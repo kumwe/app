@@ -35,6 +35,16 @@ final readonly class SecurityHeaders
      * `script-src` admits same-origin script files only, which is the safe default for pages that
      * carry no inline script at all.
      *
+     * Style is split across three directives rather than left as one permissive `style-src`, because the
+     * two things `'unsafe-inline'` used to admit are not equally dangerous. A `<style>` element is what a
+     * CSS exfiltration attack needs — attribute selectors paired with `url()` requests, or an `@import`
+     * to an attacker origin — and nothing Kumwe renders is one, so `style-src-elem` is `'self'` and an
+     * injected style block simply does not apply. What remains admitted is the `style` attribute, through
+     * `style-src-attr`, which a handful of shipped templates use to carry validated per-site theme
+     * colours and bounded layout values into CSS custom properties; an attribute cannot express a
+     * selector, so the residual is UI redress rather than exfiltration. Removing it needs those values
+     * served as same-origin stylesheets, which `docs/qualification/gap-matrix.md` records as still open.
+     *
      * @param   ?string  $scriptNonce  Nonce that admits matching inline scripts, or null to allow none.
      *
      * @return  array<string, string>  Header name to value; `Strict-Transport-Security` only when enabled.
@@ -55,7 +65,9 @@ final readonly class SecurityHeaders
                 "img-src 'self' data: blob:",
                 "object-src 'none'",
                 sprintf('script-src %s', $scriptSource),
-                "style-src 'self' 'unsafe-inline'",
+                "style-src 'self'",
+                "style-src-attr 'unsafe-inline'",
+                "style-src-elem 'self'",
                 'upgrade-insecure-requests',
             ]),
             'Cross-Origin-Opener-Policy' => 'same-origin',

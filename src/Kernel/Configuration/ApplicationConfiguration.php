@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Kernel\Configuration;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
 use Kumwe\CMS\Http\Security\TrustedProxyMatcher;
 
 /**
@@ -70,6 +71,10 @@ final readonly class ApplicationConfiguration
      * @param   RedisConfiguration             $redis                         Connection settings for the Redis server.
      * @param   RecordEncryptionConfiguration  $recordEncryption              Dedicated key material for business-record
      *          secret fields, so those envelopes no longer depend on the lifetime of `$secret`.
+     * @param   PackageConformanceMode         $packageConformanceAdmission   How install-time admission treats the
+     *          static conformance scan of packaged code; production refuses `Off`.
+     * @param   RevocationFeedConfiguration    $revocationFeed                Upstream signing-key revocation list this
+     *          installation consumes, if any, with the key it is pinned to.
      *
      * @throws  InvalidArgumentException  When a setting is malformed, a secret is too short or
      *          reused, an identity is not a stable identifier, or a production-only rule is violated.
@@ -100,6 +105,8 @@ final readonly class ApplicationConfiguration
         public DatabaseConfiguration $database,
         public RedisConfiguration $redis,
         public RecordEncryptionConfiguration $recordEncryption = new RecordEncryptionConfiguration(),
+        public PackageConformanceMode $packageConformanceAdmission = PackageConformanceMode::Enforce,
+        public RevocationFeedConfiguration $revocationFeed = new RevocationFeedConfiguration(),
     ) {
         if (filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
             throw new InvalidArgumentException('APP_BASE_URL must contain an absolute URL.');
@@ -107,6 +114,25 @@ final readonly class ApplicationConfiguration
 
         if ($environment === RuntimeEnvironment::Production && !str_starts_with($baseUrl, 'https://')) {
             throw new InvalidArgumentException('Production APP_BASE_URL must use HTTPS.');
+        }
+        if ($environment === RuntimeEnvironment::Production && $allowUnsignedLocalExtensions) {
+            throw new InvalidArgumentException(
+                'EXTENSIONS_ALLOW_UNSIGNED_LOCAL must be false when APP_ENV=production. Setting it turns off '
+                . 'Ed25519 package-signature verification for every install, which is the whole extension '
+                . 'supply-chain gate. Register a trust key with `bin/kumwe extension:trust add`, sign packages '
+                . 'with `bin/kumwe extension:sign`, and install them with --key-id and --signature; use '
+                . 'APP_ENV=development or APP_ENV=testing for the unsigned local workflow.',
+            );
+        }
+        if (
+            $environment === RuntimeEnvironment::Production
+            && $packageConformanceAdmission === PackageConformanceMode::Off
+        ) {
+            throw new InvalidArgumentException(
+                'EXTENSIONS_CONFORMANCE_ADMISSION must be enforce or warn when APP_ENV=production. Turning the '
+                . 'install-time static scan off would admit packaged PHP that has never been inspected; use warn '
+                . 'to record findings without refusing an install.',
+            );
         }
         SiteContext::fromString($publicSite);
         if (preg_match('/^[a-z][a-z0-9-]{0,62}$/D', $siteContentProfile) !== 1) {

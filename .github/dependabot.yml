@@ -1,0 +1,91 @@
+# Scheduled dependency updates.
+#
+# This file exists because of a specific, recorded incident rather than as a default: advisories have
+# appeared overnight in the committed frontend lockfile, failing `npm audit --audit-level=high` on an
+# unrelated pull request and blocking work that had nothing to do with the dependency. Weekly grouped
+# updates make that patch routine instead of an interruption.
+#
+# Two rules shape every entry below. Updates are grouped so a week produces one reviewable pull request
+# per ecosystem rather than a dozen, and security updates are deliberately left ungrouped so a fix for a
+# published advisory is never held behind an unrelated major version bump. GitHub Actions are pinned by
+# commit SHA and verified by tests/Architecture/ProductionArtifactsTest; Dependabot rewrites the SHA and
+# updates the version comment beside it, so that control survives these updates rather than being
+# defeated by them.
+version: 2
+
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:00'
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: 'composer'
+    groups:
+      composer-runtime:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        exclude-patterns:
+          - 'phpstan/*'
+          - 'phpunit/*'
+          - 'squizlabs/*'
+      composer-quality-gates:
+        applies-to: version-updates
+        patterns:
+          - 'phpstan/*'
+          - 'phpunit/*'
+          - 'squizlabs/*'
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:00'
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: 'npm'
+    groups:
+      npm-all:
+        applies-to: version-updates
+        patterns:
+          - '*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:00'
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: 'actions'
+    groups:
+      github-actions-all:
+        applies-to: version-updates
+        patterns:
+          - '*'
+
+  # Every shipped image — the PHP runtime, the Composer builder and the nginx web tier — is declared as
+  # an ARG default in one Dockerfile, so a single directory covers all three. This is what turns a base
+  # image CVE into a pull request instead of leaving it for the next release build's Trivy gate to fail.
+  - package-ecosystem: docker
+    directory: /docker/php
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:00'
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+    commit-message:
+      prefix: 'docker'

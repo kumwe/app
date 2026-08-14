@@ -6,3 +6,14 @@
 
 # Inactive example value in the preserved 2022 legacy baseline; Kumwe 2.0 does not load this file.
 a5a45e92ae8f131071d469608f595f43ccc489bd:config.php.example:generic-api-key:48
+
+# Historical workflow fixtures, surfaced when .gitleaks.toml added the project's own APP_SECRET rule.
+# The literal is `test-only-secret-that-is-never-used-in-production`: a self-describing placeholder in
+# commits that no longer exist on master's tip, in workflow files whose current versions mint a value
+# with `openssl rand` instead. Each entry is scoped to one commit, one file, one rule and one line, so
+# it exempts these three occurrences and nothing else — a future APP_SECRET assignment in any of these
+# files still fails. These entries become wrong the moment that literal stops being a placeholder,
+# which cannot happen for a value that spells out what it is.
+99249899e63bff3cafad3dac22e61a049d5a0f49:.github/workflows/release.yml:kumwe-application-secret:52
+99249899e63bff3cafad3dac22e61a049d5a0f49:.github/workflows/security.yml:kumwe-application-secret:47
+b40d2afd6a0afcc6bcc914784464c109231a512e:.github/workflows/ci.yml:kumwe-application-secret:46

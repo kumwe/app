@@ -23,6 +23,8 @@ use Kumwe\CMS\Extension\Application\Install\ExtensionInstallOutcome;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
 use Kumwe\CMS\Extension\Application\Package\ExtensionActivationAdmission;
+use Kumwe\CMS\Extension\Application\Package\PackageAdmissionReport;
+use Kumwe\CMS\Extension\Application\Package\PackageAdmissionScanner;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Contribution\ContributionDefinitionChecksum;
@@ -74,6 +76,27 @@ use ZipArchive;
 final readonly class DoctrineExtensionManager
 {
     /**
+     * Supply-chain summary reported for a release no install-time scan was recorded for.
+     *
+     * A release installed before the admission scanner shipped, or by an installation whose schema does
+     * not yet carry the attestation table, has no result to show. It reports `unscanned` rather than
+     * borrowing the wording of a package that passed, because the difference between "we checked and it
+     * was fine" and "nobody looked" is the whole point of showing this at all.
+     *
+     * @var    array{sbom: string, provenance: string, conformance: string, components: int,
+     *         builder: ?string, findings: list<string>}
+     * @since  2.0.0
+     */
+    private const array UNSCANNED_SUPPLY_CHAIN = [
+        'sbom' => 'unscanned',
+        'provenance' => 'unscanned',
+        'conformance' => 'unscanned',
+        'components' => 0,
+        'builder' => null,
+        'findings' => [],
+    ];
+
+    /**
      * Wire the registry to its database, its two storage roots and the collaborators a lifecycle change needs.
      *
      * @param  Connection                      $database              Connection every extension table read
@@ -116,6 +139,8 @@ final readonly class DoctrineExtensionManager
      *         business definitions a package contributes; null when the installation ships none.
      * @param  ?ExtensionActivationAdmission   $activationAdmission   Declarative public-contract admission
      *         run inside an activation/active-upgrade transaction before runtime publication is staged.
+     * @param  ?PackageAdmissionScanner        $packageAdmission      Install-time scanner reading packaged
+     *         code and attestations before extraction; null leaves the release recorded as unscanned.
      *
      * @since  2.0.0
      */
@@ -140,6 +165,7 @@ final readonly class DoctrineExtensionManager
         private ResourceSiteOwnershipWriter $ownership,
         private ?PackageDefinitionSynchronizer $businessDefinitions = null,
         private ?ExtensionActivationAdmission $activationAdmission = null,
+        private ?PackageAdmissionScanner $packageAdmission = null,
     ) {
     }
 
@@ -170,12 +196,13 @@ final readonly class DoctrineExtensionManager
     {
         $installed = $this->database->fetchAllAssociative(sprintf(
             'SELECT e.identifier, e.extension_type, e.installed_version, e.status, e.service_provider, '
-            . 'e.registry_version, e.runtime_path, e.installed_at, e.updated_at, r.manifest '
+            . 'e.registry_version, e.runtime_path, e.installed_at, e.updated_at, r.manifest, r.id AS release_id '
             . 'FROM %s e INNER JOIN %s r ON r.extension_id = e.id AND r.version = e.installed_version '
             . 'ORDER BY e.identifier',
             $this->tables->quoted('extensions'),
             $this->tables->quoted('extension_releases'),
         ));
+        $attestations = $this->releaseAttestations();
         $surfaces = $this->database->fetchAllAssociative(sprintf(
             'SELECT e.identifier, a.surface FROM %s a INNER JOIN %s e ON e.id = a.extension_id '
             . 'ORDER BY e.identifier, a.surface',
@@ -208,6 +235,11 @@ final readonly class DoctrineExtensionManager
 
         foreach ($installed as &$extension) {
             $identifier = $extension['identifier'] ?? null;
+            $releaseId = $extension['release_id'] ?? null;
+            $extension['supply_chain'] = is_string($releaseId)
+                ? ($attestations[$releaseId] ?? self::UNSCANNED_SUPPLY_CHAIN)
+                : self::UNSCANNED_SUPPLY_CHAIN;
+            unset($extension['release_id']);
             $extension['theme_surfaces'] = is_string($identifier) ? ($byIdentifier[$identifier] ?? []) : [];
             $manifestValue = $extension['manifest'] ?? null;
             if (is_string($identifier) && (is_string($manifestValue) || is_array($manifestValue))) {
@@ -559,6 +591,7 @@ final readonly class DoctrineExtensionManager
         $signature = $this->signature($signingKeyId, $base64Signature);
         $this->trust->assertTrusted($checksum, $signature, $manifest->identifier());
         $this->assertDependencies($manifest);
+        $admission = $this->packageAdmission?->scan($archiveFile, $manifest) ?? PackageAdmissionReport::notTaken();
 
         $relativeRuntime = $this->runtimePath($manifest);
         $this->ensureBoundedDirectory($this->extensionRoot, dirname($relativeRuntime), 0700);
@@ -684,6 +717,7 @@ final readonly class DoctrineExtensionManager
                 $lease,
                 $mysql,
                 $archiveFile,
+                $admission,
             ): array {
                 $this->assertFence($lease);
                 if (!$mysql) {
@@ -704,11 +738,13 @@ final readonly class DoctrineExtensionManager
                     $site,
                     $deployedTreeDigest,
                     $actorId,
+                    $admission,
                 );
                 $this->compiler->cancelRetirement($relativeRuntime);
                 $this->audit($actorId, 'extension.install', $manifest->identifier()->value(), [
                     'version' => (string) $manifest->version(),
                     'checksum' => (string) $checksum,
+                    ...$admission->auditMetadata(),
                 ]);
                 $generation = $this->compiler->stage('extension.install');
                 $previousRuntime = $previous['runtime_path'] ?? null;
@@ -1127,21 +1163,23 @@ final readonly class DoctrineExtensionManager
      * synchronization runs last and its rejection is audited from an after-rollback hook, because the
      * transaction that would otherwise carry the audit entry is the one being rolled back.
      *
-     * @param   ExtensionManifest  $manifest            Parsed manifest of the version being installed.
-     * @param   string             $manifestJson        The manifest exactly as read from the package,
+     * @param   ExtensionManifest       $manifest            Parsed manifest of the version being installed.
+     * @param   string                  $manifestJson        The manifest exactly as read from the package,
      *          stored verbatim on the release row.
-     * @param   PackageChecksum    $checksum            SHA-256 of the package bytes, recorded as both the
+     * @param   PackageChecksum         $checksum            SHA-256 of the package bytes, recorded as both the
      *          package and the artifact digest.
-     * @param   ?PackageSignature  $signature           Signature the trust store accepted, or null when
+     * @param   ?PackageSignature       $signature           Signature the trust store accepted, or null when
      *          the package was accepted unsigned.
-     * @param   string             $relativeRuntime     Path below the extension root the files were
+     * @param   string                  $relativeRuntime     Path below the extension root the files were
      *          published to.
-     * @param   SiteContext        $site                Site that takes ownership of the resource and that
+     * @param   SiteContext             $site                Site that takes ownership of the resource and that
      *          contributed definitions are synchronized for.
-     * @param   string             $deployedTreeDigest  Digest of the published tree, stored so a later
+     * @param   string                  $deployedTreeDigest  Digest of the published tree, stored so a later
      *          integrity check can detect tampering on disk.
-     * @param   string             $actorId             Identifier recorded as the actor on definition
+     * @param   string                  $actorId             Identifier recorded as the actor on definition
      *          synchronization and on its rejection audit.
+     * @param   PackageAdmissionReport  $admission           What install-time admission established about the
+     *          package, recorded beside the release so the Extensions screen can show it.
      *
      * @return  void
      *
@@ -1160,6 +1198,7 @@ final readonly class DoctrineExtensionManager
         SiteContext $site,
         string $deployedTreeDigest,
         string $actorId,
+        PackageAdmissionReport $admission,
     ): void {
         $identifier = $manifest->identifier()->value();
         $existing = $this->findInstalledOrNull($identifier);
@@ -1248,6 +1287,8 @@ final readonly class DoctrineExtensionManager
             'installed_at' => Types::DATETIME_IMMUTABLE,
         ]);
 
+        $this->persistAdmission($releaseId, $admission, $now);
+
         foreach ($manifest->dependencies() as $dependency) {
             $this->database->insert($this->tables->raw('extension_dependencies'), [
                 'release_id' => $releaseId,
@@ -1289,6 +1330,142 @@ final readonly class DoctrineExtensionManager
             });
             throw $failure;
         }
+    }
+
+    /**
+     * Read the supply-chain summary of every release, keyed by release identifier.
+     *
+     * The blocking and advisory findings are merged into one `findings` list for display: an operator
+     * reading the Extensions screen needs to know something was recorded, and the class of a finding on
+     * an already-installed release no longer changes what they can do about it. The distinction is kept
+     * intact in the stored document and in the audit record for whoever follows up.
+     *
+     * @return  array<string, array{sbom: string, provenance: string, conformance: string,
+     *          components: int, builder: ?string, findings: list<string>}>  Summary by release ID; empty
+     *          when the installation's schema does not carry the attestation table.
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
+     *
+     * @since   2.0.0
+     */
+    private function releaseAttestations(): array
+    {
+        $table = $this->tables->raw('extension_release_attestations');
+        if (!$this->database->createSchemaManager()->tablesExist([$table])) {
+            return [];
+        }
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT release_id, sbom_state, sbom_components, provenance_state, provenance_builder, '
+            . 'conformance_state, conformance_document FROM %s',
+            $this->tables->quoted('extension_release_attestations'),
+        ));
+        $summaries = [];
+        foreach ($rows as $row) {
+            $releaseId = $row['release_id'] ?? null;
+            if (!is_string($releaseId)) {
+                continue;
+            }
+            $summaries[$releaseId] = [
+                'sbom' => is_string($row['sbom_state'] ?? null) ? $row['sbom_state'] : 'unscanned',
+                'provenance' => is_string($row['provenance_state'] ?? null) ? $row['provenance_state'] : 'unscanned',
+                'conformance' => is_string($row['conformance_state'] ?? null) ? $row['conformance_state'] : 'unscanned',
+                'components' => $this->databaseInteger($row['sbom_components'] ?? 0, 'bill-of-materials components'),
+                'builder' => is_string($row['provenance_builder'] ?? null) ? $row['provenance_builder'] : null,
+                'findings' => $this->admissionFindings($row['conformance_document'] ?? null),
+            ];
+        }
+
+        return $summaries;
+    }
+
+    /**
+     * Decode the stored conformance document into the flat finding list a screen renders.
+     *
+     * @param   mixed  $document  Stored JSON column value, as the driver returned it.
+     *
+     * @return  list<string>  Blocking findings first, then advisory ones; empty when neither is recorded.
+     *
+     * @since   2.0.0
+     */
+    private function admissionFindings(mixed $document): array
+    {
+        if (is_resource($document)) {
+            $document = stream_get_contents($document);
+        }
+        if (is_string($document) && $document !== '') {
+            try {
+                $document = json_decode($document, true, 16, JSON_THROW_ON_ERROR);
+            } catch (Throwable) {
+                return [];
+            }
+        }
+        if (!is_array($document)) {
+            return [];
+        }
+        $findings = [];
+        foreach (['blocking', 'advisory'] as $class) {
+            $entries = $document[$class] ?? null;
+            if (!is_array($entries)) {
+                continue;
+            }
+            foreach ($entries as $entry) {
+                if (is_string($entry)) {
+                    $findings[] = $entry;
+                }
+            }
+        }
+
+        return $findings;
+    }
+
+    /**
+     * Record what install-time admission established about the package this release came from.
+     *
+     * The row is written only when the installation's schema carries the table, so an installation that
+     * has not yet taken the migration keeps installing extensions instead of failing on a missing table;
+     * the Extensions screen shows such a release as unscanned rather than as passing, which is the honest
+     * reading. Both attestation documents are stored as JSON columns rather than folded into the summary,
+     * so a later policy query can reach a component list without decoding a blob.
+     *
+     * @param   string                  $releaseId  Release row the admission result belongs to.
+     * @param   PackageAdmissionReport  $admission  Result of the install-time scan.
+     * @param   \DateTimeImmutable      $now        Instant recorded as when the scan was taken.
+     *
+     * @return  void
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the write.
+     *
+     * @since   2.0.0
+     */
+    private function persistAdmission(
+        string $releaseId,
+        PackageAdmissionReport $admission,
+        \DateTimeImmutable $now,
+    ): void {
+        $table = $this->tables->raw('extension_release_attestations');
+        if (!$this->database->createSchemaManager()->tablesExist([$table])) {
+            return;
+        }
+        $this->database->insert($table, [
+            'release_id' => $releaseId,
+            'sbom_state' => $admission->sbomState->value,
+            'sbom_sha256' => $admission->sbomSha256,
+            'sbom_components' => $admission->sbomComponents,
+            'sbom_document' => $admission->sbom,
+            'provenance_state' => $admission->provenanceState->value,
+            'provenance_sha256' => $admission->provenanceSha256,
+            'provenance_builder' => $admission->builderReference,
+            'provenance_document' => $admission->provenance,
+            'conformance_mode' => $admission->conformanceMode->value,
+            'conformance_state' => $admission->conformanceState,
+            'conformance_document' => $admission->toArray()['conformance'],
+            'recorded_at' => $now,
+        ], [
+            'sbom_document' => Types::JSON,
+            'provenance_document' => Types::JSON,
+            'conformance_document' => Types::JSON,
+            'recorded_at' => Types::DATETIME_IMMUTABLE,
+        ]);
     }
 
     /**

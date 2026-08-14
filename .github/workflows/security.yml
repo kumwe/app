@@ -53,10 +53,13 @@ jobs:
 
       # tools/scan-secrets.sh runs this same scan locally as composer security:secrets, so a contributor
       # can see this result before pushing. Change the pinned image or the arguments in both places.
+      # --config is passed explicitly rather than relied on being discovered, so a rename or a move of
+      # .gitleaks.toml fails the step instead of silently dropping the project's own token rules.
       - name: Scan repository for secrets
         shell: bash
         run: |
           install -d build/security
+          test -f .gitleaks.toml
           set +e
           docker run --rm \
             --volume "$PWD:/repo:ro" \
@@ -64,6 +67,7 @@ jobs:
             --workdir /repo \
             "$GITLEAKS_IMAGE" \
             detect --source=/repo --no-banner --redact \
+            --config=/repo/.gitleaks.toml \
             --report-format json --report-path /report/gitleaks.json
           scan_status=$?
           set -e

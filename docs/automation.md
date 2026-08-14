@@ -79,7 +79,17 @@ Built-in job types include `system.sessions.purge`, `extensions.runtime.rebuild`
 
 `business.record.secret.rekey` is site-scoped and ships with no schedule of its own, because re-encrypting stored record secrets is a campaign with an end rather than a recurring chore. Enable a schedule for the site being rotated, or enqueue the job directly, and remove it once a pass first reports that nothing is left. Each run moves at most `batch_size` rows (1 to 1000, default 200) and returns, so the lease stays short and an interrupted run leaves consistent state; see [the rotation procedure](business-security.md#record-encryption-key-lifecycle).
 
-`extensions.runtime.rebuild` and `system.idempotency.purge` are declared installation-global jobs. Their scope is persisted on both schedules and queued occurrences; they remain claimable if the site used to create them is later disabled or deleted, and execute only as their dedicated internal materializer or maintenance principal. Site-owned jobs remain joined to a live, enabled owner. Creating, listing, retrying, canceling, enabling, or deleting installation-global work requires a global `automation.manage` grant; a site-scoped grant cannot cross that boundary.
+`extensions.trust.revocations.synchronize` is installation-global and ships with no schedule, because it does
+nothing until an operator pins an upstream revocation feed with `EXTENSIONS_REVOCATION_FEED_URL` and
+`EXTENSIONS_REVOCATION_FEED_KEY`. Once pinned, schedule it as often as the issuer publishes — hourly is
+reasonable, and the run is a cheap no-op when the list has not advanced. It is safe to re-run: a list is applied
+only when its sequence is strictly newer than the one already recorded. An unreachable origin returns normally and
+records staleness, so a vendor outage does not retry-storm; a served list that fails verification is a permanent
+failure so the occurrence is visible rather than retried. See
+[the revocation feed](extensions.md#upstream-revocation-feed) for the format and the unreachable-feed decision.
+
+`extensions.runtime.rebuild`, `extensions.trust.revocations.synchronize` and `system.idempotency.purge` are
+declared installation-global jobs. Their scope is persisted on both schedules and queued occurrences; they remain claimable if the site used to create them is later disabled or deleted, and execute only as their dedicated internal materializer or maintenance principal. Site-owned jobs remain joined to a live, enabled owner. Creating, listing, retrying, canceling, enabling, or deleting installation-global work requires a global `automation.manage` grant; a site-scoped grant cannot cross that boundary.
 
 ## Operating rules
 

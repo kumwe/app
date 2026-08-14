@@ -25,6 +25,18 @@ MESSAGE
     exit 1
 fi
 
+if [[ ! -f .gitleaks.toml ]]; then
+    cat >&2 <<'MESSAGE'
+Secret scan NOT run: .gitleaks.toml is missing.
+
+The project's own token rules — the runtime signing key, the application secret, the record-encryption
+key ring, the package signing key and issued session tokens — live in that file. Scanning without it
+would still find other vendors' credential formats and would quietly stop looking for Kumwe's, which is
+a weaker check wearing the same green tick. Restore the file and run this again.
+MESSAGE
+    exit 1
+fi
+
 install -d build/security
 # A report from an earlier run must never be mistaken for this one's result, so it goes before the scan
 # rather than after it: if the container cannot start, the absence of a report is what says so.
@@ -37,6 +49,7 @@ docker run --rm \
     --workdir /repo \
     "$gitleaks_image" \
     detect --source=/repo --no-banner --redact \
+    --config=/repo/.gitleaks.toml \
     --report-format json --report-path /report/gitleaks.json
 scan_status=$?
 set -e
