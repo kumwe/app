@@ -21,10 +21,10 @@
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",
     "@playwright/test": "1.62.1",
-    "@types/node": "26.1.2",
+    "@types/node": "26.2.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "typescript": "7.0.2",
-    "vite": "8.2.0"
+    "vite": "8.2.1"
   }
 }
