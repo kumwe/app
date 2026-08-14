@@ -313,6 +313,25 @@ development programme, from the architecture decision that opened it to the curr
 - **Operator and extension documentation, and a task-focused project guide,** covering architecture, delivery,
   persistence, extensions, automation, administration, operations and the recorded architecture decisions.
   (`0f494eb`, `a37eca9`)
+- **A price stored in one currency can be presented in another, and the presented figure says so.** Kumwe now
+  owns the money conversion contract: what a conversion asks for, what it returns, and the rules it obeys. A
+  converted amount is a different kind of thing from a stored one and cannot be mistaken for it — it carries
+  the amount and currency it came from, the rate applied, the instant that rate was as at, the identity of the
+  provider that supplied the rate, the rounding rule applied and the exact unrounded product that rule was
+  applied to. It is not possible to build one without all of that, so an operator reading a figure can always
+  tell whether they are looking at what was agreed or at what it is worth today, and reproduce the second from
+  the first. The arithmetic is exact from end to end; no conversion passes through a floating-point number, and
+  rounding is a declared step with a named mode rather than something that happens on the way past.
+  Conversion is presentation and reporting only: it never writes back, and a converted amount offered where a
+  stored money value belongs is refused. (`0000000`)
+- **Exchange rates come from extensions, and Kumwe ships none.** A package declares the currencies it prices
+  and its place in the resolution order in its signed manifest, implements one port, and registers it through
+  the same contribution registrar every other extension surface uses. An external rate service, a manually
+  administered table, a bank feed and a contractual fixed rate are all that same port, and none of them is
+  wired into the product. A package cannot price a currency it did not declare, cannot attribute a rate to
+  another package, and cannot supply a rate dated after the moment that was asked about. Rates disappear with
+  their package on disable, uninstall or trust revocation, in the same sweep as everything else it
+  contributed. With no rate package installed, a conversion is refused rather than guessed. (`0000000`)
 
 ### Changed
 
@@ -376,6 +395,15 @@ development programme, from the architecture decision that opened it to the curr
 - **Restore tooling matches the supported PostgreSQL major version,** installing verified client packages rather
   than whatever the base image happens to carry. (`6f2735d`, `549bd64`, `7c4885c`, `ef4582c`)
 - **Copyright is attributed to Vast Development Method** across the source tree. (`dc35a63`)
+- **A report column or an export artifact holding a converted amount now carries the evidence for it.** An
+  export outlives the request that made it and is the record the recipient keeps, so a converted figure sent
+  out as a bare number is provenance lost permanently. A report column declared as a converted amount carries
+  the whole story in the cell — the presented figure, the amount and currency it came from, the rate, the
+  as-at instant, the provider and the rounding applied — written so that somebody reading the downloaded file,
+  with no access to the installation that produced it, can tell a converted figure from an agreed one and
+  reproduce it. A bare number in such a column fails the column's own declared type, so it is a refused report
+  rather than a quietly weaker artifact. This widens the export payload for that column type; existing report
+  and export payloads are unchanged. (`0000000`)
 
 ### Fixed
 

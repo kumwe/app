@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessReporting\Domain;
 
+use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
+
 /**
  * Closed scalar vocabulary accepted by report parameters, columns and formulas.
  *
@@ -33,6 +35,19 @@ enum ReportValueType: string
     case DateTime = 'date_time';
 
     /**
+     * An amount presented in a currency it is not stored in, inseparable from its provenance.
+     *
+     * A report or export cell carries a scalar, so a converted amount travels as the self-describing
+     * text `ConvertedMoneyValue::toPortableString()` writes. Declaring a column this type is what makes
+     * the provenance mandatory rather than a rendering choice: a bare figure fails the column's own type
+     * check and the report is refused, so a converted figure cannot reach an artifact stripped of the
+     * rate, the as-at instant and the provider that produced it.
+     *
+     * @since  2.0.0
+     */
+    case ConvertedMoney = 'converted_money';
+
+    /**
      * Prove that an inbound parameter value has this exact type.
      *
      * @param   mixed  $value  Scalar value supplied by an authenticated report caller.
@@ -49,6 +64,9 @@ enum ReportValueType: string
             self::Decimal => is_int($value)
                 || (is_string($value) && preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) === 1),
             self::String => is_string($value) && mb_strlen($value) <= 4096,
+            self::ConvertedMoney => is_string($value)
+                && mb_strlen($value) <= 512
+                && ConvertedMoneyValue::isPortableString($value),
             self::Identifier => is_string($value) && (
                 preg_match('/^[a-z][a-z0-9_.-]{0,190}$/D', $value) === 1
                 || preg_match(

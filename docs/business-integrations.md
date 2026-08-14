@@ -82,6 +82,7 @@ namespace. The section contains exactly these lists:
 | `projections` | Exact event versions, sensitivity, fields, key and rebuild batch | `ProjectionBuilder` |
 | `reports` | Policy-aware source, parameters, filters, output and row cap | None; safe compiled definition |
 | `webhooks` | Event versions, idempotency, queue, retries and sensitivity | `IntegrationEventTransport` |
+| `rate_providers` | Provider identity, the ISO 4217 currencies it prices, and its resolution priority | `MoneyRateProvider` |
 
 SPI 2 also refuses declaration-only relationship ordering. A reciprocal one-to-many/many-to-one pair is stored
 in the many-to-one record column and therefore cannot carry collection positions. An ordered one-to-many must
@@ -329,6 +330,67 @@ item through that shared path. A report denied for execution is omitted from dis
 identifier, label, source, parameters, or columns. Do not publish an owner-wide report catalog and defer the
 item-policy decision until execution. Portal visibility is opt-in in the signed report and still requires portal
 membership and field policy.
+
+## Money conversion and rate providers
+
+Core owns money-with-currency as a type and it owns the conversion contract: the shape of a conversion request,
+the shape of a converted result, and the rules a conversion obeys. Core owns no rate. There is no rate table, no
+rate feed and no rate policy anywhere in the CMS, and there never will be — an external rate service, a manually
+administered table, a bank feed and a contractual fixed rate are all packages implementing one port.
+
+A conversion is stated as a `MoneyConversionRequest`: the stored `MoneyValue`, the ISO 4217 code it is to be
+presented in, the UTC instant the rate must be as at, and the precision, scale and `MoneyRoundingMode` the answer
+is rounded to. Rounding is a declared step, never an accident, because it is a business rule and it belongs to
+whoever owns the rate. `MoneyConversionPipeline` asks each contributed provider in declared order, takes the first
+rate offered, and applies it through `MoneyConverter`. With no rate package installed it raises
+`MoneyRateUnavailable`; presenting the stored amount instead is the correct response to that.
+
+Implement `Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider` and contribute it through
+`MoneyRateProviderRegistrar::moneyRateProvider()`, the additive registrar the owner-bound registrar also
+implements. The declaration is reconciled against the manifest like every other contribution, and three further
+rules apply to the runtime object:
+
+- the currencies in the declaration are a closed claim. A conversion whose stored or target currency is outside
+  the declared list is never offered to that provider, so a package cannot widen its reach after admission;
+- a provider attributes every rate it returns to its own declared identifier. A rate attributed elsewhere is
+  refused rather than converted with; and
+- a rate must price the pair asked about and be as at the requested instant or earlier. A rate from after that
+  instant is not the historical rate and is refused.
+
+`MoneyExchangeRate` carries the pair, an `ExactDecimal` rate, the UTC as-at instant and the provider identity.
+Nothing about that is optional, and neither is any of it repairable: a rate without a fraction, at or below zero,
+outside UTC, or without a namespaced provider identity does not construct.
+
+### A converted amount is always marked as converted
+
+`ConvertedMoneyValue` is the only shape a converted figure exists in, and it carries the presented amount, the
+amount and currency it came from, the rate, the as-at instant, the provider, the rounding mode and the unrounded
+product the rounding was applied to. The constructor recomputes the product and the rounding, so a value whose
+numbers do not follow from its own provenance cannot be built at all — an incomplete converted amount is
+unconstructible rather than merely discouraged.
+
+It is deliberately not interchangeable with a stored value. Its export carries a `converted` marker and places the
+figure under `value`, so the `amount` and `currency` pair a stored `MoneyValue` exports appears nowhere at its top
+level. `RecordValueGuard` refuses the object as a record value and `RecordValueCodec` refuses its export for a
+`core.money` field, so conversion cannot leak into storage. Where a business genuinely needs a second stored
+denomination, that is a second stored exact value produced by the extension's own rule and committed in the same
+transaction — not a conversion presented as storage.
+
+### Reports and exports carry the provenance inline
+
+A report cell and an export column carry a scalar, so declare the column `ReportValueType::ConvertedMoney` and let
+the report return a `ConvertedMoneyValue`. The row builder writes it out as the self-describing line
+`ConvertedMoneyValue::toPortableString()` produces:
+
+```text
+EUR 1234.56 converted from ZAR 25000.00 at 0.04938240 as at 2026-08-14T00:00:00.000000+00:00 by acme.rates.ecb rounded half_up from 1234.5600000000
+```
+
+The column type is the enforcement: a bare figure fails its own declared type and the report is refused, so a
+converted amount cannot reach a queued, checksummed, downloaded artifact stripped of the evidence for it. The
+recipient of that artifact can tell a converted figure from an agreed one, and reproduce it, without access to the
+installation that produced it. `ConvertedMoneyValue::fromPortableString()` reads the same line back, and
+`fromArray()` does the same for a payload.
 
 ## Upgrade and lifecycle design
 

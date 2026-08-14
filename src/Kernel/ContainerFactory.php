@@ -118,6 +118,10 @@ use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionRepository;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordWriteRepository;
 use Kumwe\CMS\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolver;
+use Kumwe\CMS\BusinessRecord\Application\MoneyConversionPipeline;
+use Kumwe\CMS\BusinessRecord\Application\MoneyRateProviderCatalog;
+use Kumwe\CMS\BusinessRecord\Domain\MoneyConverter;
+use Kumwe\CMS\BusinessRecord\Infrastructure\RuntimeMoneyRateProviderCatalog;
 use Kumwe\CMS\BusinessRecord\Application\RecordCursorCodec;
 use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\CMS\BusinessRecord\Application\RecordRuleValidator;
@@ -2490,6 +2494,20 @@ final class ContainerFactory
             self::service($container, TrustedRuntimeGenerationGuard::class),
             self::service($container, TransactionManager::class),
             self::service($container, LoggerInterface::class),
+        ), true);
+        // Core owns the money conversion contract and ships no rate of any kind, so the catalog reads
+        // the contribution registries and stays empty until a package that owns rates is installed.
+        $container->share(MoneyConverter::class, new MoneyConverter(), true);
+        $container->share(MoneyRateProviderCatalog::class, static fn (
+            Container $container,
+        ): MoneyRateProviderCatalog => new RuntimeMoneyRateProviderCatalog(
+            self::service($container, ExtensionContributionRegistrySet::class),
+        ), true);
+        $container->share(MoneyConversionPipeline::class, static fn (
+            Container $container,
+        ): MoneyConversionPipeline => new MoneyConversionPipeline(
+            self::service($container, MoneyConverter::class),
+            self::service($container, MoneyRateProviderCatalog::class),
         ), true);
     }
 

@@ -976,7 +976,7 @@
     },
     {
       "id": "V2-ERP-004",
-      "title": "No unit-of-measure conversion and no currency conversion primitive",
+      "title": "No unit-of-measure conversion, so two extensions cannot agree what a case of a product is",
       "severity": "medium",
       "state": "accepted_for_implementation",
       "phase": "E",
@@ -985,27 +985,27 @@
       "source_anchors": [
         {
           "file": "src/BusinessDefinition/Domain/BuiltInFieldTypes.php",
-          "symbol": "the money and quantity types",
-          "note": "core.money pairs an exact amount with an ISO 4217 currency and configures precision, scale and currency; core.quantity pairs an exact quantity with a declared unit and configures precision, scale and unit. Both carry the denomination, neither converts. There is no rate table, no rate row, no rate provider, no conversion operator and no conversion service anywhere under src/."
+          "symbol": "the quantity type",
+          "note": "core.quantity pairs an exact quantity with a declared unit and configures precision, scale and unit. It carries the denomination and does not convert. There is no unit conversion table, no conversion operator and no conversion service for quantities anywhere under src/. The money half of this finding is delivered: core owns the money conversion contract and the rate-provider port, and ships no rate."
         },
         {
           "file": "src/BusinessRecord/Domain/QuantityValue.php",
           "symbol": "the class docblock",
-          "note": "States the limit itself: 'The unit is an opaque portable identifier — nothing here converts between units, so two quantities are only comparable when their units are identical.' The same is true of MoneyValue and is not written down anywhere."
+          "note": "States the limit itself: 'The unit is an opaque portable identifier — nothing here converts between units, so two quantities are only comparable when their units are identical.' That sentence stays true of the value type and must stop being true of the platform, as the money equivalent already has."
         },
         {
           "file": "src/BusinessSchema/Infrastructure/Schema/CanonicalDefinitionPhysicalSchemaCompiler.php",
           "symbol": "the composite column emission",
-          "note": "Line 706 emits core.money as an exact decimal .amount column beside a fixed three-character ascii .currency column; line 710 does the same for core.quantity with a .unit column. Exact storage is already correct and this work must not alter it."
+          "note": "Line 710 emits core.quantity as an exact decimal .amount column beside a .unit column. Exact storage is already correct and this work must not alter it."
         }
       ],
-      "acceptance_test": "Core owns the typed value — it already does — and additionally owns the conversion contract for both money and quantity: the shape of a conversion request, the shape of a converted result, and the rules a conversion obeys. Extensions own the rate tables and the unit conversion tables. A conformance fixture proves an extension holds a conversion table and converts with no core edit, for a quantity in the mobile assignment fixture and for a money amount in the catalogue and order fixture. Stored exact values are untouched: MoneyValue, QuantityValue, ExactDecimal, the split physical columns and the pinned-denomination refusal are unchanged, and an architecture test asserts no src/ write path accepts a converted value where a core.money or core.quantity field value is expected.",
+      "acceptance_test": "Core owns the typed quantity-with-unit — it already does — and additionally owns the conversion contract for quantities, in the shape the money conversion contract already establishes: the shape of a conversion request, the shape of a converted result, and the rules a conversion obeys. Extensions own the unit conversion tables. A conformance fixture proves an extension holds a conversion table and converts a quantity in the mobile assignment fixture with no core edit. Stored exact values are untouched: QuantityValue, ExactDecimal, the split physical columns and the pinned-unit refusal are unchanged, and an architecture test asserts no src/ write path accepts a converted value where a core.quantity field value is expected.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
-      "work_package": "PE-A, PE-C",
-      "product_owner_decision": "Decisions D10 and D13.5 — core owns the typed value and the conversion contract; extensions own the tables and the rates. Recorded in docs/roadmap/decisions/0004-money-conversion-contract.md. If core does not own the contract, extensions invent incompatible ones and cannot exchange data: a stock extension and a sales extension would disagree about what a case of a product is.",
-      "enforcing_check": "Construction and serialization tests proving the converted type cannot exist without its provenance; an architecture test proving conversion cannot leak into storage; conformance-fixture assertions for both the quantity and the money case.",
-      "cross_reference": ["V2-CUR-001", "V2-CUR-002", "V2-CUR-003", "V2-CUR-004"]
+      "work_package": "PE-C",
+      "product_owner_decision": "Decision D13.5 — core owns the typed value and the conversion contract; extensions own the tables. Identical in shape to D10, recorded in docs/roadmap/decisions/0004-money-conversion-contract.md and already delivered for money. If core does not own the contract, extensions invent incompatible ones and cannot exchange data: a stock extension and a sales extension would disagree about what a case of a product is.",
+      "enforcing_check": "Construction and serialization tests proving the converted quantity type cannot exist without its provenance; an architecture test proving conversion cannot leak into storage; a conformance-fixture assertion for the quantity case.",
+      "cross_reference": []
     },
     {
       "id": "V2-ERP-005",
@@ -1087,69 +1087,8 @@
       "forward_reference": "V2-POS-001, V2-POS-002, V2-POS-003, V2-POS-004"
     },
     {
-      "id": "V2-CUR-001",
-      "title": "Money carries its currency but nothing converts it, so a price cannot be presented in another currency",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Domain/MoneyValue.php",
-          "symbol": "MoneyValue",
-          "note": "Binds an ExactDecimal amount to an uppercase ISO 4217 alphabetic code, refusing anything that is not exactly three uppercase letters. The pair is the whole value of a core.money field. There is no second denomination, no rate and no conversion."
-        },
-        {
-          "file": "src/BusinessDefinition/Application/BusinessDefinitionValidator.php",
-          "symbol": "the money default check",
-          "note": "Line 977 compares a field's configured currency against a declared default with hash_equals(), so a field may pin exactly one denomination and refuses any other. That is a correct exactness control and it is also, today, the whole of the currency model."
-        },
-        {
-          "file": "src/BusinessDefinition/Domain/Expression.php",
-          "symbol": "Expression::OPERATORS",
-          "note": "Twenty-one scalar operators, none of which converts anything. There is no conversion operator, no rate table and no rate provider anywhere under src/."
-        }
-      ],
-      "acceptance_test": "Core gains the conversion contract: the shape of a conversion request, the shape of a converted result, and the rules a conversion obeys, plus the port a rate provider implements. Core ships no rate provider, no rate table and no rate policy. A product priced in one currency is presentable in another through the contract, and two extensions converting the same amount produce results with the same shape and the same provenance. Stored exact values are untouched: MoneyValue, ExactDecimal, the split .amount and .currency columns and the pinned-currency refusal are unchanged, and a diff of this work touching one line of them is a defect.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-A",
-      "product_owner_decision": "Decision D10 — multi-currency is core. Core owns money-with-currency as a type and the conversion contract; rate providers and rate sourcing are extension and integration concerns, so an external rate service plugs into a pipeline rather than being wired into core. Recorded in docs/roadmap/decisions/0004-money-conversion-contract.md.",
-      "enforcing_check": "An architecture test asserting no src/ write path accepts a converted value where a core.money field value is expected, so conversion cannot leak into storage.",
-      "cross_reference": ["V2-ERP-004", "V2-CUR-002"]
-    },
-    {
-      "id": "V2-CUR-002",
-      "title": "A converted amount would be indistinguishable from a stored one, which is an audit defect rather than a formatting choice",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Domain/MoneyValue.php",
-          "symbol": "MoneyValue::toArray()",
-          "note": "Exports exactly two members, amount and currency, in the canonical shape used for storage, checksums and API output. There is nowhere in the value for a marker, a rate or an as-at instant to live, because nothing produces a converted amount yet."
-        },
-        {
-          "file": "src/BusinessReporting/Application/RecordExportReportProvider.php",
-          "symbol": "the report value mapping",
-          "note": "Line 193 maps core.decimal to a report value type. Report and export payloads carry the value shape they are given, so widening the value is what widens the artifact; there is no separate provenance channel to add one to."
-        }
-      ],
-      "acceptance_test": "A converted amount is always marked as converted and carries the rate applied and the as-at instant of that rate, alongside the source currency and amount it was derived from. The type is constructible only in that complete shape, so an incomplete converted value cannot exist to be serialized. The provenance travels everywhere the figure does: the generated administrator and portal surfaces, the document view kind, report columns, export artifacts, the generated REST schemas, the machine surface and event payloads. A reader of a downloaded export can tell a converted figure from an agreed one without access to the system that produced it. A displayed price that silently drifts from its stored value is a qualification failure, not a rendering difference.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-A, PE-B",
-      "product_owner_decision": "Decision D10, the non-negotiable rule: a converted amount is always marked as converted and carries its rate and as-at instant. An operator must be able to tell, without asking anyone, whether they are looking at what was agreed or at what it is worth today, and if the latter, at what rate and as at when.",
-      "enforcing_check": "A unit test proving the converted type cannot be constructed without its rate and as-at instant; a serialization test proving the encoder emits all of them or fails, so a dropped field is a test failure rather than a rendering difference; a cross-surface test driven from one table of surfaces, so a surface added later without provenance fails rather than being missed; composer openapi:check for the generated REST half; and the capacity contract's undeclared_currency_conversions integrity objective at zero.",
-      "cross_reference": ["V2-CUR-001", "V2-CUR-004"]
-    },
-    {
-      "id": "V2-CUR-003",
-      "title": "No rate-provider extension point, so rate sourcing has nowhere to plug in",
+      "id": "V2-CUR-005",
+      "title": "Conversion provenance is guaranteed by the value but not yet rendered by the graphical, REST and machine surfaces",
       "severity": "medium",
       "state": "accepted_for_implementation",
       "phase": "E",
@@ -1157,46 +1096,23 @@
       "origin": "new",
       "source_anchors": [
         {
-          "file": "src/Extension/Contribution/ExtensionContributionRegistrar.php",
-          "symbol": "the contribution surface",
-          "note": "Twenty-four contribution methods covering capabilities, resource policies, workspaces, navigation, views, routes, field types, field presentations, business definitions, custom view and action handlers, event schemas, listeners, consumers, job handlers, queues, schedules, projections, reports and webhooks. None of them registers a rate provider or a conversion table, because no conversion contract exists for one to serve."
-        }
-      ],
-      "acceptance_test": "An extension registers a rate provider through the contribution registrar the same way it registers everything else, and a conformance fixture proves an extension can hold a rate table and convert without a core edit. Core takes no dependency on any rate source: an external rate service, a manually administered table, a bank feed and a contractual fixed rate are all implementations of one port, and none is wired into core. Which rate, from whom, applying when, rounded how and approved by whom stay entirely with the extension that owns the rate.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-B",
-      "product_owner_decision": "Decision D10 — rate providers and rate sourcing are extension and integration concerns.",
-      "enforcing_check": "A conformance-fixture assertion in the catalogue, order and payment portfolio entry: an extension-held rate provider presents a price in a second currency with its rate and as-at instant, with no core edit. The existing extension-conformance runner is the gate.",
-      "cross_reference": ["V2-CUR-001"]
-    },
-    {
-      "id": "V2-CUR-004",
-      "title": "Reports and exports would carry a converted figure without the provenance that makes it readable after it leaves the system",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessReporting/Application/ReportService.php",
-          "symbol": "the report value pipeline",
-          "note": "Report columns carry the value shape the record supplies. A converted amount rendered as a bare number in an exported artifact is unreadable once the artifact is separated from the system that produced it, and there is no place in the current shape for the rate and instant to travel."
+          "file": "src/BusinessRecord/Domain/ConvertedMoneyValue.php",
+          "symbol": "toArray() and toPortableString()",
+          "note": "The type cannot exist or be exported without its converted marker, rate, as-at instant, provider identity and declared rounding, so provenance is inseparable from the figure wherever the value itself travels. Report columns and export artifacts carry it, and ReportValueType::ConvertedMoney refuses a bare figure."
         },
         {
-          "file": "src/BusinessReporting/Application/ExportGenerationService.php",
-          "symbol": "the export artifact",
-          "note": "Exports are queued, stored and checksummed artifacts that outlive the request. Provenance omitted here is provenance lost permanently, because the artifact is the record the recipient keeps."
+          "file": "src/BusinessSurface/Presentation/Field",
+          "symbol": "the field presentation surface",
+          "note": "No presenter renders a converted amount, so no generated administrator or portal screen, no document view kind, no generated REST schema and no machine-surface response yet shows the marker, the rate and the as-at instant beside the figure. Nothing renders one incorrectly today because nothing renders one at all; the risk is a renderer added later that prints only the amount."
         }
       ],
-      "acceptance_test": "Report columns and export artifacts holding a converted amount carry the rate and the as-at instant as part of the value, so an exported artifact stays self-describing after it leaves the system. The export payload widening is stated in the work package and in the migration guidance rather than discovered by a consumer. A report combining stored and converted figures distinguishes them without the reader having to know which column is which.",
+      "acceptance_test": "Every surface that renders a converted amount renders its provenance with it: the generated administrator and portal surfaces, the document view kind, the generated REST schemas, the machine surface and event payloads. The check is driven from one table of surfaces, so a surface added later without provenance fails rather than being missed, and composer openapi:check covers the generated REST half. The value contract, the rate-provider port, the pipeline and the report and export carriage are already delivered and are not reopened by this entry.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "work_package": "PE-B",
-      "product_owner_decision": "Decision D10. The audit rule is only worth stating if it is universal; a rule half the surfaces follow is not a rule.",
-      "enforcing_check": "The same cross-surface provenance test as V2-CUR-002, with report and export among the enumerated surfaces, plus an export-artifact assertion that a downloaded artifact carries the provenance inline.",
-      "cross_reference": ["V2-CUR-002"]
+      "product_owner_decision": "Decision D10, the non-negotiable rule: a converted amount is always marked as converted and carries its rate and as-at instant, everywhere it appears. The rule is only worth stating if it is universal, so the rendering half is tracked rather than assumed.",
+      "enforcing_check": "A cross-surface provenance test driven from one enumerated table of surfaces; composer openapi:check for the generated REST half; and the capacity contract's undeclared_currency_conversions integrity objective at zero.",
+      "cross_reference": []
     },
     {
       "id": "V2-LNG-001",
