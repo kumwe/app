@@ -62,7 +62,7 @@
 
   .portal-secret-once {
     padding: .8rem 1rem;
-    border-left: .3rem solid var(--kumwe-warning);
+    border-inline-start: .3rem solid var(--kumwe-warning);
     background: var(--kumwe-warning-soft);
   }
 

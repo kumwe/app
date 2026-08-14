@@ -18,7 +18,7 @@
         <h2 id="{{ id }}-drawer-title">{{ title }}</h2>
         {% if purpose|default('') is not empty %}<p>{{ purpose }}</p>{% endif %}
       </div>
-      <button class="button" type="button" data-kis-drawer-close>Close</button>
+      <button class="button" type="button" data-kis-drawer-close>{{ t('core.interface_standard.drawer.close') }}</button>
     </header>
     <div class="kis-drawer-body">{% block content %}{% endblock %}</div>
   </aside>

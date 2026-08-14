@@ -64,7 +64,7 @@ code, pre { font-family: var(--kumwe-font-mono); }
 .panel { border: 1px solid var(--portal-line); border-radius: .6rem; background: var(--portal-panel); }
 .eyebrow { color: var(--portal-accent); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .count-badge { display: inline-flex; padding: .25rem .45rem; border-radius: 999px; background: var(--kumwe-accent-soft); }
-.notice { margin-bottom: 1rem; padding: .75rem; border-left: .3rem solid var(--portal-accent); background: var(--kumwe-info-soft); }
+.notice { margin-bottom: 1rem; padding: .75rem; border-inline-start: .3rem solid var(--portal-accent); background: var(--kumwe-info-soft); }
 .notice.danger { border-color: var(--portal-danger); background: var(--kumwe-danger-soft); color: var(--portal-danger); }
 .empty-state { display: grid; min-height: 12rem; place-items: center; padding: 2rem 1rem; border: 1px dashed var(--portal-line); border-radius: .6rem; text-align: center; }
 .empty-state-content { max-width: 31rem; }

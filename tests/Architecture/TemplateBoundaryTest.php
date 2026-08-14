@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Architecture;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Twig\Environment as TwigEnvironment;
@@ -54,6 +55,7 @@ final class TemplateBoundaryTest extends TestCase
             self::assertIsArray($templates);
             self::assertNotEmpty($templates);
             $twig = new TwigEnvironment(new FilesystemLoader($directory));
+            $twig->addExtension(InterfaceTranslation::twigExtension());
 
             foreach ($templates as $file) {
                 $twig->load(basename($file));

@@ -109,7 +109,7 @@
   .kis-business-table-region::before {
     display: block;
     position: sticky;
-    left: 0;
+    inset-inline-start: 0;
     width: max-content;
     padding: var(--kis-space-2) var(--kis-space-3);
     color: var(--kumwe-text-muted);
@@ -160,7 +160,7 @@
   .kis-business-relation-form > * { min-width: 0; }
   .kis-business-owned-line-form { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
   .kis-business-order-form { display: grid; gap: var(--kis-space-3); padding-top: var(--kis-space-3); border-top: 1px solid var(--kumwe-border); }
-  .kis-business-order-form ol { display: grid; gap: var(--kis-space-2); margin: 0; padding-left: var(--kis-space-6); }
+  .kis-business-order-form ol { display: grid; gap: var(--kis-space-2); margin: 0; padding-inline-start: var(--kis-space-6); }
   .kis-business-order-form li { display: flex; min-width: 0; gap: var(--kis-space-2); align-items: center; justify-content: space-between; padding: var(--kis-space-2); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-sm); background: var(--kumwe-surface); }
   .kis-business-order-form li > label { display: grid; min-width: 0; grid-template-columns: auto minmax(10rem, 1fr); gap: var(--kis-space-2); align-items: center; flex: 1; }
 
@@ -176,7 +176,7 @@
   .kis-business-field-invalid select,
   .kis-business-field-invalid textarea,
   .kis-business-field-invalid fieldset { border-color: var(--kumwe-danger); }
-  .kis-business-field-errors { margin: 0; padding-left: var(--kis-space-5); color: var(--kumwe-danger-strong); font-size: .8rem; }
+  .kis-business-field-errors { margin: 0; padding-inline-start: var(--kis-space-5); color: var(--kumwe-danger-strong); font-size: .8rem; }
   .kis-business-composite { display: grid; gap: var(--kis-space-3); margin: 0; padding: var(--kis-space-4); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); }
   .kis-business-composite legend { padding-inline: var(--kis-space-2); font-weight: 680; }
   .kis-business-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--kis-space-3); }
@@ -190,7 +190,7 @@
   .kis-business-schema-array-items { display: grid; gap: var(--kis-space-3); }
   .kis-business-schema-fields { grid-column: 1 / -1; }
   .kis-business-schema-group { display: grid; gap: var(--kis-space-3); margin: 0; padding: var(--kis-space-3); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); }
-  .kis-business-schema-array-item { display: grid; gap: var(--kis-space-2); padding: var(--kis-space-3); border-left: .2rem solid var(--kumwe-border-strong); background: var(--kumwe-surface-subtle); }
+  .kis-business-schema-array-item { display: grid; gap: var(--kis-space-2); padding: var(--kis-space-3); border-inline-start: .2rem solid var(--kumwe-border-strong); background: var(--kumwe-surface-subtle); }
 
   .kis-business-history { display: grid; gap: var(--kis-space-4); margin: 0; padding: 0; list-style: none; }
   .kis-business-history-entry { display: grid; min-width: 0; gap: var(--kis-space-3); padding: var(--kis-space-4); }
@@ -211,7 +211,7 @@
   .kis-business-operation-stage { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: var(--kis-space-3); margin: 0; }
   .kis-business-operation-stage div { min-width: 0; padding: var(--kis-space-3); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); background: var(--kumwe-surface-subtle); }
   .kis-business-operation-stage :is(dt, dd) { min-width: 0; margin: 0; overflow-wrap: anywhere; }
-  .kis-business-custom-list { display: grid; min-width: 0; gap: var(--kis-space-2); margin: 0; padding-left: var(--kis-space-5); }
+  .kis-business-custom-list { display: grid; min-width: 0; gap: var(--kis-space-2); margin: 0; padding-inline-start: var(--kis-space-5); }
   .kis-business-custom-object { display: grid; min-width: 0; gap: var(--kis-space-2); margin: 0; }
   .kis-business-custom-object div { display: grid; min-width: 0; grid-template-columns: minmax(8rem, .4fr) minmax(0, 1fr); gap: var(--kis-space-3); padding: var(--kis-space-2); border-bottom: 1px solid var(--kumwe-border); }
   .kis-business-custom-object dt { color: var(--kumwe-text-muted); font-weight: 680; }

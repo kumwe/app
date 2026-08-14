@@ -1,5 +1,5 @@
 {% extends "layout.twig" %}
-{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block title %}{{ t('core.site.layout.document_title', {page: entry.title, site: site_name}) }}{% endblock %}
 {% block content %}
   {% set page = entry.data|default({}) %}
   {% set logo = page.logo|default('') %}

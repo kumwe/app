@@ -1,5 +1,5 @@
 {% extends "layout.twig" %}
-{% block title %}Site setup · {{ site_name }}{% endblock %}
+{% block title %}{{ t('core.site.home.document_title', {site: site_name}) }}{% endblock %}
 {% block content %}
-  <section class="home-hero kis-phase-five-public" aria-labelledby="site-setup-title" data-kis-surface="core.public.home"><div class="site-container home-hero-content"><p class="eyebrow">Site setup</p><h1 id="site-setup-title">Choose a published homepage.</h1><p>The configured homepage is unavailable. Sign in to select or publish a managed page; Kumwe will render that database content here immediately.</p><div class="empty-home-card"><p>No placeholder page has replaced your managed content.</p><a class="site-button" href="/administrator/settings">Open site settings</a></div></div></section>
+  <section class="home-hero kis-phase-five-public" aria-labelledby="site-setup-title" data-kis-surface="core.public.home"><div class="site-container home-hero-content"><p class="eyebrow">{{ t('core.site.home.eyebrow') }}</p><h1 id="site-setup-title">{{ t('core.site.home.heading') }}</h1><p>{{ t('core.site.home.explanation') }}</p><div class="empty-home-card"><p>{{ t('core.site.home.placeholder_notice') }}</p><a class="site-button" href="/administrator/settings">{{ t('core.site.home.settings_action') }}</a></div></div></section>
 {% endblock %}

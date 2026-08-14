@@ -233,7 +233,7 @@
   .kis-phase-five-contribution-map ul {
     display: grid;
     margin: 0;
-    padding-left: 1.15rem;
+    padding-inline-start: 1.15rem;
     gap: .4rem;
   }
 
@@ -248,7 +248,7 @@
 
   .kis-phase-five-security-note {
     padding: .85rem 1rem;
-    border-left: .3rem solid var(--kumwe-warning);
+    border-inline-start: .3rem solid var(--kumwe-warning);
     background: var(--kumwe-warning-soft);
   }
 

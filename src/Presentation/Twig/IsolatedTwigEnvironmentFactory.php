@@ -6,7 +6,9 @@ namespace Kumwe\CMS\Presentation\Twig;
 
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\CMS\Presentation\ThemeSurface;
+use Twig\Environment;
 use Twig\Loader\ChainLoader;
 use Twig\Loader\FilesystemLoader;
 use Twig\Loader\LoaderInterface;
@@ -29,10 +31,17 @@ final readonly class IsolatedTwigEnvironmentFactory
     /**
      * Capture the state every surface's environment is composed from.
      *
-     * @param  ActiveExtensionSet  $active            Runtime set supplying activated theme paths and extension views.
-     * @param  string              $coreTemplateRoot  Directory holding the built-in `site` and `administrator` trees.
-     * @param  string              $cacheRoot         Directory below which each surface caches compiled templates.
-     * @param  bool                $production        True in production, where compiled templates are cached on disk.
+     * @param  ActiveExtensionSet         $active            Runtime set supplying activated theme paths and
+     *         extension views.
+     * @param  string                     $coreTemplateRoot  Directory holding the built-in `site` and
+     *         `administrator` trees.
+     * @param  string                     $cacheRoot         Directory below which each surface caches compiled
+     *         templates.
+     * @param  bool                       $production        True in production, where compiled templates are
+     *         cached on disk.
+     * @param  ?TranslationTwigExtension  $translation       Extension publishing `t`, `locale_tag` and
+     *         `text_direction`, added to every environment this factory builds; null leaves an environment
+     *         without them, which only a caller assembling templates outside a request should do.
      *
      * @since  2.0.0
      */
@@ -41,6 +50,7 @@ final readonly class IsolatedTwigEnvironmentFactory
         private string $coreTemplateRoot,
         private string $cacheRoot,
         private bool $production,
+        private ?TranslationTwigExtension $translation = null,
     ) {
     }
 
@@ -58,7 +68,7 @@ final readonly class IsolatedTwigEnvironmentFactory
      */
     public function site(?SiteContext $site = null): SiteTwigEnvironment
     {
-        return new SiteTwigEnvironment(
+        $environment = new SiteTwigEnvironment(
             $this->surfaceLoader(
                 ThemeSurface::Site,
                 $this->coreTemplateRoot . '/site',
@@ -66,6 +76,9 @@ final readonly class IsolatedTwigEnvironmentFactory
             ),
             $this->options($this->cacheRoot . '/site'),
         );
+        $this->publishTranslation($environment);
+
+        return $environment;
     }
 
     /**
@@ -77,10 +90,13 @@ final readonly class IsolatedTwigEnvironmentFactory
      */
     public function administrator(): AdministratorTwigEnvironment
     {
-        return new AdministratorTwigEnvironment(
+        $environment = new AdministratorTwigEnvironment(
             $this->surfaceLoader(ThemeSurface::Administrator, $this->coreTemplateRoot . '/administrator'),
             $this->options($this->cacheRoot . '/administrator'),
         );
+        $this->publishTranslation($environment);
+
+        return $environment;
     }
 
     /**
@@ -101,10 +117,32 @@ final readonly class IsolatedTwigEnvironmentFactory
         $loader->addPath($this->coreTemplateRoot . '/administrator', 'core-admin');
         $loader->addPath($this->coreTemplateRoot . '/interface-standard', 'kis');
 
-        return new RecoveryAdministratorTwigEnvironment(
+        $environment = new RecoveryAdministratorTwigEnvironment(
             $loader,
             $this->options($this->cacheRoot . '/recovery-administrator'),
         );
+        $this->publishTranslation($environment);
+
+        return $environment;
+    }
+
+    /**
+     * Add the translation functions to one environment, when the factory was given them.
+     *
+     * Every surface receives the same extension instance, so one shared registration decides what
+     * `t` resolves against and a template cannot reach a translator another surface configured.
+     *
+     * @param   Environment  $environment  Environment being composed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function publishTranslation(Environment $environment): void
+    {
+        if ($this->translation instanceof TranslationTwigExtension) {
+            $environment->addExtension($this->translation);
+        }
     }
 
     /**

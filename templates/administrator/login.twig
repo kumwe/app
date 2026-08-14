@@ -1,21 +1,21 @@
 {% extends "layout.twig" %}
-{% block title %}Sign in · Kumwe{% endblock %}
+{% block title %}{{ t('core.administrator.login.document_title') }}{% endblock %}
 {% block content %}
   <section class="panel login-card kis-phase-five" aria-labelledby="sign-in-title" data-kis-surface="core.administrator.login">
     <header class="login-header">
       <a class="administrator-brand" href="/">
         <img class="brand-wordmark" src="/media/00000000-0000-7000-8000-000000000902/kumwe-wordmark.svg" alt="Kumwe" width="255" height="100">
-        <span class="brand-copy"><span>Administrator</span></span>
+        <span class="brand-copy"><span>{{ t('core.administrator.layout.brand_role') }}</span></span>
       </a>
-      <p>Manage content, publishing, navigation and the platform from one secure workspace.</p>
+      <p>{{ t('core.administrator.login.purpose') }}</p>
     </header>
     <form action="/administrator/login" method="post" class="stack login-form">
-      <div><p class="eyebrow">Welcome back</p><h1 id="sign-in-title">Sign in</h1></div>
+      <div><p class="eyebrow">{{ t('core.administrator.login.eyebrow') }}</p><h1 id="sign-in-title">{{ t('core.administrator.login.heading') }}</h1></div>
       {% if error is defined %}<div class="notice danger" role="alert">{{ error }}</div>{% endif %}
-      <label>Email address<input type="email" name="email" value="{{ email|default('') }}" autocomplete="username" inputmode="email" required autofocus></label>
-      <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
-      <button class="primary full" type="submit">Sign in to Kumwe</button>
+      <label>{{ t('core.administrator.login.email_label') }}<input type="email" name="email" value="{{ email|default('') }}" autocomplete="username" inputmode="email" required autofocus></label>
+      <label>{{ t('core.administrator.login.password_label') }}<input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="primary full" type="submit">{{ t('core.administrator.login.submit') }}</button>
     </form>
-    <footer class="login-footer">Protected administrator area · Sessions and permission decisions are audited</footer>
+    <footer class="login-footer">{{ t('core.administrator.login.footer') }}</footer>
   </section>
 {% endblock %}

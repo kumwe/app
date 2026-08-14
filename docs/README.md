@@ -26,6 +26,8 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 - [Command-line interface](cli.md): installation, health, tokens, extensions, workers, schedules, and MCP stdio.
 - [Workers and scheduler](automation.md): durable jobs, retries, recurring work, and worker operation.
 - [Templates](templates.md): build, install, activate, and verify a public design.
+- [Interface translation](interface-translation.md): locale negotiation, the message-identifier grammar, the
+  catalogue override chain that also adapts a vertical's terminology, and right-to-left presentation.
 
 ## Integrate and extend Kumwe
 

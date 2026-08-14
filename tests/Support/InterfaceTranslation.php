@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Tests\Support;
+
+use Kumwe\CMS\Localization\Application\ActiveLocale;
+use Kumwe\CMS\Localization\Application\CatalogueTranslator;
+use Kumwe\CMS\Localization\Application\MessageOverrideRepository;
+use Kumwe\CMS\Localization\Application\SupportedLocales;
+use Kumwe\CMS\Localization\Application\TranslationScope;
+use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\CMS\Localization\Infrastructure\ArrayMessageOverrideRepository;
+use Kumwe\CMS\Localization\Infrastructure\CompiledMessageCatalogueRepository;
+use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
+use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
+
+/** Builds a translator over the repository's own compiled catalogues, as the container does. */
+final class InterfaceTranslation
+{
+    /** Assemble a translator reading the real `resources/localization/compiled` directory. */
+    public static function translator(
+        ?string $locale = null,
+        ?MessageOverrideRepository $overrides = null,
+    ): CatalogueTranslator {
+        $supported = new SupportedLocales();
+        $active = new ActiveLocale($supported);
+        $active->begin(
+            LocaleTag::fromString($locale ?? SupportedLocales::SOURCE),
+            TranslationScope::default(),
+        );
+
+        return new CatalogueTranslator(
+            new CompiledMessageCatalogueRepository(self::compiledDirectory()),
+            $overrides ?? new ArrayMessageOverrideRepository(),
+            new IntlMessagePatternFormatter(),
+            $active,
+            $supported,
+        );
+    }
+
+    /** Build the Twig extension the three rendering surfaces are given in production. */
+    public static function twigExtension(?string $locale = null): TranslationTwigExtension
+    {
+        $supported = new SupportedLocales();
+        $active = new ActiveLocale($supported);
+        $active->begin(
+            LocaleTag::fromString($locale ?? SupportedLocales::SOURCE),
+            TranslationScope::default(),
+        );
+
+        return new TranslationTwigExtension(
+            new CatalogueTranslator(
+                new CompiledMessageCatalogueRepository(self::compiledDirectory()),
+                new ArrayMessageOverrideRepository(),
+                new IntlMessagePatternFormatter(),
+                $active,
+                $supported,
+            ),
+            $active,
+        );
+    }
+
+    /** Absolute path of the compiled catalogue directory the build publishes. */
+    public static function compiledDirectory(): string
+    {
+        return dirname(__DIR__, 2) . '/resources/localization/compiled';
+    }
+}

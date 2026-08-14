@@ -1,5 +1,5 @@
 {% extends "layout.twig" %}
-{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block title %}{{ t('core.site.layout.document_title', {page: entry.title, site: site_name}) }}{% endblock %}
 {% block content %}
   {% set page = entry.data|default({}) %}
   {% set steps = page.steps|default([]) %}
@@ -12,7 +12,7 @@
     <div class="site-container document-layout">
       <aside class="document-aside">
         <nav class="document-nav" aria-labelledby="document-nav-title" data-document-nav>
-          <h2 id="document-nav-title">Steps</h2>
+          <h2 id="document-nav-title">{{ t('core.site.guide.contents_heading') }}</h2>
           <ol>
             {% for step in steps %}
               <li><a href="#{{ step.anchor }}">{{ step.heading }}</a></li>
@@ -42,7 +42,7 @@
         </ol>
         {% if page.outcome|default(null) %}
           <section class="document-section guide-outcome" data-document-section>
-            <h2>{{ page.outcome.heading|default('What you have now') }}</h2>
+            <h2>{{ page.outcome.heading|default(t('core.site.guide.outcome_heading')) }}</h2>
             <div class="article-body">{{ page.outcome.body_html|default('')|raw }}</div>
           </section>
         {% endif %}

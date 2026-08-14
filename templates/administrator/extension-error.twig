@@ -1,6 +1,6 @@
 {% extends "layout.twig" %}
-{% block title %}Extension unavailable · Kumwe{% endblock %}
-{% block context_title %}Extension unavailable{% endblock %}
+{% block title %}{{ t('core.administrator.extension_error.document_title') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.extension_error.context_title') }}{% endblock %}
 {% block content %}
-  <div class="page-heading"><div><p class="eyebrow">Extension</p><h1>Extension view unavailable</h1><p>The requested extension view could not be rendered safely.</p></div></div>
+  <div class="page-heading"><div><p class="eyebrow">{{ t('core.administrator.extension_error.eyebrow') }}</p><h1>{{ t('core.administrator.extension_error.heading') }}</h1><p>{{ t('core.administrator.extension_error.explanation') }}</p></div></div>
 {% endblock %}

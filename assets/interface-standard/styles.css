@@ -82,7 +82,7 @@
 
   .kis-validation-summary { align-items: stretch; }
   .kis-validation-summary h2 { margin-bottom: var(--kis-space-2); font-size: 1rem; }
-  .kis-validation-summary ul { margin: 0; padding-left: var(--kis-space-5); }
+  .kis-validation-summary ul { margin: 0; padding-inline-start: var(--kis-space-5); }
   .kis-empty-state { min-height: 12rem; }
   .kis-state-reference { margin-top: var(--kis-space-5); padding: var(--kis-space-5); }
   .kis-state-matrix { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: var(--kis-space-3); }

@@ -1,0 +1,546 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en-GB" trgLang="en-GB">
+  <file id="core-site">
+    <unit id="core.site.layout.document_title">
+      <notes>
+        <note category="context">Browser title on every public page. Page name, then the site name.</note>
+      </notes>
+      <segment>
+        <source>{page} · {site}</source>
+      </segment>
+    </unit>
+    <unit id="core.site.layout.skip_to_content">
+      <notes>
+        <note category="context">First focusable link on a public page; jumps past the header.</note>
+      </notes>
+      <segment>
+        <source>Skip to content</source>
+      </segment>
+    </unit>
+    <unit id="core.site.layout.open_navigation">
+      <notes>
+        <note category="context">Accessible name of the small-screen navigation button.</note>
+      </notes>
+      <segment>
+        <source>Open site navigation</source>
+      </segment>
+    </unit>
+    <unit id="core.site.layout.navigation_toggle">
+      <notes>
+        <note category="context">Visible text on the small-screen navigation button. Keep it short.</note>
+      </notes>
+      <segment>
+        <source>Menu</source>
+      </segment>
+    </unit>
+    <unit id="core.site.layout.main_navigation">
+      <notes>
+        <note category="context">Accessible name of the site's primary navigation landmark.</note>
+      </notes>
+      <segment>
+        <source>Main navigation</source>
+      </segment>
+    </unit>
+    <unit id="core.site.layout.footer_fallback">
+      <notes>
+        <note category="context">Footer line shown when an operator has not set their own footer text.</note>
+      </notes>
+      <segment>
+        <source>Powered by Kumwe CMS</source>
+      </segment>
+    </unit>
+    <unit id="core.site.home.document_title">
+      <notes>
+        <note category="context">Browser title of the fallback homepage shown when none is published.</note>
+      </notes>
+      <segment>
+        <source>Site setup · {site}</source>
+      </segment>
+    </unit>
+    <unit id="core.site.home.eyebrow">
+      <segment>
+        <source>Site setup</source>
+      </segment>
+    </unit>
+    <unit id="core.site.home.heading">
+      <segment>
+        <source>Choose a published homepage.</source>
+      </segment>
+    </unit>
+    <unit id="core.site.home.explanation">
+      <segment>
+        <source>The configured homepage is unavailable. Sign in to select or publish a managed page; Kumwe will render that database content here immediately.</source>
+      </segment>
+    </unit>
+    <unit id="core.site.home.placeholder_notice">
+      <segment>
+        <source>No placeholder page has replaced your managed content.</source>
+      </segment>
+    </unit>
+    <unit id="core.site.home.settings_action">
+      <segment>
+        <source>Open site settings</source>
+      </segment>
+    </unit>
+    <unit id="core.site.article.highlights">
+      <notes>
+        <note category="context">Accessible name of the pull-out list beside an article's body.</note>
+      </notes>
+      <segment>
+        <source>Highlights</source>
+      </segment>
+    </unit>
+    <unit id="core.site.article.further_reading">
+      <segment>
+        <source>Further reading</source>
+      </segment>
+    </unit>
+    <unit id="core.site.document.contents_heading">
+      <notes>
+        <note category="context">Heading above the in-page table of contents of a long document.</note>
+      </notes>
+      <segment>
+        <source>On this page</source>
+      </segment>
+    </unit>
+    <unit id="core.site.document.introduction">
+      <notes>
+        <note category="context">Table-of-contents entry for the text before the first numbered section.</note>
+      </notes>
+      <segment>
+        <source>Introduction</source>
+      </segment>
+    </unit>
+    <unit id="core.site.reference.contents_heading">
+      <segment>
+        <source>In this reference</source>
+      </segment>
+    </unit>
+    <unit id="core.site.reference.example_label">
+      <notes>
+        <note category="context">Accessible name of a code example. {term} is the reference entry it belongs to.</note>
+      </notes>
+      <segment>
+        <source>Example for {term}</source>
+      </segment>
+    </unit>
+    <unit id="core.site.guide.contents_heading">
+      <segment>
+        <source>Steps</source>
+      </segment>
+    </unit>
+    <unit id="core.site.guide.outcome_heading">
+      <notes>
+        <note category="context">Heading of the closing section of a step-by-step guide.</note>
+      </notes>
+      <segment>
+        <source>What you have now</source>
+      </segment>
+    </unit>
+  </file>
+  <file id="core-interface-standard">
+    <unit id="core.interface_standard.drawer.close">
+      <segment>
+        <source>Close</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.master_detail.catalog_toggle">
+      <notes>
+        <note category="context">Small-screen button that reveals the catalogue beside a detail pane.</note>
+      </notes>
+      <segment>
+        <source>Browse resources</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.report_parameter.choose_boolean">
+      <notes>
+        <note category="context">Placeholder option of a required yes-or-no report parameter.</note>
+      </notes>
+      <segment>
+        <source>Choose yes or no</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.report_parameter.use_default">
+      <notes>
+        <note category="context">Placeholder option meaning the report's own declared default is used.</note>
+      </notes>
+      <segment>
+        <source>Use report default</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.report_parameter.yes">
+      <segment>
+        <source>Yes</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.report_parameter.no">
+      <segment>
+        <source>No</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.report_parameter.help">
+      <notes>
+        <note category="context">Help text under one report parameter. {type} is the parameter's type name; {multiple} is true when several values may be entered, one per line, up to {limit}; {optional} is true when the parameter may be left blank. Written as one message so the clauses can be reordered, joined or dropped as a language requires.</note>
+      </notes>
+      <segment>
+        <source>{type}{multiple, select, true {; enter one value per line, up to {limit, number}} other {}}{optional, select, true {; optional} other {}}.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.report_parameter.none_required">
+      <segment>
+        <source>No parameters are required. Run the report to use its declared scope.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.technical_value.label_prefix">
+      <notes>
+        <note category="context">Read out before a technical value by a screen reader. {label} names the value.</note>
+      </notes>
+      <segment>
+        <source>{label}: </source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.technical_value.copy">
+      <segment>
+        <source>Copy</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.technical_value.copy_label">
+      <notes>
+        <note category="context">Accessible name of the copy button. {label} names what is copied.</note>
+      </notes>
+      <segment>
+        <source>Copy {label}</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.technical_value.default_label">
+      <notes>
+        <note category="context">Stands in for {label} when a technical value was given no name.</note>
+      </notes>
+      <segment>
+        <source>technical value</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.validation_summary.title">
+      <notes>
+        <note category="context">Heading of the summary listing every field a submission was rejected for.</note>
+      </notes>
+      <segment>
+        <source>Review the highlighted fields</source>
+      </segment>
+    </unit>
+  </file>
+  <file id="core-administrator">
+    <unit id="core.administrator.layout.document_title">
+      <segment>
+        <source>Kumwe Administrator</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.skip_to_content">
+      <segment>
+        <source>Skip to content</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.brand_role">
+      <notes>
+        <note category="context">Second line of the brand mark, under the product name.</note>
+      </notes>
+      <segment>
+        <source>Administrator</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.navigation_label">
+      <segment>
+        <source>Administrator navigation</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.open_navigation">
+      <segment>
+        <source>Open administrator navigation</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.close_navigation">
+      <segment>
+        <source>Close administrator navigation</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.context_title">
+      <notes>
+        <note category="context">Default heading in the top bar, replaced by each screen.</note>
+      </notes>
+      <segment>
+        <source>Administrator workspace</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.context_subtitle">
+      <segment>
+        <source>Manage your website with confidence</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.search">
+      <notes>
+        <note category="context">Command palette trigger, shown beside its keyboard shortcut.</note>
+      </notes>
+      <segment>
+        <source>Search administrator</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.view_website">
+      <notes>
+        <note category="context">Accessible name of the link opening the public site in a new tab.</note>
+      </notes>
+      <segment>
+        <source>View website</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.sign_out">
+      <segment>
+        <source>Sign out</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.login.document_title">
+      <segment>
+        <source>Sign in · Kumwe</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.login.purpose">
+      <segment>
+        <source>Manage content, publishing, navigation and the platform from one secure workspace.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.login.eyebrow">
+      <segment>
+        <source>Welcome back</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.login.heading">
+      <segment>
+        <source>Sign in</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.login.email_label">
+      <segment>
+        <source>Email address</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.login.password_label">
+      <segment>
+        <source>Password</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.login.submit">
+      <segment>
+        <source>Sign in to Kumwe</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.login.footer">
+      <segment>
+        <source>Protected administrator area · Sessions and permission decisions are audited</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_denied.document_title">
+      <segment>
+        <source>Access denied · Kumwe</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_denied.context_title">
+      <segment>
+        <source>Access denied</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_denied.eyebrow">
+      <segment>
+        <source>Permissions</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_denied.heading">
+      <segment>
+        <source>You do not have access to this screen</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_denied.explanation">
+      <notes>
+        <note category="context">{capability} is a machine capability name and is not translated. It is wrapped in a code element inside the sentence, so the sentence stays whole for a translator.</note>
+      </notes>
+      <segment>
+        <source>Your account is missing the &lt;code&gt;{capability}&lt;/code&gt; capability, so this screen stays closed. Everything you are permitted to use is listed in the navigation.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_denied.next_heading">
+      <segment>
+        <source>Where to go next</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_denied.next_explanation">
+      <segment>
+        <source>Pick a screen from the navigation, or return to your dashboard.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_denied.dashboard_action">
+      <segment>
+        <source>Back to the dashboard</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_denied.request_access">
+      <notes>
+        <note category="context">{capability} is a machine capability name and is not translated.</note>
+      </notes>
+      <segment>
+        <source>If your work needs this screen, ask an administrator with user management access to grant the &lt;code&gt;{capability}&lt;/code&gt; capability to your role.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.extension_error.document_title">
+      <segment>
+        <source>Extension unavailable · Kumwe</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.extension_error.context_title">
+      <segment>
+        <source>Extension unavailable</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.extension_error.eyebrow">
+      <segment>
+        <source>Extension</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.extension_error.heading">
+      <segment>
+        <source>Extension view unavailable</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.extension_error.explanation">
+      <segment>
+        <source>The requested extension view could not be rendered safely.</source>
+      </segment>
+    </unit>
+  </file>
+  <file id="core-portal">
+    <unit id="core.portal.layout.document_title">
+      <segment>
+        <source>Kumwe Portal</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.layout.skip_to_content">
+      <segment>
+        <source>Skip to main content</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.layout.brand_home">
+      <notes>
+        <note category="context">Accessible name of the portal brand link, which returns to the portal home.</note>
+      </notes>
+      <segment>
+        <source>Kumwe Portal home</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.layout.brand_role">
+      <notes>
+        <note category="context">Second word of the portal brand mark, shown after the product name.</note>
+      </notes>
+      <segment>
+        <source>Portal</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.layout.context_label">
+      <notes>
+        <note category="context">Accessible name of the strip showing the signed-in site, organization and workspace.</note>
+      </notes>
+      <segment>
+        <source>Active portal context</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.layout.sign_out">
+      <segment>
+        <source>Sign out</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.layout.navigation_label">
+      <segment>
+        <source>Portal navigation</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.document_title">
+      <segment>
+        <source>Sign in · Kumwe Portal</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.eyebrow">
+      <segment>
+        <source>Business workspace</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.heading">
+      <segment>
+        <source>Sign in to the portal</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.purpose">
+      <segment>
+        <source>Use your Kumwe identity. Your organization and workspace are resolved from active memberships.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.email_label">
+      <segment>
+        <source>Email address</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.password_label">
+      <segment>
+        <source>Password</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.workspace_label">
+      <notes>
+        <note category="context">Field label. The parenthesised word marks the field as not required.</note>
+      </notes>
+      <segment>
+        <source>Workspace &lt;span&gt;(optional)&lt;/span&gt;</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.workspace_help">
+      <segment>
+        <source>Leave blank to use your default active workspace.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.submit">
+      <segment>
+        <source>Sign in</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.help_summary">
+      <segment>
+        <source>What access do I need?</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.help_intro">
+      <segment>
+        <source>An administrator must provision each part of portal access before you sign in:</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.help_identity">
+      <segment>
+        <source>Your own active user identity — never a shared account.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.help_membership">
+      <segment>
+        <source>An active membership in the organization.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.help_workspace">
+      <segment>
+        <source>A permitted workspace and the roles needed for your work.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.help_identifier">
+      <segment>
+        <source>The exact workspace identifier, only when your administrator asks you to enter one.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.help_closing">
+      <segment>
+        <source>If sign-in is unavailable, ask your administrator to review the complete provisioning path. For your security, this page does not reveal which identity or access prerequisite is missing.</source>
+      </segment>
+    </unit>
+  </file>
+</xliff>

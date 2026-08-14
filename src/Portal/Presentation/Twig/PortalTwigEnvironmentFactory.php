@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Portal\Presentation\Twig;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\CMS\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
@@ -24,12 +25,16 @@ final readonly class PortalTwigEnvironmentFactory
     /**
      * Configure production caching for a portal environment.
      *
-     * @param  bool  $production  Whether compiled Twig templates are cached.
+     * @param  bool                       $production   Whether compiled Twig templates are cached.
+     * @param  ?TranslationTwigExtension  $translation  Extension publishing `t`, `locale_tag` and
+     *         `text_direction` onto the portal environment; null leaves it without them.
      *
      * @since  2.0.0
      */
-    public function __construct(private bool $production)
-    {
+    public function __construct(
+        private bool $production,
+        private ?TranslationTwigExtension $translation = null,
+    ) {
     }
 
     /**
@@ -62,11 +67,16 @@ final readonly class PortalTwigEnvironmentFactory
             );
         }
 
-        return new Environment($loader, [
+        $environment = new Environment($loader, [
             'autoescape' => 'html',
             'strict_variables' => true,
             'cache' => $this->production ? $cache : false,
         ]);
+        if ($this->translation instanceof TranslationTwigExtension) {
+            $environment->addExtension($this->translation);
+        }
+
+        return $environment;
     }
 
     /**

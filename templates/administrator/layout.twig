@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ locale_tag() }}" dir="{{ text_direction() }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#0c1c35">
-  <title>{% block title %}Kumwe Administrator{% endblock %}</title>
+  <title>{% block title %}{{ t('core.administrator.layout.document_title') }}{% endblock %}</title>
   {% for stylesheet in administrator_assets.stylesheets %}<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}
   {% for module in administrator_assets.modules %}<script type="module" src="{{ module }}"></script>{% endfor %}
 </head>
 <body>
-  <a class="skip-link" href="#administrator-content">Skip to content</a>
+  <a class="skip-link" href="#administrator-content">{{ t('core.administrator.layout.skip_to_content') }}</a>
   <svg class="sr-only" aria-hidden="true" focusable="false">
     <symbol id="kumwe-icon-dashboard" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></symbol>
     <symbol id="kumwe-icon-content" viewBox="0 0 24 24"><path d="M6 3.8h9l3 3V20H6V3.8Z"/><path d="M15 3.8V7h3M9 11h6M9 14.5h6"/></symbol>
@@ -31,12 +31,12 @@
 
   {% if csrf is defined %}
     <div class="administrator-shell" data-administrator-shell>
-      <aside class="administrator-sidebar" aria-label="Administrator navigation">
+      <aside class="administrator-sidebar" aria-label="{{ t('core.administrator.layout.navigation_label') }}">
         <a class="administrator-brand" href="/administrator">
           <span class="brand-mark"><img src="/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg" alt="" width="38" height="38"></span>
-          <span class="brand-copy"><strong>Kumwe</strong><span>Administrator</span></span>
+          <span class="brand-copy"><strong>Kumwe</strong><span>{{ t('core.administrator.layout.brand_role') }}</span></span>
         </a>
-        <nav class="administrator-navigation" aria-label="Administrator navigation">
+        <nav class="administrator-navigation" aria-label="{{ t('core.administrator.layout.navigation_label') }}">
           {% for workspace in administrator_workspaces %}
             <section class="navigation-group" aria-labelledby="navigation-group-{{ workspace.dom_id }}">
               <h2 class="navigation-group-title" id="navigation-group-{{ workspace.dom_id }}">{{ workspace.label }}</h2>
@@ -50,13 +50,13 @@
         </nav>
       </aside>
       <header class="administrator-topbar">
-        <button class="topbar-action navigation-toggle" type="button" aria-label="Open administrator navigation" aria-expanded="false" data-navigation-toggle><svg aria-hidden="true"><use href="#kumwe-icon-menu"></use></svg></button>
-        <div class="topbar-context"><strong>{% block context_title %}Administrator workspace{% endblock %}</strong><span>{% block context_subtitle %}Manage your website with confidence{% endblock %}</span></div>
-        <button class="command-trigger" type="button" aria-label="Search administrator" data-open-command-palette><svg width="16" height="16" aria-hidden="true"><use href="#kumwe-icon-search"></use></svg><span>Search administrator</span><kbd>⌘ K</kbd></button>
-        <a class="topbar-action" href="/" target="_blank" rel="noopener" aria-label="View website" data-secondary-action><svg aria-hidden="true"><use href="#kumwe-icon-external"></use></svg></a>
-        <form action="/administrator/logout" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="topbar-action" type="submit" aria-label="Sign out"><svg aria-hidden="true"><use href="#kumwe-icon-signout"></use></svg></button></form>
+        <button class="topbar-action navigation-toggle" type="button" aria-label="{{ t('core.administrator.layout.open_navigation') }}" aria-expanded="false" data-navigation-toggle><svg aria-hidden="true"><use href="#kumwe-icon-menu"></use></svg></button>
+        <div class="topbar-context"><strong>{% block context_title %}{{ t('core.administrator.layout.context_title') }}{% endblock %}</strong><span>{% block context_subtitle %}{{ t('core.administrator.layout.context_subtitle') }}{% endblock %}</span></div>
+        <button class="command-trigger" type="button" aria-label="{{ t('core.administrator.layout.search') }}" data-open-command-palette><svg width="16" height="16" aria-hidden="true"><use href="#kumwe-icon-search"></use></svg><span>{{ t('core.administrator.layout.search') }}</span><kbd>⌘ K</kbd></button>
+        <a class="topbar-action" href="/" target="_blank" rel="noopener" aria-label="{{ t('core.administrator.layout.view_website') }}" data-secondary-action><svg aria-hidden="true"><use href="#kumwe-icon-external"></use></svg></a>
+        <form action="/administrator/logout" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="topbar-action" type="submit" aria-label="{{ t('core.administrator.layout.sign_out') }}"><svg aria-hidden="true"><use href="#kumwe-icon-signout"></use></svg></button></form>
       </header>
-      <button class="navigation-backdrop" type="button" aria-label="Close administrator navigation" data-navigation-backdrop></button>
+      <button class="navigation-backdrop" type="button" aria-label="{{ t('core.administrator.layout.close_navigation') }}" data-navigation-backdrop></button>
       <main class="administrator-main" id="administrator-content" tabindex="-1"><div class="administrator-content">
   {% else %}
     <main class="login-page" id="administrator-content">

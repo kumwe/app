@@ -1,5 +1,5 @@
 {% extends "layout.twig" %}
-{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block title %}{{ t('core.site.layout.document_title', {page: entry.title, site: site_name}) }}{% endblock %}
 {% block content %}
   {% set page = entry.data|default({}) %}
   {% set entries = page.entries|default([]) %}
@@ -12,7 +12,7 @@
     <div class="site-container document-layout">
       <aside class="document-aside">
         <nav class="document-nav" aria-labelledby="document-nav-title" data-document-nav>
-          <h2 id="document-nav-title">In this reference</h2>
+          <h2 id="document-nav-title">{{ t('core.site.reference.contents_heading') }}</h2>
           <ol>
             {% for item in entries %}
               <li><a href="#{{ item.anchor }}">{{ item.term }}</a></li>
@@ -34,7 +34,7 @@
             </h2>
             <div class="article-body">{{ item.body_html|default('')|raw }}</div>
             {% if item.example|default('') %}
-              <pre class="reference-example" aria-label="Example for {{ item.term }}"><code>{{ item.example }}</code></pre>
+              <pre class="reference-example" aria-label="{{ t('core.site.reference.example_label', {term: item.term}) }}"><code>{{ item.example }}</code></pre>
             {% endif %}
           </section>
         {% endfor %}
