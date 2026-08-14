@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\Presentation\Twig;
 
 use DateTimeImmutable;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentSetup;
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Twig\Environment;
@@ -33,6 +34,7 @@ final class AdministratorAccessControlTemplateTest extends TestCase
         $loader = new FilesystemLoader($root . '/templates/administrator');
         $loader->addPath($root . '/templates/interface-standard', 'kis');
         $twig = new Environment($loader, ['strict_variables' => true]);
+        $twig->addExtension(InterfaceTranslation::twigExtension());
         $twig->getExtension(CoreExtension::class)->setTimezone('UTC');
         $secret = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
         $enrollment = new StepUpEnrollmentSetup(
@@ -78,6 +80,7 @@ final class AdministratorAccessControlTemplateTest extends TestCase
         $loader = new FilesystemLoader($root . '/templates/administrator');
         $loader->addPath($root . '/templates/interface-standard', 'kis');
         $twig = new Environment($loader, ['strict_variables' => true]);
+        $twig->addExtension(InterfaceTranslation::twigExtension());
         $roleId = '018f22e2-7c8b-7ab0-8f3a-88e8026bb701';
         $html = $twig->render('access-control.twig', [
             'csrf' => 'test-csrf-token',

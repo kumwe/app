@@ -621,6 +621,20 @@ use Kumwe\CMS\Portal\Infrastructure\Identity\DoctrinePortalPrincipalLoader;
 use Kumwe\CMS\Portal\Infrastructure\Session\DoctrinePortalSessionStore;
 use Kumwe\CMS\Portal\Presentation\PortalRenderer;
 use Kumwe\CMS\Portal\Presentation\Twig\PortalTwigEnvironmentFactory;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
+use Kumwe\CMS\Localization\Application\CatalogueTranslator;
+use Kumwe\CMS\Localization\Application\LocaleNegotiator;
+use Kumwe\CMS\Localization\Application\MessageCatalogueRepository;
+use Kumwe\CMS\Localization\Application\MessageOverrideRepository;
+use Kumwe\CMS\Localization\Application\MessagePatternFormatter;
+use Kumwe\CMS\Localization\Application\SiteDefaultLocale;
+use Kumwe\CMS\Localization\Application\SupportedLocales;
+use Kumwe\CMS\Localization\Application\Translator;
+use Kumwe\CMS\Localization\Http\Middleware\LocaleNegotiationMiddleware;
+use Kumwe\CMS\Localization\Infrastructure\ArrayMessageOverrideRepository;
+use Kumwe\CMS\Localization\Infrastructure\CompiledMessageCatalogueRepository;
+use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
+use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\CMS\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ResponseFactory;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -1721,6 +1735,49 @@ final class ContainerFactory
             new ContentPresenter(self::service($container, RichTextFormatter::class)), true);
         $container->share(ResponseFactoryInterface::class, new ResponseFactory(), true);
         $container->share(StreamFactoryInterface::class, new StreamFactory(), true);
+        // Interface translation. Registered ahead of the Twig environments because every one of them
+        // receives the same translation extension, and ahead of the pipeline because the locale is
+        // negotiated before anything renders. ADR 0002 fixes the shape: XLIFF authored, compiled to
+        // plain PHP, formatted by ICU, resolved through core, extension, site and organization.
+        $container->share(SupportedLocales::class, new SupportedLocales(), true);
+        $container->share(MessagePatternFormatter::class, new IntlMessagePatternFormatter(), true);
+        $container->share(MessageCatalogueRepository::class, new CompiledMessageCatalogueRepository(
+            $root . '/resources/localization/compiled',
+        ), true);
+        $container->share(MessageOverrideRepository::class, new ArrayMessageOverrideRepository(), true);
+        $container->share(ActiveLocale::class, static fn (Container $container): ActiveLocale =>
+            new ActiveLocale(self::service($container, SupportedLocales::class)), true);
+        $container->share(SiteDefaultLocale::class, static fn (Container $container): SiteDefaultLocale =>
+            new SiteDefaultLocale(
+                self::service($container, SiteSettings::class),
+                self::service($container, SupportedLocales::class),
+            ), true);
+        $container->share(LocaleNegotiator::class, static fn (Container $container): LocaleNegotiator =>
+            new LocaleNegotiator(
+                self::service($container, SupportedLocales::class),
+                self::service($container, SiteDefaultLocale::class),
+            ), true);
+        $container->share(Translator::class, static fn (Container $container): Translator =>
+            new CatalogueTranslator(
+                self::service($container, MessageCatalogueRepository::class),
+                self::service($container, MessageOverrideRepository::class),
+                self::service($container, MessagePatternFormatter::class),
+                self::service($container, ActiveLocale::class),
+                self::service($container, SupportedLocales::class),
+            ), true);
+        $container->share(TranslationTwigExtension::class, static fn (
+            Container $container,
+        ): TranslationTwigExtension => new TranslationTwigExtension(
+            self::service($container, Translator::class),
+            self::service($container, ActiveLocale::class),
+        ), true);
+        $container->share(LocaleNegotiationMiddleware::class, static fn (
+            Container $container,
+        ): LocaleNegotiationMiddleware => new LocaleNegotiationMiddleware(
+            self::service($container, LocaleNegotiator::class),
+            self::service($container, ActiveLocale::class),
+            $configuration->publicSite,
+        ), true);
         $container->share(IsolatedTwigEnvironmentFactory::class, static fn (
             Container $container,
         ): IsolatedTwigEnvironmentFactory => new IsolatedTwigEnvironmentFactory(
@@ -1728,6 +1785,7 @@ final class ContainerFactory
             $root . '/templates',
             $root . '/storage/cache/twig',
             $configuration->isProduction(),
+            self::service($container, TranslationTwigExtension::class),
         ), true);
         $container->share(SiteTwigEnvironment::class, static fn (
             Container $container,
@@ -1768,7 +1826,10 @@ final class ContainerFactory
         if ($portalEnabled) {
             $container->share(
                 PortalTwigEnvironmentFactory::class,
-                new PortalTwigEnvironmentFactory($configuration->isProduction()),
+                static fn (Container $container): PortalTwigEnvironmentFactory => new PortalTwigEnvironmentFactory(
+                    $configuration->isProduction(),
+                    self::service($container, TranslationTwigExtension::class),
+                ),
                 true,
             );
             $container->share(PortalRenderer::class, static fn (Container $container): PortalRenderer =>
@@ -2390,7 +2451,12 @@ final class ContainerFactory
             self::service($container, AuthorizationGateway::class),
         ), true);
         $container->alias(ThemeMutationAuthorizer::class, DoctrineThemeMutationAuthorizer::class);
-        $container->share(ThemePackageValidator::class, new ThemePackageValidator($root . '/templates'), true);
+        $container->share(ThemePackageValidator::class, static fn (
+            Container $container,
+        ): ThemePackageValidator => new ThemePackageValidator(
+            $root . '/templates',
+            self::service($container, TranslationTwigExtension::class),
+        ), true);
         $container->share(ExtensionRegistryFenceAllocator::class, static fn (
             Container $container,
         ): ExtensionRegistryFenceAllocator => new ExtensionRegistryFenceAllocator(
@@ -3573,6 +3639,10 @@ final class ContainerFactory
      * declared core first, then the routes contributed by active extensions, then the catch-all
      * published-content route, so an extension can add a path but never shadow a core one.
      *
+     * Locale negotiation sits immediately after request identity, ahead of the error boundary, so a
+     * problem document manufactured for a rejected request is rendered in the caller's language
+     * rather than in whatever language the previous request left behind in a long-lived process.
+     *
      * Metric recording sits between request identity and the error boundary, which is the only place
      * it counts every response including the ones the error boundary manufactured. The `/metrics`
      * route is declared unconditionally so the compiled route graph never depends on a deployment
@@ -3592,6 +3662,7 @@ final class ContainerFactory
         bool $portalEnabled,
     ): void {
         $application->pipe(RequestIdMiddleware::class);
+        $application->pipe(LocaleNegotiationMiddleware::class);
         $application->pipe(MetricsMiddleware::class);
         $application->pipe(ProblemDetailsMiddleware::class);
         $application->pipe(TrustedProxyMiddleware::class);

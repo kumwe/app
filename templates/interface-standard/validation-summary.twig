@@ -7,7 +7,7 @@
     tabindex="-1"
   >
     <div>
-      <h2 id="{{ id }}-validation-title">{{ title|default('Review the highlighted fields') }}</h2>
+      <h2 id="{{ id }}-validation-title">{{ title|default(t('core.interface_standard.validation_summary.title')) }}</h2>
       <ul>
         {% for error in errors %}<li><a href="#{{ error.target }}">{{ error.message }}</a></li>{% endfor %}
       </ul>

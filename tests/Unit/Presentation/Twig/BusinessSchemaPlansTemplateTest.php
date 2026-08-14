@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Presentation\Twig;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Twig\Environment;
@@ -30,6 +31,7 @@ final class BusinessSchemaPlansTemplateTest extends TestCase
         $loader = new FilesystemLoader($root . '/templates/administrator');
         $loader->addPath($root . '/templates/interface-standard', 'kis');
         $twig = new Environment($loader, ['strict_variables' => true]);
+        $twig->addExtension(InterfaceTranslation::twigExtension());
         $plan = [
             'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb501',
             'definition_id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb401',

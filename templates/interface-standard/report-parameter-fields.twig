@@ -15,9 +15,11 @@
           >{% if parameter.default is iterable %}{{ parameter.default|join('\n') }}{% endif %}</textarea>
         {% elseif parameter.type == 'boolean' %}
           <select id="{{ input_id }}" name="parameters[{{ parameter.name }}]"{% if parameter.required %} required{% endif %} aria-describedby="{{ input_id }}-help">
-            <option value=""{% if parameter.default is null %} selected{% endif %}>{{ parameter.required ? 'Choose yes or no' : 'Use report default' }}</option>
-            <option value="1"{% if parameter.default is same as(true) %} selected{% endif %}>Yes</option>
-            <option value="0"{% if parameter.default is same as(false) %} selected{% endif %}>No</option>
+            <option value=""{% if parameter.default is null %} selected{% endif %}>{{ parameter.required
+              ? t('core.interface_standard.report_parameter.choose_boolean')
+              : t('core.interface_standard.report_parameter.use_default') }}</option>
+            <option value="1"{% if parameter.default is same as(true) %} selected{% endif %}>{{ t('core.interface_standard.report_parameter.yes') }}</option>
+            <option value="0"{% if parameter.default is same as(false) %} selected{% endif %}>{{ t('core.interface_standard.report_parameter.no') }}</option>
           </select>
         {% else %}
           <input
@@ -35,11 +37,16 @@
           >
         {% endif %}
         <small id="{{ input_id }}-help">
-          {{ parameter.type|replace({'_': ' '})|title }}{% if parameter.multiple %}; enter one value per line, up to 100{% endif %}{% if not parameter.required %}; optional{% endif %}.
+          {{ t('core.interface_standard.report_parameter.help', {
+            type: parameter.type|replace({'_': ' '})|title,
+            multiple: parameter.multiple ? 'true' : 'false',
+            limit: 100,
+            optional: parameter.required ? 'false' : 'true'
+          }) }}
         </small>
       </div>
     {% else %}
-      <p>No parameters are required. Run the report to use its declared scope.</p>
+      <p>{{ t('core.interface_standard.report_parameter.none_required') }}</p>
     {% endfor %}
   </div>
 {% endmacro %}

@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Presentation\Application;
 use InvalidArgumentException;
 use Kumwe\CMS\Extension\Domain\SemanticVersion;
 use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
+use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\CMS\Presentation\ThemeSurface;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -138,12 +139,18 @@ final readonly class ThemePackageValidator
     /**
      * Bind the validator to the core template tree candidate themes inherit from.
      *
-     * @param  string  $coreTemplateRoot  Directory holding the per-surface built-in template trees.
+     * @param  string                     $coreTemplateRoot  Directory holding the per-surface built-in
+     *         template trees.
+     * @param  ?TranslationTwigExtension  $translation       Extension publishing the translation functions,
+     *         which the core templates behind a candidate theme call; without it a theme that overrides
+     *         only part of a surface would fail validation on core's own markup rather than on its own.
      *
      * @since  2.0.0
      */
-    public function __construct(private string $coreTemplateRoot)
-    {
+    public function __construct(
+        private string $coreTemplateRoot,
+        private ?TranslationTwigExtension $translation = null,
+    ) {
     }
 
     /**
@@ -200,6 +207,9 @@ final readonly class ThemePackageValidator
             $loader->addPath($componentPath, 'kis');
         }
         $twig = new Environment($loader, ['autoescape' => 'html', 'cache' => false, 'strict_variables' => true]);
+        if ($this->translation instanceof TranslationTwigExtension) {
+            $twig->addExtension($this->translation);
+        }
         $templates = $this->templates($resolved);
 
         if ($templates === []) {

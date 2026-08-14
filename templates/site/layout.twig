@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ locale_tag() }}" dir="{{ text_direction() }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,15 +18,15 @@
   style="{% for property, value in presentation.css_variables|default({}) %}{{ property }}:{{ value }};{% endfor %}"
 >
   {% import '_navigation.twig' as navigation_tree %}
-  <a class="sr-only" href="#site-content">Skip to content</a>
+  <a class="sr-only" href="#site-content">{{ t('core.site.layout.skip_to_content') }}</a>
   <header class="site-header"><div class="site-container site-header-inner">
     <a class="site-brand" href="/">{% if site_logo %}<img src="{{ site_logo }}" width="42" height="42" alt="">{% endif %}<span>{{ site_name }}</span></a>
     {% if navigation is not empty %}
-      <button class="site-navigation-toggle" type="button" aria-label="Open site navigation" aria-expanded="false" data-site-navigation-toggle>Menu</button>
-      <nav class="site-navigation" aria-label="Main navigation" data-site-navigation>{{ navigation_tree.branch(navigation, current_path) }}</nav>
+      <button class="site-navigation-toggle" type="button" aria-label="{{ t('core.site.layout.open_navigation') }}" aria-expanded="false" data-site-navigation-toggle>{{ t('core.site.layout.navigation_toggle') }}</button>
+      <nav class="site-navigation" aria-label="{{ t('core.site.layout.main_navigation') }}" data-site-navigation>{{ navigation_tree.branch(navigation, current_path) }}</nav>
     {% endif %}
   </div></header>
   <main class="site-main" id="site-content" tabindex="-1">{% block content %}{% endblock %}</main>
-  <footer class="site-footer"><div class="site-container"><span>{{ site_name }}</span><span>{{ presentation.footer_text|default('Powered by Kumwe CMS') }}</span></div></footer>
+  <footer class="site-footer"><div class="site-container"><span>{{ site_name }}</span><span>{{ presentation.footer_text|default(t('core.site.layout.footer_fallback')) }}</span></div></footer>
 </body>
 </html>

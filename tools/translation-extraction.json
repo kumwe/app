@@ -1,0 +1,220 @@
+{
+  "translatable_attributes": [
+    "alt",
+    "aria-description",
+    "aria-label",
+    "aria-placeholder",
+    "aria-roledescription",
+    "aria-valuetext",
+    "abbr",
+    "label",
+    "placeholder",
+    "summary",
+    "title"
+  ],
+  "ignored_elements": [
+    "script",
+    "style",
+    "svg"
+  ],
+  "allowed_literals": [
+    {
+      "value": "Kumwe",
+      "reason": "The product name. A proper noun is the same word in every language, and translating it would rename the product."
+    }
+  ],
+  "pending_extraction": [
+    {
+      "path": "templates/administrator/_business-fields.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/_business-schema-fields.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/_fields.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/access-control.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/automation.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-bulk-confirm.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-choices.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-confirm.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-custom-view.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-definitions.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-detail.twig",
+      "reason": "Held open deliberately: this template is being changed on another branch, so extracting it here would produce a conflict that cannot be resolved mechanically. Extract it once that change has landed. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-document.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-form.twig",
+      "reason": "Held open deliberately: this template is being changed on another branch, so extracting it here would produce a conflict that cannot be resolved mechanically. Extract it once that change has landed. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-history.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-index.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-list.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-report.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-schema-plans.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-security.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/business-status.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/content-form.twig",
+      "reason": "Held open deliberately: this template is being changed on another branch, so extracting it here would produce a conflict that cannot be resolved mechanically. Extract it once that change has landed. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/content-list.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/content-models.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/dashboard.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/extensions.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/interface-standard.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/media.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/navigation.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/administrator/settings.twig",
+      "reason": "Awaiting extraction. The administrator record surfaces are extracted as one piece, so that a partial pass cannot leave one sentence split between a catalogue and a template. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/_business-fields.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/_business-schema-fields.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/approval-detail.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/approval-not-found.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/approvals.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-bulk-confirm.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-choices.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-confirm.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-custom-view.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-detail.twig",
+      "reason": "Held open deliberately: this template is being changed on another branch, so extracting it here would produce a conflict that cannot be resolved mechanically. Extract it once that change has landed. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-document.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-form.twig",
+      "reason": "Held open deliberately: this template is being changed on another branch, so extracting it here would produce a conflict that cannot be resolved mechanically. Extract it once that change has landed. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-history.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-index.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-list.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-report.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/business-status.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/home.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    },
+    {
+      "path": "templates/portal/security.twig",
+      "reason": "Awaiting extraction. The portal record surfaces share their wording with the administrator ones and are extracted with them, so the two surfaces cannot drift apart mid-extraction. V2-LNG-008."
+    }
+  ]
+}

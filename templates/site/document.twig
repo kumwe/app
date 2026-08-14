@@ -1,5 +1,5 @@
 {% extends "layout.twig" %}
-{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block title %}{{ t('core.site.layout.document_title', {page: entry.title, site: site_name}) }}{% endblock %}
 {% block content %}
   {% set page = entry.data|default({}) %}
   {% set sections = page.sections|default([]) %}
@@ -13,9 +13,9 @@
     <div class="site-container document-layout">
       <aside class="document-aside">
         <nav class="document-nav" aria-labelledby="document-nav-title" data-document-nav>
-          <h2 id="document-nav-title">On this page</h2>
+          <h2 id="document-nav-title">{{ t('core.site.document.contents_heading') }}</h2>
           <ol>
-            {% if has_introduction %}<li><a href="#document-introduction">Introduction</a></li>{% endif %}
+            {% if has_introduction %}<li><a href="#document-introduction">{{ t('core.site.document.introduction') }}</a></li>{% endif %}
             {% for section in sections %}
               <li><a href="#{{ section.anchor }}">{{ section.heading }}</a></li>
             {% endfor %}

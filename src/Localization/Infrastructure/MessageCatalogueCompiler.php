@@ -1,0 +1,141 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Localization\Infrastructure;
+
+use Kumwe\CMS\Localization\Domain\MessageIdentifier;
+use RuntimeException;
+
+/**
+ * Turns one authored XLIFF document into the deterministic PHP array file the request path reads.
+ *
+ * The output is generated, so it is read before it is merged and its freshness is a build check
+ * like every other generated artifact this repository produces. Determinism is what makes that
+ * check meaningful: identifiers are emitted in ascending byte order rather than document order, the
+ * header is fixed, and string escaping is explicit, so recompiling an unchanged source produces an
+ * identical file on any machine and a diff shows only what a translator actually changed.
+ *
+ * Compilation is also where the identifier grammar is enforced against real content. A unit whose
+ * `id` is English prose, or is not namespaced, or is not three dotted segments, fails the build
+ * here rather than becoming a catalogue entry nobody can rename later.
+ *
+ * @since  2.0.0
+ */
+final readonly class MessageCatalogueCompiler
+{
+    /**
+     * Bind the compiler to the reader that supplies its input.
+     *
+     * @param  XliffCatalogueReader  $reader  Reader used to parse the authored document.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private XliffCatalogueReader $reader = new XliffCatalogueReader())
+    {
+    }
+
+    /**
+     * Compile one XLIFF file into the exact bytes its compiled catalogue must contain.
+     *
+     * @param   string  $sourcePath  Absolute path of the authored XLIFF document.
+     * @param   string  $locale      Canonical locale tag the compiled catalogue is filed under.
+     *
+     * @return  string  The complete contents of the compiled PHP file.
+     *
+     * @throws  RuntimeException  When the document cannot be read, or carries an identifier the
+     *          frozen grammar refuses.
+     *
+     * @since   2.0.0
+     */
+    public function compileFile(string $sourcePath, string $locale): string
+    {
+        return $this->compile($this->reader->readFile($sourcePath)->patterns(), $locale, basename($sourcePath));
+    }
+
+    /**
+     * Compile a pattern map into the exact bytes its compiled catalogue must contain.
+     *
+     * @param   array<string, string>  $patterns  ICU patterns keyed by message identifier.
+     * @param   string                 $locale    Canonical locale tag the catalogue is filed under.
+     * @param   string                 $origin    Authored file name, named in the generated header.
+     *
+     * @return  string  The complete contents of the compiled PHP file.
+     *
+     * @throws  RuntimeException  When an identifier does not satisfy the frozen grammar.
+     *
+     * @since   2.0.0
+     */
+    public function compile(array $patterns, string $locale, string $origin): string
+    {
+        $invalid = [];
+        foreach (array_keys($patterns) as $identifier) {
+            if (!MessageIdentifier::isValid($identifier)) {
+                $invalid[] = $identifier;
+            }
+        }
+        if ($invalid !== []) {
+            throw new RuntimeException(sprintf(
+                'The catalogue %s carries %d message identifier(s) the grammar refuses: %s',
+                $origin,
+                count($invalid),
+                implode(', ', array_slice($invalid, 0, 10)),
+            ));
+        }
+
+        ksort($patterns, SORT_STRING);
+        $lines = '';
+        foreach ($patterns as $identifier => $pattern) {
+            $lines .= sprintf("    %s => %s,\n", self::quote($identifier), self::quote($pattern));
+        }
+
+        return sprintf(
+            "<?php\n\n%s\n\ndeclare(strict_types=1);\n\nreturn [\n%s];\n",
+            self::header($locale, $origin, count($patterns)),
+            $lines,
+        );
+    }
+
+    /**
+     * Build the fixed documentation block every compiled catalogue carries.
+     *
+     * @param   string  $locale  Canonical locale tag the catalogue is filed under.
+     * @param   string  $origin  Authored file name the catalogue was compiled from.
+     * @param   int     $count   Number of messages the catalogue carries.
+     *
+     * @return  string  The block, without a trailing newline.
+     *
+     * @since   2.0.0
+     */
+    private static function header(string $locale, string $origin, int $count): string
+    {
+        return implode("\n", [
+            '/**',
+            sprintf(' * Compiled interface message catalogue for %s, carrying %d messages.', $locale, $count),
+            ' *',
+            sprintf(' * Generated from %s by `composer translation:compile`. Do not edit: the build', $origin),
+            ' * compares these bytes against a fresh compilation and fails when they differ. Author the',
+            ' * change in the XLIFF source, which is what a translator and a translation platform read.',
+            ' *',
+            ' * @since  2.0.0',
+            ' */',
+        ]);
+    }
+
+    /**
+     * Render one string as a single-quoted PHP literal.
+     *
+     * `var_export()` is avoided because its output for strings containing certain byte sequences has
+     * changed between releases, and this file's bytes are compared for equality by a build check.
+     *
+     * @param   string  $value  Raw string to render.
+     *
+     * @return  string  The quoted literal.
+     *
+     * @since   2.0.0
+     */
+    private static function quote(string $value): string
+    {
+        return "'" . str_replace(['\\', "'"], ['\\\\', "\\'"], $value) . "'";
+    }
+}

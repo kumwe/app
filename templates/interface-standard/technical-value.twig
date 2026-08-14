@@ -1,12 +1,12 @@
 <span class="kis-technical-value" data-kis-component="technical-value">
-  {% if label|default('') is not empty %}<span class="sr-only">{{ label }}: </span>{% endif %}
+  {% if label|default('') is not empty %}<span class="sr-only">{{ t('core.interface_standard.technical_value.label_prefix', {label: label}) }}</span>{% endif %}
   <code>{{ value }}</code>
   {% if copy|default(true) %}
     <button
       class="link-button kis-copy-value"
       type="button"
       data-copy-value="{{ value }}"
-      aria-label="Copy {{ label|default('technical value') }}"
-    >Copy</button>
+      aria-label="{{ t('core.interface_standard.technical_value.copy_label', {label: label|default(t('core.interface_standard.technical_value.default_label'))}) }}"
+    >{{ t('core.interface_standard.technical_value.copy') }}</button>
   {% endif %}
 </span>
