@@ -4,6 +4,11 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
 **Updated at** `26a7b3963c255064754f541dc8286e75dd566b1f`
 
+> **Open work is here. Finished work is in [`CHANGELOG.md`](../../CHANGELOG.md).** A work package leaves this
+> directory and lands in the changelog in the pull request that completes it — see
+> [How this document moves](README.md#how-this-document-moves). `findings.json` no longer admits the `closed`
+> state and `composer roadmap:check` fails if one appears.
+
 ---
 
 ## Where we are
@@ -52,11 +57,10 @@ record.
 
 ## Ledger snapshot
 
-114 findings in [`findings.json`](findings.json).
+**58 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `closed` | 56 |
 | `reproduced` | 18 |
 | `open` | 17 |
 | `accepted_for_implementation` | 9 |
@@ -65,6 +69,7 @@ record.
 | `in_progress` | 1 |
 | `verified` | 0 |
 | `external` | 0 |
+| `closed` | **not an allowed state** — see [`CHANGELOG.md`](../../CHANGELOG.md) |
 
 | Phase | Findings |
 |---|---|
@@ -77,11 +82,17 @@ record.
 | 6 | 7 |
 | 7 | 9 |
 | M | 1 |
-| evidence (already executed) | 57 |
+| evidence (`GM-AUD-02`, conditional residual) | 1 |
 
-By severity: 2 critical, 45 high, 42 medium, 25 low.
-By origin: 27 from the independent review, 62 from the executed gap matrix, 25 discovered while verifying
-this roadmap or during the qualification programme.
+By severity: 2 critical, 30 high, 18 medium, 8 low.
+By origin: 25 from the independent review, 12 still-open entries from the executed gap matrix, 21 discovered
+while verifying this roadmap or during the qualification programme.
+
+The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
+the tamper-evident audit work, the record-secret key ring and rotation, the credential lifecycle, the
+supply-chain controls, the contention proofs, the failure drills, the observability contract, the restore
+drill and the four production-only defects — is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits
+that closed it.
 
 ## Gate A criteria
 
@@ -113,3 +124,7 @@ services.
 It is derivable from [`findings.json`](findings.json) plus the phase board. When a phase or gate moves,
 change the two tables at the top, the affected phase row, and the ledger snapshot counts. Do not add
 narrative here — narrative belongs in [`README.md`](README.md).
+
+When a work package finishes, delete its findings from `findings.json`, write them into
+[`CHANGELOG.md`](../../CHANGELOG.md), and lower the counts here in the same change. `composer roadmap:check`
+fails if a finished finding is left behind as `closed`.

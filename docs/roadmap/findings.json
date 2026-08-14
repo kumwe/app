@@ -1,9 +1,10 @@
 {
   "ledger": "kumwe-consolidated-findings",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "verified_at_sha": "26a7b3963c255064754f541dc8286e75dd566b1f",
   "authority": "docs/roadmap/README.md",
-  "note": "Every source anchor in this file was resolved against the repository at verified_at_sha. Every closure_sha was resolved with git log at the same revision. Entries whose origin is 'gap-matrix' record the executed production-qualification programme and are evidence, not forward plan; they appear here so one ledger answers 'what is already proven' and 'what is left'.",
+  "completed_work": "CHANGELOG.md",
+  "note": "This ledger holds open work only. A finding that reaches 'closed' leaves this file in the same change that closes it, and its substance becomes an entry in CHANGELOG.md under the category it belongs to; the roadmap therefore shrinks as the programme advances instead of accumulating a tail of finished items. 'closed' is deliberately absent from states for that reason, and tools/verify-roadmap.php fails the build when an entry carries it. Every source anchor in this file was resolved against the repository at verified_at_sha. The 56 entries closed before this rule was introduced were moved to CHANGELOG.md with the commits that closed them.",
   "states": [
     "open",
     "reproduced",
@@ -11,7 +12,6 @@
     "accepted_for_implementation",
     "in_progress",
     "verified",
-    "closed",
     "conditional",
     "external"
   ],
@@ -632,7 +632,8 @@
       "owner": "UNASSIGNED",
       "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
       "correction_to_review": "The review, pinned at 309db888, listed key-restoration order and post-restore proofs as incomplete. Wave 8 closed both — the documented order and an end-to-end envelope decryption through the production cipher — after that revision. Only the two named residuals remain.",
-      "cross_reference": ["GM-BAK-02", "GM-BAK-03", "GM-BAK-04"]
+      "cross_reference": ["GM-BAK-04"],
+      "completed_reference": "GM-BAK-02 and GM-BAK-03 closed in 687707c; their substance is in CHANGELOG.md."
     },
     {
       "id": "V2-DR-003",
@@ -1079,67 +1080,6 @@
       "closure_sha": null
     },
     {
-      "id": "V2-OBS-BASE",
-      "title": "Structured logging, metrics, alerts and trace-context propagation are baseline controls to preserve",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "gate": null,
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "config/observability.php",
-          "symbol": "the observability contract",
-          "note": "Loaded once, by one class, and everything else composed from that instance."
-        },
-        {
-          "file": "src/Infrastructure/Observability/",
-          "symbol": "the module",
-          "note": "CorrelationContext, LogContextProcessor, LogRedactionProcessor, MetricCatalog, MetricCollector, MetricDefinition, MetricRecorder, MetricSample, MetricType, MetricsAccessPolicy, NullMetricRecorder, ObservabilityContract, PrometheusExposition, RedisMetricRecorder, RuntimeMetricCollector."
-        }
-      ],
-      "acceptance_test": "No later phase reopens or duplicates this work. Later phases load-test, matrix-test and harden its residuals.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "309db888e65a14aab879ef752dac835be71a3d10"
-    },
-    {
-      "id": "V2-CHAOS-BASE",
-      "title": "Real failure and recovery drills are baseline controls to preserve",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "gate": null,
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "tests/Integration/Infrastructure/RedisOutageIntegrationTest.php",
-          "symbol": "the Redis outage drill",
-          "note": "Kills a relay process so reconnection is refused, which a throwing stub cannot reproduce."
-        },
-        {
-          "file": "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php",
-          "symbol": "the SIGKILL drill",
-          "note": "A second operating-system process claims a job, announces on disk, and is killed with nothing unwound."
-        }
-      ],
-      "acceptance_test": "Preserved and extended to the exact release artifacts, all three engines, a representative dataset and target concurrency in phase 7.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "f8b856ef5b75b3c833229777e710c70cefbc194a"
-    },
-
-    {
-      "id": "GM-AUD-01",
-      "title": "Audit rows carried no per-event digest and no previous-digest chain",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Audit/Domain/AuditEventDigest.php", "symbol": "AuditEventDigest"}],
-      "acceptance_test": "bin/kumwe audit:verify recomputes the chain and reports the first divergent row.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "05ff83144416c1ef65254637e1708ef1e3da22ff"
-    },
-    {
       "id": "GM-AUD-02",
       "title": "Append-only held only by application discipline",
       "severity": "high",
@@ -1153,67 +1093,6 @@
       "residual": "On a managed service that withholds CREATE TRIGGER there is no database-level prevention of UPDATE or DELETE on audit_events. Tamper evidence, which is what the domain claims, holds unconditionally."
     },
     {
-      "id": "GM-AUD-03",
-      "title": "No verification CLI or scheduled job for audit-trail integrity",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Delivery/Console/Command/VerifyAuditTrailCommand.php", "symbol": "VerifyAuditTrailCommand"}],
-      "acceptance_test": "The scheduled audit.trail.verify job fails loudly on divergence.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "05ff83144416c1ef65254637e1708ef1e3da22ff"
-    },
-    {
-      "id": "GM-AUD-04",
-      "title": "No periodic anchors or checkpoints for the audit trail",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Audit/Domain/AuditAnchorDigest.php", "symbol": "AuditAnchorDigest"}],
-      "acceptance_test": "The audit_anchors ledger is written by the scheduled audit.anchor.record job and compared by the verifier.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "05ff83144416c1ef65254637e1708ef1e3da22ff"
-    },
-    {
-      "id": "GM-AUD-05",
-      "title": "No monotonic per-scope sequence on audit rows",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Infrastructure/Persistence/Migration/AuditTamperEvidenceMigration.php", "symbol": "the position column"}],
-      "acceptance_test": "Deletion is settled by the anchored row count the verifier re-derives, since a rolled-back transaction consumes a position value and bare gaps are therefore not evidence.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "05ff83144416c1ef65254637e1708ef1e3da22ff"
-    },
-    {
-      "id": "GM-AUD-06",
-      "title": "No protected audit export",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Delivery/Console/Command/ExportAuditTrailCommand.php", "symbol": "audit:export"}],
-      "acceptance_test": "A capability-gated, redacted, checksummed archive whose own creation is recorded as audit.trail.exported.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "05ff83144416c1ef65254637e1708ef1e3da22ff"
-    },
-    {
-      "id": "GM-AUD-07",
-      "title": "No retention control for the audit trail in code",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Application/Automation/Job/EnforceAuditRetentionHandler.php", "symbol": "audit.retention.enforce"}],
-      "acceptance_test": "Archive, chain a prune mark, guarded delete, audited prune. Seeded disabled with a zero window.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "05ff83144416c1ef65254637e1708ef1e3da22ff",
-      "forward_reference": "V2-SCL-008 must give this stream an enterprise ingest-versus-drain budget."
-    },
-    {
       "id": "GM-AUD-08",
       "title": "Audit-metadata redaction is a write-time convention with no runtime guard",
       "severity": "low",
@@ -1224,145 +1103,6 @@
       "acceptance_test": "A denylist decorator around AuditRecorder, or a constructor check, rejecting credential-shaped metadata keys and values, plus unit assertions on each writing service's recorded metadata.",
       "owner": "UNASSIGNED",
       "closure_sha": null
-    },
-    {
-      "id": "GM-AUD-09",
-      "title": "Documentation claimed a tamper-evident audit store that did not exist",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "docs/operations/monitoring.md", "symbol": "the audit properties section"}],
-      "acceptance_test": "The stated properties match the shipped controls and their bounds.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "1e8bc1232cb0e667a7be0708ff24e5a666a2530c"
-    },
-
-    {
-      "id": "GM-ENC-01",
-      "title": "No key rotation or re-encryption capability for record secrets",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {"file": "src/BusinessRecord/Domain/SecretKeyRing.php", "symbol": "SecretKeyRing"},
-        {"file": "src/Delivery/Console/Command/RotateRecordSecretsCommand.php", "symbol": "business-record-rekey"}
-      ],
-      "acceptance_test": "tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php runs a three-pass rotation with a one-row budget on MariaDB and PostgreSQL and every record stays readable at every intermediate point.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "870673620de31fc059b579eb4bbb96d60e77b9e8",
-      "residual": "Revision snapshots are deliberately not re-sealed, because a revision row is checksummed over its snapshot. A retired key must stay loaded until revision history naming it has aged out of retention."
-    },
-    {
-      "id": "GM-ENC-02",
-      "title": "The master data-encryption key was coupled to APP_SECRET",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Kernel/Configuration/RecordEncryptionConfiguration.php", "symbol": "RecordEncryptionConfiguration"}],
-      "acceptance_test": "tests/Unit/BusinessRecord/Infrastructure/SecretKeyLifecycleTest.php asserts the original derivation literally, opens a pre-change envelope after the change, and shows an APP_SECRET rotation stranding envelopes without RECORD_ENCRYPTION_LEGACY_SECRET and not stranding them with it.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "a66984610579e2c5e57fed1748e2e2a772b4057f"
-    },
-    {
-      "id": "GM-ENC-03",
-      "title": "No key-provider interface and no documented KMS or HSM adapter contract",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/BusinessRecord/Application/SecretKeyProvider.php", "symbol": "SecretKeyProvider"}],
-      "acceptance_test": "The adapter contract is written on the port and for operators in docs/business-security.md; key acquisition no longer sits inline in ContainerFactory.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "a66984610579e2c5e57fed1748e2e2a772b4057f"
-    },
-    {
-      "id": "GM-ENC-04",
-      "title": "Unavailable-key and envelope-validation failure branches had no coverage",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Unit/BusinessRecord/Domain/EncryptedEnvelopeTest.php", "symbol": "the nine malformed stored rows"}],
-      "acceptance_test": "A foreign key is reported as unavailable and explicitly not as an authentication failure; across five fail-closed paths neither message nor stack trace carries the plaintext or the key in any spelling.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "a66984610579e2c5e57fed1748e2e2a772b4057f"
-    },
-    {
-      "id": "GM-ENC-05",
-      "title": "Record envelopes and mutation-plan tokens shared one key and key identifier",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/BusinessRecord/Domain/SecretKeyPurpose.php", "symbol": "SecretKeyPurpose"}],
-      "acceptance_test": "The two purposes carry different identifiers and different bytes; a plan token is refused by the record ring as an unavailable key; rotating the record key leaves the plan key byte-identical.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "a66984610579e2c5e57fed1748e2e2a772b4057f"
-    },
-    {
-      "id": "GM-ENC-06",
-      "title": "No authorized decrypt or disclose path for stored record secrets",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/BusinessRecord/Domain/SecretKeyUnavailable.php", "symbol": "SecretKeyUnavailable"}],
-      "acceptance_test": "Accepted by design: core.secret is write-only, no reveal surface exists on any adapter, and the position is stated as a qualification claim with the control list a future reveal would have to carry.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "9c4d744b3ab75255f9a6f13849512c81cf127b5a"
-    },
-    {
-      "id": "GM-ENC-07",
-      "title": "File-based master-secret provisioning existed only in the Docker entrypoint",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Shared/Infrastructure/Configuration/Environment.php", "symbol": "the allow-list"}],
-      "acceptance_test": "APP_SECRET_FILE, RECORD_ENCRYPTION_KEY_FILE, RECORD_ENCRYPTION_PREVIOUS_KEYS_FILE and RECORD_ENCRYPTION_LEGACY_SECRET_FILE resolve through one path in every deployment mode.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "a66984610579e2c5e57fed1748e2e2a772b4057f"
-    },
-
-    {
-      "id": "GM-IDN-01",
-      "title": "No password change or rotation path existed anywhere",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Identity/Application/Administration/AccessControlService.php", "symbol": "changeOwnPassword and resetUserPassword"}],
-      "acceptance_test": "tests/Integration/Identity/CredentialLifecycleIntegrationTest.php on MariaDB and PostgreSQL. One epoch advance retires the subject's API tokens, portal sessions, administrator sessions and outstanding step-up proofs.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "4bc5c741d4aa880be972c98272ddc5d9ca3c05f2",
-      "residual": "The REST surface deliberately gains no password path."
-    },
-    {
-      "id": "GM-IDN-02",
-      "title": "No administrative reset, unenroll or revoke for TOTP step-up credentials",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Delivery/Console/Command/RecoverCredentialsCommand.php", "symbol": "user:recover-credentials"}],
-      "acceptance_test": "Revocation is reachable from the administrator screen, the console under a users.manage token, and the break-glass command under SystemIdentity::CredentialRecovery. Recovery-code reissue is authorized by a fresh TOTP challenge only.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "4bc5c741d4aa880be972c98272ddc5d9ca3c05f2"
-    },
-    {
-      "id": "GM-IDN-03",
-      "title": "Administrator browser sessions survived a security-epoch bump",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Identity/Infrastructure/Administration/DoctrineAdministratorSessionStore.php", "symbol": "the epoch predicate in find()"}],
-      "acceptance_test": "CredentialLifecycleIntegrationTest::testAdministratorSessionStopsResolvingAfterTheEpochAdvances on MariaDB and PostgreSQL.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "4bc5c741d4aa880be972c98272ddc5d9ca3c05f2"
     },
     {
       "id": "GM-IDN-04",
@@ -1412,244 +1152,6 @@
       "owner": "UNASSIGNED",
       "closure_sha": null
     },
-
-    {
-      "id": "GM-CON-01",
-      "title": "No business-facing unique-number allocation primitive",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/BusinessRecord/Application/BusinessNumberSequenceAllocator.php", "symbol": "allocate()"}],
-      "acceptance_test": "Gapless-on-commit per counter, deliberately not monotonic. The hole a hard-deleted numbered record leaves, and serialized creates within one counter, are stated in docs/business-definitions.md with the scope and reset levers that narrow the contention.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "256888f19b90f0867905f6c4646e51f26b1ce387",
-      "forward_reference": "V2-SCL-001 and the phase 5 hot-sequence work must measure this counter at the enterprise profile."
-    },
-    {
-      "id": "GM-CON-02",
-      "title": "Outbox and inbox claim contention was never exercised on a real database",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/BusinessIntegration/Infrastructure/DoctrineOutboxStore.php", "symbol": "buryExhausted()", "note": "Had been serializing every dispatcher at the head of claim(); invisible on the in-memory suite where the lock clauses compile to nothing."}],
-      "acceptance_test": "tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "6e0d2e2687165803d0ab6cdde113878764677237"
-    },
-    {
-      "id": "GM-CON-03",
-      "title": "Competing-approver races had no cross-session deterministic test",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php", "symbol": "the drill"}],
-      "acceptance_test": "The approval lock, the double-vote insert race and the simultaneous quorum transition are proven across real sessions.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "c0bd0a1b0639e26a3fd141b8b711571e86d5a477"
-    },
-    {
-      "id": "GM-CON-04",
-      "title": "Deadlock handling was classify-and-surface only, with no injection test",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Integration/BusinessRecord/BusinessRecordDeadlockIntegrationTest.php", "symbol": "the drill", "note": "The cycle is built with a second operating-system process because it cannot exist inside one."}],
-      "acceptance_test": "The deadlock cycle is produced and the classification proven on a real engine.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "c0bd0a1b0639e26a3fd141b8b711571e86d5a477",
-      "residual": "PostgreSQL's lock_timeout SQLSTATE is unclassified by DBAL outside the allocator, and workers still have no in-process reconnect."
-    },
-    {
-      "id": "GM-CON-05",
-      "title": "Scheduler duplicate-occurrence suppression was untested",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Application/Automation/Job/DoctrineScheduler.php", "symbol": "dispatch()", "note": "Crashed a whole scheduler pass on PostgreSQL the first time two schedulers met on one occurrence."}],
-      "acceptance_test": "tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "8bb8cc4269de12c4aae2ea86ee6aa60b92116d15"
-    },
-    {
-      "id": "GM-CON-06",
-      "title": "No kill-point test between an external effect and its fenced settlement",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Integration/Automation/WorkerConnectionLossKillPointIntegrationTest.php", "symbol": "the drill"}],
-      "acceptance_test": "The lease stands with its original token, one attempt spent, no invented failure row; the replacement process claims and completes once.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "c0bd0a1b0639e26a3fd141b8b711571e86d5a477",
-      "residual": "Workers still have no in-process reconnect; recovery is crash-to-exit plus supervisor restart plus lease recovery."
-    },
-    {
-      "id": "GM-CON-07",
-      "title": "The HTTP idempotency concurrent-first-claim race was exercised only through fakes",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Integration/Automation/IdempotencyFirstClaimContentionIntegrationTest.php", "symbol": "the drill"}],
-      "acceptance_test": "A genuine cross-connection duplicate insert; the loser lands on replay or conflict without running the handler.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "c0bd0a1b0639e26a3fd141b8b711571e86d5a477"
-    },
-
-    {
-      "id": "GM-CHA-01",
-      "title": "No wall-clock deadline on external-effect publish in the integration worker",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Application/Automation/RuntimeDeadline.php", "symbol": "RuntimeDeadline"}],
-      "acceptance_test": "tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php; the load-bearing assertion is elapsed time, because without the deadline the drill never returns.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "f8b856ef5b75b3c833229777e710c70cefbc194a"
-    },
-    {
-      "id": "GM-CHA-02",
-      "title": "The wedged-handler SIGALRM path was untested",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Unit/Application/Automation/WorkerTest.php", "symbol": "the three RuntimeDeadline cases"}],
-      "acceptance_test": "A real SIGALRM aborts a wedged handler; a sentinel handler proves the previous handler is restored; an unenforceable budget is refused before entering the handler.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "f8b856ef5b75b3c833229777e710c70cefbc194a"
-    },
-    {
-      "id": "GM-CHA-03",
-      "title": "Redis outage behaviour was documented but never verified",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Integration/Infrastructure/RedisOutageIntegrationTest.php", "symbol": "the drill"}],
-      "acceptance_test": "The sign-in budget fails closed and not as AuthenticationThrottled; the public settings cache degrades to the authoritative table with a recorded warning.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "f8b856ef5b75b3c833229777e710c70cefbc194a",
-      "residual": "An established client does not heal when Redis returns; a replica recovers when its process is recycled."
-    },
-    {
-      "id": "GM-CHA-04",
-      "title": "No database connection-loss or restart drill",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php", "symbol": "the two drills"}],
-      "acceptance_test": "The network path is severed and the session is terminated, on both engine families, with the recovery of the replacement worker asserted rather than assumed.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "f8b856ef5b75b3c833229777e710c70cefbc194a",
-      "residual": "No drill restarts a database server process, because the CI database is a shared service container."
-    },
-    {
-      "id": "GM-CHA-05",
-      "title": "Killed-worker recovery was proven only by simulated lease expiry",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php", "symbol": "the drill"}],
-      "acceptance_test": "A successor is refused while the dead holder's lease lives, then claims under a different token once the clock releases it; the effect lands exactly once, counted from a durable trace.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "f8b856ef5b75b3c833229777e710c70cefbc194a"
-    },
-    {
-      "id": "GM-CHA-06",
-      "title": "The record-secret cipher held exactly one key with no ring and no re-encryption job",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/BusinessRecord/Infrastructure/Security/KeyRingSecretCipher.php", "symbol": "KeyRingSecretCipher"}],
-      "acceptance_test": "Closed by the encrypted-field lifecycle wave and re-verified rather than reimplemented; listed here so the domain totals are not double-counted.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "a66984610579e2c5e57fed1748e2e2a772b4057f",
-      "cross_reference": "GM-ENC-01"
-    },
-    {
-      "id": "GM-CHA-07",
-      "title": "An interrupted restore left partially populated targets with no completion sentinel",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tools/restore.sh", "symbol": "kumwe-restore-manifest.json and its .partial claim"}],
-      "acceptance_test": "tools/restore-interruption-drill.sh SIGKILLs the restore as it begins publishing targets, asserts a claim and no manifest, re-runs unchanged, and compares every restored tree against the source and the manifest digests. Operator-run rather than CI.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "f8b856ef5b75b3c833229777e710c70cefbc194a",
-      "residual": "On MySQL and MariaDB, data definition commits implicitly, so an interruption during the import needs a freshly created empty database."
-    },
-    {
-      "id": "GM-CHA-08",
-      "title": "No test exercised application behaviour against a failed or read-only storage volume",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Integration/Infrastructure/UnwritableStorageIntegrationTest.php", "symbol": "the three refusals"}],
-      "acceptance_test": "Each refusal is typed, names the step that refused, publishes nothing partial and leaves no temporary file behind. Drills a machine cannot produce skip with the reason stated.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "f8b856ef5b75b3c833229777e710c70cefbc194a"
-    },
-
-    {
-      "id": "GM-SUP-01",
-      "title": "EXTENSIONS_ALLOW_UNSIGNED_LOCAL was accepted in production",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Kernel/Configuration/ApplicationConfiguration.php", "symbol": "the production assertions"}],
-      "acceptance_test": "Production configuration refuses the flag.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
-    },
-    {
-      "id": "GM-SUP-02",
-      "title": "No SBOM or provenance for extension packages",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Extension/Application/Package/PackageBillOfMaterials.php", "symbol": "CycloneDX 1.6 inventory"}],
-      "acceptance_test": "A package carries its own inventory and a kumwe-extension-provenance-v1 predicate, stored per release and queryable.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
-    },
-    {
-      "id": "GM-SUP-03",
-      "title": "Trust revocation was local-only",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Extension/Application/Trust/RevocationFeedSynchronizer.php", "symbol": "RevocationFeedSynchronizer"}],
-      "acceptance_test": "A signed revocation envelope with a monotonic sequence and validity window; integrity fails closed while an unreachable feed reports staleness loudly rather than taking installations offline.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
-    },
-    {
-      "id": "GM-SUP-04",
-      "title": "Install-time admission never ran the static code conformance scan",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Extension/Application/Package/PackageCodeConformance.php", "symbol": "PackageCodeConformance"}],
-      "acceptance_test": "Only unparseable PHP and an unresolvable manifest reference refuse an install; style-level findings are recorded and shown, never used to refuse another vendor's code.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
-    },
     {
       "id": "GM-SUP-05",
       "title": "Out-of-process execution for untrusted code is a documented invariant without a shipped runtime",
@@ -1662,30 +1164,6 @@
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "cross_reference": "V2-SEC-003"
-    },
-    {
-      "id": "GM-SUP-06",
-      "title": "Vulnerability policy lacked remediation and disclosure timelines",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "SECURITY.md", "symbol": "the remediation windows"}],
-      "acceptance_test": "Acknowledgement in 3 days, triage in 10, CVSS-banded remediation windows, a 90-day disclosure ceiling, and an explicit statement that a missed window must be announced before it closes.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
-    },
-    {
-      "id": "GM-SUP-07",
-      "title": "Secret scanning was CI-only with the default ruleset",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": ".gitleaks.toml", "symbol": "the five Kumwe-specific rules"}],
-      "acceptance_test": "composer security:secrets runs the pinned image over the branch's whole history before the push.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
     },
     {
       "id": "GM-SUP-08",
@@ -1712,58 +1190,6 @@
       "closure_sha": null,
       "forward_reference": "V2-REL-001 is the natural home for this once the build-once chain exists."
     },
-
-    {
-      "id": "GM-OBS-01",
-      "title": "No metrics implementation at all",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Infrastructure/Observability/PrometheusExposition.php", "symbol": "PrometheusExposition"}],
-      "acceptance_test": "A protected exposition endpoint, Redis-backed request metrics, durable gauges and bounded label cardinality.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "309db888e65a14aab879ef752dac835be71a3d10",
-      "forward_reference": "V2-SCL-005 must benchmark the durable gauges at enterprise table size."
-    },
-    {
-      "id": "GM-OBS-02",
-      "title": "The observability logging contract was declared but not wired",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Infrastructure/Observability/ObservabilityContract.php", "symbol": "ObservabilityContract"}],
-      "acceptance_test": "config/observability.php is loaded exactly once by exactly one class; formatter, level, redaction, required context, metric labels and endpoint exposure are composed from that instance.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "309db888e65a14aab879ef752dac835be71a3d10"
-    },
-    {
-      "id": "GM-OBS-03",
-      "title": "No alert thresholds and no machine-readable alert rules",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "docs/operations/monitoring.md", "symbol": "the alert rules and runbook references"}],
-      "acceptance_test": "Every documented signal has a rule, each rule names an existing runbook heading, and each states what it would have caught.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "309db888e65a14aab879ef752dac835be71a3d10",
-      "residual": "Nothing asserts the alert expressions evaluate; no rule-checking toolchain runs in CI."
-    },
-    {
-      "id": "GM-OBS-04",
-      "title": "Worker and dispatcher log lines omitted correlation and causation identifiers",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Infrastructure/Observability/LogContextProcessor.php", "symbol": "LogContextProcessor"}],
-      "acceptance_test": "Correlation, causation and W3C trace context propagate across asynchronous boundaries.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "309db888e65a14aab879ef752dac835be71a3d10",
-      "residual": "Worker and QueueWorkCommand were left untouched; Worker has no logger, so a job's settlement path carries its correlation identifier only into the ExecutionContext."
-    },
     {
       "id": "GM-OBS-05",
       "title": "No distributed tracing and no trace exporter",
@@ -1775,69 +1201,6 @@
       "acceptance_test": "Open by decision. Adopting an exporter is a separately reviewed dependency and configuration decision. Until then, documentation states propagation, never tracing.",
       "owner": "UNASSIGNED",
       "closure_sha": null
-    },
-    {
-      "id": "GM-OBS-06",
-      "title": "Log level was bound solely to the debug boolean",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "config/observability.php", "symbol": "default_level"}],
-      "acceptance_test": "The declared default level is honoured.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "309db888e65a14aab879ef752dac835be71a3d10",
-      "residual": "The override is process-wide; per-subsystem control did not ship."
-    },
-    {
-      "id": "GM-OBS-07",
-      "title": "No dedicated tests for the liveness, readiness and logging surfaces",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Integration/Infrastructure/ObservabilityMetricsIntegrationTest.php", "symbol": "the drill"}],
-      "acceptance_test": "Direct liveness, readiness, health-command, metrics and logging tests.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "309db888e65a14aab879ef752dac835be71a3d10"
-    },
-
-    {
-      "id": "GM-BAK-01",
-      "title": "No PITR posture and no declared recovery objectives",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "docs/operations/backup-restore.md", "symbol": "Recovery objectives"}],
-      "acceptance_test": "RPO 60 minutes equal to the backup interval and RTO 60 minutes are declared as numbers, and the drill records measured backup_quiesce_seconds and restore_seconds.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
-      "superseded_by": "V2-DR-001. The closure declared PITR to be outside this repository's ownership. The product owner has reversed that: PITR is now platform-supported and operator-configured."
-    },
-    {
-      "id": "GM-BAK-02",
-      "title": "Key restoration order was not documented",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "docs/operations/backup-restore.md", "symbol": "Restore keys first"}],
-      "acceptance_test": "The four excluded secrets, what a restore booted with each wrong key looks like, the permanence of the loss, and the eight-step order that provisions secrets before the database.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e"
-    },
-    {
-      "id": "GM-BAK-03",
-      "title": "The restore drill never decrypted an encrypted envelope",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Support/BusinessRuntimeBackupAcceptance.php", "symbol": "recoverSecretDigest()"}],
-      "acceptance_test": "A wrong APP_SECRET now fails the drill instead of passing it.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e"
     },
     {
       "id": "GM-BAK-04",
@@ -1853,43 +1216,6 @@
       "cross_reference": "V2-DR-002"
     },
     {
-      "id": "GM-BAK-05",
-      "title": "No negative-path tests for the backup tooling",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Support/backup-tamper-drill.sh", "symbol": "the sixteen fail-closed refusals"}],
-      "acceptance_test": "Each case asserts the exit status and the operator-facing message; the genuine backup is re-verified afterwards; an architecture test stops a case being quietly deleted.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
-      "forward_reference": "V2-DR-003 reshapes the artifact and must leave all sixteen refusals passing, unchanged in meaning."
-    },
-    {
-      "id": "GM-BAK-06",
-      "title": "The signed-backup path was never executed in CI",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": ".github/workflows/ci.yml", "symbol": "the ephemeral minisign keypair"}],
-      "acceptance_test": "All three signature branches execute: a genuine signature over superseded bytes, a missing signature with a key configured, and a signed backup with no key configured.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e"
-    },
-    {
-      "id": "GM-BAK-07",
-      "title": "The restored system never executed work",
-      "severity": "low",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Support/RestoredWork.php", "symbol": "RestoredWork"}],
-      "acceptance_test": "The restored installation materializes its runtime, dispatches a schedule and drains a job through bin/kumwe in fresh processes, and the job's effect is checked in restored data.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e"
-    },
-    {
       "id": "GM-BAK-08",
       "title": "Backup scheduling, retention and off-host copy are operator-owned, and whole-table parity is not asserted",
       "severity": "low",
@@ -1901,55 +1227,6 @@
       "owner": "UNASSIGNED",
       "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
       "forward_reference": "V2-DR-003 changes the artifact this section documents; the reference schedule and the off-host step must be restated for the reshaped payload and the reference transport."
-    },
-
-    {
-      "id": "PD-001",
-      "title": "Package admission charged the memory ceiling per entry",
-      "severity": "medium",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "new",
-      "source_anchors": [{"file": "src/Extension/Application/Package/", "symbol": "the chunked entry expansion"}],
-      "acceptance_test": "Found only in production deployment acceptance. Seeds V2-QA-005 as a regression case for the deployed-artifact lane.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "cfaf84070a0089bdfe9303bc020e29eb007b2e07"
-    },
-    {
-      "id": "PD-002",
-      "title": "The deployment drills could not load their own classes in the production image",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "new",
-      "source_anchors": [{"file": "tests/Support/deployment-drill-autoload.php", "symbol": "the shared loader", "note": "The image installs with --no-dev and dumps an authoritative classmap, so nothing under Kumwe\\CMS\\Tests\\ is loadable. The entry point compensated with a hand-maintained require list that went stale. An architecture assertion now refuses a hand-maintained list that grows back."}],
-      "acceptance_test": "Found only in production deployment acceptance, on all three engines, after a full deployment was already up. Seeds V2-QA-005 as a regression case.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "26a7b3963c255064754f541dc8286e75dd566b1f"
-    },
-    {
-      "id": "PD-003",
-      "title": "A site-wide record-key rotation stranded the shared fixture database",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "new",
-      "source_anchors": [{"file": "tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php", "symbol": "tearDownAfterClass", "note": "A rotation pass covers every installation of the caller's site, so the drill moved every stored core.secret envelope in the test database onto a key whose material existed only inside that test's process. It went unnoticed while the backup drill only hashed ciphertext — a stranded envelope hashes exactly like a readable one."}],
-      "acceptance_test": "Found only in production deployment acceptance, on all three engines, with the runbook's own wrong-keyring symptom. Seeds both V2-QA-004 and V2-QA-005.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "3fdb4e98518058a1af8979697182d0b2df2993e3"
-    },
-    {
-      "id": "PD-004",
-      "title": "A restore drill leg had never executed inside the deployed image",
-      "severity": "high",
-      "state": "closed",
-      "phase": "evidence",
-      "origin": "new",
-      "source_anchors": [{"file": "tests/Support/BusinessRuntimeBackupAcceptance.php", "symbol": "the drill entry point"}],
-      "acceptance_test": "Found only in production deployment acceptance. Seeds V2-QA-005 as the fourth regression case and is the direct argument for a deployed-artifact test lane.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e"
     }
   ]
 }
