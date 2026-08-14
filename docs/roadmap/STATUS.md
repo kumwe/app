@@ -66,7 +66,7 @@ table when it completes, in the same change that writes it into the changelog.
 
 ## Decisions
 
-Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full decision record.
+Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full decision record.
 
 | | Decision | Record |
 |---|---|---|
@@ -77,7 +77,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 | D5 | `BusinessRecordService` decomposition leaves the critical path | README section 2 |
 | D6 | Runtime operational introspection is a distinct deliverable | README section 2 |
 | D7 | A business-group installation is supported, through ownership scopes | [ADR 0001](decisions/0001-resource-ownership-scope.md) |
-| D8 | The atomic aggregate contract is designed before it is built | README section 2; ADR due in `P0-E` |
+| D8 | The atomic aggregate contract is designed before it is built | [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) |
 | D9 | Capabilities are described on their own merits | README section 2 |
 | D10 | Multi-currency is core: the type and the conversion contract | [ADR 0004](decisions/0004-money-conversion-contract.md) |
 | D11 | The interface is multilingual, with a decided architecture | [ADR 0002](decisions/0002-interface-translation-architecture.md) |
@@ -88,12 +88,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 ## Ledger snapshot
 
-**64 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**62 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 22 |
-| `reproduced` | 15 |
+| `accepted_for_implementation` | 21 |
+| `reproduced` | 14 |
 | `open` | 17 |
 | `conditional` | 7 |
 | `decision_required` | 2 |
@@ -119,12 +119,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 | Gate | Findings |
 |---|---|
-| A | 26 |
+| A | 24 |
 | B | 23 |
 | none | 15 |
 
-By severity: 1 critical, 30 high, 24 medium, 9 low.
-By origin: 24 from the independent review, 12 still-open entries from the executed gap matrix, 28 discovered
+By severity: 0 critical, 29 high, 24 medium, 9 low.
+By origin: 23 from the independent review, 12 still-open entries from the executed gap matrix, 27 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
@@ -138,7 +138,7 @@ that closed it.
 | # | Criterion | Met | Findings |
 |---|---|---|---|
 | 1 | Extension contract frozen with passing compatibility fixtures | No | `V2-EXT-001` |
-| 2 | Atomic aggregate command exists and matches the recorded shape | No | `V2-SCL-003` |
+| 2 | Atomic aggregate command exists and matches the recorded shape | Yes | Recorded in [`CHANGELOG.md`](../../CHANGELOG.md); [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) |
 | 3 | Data-entry integrity holds on all three browser surfaces | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
 | 4 | Correctness and security contradictions fixed | No | `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-003` |
 | 5 | Quality gates are truthful | No | `V2-QA-001`, `V2-QA-002`, `V2-QA-003`, `V2-QA-004`, `V2-QA-005`, `V2-DB-001` |
@@ -161,7 +161,7 @@ Gate B's ten criteria are unchanged and are listed in [`README.md`](README.md) s
 ## Baseline health at this revision
 
 Green: `composer docs:api` (100% across 1,172 classes and 6,365 methods), `composer architecture:policy`,
-`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (64 open
+`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (62 open
 findings), `composer openapi:check`, `composer cs`, `composer analyse` (PHPStan level `max`, no errors),
 unit suite (1,555 tests, 22,316 assertions), architecture suite (114 tests, 9,386 assertions).
 

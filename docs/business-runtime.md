@@ -84,6 +84,129 @@ making stored values unreadable. Re-sealing stored envelopes under a new active 
 revision snapshots, whose checksums are their integrity evidence. See
 [record encryption key lifecycle](business-security.md#record-encryption-key-lifecycle).
 
+## Atomic documents: a header and its owned lines
+
+Nearly every business object worth the name is a document: a header and the lines that belong to it. An
+invoice, a purchase order, an attendance batch, a job card, a stock movement, a pay run. Core owns the write
+and none of the meaning — what makes something an invoice is an extension's definition, and there is no
+invoice, order or ledger rule anywhere in this runtime.
+
+`BusinessRecordService::writeDocument()` writes one whole document as one command. Header and lines are
+settled together and committed together inside the one transaction the definition's exclusive fence is held
+for, so there is no instant at which a reader can see a header without its lines, or lines whose header has
+already moved on. A refusal anywhere — a field rule, an aggregate invariant, a stale version, a unique
+collision on the nine hundredth line — takes the whole document with it and leaves no row, no revision, no
+audit entry and no idempotency claim behind.
+
+### The line list is the collection, not a set of edits
+
+A `WriteDocumentCommand` carries the header's values and the document's whole line list, in the order it is to
+be stored. That list is declarative:
+
+- a line naming an identity the document already holds is **amended**;
+- a line naming none is **added**;
+- a stored line the list never names is **removed**;
+- every line's position is **its index in the list**.
+
+Two consequences follow, and they are the reason the shape was chosen. No two lines can occupy one slot and
+no caller can leave a hole, because position is not an input. And a line's identity is meaningful only inside
+its document: it is addressed through the header, it is removed with it, and a delete of the header takes the
+whole collection with it.
+
+`DocumentWriteIntent` says which of the two things a command is. `Create` writes the document at version one;
+`Amend` names the aggregate version the caller read.
+
+### Concurrency is settled at the document
+
+`expectedVersion` is the header's version, and it guards every line write in the command. Two callers
+amending one document therefore contend for one value: the second to arrive is refused with
+`BusinessRecordVersionConflict` rather than interleaved into a document that neither of them wrote. A
+line-level change against a header that has moved on is refused for the same reason and by the same
+mechanism.
+
+### What a document write costs
+
+Statement count follows the change rather than the collection.
+
+| Command | Statements against the line table |
+|---|---|
+| Create of N lines | one batched insert per 100 lines |
+| Amend, values only | one update per line whose values actually changed |
+| Amend, lines removed | one batched delete per 100 removed keys |
+| Amend, order changed | one renumbering statement, then one update per surviving line |
+| Amend, nothing changed | none |
+
+A thousand-line document is written in ten insert statements, and a document resubmitted unchanged writes
+nothing at all. Batch size is derived from the line entity's own column count against a bounded parameter
+budget, so a wide line batches fewer rows rather than failing on the strictest engine. One version, one
+revision, one audit action and one bounded event describe the whole write, and the event carries a change
+summary — counts and a keyed digest over the line identities — rather than a thousand-line payload.
+
+### Rules that span the whole document
+
+A `record_invariant` may reduce an owned-line collection, which is what makes the most fundamental document
+rule there is expressible at all:
+
+```json
+{
+  "handle": "total_agrees_with_lines",
+  "message": "The document total must equal the sum of its lines.",
+  "condition": {
+    "op": "eq",
+    "type": "boolean",
+    "args": [
+      {"op": "field", "type": "decimal", "field": "total"},
+      {"op": "line_aggregate", "type": "decimal", "lines": "lines", "field": "amount", "aggregate": "sum"}
+    ]
+  }
+}
+```
+
+The `line_aggregate` leaf is deliberately narrow: one collection the entity declares as an owned-line
+relationship, one reduction from a closed set — `sum` over one line field, or `count` over the collection —
+and the same 32-kilobyte, 128-node, 12-level budget every other expression lives under. It is a rule about a
+document, not a query language inside a definition.
+
+Four things are settled before a definition is ever published. The aggregation must name a collection the
+entity actually declares as an owned-line relationship. The summed handle must be a field the line entity
+carries, and must be `core.decimal` or `core.integer` — an exact number, never text the runtime would have to
+guess at, and never a value the line keeps restricted or secret, because folding one into a header total
+would leak its magnitude. A `count` takes no field and a `sum` requires one. And a field formula, a
+visibility or editability condition and an action condition may not aggregate at all, because each of those
+is evaluated for one record at a time.
+
+Arithmetic stays exact end to end. A thousand `core.decimal` line values fold through the same exact decimal
+type the columns store, producing a canonical base-10 string and never a float. Equality between decimals is
+judged by value rather than by spelling, so a total stored at scale three agrees with a sum that spells one
+fewer digit.
+
+The rule is evaluated **once per command**, over the collection the write is about to store — not once per
+line, and not by re-reading rows. A violation is reported against the invariant's own handle carrying the
+definition's own message, so an operator is told that a total disagrees with its lines rather than that
+something, somewhere, was unavailable.
+
+Because the rule belongs to the document rather than to one command, it is enforced by every command that can
+move either side of it: the document write, an ordinary header update, and a single-line `relate()` or
+`unrelate()`. A `reorder()` moves no value and changes no count, so it is not re-judged. Definitions that
+declare no aggregate invariant pay nothing for any of this — no extra lock, no extra statement.
+
+### Declaring one from an extension
+
+Nothing above requires a core edit. An extension contributes an entity definition through the ordinary
+package contribution path, and if that definition declares an aggregate invariant, core enforces it without
+having heard of the rule, the vertical, or the document. That is the test of the boundary: if a new vertical
+needs core to change, either a primitive is missing or the boundary was drawn wrong.
+
+### Limits
+
+- A command writes at most 1,000 lines, and writes exactly one owned-line collection.
+- A line type that declares an aggregate invariant of its own cannot be written through this command; a
+  nested document needs a command that writes its own lines too, and that is refused rather than half-applied.
+- The whole stored collection must be visible to the caller. A document command replaces a collection, so
+  working from a filtered view of it would silently destroy the lines the actor was never shown; a stored line
+  the row policy hides fails the whole command closed.
+- The single-line `relate()`, `unrelate()` and `reorder()` commands are unchanged and remain supported.
+
 ## Bounded querying
 
 Browse accepts only the typed `RecordQuerySpecification` AST: boolean/comparison/null/set/text filters, bounded

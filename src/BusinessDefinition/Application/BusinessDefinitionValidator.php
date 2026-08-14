@@ -168,6 +168,7 @@ final readonly class BusinessDefinitionValidator
                 }
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
                     $ownershipEdges[$definition->handle][] = $target->handle;
+                    $this->validateLineAggregations($definition, $relationship, $target);
                 }
                 if (
                     $relationship->onDelete === DeleteBehavior::Cascade
@@ -191,6 +192,72 @@ final readonly class BusinessDefinitionValidator
             }
         }
         $this->assertAcyclicOwnership($ownershipEdges);
+    }
+
+    /**
+     * Prove every invariant that reduces one owned-line collection against the entity on the far side.
+     *
+     * `EntityTypeDefinition` has already settled that the aggregation names a collection this entity
+     * declares; what needs the rest of the catalog is the line itself. A summed handle has to be a field
+     * the line entity actually carries, it has to hold an exact number rather than text the runtime would
+     * have to guess at, and it must not be a value the line keeps sealed — folding an encrypted or
+     * restricted field into a header total would leak its magnitude to anyone who can read the header.
+     *
+     * @param   EntityTypeDefinition    $definition    Entity declaring the invariant and the collection.
+     * @param   RelationshipDefinition  $relationship  Owned-line collection being reduced.
+     * @param   EntityTypeDefinition    $target        Line entity the collection stores, already resolved.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When a reduction names a field the line entity does not declare,
+     *          a field whose type carries no exact number, or a restricted or secret field.
+     *
+     * @since   2.0.0
+     */
+    private function validateLineAggregations(
+        EntityTypeDefinition $definition,
+        RelationshipDefinition $relationship,
+        EntityTypeDefinition $target,
+    ): void {
+        $lineFields = [];
+        foreach ($target->fields() as $field) {
+            $lineFields[$field->handle] = $field;
+        }
+        foreach ($definition->recordInvariants() as $invariant) {
+            foreach ($invariant->lineDependencies() as $collection => $handles) {
+                if ($collection !== $relationship->handle) {
+                    continue;
+                }
+                foreach ($handles as $handle) {
+                    $field = $lineFields[$handle] ?? null;
+                    if (!$field instanceof FieldDefinition) {
+                        throw new InvalidBusinessDefinition(sprintf(
+                            'Record invariant %s sums %s.%s, which the line entity %s does not declare.',
+                            $invariant->handle,
+                            $collection,
+                            $handle,
+                            $target->handle,
+                        ));
+                    }
+                    if (!in_array($field->type, ['core.decimal', 'core.integer'], true)) {
+                        throw new InvalidBusinessDefinition(sprintf(
+                            'Record invariant %s sums %s.%s, which is not an exact numeric line field.',
+                            $invariant->handle,
+                            $collection,
+                            $handle,
+                        ));
+                    }
+                    if (in_array($field->sensitivity, [Sensitivity::Restricted, Sensitivity::Secret], true)) {
+                        throw new InvalidBusinessDefinition(sprintf(
+                            'Record invariant %s sums %s.%s, which the line entity keeps restricted.',
+                            $invariant->handle,
+                            $collection,
+                            $handle,
+                        ));
+                    }
+                }
+            }
+        }
     }
 
     /**

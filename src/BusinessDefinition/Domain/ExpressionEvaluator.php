@@ -16,6 +16,11 @@ namespace Kumwe\CMS\BusinessDefinition\Domain;
  * record invariant is never quietly reported as satisfied on incomplete input. Callers reach it through
  * `Expression::evaluate()`; it is a stateless collection of static routines and cannot be instantiated.
  *
+ * One leaf reads past the record: `line_aggregate` reduces a whole owned-line collection the caller
+ * gathered, so a document rule is computed once for the document. The same refusal applies to it — a
+ * collection that was not supplied is an error, never an empty one — because a header total silently
+ * compared against no lines at all would pass every time.
+ *
  * @since  2.0.0
  */
 final class ExpressionEvaluator
@@ -28,9 +33,12 @@ final class ExpressionEvaluator
      * been discarded. Callers that need a guarded division must therefore make the guard part of the
      * data, not of the tree shape.
      *
-     * @param   Expression                  $expression  Node to evaluate; its subtree is walked recursively.
-     * @param   array<string, scalar|null>  $fields      Values for the handles the tree reads, keyed by
-     *          field handle.
+     * @param   Expression                                       $expression  Node to evaluate; its subtree
+     *          is walked recursively.
+     * @param   array<string, scalar|null>                       $fields      Values for the handles the tree
+     *          reads, keyed by field handle.
+     * @param   array<string, list<array<string, scalar|null>>>  $lines       Whole owned-line collections
+     *          keyed by relationship handle, for the aggregation leaves the tree carries.
      *
      * @return  mixed  Result of the operator in the node's declared type; a decimal result is a canonical
      *          base-10 string.
@@ -41,7 +49,7 @@ final class ExpressionEvaluator
      *
      * @since   2.0.0
      */
-    public static function evaluate(Expression $expression, array $fields): mixed
+    public static function evaluate(Expression $expression, array $fields, array $lines = []): mixed
     {
         if ($expression->operator === 'literal') {
             return $expression->literal;
@@ -57,14 +65,17 @@ final class ExpressionEvaluator
 
             return self::typed($expression->type, $value);
         }
+        if ($expression->operator === 'line_aggregate') {
+            return self::reduce($expression, $lines);
+        }
         $values = array_map(
-            static fn (Expression $item): mixed => self::evaluate($item, $fields),
+            static fn (Expression $item): mixed => self::evaluate($item, $fields, $lines),
             $expression->arguments(),
         );
 
         return match ($expression->operator) {
-            'eq' => $values[0] === $values[1],
-            'ne' => $values[0] !== $values[1],
+            'eq' => self::equal($expression->arguments()[0]->type, $values[0], $values[1]),
+            'ne' => !self::equal($expression->arguments()[0]->type, $values[0], $values[1]),
             'lt' => self::compare($expression->arguments()[0]->type, $values[0], $values[1]) < 0,
             'lte' => self::compare($expression->arguments()[0]->type, $values[0], $values[1]) <= 0,
             'gt' => self::compare($expression->arguments()[0]->type, $values[0], $values[1]) > 0,
@@ -80,10 +91,158 @@ final class ExpressionEvaluator
             'coalesce' => self::coalesce($values),
             'if' => self::boolean($values[0]) ? $values[1] : $values[2],
             'is_null' => $values[0] === null,
-            'in' => in_array($values[0], array_slice($values, 1), true),
+            'in' => self::member($expression->arguments()[0]->type, $values[0], array_slice($values, 1)),
             'contains' => str_contains(self::string($values[0]), self::string($values[1])),
             default => throw new InvalidBusinessDefinition('A formula operator is not executable.'),
         };
+    }
+
+    /**
+     * Reduce one whole owned-line collection to the single value a `line_aggregate` leaf declares.
+     *
+     * The collection has to be present even when it is empty, because an absent collection means the
+     * caller never gathered it and a rule judged on lines nobody read would be worse than no rule at all.
+     * An empty collection is a legitimate document, so it counts zero and sums to zero. A line that
+     * carries no value for the folded field is skipped rather than read as zero, which is what makes a
+     * nullable line field behave the way a reader expects. Decimal accumulation runs through
+     * `DecimalValue`, so a thousand lines fold to an exact base-10 string and no float is produced at any
+     * step; integer accumulation is re-checked after every addition, because PHP promotes an overflowing
+     * integer to float instead of failing.
+     *
+     * @param   Expression                                       $expression  Aggregation leaf to reduce.
+     * @param   array<string, list<array<string, scalar|null>>>  $lines       Collections keyed by
+     *          relationship handle, as the caller gathered them.
+     *
+     * @return  int|string  The line count or an integer sum as an `int`, a decimal sum as a canonical
+     *          base-10 string.
+     *
+     * @throws  InvalidBusinessDefinition  When the named collection was not supplied, a folded value is a
+     *          float or is neither an integer nor a canonical decimal string, or an integer sum leaves the
+     *          platform integer range.
+     *
+     * @since   2.0.0
+     */
+    private static function reduce(Expression $expression, array $lines): int|string
+    {
+        $relationship = $expression->lines;
+        if ($relationship === null || !array_key_exists($relationship, $lines)) {
+            throw new InvalidBusinessDefinition('An owned-line collection an invariant reduces was not supplied.');
+        }
+        $collection = $lines[$relationship];
+        if ($expression->aggregate === 'count') {
+            return count($collection);
+        }
+        $handle = $expression->field;
+        if ($handle === null) {
+            throw new InvalidBusinessDefinition('A line sum names no line field.');
+        }
+        if ($expression->type === 'integer') {
+            $total = 0;
+            foreach ($collection as $line) {
+                $value = $line[$handle] ?? null;
+                if ($value === null) {
+                    continue;
+                }
+                $next = $total + self::integer($value);
+                // PHP promotes overflowing integer arithmetic to float at runtime.
+                /** @phpstan-ignore function.alreadyNarrowedType */
+                if (!is_int($next)) {
+                    throw new InvalidBusinessDefinition('A line sum exceeded the platform integer range.');
+                }
+                $total = $next;
+            }
+
+            return $total;
+        }
+        $total = DecimalValue::fromString('0');
+        foreach ($collection as $line) {
+            $value = $line[$handle] ?? null;
+            if ($value === null) {
+                continue;
+            }
+            $total = $total->add(DecimalValue::fromString(self::typedDecimal($value)));
+        }
+
+        return $total->value();
+    }
+
+    /**
+     * Read a folded line value that must already be a canonical decimal string.
+     *
+     * Line values reach this through the same flattening record values do, so a stored exact decimal
+     * arrives as its canonical text and a float never gets that far. Holding the spelling here rather than
+     * trusting it is what keeps a malformed stored value out of the accumulator.
+     *
+     * @param   scalar  $value  Value the line carries for the folded field.
+     *
+     * @return  string  The value unchanged, once it spells a canonical base-10 decimal.
+     *
+     * @throws  InvalidBusinessDefinition  When the value is not a canonical decimal string.
+     *
+     * @since   2.0.0
+     */
+    private static function typedDecimal(mixed $value): string
+    {
+        if (!is_string($value) || preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) !== 1) {
+            throw new InvalidBusinessDefinition('A line sum read a value that is not an exact decimal.');
+        }
+
+        return $value;
+    }
+
+    /**
+     * Decide whether two operands of `eq` or `ne` hold the same value.
+     *
+     * Every type but `decimal` is compared identically, which is what parsing's same-type rule was written
+     * to make safe. A decimal is compared by value instead, because the canonical text of an exact decimal
+     * carries the scale of the field it came from: a total stored at scale three spells `30.750` while the
+     * sum of its lines spells `30.75`, and comparing those as text would report the most fundamental
+     * document rule there is as broken by a trailing zero.
+     *
+     * @param   string  $type   Type the left argument declares, which parsing has matched to the right.
+     * @param   mixed   $left   Evaluated value on the left of the comparison.
+     * @param   mixed   $right  Evaluated value on the right of the comparison.
+     *
+     * @return  bool  True when the two operands hold the same value.
+     *
+     * @throws  InvalidBusinessDefinition  When a decimal operand is not a canonical decimal string.
+     *
+     * @since   2.0.0
+     */
+    private static function equal(string $type, mixed $left, mixed $right): bool
+    {
+        if ($type !== 'decimal' || $left === null || $right === null) {
+            return $left === $right;
+        }
+
+        return self::compare($type, $left, $right) === 0;
+    }
+
+    /**
+     * Decide whether the first operand of `in` appears among the rest.
+     *
+     * Membership follows the same value rule `eq` does, so a decimal is matched by value rather than by
+     * the spelling the field it came from happens to store it in.
+     *
+     * @param   string       $type        Type the first argument declares, matched to every candidate.
+     * @param   mixed        $needle      Evaluated value being looked for.
+     * @param   list<mixed>  $candidates  Evaluated values it may be one of.
+     *
+     * @return  bool  True when one candidate holds the same value.
+     *
+     * @throws  InvalidBusinessDefinition  When a decimal operand is not a canonical decimal string.
+     *
+     * @since   2.0.0
+     */
+    private static function member(string $type, mixed $needle, array $candidates): bool
+    {
+        foreach ($candidates as $candidate) {
+            if (self::equal($type, $needle, $candidate)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

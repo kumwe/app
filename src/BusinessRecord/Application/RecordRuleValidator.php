@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\Expression;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\RecordInvariantDefinition;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
@@ -19,7 +20,9 @@ use Ramsey\Uuid\Uuid;
  * This is where a published definition's write policy is enforced: identity is server-assigned, computed
  * and server-only fields refuse caller values, immutable fields refuse to move after creation,
  * visibility and editability conditions gate submitted create and update values, the required and nullable
- * rules and each field's declared validator list judge single values, and record invariants judge the set.
+ * rules and each field's declared validator list judge single values, and record invariants judge the set —
+ * including, where a definition declares one, a rule that reduces a whole owned-line collection the caller
+ * hands over, so a document's total can be held against its lines in the same pass.
  * `RecordValueCodec` owns the per-value type conversion this delegates to, so the rules here stay about policy
  * rather than representation. Every breach is collected instead of aborting the pass, and the whole list is
  * raised once as `BusinessRecordValidationFailed`, which lets a caller correct a form in one round trip.
@@ -53,17 +56,21 @@ final readonly class RecordRuleValidator
      * field is reported rather than quietly ignored, so a caller learns its payload was not honoured. A
      * supplied writable field must also satisfy both of its conditions over the complete prospective record.
      *
-     * @param   EntityTypeDefinition   $definition      Published definition whose field rules apply.
-     * @param   array<string, mixed>   $input           Caller-supplied values keyed by field handle; an
+     * @param EntityTypeDefinition $definition Published definition whose field rules apply.
+     * @param array<string, mixed> $input Caller-supplied values keyed by field handle; an
      *          unrecognised handle is reported rather than dropped.
-     * @param   string                 $siteIdentifier  Site the record belongs to, bound into encrypted
+     * @param string $siteIdentifier Site the record belongs to, bound into encrypted
      *          secret values as associated data.
-     * @param   string                 $recordKey       Internal row key, bound into that same associated
+     * @param string $recordKey Internal row key, bound into that same associated
      *          data; equal to the record ID only under the UUID identity strategy.
-     * @param   string                 $recordId        Public identity written into the identity field.
-     * @param   array<string, string>  $allocated       Numbers the caller's transaction has already reserved
+     * @param string $recordId Public identity written into the identity field.
+     * @param array<string, string> $allocated Numbers the caller's transaction has already reserved
      *          from `BusinessNumberSequenceAllocator`, keyed by the `core.sequence` handle each belongs to;
      *          a sequence field with no reserved number here is reported rather than left empty.
+     * @param   ?array<string, list<array<string, scalar|null>>>  $lines           Owned-line collections the
+     *          definition's aggregate invariants reduce, keyed by relationship handle and in position
+     *          order; the empty map is the honest input for a record being created on its own, and null
+     *          suspends aggregate invariants for a caller that is not changing either side of one.
      *
      * @return  array<string, mixed>  Normalized values by field handle, computed fields, allocated numbers
      *          and identity included, ready for `RecordValueCodec::encodeColumns()`.
@@ -80,6 +87,7 @@ final readonly class RecordRuleValidator
         string $recordKey,
         string $recordId,
         array $allocated = [],
+        ?array $lines = [],
     ): array {
         $violations = [];
         $fields = $this->fields($definition);
@@ -171,7 +179,7 @@ final readonly class RecordRuleValidator
                 $violations[] = $violation;
             }
         }
-        $this->validate($definition, $values, $violations);
+        $this->validate($definition, $values, $violations, $lines);
         $this->throwIfInvalid($violations);
 
         return $values;
@@ -186,16 +194,20 @@ final readonly class RecordRuleValidator
      * repeats the value already stored. A field guarded by a visibility or editability condition is rejected
      * unless both conditions read true over the record as it stands *before* the patch is applied.
      *
-     * @param   EntityTypeDefinition  $definition      Published definition whose field rules apply.
-     * @param   array<string, mixed>  $current         Values the stored record holds, already normalized.
-     * @param   array<string, mixed>  $patch           Values the caller wants changed, keyed by field
+     * @param EntityTypeDefinition $definition Published definition whose field rules apply.
+     * @param array<string, mixed> $current Values the stored record holds, already normalized.
+     * @param array<string, mixed> $patch Values the caller wants changed, keyed by field
      *          handle; an unrecognised handle is reported rather than dropped.
-     * @param   string                $siteIdentifier  Site the record belongs to, bound into encrypted
+     * @param string $siteIdentifier Site the record belongs to, bound into encrypted
      *          secret values as associated data.
-     * @param   string                $recordKey       Internal row key, bound into that same associated
+     * @param string $recordKey Internal row key, bound into that same associated
      *          data.
-     * @param   string                $recordId        Public identity of the record; accepted for
+     * @param string $recordId Public identity of the record; accepted for
      *          symmetry with `create()`, as immutability is judged against `$current` instead.
+     * @param   ?array<string, list<array<string, scalar|null>>>  $lines           Owned-line collections the
+     *          definition's aggregate invariants reduce, keyed by relationship handle and in position
+     *          order, as they will stand once this command commits; null suspends aggregate invariants for
+     *          a caller that is not changing either side of one.
      *
      * @return  array<string, mixed>  The whole value set after the patch, with every formula field
      *          re-evaluated, ready to become the record's new state.
@@ -212,6 +224,7 @@ final readonly class RecordRuleValidator
         string $siteIdentifier,
         string $recordKey,
         string $recordId,
+        ?array $lines = [],
     ): array {
         $violations = [];
         $fields = $this->fields($definition);
@@ -260,7 +273,7 @@ final readonly class RecordRuleValidator
             );
         }
         $this->compute($definition, $siteIdentifier, $recordKey, $values, $violations);
-        $this->validate($definition, $values, $violations);
+        $this->validate($definition, $values, $violations, $lines);
         $this->throwIfInvalid($violations);
 
         return $values;
@@ -309,7 +322,11 @@ final readonly class RecordRuleValidator
      * definition, so a row the new definition would not accept is caught before its version pin moves.
      * Ordered-line fields are skipped because their contents live in the relationship tables. The identity
      * field is set from `$recordId` whatever the target's normalizers would make of it, and a normalizer
-     * that would have moved it is itself reported as an `identity_normalization` breach.
+     * that would have moved it is itself reported as an `identity_normalization` breach. An invariant that
+     * aggregates owned lines is suspended for the same reason the lines themselves are: repinning proves a
+     * stored row against a new field contract and moves neither the header total nor a single line, so
+     * re-judging a document rule here would read every document's whole collection to reach a conclusion
+     * the repin cannot have changed.
      *
      * @param   EntityTypeDefinition  $definition      Target definition the row is being repinned to.
      * @param   array<string, mixed>  $storedValues    Decoded values of the stored row, keyed by handle;
@@ -376,7 +393,7 @@ final readonly class RecordRuleValidator
             );
         }
         $this->compute($definition, $siteIdentifier, $recordKey, $values, $violations);
-        $this->validate($definition, $values, $violations);
+        $this->validate($definition, $values, $violations, null);
         $this->throwIfInvalid($violations);
 
         return $values;
@@ -607,16 +624,22 @@ final readonly class RecordRuleValidator
      * a second missing-value diagnosis. A present value runs every validator it declares, so one field can
      * contribute several breaches to the same pass.
      *
-     * @param   EntityTypeDefinition       $definition  Definition supplying the rules to apply.
-     * @param   array<string, mixed>       $values      Normalized value set to judge, keyed by handle.
-     * @param   list<ValidationViolation>  $violations  Accumulating breach list.
+     * @param   EntityTypeDefinition                              $definition  Definition supplying the rules to apply.
+     * @param array<string, mixed> $values Normalized value set to judge, keyed by handle.
+     * @param   list<ValidationViolation>                         $violations  Accumulating breach list.
+     * @param   ?array<string, list<array<string, scalar|null>>>  $lines       Owned-line collections an
+     *          aggregate invariant reduces, or null to suspend those invariants.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    private function validate(EntityTypeDefinition $definition, array $values, array &$violations): void
-    {
+    private function validate(
+        EntityTypeDefinition $definition,
+        array $values,
+        array &$violations,
+        ?array $lines,
+    ): void {
         $normalizationFailures = [];
         foreach ($violations as $violation) {
             if ($violation->code === 'invalid_type') {
@@ -650,20 +673,28 @@ final readonly class RecordRuleValidator
                 }
             }
         }
-        $this->validateInvariants($definition, $values, $violations);
+        $this->validateInvariants($definition, $values, $violations, $lines);
     }
 
     /**
-     * Evaluate the definition's cross-field invariants over the assembled value set.
+     * Evaluate the definition's cross-field invariants over the assembled value set and its owned lines.
      *
      * A rule that reads false is reported against its own handle, carrying the definition's operator
      * wording and the code `invariant.<handle>` so a client can tell which rule failed. A rule that
-     * cannot be evaluated at all — a dependency the record does not carry, a value contradicting the
-     * declared type — becomes an `invariant_invalid` breach instead of escaping as a fault.
+     * cannot be evaluated at all — a dependency the record does not carry, a collection the caller never
+     * gathered, a value contradicting the declared type — becomes an `invariant_invalid` breach instead of
+     * escaping as a fault. The error identifies the invariant and never a row, because a document rule is
+     * broken by the document rather than by whichever line happens to be last.
      *
-     * @param   EntityTypeDefinition       $definition  Definition supplying the invariants.
-     * @param   array<string, mixed>       $values      Normalized value set the conditions read.
-     * @param   list<ValidationViolation>  $violations  Accumulating breach list.
+     * The whole pass runs once for the command, over the prepared collection the write is about to store,
+     * so a thousand-line document is judged once and not a thousand times.
+     *
+     * @param   EntityTypeDefinition                              $definition  Definition supplying the invariants.
+     * @param   array<string, mixed>                              $values      Normalized value set the conditions read.
+     * @param   list<ValidationViolation>                         $violations  Accumulating breach list.
+     * @param   ?array<string, list<array<string, scalar|null>>>  $lines       Owned-line collections keyed by
+     *          relationship handle; null suspends every invariant that reduces one, and is only correct
+     *          for a caller that changes neither the header values a rule reads nor the collection itself.
      *
      * @return  void
      *
@@ -673,26 +704,92 @@ final readonly class RecordRuleValidator
         EntityTypeDefinition $definition,
         array $values,
         array &$violations,
+        ?array $lines,
     ): void {
         foreach ($definition->recordInvariants() as $invariant) {
-            try {
-                $satisfied = $invariant->isSatisfied(RecordExpressionValues::from($values));
-            } catch (InvalidArgumentException $exception) {
-                $violations[] = new ValidationViolation(
-                    $invariant->handle,
-                    'invariant_invalid',
-                    $exception->getMessage(),
-                );
+            if ($lines === null && $invariant->lineDependencies() !== []) {
                 continue;
             }
-            if (!$satisfied) {
-                $violations[] = new ValidationViolation(
-                    $invariant->handle,
-                    'invariant.' . $invariant->handle,
-                    $invariant->message,
-                );
+            $violation = $this->judgeInvariant($invariant, $values, $lines ?? []);
+            if ($violation !== null) {
+                $violations[] = $violation;
             }
         }
+    }
+
+    /**
+     * Judge only the invariants that reduce an owned-line collection, over the collection as it now stands.
+     *
+     * This is the seam a command that changes a collection without touching the header reaches for — one
+     * line linked, one line detached — because the rule that spans the document has moved even though not
+     * one header value did. Field rules are deliberately not re-run: they judged these values when they
+     * were written and nothing here has changed them, so re-reporting them would turn an unrelated,
+     * pre-existing condition into the reason a link was refused.
+     *
+     * @param   EntityTypeDefinition                             $definition  Definition supplying the rules.
+     * @param   array<string, mixed>                             $values      Stored header values as they
+     *          now stand, keyed by field handle.
+     * @param   array<string, list<array<string, scalar|null>>>  $lines       Owned-line collections keyed by
+     *          relationship handle, gathered after the write so the rule is judged on the new state.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordValidationFailed  When any aggregate invariant is breached or cannot be
+     *          evaluated; it carries every breach the pass found.
+     *
+     * @since   2.0.0
+     */
+    public function assertLineAggregates(EntityTypeDefinition $definition, array $values, array $lines): void
+    {
+        $violations = [];
+        foreach ($definition->recordInvariants() as $invariant) {
+            if ($invariant->lineDependencies() === []) {
+                continue;
+            }
+            $violation = $this->judgeInvariant($invariant, $values, $lines);
+            if ($violation !== null) {
+                $violations[] = $violation;
+            }
+        }
+        $this->throwIfInvalid($violations);
+    }
+
+    /**
+     * Evaluate one invariant and describe the breach it produced, if any.
+     *
+     * A rule that reads false is reported against its own handle with the definition's own wording; a rule
+     * that cannot be evaluated at all becomes an `invariant_invalid` breach rather than escaping as a
+     * fault, so a definition that declares a rule this input cannot satisfy is refused rather than crashing.
+     *
+     * @param   RecordInvariantDefinition                        $invariant  Rule to judge.
+     * @param   array<string, mixed>                             $values     Normalized values the condition
+     *          reads, flattened here into the expression vocabulary.
+     * @param   array<string, list<array<string, scalar|null>>>  $lines      Owned-line collections the rule
+     *          may reduce, keyed by relationship handle.
+     *
+     * @return  ?ValidationViolation  The breach, or null when the record honours the rule.
+     *
+     * @since   2.0.0
+     */
+    private function judgeInvariant(
+        RecordInvariantDefinition $invariant,
+        array $values,
+        array $lines,
+    ): ?ValidationViolation {
+        try {
+            $satisfied = $invariant->isSatisfied(RecordExpressionValues::from($values), $lines);
+        } catch (InvalidArgumentException $exception) {
+            return new ValidationViolation($invariant->handle, 'invariant_invalid', $exception->getMessage());
+        }
+        if ($satisfied) {
+            return null;
+        }
+
+        return new ValidationViolation(
+            $invariant->handle,
+            'invariant.' . $invariant->handle,
+            $invariant->message,
+        );
     }
 
     /**

@@ -29,6 +29,7 @@ use Kumwe\CMS\BusinessRecord\Application\RecordFieldVisibility;
 use Kumwe\CMS\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\CMS\BusinessRecord\Application\StoredOwnedLine;
 use Kumwe\CMS\BusinessRecord\Application\StoredRecordIdentity;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
@@ -1586,6 +1587,83 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $lineDefinition->definitionVersion,
             $this->integer($row, $this->physical($table, 'version')),
         );
+    }
+
+    /**
+     * Read one owner's whole owned-line collection in position order, unfiltered by actor row policy.
+     *
+     * One statement returns the collection, because a document write and a document rule both need it
+     * whole and neither can afford a query per line. Rows are decoded against the pinned line definition
+     * and their virtual computations rebuilt, so a rule that reduces a computed line field reads the same
+     * value a reader would. No access predicate is compiled into the statement, deliberately: the caller
+     * is replacing or judging the collection that exists, and it is the caller that must hold each line
+     * against the relationship's row policy and refuse the command rather than quietly work on a subset.
+     *
+     * @param   ResolvedBusinessDefinition  $owner         Owner definition whose installation carries the
+     *          line table for this relationship.
+     * @param   BusinessRecord              $ownerRecord   Owner record whose collection is read.
+     * @param   RelationshipDefinition      $relationship  Owned-line relationship naming that table.
+     * @param   ResolvedBusinessDefinition  $lineResolved  Pinned line definition the rows decode against.
+     * @param   int                         $limit         Largest number of rows to return.
+     *
+     * @return  list<StoredOwnedLine>  The collection in position then storage-key order.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the installation carries no line table for the
+     *          relationship, or the table lacks a column this read names.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
+     *          decoded line's virtual computations cannot be rebuilt.
+     * @throws  InvalidArgumentException  When a stored line key, identity or version is malformed.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read, or the platform to quote
+     *          identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
+     */
+    public function ownedLinesForDocumentIntegrity(
+        ResolvedBusinessDefinition $owner,
+        BusinessRecord $ownerRecord,
+        RelationshipDefinition $relationship,
+        ResolvedBusinessDefinition $lineResolved,
+        int $limit,
+    ): array {
+        if ($relationship->kind !== RelationshipKind::OwnedLineCollection) {
+            throw new BusinessRecordSchemaUnavailable('Only an owned-line collection carries document lines.');
+        }
+        $table = $owner->installation->blueprint->table('line:' . $relationship->handle)
+            ?? throw new BusinessRecordSchemaUnavailable('The installed owned-line table is unavailable.');
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT r0.* FROM %s r0 WHERE r0.%s = ? ORDER BY r0.%s, r0.%s LIMIT %d',
+            $this->quote($table->physicalName),
+            $this->quote($this->physical($table, 'owner_id')),
+            $this->quote($this->physical($table, 'position')),
+            $this->quote($this->physical($table, 'line_id')),
+            max(1, $limit),
+        ), [$ownerRecord->recordKey], [$this->type($table, 'owner_id')]);
+        $lines = [];
+        foreach ($rows as $row) {
+            $recordKey = $this->string($row, $this->physical($table, 'line_id'));
+            $values = $this->values->decodeColumns(
+                $lineResolved->definition,
+                $table,
+                $row,
+                $lineResolved->definition->siteIdentifier,
+                $recordKey,
+            );
+            $values = $this->rules->materialize(
+                $lineResolved->definition,
+                $values,
+                $lineResolved->definition->siteIdentifier,
+                $recordKey,
+            );
+            $lines[] = new StoredOwnedLine(
+                $recordKey,
+                $this->values->publicIdentity($lineResolved->definition, $recordKey, $values),
+                $this->integer($row, $this->physical($table, 'position')),
+                $this->integer($row, $this->physical($table, 'version')),
+                $values,
+            );
+        }
+
+        return $lines;
     }
 
     /**

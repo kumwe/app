@@ -11,6 +11,7 @@ use Joomla\DI\Container;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Automation\IdempotencyKey;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
@@ -25,6 +26,7 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -62,6 +64,15 @@ final class NeutralBusinessFixture
     public const SECOND_RECORD_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8244e12';
 
     public const BACKUP_GRAPH_SUFFIX = 'backupgraph';
+
+    /**
+     * Stable suffix the site-owned document fixture installs under, so one pair serves every case.
+     *
+     * A definition is a schema plan and a bounded per-site resource, so a suite that installs the same
+     * document shape once per test method pays for it twice over. Records are kept apart by their own
+     * identities instead.
+     */
+    public const DOCUMENT_SUFFIX = 'aggdoc';
 
     public const TARGET_DEFINITION_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8244e20';
 
@@ -666,6 +677,194 @@ final class NeutralBusinessFixture
         ];
     }
 
+    /**
+     * Line entity of the neutral document fixture: a description, a unique code and an exact amount.
+     *
+     * The code is unique so a test can force a collision partway through a batched insert and prove that
+     * a document refused on its nine hundredth line leaves nothing behind.
+     *
+     * @return array<string, mixed>
+     */
+    public static function documentLineDocument(
+        string $suffix,
+        string $definitionId,
+        ?string $extensionIdentifier = null,
+    ): array {
+        self::assertGraphIdentity($suffix, $definitionId);
+
+        return [
+            'id' => $definitionId,
+            'owner' => self::documentOwner($extensionIdentifier),
+            'site' => 'default',
+            'handle' => self::documentHandle('doc_line', $suffix, $extensionIdentifier),
+            'singular_label' => 'Document line',
+            'plural_label' => 'Document lines',
+            'status' => 'draft',
+            'definition_version' => 0,
+            'storage_mode' => 'relational',
+            'identity_strategy' => 'uuid',
+            'scope' => 'site',
+            'audit_enabled' => true,
+            'revisions_enabled' => true,
+            'fields' => [
+                self::identityField(),
+                [
+                    'handle' => 'code',
+                    'label' => 'Code',
+                    'type' => 'core.text',
+                    'required' => true,
+                    'nullable' => false,
+                    'length' => 80,
+                    'unique' => true,
+                    'indexed' => true,
+                    'filterable' => true,
+                ],
+                [
+                    'handle' => 'description',
+                    'label' => 'Description',
+                    'type' => 'core.text',
+                    'required' => true,
+                    'nullable' => false,
+                    'length' => 160,
+                    'filterable' => true,
+                ],
+                [
+                    'handle' => 'amount',
+                    'label' => 'Amount',
+                    'type' => 'core.decimal',
+                    'required' => true,
+                    'nullable' => false,
+                    'precision' => 18,
+                    'scale' => 2,
+                    'reportable' => true,
+                ],
+            ],
+            'relationships' => [],
+            'views' => [self::listView('Document lines', ['code', 'description', 'amount'])],
+            'actions' => [],
+            'workflow' => null,
+            'compatibility_metadata' => [],
+            'administrator_exposure' => true,
+            'portal_exposure' => false,
+            'public_exposure' => false,
+        ];
+    }
+
+    /**
+     * Header entity of the neutral document fixture, optionally declaring the rules that span its lines.
+     *
+     * With the aggregate invariants declared this is the vertical-neutral shape every document-shaped
+     * business object has: a total that must agree with its lines, and a bounded line count. Nothing here
+     * names an invoice, an order or any other vertical, which is the point.
+     *
+     * @return array<string, mixed>
+     */
+    public static function documentHeaderDocument(
+        string $suffix,
+        string $definitionId,
+        string $lineHandle,
+        ?string $extensionIdentifier = null,
+        bool $withAggregateInvariants = true,
+        int $maximumLines = 1000,
+    ): array {
+        self::assertGraphIdentity($suffix, $definitionId);
+        $document = [
+            'id' => $definitionId,
+            'owner' => self::documentOwner($extensionIdentifier),
+            'site' => 'default',
+            'handle' => self::documentHandle('doc_header', $suffix, $extensionIdentifier),
+            'singular_label' => 'Document',
+            'plural_label' => 'Documents',
+            'status' => 'draft',
+            'definition_version' => 0,
+            'storage_mode' => 'relational',
+            'identity_strategy' => 'uuid',
+            'scope' => 'site',
+            'audit_enabled' => true,
+            'revisions_enabled' => true,
+            'soft_delete_enabled' => false,
+            'fields' => [
+                self::identityField(),
+                [
+                    'handle' => 'title',
+                    'label' => 'Title',
+                    'type' => 'core.text',
+                    'required' => true,
+                    'nullable' => false,
+                    'length' => 160,
+                    'filterable' => true,
+                    'sortable' => true,
+                ],
+                [
+                    'handle' => 'total',
+                    'label' => 'Total',
+                    'type' => 'core.decimal',
+                    'required' => true,
+                    'nullable' => false,
+                    'precision' => 18,
+                    'scale' => 2,
+                    'reportable' => true,
+                ],
+            ],
+            'relationships' => [[
+                'handle' => 'lines',
+                'label' => 'Lines',
+                'kind' => 'owned_line_collection',
+                'target' => $lineHandle,
+                'ordered' => true,
+                'on_delete' => 'cascade',
+            ]],
+            'views' => [self::listView('Documents', ['title', 'total'])],
+            'actions' => [],
+            'workflow' => null,
+            'compatibility_metadata' => [],
+            'administrator_exposure' => true,
+            'portal_exposure' => false,
+            'public_exposure' => false,
+        ];
+        if ($withAggregateInvariants) {
+            $document['record_invariants'] = [
+                [
+                    'handle' => 'total_agrees_with_lines',
+                    'message' => 'The document total must equal the sum of its lines.',
+                    'condition' => [
+                        'op' => 'eq',
+                        'type' => 'boolean',
+                        'args' => [
+                            ['op' => 'field', 'type' => 'decimal', 'field' => 'total'],
+                            [
+                                'op' => 'line_aggregate',
+                                'type' => 'decimal',
+                                'lines' => 'lines',
+                                'field' => 'amount',
+                                'aggregate' => 'sum',
+                            ],
+                        ],
+                    ],
+                ],
+                [
+                    'handle' => 'line_count_within_bounds',
+                    'message' => 'The document carries more lines than it admits.',
+                    'condition' => [
+                        'op' => 'lte',
+                        'type' => 'boolean',
+                        'args' => [
+                            [
+                                'op' => 'line_aggregate',
+                                'type' => 'integer',
+                                'lines' => 'lines',
+                                'aggregate' => 'count',
+                            ],
+                            ['op' => 'literal', 'type' => 'integer', 'value' => $maximumLines],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        return $document;
+    }
+
     /** @return array<string, mixed> */
     public static function relationshipOwnerDocument(
         string $suffix,
@@ -830,6 +1029,93 @@ final class NeutralBusinessFixture
         self::grantRecordAccess($container, $context, $published->definition);
 
         return $published->definition;
+    }
+
+    /**
+     * Publish and install definitions the way an extension package contributes them, not an administrator.
+     *
+     * An administrator may only edit definitions the current site owns, so an extension-owned contract
+     * cannot arrive through the draft-and-publish path at all. This is the real contribution seam: the
+     * package synchronizer publishes the set, the ordinary schema-plan path installs it, and core then
+     * enforces whatever the extension declared without having heard of it.
+     *
+     * @param   Container                   $container             Real integration container.
+     * @param   ExecutionContext            $context              Trusted test actor.
+     * @param   string                      $extensionIdentifier  Owner identifier, as `vendor/package`.
+     * @param   list<array<string, mixed>>  $documents            Canonical definition documents to publish,
+     *          in dependency order.
+     *
+     * @return  list<EntityTypeDefinition>  The published definitions, in the order supplied.
+     */
+    public static function installContributed(
+        Container $container,
+        ExecutionContext $context,
+        string $extensionIdentifier,
+        array $documents,
+    ): array {
+        $synchronizer = $container->get(PackageDefinitionSynchronizer::class);
+        $transactions = $container->get(TransactionManager::class);
+        $schemas = $container->get(BusinessSchemaService::class);
+        if (
+            !$synchronizer instanceof PackageDefinitionSynchronizer
+            || !$transactions instanceof TransactionManager
+            || !$schemas instanceof BusinessSchemaService
+        ) {
+            throw new RuntimeException('The extension contribution fixture services are unavailable.');
+        }
+        $definitions = array_map(
+            static fn (array $document): EntityTypeDefinition => EntityTypeDefinition::fromArray(
+                [...$document, 'status' => 'published', 'definition_version' => 1],
+            ),
+            $documents,
+        );
+        $transactions->transactional(static function () use (
+            $synchronizer,
+            $extensionIdentifier,
+            $context,
+            $definitions,
+        ): void {
+            $synchronizer->synchronize(
+                $extensionIdentifier,
+                '1.0.0',
+                $context->site(),
+                [],
+                $definitions,
+                true,
+                $context->actorId(),
+            );
+        });
+        $wanted = array_map(
+            static fn (EntityTypeDefinition $definition): string => $definition->id,
+            $definitions,
+        );
+        foreach ($schemas->plans($context) as $plan) {
+            if (!in_array($plan->definitionId, $wanted, true)) {
+                continue;
+            }
+            if ($plan->status === SchemaPlanStatus::PendingApproval) {
+                $schemas->approve(
+                    $context,
+                    $plan->id,
+                    $plan->checksum(),
+                    $plan->risk->requiresHighImpactAuthorization() ? $plan->checksum() : null,
+                    null,
+                );
+            }
+            $current = $schemas->plan($context, $plan->id);
+            if ($current->status === SchemaPlanStatus::Approved) {
+                $schemas->execute($context, $current->id);
+            }
+        }
+        foreach ($definitions as $definition) {
+            $installation = $schemas->installation($context, $definition->id);
+            if ($installation?->status !== SchemaInstallationStatus::Active) {
+                throw new RuntimeException('A contributed fixture definition did not become active.');
+            }
+            self::grantRecordAccess($container, $context, $definition);
+        }
+
+        return $definitions;
     }
 
     /**
@@ -1200,6 +1486,33 @@ final class NeutralBusinessFixture
             'line_record_ids' => [self::LINE_RECORD_ID, self::SECOND_LINE_RECORD_ID],
             'owner_version' => $version,
         ];
+    }
+
+    /**
+     * Owner block for a document fixture, so the same shape can be declared by the site or an extension.
+     *
+     * @return array<string, string>
+     */
+    private static function documentOwner(?string $extensionIdentifier): array
+    {
+        if ($extensionIdentifier === null) {
+            return ['type' => 'site', 'identifier' => 'default'];
+        }
+        if (preg_match('#^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$#D', $extensionIdentifier) !== 1) {
+            throw new RuntimeException('A neutral document fixture extension identifier is invalid.');
+        }
+
+        return ['type' => 'extension', 'identifier' => $extensionIdentifier];
+    }
+
+    /** Namespaced handle for a document fixture, under the site or under the contributing extension. */
+    private static function documentHandle(string $name, string $suffix, ?string $extensionIdentifier): string
+    {
+        if ($extensionIdentifier === null) {
+            return 'site.default.' . $name . '_' . $suffix;
+        }
+
+        return str_replace('/', '.', $extensionIdentifier) . '.' . $name;
     }
 
     /** @return array<string, mixed> */

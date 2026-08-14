@@ -31,12 +31,15 @@ use Kumwe\CMS\BusinessIntegration\Application\BusinessRecordMutationEventPublish
 use Kumwe\CMS\BusinessRecord\Application\Command\ArchiveRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\DocumentLineInput;
+use Kumwe\CMS\BusinessRecord\Application\Command\DocumentWriteIntent;
 use Kumwe\CMS\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\RelateRecordsCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\RestoreRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\UnrelateRecordsCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\WriteDocumentCommand;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
@@ -257,6 +260,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $recordKey,
                         $recordId,
                         $this->allocateNumbers($resolved, $scope, $now),
+                        $this->invariantLineValues($command->context, $resolved, null),
                     );
                 } catch (BusinessRecordValidationFailed $exception) {
                     throw $this->validationForAccess(
@@ -763,6 +767,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $resolved->definition->siteIdentifier,
                         $record->recordKey,
                         $record->recordId,
+                        $this->invariantLineValues($command->context, $resolved, $record),
                     );
                 } catch (BusinessRecordValidationFailed $exception) {
                     throw $this->validationForAccess(
@@ -1386,6 +1391,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $lineValues,
                 );
                 $updated = $write->source;
+                $this->assertAggregateInvariants($command->context, $resolved, $updated);
                 $this->recordMutation(
                     $command->context,
                     $resolved,
@@ -1547,6 +1553,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $target,
                 );
                 $updated = $write->source;
+                $this->assertAggregateInvariants($command->context, $resolved, $updated);
                 $this->recordMutation(
                     $command->context,
                     $resolved,
@@ -1722,6 +1729,89 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     }
 
     /**
+     * Write one whole document — a header and the owned lines belonging to it — as a single command.
+     *
+     * This is the primitive every document-shaped business object is built on, and core owns the write
+     * without owning a single rule about what the document means. Header and lines are settled together
+     * and committed together: there is no instant at which a reader can see a header without its lines, or
+     * lines whose header has already moved on, because both halves and the revision, the audit entry and
+     * the event that describe them share the one transaction the definition's exclusive fence is held for.
+     * Anything that refuses — a field rule, an aggregate invariant, a stale version, a unique collision on
+     * the nine hundredth line — takes the whole document with it and leaves no row behind.
+     *
+     * The line list is the collection as it is to end up, not a set of edits: a line naming an identity the
+     * document holds is amended, a line naming none is added, a stored line the list does not name is
+     * removed, and each line's slot is its index in the list. Positions are therefore dense and unique by
+     * construction rather than by convention, and identity is meaningful only inside the document.
+     *
+     * Concurrency is settled at the document, not the line. `$command->expectedVersion` is the header's
+     * version and every line write is guarded by it, so two callers amending one document contend for one
+     * value: the second to arrive is refused as a stale conflict rather than interleaved into a document
+     * neither of them wrote.
+     *
+     * What a write costs is bounded by the change rather than by the collection. A create issues one
+     * batched insert per hundred lines; an amend additionally reads the collection once, deletes what the
+     * document dropped in batches, and writes an existing line only when its values or its slot actually
+     * moved — so resubmitting a document unchanged writes nothing at all, and an aggregate invariant is
+     * evaluated once for the command rather than once per line.
+     *
+     * @param   WriteDocumentCommand  $command  Validated document write: context, header type and values,
+     *          the owned-line collection and its whole line list, intent, expected aggregate version,
+     *          identity, idempotency key and organization scope.
+     *
+     * @return  RecordMutationResult  Keys, the aggregate's new version and the header's workflow state;
+     *          `replayed` is true when an earlier command under the same key wrote this document and
+     *          nothing was written now.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create or
+     *          update business records, or may not relate them.
+     * @throws  BusinessRecordValidationFailed  When a header field rule, a line field rule or a record
+     *          invariant — including one that reduces the whole collection — is breached.
+     * @throws  BusinessRelationshipRejected  When the named relationship is not an owned-line collection,
+     *          the collection is larger than one command may write, the line type declares an aggregate
+     *          invariant of its own, or a line moved while the document was being written.
+     * @throws  BusinessRecordVersionConflict  When the document moved past the version the caller read.
+     * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
+     *          authority, has expired, or its stored entry cannot be replayed.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the installation moved between resolve and lock,
+     *          the database refused the write transiently, or three idempotency races were lost.
+     *
+     * @since   2.0.0
+     */
+    public function writeDocument(WriteDocumentCommand $command): RecordMutationResult
+    {
+        $creating = $command->intent === DocumentWriteIntent::Create;
+        $this->authorize($command->context, $creating ? 'business.record.create' : 'business.record.update');
+        $this->authorize($command->context, 'business.record.relate');
+
+        return $this->idempotent(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->organizationIdentifier,
+            'business.record.document_' . $command->intent->value,
+            $command->idempotencyKey,
+            [
+                'definition' => $command->definitionIdentifier,
+                'record_id' => $command->recordId,
+                'expected_version' => $command->expectedVersion,
+                'relationship' => $command->relationship,
+                'values' => $command->values,
+                'lines' => array_map(
+                    static fn (DocumentLineInput $line): array => [
+                        'record_id' => $line->recordId,
+                        'values' => $line->values,
+                    ],
+                    $command->lines,
+                ),
+            ],
+            fn (
+                DateTimeImmutable $now,
+                BusinessRecordMutationGeneration $generation,
+            ): RecordMutationResult => $this->applyDocument($command, $now, $generation),
+        );
+    }
+
+    /**
      * Read one bounded, newest-first window of a record's revision log.
      *
      * History outlives both the row and the record type, so this is the only operation that fences and
@@ -1887,6 +1977,668 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
 
             return new RecordHistoryResult($views, $hasMore);
         });
+    }
+
+    /**
+     * Settle and apply one whole document inside the claim, the fence and the transaction already held.
+     *
+     * The order of what happens here is the contract. Everything is decided before anything is written:
+     * the header is resolved or loaded and its version proved, the collection is read once, every line is
+     * validated against the line type, the whole prepared collection is held against the definition's
+     * aggregate invariants, and only then does the first statement run. That is what makes a refusal on
+     * the last line indistinguishable from a refusal on the first — neither leaves a row.
+     *
+     * The header is written before the lines, always, so the row locks a document takes are taken in one
+     * stable order however many lines it carries, and the header's compare-and-set is the single point
+     * where two concurrent amendments are separated.
+     *
+     * @param   WriteDocumentCommand              $command     Validated document write being applied.
+     * @param   DateTimeImmutable                 $now         Instant stamped on every row this writes.
+     * @param   BusinessRecordMutationGeneration  $generation  Generation the fence observed, asserted
+     *          against every definition this resolves.
+     *
+     * @return  RecordMutationResult  Keys, the aggregate's new version and the header's workflow state.
+     *
+     * @throws  BusinessRecordValidationFailed  When a header field rule, a line field rule or a record
+     *          invariant is breached.
+     * @throws  BusinessRelationshipRejected  When the relationship is not an owned-line collection, the
+     *          stored collection overflows what one command may write, the line type declares an aggregate
+     *          invariant of its own, or two lines claim one identity.
+     * @throws  BusinessRecordNotFound  When the actor's row policy hides the collection, one of its stored
+     *          lines, or a line the command would write.
+     * @throws  BusinessRecordVersionConflict  When the document moved past the version the caller read.
+     *
+     * @since   2.0.0
+     */
+    private function applyDocument(
+        WriteDocumentCommand $command,
+        DateTimeImmutable $now,
+        BusinessRecordMutationGeneration $generation,
+    ): RecordMutationResult {
+        $creating = $command->intent === DocumentWriteIntent::Create;
+        $operation = $creating ? 'business.record.create' : 'business.record.update';
+        $header = null;
+        if ($creating) {
+            $resolved = $this->definitions->forCreate($command->context, $command->definitionIdentifier);
+            $generation->assertMatches($resolved);
+            $scope = $this->scope($resolved, $command->context, $command->organizationIdentifier);
+            $access = $this->recordAccess->plan($command->context, $operation, $resolved, $scope);
+        } else {
+            [$resolved, $scope, $header, $access] = $this->load(
+                $command->context,
+                $command->definitionIdentifier,
+                (string) $command->recordId,
+                $command->organizationIdentifier,
+                $operation,
+                generation: $generation,
+            );
+            $this->expected($header, (int) $command->expectedVersion);
+        }
+        $relationship = $this->relationship($resolved->definition, $command->relationship);
+        if ($relationship->kind !== RelationshipKind::OwnedLineCollection) {
+            throw new BusinessRelationshipRejected('A document is written over a declared owned-line collection.');
+        }
+        $relatedAccess = $access->related($relationship->handle) ?? throw new BusinessRecordNotFound();
+        $lineResolved = $this->lineDefinition($command->context, $resolved, $relationship);
+        $lineDefinition = $lineResolved->definition;
+        if ($lineDefinition->invariantLineDependencies() !== []) {
+            throw new BusinessRelationshipRejected(
+                'A line type declaring its own aggregate invariant needs a command that writes its lines too.',
+            );
+        }
+        $this->assertPortalTargetOperation($command->context, $lineDefinition, PortalOperation::Relation);
+        $this->assertRelatedTargetAccess($lineDefinition, $relatedAccess);
+        $stored = $this->storedDocumentLines($resolved, $header, $relationship, $lineResolved, $relatedAccess);
+        [$prepared, $removed, $renumber] = $this->prepareDocumentLines(
+            $command,
+            $scope,
+            $relatedAccess,
+            $lineDefinition,
+            $stored,
+        );
+        $collections = $this->invariantLineValues($command->context, $resolved, $header, [
+            $relationship->handle => array_map(
+                static fn (OwnedLineWrite $line): array => RecordExpressionValues::from($line->values),
+                $prepared,
+            ),
+        ]);
+        [$record, $changed] = $creating
+            ? $this->createDocumentHeader($command, $resolved, $scope, $access, $collections, $now)
+            : $this->amendDocumentHeader($command, $resolved, $scope, $access, $header, $collections, $now);
+        $this->writes->writeOwnedLines(
+            $resolved,
+            $record,
+            $relationship,
+            $lineDefinition,
+            $prepared,
+            $removed,
+            $renumber,
+            $command->context->actorId(),
+            $now,
+        );
+        $this->recordMutation(
+            $command->context,
+            $resolved,
+            $record,
+            'document.' . $command->intent->value,
+            [...$changed, $relationship->handle],
+            $now,
+            $this->documentEvidence($relationship->handle, $prepared, $removed),
+        );
+
+        return $this->result($record, 'document.' . $command->intent->value);
+    }
+
+    /**
+     * Read the document's stored collection whole, and refuse a caller that cannot see all of it.
+     *
+     * A document command replaces a collection rather than adding to one, so working from a filtered view
+     * of it would silently delete the lines the actor was not shown. The read is therefore unfiltered and
+     * the policy is applied here instead: a stored line the relationship's row policy hides fails the whole
+     * command closed, which is the only safe answer when the alternative is destroying data invisibly.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved       Pinned header definition and its installation.
+     * @param   ?BusinessRecord             $header         Document being amended, or null while creating.
+     * @param   RelationshipDefinition      $relationship   Owned-line collection being written.
+     * @param   ResolvedBusinessDefinition  $lineResolved   Pinned line definition the rows decode against.
+     * @param   BusinessRecordAccessPlan    $relatedAccess  Row and field policy for the collection.
+     *
+     * @return  array<string, StoredOwnedLine>  Stored lines keyed by caller-facing identity; empty while
+     *          creating, because a document that does not exist holds nothing.
+     *
+     * @throws  BusinessRelationshipRejected  When the stored collection is larger than one command may
+     *          write, so an amend could not describe it whole.
+     * @throws  BusinessRecordNotFound  When the row policy hides one of the stored lines.
+     *
+     * @since   2.0.0
+     */
+    private function storedDocumentLines(
+        ResolvedBusinessDefinition $resolved,
+        ?BusinessRecord $header,
+        RelationshipDefinition $relationship,
+        ResolvedBusinessDefinition $lineResolved,
+        BusinessRecordAccessPlan $relatedAccess,
+    ): array {
+        if ($header === null) {
+            return [];
+        }
+        $rows = $this->reads->ownedLinesForDocumentIntegrity(
+            $resolved,
+            $header,
+            $relationship,
+            $lineResolved,
+            WriteDocumentCommand::MAXIMUM_LINES + 1,
+        );
+        if (count($rows) > WriteDocumentCommand::MAXIMUM_LINES) {
+            throw new BusinessRelationshipRejected('The stored document holds more lines than one command may write.');
+        }
+        $stored = [];
+        foreach ($rows as $row) {
+            if (!$relatedAccess->records->allows($row->values)) {
+                throw new BusinessRecordNotFound();
+            }
+            $stored[$row->recordId] = $row;
+        }
+
+        return $stored;
+    }
+
+    /**
+     * Turn the submitted line list into the collection the write side will store.
+     *
+     * Position comes from the list rather than from the caller, which is what makes two lines in one slot
+     * impossible and a hole in the numbering impossible with it. Identity decides the rest: a line whose
+     * identity the document already holds is amended in place and keeps its storage key, one whose identity
+     * it does not is added, and every stored line the list never names is removed. A line that comes back
+     * spelled exactly as it was stored, in the slot it already held, is marked unmodified and costs no
+     * statement at all.
+     *
+     * @param   WriteDocumentCommand            $command         Document write being prepared.
+     * @param   RecordScope                     $scope           Resolved site and organization the lines
+     *          inherit from their owner.
+     * @param   BusinessRecordAccessPlan        $relatedAccess   Row and field policy for the collection.
+     * @param   EntityTypeDefinition            $lineDefinition  Pinned line type every line is judged
+     *          against.
+     * @param   array<string, StoredOwnedLine>  $stored          Stored collection keyed by line identity.
+     *
+     * @return  array{list<OwnedLineWrite>, list<string>, bool}  The whole collection in position order, the
+     *          storage keys the document no longer holds, and whether any surviving line moved and the
+     *          order therefore has to be rewritten in two passes.
+     *
+     * @throws  BusinessRelationshipRejected  When a line identity cannot be settled, or two lines resolve
+     *          to one identity.
+     * @throws  BusinessRecordValidationFailed  When a line breaks one of its own type's field rules.
+     * @throws  BusinessRecordNotFound  When the row policy would hide a line the command writes.
+     *
+     * @since   2.0.0
+     */
+    private function prepareDocumentLines(
+        WriteDocumentCommand $command,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $relatedAccess,
+        EntityTypeDefinition $lineDefinition,
+        array $stored,
+    ): array {
+        $prepared = [];
+        $claimed = [];
+        $renumber = false;
+        foreach ($command->lines as $position => $line) {
+            try {
+                $lineId = $this->values->identity($lineDefinition, $line->values, $line->recordId);
+            } catch (InvalidArgumentException $exception) {
+                throw new BusinessRelationshipRejected($exception->getMessage());
+            }
+            if (isset($claimed[$lineId])) {
+                throw new BusinessRelationshipRejected('A document names one line identity more than once.');
+            }
+            $claimed[$lineId] = true;
+            $existing = $stored[$lineId] ?? null;
+            if ($existing !== null && $existing->position !== $position) {
+                $renumber = true;
+            }
+            $prepared[] = $this->prepareDocumentLine(
+                $command->context,
+                $scope,
+                $relatedAccess,
+                $lineDefinition,
+                $line,
+                $lineId,
+                $position,
+                $existing,
+            );
+        }
+        if ($renumber) {
+            $prepared = array_map(
+                static fn (OwnedLineWrite $line): OwnedLineWrite => $line->storedVersion === null || $line->modified
+                    ? $line
+                    : new OwnedLineWrite(
+                        $line->recordKey,
+                        $line->recordId,
+                        $line->position,
+                        $line->values,
+                        $line->storedVersion,
+                        true,
+                    ),
+                $prepared,
+            );
+        }
+        $removed = [];
+        foreach ($stored as $identity => $row) {
+            if (!isset($claimed[$identity])) {
+                $removed[] = $row->recordKey;
+            }
+        }
+
+        return [$prepared, $removed, $renumber];
+    }
+
+    /**
+     * Validate one submitted line against the line type and decide whether it has to be written at all.
+     *
+     * A line already in the document is treated as a patch over what it holds, exactly as an ordinary
+     * record update would be, so a caller may resend only the handles that moved. A line being added is
+     * validated as a creation. Either way the result is held against the collection's own row policy
+     * before it is accepted, so a caller cannot write a line into a document it would not be shown.
+     *
+     * @param   ExecutionContext          $context         Actor and site the write runs as.
+     * @param   RecordScope               $scope           Scope entity references are resolved within.
+     * @param   BusinessRecordAccessPlan  $relatedAccess   Row and field policy for the collection.
+     * @param   EntityTypeDefinition      $lineDefinition  Pinned line type the values are judged against.
+     * @param   DocumentLineInput         $line            Submitted line.
+     * @param   string                    $lineId          Caller-facing identity settled for the line.
+     * @param   int                       $position        Slot the line takes, being its index in the list.
+     * @param   ?StoredOwnedLine          $existing        The stored line this one replaces, or null when
+     *          the document is gaining it now.
+     *
+     * @return  OwnedLineWrite  The prepared line, carrying the storage key, the slot, the normalized values
+     *          and whether the row actually has to move.
+     *
+     * @throws  BusinessRecordValidationFailed  When the line breaks one of its type's field rules, or names
+     *          a field the actor may not write.
+     * @throws  BusinessRecordNotFound  When the collection's row policy would hide the resulting line.
+     *
+     * @since   2.0.0
+     */
+    private function prepareDocumentLine(
+        ExecutionContext $context,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $relatedAccess,
+        EntityTypeDefinition $lineDefinition,
+        DocumentLineInput $line,
+        string $lineId,
+        int $position,
+        ?StoredOwnedLine $existing,
+    ): OwnedLineWrite {
+        $usage = $existing === null ? FieldAccessUsage::Create : FieldAccessUsage::Update;
+        $this->assertFieldInput($relatedAccess, $usage, array_keys($line->values));
+        $recordKey = $existing->recordKey
+            ?? ($lineDefinition->identityStrategy === IdentityStrategy::Uuid
+                ? $lineId
+                : Uuid::uuid7()->toString());
+        try {
+            $values = $existing === null
+                ? $this->rules->create(
+                    $lineDefinition,
+                    $line->values,
+                    $lineDefinition->siteIdentifier,
+                    $recordKey,
+                    $lineId,
+                )
+                : $this->rules->update(
+                    $lineDefinition,
+                    $existing->values,
+                    $line->values,
+                    $lineDefinition->siteIdentifier,
+                    $recordKey,
+                    $lineId,
+                );
+        } catch (BusinessRecordValidationFailed $exception) {
+            throw $this->validationForAccess($exception, $context, $lineDefinition, $relatedAccess, $usage);
+        }
+        $values = $this->resolveEntityReferences(
+            $context,
+            $lineDefinition,
+            $scope,
+            $relatedAccess,
+            $values,
+            $existing === null ? array_keys($values) : array_keys($line->values),
+        );
+        if (!$relatedAccess->records->allows($values)) {
+            throw new BusinessRecordNotFound();
+        }
+
+        return new OwnedLineWrite(
+            $recordKey,
+            $lineId,
+            $position,
+            $values,
+            $existing?->version,
+            $existing === null
+                || $existing->position !== $position
+                || $this->changed($existing->values, $values) !== [],
+        );
+    }
+
+    /**
+     * Write the header of a document being created and report which of its fields the trail should name.
+     *
+     * This is the create path of the ordinary record command, reached with the collection already prepared
+     * so the definition's aggregate invariants are judged against the lines this same command is about to
+     * store rather than against nothing.
+     *
+     * @param   WriteDocumentCommand                             $command      Document write being applied.
+     * @param ResolvedBusinessDefinition $resolved Pinned header definition and its installation.
+     * @param RecordScope $scope Resolved site and organization for the document.
+     * @param BusinessRecordAccessPlan $access Header row and field policy for the create.
+     * @param   array<string, list<array<string, scalar|null>>>  $collections  Owned-line collections the
+     *          definition's invariants reduce, as this command will leave them.
+     * @param   DateTimeImmutable                                $now          Instant stamped on the header row.
+     *
+     * @return  array{BusinessRecord, list<string>}  The stored header at version one, and the handles the
+     *          revision and audit entry name as changed.
+     *
+     * @throws  BusinessRecordValidationFailed  When the header breaks a field rule or a record invariant,
+     *          including one that reduces the collection.
+     *
+     * @since   2.0.0
+     */
+    private function createDocumentHeader(
+        WriteDocumentCommand $command,
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        array $collections,
+        DateTimeImmutable $now,
+    ): array {
+        $this->assertFieldInput($access, FieldAccessUsage::Create, array_keys($command->values));
+        try {
+            $recordId = $this->values->identity($resolved->definition, $command->values, $command->recordId);
+        } catch (InvalidArgumentException $exception) {
+            throw $this->validationForAccess(
+                new BusinessRecordValidationFailed([
+                    new ValidationViolation(
+                        $this->identityField($resolved->definition)->handle,
+                        'identity',
+                        $exception->getMessage(),
+                    ),
+                ]),
+                $command->context,
+                $resolved->definition,
+                $access,
+                FieldAccessUsage::Create,
+            );
+        }
+        $recordKey = $resolved->definition->identityStrategy === IdentityStrategy::Uuid
+            ? $recordId
+            : Uuid::uuid7()->toString();
+        try {
+            $values = $this->rules->create(
+                $resolved->definition,
+                $command->values,
+                $resolved->definition->siteIdentifier,
+                $recordKey,
+                $recordId,
+                $this->allocateNumbers($resolved, $scope, $now),
+                $collections,
+            );
+        } catch (BusinessRecordValidationFailed $exception) {
+            throw $this->validationForAccess(
+                $exception,
+                $command->context,
+                $resolved->definition,
+                $access,
+                FieldAccessUsage::Create,
+            );
+        }
+        $values = $this->resolveEntityReferences(
+            $command->context,
+            $resolved->definition,
+            $scope,
+            $access,
+            $values,
+            array_keys($values),
+        );
+        $record = new BusinessRecord(
+            $resolved->definition->id,
+            $resolved->definition->definitionVersion,
+            $recordKey,
+            $recordId,
+            $scope,
+            1,
+            $resolved->definition->workflow?->initialState,
+            $values,
+            $command->context->actorId(),
+            $now,
+            $command->context->actorId(),
+            $now,
+        );
+        if (!$access->records->allows($record->values())) {
+            throw new BusinessRecordValidationFailed([
+                new ValidationViolation('record', 'access', 'The submitted record is unavailable.'),
+            ]);
+        }
+        $this->writes->insert($resolved, $record);
+        $this->ownership->record(
+            AuthorizationResource::item('business_record', $this->recordResourceIdentifier($record)),
+            $command->context->site(),
+        );
+
+        return [$record, array_keys($record->values())];
+    }
+
+    /**
+     * Write the header of a document being amended, as a compare-and-set on the version the caller read.
+     *
+     * This single statement is where two concurrent amendments are separated. Both callers may prepare a
+     * whole document against the same version, but only one of them can move the header off it; the other
+     * is refused as a version conflict before any of its lines are written, which is what stops a
+     * line-level change from landing against a header that has already moved on.
+     *
+     * @param   WriteDocumentCommand                             $command      Document write being applied.
+     * @param ResolvedBusinessDefinition $resolved Pinned header definition and its installation.
+     * @param RecordScope $scope Resolved site and organization for the document.
+     * @param BusinessRecordAccessPlan $access Header row and field policy for the update.
+     * @param BusinessRecord $header Document header as it was read, at the version
+     *          the caller expects it to still carry.
+     * @param   array<string, list<array<string, scalar|null>>>  $collections  Owned-line collections the
+     *          definition's invariants reduce, as this command will leave them.
+     * @param   DateTimeImmutable                                $now          Instant stamped on the header row.
+     *
+     * @return  array{BusinessRecord, list<string>}  The header at its new version, and the handles whose
+     *          value actually differs afterwards.
+     *
+     * @throws  BusinessRecordValidationFailed  When the header breaks a field rule or a record invariant,
+     *          including one that reduces the collection.
+     * @throws  BusinessRecordVersionConflict  When the document moved past the version the caller read.
+     *
+     * @since   2.0.0
+     */
+    private function amendDocumentHeader(
+        WriteDocumentCommand $command,
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        BusinessRecord $header,
+        array $collections,
+        DateTimeImmutable $now,
+    ): array {
+        $this->assertFieldInput($access, FieldAccessUsage::Update, array_keys($command->values));
+        try {
+            $values = $this->rules->update(
+                $resolved->definition,
+                $header->values(),
+                $command->values,
+                $resolved->definition->siteIdentifier,
+                $header->recordKey,
+                $header->recordId,
+                $collections,
+            );
+        } catch (BusinessRecordValidationFailed $exception) {
+            throw $this->validationForAccess(
+                $exception,
+                $command->context,
+                $resolved->definition,
+                $access,
+                FieldAccessUsage::Update,
+            );
+        }
+        $values = $this->resolveEntityReferences(
+            $command->context,
+            $resolved->definition,
+            $scope,
+            $access,
+            $values,
+            array_keys($command->values),
+        );
+        $updated = $header->updated($values, $command->context->actorId(), $now);
+        $changed = $this->changed($header->values(), $updated->values());
+        $this->writes->update($resolved, $updated, (int) $command->expectedVersion);
+
+        return [$updated, $changed];
+    }
+
+    /**
+     * Gather the owned-line collections this definition's invariants reduce, without reading the rest.
+     *
+     * A definition that declares no aggregate invariant costs nothing here — no lock, no statement, no
+     * decode — which is what keeps the rule free for the records that do not use it. Where one is
+     * declared, the caller's own prepared collection is preferred over storage, because the rule has to be
+     * judged on the document the command is about to write and not on the one it is replacing.
+     *
+     * @param   ExecutionContext                                 $context   Actor and site the gather runs as.
+     * @param   ResolvedBusinessDefinition                       $resolved  Pinned definition whose invariants name the
+     *          collections.
+     * @param ?BusinessRecord $record Record whose stored collections are read, or null
+     *          while a record is being created and therefore holds none.
+     * @param   array<string, list<array<string, scalar|null>>>  $prepared  Collections the caller has
+     *          already settled, keyed by relationship handle, which win over what is stored.
+     *
+     * @return  array<string, list<array<string, scalar|null>>>  Every collection the invariants name, keyed
+     *          by relationship handle and flattened into the expression vocabulary; empty when none does.
+     *
+     * @throws  BusinessRelationshipRejected  When a stored collection an invariant reduces is larger than
+     *          one command may write, so the rule could not be judged over the whole of it.
+     *
+     * @since   2.0.0
+     */
+    private function invariantLineValues(
+        ExecutionContext $context,
+        ResolvedBusinessDefinition $resolved,
+        ?BusinessRecord $record,
+        array $prepared = [],
+    ): array {
+        $collections = [];
+        foreach (array_keys($resolved->definition->invariantLineDependencies()) as $handle) {
+            if (array_key_exists($handle, $prepared)) {
+                $collections[$handle] = $prepared[$handle];
+                continue;
+            }
+            if ($record === null) {
+                $collections[$handle] = [];
+                continue;
+            }
+            $relationship = $this->relationship($resolved->definition, $handle);
+            $lineResolved = $this->lineDefinition($context, $resolved, $relationship);
+            $rows = $this->reads->ownedLinesForDocumentIntegrity(
+                $resolved,
+                $record,
+                $relationship,
+                $lineResolved,
+                WriteDocumentCommand::MAXIMUM_LINES + 1,
+            );
+            if (count($rows) > WriteDocumentCommand::MAXIMUM_LINES) {
+                throw new BusinessRelationshipRejected(
+                    'A document holds more lines than one aggregate invariant may reduce.',
+                );
+            }
+            $collections[$handle] = array_map(
+                static fn (StoredOwnedLine $row): array => RecordExpressionValues::from($row->values),
+                $rows,
+            );
+        }
+
+        return $collections;
+    }
+
+    /**
+     * Re-judge the aggregate invariants of a record whose collection a single-line write has just changed.
+     *
+     * `relate()` and `unrelate()` move one member of a collection without touching a single header value,
+     * so a rule that spans the document can be broken by them even though the ordinary update path never
+     * runs. The check reads the collection as it now stands, inside the same transaction, so a link that
+     * would leave the document inconsistent takes its own write down with it rather than committing.
+     *
+     * A definition declaring no aggregate invariant reaches no statement here at all.
+     *
+     * @param   ExecutionContext            $context   Actor and site the write ran as.
+     * @param   ResolvedBusinessDefinition  $resolved  Pinned definition supplying the invariants.
+     * @param   BusinessRecord              $record    Record at the version the write produced.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordValidationFailed  When the changed collection breaks an aggregate invariant.
+     * @throws  BusinessRelationshipRejected  When a collection an invariant reduces is larger than one
+     *          command may reduce.
+     *
+     * @since   2.0.0
+     */
+    private function assertAggregateInvariants(
+        ExecutionContext $context,
+        ResolvedBusinessDefinition $resolved,
+        BusinessRecord $record,
+    ): void {
+        if ($resolved->definition->invariantLineDependencies() === []) {
+            return;
+        }
+        $this->rules->assertLineAggregates(
+            $resolved->definition,
+            $record->values(),
+            $this->invariantLineValues($context, $resolved, $record),
+        );
+    }
+
+    /**
+     * Reduce a document write to the bounded summary its revision, audit entry and event carry.
+     *
+     * A thousand-line document produces one entry, and that entry describes the shape of the change rather
+     * than embedding the change: how many lines the document now holds, how many were added, amended and
+     * removed, and one keyed digest over the line identities. The digest is what lets a later request be
+     * compared against what was written without the trail itself holding identities that may be business
+     * references.
+     *
+     * @param   string                $relationship  Owned-line collection the document was written over.
+     * @param   list<OwnedLineWrite>  $lines         The document's whole collection as it was stored.
+     * @param   list<string>          $removed       Storage keys of the lines the document dropped.
+     *
+     * @return  array<string, mixed>  The relationship handle, the four counts, and the identity digest.
+     *
+     * @since   2.0.0
+     */
+    private function documentEvidence(string $relationship, array $lines, array $removed): array
+    {
+        $added = 0;
+        $amended = 0;
+        foreach ($lines as $line) {
+            if ($line->storedVersion === null) {
+                ++$added;
+                continue;
+            }
+            if ($line->modified) {
+                ++$amended;
+            }
+        }
+
+        return [
+            'relationship' => $relationship,
+            'line_count' => count($lines),
+            'lines_added' => $added,
+            'lines_amended' => $amended,
+            'lines_removed' => count($removed),
+            'line_identity_digest' => $this->fingerprints->digest(array_map(
+                static fn (OwnedLineWrite $line): string => $line->recordId,
+                $lines,
+            )),
+        ];
     }
 
     /**
@@ -2121,9 +2873,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * The scope digest binds the key to the site, organization, actor and operation it was presented for,
      * and the entry additionally stores digests of the canonical request and of the caller's authority, so
      * the same key offered for a different request or under different authority is refused rather than
-     * replayed. Claiming the entry, running the effect and completing it share the one transaction that
-     * also holds the definition's exclusive fence, which is what makes an abandoned command roll its claim
-     * back with the work it guarded, and what lets the effect assume the schema cannot move underneath it.
+     * replayed. The ledger's operation name and the policy operation are allowed to differ: an unrelate
+     * and a reorder are authorized as a relate, and a document write as the create or update of its
+     * header, so each command still claims its own key while the policy catalogue keeps its closed set.
+     * Claiming the entry, running the effect and completing it share the one transaction that also holds
+     * the definition's exclusive fence, which is what makes an abandoned command roll its claim back with
+     * the work it guarded, and what lets the effect assume the schema cannot move underneath it.
      *
      * Two failures are retried from the top rather than reported. A lost claim race is retried because the
      * next attempt finds the winner's completed entry and replays it; a transient failure is retried
@@ -2187,11 +2942,16 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $resolved = $this->definitions->forCreate($context, $definitionIdentifier);
                     $generation->assertMatches($resolved);
                     $scope = $this->scope($resolved, $context, $organizationIdentifier);
-                    $policyOperation = in_array(
-                        $operation,
-                        ['business.record.unrelate', 'business.record.reorder'],
-                        true,
-                    ) ? 'business.record.relate' : $operation;
+                    $policyOperation = match (true) {
+                        in_array(
+                            $operation,
+                            ['business.record.unrelate', 'business.record.reorder'],
+                            true,
+                        ) => 'business.record.relate',
+                        $operation === 'business.record.document_create' => 'business.record.create',
+                        $operation === 'business.record.document_amend' => 'business.record.update',
+                        default => $operation,
+                    };
                     $access = $this->recordAccess->plan($context, $policyOperation, $resolved, $scope);
                     $authorizationFingerprint = $this->fingerprints->digest([
                         'context' => $context->authorizationFingerprint(),
@@ -2800,6 +3560,13 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * detail. Any number of violations on unavailable handles collapses to one generic record failure, so
      * neither names nor counts can be recovered from REST, CLI, MCP, or generated form errors.
      *
+     * A breached record invariant is reported as itself rather than collapsed. Its handle and its message
+     * are declared in the published definition and describe a rule, not a value, so they disclose nothing
+     * about the record — and collapsing them would make the operator-facing wording the definition author
+     * wrote unreachable, which is the whole reason a rule carries one. That matters most for the rule that
+     * spans a document: an operator told that a total disagrees with its lines can fix it, while an
+     * operator told that "one or more submitted fields are unavailable" cannot.
+     *
      * @param   BusinessRecordValidationFailed  $failure     Complete trusted validator result.
      * @param   ExecutionContext                $context     Authenticated site and surface.
      * @param   EntityTypeDefinition            $definition  Definition whose immutable flags are ceilings.
@@ -2817,9 +3584,17 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         BusinessRecordAccessPlan $access,
         FieldAccessUsage $usage,
     ): BusinessRecordValidationFailed {
+        $invariants = [];
+        foreach ($definition->recordInvariants() as $invariant) {
+            $invariants[$invariant->handle] = true;
+        }
         $visible = [];
         $withheld = false;
         foreach ($failure->violations as $violation) {
+            if (isset($invariants[$violation->field])) {
+                $visible[] = $violation;
+                continue;
+            }
             $field = $this->optionalField($definition, $violation->field);
             if (
                 $field !== null
