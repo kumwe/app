@@ -44,6 +44,63 @@ coordination state. Do not report a queue as healthy merely because Redis respon
 inbox, checkpoints, process work, export metadata, or runtime generations from a monitoring tool. See
 [Business integrations and extension SDK](../business-integrations.md#monitoring-and-failure-recovery).
 
+## Dependency failure and recovery
+
+What follows is observed behaviour, not intent: each statement is produced by a drill that kills a real process
+or takes a real dependency away, listed at the end of the section.
+
+**Redis is gone.** The two things Redis carries fail in opposite directions, on purpose. The sign-in attempt
+budget fails *closed*: an unreachable server refuses the attempt rather than admitting one nobody counted, and the
+refusal is deliberately not the throttling error that callers already absorb, so no handler can turn an outage
+into an open door. The public settings cache degrades: reads are served from the authoritative table and each one
+records a warning naming the operation that failed, because SQL is the source of truth and refusing would turn a
+dead cache into a site-wide outage. Locks are never reported as taken. Readiness reports not-ready rather than
+raising, so the replica drains. **An established client does not heal when Redis returns** — a request-scoped
+process picks up a new connection on its next request, and a long-lived worker picks one up when it is restarted,
+which is what the supervisor's restart policy is for. Alert on the warning above: a steady stream of it means
+every public read is now a query.
+
+**The database is gone.** There is no reconnect wrapper, by design, but the behaviour is not uniform and the
+difference matters when reading an incident. A *severed session* — a failover, an idle-session reaper, an
+administrative `KILL` — is absorbed: the driver reports the loss, closes the connection, and the next statement
+opens a new one, so the worker records its failed attempt on a fresh session and drains cleanly with the job left
+retryable. A *server that is gone* cannot be absorbed: the worker dies inside its settlement without recording
+anything, the job's lease is left standing exactly as it was, and no failure record is invented for an attempt
+nobody could write. Recovery is the supervisor restarting the process and the lease expiring; the replacement
+claims the job as its second attempt and completes it once. Expect one unsettled reserved job per killed worker
+for the length of its lease, and alert on expired leases rather than on the crash itself.
+
+**A worker is killed mid-job.** `SIGKILL` leaves no chance to release anything, which is the point: the fence,
+not the process table, decides ownership. The job stays reserved and *unclaimable* for the rest of its lease even
+though nothing is executing it, then a replacement claims it under a new token with the attempt count moved on.
+The heartbeat is not load-bearing — a stale heartbeat row is a monitoring signal, never a recovery mechanism.
+
+**A handler or an outbound endpoint wedges.** Both durable workers bound their work with a wall-clock alarm. A
+job handler that overruns its runtime lease is aborted and settled as a failed attempt reading *The job exceeded
+its maximum runtime lease.* in `failed_jobs`. An integration effect that overruns is aborted and recorded on the
+outbox row as *The integration effect exceeded its dispatch deadline.*, with a retry scheduled; the bound is four
+fifths of the dispatch lease, so the attempt is recorded while the fence is still that worker's rather than
+racing a sibling's re-delivery. Alert on either message: it means an endpoint or a handler is not answering.
+
+**Work that can never succeed.** A consumer that fails every delivery spends its attempt budget and is
+quarantined as poison; it is not delivered again, and the receipt names the exception. Only a signed handler
+revision frees it, and that is worth exactly one delivery, after which the receipt is settled and further
+deliveries are duplicates. A job that fails every attempt is dead-lettered into `failed_jobs` and never handed
+out again. Both are terminal states an operator must act on, not transient conditions that clear themselves.
+
+**Storage refuses a write.** A missing volume, an unwritable root and a read-only filesystem each produce a typed
+failure naming the step, publish nothing partial, and leave no temporary file behind.
+
+Drills, all of which kill something real: `tests/Integration/Infrastructure/RedisOutageIntegrationTest.php`,
+`tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php`,
+`tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php`,
+`tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php`,
+`tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php`,
+`tests/Integration/Infrastructure/UnwritableStorageIntegrationTest.php` and the runtime-lease alarm cases in
+`tests/Unit/Application/Automation/WorkerTest.php` all run in continuous integration. The restore-interruption
+drill, `tools/restore-interruption-drill.sh`, is operator-run; see
+[Backup and restore](backup-restore.md#knowing-a-restore-finished-and-re-running-one-that-did-not).
+
 ## Audit records
 
 Application audit records are separate from diagnostic logs. They identify actor, action, target, outcome, time, and safe metadata for content, settings, access control, extensions, and automation. Restrict audit access, retain it according to site policy, and include it in incident preservation. Do not treat application logs as a substitute for audit history.

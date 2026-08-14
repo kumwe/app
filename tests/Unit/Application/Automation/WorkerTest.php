@@ -13,6 +13,7 @@ use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\JobLeaseContext;
 use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Application\Automation\LeaseAwareJobHandler;
+use Kumwe\CMS\Application\Automation\RuntimeDeadline;
 use Kumwe\CMS\Application\Automation\StoredJob;
 use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
@@ -28,8 +29,90 @@ use Throwable;
 
 #[CoversClass(Worker::class)]
 #[CoversClass(JobLeaseContext::class)]
+#[CoversClass(RuntimeDeadline::class)]
 final class WorkerTest extends TestCase
 {
+    /**
+     * Drives the wedged-handler defence with a handler that genuinely never returns on its own.
+     *
+     * Nothing in the suite had ever made the runtime-lease alarm fire, so the only thing standing
+     * between a wedged handler and a worker pinned for good was unexecuted code. The handler here sleeps
+     * for thirty seconds against a one-second budget: the alarm is a real signal, delivered by the
+     * kernel to this process, and the assertion that `runOnce()` returned in well under the sleep is
+     * what distinguishes an aborted handler from one that merely finished.
+     */
+    public function testAWedgedHandlerIsAbortedByTheRuntimeLeaseAlarmAndSettledAsAFailedAttempt(): void
+    {
+        $queue = new RecordingJobQueue([$this->job('wedged')]);
+        $worker = $this->worker($queue, new JobHandlerRegistry([new WedgedHandler()]));
+
+        $startedAt = hrtime(true);
+        $handled = $worker->runOnce($this->context(), 'default', 'worker-one', 30, 1);
+        $elapsed = (hrtime(true) - $startedAt) / 1_000_000_000;
+
+        self::assertTrue($handled);
+        self::assertLessThan(10.0, $elapsed);
+        self::assertSame([], $queue->completed);
+        self::assertSame([false], $queue->permanentFailures);
+        self::assertCount(1, $queue->failures);
+        self::assertSame('The job exceeded its maximum runtime lease.', $queue->failures[0]->getMessage());
+    }
+
+    /**
+     * Proves the alarm arrangement is put back exactly as it was found, wedge or no wedge.
+     *
+     * A deadline that leaves its own throwing handler installed would turn the next alarm anywhere in
+     * the process into a spurious job failure, so restoration is asserted by arming a real alarm
+     * afterwards and observing that the sentinel — not the worker's handler — is what runs.
+     */
+    public function testTheRuntimeLeaseAlarmRestoresTheHandlerItFound(): void
+    {
+        $observed = null;
+        $sentinel = static function (int $signal) use (&$observed): void {
+            $observed = $signal;
+        };
+        pcntl_async_signals(true);
+        pcntl_signal(SIGALRM, $sentinel);
+
+        try {
+            $queue = new RecordingJobQueue([$this->job('wedged')]);
+            $worker = $this->worker($queue, new JobHandlerRegistry([new WedgedHandler()]));
+            $worker->runOnce($this->context(), 'default', 'worker-one', 30, 1);
+
+            self::assertSame($sentinel, pcntl_signal_get_handler(SIGALRM));
+
+            pcntl_alarm(1);
+            $deadline = microtime(true) + 5.0;
+            while ($observed === null && microtime(true) < $deadline) {
+                usleep(50_000);
+            }
+        } finally {
+            pcntl_alarm(0);
+            pcntl_signal(SIGALRM, SIG_DFL);
+        }
+
+        self::assertSame(SIGALRM, $observed);
+    }
+
+    /**
+     * Proves the worker refuses a budget it cannot enforce instead of running the handler unbounded.
+     */
+    public function testAnUnenforceableRuntimeLimitFailsTheJobWithoutRunningItsHandler(): void
+    {
+        $queue = new RecordingJobQueue([$this->job('wedged')]);
+        $handler = new WedgedHandler();
+        $worker = $this->worker($queue, new JobHandlerRegistry([$handler]));
+
+        self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one', 30, 0));
+        self::assertFalse($handler->entered);
+        self::assertSame([], $queue->completed);
+        self::assertCount(1, $queue->failures);
+        self::assertSame(
+            'Durable workers require a positive, enforceable handler runtime limit.',
+            $queue->failures[0]->getMessage(),
+        );
+    }
+
     public function testLeaseAwareHandlerCanRenewAndCompleteFencedJob(): void
     {
         $queue = new RecordingJobQueue([$this->job('lease-aware')]);
@@ -223,6 +306,8 @@ final class RecordingJobQueue implements JobQueue
     public array $completed = [];
     /** @var list<bool> */
     public array $permanentFailures = [];
+    /** @var list<Throwable> */
+    public array $failures = [];
     /** @var list<SystemIdentity|null> */
     public array $completionIdentities = [];
     public int $heartbeats = 0;
@@ -277,6 +362,7 @@ final class RecordingJobQueue implements JobQueue
         bool $permanent,
     ): void {
         $this->permanentFailures[] = $permanent;
+        $this->failures[] = $failure;
     }
 
     public function heartbeat(
@@ -387,5 +473,25 @@ final class FailingHandler implements JobHandler
     public function handle(array $payload, ExecutionContext $context): void
     {
         throw new \RuntimeException('Expected failure.');
+    }
+}
+
+/** A handler that returns only because something outside it intervened. */
+final class WedgedHandler implements JobHandler
+{
+    public bool $entered = false;
+
+    public function type(): string
+    {
+        return 'wedged';
+    }
+
+    public function handle(array $payload, ExecutionContext $context): void
+    {
+        $this->entered = true;
+        $deadline = microtime(true) + 30.0;
+        while (microtime(true) < $deadline) {
+            sleep(1);
+        }
     }
 }

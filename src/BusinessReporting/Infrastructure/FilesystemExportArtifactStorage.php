@@ -35,10 +35,12 @@ final readonly class FilesystemExportArtifactStorage implements ExportArtifactSt
         if (!str_starts_with($directory, DIRECTORY_SEPARATOR)) {
             throw new RuntimeException('The export artifact directory must be absolute.');
         }
-        if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
+        // Suppressed diagnostics, typed refusals: an unwritable or read-only volume is reported once,
+        // by the exception naming the step, rather than twice with a PHP warning saying the same thing.
+        if (!is_dir($directory) && !@mkdir($directory, 0700, true) && !is_dir($directory)) {
             throw new RuntimeException('The export artifact directory cannot be created.');
         }
-        if (is_link($directory) || chmod($directory, 0700) === false) {
+        if (is_link($directory) || @chmod($directory, 0700) === false) {
             throw new RuntimeException('The export artifact directory is unsafe.');
         }
     }
@@ -64,7 +66,7 @@ final readonly class FilesystemExportArtifactStorage implements ExportArtifactSt
             throw new RuntimeException('An export artifact object already exists.');
         }
         $temporary = $path . '.' . bin2hex(random_bytes(8)) . '.tmp';
-        $stream = fopen($temporary, 'x+b');
+        $stream = @fopen($temporary, 'x+b');
         if ($stream === false) {
             throw new RuntimeException('A temporary export artifact cannot be created.');
         }

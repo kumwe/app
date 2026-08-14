@@ -119,6 +119,42 @@ tools/restore.sh /srv/kumwe/backups/BACKUP
 restores into staging, confirms the required migration, and then publishes all four filesystem directories. It
 refuses to restore a MariaDB backup as MySQL or PostgreSQL, or any other driver mismatch.
 
+## Knowing a restore finished, and re-running one that did not
+
+A restore publishes four directories one after another, so a restore that is interrupted — a lost session, an
+OOM kill, a power cut — can leave some targets in place and others not. Two files settle what happened.
+
+`kumwe-restore-manifest.json`, written beside the private-data target unless `KUMWE_RESTORE_MANIFEST` names
+another absolute path, is the completion record. It exists only when a restore finished, and carries the backup
+identity (the digest of the backup's own checksum list), the backup and completion timestamps, the database and
+prefix restored into, and for each of the four trees its path, its file count and a digest taken over the sorted
+per-file digests. **Check for it before first boot**: a target tree that happens to contain a runtime map is not
+evidence that the restore completed, and the manifest is.
+
+```bash
+jq -e '.format == "kumwe-restore-v1"' /srv/kumwe/restored/kumwe-restore-manifest.json \
+  || echo 'This restore did not finish; do not boot on it.'
+```
+
+`kumwe-restore-manifest.json.partial` is the claim, written before the first target is created and removed when
+the manifest is written. It names the backup, the database and the exact four targets this restore owns. While it
+is present, **re-running the same command against the same backup and the same targets is the recovery**: the
+restore clears the targets its own claim names and rebuilds them. No manual cleanup, and no widening of the
+fail-closed rule — a target that no claim names is still refused untouched, because it is somebody else's data.
+
+The database half has one bound worth knowing before an incident rather than during one. On PostgreSQL the import
+is a single transaction, so an interruption leaves the database exactly as empty as it found it and the re-run
+simply imports again. On MySQL and MariaDB data definition commits implicitly, so an interruption part-way
+through the import leaves a partly populated database; the re-run says so and asks for a freshly created empty
+database rather than importing over the remains. Dropping and recreating the scratch database, then re-running,
+recovers it.
+
+`tools/restore-interruption-drill.sh` is the evidence for all of this and the way to re-qualify it after changing
+either script. It takes a real backup, restores it into a scratch database and scratch targets, `SIGKILL`s the
+restore at the moment it begins publishing targets, re-runs it unchanged, and compares every restored tree
+against the source. It is an operator drill rather than a continuous-integration step because it needs the dump
+and restore clients on the host and a disposable database it may be pointed at; run it when qualifying a release.
+
 ## Recovery acceptance
 
 Point an isolated deployment at the restored database and filesystem targets. Confirm readiness, owner and limited-user login, public rendering, content revisions and workflow, business-definition catalog/version/checksum counts, menus, role grants, settings, active extensions/templates, API idempotency, MCP initialization, one reversible mutation, one worker job, and one scheduler iteration. Compare important media and extension checksums. Also compare installed physical-blueprint checksums, generated table/junction/line counts, exact money and quantity values, encrypted secret envelopes, record revisions, command outcomes, and audit checksums; then execute one typed business-record command against each installed fixture.

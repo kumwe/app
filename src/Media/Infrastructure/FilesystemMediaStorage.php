@@ -350,12 +350,15 @@ final readonly class FilesystemMediaStorage implements MediaStorage, BoundedMedi
         $name = $this->displayName($originalName, $extension);
         $id = Uuid::uuid7()->toString();
         $directory = $this->siteDirectory($site);
-        if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
+        // The diagnostics are suppressed because each refusal below is immediately reported as a typed
+        // exception naming the step that failed. Leaving them on adds a second, unstructured account of
+        // the same event to the PHP error log, which on an unwritable volume is one line per upload.
+        if (!is_dir($directory) && !@mkdir($directory, 0750, true) && !is_dir($directory)) {
             throw new RuntimeException('The media directory could not be created.');
         }
         $temporary = $directory . '/.upload-' . bin2hex(random_bytes(16));
         $path = $directory . '/' . $id . '.' . $extension;
-        if (!copy($source, $temporary) || !chmod($temporary, 0640) || !rename($temporary, $path)) {
+        if (!@copy($source, $temporary) || !@chmod($temporary, 0640) || !@rename($temporary, $path)) {
             @unlink($temporary);
             throw new RuntimeException('The media file could not be stored.');
         }

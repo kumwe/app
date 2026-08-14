@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Infrastructure\Redis;
 
 use JsonException;
 use Redis;
+use RedisException;
 use RuntimeException;
 
 /**
@@ -19,10 +20,26 @@ use RuntimeException;
  * `RedisLease` instead of raw driver return values, and turns an unusable response into a
  * `RuntimeException` at this boundary rather than three call sites further in.
  *
+ * A server that has gone away is converted here too, and for the same reason. `ext-redis` reports a
+ * lost connection by raising its own `RedisException`, which is a driver type every caller above would
+ * otherwise have to know about — and which none of their documented failures name. Each operation
+ * therefore reports an outage as the same `RuntimeException` an unusable answer produces, so the
+ * distinction callers actually act on stays *what failed*, not *which library raised it*. What an
+ * outage must never become is a quiet success: no method answers a default in place of the server, and
+ * the fail-closed rate limiter above depends on exactly that.
+ *
  * @since  2.0.0
  */
 final readonly class RedisRuntime
 {
+    /**
+     * Message every unreachable-server failure is reported with, whichever operation hit it.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string UNREACHABLE = 'Redis is unreachable.';
+
     /**
      * Bind the runtime to an already connected client.
      *
@@ -40,15 +57,22 @@ final readonly class RedisRuntime
      *
      * `ReadinessProbe` calls this, so a deployment whose Redis has gone away is held out of rotation
      * instead of failing on the first lock or cache read. The three accepted answers cover the shapes
-     * different ext-redis versions return for `PING`.
+     * different ext-redis versions return for `PING`. An unreachable server is the answer this exists
+     * to give rather than a failure to report, so a raised connection error reads as not-ready, which
+     * is what lets a readiness check drain a node whose Redis died instead of erroring on the probe.
      *
-     * @return  bool  True when the server replied with a pong; false for any other reply.
+     * @return  bool  True when the server replied with a pong; false for any other reply, and false
+     *          when the server could not be reached at all.
      *
      * @since   2.0.0
      */
     public function ready(): bool
     {
-        $response = $this->redis->ping();
+        try {
+            $response = $this->redis->ping();
+        } catch (RedisException) {
+            return false;
+        }
 
         return $response === true || $response === '+PONG' || $response === 'PONG';
     }
@@ -68,19 +92,24 @@ final readonly class RedisRuntime
      * @return  int  Attempts recorded in the current window, this one included; the caller compares it
      *          against its own ceiling.
      *
-     * @throws  RuntimeException  When the counter cannot be incremented, or a new window's expiry
-     *          cannot be set.
+     * @throws  RuntimeException  When the counter cannot be incremented, when a new window's expiry
+     *          cannot be set, and when the server cannot be reached — never an answer that would let an
+     *          uncounted attempt through.
      *
      * @since   2.0.0
      */
     public function incrementLimit(string $key, int $seconds): int
     {
-        $count = $this->redis->incr('limit:' . hash('sha256', $key));
-        if (!is_int($count)) {
-            throw new RuntimeException('Redis could not update a rate limit.');
-        }
-        if ($count === 1 && !$this->redis->expire('limit:' . hash('sha256', $key), $seconds)) {
-            throw new RuntimeException('Redis could not set the rate-limit expiry.');
+        try {
+            $count = $this->redis->incr('limit:' . hash('sha256', $key));
+            if (!is_int($count)) {
+                throw new RuntimeException('Redis could not update a rate limit.');
+            }
+            if ($count === 1 && !$this->redis->expire('limit:' . hash('sha256', $key), $seconds)) {
+                throw new RuntimeException('Redis could not set the rate-limit expiry.');
+            }
+        } catch (RedisException $failure) {
+            throw new RuntimeException(self::UNREACHABLE, 0, $failure);
         }
 
         return $count;
@@ -96,11 +125,19 @@ final readonly class RedisRuntime
      *
      * @return  void
      *
+     * @throws  RuntimeException  When the server cannot be reached. A sign-in that cannot clear its
+     *          window is refused rather than completed, because the alternative is a caller deciding on
+     *          its own how much of a limiter outage it is willing to ignore.
+     *
      * @since   2.0.0
      */
     public function resetLimit(string $key): void
     {
-        $this->redis->del('limit:' . hash('sha256', $key));
+        try {
+            $this->redis->del('limit:' . hash('sha256', $key));
+        } catch (RedisException $failure) {
+            throw new RuntimeException(self::UNREACHABLE, 0, $failure);
+        }
     }
 
     /**
@@ -116,14 +153,18 @@ final readonly class RedisRuntime
      * @return  array<string, mixed>|null  The decoded document, or null when nothing is cached.
      *
      * @throws  JsonException  When the cached string is not valid JSON, or nests deeper than 64 levels.
-     * @throws  RuntimeException  When Redis answers with a non-string value, or the decoded value is a
-     *          list rather than a keyed document.
+     * @throws  RuntimeException  When Redis answers with a non-string value, when the decoded value is a
+     *          list rather than a keyed document, and when the server cannot be reached.
      *
      * @since   2.0.0
      */
     public function cachedJson(string $key): ?array
     {
-        $value = $this->redis->get('cache:' . $key);
+        try {
+            $value = $this->redis->get('cache:' . $key);
+        } catch (RedisException $failure) {
+            throw new RuntimeException(self::UNREACHABLE, 0, $failure);
+        }
         if ($value === false) {
             return null;
         }
@@ -151,13 +192,19 @@ final readonly class RedisRuntime
      * @return  void
      *
      * @throws  JsonException  When the document contains a value JSON cannot represent.
-     * @throws  RuntimeException  When Redis refuses to store the entry.
+     * @throws  RuntimeException  When Redis refuses to store the entry, or cannot be reached.
      *
      * @since   2.0.0
      */
     public function cacheJson(string $key, array $value, int $seconds): void
     {
-        $stored = $this->redis->setex('cache:' . $key, $seconds, json_encode($value, JSON_THROW_ON_ERROR));
+        $encoded = json_encode($value, JSON_THROW_ON_ERROR);
+
+        try {
+            $stored = $this->redis->setex('cache:' . $key, $seconds, $encoded);
+        } catch (RedisException $failure) {
+            throw new RuntimeException(self::UNREACHABLE, 0, $failure);
+        }
         if (!$stored) {
             throw new RuntimeException('Redis could not store the cached value.');
         }
@@ -174,11 +221,18 @@ final readonly class RedisRuntime
      *
      * @return  void
      *
+     * @throws  RuntimeException  When the server cannot be reached, so a writer learns that its
+     *          invalidation did not happen instead of assuming it did.
+     *
      * @since   2.0.0
      */
     public function forgetCache(string $key): void
     {
-        $this->redis->del('cache:' . $key);
+        try {
+            $this->redis->del('cache:' . $key);
+        } catch (RedisException $failure) {
+            throw new RuntimeException(self::UNREACHABLE, 0, $failure);
+        }
     }
 
     /**
@@ -195,7 +249,8 @@ final readonly class RedisRuntime
      *
      * @return  ?RedisLease  A handle on the lock now held, or null when another holder already has it.
      *
-     * @throws  RuntimeException  When the script answers with neither a refusal nor a success.
+     * @throws  RuntimeException  When the script answers with neither a refusal nor a success, and when
+     *          the server cannot be reached — an outage is never reported as a lock taken.
      *
      * @since   2.0.0
      */
@@ -204,11 +259,16 @@ final readonly class RedisRuntime
         $token = bin2hex(random_bytes(32));
         $script = "if redis.call('exists', KEYS[1]) == 1 then return false end "
             . "redis.call('set', KEYS[1], ARGV[1], 'EX', ARGV[2]); return 1";
-        $result = $this->redis->eval(
-            $script,
-            ['lock:' . $key, $token, (string) $seconds],
-            1,
-        );
+
+        try {
+            $result = $this->redis->eval(
+                $script,
+                ['lock:' . $key, $token, (string) $seconds],
+                1,
+            );
+        } catch (RedisException $failure) {
+            throw new RuntimeException(self::UNREACHABLE, 0, $failure);
+        }
         if ($result === false || $result === null) {
             return null;
         }
@@ -234,6 +294,9 @@ final readonly class RedisRuntime
      * @return  bool  True when the lock was still this holder's and its expiry moved; false when it
      *          had expired or now belongs to someone else.
      *
+     * @throws  RuntimeException  When the server cannot be reached, so a holder that can no longer
+     *          renew is told rather than left believing its lock is still armed.
+     *
      * @since   2.0.0
      */
     public function renewLease(string $key, string $token, int $seconds): bool
@@ -241,11 +304,15 @@ final readonly class RedisRuntime
         $script = "if redis.call('get', KEYS[1]) == ARGV[1] then "
             . "return redis.call('expire', KEYS[1], ARGV[2]) else return 0 end";
 
-        return $this->redis->eval(
-            $script,
-            ['lock:' . $key, $token, (string) $seconds],
-            1,
-        ) === 1;
+        try {
+            return $this->redis->eval(
+                $script,
+                ['lock:' . $key, $token, (string) $seconds],
+                1,
+            ) === 1;
+        } catch (RedisException $failure) {
+            throw new RuntimeException(self::UNREACHABLE, 0, $failure);
+        }
     }
 
     /**
@@ -261,6 +328,9 @@ final readonly class RedisRuntime
      * @return  bool  True when this holder's lock was deleted; false when it had already expired or
      *          belongs to another holder.
      *
+     * @throws  RuntimeException  When the server cannot be reached; the lock's expiry is what releases
+     *          it in that case, which is the same outcome a crashed holder gets.
+     *
      * @since   2.0.0
      */
     public function releaseLease(string $key, string $token): bool
@@ -268,10 +338,14 @@ final readonly class RedisRuntime
         $script = "if redis.call('get', KEYS[1]) == ARGV[1] then "
             . "return redis.call('del', KEYS[1]) else return 0 end";
 
-        return $this->redis->eval(
-            $script,
-            ['lock:' . $key, $token],
-            1,
-        ) === 1;
+        try {
+            return $this->redis->eval(
+                $script,
+                ['lock:' . $key, $token],
+                1,
+            ) === 1;
+        } catch (RedisException $failure) {
+            throw new RuntimeException(self::UNREACHABLE, 0, $failure);
+        }
     }
 }
