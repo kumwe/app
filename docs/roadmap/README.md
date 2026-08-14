@@ -448,9 +448,9 @@ discovered while verifying this roadmap, during the qualification programme, or 
 decision. Fifty-six of them were already closed. Under the lifecycle rule above those left the ledger and
 their substance is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them, so
 [`findings.json`](findings.json) now carries **58 open entries**: 25 from the review, 12 from the gap
-matrix and 21 discovered here. Review identifiers are unchanged, so a reference to `V2-SCL-003` resolves
-the same way in both documents, and a reference to a closed identifier such as `GM-AUD-01` resolves in the
-changelog.
+matrix and 21 discovered here. Review identifiers are unchanged, so a reference to `V2-SCL-001` resolves
+the same way in both documents, and a reference to a completed identifier such as `GM-AUD-01` or
+`V2-SCL-003` resolves in the changelog.
 
 Decisions D10 through D14 added 22 further entries — `V2-CUR-001` to `V2-CUR-004` for multi-currency,
 `V2-LNG-001` to `V2-LNG-010` for the interface language programme, `V2-MLC-001` to `V2-MLC-004` for
@@ -519,7 +519,6 @@ residuals.
 | `V2-ARC-003` | `BusinessRecordService` 73 and three peers; `src/Application/Automation/Job/Doctrine*` | Application imports `Kumwe\CMS\Infrastructure\Persistence\TransactionManager`. Three Doctrine adapters live under `src/Application`. |
 | `V2-SCL-001` | `DoctrineBusinessRecordMutationFence::lock()` 76; eight call sites in the service | Every write path takes the installation row `FOR UPDATE` for the whole transaction. A shared fence exists at line 110 and is used by reads only. |
 | `V2-SCL-002` | `DoctrineOutboxStore` 140–181 | A locking read of `business_projection_event_head` `singleton_id = 1` and a guarded update of `last_sequence`, both inside the caller's authoritative transaction. |
-| `V2-SCL-003` | `RelationshipKind::OwnedLineCollection`; the single-line relation commands | The relational owned-line primitive exists. The one-command, one-transaction, one-version commit over it does not. |
 | `V2-SCL-004` | `BusinessRecordIdempotencyRetentionMigration` 60, 65 | Seeded `43 * * * *` with `{"batch_size": 500, "maximum_batches": 10}`: 5,000 rows per hour, 120,000 per day, against an enterprise ingress of at least five million. |
 | `V2-SCL-005` | `RuntimeMetricCollector` 208, 227, 270, 289 | Exact `COUNT(*)`, `MIN()` and `MAX()` on the primary at scrape time. The statement count is bounded; the work of an exact count is not bounded by it. |
 | `V2-SCL-006` | `RuntimeIntegrationEventTransport::publish()` 91, 106, 132 | Consumers and webhooks iterate serially in the publishing path. |
@@ -528,7 +527,6 @@ residuals.
 | `V2-DB-001` | `ci.yml` 63–167 | Browser journeys run against one PostgreSQL service, Chromium only, while MariaDB is the canonical engine. |
 | `V2-DB-003` | `ApplicationAuthorizationMigration` 106; `ApplicationAuthorizationMigrationRecovery` 443 | The primary migration names the constraint literally `fk_resource_site`; the recovery path already derives a hashed unique name. Foreign-key names are schema-global on MySQL and MariaDB. |
 | `V2-DR-003` | `tools/backup.sh` 149, 161, 198–202 | Four gzip tarballs; `pg_dump --format=custom` compresses by default; `--set-gtid-purged=OFF` on MySQL; no coordinate at all on MariaDB. |
-| `V2-ERP-001` | `Expression::OPERATORS` 58–80; `RecordRuleValidator` 167 | Twenty-one scalar operators, none of them an aggregation. Invariants evaluate over `RecordExpressionValues::from($values)`, the record's own fields. `RecordInvariantDefinition`'s docblock offers "a total agreeing with its lines" as an example the vocabulary cannot express. |
 | Fence partitioning (positive) | `DoctrineBusinessRecordMutationFence::acquire()`; `BusinessTransactionalRuntimeMigration::installations()` 122–147 | The fence selects with `WHERE h.site_identifier = ?` on the site-scoped `business_definitions` table joined to `business_schema_installations`, and re-checks the installation's own site on the joined row. Four businesses running the same logical definition hold four definition rows and four installation rows, so a group **partitions** the `V2-SCL-001` hot spot rather than concentrating it. |
 
 ### 4.5 Currency, language and enterprise-primitive current state, verified
@@ -676,9 +674,9 @@ answer.
 | A converted amount marked as converted, carrying its rate and as-at instant | Provided | `ConvertedMoneyValue`, unconstructible without its rate, as-at instant, provider and declared rounding; carried into report columns and export artifacts |
 | Relationships: one-to-one, many-to-one, one-to-many, many-to-many | Provided | `RelationshipKind` |
 | Owned line collections stored relationally | Provided | `RelationshipKind::OwnedLineCollection`; relational storage mode is the only storage mode |
-| Atomic multi-line document commit | **Must add** | `V2-SCL-003` — the Gate A blocker |
-| Cross-field record invariants | Partial | `RecordInvariantDefinition` over a bounded typed expression, but scalar-only over the header — `V2-ERP-001` |
-| Aggregate invariants over owned lines ("total equals the sum of its lines") | **Must add** | `V2-ERP-001`, decision D13.1 — the single most fundamental document invariant is currently inexpressible, and core supplies it |
+| Atomic multi-line document commit | Provided | `BusinessRecordService::writeDocument()`; [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md); recorded in [`CHANGELOG.md`](../../CHANGELOG.md) |
+| Cross-field record invariants | Provided | `RecordInvariantDefinition` over a bounded typed expression |
+| Aggregate invariants over owned lines ("total equals the sum of its lines") | Provided | `Expression`'s `line_aggregate` leaf, decision D13.1; recorded in [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Locale variants on business definition labels | **Must add** | `V2-MLC-003`, decision D12 — labels are single strings inside an immutable checksummed document, so the dimension must exist before extensions publish |
 | Server-computed derived values | Provided | `core.computed`; `ComputationMode`; `Expression` |
 | Encrypted secret fields with key rotation | Provided | `core.secret`; `SecretKeyRing`; `business-record-rekey` |
@@ -908,8 +906,9 @@ intention.
 2. **The atomic aggregate command exists and is stable.** One vertical-neutral command commits a
    hundred-line and a thousand-line aggregate with one authorization decision, one idempotent outcome, one
    transaction, one version increment, one revision, one audit action and one bounded event. The
-   single-line relation APIs are unchanged. The public shape matches the phase 0 architecture decision.
-   `V2-SCL-003` closed.
+   single-line relation APIs are unchanged. The public shape matches the recorded architecture decision.
+   Met; recorded in [`CHANGELOG.md`](../../CHANGELOG.md) against
+   [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md).
 3. **Data-entry integrity holds.** A validation failure and a stale-version conflict both re-render with
    the operator's submitted values on the generated administrator surface, the generated portal surface
    and the CMS content editor, proven by browser tests on all three, including a hundred-line document.
@@ -930,12 +929,13 @@ intention.
    group-scoped read. The per-category scope table and the non-atomic inter-business rule are both in the
    frozen contract. What remains for the gate is the three-engine run of the four-business installation,
    which belongs to phase 2's engine matrix rather than to the model itself.
-8. **The enterprise document primitives exist and are enforced.** An aggregate invariant sums a
-   thousand-line document's lines and rejects a violating document atomically; an approved document refuses
-   mutation and is corrected by a linked reversal; a closed period refuses a mutation dated inside it; a
-   sequence is scoped by document type and legal entity and resets on a fiscal period; and a quantity and a
-   money amount each convert through the core contract against an extension-held table. Each rule has a
-   named check that fails the build when it is violated. `V2-ERP-001` through `V2-ERP-005` closed.
+8. **The enterprise document primitives exist and are enforced.** An approved document refuses mutation and
+   is corrected by a linked reversal; a closed period refuses a mutation dated inside it; a sequence is
+   scoped by document type and legal entity and resets on a fiscal period; and a quantity and a money
+   amount each convert through the core contract against an extension-held table. Each rule has a named
+   check that fails the build when it is violated. `V2-ERP-002` through `V2-ERP-005` closed. The aggregate
+   invariant half — a rule that sums a thousand-line document's lines and rejects a violating document
+   atomically — is met and recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
 9. **The multi-currency contract holds.** A converted amount is marked as converted and carries its rate
    and as-at instant on every surface that renders it, no write path accepts a converted amount as a stored
    value, and a rate provider is an extension. The contract, the port, the pipeline and the report and
@@ -1117,7 +1117,7 @@ follow.
    engine defaults are not a portable contract.
 8. **Release qualification authority.** The build-once artifact chain and the signed manifest as the
    release source of truth.
-9. **Enterprise primitive ownership.** Findings: `V2-ERP-001` through `V2-ERP-005`, `V2-ERP-007`,
+9. **Enterprise primitive ownership.** Findings: `V2-ERP-002` through `V2-ERP-005`, `V2-ERP-007`,
    `V2-CUR-005`. Decision D13 has answered six of the seven boundary questions and
    decision D10 has answered currency; `V2-ERP-006`, role-specific dashboards, is the one still genuinely
    open and is decided here. What remains for the rest is to write each verdict down where an author finds
@@ -1445,28 +1445,14 @@ a group scope reach an accounting document, a ledger or a pay run.** **Do not co
 
 ### Phase 4 — Atomic aggregate documents
 
-**Objective.** Deliver the missing primitive: one command that atomically commits a document header with up
-to a thousand owned lines.
+**Objective.** The primitive itself — one command that atomically commits a document header with up to a
+thousand owned lines, and a record invariant that can state a rule about the whole collection — is
+delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) against
+[ADR 0005](decisions/0005-atomic-aggregate-document-contract.md). What remains here is the persistence and
+numbering work that sits underneath it.
 
-**Entry conditions.** Phase 3 exit gate passed. Phase 0 decision 2 recorded — the public shape is already
-settled and this phase implements it rather than designing it.
-
-**P4-A — The aggregate command.** Findings: `V2-SCL-003`. Add vertical-neutral commands behind the existing
-facade, following the approved shape. They must serve invoices, purchase orders, attendance batches,
-job-card parts and labour, commerce orders and any extension-defined aggregate without a single vertical
-rule entering core. Contract requirements: one authorization decision and context; one idempotency outcome;
-one database transaction; one aggregate version increment; one root plus up to a thousand validated lines
-with an encoded-byte ceiling; typed exact decimal, money, quantity, date and relationship values; policy and
-definition version pinned for the command; validation performed outside the hot lock where safe, then
-version and generation and authority and uniqueness revalidated inside; deterministic line identities and
-order and stable lock acquisition; set-based or chunked writes bounded below database parameter and packet
-limits; one aggregate revision identity with relational line revision entries where needed; one audit
-action with a bounded summary and accessible detailed revision evidence; one bounded aggregate event
-describing identity, version and change summary rather than embedding a thousand-line payload; full
-rollback on any invalid or conflicting line; and exact replay returning the original result without
-rewriting lines, revisions, audit entries or events. The single-line relation APIs remain supported.
-Generated interfaces, REST, console, machine surface, SDK and workers may call it; none reimplements its
-transaction loop.
+**Entry conditions.** Phase 3 exit gate passed. The public shape is recorded in ADR 0005, so both remaining
+packages build against a settled contract rather than a moving one.
 
 **P4-B — Bulk persistence mechanics.** Precompile field and relationship metadata once per command.
 Validate in bounded batches. Use bulk insert or upsert only where the SQL is portable and
@@ -1486,41 +1472,16 @@ sequence for throughput alone. Tests: concurrency and uniqueness; the rollback a
 declared policy requires; replay and stale posting; period rollover; multi-site independence; lock duration
 on a thousand-line posting; and one hot-sequence stress profile representing a legitimate worst case.
 
-**P4-D — Aggregate invariants over owned lines.** Findings: `V2-ERP-001`. Decision D13.1: **core supplies
-this**, and it is urgent, because "document total equals the sum of its lines" is the most fundamental
-document rule there is and today no definition can express it. Extend the expression vocabulary with a
-bounded aggregation over an owned-line collection — the operator set at `Expression::OPERATORS` grows for
-the first time since it was written, so the addition is deliberate and small: aggregation over exactly one
-declared owned-line relation, over exactly one line field, with the same 32-kilobyte encoded ceiling and
-the same node-count discipline the vocabulary already enforces.
-
-The evaluation runs **once per aggregate command, not once per line**, inside the one transaction, on the
-prepared line set before the commit rather than by re-reading rows. Exact decimal semantics are preserved
-end to end: the sum of a thousand `ExactDecimal` values is an `ExactDecimal`, never a float, and never a
-string reassembled through arithmetic that could round. A violating thousand-line document is rejected
-atomically with no partial commit and a stable, named error that identifies the invariant rather than the
-row.
-
-`RecordInvariantDefinition`'s docblock, which offers "a total agreeing with its lines" as an example the
-vocabulary could not express, becomes accurate in the same change rather than being corrected separately.
-
-**The enforcing check.** A unit test asserts that `Expression` refuses an aggregation naming a relation the
-definition does not declare, or a field the line entity does not carry, so an invariant cannot be published
-against a shape that does not exist. A three-engine integration test asserts the atomic rejection of a
-violating thousand-line document and a query-count assertion proves the evaluation did not become
-per-line — a per-line regression fails the build on the count, not on a timing threshold that would drift.
-
-**Exit gate.** A hundred-line and a thousand-line aggregate commit atomically with one idempotent outcome,
-one version, one revision, one audit action and one bounded event. A definition can declare that its total
-equals the sum of its lines, and a document that breaks it is refused atomically. Single-line compatibility
-is intact. Query and statement counts meet the declared budget. Replay is exact. Rollback is complete. All
-three engines pass.
+**Exit gate.** Statement growth stays sublinear on every supported engine at the declared budget, including
+on the amendment paths that renumber and on a line entity wide enough to bind the parameter ceiling first.
+Numbering is allocated as late as the transaction allows, and its concurrency, rollback, replay, rollover
+and multi-site behaviour is proven under a hot-sequence stress profile. All three engines pass.
 
 **Non-goals.** Do not embed an invoice, ledger, enrolment, job-card or commerce rule in core. Do not count a
 thousand-line document as a thousand and one successful transactions. Do not begin the scale work here —
 the fence and the sequencer are phase 5. Do not use a feature flag as a substitute for a finished contract.
-Do not widen the expression vocabulary beyond the one bounded aggregation this package names; a general
-query language inside an invariant is not what was decided.
+Do not widen the expression vocabulary beyond the one bounded aggregation ADR 0005 records; a general query
+language inside an invariant is not what was decided.
 
 ---
 
@@ -1583,8 +1544,9 @@ stable named error rather than a policy denial — the caller may be fully autho
 closed. Correction is a new record of the same definition carrying a first-class typed link to the record
 it reverses, with its own approval path. The original is never rewritten and never suppressed.
 
-A thousand-line reversal is a thousand-line document and commits through `P4-A`'s aggregate command. No
-separate reversal write path exists and none may be added.
+A thousand-line reversal is a thousand-line document and commits through the aggregate document command
+[ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) records. No separate reversal write path
+exists and none may be added.
 
 *The enforcing check:* an architecture test asserts no mutation path in `src/` can write a record whose
 definition declares it immutable in its current state, so a new write path added later cannot bypass the

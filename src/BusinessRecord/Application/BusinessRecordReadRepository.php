@@ -251,4 +251,43 @@ interface BusinessRecordReadRepository
         BusinessRecordAccessPlan $access,
         string $lineId,
     ): ?StoredRecordIdentity;
+
+    /**
+     * Read one owner's whole owned-line collection, in position order, for a write that must see all of it.
+     *
+     * This deliberately applies no actor row disclosure, in the same spirit as
+     * `referencingForDeleteIntegrity()` and for the same reason: a document command replaces a collection
+     * and a document rule reduces it, so both have to work from the collection that exists rather than the
+     * part of it one caller may read. Nothing here reaches a caller — the write path holds each decoded
+     * line against the relationship's own row policy and refuses the whole command when one is hidden, so
+     * an actor can neither observe nor silently drop a line it was never entitled to.
+     *
+     * @param   ResolvedBusinessDefinition  $owner         Owner definition whose installation carries the
+     *          line table.
+     * @param   BusinessRecord              $ownerRecord   Owner record whose collection is read.
+     * @param   RelationshipDefinition      $relationship  Owned-line relationship naming that table.
+     * @param   ResolvedBusinessDefinition  $lineResolved  Pinned line definition the rows are decoded
+     *          against.
+     * @param   int                         $limit         Largest number of rows to return; a caller
+     *          asking for one beyond its own ceiling learns that the collection overflows rather than
+     *          silently seeing a truncated document.
+     *
+     * @return  list<StoredOwnedLine>  The lines in position order, then storage-key order for a
+     *          collection whose positions were never renumbered; empty when the owner holds none.
+     *
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     *          owned-line table or one of its control columns is absent from the installed schema, or a
+     *          stored value does not match the column the blueprint describes.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
+     *          decoded line's virtual computations cannot be rebuilt.
+     *
+     * @since   2.0.0
+     */
+    public function ownedLinesForDocumentIntegrity(
+        ResolvedBusinessDefinition $owner,
+        BusinessRecord $ownerRecord,
+        RelationshipDefinition $relationship,
+        ResolvedBusinessDefinition $lineResolved,
+        int $limit,
+    ): array;
 }

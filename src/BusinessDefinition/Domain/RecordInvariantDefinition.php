@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
 /**
- * A named rule spanning several fields of a record, carried inside the entity definition.
+ * A named rule spanning several fields of a record — and, where it says so, its owned lines.
  *
  * Field-level rules judge one value at a time; an invariant is how a definition states a rule that only
  * makes sense across values — an end date after its start, a total agreeing with its lines.
@@ -13,6 +13,12 @@ namespace Kumwe\CMS\BusinessDefinition\Domain;
  * violation keyed by this handle carrying this message, so the operator-facing wording lives in the
  * definition rather than in the runtime. The condition is a typed `Expression`, never executable code,
  * which is what allows an untrusted definition to declare a rule at all.
+ *
+ * A condition carrying an `Expression` line aggregation reads the whole owned-line collection rather than
+ * the header alone, which is what makes "the total agrees with its lines" an expressible rule rather than
+ * an aspiration. `lineDependencies()` names the collections a caller has to gather first, and
+ * `isSatisfied()` refuses to judge a rule whose collection was not supplied — so an aggregate rule is
+ * never quietly reported as satisfied by a caller that did not read the lines.
  *
  * @since  2.0.0
  */
@@ -23,7 +29,8 @@ final readonly class RecordInvariantDefinition
      *
      * @param   string      $handle     Stable snake_case name reported with the violation.
      * @param   string      $message    Operator-facing text shown when the rule fails, up to 500 bytes.
-     * @param   Expression  $condition  Boolean-typed condition read over the record's field values.
+     * @param   Expression  $condition  Boolean-typed condition read over the record's field values, and
+     *          over an owned-line collection wherever it carries a line aggregation.
      *
      * @throws  InvalidBusinessDefinition  When the handle or message is malformed, or the condition is
      *          not boolean-typed.
@@ -78,24 +85,45 @@ final readonly class RecordInvariantDefinition
     }
 
     /**
-     * Evaluate the condition against one record's values.
+     * Name the owned-line collections this invariant reduces, and the line field each reduction reads.
      *
-     * The caller supplies every field the condition depends on; a missing dependency is an error rather
-     * than a false result, so a rule is never quietly reported as passing on incomplete input.
+     * A caller uses this to decide what it must gather before judging the rule: an empty map means the
+     * invariant reads the header alone and needs nothing else, and a non-empty one names every collection
+     * `isSatisfied()` will insist on.
      *
-     * @param   array<string, scalar|null>  $fields  Record values the condition reads, keyed by field
-     *          handle.
-     *
-     * @return  bool  True when the record honours the invariant.
-     *
-     * @throws  InvalidBusinessDefinition  When a dependency is absent, a value contradicts its declared
-     *          type, or the condition yields a non-boolean result.
+     * @return  array<string, list<string>>  Line field handles keyed by owned-line relationship handle,
+     *          each list sorted and deduplicated; empty for a rule that spans the header's fields only.
      *
      * @since   2.0.0
      */
-    public function isSatisfied(array $fields): bool
+    public function lineDependencies(): array
     {
-        $result = $this->condition->evaluate($fields);
+        return $this->condition->lineDependencies();
+    }
+
+    /**
+     * Evaluate the condition against one record's values, and its owned lines where the rule reduces them.
+     *
+     * The caller supplies every field the condition depends on; a missing dependency is an error rather
+     * than a false result, so a rule is never quietly reported as passing on incomplete input. The same
+     * holds for a collection: a rule that reduces lines the caller did not gather is an error, not a rule
+     * judged against nothing.
+     *
+     * @param   array<string, scalar|null>                       $fields  Record values the condition reads,
+     *          keyed by field handle.
+     * @param   array<string, list<array<string, scalar|null>>>  $lines   Whole owned-line collections keyed
+     *          by the relationship handles `lineDependencies()` names, in position order.
+     *
+     * @return  bool  True when the record honours the invariant.
+     *
+     * @throws  InvalidBusinessDefinition  When a dependency or a named collection is absent, a value
+     *          contradicts its declared type, or the condition yields a non-boolean result.
+     *
+     * @since   2.0.0
+     */
+    public function isSatisfied(array $fields, array $lines = []): bool
+    {
+        $result = $this->condition->evaluate($fields, $lines);
         if (!is_bool($result)) {
             throw new InvalidBusinessDefinition('A record invariant produced a non-boolean result.');
         }

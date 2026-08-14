@@ -287,4 +287,66 @@ interface BusinessRecordWriteRepository
         int $expectedVersion,
         ?ResolvedBusinessDefinition $targetResolved = null,
     ): BusinessRecord;
+
+    /**
+     * Store one owner's whole owned-line collection in bounded statements, without touching the owner row.
+     *
+     * This is the line half of an atomic document write. The caller has already settled what the document
+     * is to become and has already written the header at its new version, so nothing here re-versions the
+     * owner: the collection is brought to the state the caller describes and the two writes stand or fall
+     * together inside the caller's one transaction.
+     *
+     * Statement count follows the change rather than the collection. Lines with no stored version are
+     * inserted in bounded multi-row batches, removed keys go in bounded batched deletes, and an existing
+     * line is written only when the caller marked it modified — so a document resubmitted unchanged
+     * touches nothing. Where positions move, $renumber first parks every surviving line on a negative
+     * slot, which is what keeps the unique index over owner and position satisfied while an order is being
+     * rewritten; the caller owes it that every survivor is then written back to its final position.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved           Definition pinned to the installation
+     *          holding the owner row and its line table.
+     * @param   BusinessRecord              $owner              Owner record whose collection is written;
+     *          its storage key addresses the lines and its scope is copied onto them.
+     * @param   RelationshipDefinition      $relationship       Owned-line collection being written.
+     * @param   EntityTypeDefinition        $lineDefinition     Pinned definition of the line type, whose
+     *          fields the line values are encoded against.
+     * @param   list<OwnedLineWrite>        $lines              The whole collection in position order,
+     *          each line already carrying the slot and the values it is to be stored with.
+     * @param   list<string>                $removedRecordKeys  Storage keys of lines the document no
+     *          longer holds, deleted before anything is renumbered or written.
+     * @param   bool                        $renumber           True when at least one surviving line
+     *          moves, which requires the two-pass rewrite described above.
+     * @param   string                      $actorId            Actor credited with every line row this
+     *          write touches.
+     * @param   DateTimeImmutable           $at                 Instant stamped on every line row this
+     *          write touches.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected  When the
+     *          relationship is not an owned-line collection, or a line the caller expected to exist did
+     *          not move under the version it named.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict  When a line
+     *          collides with a unique constraint, such as two lines claiming one reference identity.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When a
+     *          line's stored entity reference names a row that does not exist.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     *          installation describes no line table for this collection, or a column the write names is
+     *          not in its blueprint.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     *          the database refuses a statement for a transient reason such as a deadlock.
+     *
+     * @since   2.0.0
+     */
+    public function writeOwnedLines(
+        ResolvedBusinessDefinition $resolved,
+        BusinessRecord $owner,
+        RelationshipDefinition $relationship,
+        EntityTypeDefinition $lineDefinition,
+        array $lines,
+        array $removedRecordKeys,
+        bool $renumber,
+        string $actorId,
+        DateTimeImmutable $at,
+    ): void;
 }

@@ -463,6 +463,38 @@ final readonly class EntityTypeDefinition
     }
 
     /**
+     * Name every owned-line collection the entity's invariants reduce, and the line fields they read.
+     *
+     * This is what a write path asks before it commits: an empty map means no invariant looks past the
+     * header, so nothing extra has to be gathered, and a non-empty one is the exact, bounded set of
+     * collections and line fields the command must prepare for the rules to be judged once. Construction
+     * has already proven every key is a declared owned-line collection of this entity.
+     *
+     * @return  array<string, list<string>>  Line field handles keyed by owned-line relationship handle,
+     *          each list sorted and deduplicated; empty when no invariant aggregates.
+     *
+     * @since   2.0.0
+     */
+    public function invariantLineDependencies(): array
+    {
+        /** @var array<string, list<string>> $collections */
+        $collections = [];
+        foreach ($this->recordInvariants as $invariant) {
+            foreach ($invariant->lineDependencies() as $relationship => $fields) {
+                $collections[$relationship] = [...($collections[$relationship] ?? []), ...$fields];
+            }
+        }
+        foreach ($collections as $relationship => $fields) {
+            $fields = array_values(array_unique($fields));
+            sort($fields, SORT_STRING);
+            $collections[$relationship] = $fields;
+        }
+        ksort($collections, SORT_STRING);
+
+        return $collections;
+    }
+
+    /**
      * Business-record operations explicitly enabled for the authenticated portal surface.
      *
      * Entity-level portal exposure is only the outer surface switch. An operation absent from this list
@@ -754,6 +786,12 @@ final readonly class EntityTypeDefinition
      * and party relationships, an action's transition naming an edge the bound workflow declares, and
      * action and invariant conditions reading only declared fields.
      *
+     * Line aggregation is settled here too, and in two directions. An invariant may reduce a collection,
+     * but only one this entity declares as an owned-line collection, so a rule can never be published
+     * against a shape that does not exist. A field formula, a visibility or editability condition, and an
+     * action condition may not reduce at all, because each of those is evaluated for one record at a time
+     * and there is no collection in scope when they run.
+     *
      * @return  void
      *
      * @throws  InvalidBusinessDefinition  When any of those checks fails; the message states which rule was
@@ -797,6 +835,11 @@ final readonly class EntityTypeDefinition
                         ));
                     }
                 }
+                if (($expression?->lineDependencies() ?? []) !== []) {
+                    throw new InvalidBusinessDefinition(
+                        'A field formula or condition is evaluated per record and cannot aggregate owned lines.',
+                    );
+                }
             }
         }
         $this->assertNoFieldCycle($fields);
@@ -831,11 +874,31 @@ final readonly class EntityTypeDefinition
                     throw new InvalidBusinessDefinition('A business action condition references a missing field.');
                 }
             }
+            if (($action->condition?->lineDependencies() ?? []) !== []) {
+                throw new InvalidBusinessDefinition(
+                    'A business action condition is evaluated against one record and cannot aggregate owned lines.',
+                );
+            }
+        }
+        $collections = [];
+        foreach ($this->relationships as $relationship) {
+            if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
+                $collections[$relationship->handle] = true;
+            }
         }
         foreach ($this->recordInvariants as $invariant) {
             foreach ($invariant->condition->dependencies() as $dependency) {
                 if (!isset($fields[$dependency])) {
                     throw new InvalidBusinessDefinition('A record invariant references a missing field.');
+                }
+            }
+            foreach (array_keys($invariant->lineDependencies()) as $collection) {
+                if (!isset($collections[$collection])) {
+                    throw new InvalidBusinessDefinition(sprintf(
+                        'Record invariant %s aggregates %s, which is not a declared owned-line collection.',
+                        $invariant->handle,
+                        $collection,
+                    ));
                 }
             }
         }

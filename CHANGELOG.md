@@ -57,7 +57,43 @@ development programme, from the architecture decision that opened it to the curr
 - **[Business groups](docs/business-groups.md),** explaining the model to an operator, stating the widening
   and narrowing asymmetry plainly, and telling an extension author the four things to do to make a new record
   category take part. (`e46104b`)
-
+- **A business document is written as one thing: a header and its owned lines, in one command.** Nearly
+  every demanding business object is a document — an invoice, a purchase order, an attendance batch, a job
+  card, a stock movement, a pay run — and every one of them is a header plus the lines that belong to it.
+  Until now the platform could store that shape but could not write it: a header plus a hundred lines was a
+  hundred and one separate commands, each with its own transaction, version, revision, audit entry and
+  event, and an invoice whose header said one total while its lines said another was reachable in between.
+  `BusinessRecordService::writeDocument()` writes the whole document at once. There is no instant at which a
+  reader sees a header without its lines, or lines whose header has already moved on, and a refusal
+  anywhere — a field rule, a stale version, a unique collision on the nine hundredth line — takes the whole
+  document with it and leaves no row, no revision, no audit entry and no idempotency claim behind. The
+  submitted line list is the collection as it is to end up rather than a set of edits, so a line's slot is
+  simply its place in the list: two lines can never claim one position, a caller can never leave a hole, and
+  a line's identity is meaningful only inside the document it belongs to. Deleting the header still takes
+  the whole collection with it. The single-line relate, unrelate and reorder commands are unchanged and
+  remain supported. (`6620736`)
+- **A rule may now state something about a whole document, not just about one row.** A definition can say
+  that its total equals the sum of its lines, or that its line count stays within a bound, and the platform
+  enforces it. That is the most fundamental document rule there is, and until now no definition could
+  express it at all — so every extension would have reimplemented it differently and none of them provably.
+  The expression vocabulary gains exactly one leaf for this: one owned-line collection the entity declares,
+  one reduction from a closed set, one line field. What a definition may declare is settled before it is
+  ever published — the collection must exist, the summed field must exist on the line entity, must hold an
+  exact number, and must not be one the line keeps restricted or secret — so a rule that could never be
+  judged can never be published. The arithmetic stays exact: a thousand decimal line values fold through the
+  same exact decimal type the columns store and never through a float, and a total is compared by value
+  rather than by how many trailing digits its column happens to spell. The rule is judged once for the
+  command over the collection the write is about to store, never once per line, and a violation names the
+  rule and carries the definition author's own wording so an operator is told what to fix. Because the rule
+  belongs to the document, every command that can break it enforces it: the document write, an ordinary
+  header edit, and a single-line link or unlink. (`6620736`)
+- **An extension declares all of that without a core edit.** An extension contributes an entity definition
+  through the ordinary package path, and if that definition declares a document rule the platform enforces
+  it without having heard of the rule, the vertical or the document. Proven by an integration test that
+  registers the definition from outside core and watches core refuse a document that breaks it. The
+  contract is recorded in
+  [ADR 0005](docs/roadmap/decisions/0005-atomic-aggregate-document-contract.md) and documented for
+  extension authors in [the business runtime guide](docs/business-runtime.md). (`6620736`)
 - **A consolidated programme roadmap with a machine-readable findings ledger.** Six competing plans became
   one authority for sequencing: two gates, ten decisions, an enterprise capacity contract, a per-primitive
   judgement of what an enterprise resource planning system needs against what the code actually provides, and
@@ -567,6 +603,17 @@ development programme, from the architecture decision that opened it to the curr
   than being a MariaDB special case. The same repair gives the ownership constraint the per-installation
   name the recovery path already used, so the two routes that create it no longer disagree about what it is
   called. (`731c99d`)
+- **A broken record rule said only that "one or more submitted fields are unavailable".** A rule spanning
+  several fields is named and carries wording its author wrote for an operator to read, and none of that
+  reached anybody: because a rule's name is not a field name, every breach of one was collapsed into the
+  same generic refusal used to avoid disclosing a field the caller may not see. A rule describes a rule, not
+  a value, so it discloses nothing about the record and is now reported as itself — the operator is told
+  which rule was broken, in the words the definition author chose. (`6620736`)
+- **Two exact decimals could be judged unequal for spelling the same number differently.** An equality or
+  set-membership test between decimal values compared their text, while an ordering test compared their
+  value, so a figure stored at one scale disagreed with the same figure at another — `30.750` was not
+  `30.75`, and only the greater-or-equal spelling of the same comparison got it right. Both now compare by
+  value. (`6620736`)
 - **The deployment drills could not load their own classes in the production image.** Production acceptance died
   on all three engines inside the restore drill's seed leg with a class-not-found error: the image installs with
   `--no-dev` and dumps an authoritative classmap, so nothing under the test namespace is loadable there even

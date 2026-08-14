@@ -17,6 +17,14 @@ namespace Kumwe\CMS\BusinessDefinition\Domain;
  * must supply first, and `toArray()` returns the same document shape so a tree survives a definition
  * checksum or a stored migration state and comes back identical.
  *
+ * One leaf reaches past the record's own fields. `line_aggregate` reduces an owned-line collection to a
+ * single value — the count of its lines, or the sum of one line field — so a record invariant can state
+ * the most fundamental document rule there is, that a header total agrees with its lines. It is
+ * deliberately the narrowest thing that expresses that: one declared collection, one closed reduction,
+ * one line field, inside the same byte, node and depth budget every other tree lives under.
+ * `lineDependencies()` names what a caller must gather, and it is the caller's job to hand over the whole
+ * prepared collection so the rule is judged once for the document rather than once per line.
+ *
  * @since  2.0.0
  */
 final readonly class Expression
@@ -49,8 +57,8 @@ final readonly class Expression
      * Supported operators, each mapped to the inclusive minimum and maximum argument count it accepts.
      *
      * Membership of this map is the operator vocabulary: an operator absent from it is rejected at parse
-     * time. The `literal` and `field` leaves are listed at zero arity because they carry a value or a
-     * field handle instead of arguments.
+     * time. The `literal`, `field` and `line_aggregate` leaves are listed at zero arity because they carry
+     * a value, a field handle, or a collection reduction instead of arguments.
      *
      * @var    array<string, array{int, int}>
      * @since  2.0.0
@@ -58,6 +66,7 @@ final readonly class Expression
     private const OPERATORS = [
         'literal' => [0, 0],
         'field' => [0, 0],
+        'line_aggregate' => [0, 0],
         'eq' => [2, 2],
         'ne' => [2, 2],
         'lt' => [2, 2],
@@ -77,6 +86,22 @@ final readonly class Expression
         'is_null' => [1, 1],
         'in' => [2, 32],
         'contains' => [2, 2],
+    ];
+
+    /**
+     * The closed set of reductions a `line_aggregate` leaf may apply to an owned-line collection.
+     *
+     * Each entry maps the reduction to the result types it may declare. `count` measures the collection
+     * itself and therefore names no line field; `sum` folds one declared line field and therefore
+     * requires one. The set is deliberately this small: an invariant states a rule about a document, and
+     * a general query language inside a published definition is not what a rule needs.
+     *
+     * @var    array<string, list<string>>
+     * @since  2.0.0
+     */
+    private const LINE_AGGREGATES = [
+        'count' => ['integer'],
+        'sum' => ['integer', 'decimal'],
     ];
 
     /**
@@ -100,8 +125,13 @@ final readonly class Expression
      * @param  string            $type       Result type this node declares, such as `boolean`.
      * @param  list<Expression>  $arguments  Operand nodes in evaluation order; empty for a leaf.
      * @param  mixed             $literal    Constant a `literal` node carries; null for other operators.
-     * @param  ?string           $field      Field handle a `field` node reads; null for other operators.
+     * @param  ?string           $field      Field handle a `field` node reads, or the line field a
+     *         `line_aggregate` node folds; null for other operators.
      * @param  ?int              $scale      Decimal places a decimal `divide` rounds to; null otherwise.
+     * @param  ?string           $lines      Owned-line relationship handle a `line_aggregate` node reduces
+     *         over; null for other operators.
+     * @param  ?string           $aggregate  Reduction a `line_aggregate` node applies, `count` or `sum`;
+     *         null for other operators.
      *
      * @since  2.0.0
      */
@@ -112,6 +142,8 @@ final readonly class Expression
         public mixed $literal = null,
         public ?string $field = null,
         public ?int $scale = null,
+        public ?string $lines = null,
+        public ?string $aggregate = null,
     ) {
         $this->arguments = $arguments;
     }
@@ -181,10 +213,43 @@ final readonly class Expression
     }
 
     /**
-     * Compute this expression against one record's field values.
+     * Name the owned-line collections this tree reduces over, and which line field each reduction reads.
      *
-     * @param   array<string, scalar|null>  $fields  Values for the handles `dependencies()` names, keyed
-     *          by field handle.
+     * This is the counterpart of `dependencies()` for the collection half of a document rule. A caller
+     * gathers the header's own values from `dependencies()` and the lines from here, so the whole rule is
+     * evaluated once over a prepared line set rather than once per line. A `count` reduction contributes
+     * its relationship handle with no field, because it measures the collection rather than a value in it.
+     *
+     * @return  array<string, list<string>>  Line field handles keyed by owned-line relationship handle,
+     *          each list deduplicated and in ascending string order and possibly empty; the map itself is
+     *          empty when the tree reduces over nothing, which is true of every tree written before this
+     *          leaf existed.
+     *
+     * @since   2.0.0
+     */
+    public function lineDependencies(): array
+    {
+        /** @var array<string, list<string>> $collections */
+        $collections = [];
+        $this->collectLineDependencies($collections);
+        foreach ($collections as $relationship => $fields) {
+            $fields = array_values(array_unique($fields));
+            sort($fields, SORT_STRING);
+            $collections[$relationship] = $fields;
+        }
+        ksort($collections, SORT_STRING);
+
+        return $collections;
+    }
+
+    /**
+     * Compute this expression against one record's field values, and over its lines where it reduces them.
+     *
+     * @param   array<string, scalar|null>                       $fields  Values for the handles
+     *          `dependencies()` names, keyed by field handle.
+     * @param   array<string, list<array<string, scalar|null>>>  $lines   Prepared line values keyed by the
+     *          owned-line relationship handles `lineDependencies()` names; each entry is the whole
+     *          collection as the command is about to store it, in position order.
      *
      * @return  mixed  Result of the root operator in this node's declared type; a decimal result is a
      *          canonical base-10 string, never a float.
@@ -194,9 +259,9 @@ final readonly class Expression
      *
      * @since   2.0.0
      */
-    public function evaluate(array $fields): mixed
+    public function evaluate(array $fields, array $lines = []): mixed
     {
-        return ExpressionEvaluator::evaluate($this, $fields);
+        return ExpressionEvaluator::evaluate($this, $fields, $lines);
     }
 
     /**
@@ -206,7 +271,8 @@ final readonly class Expression
      * expression inside its persisted state and rebuild the same tree in a later request.
      *
      * @return  array<string, mixed>  Node keyed by `op` and `type`, plus `value` for a literal, `field`
-     *          for a field reference, or nested `args` for an operator, and `scale` where one is set.
+     *          for a field reference, `lines` and `aggregate` — and `field` where the reduction folds
+     *          one — for a line aggregation, or nested `args` for an operator, and `scale` where one is set.
      *
      * @since   2.0.0
      */
@@ -217,6 +283,12 @@ final readonly class Expression
             $document['value'] = $this->literal;
         } elseif ($this->operator === 'field') {
             $document['field'] = $this->field;
+        } elseif ($this->operator === 'line_aggregate') {
+            $document['lines'] = $this->lines;
+            $document['aggregate'] = $this->aggregate;
+            if ($this->field !== null) {
+                $document['field'] = $this->field;
+            }
         } else {
             $document['args'] = array_map(static fn (self $item): array => $item->toArray(), $this->arguments);
         }
@@ -233,7 +305,8 @@ final readonly class Expression
      * Depth is counted down the descent and the node total is carried by reference across it, so a tree
      * is refused the moment it crosses a limit rather than after the whole document has been walked.
      * Each operator family is then held to its own shape: a literal carries exactly `value`, a field
-     * reference exactly `field`, and everything else exactly `args` with an optional `scale`.
+     * reference exactly `field`, a line aggregation exactly `lines`, `aggregate` and — for a reduction
+     * that folds a value — `field`, and everything else exactly `args` with an optional `scale`.
      *
      * @param   array<string, mixed>  $document    Node object to validate at this level of the descent.
      * @param   int                   $depth       Nesting level of this node; the root is passed as 1.
@@ -252,7 +325,10 @@ final readonly class Expression
         if ($depth > self::MAX_DEPTH) {
             throw new InvalidBusinessDefinition('A condition or formula exceeds 12 expression levels.');
         }
-        $unknown = array_diff(array_keys($document), ['op', 'type', 'args', 'value', 'field', 'scale']);
+        $unknown = array_diff(
+            array_keys($document),
+            ['op', 'type', 'args', 'value', 'field', 'scale', 'lines', 'aggregate'],
+        );
         if ($unknown !== []) {
             throw new InvalidBusinessDefinition('A condition or formula contains an unknown property.');
         }
@@ -297,6 +373,9 @@ final readonly class Expression
 
             return new self($operator, $type, [], null, $field);
         }
+        if ($operator === 'line_aggregate') {
+            return self::parseLineAggregate($document, $type);
+        }
         if (array_diff(array_keys($document), ['op', 'type', 'args', 'scale']) !== []) {
             throw new InvalidBusinessDefinition('An operator expression has an invalid shape.');
         }
@@ -329,6 +408,63 @@ final readonly class Expression
         self::assertOperatorType($operator, $type, $parsed);
 
         return new self($operator, $type, $parsed, null, null, $scale);
+    }
+
+    /**
+     * Validate a `line_aggregate` leaf and build the immutable node for it.
+     *
+     * The leaf is deliberately narrow, because a rule about a document is not a query over it: it names
+     * exactly one owned-line relationship, applies exactly one reduction from a closed set, and folds at
+     * most one line field. `count` measures the collection and so must carry no field; `sum` folds a value
+     * and so must carry one. The result type is held to what the reduction can honestly produce, which is
+     * what keeps the surrounding comparison exact — a summed decimal stays a canonical decimal string and
+     * never becomes a float on the way into a `gte`.
+     *
+     * @param   array<string, mixed>  $document  Node object as it appears in the definition.
+     * @param   string                $type      Result type the node declares, already in the supported set.
+     *
+     * @return  self  The aggregation leaf.
+     *
+     * @throws  InvalidBusinessDefinition  When the node carries a property this leaf does not take, names
+     *          an unsupported reduction, spells the relationship or field handle wrongly, declares a result
+     *          type the reduction cannot produce, or supplies a field where the reduction takes none or
+     *          omits one where it requires it.
+     *
+     * @since   2.0.0
+     */
+    private static function parseLineAggregate(array $document, string $type): self
+    {
+        if (array_diff(array_keys($document), ['op', 'type', 'lines', 'aggregate', 'field']) !== []) {
+            throw new InvalidBusinessDefinition('A line aggregation has an invalid shape.');
+        }
+        $aggregate = $document['aggregate'] ?? null;
+        if (!is_string($aggregate) || !isset(self::LINE_AGGREGATES[$aggregate])) {
+            throw new InvalidBusinessDefinition('A line aggregation names an unsupported reduction.');
+        }
+        $lines = $document['lines'] ?? null;
+        if (!is_string($lines) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $lines) !== 1) {
+            throw new InvalidBusinessDefinition('A line aggregation references an invalid owned-line collection.');
+        }
+        if (!in_array($type, self::LINE_AGGREGATES[$aggregate], true)) {
+            throw new InvalidBusinessDefinition(sprintf(
+                'Line aggregation %s cannot produce %s.',
+                $aggregate,
+                $type,
+            ));
+        }
+        $field = $document['field'] ?? null;
+        if ($aggregate === 'count') {
+            if ($field !== null) {
+                throw new InvalidBusinessDefinition('A line count measures the collection and takes no field.');
+            }
+
+            return new self('line_aggregate', $type, [], null, null, null, $lines, $aggregate);
+        }
+        if (!is_string($field) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $field) !== 1) {
+            throw new InvalidBusinessDefinition('A line aggregation references an invalid line field.');
+        }
+
+        return new self('line_aggregate', $type, [], null, $field, null, $lines, $aggregate);
     }
 
     /**
@@ -563,11 +699,37 @@ final readonly class Expression
      */
     private function collectDependencies(array &$dependencies): void
     {
-        if ($this->field !== null) {
+        if ($this->operator === 'field' && $this->field !== null) {
             $dependencies[] = $this->field;
         }
         foreach ($this->arguments as $argument) {
             $argument->collectDependencies($dependencies);
+        }
+    }
+
+    /**
+     * Append this node's owned-line reduction, then those of its subtree, to the accumulator.
+     *
+     * A relationship handle is recorded even when the reduction folds no field, so a `count` still tells a
+     * caller which collection it has to gather. `lineDependencies()` owns the deduplication and ordering.
+     *
+     * @param   array<string, list<string>>  $collections  Accumulator appended to in place, keyed by
+     *          owned-line relationship handle.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function collectLineDependencies(array &$collections): void
+    {
+        if ($this->operator === 'line_aggregate' && $this->lines !== null) {
+            $collections[$this->lines] ??= [];
+            if ($this->field !== null) {
+                $collections[$this->lines][] = $this->field;
+            }
+        }
+        foreach ($this->arguments as $argument) {
+            $argument->collectLineDependencies($collections);
         }
     }
 }

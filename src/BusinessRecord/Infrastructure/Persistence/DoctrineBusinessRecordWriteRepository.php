@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
@@ -22,6 +23,7 @@ use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnav
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
+use Kumwe\CMS\BusinessRecord\Application\OwnedLineWrite;
 use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\CMS\BusinessRecord\Application\RelationshipWriteResult;
 use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
@@ -43,10 +45,39 @@ use LogicException;
  * translated into the BusinessRecord exception vocabulary, so a unique index, a foreign key, or a
  * deadlock reaches the caller as a domain exception rather than as a driver one.
  *
+ * One entry point writes a collection rather than a row. `writeOwnedLines()` stores a whole document's
+ * lines in statements bounded by the parameter budget instead of one call per line, and leaves the owner
+ * row alone because the caller has already written the header at its new version in the same transaction.
+ *
  * @since  2.0.0
  */
 final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRecordWriteRepository
 {
+    /**
+     * Largest number of owned lines one statement carries, whichever ceiling binds first.
+     *
+     * A hundred rows keeps a batched insert's bound parameter list small enough to stay comfortable on
+     * every supported engine even for a wide line entity, and keeps the statement text well inside the
+     * packet each engine will accept. It is a ceiling rather than a target: the effective batch is
+     * whichever of this and the parameter budget is smaller.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int OWNED_LINE_BATCH = 100;
+
+    /**
+     * Largest number of bound parameters one owned-line statement is allowed to carry.
+     *
+     * MariaDB, MySQL and PostgreSQL all refuse a statement past 65,535 placeholders, so the budget sits an
+     * order of magnitude below that: a batch is sized from the line entity's own column count, which means
+     * a wide line simply batches fewer rows instead of failing on the widest engine.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int MAXIMUM_PARAMETERS = 4096;
+
     /**
      * Wire the adapter to the connection it writes through and the codec that shapes field values.
      *
@@ -661,6 +692,281 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         }
 
         return $updated;
+    }
+
+    /**
+     * Store one owner's whole owned-line collection, in statements bounded by the change rather than by it.
+     *
+     * Nothing here touches the owner row: the caller has already written the header at its new version
+     * inside the same transaction, and a second bump would make one document write count as two. What is
+     * done here is the collection, in a fixed order that keeps the unique index over owner and position
+     * satisfied at every step — remove what the document dropped, park every survivor on a negative slot
+     * when the order moved, write the survivors back at their final slots, then insert what is new.
+     *
+     * Statement growth is deliberately sublinear in the collection. Inserts and deletes go in bounded
+     * batches sized so a thousand-line document stays well inside the parameter ceiling every supported
+     * engine enforces, and a line the caller did not mark modified issues nothing at all.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved           Definition pinned to the installation
+     *          holding the owner row and its line table.
+     * @param   BusinessRecord              $owner              Owner record the lines belong to.
+     * @param   RelationshipDefinition      $relationship       Owned-line collection being written.
+     * @param   EntityTypeDefinition        $lineDefinition     Pinned line definition the values encode
+     *          against.
+     * @param   list<OwnedLineWrite>        $lines              The whole collection in position order.
+     * @param   list<string>                $removedRecordKeys  Storage keys the document no longer holds.
+     * @param   bool                        $renumber           True when at least one surviving line moves.
+     * @param   string                      $actorId            Actor credited with every row this touches.
+     * @param   DateTimeImmutable           $at                 Instant stamped on every row this touches.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  BusinessRelationshipRejected  When the relationship is not an owned-line collection, or a
+     *          line did not move under the version the caller named for it.
+     * @throws  BusinessRecordSchemaUnavailable  When the installation describes no line table for this
+     *          collection, or a column the write names is not in its blueprint.
+     * @throws  BusinessRecordUniqueConflict  When a line collides with a unique index.
+     * @throws  BusinessRecordReferenceConflict  When a line's stored reference names a row that is absent.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses a statement for any other
+     *          reason, such as a deadlock.
+     *
+     * @since   2.0.0
+     */
+    public function writeOwnedLines(
+        ResolvedBusinessDefinition $resolved,
+        BusinessRecord $owner,
+        RelationshipDefinition $relationship,
+        EntityTypeDefinition $lineDefinition,
+        array $lines,
+        array $removedRecordKeys,
+        bool $renumber,
+        string $actorId,
+        DateTimeImmutable $at,
+    ): void {
+        $this->assertTransaction();
+        if ($relationship->kind !== RelationshipKind::OwnedLineCollection) {
+            throw new BusinessRelationshipRejected('Only an owned-line collection is written as a document.');
+        }
+        $table = $this->associationTableOrNull($resolved, $relationship)
+            ?? throw new BusinessRecordSchemaUnavailable('The installed owned-line table is unavailable.');
+        try {
+            $this->deleteOwnedLines($table, $owner->recordKey, $removedRecordKeys);
+            if ($renumber) {
+                $this->database->executeStatement(sprintf(
+                    'UPDATE %s SET %s = -%s - 1 WHERE %s = ?',
+                    $this->quote($table->physicalName),
+                    $this->quote($this->physical($table, 'position')),
+                    $this->quote($this->physical($table, 'position')),
+                    $this->quote($this->physical($table, 'owner_id')),
+                ), [$owner->recordKey], [$this->type($table, 'owner_id')]);
+            }
+            $inserts = [];
+            foreach ($lines as $line) {
+                if ($line->storedVersion === null) {
+                    $inserts[] = $this->ownedLineRow($table, $lineDefinition, $owner, $line, $actorId, $at);
+                    continue;
+                }
+                if (!$line->modified) {
+                    continue;
+                }
+                $this->updateOwnedLine($table, $lineDefinition, $owner, $line, $actorId, $at);
+            }
+            $this->insertOwnedLines($table, $inserts);
+        } catch (DbalException $exception) {
+            $this->map($exception, $relationship->handle);
+        }
+    }
+
+    /**
+     * Delete the lines a document no longer holds, in batches bounded by the parameter ceiling.
+     *
+     * The owner's key is part of every predicate, so a key that belongs to another document deletes
+     * nothing rather than reaching outside the collection being written.
+     *
+     * @param   PhysicalTableBlueprint  $table       Installed line table holding the rows.
+     * @param   string                  $ownerKey    Storage key of the owner whose lines are removed.
+     * @param   list<string>            $recordKeys  Storage keys of the lines to delete.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When a column this delete names is not in the blueprint.
+     * @throws  \Doctrine\DBAL\Exception  When the driver refuses the delete.
+     *
+     * @since   2.0.0
+     */
+    private function deleteOwnedLines(PhysicalTableBlueprint $table, string $ownerKey, array $recordKeys): void
+    {
+        foreach (array_chunk($recordKeys, self::OWNED_LINE_BATCH) as $batch) {
+            $this->database->executeStatement(sprintf(
+                'DELETE FROM %s WHERE %s = ? AND %s IN (?)',
+                $this->quote($table->physicalName),
+                $this->quote($this->physical($table, 'owner_id')),
+                $this->quote($this->physical($table, 'line_id')),
+            ), [$ownerKey, $batch], [
+                $this->type($table, 'owner_id'),
+                ArrayParameterType::STRING,
+            ]);
+        }
+    }
+
+    /**
+     * Build the whole column set one new line row is inserted with.
+     *
+     * A line inherits its owner's tenancy rather than declaring its own, starts at version one, and takes
+     * the slot the caller assigned it from the submitted order.
+     *
+     * @param   PhysicalTableBlueprint  $table           Installed line table receiving the row.
+     * @param   EntityTypeDefinition    $lineDefinition  Pinned line definition the values encode against.
+     * @param   BusinessRecord          $owner           Owner record supplying the key and the scope.
+     * @param   OwnedLineWrite          $line            Prepared line to store.
+     * @param   string                  $actorId         Actor credited with the new row.
+     * @param   DateTimeImmutable       $at              Instant stamped on the new row.
+     *
+     * @return  array<string, mixed>  Column values keyed by physical name.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When a column the row needs is not in the blueprint, or
+     *          the owner carries a scope value the line table has nowhere to record.
+     *
+     * @since   2.0.0
+     */
+    private function ownedLineRow(
+        PhysicalTableBlueprint $table,
+        EntityTypeDefinition $lineDefinition,
+        BusinessRecord $owner,
+        OwnedLineWrite $line,
+        string $actorId,
+        DateTimeImmutable $at,
+    ): array {
+        return [
+            $this->physical($table, 'owner_id') => $owner->recordKey,
+            $this->physical($table, 'line_id') => $line->recordKey,
+            $this->physical($table, 'position') => $line->position,
+            $this->physical($table, 'version') => 1,
+            $this->physical($table, 'created_by') => $actorId,
+            $this->physical($table, 'created_at') => $at,
+            $this->physical($table, 'updated_by') => $actorId,
+            $this->physical($table, 'updated_at') => $at,
+            ...$this->associationScopeValues($table, $owner),
+            ...$this->codec->encodeColumns($lineDefinition, $table, $line->values),
+        ];
+    }
+
+    /**
+     * Insert prepared line rows as multi-row statements bounded by the parameter ceiling.
+     *
+     * Every row carries the same column set, which is what lets one statement hold a batch of them; the
+     * batch size is chosen from the column count so the bound parameter list stays far below the limit
+     * MariaDB, MySQL and PostgreSQL each impose, and a thousand-line document therefore costs a handful of
+     * statements rather than a thousand.
+     *
+     * @param   PhysicalTableBlueprint      $table  Installed line table receiving the rows.
+     * @param   list<array<string, mixed>>  $rows   Column values keyed by physical name, one entry per row.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When a named column is not in the table's blueprint.
+     * @throws  \Doctrine\DBAL\Exception  When the driver refuses the insert.
+     *
+     * @since   2.0.0
+     */
+    private function insertOwnedLines(PhysicalTableBlueprint $table, array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
+        $columns = array_keys($rows[0]);
+        $columnTypes = $this->types($table, $rows[0]);
+        $batch = max(1, min(self::OWNED_LINE_BATCH, intdiv(self::MAXIMUM_PARAMETERS, max(1, count($columns)))));
+        $quoted = implode(', ', array_map($this->quote(...), $columns));
+        $placeholders = '(' . implode(', ', array_fill(0, count($columns), '?')) . ')';
+        foreach (array_chunk($rows, $batch) as $chunk) {
+            /** @var list<mixed> $parameters */
+            $parameters = [];
+            /** @var list<string> $types */
+            $types = [];
+            foreach ($chunk as $row) {
+                foreach ($columns as $column) {
+                    $parameters[] = $row[$column] ?? null;
+                    $types[] = $columnTypes[$column];
+                }
+            }
+            $this->database->executeStatement(sprintf(
+                'INSERT INTO %s (%s) VALUES %s',
+                $this->quote($table->physicalName),
+                $quoted,
+                implode(', ', array_fill(0, count($chunk), $placeholders)),
+            ), $parameters, $types);
+        }
+    }
+
+    /**
+     * Rewrite one existing line under the version the caller read for it.
+     *
+     * The predicate names the owner as well as the line, so a line cannot be moved into a document it does
+     * not belong to, and it names the version so a line that changed under the command is refused rather
+     * than overwritten — which is what carries the aggregate's optimistic concurrency down to the row.
+     *
+     * @param   PhysicalTableBlueprint  $table           Installed line table holding the row.
+     * @param   EntityTypeDefinition    $lineDefinition  Pinned line definition the values encode against.
+     * @param   BusinessRecord          $owner           Owner record the line must still belong to.
+     * @param   OwnedLineWrite          $line            Prepared line, carrying the version it was read at.
+     * @param   string                  $actorId         Actor credited with the new line version.
+     * @param   DateTimeImmutable       $at              Instant stamped on the rewritten row.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRelationshipRejected  When the line did not move under the version the caller named.
+     * @throws  BusinessRecordSchemaUnavailable  When a column this write names is not in the blueprint.
+     * @throws  \Doctrine\DBAL\Exception  When the driver refuses the update.
+     *
+     * @since   2.0.0
+     */
+    private function updateOwnedLine(
+        PhysicalTableBlueprint $table,
+        EntityTypeDefinition $lineDefinition,
+        BusinessRecord $owner,
+        OwnedLineWrite $line,
+        string $actorId,
+        DateTimeImmutable $at,
+    ): void {
+        $values = [
+            $this->physical($table, 'position') => $line->position,
+            $this->physical($table, 'version') => ($line->storedVersion ?? 0) + 1,
+            $this->physical($table, 'updated_by') => $actorId,
+            $this->physical($table, 'updated_at') => $at,
+            ...$this->codec->encodeColumns($lineDefinition, $table, $line->values),
+        ];
+        /** @var list<string> $assignments */
+        $assignments = [];
+        /** @var list<mixed> $parameters */
+        $parameters = [];
+        /** @var list<string> $types */
+        $types = [];
+        $columnTypes = $this->types($table, $values);
+        foreach ($values as $column => $value) {
+            $assignments[] = $this->quote($column) . ' = ?';
+            $parameters[] = $value;
+            $types[] = $columnTypes[$column];
+        }
+        array_push($parameters, $owner->recordKey, $line->recordKey, $line->storedVersion);
+        array_push(
+            $types,
+            $this->type($table, 'owner_id'),
+            $this->type($table, 'line_id'),
+            Types::INTEGER,
+        );
+        $affected = $this->database->executeStatement(sprintf(
+            'UPDATE %s SET %s WHERE %s = ? AND %s = ? AND %s = ?',
+            $this->quote($table->physicalName),
+            implode(', ', $assignments),
+            $this->quote($this->physical($table, 'owner_id')),
+            $this->quote($this->physical($table, 'line_id')),
+            $this->quote($this->physical($table, 'version')),
+        ), $parameters, $types);
+        if ($affected !== 1) {
+            throw new BusinessRelationshipRejected('A document line changed while the document was being written.');
+        }
     }
 
     /**

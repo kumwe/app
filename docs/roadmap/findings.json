@@ -198,31 +198,6 @@
       "closure_sha": null
     },
     {
-      "id": "V2-SCL-003",
-      "title": "No atomic multi-line document command",
-      "severity": "critical",
-      "state": "reproduced",
-      "phase": "4",
-      "gate": "A",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "relate() and the single-line relation commands",
-          "note": "A header plus N owned lines is expressed as a header mutation followed by N relation mutations, each with its own transaction, version, revision, audit entry, event and idempotency row."
-        },
-        {
-          "file": "src/BusinessDefinition/Domain/RelationshipKind.php",
-          "symbol": "RelationshipKind::OwnedLineCollection",
-          "note": "The relational owned-line primitive already exists; what is missing is the one-command, one-transaction, one-version commit over it."
-        }
-      ],
-      "acceptance_test": "One generic vertical-neutral command atomically commits a 100-line and a 1,000-line aggregate with one authorization decision, one idempotent outcome, one transaction, one aggregate version increment, one revision identity, one audit action and one bounded aggregate event. Full rollback on any invalid or conflicting line. Exact replay returns the original result without rewriting lines, revisions, audit entries or events. The single-line relation APIs remain supported and unchanged.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "The contract is designed in phase 0 as an architecture decision record, before implementation, so extension authors build against the real shape from the moment Gate A opens."
-    },
-    {
       "id": "V2-SCL-004",
       "title": "The seeded idempotency purge ceiling is two orders of magnitude below enterprise ingress",
       "severity": "high",
@@ -694,38 +669,6 @@
       "acceptance_test": "A machine-readable classification of public versus internal contract, plus executable compatibility fixtures: a representative signed package for every supported manifest and SPI generation that is still promised, which installs, activates, upgrades, disables, reactivates and uninstalls according to its declared compatibility contract. A later refactor is acceptable only if these packages still pass.",
       "owner": "UNASSIGNED",
       "closure_sha": null
-    },
-    {
-      "id": "V2-ERP-001",
-      "title": "A record invariant cannot aggregate over an owned-line collection",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "4",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessDefinition/Domain/Expression.php",
-          "symbol": "Expression::OPERATORS",
-          "note": "Lines 58-80. Twenty-one operators: literal, field, eq, ne, lt, lte, gt, gte, and, or, not, add, subtract, multiply, divide, concat, coalesce, if, is_null, in, contains. There is no sum, count or any other aggregation over a collection."
-        },
-        {
-          "file": "src/BusinessRecord/Application/RecordRuleValidator.php",
-          "symbol": "the invariant evaluation",
-          "note": "Line 167 builds the evaluation scope with RecordExpressionValues::from($values), where $values is the record's own field values. Owned lines are not in scope."
-        },
-        {
-          "file": "src/BusinessDefinition/Domain/RecordInvariantDefinition.php",
-          "symbol": "the class docblock",
-          "note": "Offers 'a total agreeing with its lines' as an example of what an invariant expresses. The vocabulary above cannot express it. The docblock overstates the capability and must be corrected whichever way the decision goes."
-        }
-      ],
-      "acceptance_test": "Core supplies a bounded aggregation over an owned-line collection: over exactly one declared owned-line relation, over exactly one line field, under the vocabulary's existing 32KB encoded ceiling and node-count discipline. A definition declares 'total equals the sum of line amounts'; a 1,000-line document violating it is rejected atomically with no partial commit and a stable named error identifying the invariant rather than the row; the evaluation runs once per aggregate command rather than once per line, proven by a query-count assertion so a per-line regression fails on the count rather than on a timing threshold; exact decimal semantics hold end to end, the sum of 1,000 ExactDecimal values being an ExactDecimal and never a float. A unit test proves Expression refuses an aggregation naming a relation the definition does not declare or a field the line entity does not carry. RecordInvariantDefinition's docblock becomes accurate in the same change.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "P4-D",
-      "product_owner_decision": "Decision D13.1 — core, and urgent. Without it every extension reimplements the most fundamental document rule differently and none provably.",
-      "enforcing_check": "Unit test on Expression's aggregation validation; three-engine integration test asserting atomic rejection of a violating 1,000-line document; query-count assertion proving once-per-command evaluation."
     },
     {
       "id": "V2-ERP-002",
