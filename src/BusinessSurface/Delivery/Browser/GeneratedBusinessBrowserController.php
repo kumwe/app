@@ -11,6 +11,7 @@ use Kumwe\CMS\Application\Automation\IdempotencyKey;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\CMS\BusinessSurface\Application\BusinessFormInputMapper;
 use Kumwe\CMS\BusinessSurface\Application\BusinessOperationNotFound;
@@ -876,6 +877,12 @@ final readonly class GeneratedBusinessBrowserController
     /**
      * Apply one form operation and return a same-origin redirect.
      *
+     * The two failures an operator can recover from without leaving the screen never reach the error
+     * page. A rejected value re-renders the same form at 422 with every submitted value retained and
+     * the offending fields marked, and a lost optimistic-concurrency race re-renders it at 409 with the
+     * same retained values beside the version the record now carries. Both keep the typed document
+     * intact; nothing is written on either path, so the newer record is never silently overwritten.
+     *
      * @param   ExecutionContext      $context     Authenticated actor and scope.
      * @param   BusinessSurface       $surface     Administrator or portal boundary.
      * @param   string                $basePath    Surface root used for redirects.
@@ -883,7 +890,11 @@ final readonly class GeneratedBusinessBrowserController
      * @param   ?string               $record      Optional route record identity.
      * @param   array<string, mixed>  $form        Decoded form body.
      *
-     * @return  BusinessBrowserResult  303 redirect, or a 422 form with retained values and field errors.
+     * @return  BusinessBrowserResult  303 redirect, a 422 form carrying field errors, or a 409 form
+     *          carrying the stale-version notice; every failing page retains the submitted values.
+     *
+     * @throws  BusinessRecordVersionConflict  When an operation carrying no typed input lost the race,
+     *          leaving nothing to retain and no form to return to.
      *
      * @since   2.0.0
      */
@@ -1195,7 +1206,95 @@ final readonly class GeneratedBusinessBrowserController
                 ...$model,
                 'error_summary' => 'The business record failed validation. Review the marked fields.',
             ], status: 422);
+        } catch (BusinessRecordVersionConflict $exception) {
+            if ($record === null || !in_array($operation, ['update', 'relate'], true)) {
+                throw $exception;
+            }
+
+            return $this->conflicted(
+                $context,
+                $surface,
+                $definition,
+                $record,
+                $operation,
+                $form,
+                $exception->expectedVersion,
+            );
         }
+    }
+
+    /**
+     * Re-render the submitted form after another writer moved the record on first.
+     *
+     * The re-read carries the version the record holds now, so the returned form quotes it and the
+     * operator's next submission applies their retained values on top of the newer record instead of
+     * failing again. Nothing was written when this ran, so choosing to leave the screen — or to reload
+     * it — discards the attempt rather than the stored record.
+     *
+     * @param   ExecutionContext      $context          Authenticated actor and scope.
+     * @param   BusinessSurface       $surface          Administrator or portal boundary.
+     * @param   string                $definition       Definition UUID or handle.
+     * @param   string                $record           Public record identity.
+     * @param   string                $operation        `update` or `relate`; both carry typed input.
+     * @param   array<string, mixed>  $form             Decoded form body retained for the re-render.
+     * @param   int                   $expectedVersion  Version the refused submission was composed against.
+     *
+     * @return  BusinessBrowserResult  409 form or relations page carrying the submitted values.
+     *
+     * @since   2.0.0
+     */
+    private function conflicted(
+        ExecutionContext $context,
+        BusinessSurface $surface,
+        string $definition,
+        string $record,
+        string $operation,
+        array $form,
+        int $expectedVersion,
+    ): BusinessBrowserResult {
+        $conflict = [
+            'expected_version' => $expectedVersion,
+            'summary' => 'Another save changed this record after you opened it, so nothing you submitted '
+                . 'was written and the newer record is untouched.',
+        ];
+        if ($operation === 'relate') {
+            $relationship = $this->required($form, 'relationship');
+            $model = $this->business->relationship($context, $surface, $definition, $record, $relationship);
+            $model = $this->relationshipChoices(
+                $context,
+                $surface,
+                $definition,
+                $record,
+                $model,
+                [],
+                $relationship,
+                $this->nestedObject($form, 'target_values'),
+                [],
+                $this->nestedObject($form, 'target_structured'),
+                $this->nestedObject($form, 'target_choice_labels'),
+            );
+
+            return new BusinessBrowserResult('business-detail', [
+                ...$model,
+                'record_task' => 'relations',
+                'version_conflict' => $conflict,
+            ], status: 409);
+        }
+        $model = $this->business->form($context, $surface, $definition, $record, $this->values($form));
+        $model = $this->formChoices(
+            $context,
+            $surface,
+            $definition,
+            $record,
+            $model,
+            [],
+            $this->nestedObject($form, 'structured'),
+        );
+
+        return new BusinessBrowserResult('business-form', [
+            ...$model,
+            'version_conflict' => $conflict,
+        ], status: 409);
     }
 
     /**

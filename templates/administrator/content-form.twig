@@ -27,6 +27,29 @@
       <form class="panel panel-body form-grid" action="/administrator/content/new" method="get"><label>Content type<select name="content_type" data-content-type-selector>{% for type in content_types %}<option value="{{ type.id }}"{% if type.id == content_type.id %} selected{% endif %}>{{ type.name }}</option>{% endfor %}</select></label><div><span class="field-help">Changing the type changes the fields available for this item.</span><noscript><button type="submit">Use selected type</button></noscript></div></form>
     {% endif %}
 
+    {% if version_conflict %}
+      <section class="notice warning content-version-conflict" data-kis-state="conflict" role="alert" aria-labelledby="content-conflict-title" tabindex="-1">
+        <div>
+          <h2 id="content-conflict-title">Another actor saved a newer version</h2>
+          <p>Another save changed this item after you opened it, so nothing you submitted was written and the newer version is untouched. You composed this form against version {{ version_conflict.expected_version }}; the stored item is now at version {{ version_conflict.current_version }}.</p>
+          <p>Everything you typed is still below. Choose one:</p>
+          <ul>
+            <li>Save changes again to apply your entries on top of version {{ version_conflict.current_version }}.</li>
+            <li><a href="/administrator/content/{{ entry.id }}/edit">Reload version {{ version_conflict.current_version }}</a> and lose what you typed here.</li>
+          </ul>
+        </div>
+      </section>
+    {% endif %}
+    {% if content_violations is not empty %}
+      <section class="notice danger content-error-summary kis-validation-summary" data-kis-component="validation-summary" role="alert" aria-labelledby="content-error-title" tabindex="-1">
+        <div>
+          <h2 id="content-error-title">The item could not be saved</h2>
+          <p>The content model refused these values. Everything you typed is still below; correct the fields named here and save again.</p>
+          <ul>{% for violation in content_violations %}<li>{{ violation }}</li>{% endfor %}</ul>
+        </div>
+      </section>
+    {% endif %}
+
     <div class="editor-grid">
       <kumwe-dirty-form>
       <form action="{{ entry ? '/administrator/content/' ~ entry.id : '/administrator/content' }}" method="post" class="panel editor-main editor-form stack" data-kis-dirty-form>
@@ -36,15 +59,15 @@
       <section id="content-details" class="stack kis-phase-five-card" aria-labelledby="content-details-title">
         <div><p class="eyebrow">Identity</p><h2 id="content-details-title">Content details</h2><p class="field-help">Name the item and choose the stable public address editors will recognize.</p></div>
         <div class="two-column">
-        <label>Title<input type="text" name="title" maxlength="255" value="{{ entry.title|default('') }}" required data-title-input></label>
-        <label>URL slug<small>Used as /{{ entry.slug|default('your-page') }} until a menu path becomes canonical.</small><span class="input-prefix"><span>/</span><input type="text" name="slug" maxlength="160" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{ entry.slug|default('') }}" required data-slug-input></span></label>
+        <label>Title<input type="text" name="title" maxlength="255" value="{{ editor_input ? editor_input.title : entry.title|default('') }}" required data-title-input></label>
+        <label>URL slug<small>Used as /{{ editor_input and editor_input.slug is not empty ? editor_input.slug : entry.slug|default('your-page') }} until a menu path becomes canonical.</small><span class="input-prefix"><span>/</span><input type="text" name="slug" maxlength="160" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{ editor_input ? editor_input.slug : entry.slug|default('') }}" required data-slug-input></span></label>
         </div>
       </section>
       <section id="content-fields" class="stack kis-phase-five-card" aria-labelledby="content-fields-title">
         <div><p class="eyebrow">Authoring</p><h2 id="content-fields-title">Content fields</h2><p class="field-help">Complete the fields supplied by the {{ content_type.name }} model.</p></div>
         <kumwe-schema-form class="stack">{{ field_renderer.render(fields) }}</kumwe-schema-form>
       </section>
-      <fieldset id="content-publication" class="field-group stack kis-phase-five-card"><legend>Publication timing</legend><p class="field-help">Leave these fields empty to publish immediately when the workflow reaches a public state.</p><div class="two-column"><label>Publish at<input type="datetime-local" name="publish_at" value="{{ entry.publication_window.starts_at|default('') ? entry.publication_window.starts_at|date('Y-m-d\\TH:i') : '' }}"></label><label>Unpublish at<input type="datetime-local" name="unpublish_at" value="{{ entry.publication_window.ends_at|default('') ? entry.publication_window.ends_at|date('Y-m-d\\TH:i') : '' }}"></label></div></fieldset>
+      <fieldset id="content-publication" class="field-group stack kis-phase-five-card"><legend>Publication timing</legend><p class="field-help">Leave these fields empty to publish immediately when the workflow reaches a public state.</p><div class="two-column"><label>Publish at<input type="datetime-local" name="publish_at" value="{{ editor_input ? editor_input.publish_at : (entry.publication_window.starts_at|default('') ? entry.publication_window.starts_at|date('Y-m-d\\TH:i') : '') }}"></label><label>Unpublish at<input type="datetime-local" name="unpublish_at" value="{{ editor_input ? editor_input.unpublish_at : (entry.publication_window.ends_at|default('') ? entry.publication_window.ends_at|date('Y-m-d\\TH:i') : '') }}"></label></div></fieldset>
       <p class="kis-dirty-status" role="status" aria-live="polite" data-kis-dirty-status>Changes are saved when you submit this form.</p>
       <div class="page-actions"><button class="primary" type="submit">{{ entry ? 'Save changes' : 'Create draft' }}</button><a class="button" href="/administrator/content">Cancel</a></div>
       </form>
