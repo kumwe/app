@@ -50,6 +50,18 @@ use RuntimeException;
 final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
 {
     /**
+     * Savepoint name the occurrence insert is attempted inside, so a duplicate undoes only itself.
+     *
+     * One name is reused across every schedule in a pass: each `dispatch()` opens the savepoint and
+     * either releases or rolls back to it before the next one begins, and re-declaring a savepoint name
+     * replaces the earlier mark on every supported engine.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string OCCURRENCE_SAVEPOINT = 'kumwe_schedule_occurrence';
+
+    /**
      * Wire the scheduler to its connection, clock and authorization collaborators.
      *
      * @param  Connection                    $database              Connection the schedule, job and site tables live
@@ -465,6 +477,12 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * The next instant is computed from the instant that was due rather than from now, so a late pass
      * does not drift the recurrence off its grid.
      *
+     * The insert runs inside a savepoint because swallowing is not enough on its own. PostgreSQL marks
+     * the whole transaction as aborted when a statement violates a constraint, so a caught duplicate
+     * would leave the schedule advance — and every remaining schedule in this pass — unable to run at
+     * all. Rolling back to the savepoint undoes only the refused insert, which is what makes the swallow
+     * mean the same thing on all four supported engines.
+     *
      * @param   array<string, mixed>                               $row             Claimed schedule row.
      * @param   ?\Kumwe\CMS\Application\Authorization\SiteContext  $site            Owner, null if global.
      * @param   JobExecutionClass                                  $executionClass  Scope the job inherits.
@@ -491,6 +509,8 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         $maximumAttempts = $this->integer($row, 'maximum_attempts');
         $maximumAttempts = $this->queuePolicies?->maximumAttempts($queue, $jobType, $maximumAttempts)
             ?? $maximumAttempts;
+
+        $this->database->createSavepoint(self::OCCURRENCE_SAVEPOINT);
 
         try {
             $this->database->insert($this->tables->raw('jobs'), [
@@ -523,8 +543,11 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 }
                 $this->ownershipWriter->record(AuthorizationResource::item('job', $jobId), $site);
             }
+            $this->database->releaseSavepoint(self::OCCURRENCE_SAVEPOINT);
         } catch (UniqueConstraintViolationException) {
-            // A concurrent scheduler already emitted this occurrence.
+            // A concurrent scheduler already emitted this occurrence; undo only the refused insert so
+            // the advance below still runs on an engine that aborts a transaction on a failed statement.
+            $this->database->rollbackSavepoint(self::OCCURRENCE_SAVEPOINT);
         }
 
         $next = (new CronExpression($this->requiredString($row, 'cron_expression')))->next(
