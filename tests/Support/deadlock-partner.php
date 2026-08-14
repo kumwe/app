@@ -48,7 +48,7 @@ $await = static function (string $path, float $seconds): bool {
 $configuration = (new ConfigurationFactory())->create(Environment::fromGlobals());
 $database = (new DoctrineConnectionFactory($configuration->database))->create();
 $table = (new TableNames($database, $configuration->database->tablePrefix))->quoted('business_number_sequences');
-$touch = sprintf('UPDATE %s SET last_value = last_value + 1 WHERE id = ?', $table);
+$touch = sprintf('UPDATE %s SET current_value = current_value + 1 WHERE id = ?', $table);
 $outcome = 'no-conflict';
 
 try {
