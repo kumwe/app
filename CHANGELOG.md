@@ -367,6 +367,71 @@ development programme, from the architecture decision that opened it to the curr
   another package, and cannot supply a rate dated after the moment that was asked about. Rates disappear with
   their package on disable, uninstall or trust revocation, in the same sweep as everything else it
   contributed. With no rate package installed, a conversion is refused rather than guessed. (`8acec2c`)
+- **A translation layer, so the interface can be presented in a language other than English.** Until now
+  there was none at all: no catalogue, no translator, and no localizable helper on any of the three
+  rendering surfaces. Interface text is now authored as XLIFF 2.0 — the format every professional
+  translation tool and platform reads, so a translator never opens a source file and an external
+  translation service plugs in through a format it already speaks — and compiled at build time into plain
+  PHP arrays the opcode cache holds. A lookup is an array access: the request path parses no XML, reads no
+  file per message and warms no cache. `composer translation:compile` produces the compiled catalogue and
+  `composer translation:check` fails the build when it drifts from its source, in the same shape
+  `composer openapi:check` already guards the API contract. (`a7a93db`)
+- **Messages that are correct in every language's grammar, not only in English's.** Plurals, gender and
+  other selections, ordinals, numbers, currencies and dates go through ICU MessageFormat via the
+  already-required `ext-intl`. The reason is arithmetic rather than preference: the nine languages in scope
+  span one plural category, two, three and six, and Arabic alone distinguishes zero, one, two, few, many and
+  other. A whole sentence is one message, so a translator is never handed two halves of a sentence to
+  reassemble in a language that orders it differently. Without `ext-intl` the formatter refuses to start and
+  says why; it never degrades to a substituting formatter, because substitution is wrong rather than
+  approximate. (`a7a93db`)
+- **A stable message identifier, frozen before translation starts.** A message is looked up by a
+  namespaced, lowercase, dotted identifier — `core.administrator.settings.save_action` — and never by its
+  own English text. If the text were the key, correcting a typographical error in English would orphan that
+  message in every other language and every translator would redo work for a change that altered no
+  meaning. The grammar refuses source text by name, refuses an identifier an extension may not claim,
+  refuses fewer than three segments, and admits only lowercase, so two identifiers can never differ from
+  each other only by case. It is the same namespacing rule every other contributed identifier already
+  follows, and it is written down for extension authors in `docs/interface-translation.md`. (`a7a93db`)
+- **A four-step override chain, which is also how a vertical speaks its own language.** Lookup resolves
+  core, then extension, then site, then organization, most specific first and **per identifier rather than
+  per file** — so changing one word leaves every other message in that catalogue alone, and a later release
+  still improves the ones nobody touched. That is what lets a health vertical relabel "Client" as
+  "Patient", an education vertical as "Learner" and a hospitality vertical as "Guest", in one language or
+  in all nine, without forking core and without an extension shipping a parallel string table. A page
+  resolving several hundred messages performs one catalogue load, not several hundred. A message no layer
+  carries comes back as its own identifier and never as an empty string: a visibly untranslated interface
+  is a defect anyone can report, and a silently blank one is a defect nobody notices until a customer does.
+  (`a7a93db`)
+- **The language of a page is now decided per request, and `default_locale` finally decides something.**
+  The site setting has existed, been validated and been administered since 2.0.0 while nothing consumed it.
+  Negotiation now takes an explicit `locale` choice, then the client's accepted languages with their
+  quality values, then that setting, then the source language — so an installation that changes nothing
+  renders exactly as it did, and a site set to Hebrew renders in Hebrew with no further configuration. The
+  resolved locale is published on the request and on a request-scoped holder that is closed when the
+  request ends, and it is always an argument to a call rather than process state, so two jobs in one
+  long-lived worker cannot end up sharing a language. (`a7a93db`)
+- **Right-to-left presentation, finished rather than begun.** Every remaining physical inline-axis
+  declaration across the stylesheets is now a logical property — margins, padding, borders, offsets,
+  alignment and corner radii — so there is no second right-to-left stylesheet to keep in step: the whole
+  mirroring follows from the `dir` attribute the three layouts now emit from the resolved locale.
+  `composer assets:direction` fails the build on a new physical declaration, with an allowlist that ships
+  empty. A browser journey opens the public, administrator and portal entry surfaces in Hebrew and in
+  Arabic and asserts both the direction and the absence of horizontal overflow. (`a7a93db`)
+- **A gate that stops hardcoded interface text coming back.** `composer translation:strings` walks every
+  Twig template, refuses user-facing text nodes, translatable attributes and prose written into a Twig
+  expression, and proves both directions of the catalogue contract — no template may reference an
+  identifier the catalogue does not carry, and no catalogue entry may sit there unreferenced. What is
+  deliberately not translated is stated rather than guessed: machine error codes, audit action names, log
+  lines, developer exceptions and the product name, each with its reason recorded in
+  `tools/translation-extraction.json`. A template that appears in neither the enforced set nor the register
+  of work still to do is enforced, so a new template cannot quietly reintroduce inline text, and a
+  registered template that becomes clean must leave the register. The gate is proven in both directions:
+  green on this tree, and red with a useful message on a tree that puts back what it forbids. (`a7a93db`)
+- **`en-GB` extracted across the public and shared surfaces:** 89 messages covering the whole public site,
+  the eleven shared interface-standard partials, and the chrome, sign-in and access-denied surfaces of the
+  administrator and the portal. Extraction of the remaining record surfaces, the console and the
+  user-facing error paths stays in the roadmap with the register naming every template still to do.
+  (`a7a93db`)
 
 ### Changed
 

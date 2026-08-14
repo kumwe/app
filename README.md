@@ -153,6 +153,9 @@ composer cs                    # PSR-12 layout, 120-character lines
 composer analyse               # PHPStan at level max
 composer docs:api              # documentation-block completeness
 composer openapi:check         # the compiled REST contract is current
+composer translation:check     # the compiled message catalogues are current
+composer translation:strings   # no template carries user-facing text inline
+composer assets:direction      # no stylesheet pins a rule to one writing direction
 composer test:unit             # unit suite
 composer test:integration      # integration suite (needs the database)
 ```

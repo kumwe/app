@@ -37,7 +37,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | 3 — Seams and the ownership model | A | In progress — the business-group ownership model has landed; `P3-F` now only owes its three-engine proof | Phases 1 and 2 |
 | 4 — Atomic aggregate documents | A | Not started | Phase 3; phase 0 decision 2 |
 | E — Enterprise document primitives | A | Not started | Phase 3; phase 0 decisions 9 and 12, including the `V2-POS-002` choice. `PE-F` cannot run beside `P4-C` — both own numbering. |
-| L — Language, locale and multilingual content | A, with a B tail | Not started | Phase 0 decision 11; phase 2's `P2-E` locale axis. Otherwise parallel to 3, 4 and E. |
+| L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A` delivered, `PL-B`, `PL-C`, `PL-E` and `PL-F` part delivered | `PL-F`'s remaining half and `PL-G` need phase 2's `P2-E` locale axis. Otherwise parallel to 3, 4 and E. |
 | **Gate A** | | **Not assessed** | **Phases 4, E and L** |
 | 5 — Enterprise scale | B | Not started | Gate A |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
@@ -88,11 +88,11 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 ## Ledger snapshot
 
-**68 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**64 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 26 |
+| `accepted_for_implementation` | 22 |
 | `reproduced` | 15 |
 | `open` | 17 |
 | `conditional` | 7 |
@@ -119,12 +119,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 | Gate | Findings |
 |---|---|
-| A | 30 |
+| A | 26 |
 | B | 23 |
 | none | 15 |
 
-By severity: 1 critical, 34 high, 24 medium, 9 low.
-By origin: 24 from the independent review, 12 still-open entries from the executed gap matrix, 32 discovered
+By severity: 1 critical, 30 high, 24 medium, 9 low.
+By origin: 24 from the independent review, 12 still-open entries from the executed gap matrix, 28 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
@@ -161,7 +161,7 @@ Gate B's ten criteria are unchanged and are listed in [`README.md`](README.md) s
 ## Baseline health at this revision
 
 Green: `composer docs:api` (100% across 1,172 classes and 6,365 methods), `composer architecture:policy`,
-`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (68 open
+`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (64 open
 findings), `composer openapi:check`, `composer cs`, `composer analyse` (PHPStan level `max`, no errors),
 unit suite (1,555 tests, 22,316 assertions), architecture suite (114 tests, 9,386 assertions).
 
