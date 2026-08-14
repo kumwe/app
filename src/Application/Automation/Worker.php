@@ -207,8 +207,9 @@ final readonly class Worker
      *
      * A handler that never returns would otherwise pin the worker process for good while its lease
      * quietly expires and a sibling re-claims the same job; the alarm converts that into an ordinary
-     * failure the caller can record and move past. The signal functions are required rather than
-     * best-effort, so a runtime without them fails loudly instead of silently running unbounded.
+     * failure the caller can record and move past. The bound itself belongs to `RuntimeDeadline`, which
+     * the integration worker shares, so both durable workers wedge and recover the same way rather than
+     * one of them having the defence and the other only the intention.
      *
      * @param   callable(): void  $operation              Handler invocation to run under the deadline.
      * @param   int               $maximumHandlerSeconds  Wall-clock seconds before the alarm fires.
@@ -222,26 +223,9 @@ final readonly class Worker
      */
     private function handleWithinRuntimeLease(callable $operation, int $maximumHandlerSeconds): void
     {
-        if (
-            $maximumHandlerSeconds < 1
-            || !function_exists('pcntl_alarm')
-            || !function_exists('pcntl_async_signals')
-            || !function_exists('pcntl_signal')
-            || !function_exists('pcntl_signal_get_handler')
-        ) {
-            throw new RuntimeException('Durable workers require a positive, enforceable handler runtime limit.');
-        }
-        pcntl_async_signals(true);
-        $previous = pcntl_signal_get_handler(SIGALRM);
-        pcntl_signal(SIGALRM, static function (): never {
-            throw new RuntimeException('The job exceeded its maximum runtime lease.');
-        });
-        pcntl_alarm($maximumHandlerSeconds);
-        try {
-            $operation();
-        } finally {
-            pcntl_alarm(0);
-            pcntl_signal(SIGALRM, $previous);
-        }
+        (new RuntimeDeadline(
+            $maximumHandlerSeconds,
+            'The job exceeded its maximum runtime lease.',
+        ))->run($operation);
     }
 }

@@ -743,6 +743,11 @@ jobs:
           export KUMWE_RESTORE_MEDIA_DIR="$restore_root/media"
           export KUMWE_RESTORE_PRIVATE_DIR="$restore_root/private"
           bash tools/restore.sh "$backup_path"
+          # The completion manifest is what distinguishes a finished restore from an abandoned one, so
+          # the drill checks for it here rather than inferring completion from the presence of files.
+          jq -e '.format == "kumwe-restore-v1" and .resumed_after_interruption == false' \
+            "$restore_root/kumwe-restore-manifest.json" > /dev/null
+          test ! -e "$restore_root/kumwe-restore-manifest.json.partial"
           sudo chown -R 82:82 \
             "$restore_root/extensions" \
             "$restore_root/extension-assets" \

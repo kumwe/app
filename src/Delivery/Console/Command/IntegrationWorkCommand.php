@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Delivery\Console\Command;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Automation\RuntimeDeadline;
 use Kumwe\CMS\BusinessIntegration\Application\OutboxDispatcher;
 use Kumwe\CMS\BusinessIntegration\Application\ProcessWorkDispatcher;
 use Kumwe\CMS\Delivery\Console\Command;
@@ -16,6 +17,16 @@ use Throwable;
 
 /**
  * Supervised exact-generation worker for the transactional outbox and generic process work.
+ *
+ * Every claimed item runs under a wall-clock deadline drawn from its lease, enforced by the same
+ * `RuntimeDeadline` the job worker uses. The reason is the outbound half: `publish()` hands an event to
+ * an adapter that talks to somebody else's endpoint, and an endpoint that accepts a connection and then
+ * never answers blocks this process inside a socket read where neither the drain signal nor the
+ * max-runtime budget — both only consulted between iterations — is ever reached. Cutting the effect
+ * inside the lease rather than at it turns the wedge into a recorded failed attempt with backoff while
+ * the fence is still this worker's, so the retry is its own rather than a sibling's re-delivery racing
+ * a publish that may still be in flight. Enforcement is unconditional: without the pcntl signal
+ * functions the worker refuses to run rather than draining external effects with no deadline at all.
  *
  * @since  2.0.0
  */
@@ -64,7 +75,13 @@ final readonly class IntegrationWorkCommand implements Command
     }
 
     /**
-     * Execute the command with validated positional arguments and options.
+     * Drain the configured streams until the process is asked to stop, or for a single pass with `--once`.
+     *
+     * Each claimed item is dispatched inside a `RuntimeDeadline` derived from `--lease-seconds`, so a
+     * hung outbound endpoint ends the attempt rather than the worker: the dispatcher catches the expiry
+     * like any other failure and records it with backoff. An expiry raised outside a dispatcher's own
+     * boundary — while it is settling the row it already claimed — ends the process with status one, and
+     * the abandoned lease is recovered by expiry exactly as any other crash is.
      *
      * @param   list<string>  $arguments  Ordered console arguments supplied by the dispatcher.
      * @param   Output        $output     Console output sink for results and sanitized failures.
@@ -105,14 +122,23 @@ final readonly class IntegrationWorkCommand implements Command
                 pcntl_signal(SIGQUIT, $drain);
             }
 
+            $deadline = new RuntimeDeadline(
+                $this->effectSeconds($lease),
+                'The integration effect exceeded its dispatch deadline.',
+            );
+
             do {
                 $this->runtime->assertLoadedGenerationCurrent($this->loadedRuntime);
                 $didWork = false;
                 if ($stream !== 'process') {
-                    $didWork = $this->outbox->dispatchOne($workerId, $generation, $lease);
+                    $deadline->run(function () use ($workerId, $generation, $lease, &$didWork): void {
+                        $didWork = $this->outbox->dispatchOne($workerId, $generation, $lease);
+                    });
                 }
                 if ($stream !== 'outbox') {
-                    $didWork = $this->processes->dispatchOne($workerId, $generation, $lease) || $didWork;
+                    $deadline->run(function () use ($workerId, $generation, $lease, &$didWork): void {
+                        $didWork = $this->processes->dispatchOne($workerId, $generation, $lease) || $didWork;
+                    });
                 }
                 $handled += $didWork ? 1 : 0;
                 $elapsed = (int) ((hrtime(true) - $started) / 1_000_000_000);
@@ -130,6 +156,27 @@ final readonly class IntegrationWorkCommand implements Command
             $output->error($exception->getMessage());
             return 1;
         }
+    }
+
+    /**
+     * Work out how long one external effect may run inside a lease of the given length.
+     *
+     * The bound is deliberately shorter than the lease rather than equal to it. Settling a claimed row
+     * is itself fenced on an unexpired lease, so an effect cut at the exact moment the lease lapses
+     * would find its own failure record refused and take the process down with an unsettled row — the
+     * outcome the deadline exists to avoid. Four fifths leaves the remaining fifth for the dispatcher to
+     * record the attempt and schedule the retry while the fence is still this worker's, and never falls
+     * below a second, so even the shortest accepted lease keeps an enforceable bound.
+     *
+     * @param   int  $leaseSeconds  Dispatch lease each claim is taken under.
+     *
+     * @return  int  Wall-clock seconds one claim, effect included, may take.
+     *
+     * @since   2.0.0
+     */
+    private function effectSeconds(int $leaseSeconds): int
+    {
+        return max(1, intdiv($leaseSeconds * 4, 5));
     }
 
     /**

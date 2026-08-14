@@ -1351,6 +1351,7 @@ final class ContainerFactory
             new CachedSiteSettings(
                 self::service($container, DoctrineSiteSettings::class),
                 self::service($container, RedisRuntime::class),
+                self::service($container, LoggerInterface::class),
             ), true);
         $container->share(PublicPageLocator::class, static fn (Container $container): PublicPageLocator =>
             new PublicPageLocator(
