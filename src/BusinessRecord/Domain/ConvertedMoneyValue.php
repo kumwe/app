@@ -47,11 +47,11 @@ final readonly class ConvertedMoneyValue
     /**
      * Bind a converted figure to the whole of the evidence that produced it.
      *
-     * @param   MoneyValue         $source      Stored amount the conversion read, in the currency it is held in.
-     * @param   MoneyValue         $converted   Presented amount, in the currency the rate quotes.
-     * @param   MoneyExchangeRate  $rate        Rate applied, its as-at instant, and the provider behind it.
-     * @param   MoneyRoundingMode  $rounding    Declared rule applied to the digits the target scale discards.
-     * @param   ExactDecimal       $unrounded   Exact product of the source amount and the rate, before rounding.
+     * @param   MoneyValue         $source     Stored amount the conversion read, in the currency it is held in.
+     * @param   MoneyValue         $converted  Presented amount, in the currency the rate quotes.
+     * @param   MoneyExchangeRate  $rate       Rate applied, its as-at instant, and the provider behind it.
+     * @param   MoneyRoundingMode  $rounding   Declared rule applied to the digits the target scale discards.
+     * @param   ExactDecimal       $unrounded  Exact product of the source amount and the rate, before rounding.
      *
      * @throws  InvalidArgumentException  When the rate does not price the two currencies given, the unrounded
      *          product is not the exact product of the source amount and the rate, or the converted amount is

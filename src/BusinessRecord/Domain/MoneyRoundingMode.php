@@ -68,10 +68,10 @@ enum MoneyRoundingMode: string
      * expressed in. Keeping the decision here is what lets `ExactDecimalArithmetic` stay pure digit
      * handling and a new mode be added without touching it.
      *
-     * @param   int   $firstDropped            First discarded digit, 0 through 9.
-     * @param   bool  $remainderBeyondFirst    Whether any discarded digit after the first is non-zero.
-     * @param   bool  $lastKeptOdd             Whether the last retained digit is odd.
-     * @param   bool  $negative                Whether the value being rounded is below zero.
+     * @param   int   $firstDropped          First discarded digit, 0 through 9.
+     * @param   bool  $remainderBeyondFirst  Whether any discarded digit after the first is non-zero.
+     * @param   bool  $lastKeptOdd           Whether the last retained digit is odd.
+     * @param   bool  $negative              Whether the value being rounded is below zero.
      *
      * @return  bool  True when the retained magnitude is incremented by one at its last digit.
      *
