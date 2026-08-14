@@ -628,12 +628,12 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Deprecated
 
-- **The `APP_SECRET`-derived record encryption key, `application-secret-v1`.** Configuring nothing keeps it
-  active with its original derivation reproduced byte for byte, because those bytes are in production databases
-  and are not ours to change; configuring dedicated key material makes it retired rather than absent, and
-  `RECORD_ENCRYPTION_LEGACY_SECRET` pins the old derivation to the outgoing application secret so an
-  installation can finish the move. A test asserts the derivation literally rather than through the class, so if
-  it ever needs changing the failure says what it really means. (`a669846`, `8706736`)
+- **The `APP_SECRET`-derived record encryption key identified as `application-secret-v1`.** Configuring
+  nothing keeps it active with its original derivation reproduced byte for byte, because those bytes are in
+  production databases and are not ours to change; configuring dedicated key material makes it retired rather
+  than absent, and `RECORD_ENCRYPTION_LEGACY_SECRET` pins the old derivation to the outgoing application
+  secret so an installation can finish the move. A test asserts the derivation literally rather than through
+  the class, so if it ever needs changing the failure says what it really means. (`a669846`, `8706736`)
 - **Per-entry ceiling reads of archive contents, and hand-maintained autoload lists in the drill entry
   points.** Both patterns are retired in favour of streamed reads bounded against the bytes that actually
   arrive, and a registered loader mapping; an architecture assertion refuses a hand-maintained list that grows
