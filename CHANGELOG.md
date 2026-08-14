@@ -478,6 +478,30 @@ development programme, from the architecture decision that opened it to the curr
   write-only secret is still never echoed back, so that one field is re-entered; everything else survives.
   Operations that carry nothing typed — archive, delete, restore, an action confirmation — still fail
   closed, because there is nothing to keep and no form to return to. (`847576a`)
+- **Record history could show one record's past under a reference another record had since taken over.** A
+  business reference such as an invoice number can be used again once the record holding it has been deleted
+  outright, and the revision log deliberately outlives the record, so a single reference can name more than
+  one past. Kumwe already refused to merge two of them — but it decided how many there were by looking only
+  at the page of history it had just read. Ask for a small page, or page back far enough, and the second
+  record simply was not in view: the request succeeded and returned one record's history under a reference
+  two records had held, with nothing on the page to say so. How many records a reference covers is now
+  settled across the whole site and organization before any page is read, so the refusal is the same answer
+  at every page size and every position in the log. Paging itself was tightened at the same time, because
+  two records under one reference number their versions independently: history is now ordered on a key that
+  can never tie, and a page boundary that lands between two entries agreeing on version repeats neither and
+  skips neither. A new index carries that order, so the stricter guarantee costs a history page nothing.
+  (`92f9305`)
+- **A freshly created database could refuse to schedule work.** Site ownership is recorded in its own table,
+  and the column naming the owning site was never tied to the site table's own identifier column. On MariaDB
+  and MySQL that tie is only ever enforced by a foreign key — one a partially recovered installation may
+  never have gained — and on PostgreSQL it is not enforced at all. Where a database had been created with a
+  different default text collation, the two columns compared under different rules and the engine refused
+  the comparison outright, which took the scheduler's dispatch pass down with it: due work simply stopped
+  being queued. The ownership column now copies the site identifier's exact character definition, the
+  migration proves the two agree before it finishes, and the check runs on every supported engine rather
+  than being a MariaDB special case. The same repair gives the ownership constraint the per-installation
+  name the recovery path already used, so the two routes that create it no longer disagree about what it is
+  called. (`92f9305`)
 - **The deployment drills could not load their own classes in the production image.** Production acceptance died
   on all three engines inside the restore drill's seed leg with a class-not-found error: the image installs with
   `--no-dev` and dumps an authoritative classmap, so nothing under the test namespace is loadable there even
