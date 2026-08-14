@@ -490,7 +490,7 @@ development programme, from the architecture decision that opened it to the curr
   two records under one reference number their versions independently: history is now ordered on a key that
   can never tie, and a page boundary that lands between two entries agreeing on version repeats neither and
   skips neither. A new index carries that order, so the stricter guarantee costs a history page nothing.
-  (`92f9305`)
+  (`731c99d`)
 - **A freshly created database could refuse to schedule work.** Site ownership is recorded in its own table,
   and the column naming the owning site was never tied to the site table's own identifier column. On MariaDB
   and MySQL that tie is only ever enforced by a foreign key — one a partially recovered installation may
@@ -501,7 +501,7 @@ development programme, from the architecture decision that opened it to the curr
   migration proves the two agree before it finishes, and the check runs on every supported engine rather
   than being a MariaDB special case. The same repair gives the ownership constraint the per-installation
   name the recovery path already used, so the two routes that create it no longer disagree about what it is
-  called. (`92f9305`)
+  called. (`731c99d`)
 - **The deployment drills could not load their own classes in the production image.** Production acceptance died
   on all three engines inside the restore drill's seed leg with a class-not-found error: the image installs with
   `--no-dev` and dumps an authoritative classmap, so nothing under the test namespace is loadable there even
