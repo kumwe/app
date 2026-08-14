@@ -455,6 +455,16 @@ jobs:
         with:
           driver: ${{ matrix.database.driver }}
 
+      # The signing and verification branches of the backup tooling are conditional on a key being
+      # configured, so without one they are dead code in every drill this repository runs. minisign
+      # comes from the distribution archive rather than a release download, so the step cannot start
+      # failing because an upstream asset moved.
+      - name: Install the backup signing tool
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends minisign
+
       - name: Exercise clean-target backup and restore
         shell: bash
         run: |
@@ -468,13 +478,15 @@ jobs:
           restore_root="$recovery_root/restored"
           runtime_manifest="$recovery_root/business-runtime-source.json"
           password_file="$recovery_root/database-password"
+          signing_root="$recovery_root/signing"
           install -d -m 0700 \
             "$backup_root" \
             "$source_media" \
             "$source_private" \
             "$source_extensions" \
             "$source_extension_assets" \
-            "$restore_root"
+            "$restore_root" \
+            "$signing_root"
           install -m 0600 /dev/null "$password_file"
           printf %s "$DB_PASSWORD" > "$password_file"
           printf 'acceptance-media' > "$source_media/probe.txt"
@@ -485,6 +497,12 @@ jobs:
           chmod 0600 "$source_private/report-exports/objects/probe.csv"
           printf 'acceptance-extension' > "$source_extensions/probe.txt"
           printf 'acceptance-extension-asset' > "$source_extension_assets/probe.css"
+          # An ephemeral, unencrypted keypair that never leaves the runner: the point is to execute
+          # the signing and verification branches, not to model key custody.
+          minisign -G -f -W \
+            -p "$signing_root/backup-signing.pub" \
+            -s "$signing_root/backup-signing.key" >/dev/null
+          chmod 0600 "$signing_root/backup-signing.key"
           php tests/Support/business-runtime-backup-acceptance.php seed > "$runtime_manifest"
           test -s "$runtime_manifest"
 
@@ -515,8 +533,14 @@ jobs:
           export KUMWE_MEDIA_DIR="$source_media"
           export KUMWE_PRIVATE_DIR="$source_private"
           export KUMWE_RELEASE=2.0.0
+          export KUMWE_BACKUP_SIGNING_SECRET_KEY_FILE="$signing_root/backup-signing.key"
+          backup_started="$(date +%s)"
           backup_path="$(bash tools/backup.sh)"
+          backup_seconds="$(( $(date +%s) - backup_started ))"
+          test -f "$backup_path/checksums.sha256.minisig"
 
+          export KUMWE_BACKUP_SIGNING_PUBLIC_KEY_FILE="$signing_root/backup-signing.pub"
+          export KUMWE_EXPECTED_RELEASE=2.0.0
           export KUMWE_RESTORE_DB_DRIVER="$DB_DRIVER"
           export KUMWE_RESTORE_DB_HOST="$DB_HOST"
           export KUMWE_RESTORE_DB_PORT="$DB_PORT"
@@ -528,8 +552,17 @@ jobs:
           export KUMWE_RESTORE_EXTENSION_ASSETS_DIR="$restore_root/extension-assets"
           export KUMWE_RESTORE_MEDIA_DIR="$restore_root/media"
           export KUMWE_RESTORE_PRIVATE_DIR="$restore_root/private"
+          restore_started="$(date +%s)"
           bash tools/restore.sh "$backup_path"
+          restore_seconds="$(( $(date +%s) - restore_started ))"
+          # The measured recovery time is written into the restored installation's own schema
+          # recovery evidence, which is what the destructive-plan gate reads.
           DB_NAME=kumwe_restore_test \
+          KUMWE_DRILL_REFERENCE="ci-${DB_DRIVER}-${GITHUB_RUN_ID}" \
+          KUMWE_DRILL_BACKUP_MANIFEST_CHECKSUM="$(sha256sum "$backup_path/manifest.json" | cut -d' ' -f1)" \
+          KUMWE_DRILL_BACKUP_CREATED_AT="$(jq -r '.created_at' "$backup_path/manifest.json")" \
+          KUMWE_DRILL_BACKUP_SECONDS="$backup_seconds" \
+          KUMWE_DRILL_RESTORE_SECONDS="$restore_seconds" \
             php tests/Support/business-runtime-backup-acceptance.php verify "$runtime_manifest"
           cmp "$source_media/probe.txt" "$restore_root/media/probe.txt"
           cmp \
@@ -540,6 +573,13 @@ jobs:
           test "$(stat --format='%a' "$restore_root/private/report-exports/objects")" = 700
           cmp "$source_extensions/probe.txt" "$restore_root/extensions/probe.txt"
           cmp "$source_extension_assets/probe.css" "$restore_root/extension-assets/probe.css"
+
+          # Everything above proves a good backup restores. This proves the bad ones do not: the
+          # drill damages copies of the backup that was just taken and requires each one to be
+          # refused with the message that names the damage. The restored database is handed over as
+          # the occupied target, so the "refuse a non-empty database" branch runs against a real one.
+          KUMWE_TAMPER_DRILL_OCCUPIED_DB=kumwe_restore_test \
+            bash tests/Support/backup-tamper-drill.sh "$backup_path"
 
   deployment:
     name: Complete deployment acceptance

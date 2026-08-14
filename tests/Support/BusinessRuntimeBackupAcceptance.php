@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Support;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Joomla\DI\Container;
+use JsonException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
@@ -14,16 +16,22 @@ use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\CMS\BusinessRecord\Application\SecretAssociatedData;
+use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
+use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
 use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
 use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaEnvironment;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Application\PhysicalSchemaGateway;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableKind;
+use Kumwe\CMS\BusinessSchema\Domain\SchemaRecoveryEvidence;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
 
@@ -33,6 +41,26 @@ final class BusinessRuntimeBackupAcceptance
     private const SECRET = 'neutral-fixture-secret';
     private const AUDIT_EVENT_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8244e28';
     private const AUDIT_ACTION = 'business.record.backup_acceptance';
+
+    /** Handle of the encrypted field the drill opens rather than only hashing. @since 2.0.0 */
+    private const SECRET_FIELD = 'credential';
+
+    /**
+     * Domain separator for the recovered-plaintext digest carried in the manifest.
+     *
+     * The manifest is compared byte for byte, so the digest has to be there for the source and the
+     * restore to disagree when only one of them can open the envelope. Prefixing it keeps the value
+     * from being a bare hash of a constant that appears elsewhere.
+     *
+     * @since  2.0.0
+     */
+    private const SECRET_DIGEST_LABEL = 'kumwe-backup-acceptance-recovered-plaintext-v1';
+
+    /** Queue the drill's own schedule enqueues onto, so the worker claims only its job. @since 2.0.0 */
+    private const DRILL_QUEUE = 'backupdrill';
+
+    /** Operator-facing name of the schedule the restored installation has to dispatch. @since 2.0.0 */
+    private const DRILL_SCHEDULE = 'Backup drill session purge';
 
     /** @var list<string> */
     private const DEFINITION_IDS = [
@@ -87,6 +115,8 @@ final class BusinessRuntimeBackupAcceptance
         NeutralBusinessFixture::createBackupRecord($container, $context);
         NeutralBusinessFixture::seedBackupGraph($container, $context);
         self::ensureAuditEvidence($container, $context);
+        RestoreSecurityAcceptance::seed($container, $context);
+        RestoredWork::seedSchedule($container, $context, self::DRILL_SCHEDULE, self::DRILL_QUEUE);
         $manifest = self::manifest($container, $context);
         $encoded = CanonicalDefinitionJson::encode($manifest);
         if (str_contains($encoded, self::SECRET)) {
@@ -113,12 +143,139 @@ final class BusinessRuntimeBackupAcceptance
         }
 
         self::executeRestoredCommand($container, $context);
+        $security = RestoreSecurityAcceptance::accept($container);
+        $work = RestoredWork::execute($container, self::DRILL_SCHEDULE, self::DRILL_QUEUE);
+        $sessionsRemaining = RestoreSecurityAcceptance::assertExpiredSessionsPurged($container);
+        $evidence = self::recordRecoveryEvidence($container, $context);
         fwrite(STDOUT, CanonicalDefinitionJson::encode([
             'format' => self::FORMAT,
             'source_manifest_checksum' => $expectedChecksum,
             'restored_manifest_checksum' => $actualChecksum,
             'typed_update_replayed' => true,
+            'secret_plaintext_recovered' => true,
+            'security_acceptance' => $security,
+            'sessions_after_purge' => $sessionsRemaining,
+            'work_executed' => $work,
+            'recovery_evidence_id' => $evidence,
         ]) . "\n");
+    }
+
+    /**
+     * Record the drill as schema recovery evidence, with the recovery time this run actually took.
+     *
+     * The destructive-plan gate reads evidence rather than prose, so a drill that measures its own
+     * recovery and never writes it down leaves the gate to be satisfied by hand. Timings come from
+     * the drill harness through `KUMWE_DRILL_*`; when it supplies none, the drill still passes and
+     * simply records nothing, because inventing a measurement would be worse than having none.
+     *
+     * @param   Container         $container  Booted kernel bound to the restored database.
+     * @param   ExecutionContext  $context    Owner context able to record recovery evidence.
+     *
+     * @return  ?string  Evidence identity, or null when the harness supplied no drill reference.
+     *
+     * @throws  RuntimeException  When the schema service is unavailable or a supplied measurement is
+     *          not a non-negative whole number of seconds.
+     *
+     * @since   2.0.0
+     */
+    private static function recordRecoveryEvidence(
+        Container $container,
+        ExecutionContext $context,
+    ): ?string {
+        $reference = getenv('KUMWE_DRILL_REFERENCE');
+        $backupManifestChecksum = getenv('KUMWE_DRILL_BACKUP_MANIFEST_CHECKSUM');
+        if (!is_string($reference) || $reference === '' || !is_string($backupManifestChecksum)) {
+            return null;
+        }
+        $schemas = $container->get(BusinessSchemaService::class);
+        $environment = $container->get(BusinessSchemaEnvironment::class);
+        if (!$schemas instanceof BusinessSchemaService || !$environment instanceof BusinessSchemaEnvironment) {
+            throw new RuntimeException('The restored schema service is unavailable.');
+        }
+        $installation = $schemas->installation($context, NeutralBusinessFixture::DEFINITION_ID);
+        if ($installation === null) {
+            throw new RuntimeException('The restored drill has no installed source schema.');
+        }
+        $backupCreatedAt = self::drillInstant('KUMWE_DRILL_BACKUP_CREATED_AT');
+        $now = new DateTimeImmutable('now');
+        $evidence = new SchemaRecoveryEvidence(
+            Uuid::uuid7()->toString(),
+            $context->site()->identifier(),
+            $environment->databaseDriver(),
+            $environment->databaseServerVersion(),
+            $environment->applicationRelease(),
+            $installation->schemaChecksum,
+            $backupManifestChecksum,
+            true,
+            $backupCreatedAt ?? $now,
+            $now,
+            $context->actorId(),
+            $reference,
+            [
+                'backup_quiesce_seconds' => self::drillSeconds('KUMWE_DRILL_BACKUP_SECONDS'),
+                'blueprint_checksum_verified' => true,
+                'clean_target_restore' => true,
+                'client_version' => $environment->databaseServerVersion(),
+                'record_revision_audit_checksums_verified' => true,
+                'recovery_point_is_backup_instant' => true,
+                'restore_seconds' => self::drillSeconds('KUMWE_DRILL_RESTORE_SECONDS'),
+                'restore_target_reference' => $reference,
+                'secret_plaintext_recovered' => true,
+                'typed_command_verified' => true,
+            ],
+        );
+        $schemas->recordRecoveryEvidence($context, $evidence);
+
+        return $evidence->id;
+    }
+
+    /**
+     * Read one measured duration the drill harness reported, refusing anything but whole seconds.
+     *
+     * @param   string  $variable  Environment variable naming the measurement.
+     *
+     * @return  int  Measured seconds; zero when the harness reported none.
+     *
+     * @throws  RuntimeException  When the value is present but is not a non-negative integer.
+     *
+     * @since   2.0.0
+     */
+    private static function drillSeconds(string $variable): int
+    {
+        $value = getenv($variable);
+        if (!is_string($value) || $value === '') {
+            return 0;
+        }
+        if (preg_match('/^[0-9]{1,7}$/D', $value) !== 1) {
+            throw new RuntimeException('A drill measurement must be a non-negative whole number of seconds.');
+        }
+
+        return (int) $value;
+    }
+
+    /**
+     * Read one instant the drill harness reported, refusing anything unparseable.
+     *
+     * @param   string  $variable  Environment variable naming the instant.
+     *
+     * @return  ?DateTimeImmutable  The instant, or null when the harness reported none.
+     *
+     * @throws  RuntimeException  When the value is present but cannot be read as a timestamp.
+     *
+     * @since   2.0.0
+     */
+    private static function drillInstant(string $variable): ?DateTimeImmutable
+    {
+        $value = getenv($variable);
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+        $timestamp = strtotime($value);
+        if ($timestamp === false) {
+            throw new RuntimeException('A drill instant could not be read.');
+        }
+
+        return (new DateTimeImmutable('@' . $timestamp))->setTimezone(new DateTimeZone('UTC'));
     }
 
     /** @return array{0: Container, 1: ExecutionContext} */
@@ -261,7 +418,8 @@ final class BusinessRuntimeBackupAcceptance
             'installations' => $installations,
             'generated_tables' => $generated,
             'control_tables' => $control,
-            'standalone_record' => self::standaloneState($database, $schemas, $records, $context),
+            'identity_security' => RestoreSecurityAcceptance::manifest($container),
+            'standalone_record' => self::standaloneState($container, $database, $schemas, $records, $context),
             'relationship_graph' => self::relationshipGraphState(
                 $database,
                 $schemas,
@@ -399,6 +557,7 @@ final class BusinessRuntimeBackupAcceptance
 
     /** @return array<string, mixed> */
     private static function standaloneState(
+        Container $container,
         Connection $database,
         BusinessSchemaService $schemas,
         BusinessRecordService $records,
@@ -440,6 +599,13 @@ final class BusinessRuntimeBackupAcceptance
         $algorithm = self::physicalValue($database, $table, 'credential.algorithm', $view->recordKey);
         self::assertNoPlaintext($ciphertext);
         self::assertNoPlaintext($nonce);
+        $recoveredDigest = self::recoverSecretDigest(
+            $container,
+            new EncryptedEnvelope($ciphertext, $nonce, $keyId, $algorithm),
+            $view->siteIdentifier ?? '',
+            $view->definitionId,
+            $view->recordKey,
+        );
 
         return [
             'definition_id' => $view->definitionId,
@@ -463,8 +629,54 @@ final class BusinessRuntimeBackupAcceptance
                 'nonce_bytes' => strlen($nonce),
                 'key_id' => $keyId,
                 'algorithm' => $algorithm,
+                'recovered_plaintext_digest' => $recoveredDigest,
             ],
         ];
+    }
+
+    /**
+     * Open the stored envelope and digest what came out, without ever holding it in the manifest.
+     *
+     * Hashing ciphertext proves the bytes survived the round trip. It cannot tell a restore that
+     * kept its keys from one that lost them, because a wrong key leaves the ciphertext identical and
+     * only makes it useless. Decrypting here is what makes the difference visible: the associated
+     * data is rebuilt from the record's own coordinates, so the AEAD binding is re-proved at the same
+     * time, and a restore booted under the wrong record key fails at this line instead of at the
+     * first business use weeks later.
+     *
+     * @param   Container          $container     Booted kernel, source or restored.
+     * @param   EncryptedEnvelope  $envelope      Envelope read straight out of its physical columns.
+     * @param   string             $site          Site the record belongs to.
+     * @param   string             $definitionId  Definition the record instantiates.
+     * @param   string             $recordKey     Storage key the binding was built from.
+     *
+     * @return  string  Domain-separated digest of the recovered plaintext.
+     *
+     * @throws  RuntimeException  When the cipher is unavailable, the envelope does not open, or the
+     *          recovered value is not the fixture's own secret.
+     *
+     * @since   2.0.0
+     */
+    private static function recoverSecretDigest(
+        Container $container,
+        EncryptedEnvelope $envelope,
+        string $site,
+        string $definitionId,
+        string $recordKey,
+    ): string {
+        $cipher = $container->get(SecretCipher::class);
+        if (!$cipher instanceof SecretCipher) {
+            throw new RuntimeException('The business-record secret cipher is unavailable.');
+        }
+        $plaintext = $cipher->decrypt(
+            $envelope,
+            SecretAssociatedData::for($site, $definitionId, $recordKey, self::SECRET_FIELD),
+        );
+        if (!hash_equals(self::SECRET, $plaintext)) {
+            throw new RuntimeException('The recovered business-record secret is not the fixture value.');
+        }
+
+        return hash('sha256', self::SECRET_DIGEST_LABEL . "\0" . $plaintext);
     }
 
     private static function executeRestoredCommand(
