@@ -125,6 +125,101 @@ final class ProductionArtifactsTest extends TestCase
     }
 
     /**
+     * Require CI to execute the signed backup path and every fail-closed refusal the tooling claims.
+     *
+     * The signing and signature-verification branches are conditional on a key being configured, and
+     * the refusals are conditional on something being wrong, so both are dead code in a drill that
+     * only ever hands the tooling a good, unsigned backup. This asserts the drill supplies a keypair
+     * and runs the tamper cases, and that the tamper drill still covers each named refusal — a case
+     * quietly deleted from it would otherwise reduce the gate without failing anything.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCiExercisesTheSignedBackupPathAndEveryFailClosedRefusal(): void
+    {
+        $ci = $this->contents('.github/workflows/ci.yml');
+        $drill = $this->contents('tests/Support/backup-tamper-drill.sh');
+
+        self::assertStringContainsString('minisign -G -f -W', $ci);
+        self::assertStringContainsString('KUMWE_BACKUP_SIGNING_SECRET_KEY_FILE="$signing_root', $ci);
+        self::assertStringContainsString('KUMWE_BACKUP_SIGNING_PUBLIC_KEY_FILE="$signing_root', $ci);
+        self::assertStringContainsString('test -f "$backup_path/checksums.sha256.minisig"', $ci);
+        self::assertStringContainsString('export KUMWE_EXPECTED_RELEASE=2.0.0', $ci);
+        self::assertStringContainsString('bash tests/Support/backup-tamper-drill.sh "$backup_path"', $ci);
+        self::assertStringContainsString('KUMWE_TAMPER_DRILL_OCCUPIED_DB=kumwe_restore_test', $ci);
+        self::assertStringContainsString('KUMWE_DRILL_BACKUP_MANIFEST_CHECKSUM=', $ci);
+        self::assertStringContainsString('KUMWE_DRILL_RESTORE_SECONDS=', $ci);
+
+        self::assertStringContainsString('set -Eeuo pipefail', $drill);
+        foreach (
+            [
+                'corrupted-database-dump',
+                'corrupted-media-archive',
+                'edited-manifest-without-reseal',
+                'missing-payload',
+                'narrowed-checksum-manifest',
+                'old-manifest-version',
+                'traversal-archive',
+                'symlink-archive',
+                'symlink-in-backup-directory',
+                'unexpected-release',
+                'resealed-after-tamper',
+                'missing-signature',
+                'signed-without-public-key',
+                'driver-mismatch',
+                'existing-filesystem-target',
+                'non-empty-target-database',
+            ] as $case
+        ) {
+            self::assertStringContainsString($case, $drill, sprintf('The %s tamper case must survive.', $case));
+        }
+    }
+
+    /**
+     * Require the restore drill to prove recoverability by using restored data, not by hashing it.
+     *
+     * A restore booted with the wrong application secret reproduces every digest the acceptance
+     * manifest compares, so the proofs that separate "the bytes came back" from "the system works"
+     * are the ones that decrypt, authenticate, elevate and execute. Each is asserted here by the
+     * production collaborator it must go through, because a drill that stopped calling one of them
+     * would still pass its own comparison.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRestoreDrillProvesRecoverabilityByExecutingRatherThanComparing(): void
+    {
+        $acceptance = $this->contents('tests/Support/BusinessRuntimeBackupAcceptance.php');
+        $security = $this->contents('tests/Support/RestoreSecurityAcceptance.php');
+        $work = $this->contents('tests/Support/RestoredWork.php');
+
+        self::assertStringContainsString('SecretCipher::class', $acceptance);
+        self::assertStringContainsString('$cipher->decrypt(', $acceptance);
+        self::assertStringContainsString('SecretAssociatedData::for(', $acceptance);
+        self::assertStringContainsString('recovered_plaintext_digest', $acceptance);
+        self::assertStringContainsString('SchemaRecoveryEvidence(', $acceptance);
+        self::assertStringContainsString('backup_quiesce_seconds', $acceptance);
+        self::assertStringContainsString('restore_seconds', $acceptance);
+
+        self::assertStringContainsString('AdministratorIdentityGateway', $security);
+        self::assertStringContainsString('StepUpSecretCipher', $security);
+        self::assertStringContainsString('->decrypt(', $security);
+        self::assertStringContainsString('catch (StepUpRejected)', $security);
+        self::assertStringContainsString('accepted a replayed TOTP code', $security);
+        self::assertStringContainsString('accepted a spent recovery code', $security);
+        self::assertStringContainsString('accepted a session that had expired', $security);
+        self::assertStringContainsString('let a read-only operator write a record', $security);
+
+        self::assertStringContainsString("'extension:runtime:materialize'", $work);
+        self::assertStringContainsString("'schedule:run'", $work);
+        self::assertStringContainsString("'queue:work', '--once'", $work);
+        self::assertStringContainsString('/bin/kumwe', $work);
+    }
+
+    /**
      * Proves CI deploys every supported database and both released distribution formats.
      *
      * @return  void
