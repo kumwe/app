@@ -379,6 +379,20 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **A refused save no longer empties the form.** Filling in a long document and losing every value to a
+  failure you could have recovered from was the single most expensive defect an operator met. Two gaps
+  caused it. On the generated administrator and portal surfaces a validation failure already came back with
+  the submitted values, but a stale-version conflict — somebody else saved the same record while your form
+  was open — escaped as an error page and took the whole submission with it. The CMS content editor had no
+  retention at all: both failures discarded the work, and for a new draft that meant everything typed was
+  gone, because the draft existed nowhere else. Both surfaces now return you to your own form with every
+  value still in it. A conflict says plainly that the record changed underneath you, names the version it
+  is at now, and offers three things you can actually do: save again to apply your entries on top of that
+  newer version, reload it and start over, or look at what changed first. Nothing is written on the way
+  through, so the newer record is never silently overwritten and a hundred-line document loses no line. A
+  write-only secret is still never echoed back, so that one field is re-entered; everything else survives.
+  Operations that carry nothing typed — archive, delete, restore, an action confirmation — still fail
+  closed, because there is nothing to keep and no form to return to. (`847576a`)
 - **The deployment drills could not load their own classes in the production image.** Production acceptance died
   on all three engines inside the restore drill's seed leg with a class-not-found error: the image installs with
   `--no-dev` and dumps an authoritative classmap, so nothing under the test namespace is loadable there even
