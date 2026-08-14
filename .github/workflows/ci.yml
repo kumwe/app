@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Install PHP and Composer
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
@@ -42,10 +42,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Install Node.js
-        uses: actions/setup-node@e51e5fe84fc33b4c73ebe40526b2694712b5b858
+        uses: actions/setup-node@3d7870f6218881292d183093179901ae8dc2ef85
         with:
           node-version: '22.12.0'
 
@@ -116,7 +116,7 @@ jobs:
       KUMWE_BROWSER_START_SERVER: '1'
     steps:
       - name: Check out repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Install PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
@@ -127,7 +127,7 @@ jobs:
           tools: composer:v2
 
       - name: Install Node.js
-        uses: actions/setup-node@e51e5fe84fc33b4c73ebe40526b2694712b5b858
+        uses: actions/setup-node@3d7870f6218881292d183093179901ae8dc2ef85
         with:
           node-version: '22.12.0'
 
@@ -162,7 +162,7 @@ jobs:
 
       - name: Upload browser and screenshot evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-evidence
           path: |
@@ -177,7 +177,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
 
@@ -208,7 +208,7 @@ jobs:
 
       - name: Upload coding-standard normalization evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: phpcbf-patch
           path: phpcbf.patch
@@ -322,7 +322,7 @@ jobs:
       KUMWE_BUSINESS_DEMO: 'false'
     steps:
       - name: Check out repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
 
@@ -440,7 +440,7 @@ jobs:
 
       - name: Upload the coverage report
         if: matrix.database.coverage == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: build/coverage
