@@ -28,4 +28,9 @@ b40d2afd6a0afcc6bcc914784464c109231a512e:.github/workflows/ci.yml:kumwe-applicat
 # the wording frozen in the commit that introduced it, which gitleaks still reads. Scoped to one commit,
 # one file, one rule and one line — a real credential added to CHANGELOG.md still fails. The entry
 # becomes wrong only if `application-secret-v1` ever names key material instead of naming a key.
-03dc2587e7cad4147c0f5a45c95efa0ed684a336:CHANGELOG.md:generic-api-key:631
+# The fingerprint names the commit as it exists on `master`. A pull request that is rebased or squashed
+# on merge rewrites its commits, so a fingerprint captured from a branch stops matching the moment the
+# branch lands. Take the fingerprint from the merged history, not from the branch, or the scan fails on
+# `master` after a green pull request.
+
+6c66fe2f4bf60c02e3269e5abb242a24583868be:CHANGELOG.md:generic-api-key:631
