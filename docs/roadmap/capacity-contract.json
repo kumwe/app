@@ -1,0 +1,357 @@
+{
+  "contract": "kumwe-capacity-contract",
+  "version": "1.0.0",
+  "status": "approved",
+  "authority": "docs/roadmap/README.md, section 7",
+  "baseline_sha": "26a7b3963c255064754f541dc8286e75dd566b1f",
+  "supersedes": {
+    "document": "KUMWE_CMS_ENTERPRISE_STABILIZATION_AND_SCALE_ROADMAP_V2.md",
+    "section": "6",
+    "pinned_sha": "309db888e65a14aab879ef752dac835be71a3d10",
+    "amendment": "The product owner selected the 5,000,000 logical-business-transaction daily profile as the Version 2 release qualification target. The 1,000,000 profile is retained as an early characterisation step only and is explicitly not a release claim. Staging the release claim down to 1,000,000 was considered and rejected."
+  },
+  "measurement_units": {
+    "logical_business_transaction": {
+      "abbreviation": "LBT",
+      "definition": "One application command with one idempotent outcome and one atomic commit boundary, such as creating or posting one document.",
+      "counting_rule": "A document header plus its owned lines committed under one application invariant counts as exactly one LBT, never as one plus the line count."
+    },
+    "document_line": {
+      "definition": "One owned or related line inside an aggregate.",
+      "counting_rule": "Reported separately from LBTs; never substituted for them."
+    },
+    "physical_row_mutation": {
+      "abbreviation": "PRM",
+      "definition": "One database row insert, update or delete caused by an LBT, including header, lines, relations, revision, audit, idempotency, outbox, projection-source and supporting ledgers.",
+      "counting_rule": "Write amplification is the measured ratio PRM/LBT and must be published with every capacity result."
+    },
+    "application_interaction": {
+      "definition": "One HTTP, CLI, MCP, administrator, portal, worker or scheduler request, read or write."
+    },
+    "background_delivery": {
+      "definition": "One event dispatch, inbox consumption, job attempt, process step, report generation, projection update or export operation."
+    },
+    "active_concurrency": {
+      "definition": "Requests or jobs executing simultaneously, not registered accounts and not logged-in sessions."
+    }
+  },
+  "counting_formulae": {
+    "peak_logical_operations_per_second": "daily logical operations / 86400 * peak factor",
+    "physical_row_writes_per_second": "peak logical operations/s * write amplification * (1 + retry rate)",
+    "event_deliveries_per_second": "event rate * average consumer fan-out",
+    "prohibited": "No document produced by this programme may publish an unqualified 'TPS' figure."
+  },
+  "profiles": {
+    "baseline": {
+      "role": "early characterisation only; not a release claim",
+      "daily_lbt": 1000000,
+      "peak_factor": 5,
+      "peak_logical_writes_per_second": 58
+    },
+    "enterprise": {
+      "role": "Version 2 release qualification target",
+      "daily_lbt": 5000000,
+      "peak_factor": 8,
+      "peak_logical_writes_per_second": 463
+    },
+    "stretch": {
+      "role": "breakpoint discovery; not automatically a supported claim",
+      "daily_lbt": 10000000,
+      "peak_factor": 10,
+      "peak_logical_writes_per_second": 1158
+    }
+  },
+  "reference_installation_shape": {
+    "role": "The installation the enterprise envelope is measured on. The reference workload is a business group, not a single business, because that is the shape Version 2 supports.",
+    "decision": "D7; docs/roadmap/decisions/0001-resource-ownership-scope.md",
+    "businesses": 4,
+    "description": "Four related businesses on one installation, selling different things, sharing selected master data by explicit choice, with accounting isolated per business and reportable in consolidated form.",
+    "sites": 4,
+    "declared_groups": {
+      "count": 3,
+      "shape": "overlapping, not a hierarchy",
+      "examples": [
+        "sites A, B and D share clients",
+        "sites A and C share products and price lists",
+        "all four sites share staff and person master data"
+      ]
+    },
+    "ownership_scope_mix": {
+      "site_owned": "all accounting documents, ledgers and pay runs, plus each business's own definitions, records and operational data",
+      "group_owned": "clients, products and services, price lists, and staff or person master data, in the proportions the workload generator declares",
+      "installation_owned": "platform resources only"
+    },
+    "load_distribution": {
+      "rule": "The 5,000,000 daily logical business transactions are distributed across the four businesses, not concentrated in one. The generator declares the split and it is not uniform, because a real group has a dominant business.",
+      "default_split": [0.45, 0.25, 0.20, 0.10]
+    },
+    "consolidated_reporting": {
+      "rule": "The reference workload includes group-scoped consolidated reads running concurrently with transactional load, served through projections and counted in the report and export share of the workload mix.",
+      "requirement": "A consolidated read must never be served by relaxing write isolation, and its cost is measured alongside interactive traffic rather than in a quiet window."
+    },
+    "inter_business_documents": {
+      "rule": "A transfer between two businesses of the group is two transactions coordinated by a durable event, never one. No transaction spans sites.",
+      "workload_share": "included in the ordinary mutation share; each transfer counts as two logical business transactions plus one event delivery"
+    },
+    "expected_contention_effect": {
+      "claim": "The mutation fence is taken per site and definition installation, so four businesses running the same logical definition hold four distinct definition rows and four distinct installation rows. A group installation therefore partitions the definition-wide write hot spot into four independent fences.",
+      "verified_at": "26a7b3963c255064754f541dc8286e75dd566b1f",
+      "anchor": "DoctrineBusinessRecordMutationFence::acquire() selects with WHERE h.site_identifier = ? on the site-scoped business_definitions table, joined to business_schema_installations, re-checking the installation's own site on the joined row.",
+      "obligation": "Characterisation runs measure a single-business installation and a four-business group installation, so the effect is reported as measured rather than claimed. The single-business figure remains the conservative published bound."
+    },
+    "out_of_scope": "Multi-tenant service to unrelated tenants. That is version 3 or 4 and no figure in this contract is sized for it."
+  },
+  "envelope": {
+    "authorized_reads": {
+      "daily_minimum": 10000000,
+      "peak_reads_per_second": 1000
+    },
+    "peak_shape": {
+      "sustained_peak_minutes": 15,
+      "spike_minutes": 5,
+      "spike_handling": "bounded backpressure and asynchronous processing; never silent partial work",
+      "integrity_requirement": "no integrity loss and no unbounded backlog during either window"
+    },
+    "staff": {
+      "simultaneously_authenticated": 200,
+      "actively_navigating_or_mutating": 100
+    },
+    "clients": {
+      "identities": 100000,
+      "live_authenticated_sessions": 10000,
+      "concurrently_active_portal_or_public": 2000
+    },
+    "documents": {
+      "per_day": 100000,
+      "line_distribution": [
+        {"lines": 100, "share": 0.70},
+        {"lines": 200, "share": 0.25},
+        {"lines": 500, "share": 0.04},
+        {"lines": 1000, "share": 0.01}
+      ],
+      "average_lines": 150,
+      "line_rows_per_day": 15000000,
+      "burst": {
+        "document_commits_per_second": 10,
+        "line_rows_per_second": 1500,
+        "duration_minutes": 15,
+        "concurrent_ordinary_traffic": true
+      },
+      "standard_document": "header plus up to 100 owned or related lines committed as one LBT",
+      "large_document": "header plus up to 1000 owned or related lines committed atomically through the same application invariant; HTTP and MCP may use an asynchronous operation envelope but may not split the business commit"
+    },
+    "data_volume": {
+      "business_record_headers": 10000000,
+      "owned_and_relation_rows": 100000000,
+      "retained_ledger_rows": 100000000,
+      "ledger_streams": ["audit", "event", "idempotency", "revision"]
+    },
+    "platform_breadth": {
+      "independently_owned_extension_packages": 100,
+      "published_definitions_or_versions": 1000
+    },
+    "events": {
+      "events_per_mutation": 1,
+      "consumer_fan_out_normal": 3,
+      "consumer_fan_out_stress": 10,
+      "transient_retry_rate": 0.02,
+      "exact_duplicate_replay_rate": 0.05
+    }
+  },
+  "service_level_objectives": {
+    "bounded_primary_key_read": {"p95_ms": 250, "p99_ms": 750},
+    "indexed_policy_filtered_page": {"p95_ms": 500, "p99_ms": 1500},
+    "ordinary_small_mutation": {"p95_ms": 750, "p99_ms": 2000},
+    "document_100_line_commit": {"p95_ms": 2000, "p99_ms": 5000},
+    "document_1000_line_commit": {
+      "p95_ms": 8000,
+      "p99_ms": 15000,
+      "asynchronous_alternative": {
+        "acceptance_p95_ms": 500,
+        "acceptance_p99_ms": 1000,
+        "completion_p95_ms": 30000,
+        "completion_p99_ms": 120000
+      }
+    },
+    "queue_time_to_start": {"p95_ms": 2000},
+    "delivery_age": {"p95_ms": 5000, "p99_ms": 30000, "p999_ms": 120000},
+    "backlog_recovery": {
+      "worker_outage_minutes": 15,
+      "outage_load": "enterprise peak",
+      "drain_within_minutes": 30,
+      "normal_load_continues": true
+    },
+    "latency_exclusions": "internet latency is excluded; all figures are measured at the application boundary"
+  },
+  "integrity_objectives": {
+    "lost_acknowledged_commits": 0,
+    "duplicate_externally_visible_effects": 0,
+    "unauthorized_disclosures": 0,
+    "silent_partial_document_commits": 0,
+    "audit_omissions": 0,
+    "exact_value_drift": 0
+  },
+  "availability_and_recovery": {
+    "baseline_availability": "99.9% on the documented baseline deployment",
+    "high_availability": "99.95% on the high-availability reference topology",
+    "valid_request_5xx_rate_max": 0.001,
+    "baseline_rpo_minutes": 5,
+    "baseline_rto_minutes": 60,
+    "high_availability_rpo_minutes": 1,
+    "high_availability_rto_minutes": 15,
+    "note": "The baseline RPO of 5 minutes is only reachable with the point-in-time recovery capability adopted in the roadmap's decision D3. The currently shipped full-snapshot posture declares RPO equal to the backup interval (60 minutes on the documented reference schedule) in docs/operations/backup-restore.md. Until D3 ships, the 5-minute figure is a target, not a capability."
+  },
+  "workload_mix": [
+    {"share": 0.60, "class": "bounded reads, searches, lists, metadata discovery, portal and public views"},
+    {"share": 0.25, "class": "ordinary create, update, action and relation mutations"},
+    {"share": 0.10, "class": "10 to 100 line aggregate documents"},
+    {"share": 0.01, "class": "1000 line aggregate documents or an equivalent line-volume stream"},
+    {"share": 0.02, "class": "report, projection and export initiation, status and download"},
+    {"share": 0.02, "class": "identity, approval, step-up, extension, schema, job and operational traffic"}
+  ],
+  "workload_mix_required_concurrent_activity": [
+    "group-scoped consolidated reads across the four businesses, served through projections",
+    "inter-business transfers, each two transactions coordinated by a durable event",
+    "outbox and inbox drain",
+    "worker pools",
+    "scheduler",
+    "projection updates",
+    "audit anchoring",
+    "retention and archival",
+    "export generation",
+    "at least one noisy-neighbour site or organization attempting bounded expensive queries while unrelated sites stay inside their SLOs"
+  ],
+  "workload_mix_rules": [
+    "Percentages may be refined only by a recorded decision that restates the business consequence.",
+    "The mix must always retain large documents, policy-heavy queries, background effects, retention and operational traffic.",
+    "A benchmark composed only of primary-key reads or single-row inserts is not an enterprise qualification."
+  ],
+  "topologies": {
+    "reference_single_node": {
+      "role": "developer and characterisation runs; never a release claim",
+      "requirement": "application, worker, Redis and database on one host with recorded vCPU, RAM, storage and IOPS"
+    },
+    "standard_enterprise": {
+      "role": "the topology the Version 2 enterprise claim is bound to",
+      "requirement": "stateless application replicas, distinct worker pools per class, one authoritative primary database, bounded connection pools, recorded vCPU, RAM, storage class, IOPS, network round-trip time, TLS termination, binlog or WAL configuration and durability settings"
+    },
+    "high_availability": {
+      "role": "the topology the 99.95% and 1-minute RPO figures are bound to",
+      "requirement": "standard enterprise plus a synchronous or semi-synchronous replica, automated failover, and archive shipping proven by drill"
+    }
+  },
+  "worker_pool_classes": [
+    "high-priority interactive commands",
+    "event sequencing",
+    "consumer fan-out",
+    "queues, schedules and processes",
+    "reports, exports and projections",
+    "maintenance and retention"
+  ],
+  "database_support": {
+    "mariadb_lts": {
+      "tier": "canonical and default enterprise engine",
+      "depth": "authoritative global coverage, full functional, concurrency, browser, deployment, backup and recovery tests, absolute and relative performance, soak and failover evidence"
+    },
+    "mysql_8_4_lts": {
+      "tier": "co-primary enterprise engine",
+      "depth": "full functional, concurrency, browser, deployment, backup and recovery tests, absolute and relative performance, soak and failover evidence"
+    },
+    "postgresql_17": {
+      "tier": "fully supported portable engine",
+      "depth": "release-blocking full functional, concurrency, browser, deployment, backup and recovery parity, performance regression and a documented capacity result"
+    },
+    "rule": "Primary status adds MariaDB and MySQL depth. It never weakens PostgreSQL correctness and never permits an untested driver branch.",
+    "image_pinning": "CI and qualification pin exact image digests. Floating tags may run as scheduled upgrade canaries but are never the sole reproducibility evidence for a release."
+  },
+  "benchmark_method": {
+    "hardware": "versioned dedicated reference hardware; shared CI runners are never the authority for absolute throughput",
+    "warm_up_iterations_minimum": 5,
+    "measured_samples_minimum": 30,
+    "coefficient_of_variation_max": 0.10,
+    "regression_rule": "alert first, then fail on a p95 or memory regression greater than 10% or beyond two standard deviations, unless an approved budget change explains it",
+    "result_binding": [
+      "exact hardware",
+      "database engine, version and configuration",
+      "dataset generator seed and age distribution",
+      "application image digest",
+      "source commit",
+      "runner isolation",
+      "warm-up count",
+      "sample count",
+      "variance"
+    ],
+    "deterministic_pull_request_budgets": [
+      "query count may not grow per line, item or result",
+      "no new N+1 query slope",
+      "bounded memory and encoded payload size at 1000 lines",
+      "indexed cursor pagination rather than deep offset",
+      "no full scan, sort or spill on a declared hot plan",
+      "migration plan size and runtime budget",
+      "statement and lock-duration budget for changed transactional paths",
+      "artifact and image size regression budget"
+    ],
+    "scheduled_qualification": {
+      "nightly": "all three engines with a realistic aged dataset, 30 to 60 minutes at baseline and target subsets, repeated isolation, deadlock and lock-timeout cases, plan regression assertions",
+      "weekly_or_release": "24-hour enterprise-rated run, 72-hour soak at 70% enterprise load, peak and spike and stress and breakpoint profiles, worker outage and backlog recovery, primary failover and replica lag, Redis loss, worker SIGKILL, network delay, downstream timeout, disk pressure, storage outage, schema and runtime generation transition during traffic, retention during load, fan-out 3 and 10 with slow and poison consumers, idempotency duplicates and conflicts, one hot legal-number sequence, noisy-neighbour tenant, and report, export and projection load alongside interactive traffic"
+    },
+    "structural_pass_conditions": [
+      "query count does not grow per line or per result",
+      "no unapproved full scan, sort or spill on a hot plan",
+      "no missing or duplicate record, number, revision, audit, outbox row or external effect",
+      "lock waits, deadlocks and retries remain within declared budgets",
+      "queue and retention slopes return to zero",
+      "resident memory, connections, leases, temporary space and background processes stabilise after warm-up",
+      "catch-up meets the declared window after every injected fault",
+      "database CPU, connections and IOPS and worker utilisation stay below 70% normal and 85% peak, leaving at least 30% supported headroom"
+    ]
+  },
+  "storage_forecast": {
+    "hot_bytes_formula": "live record bytes + line rows * measured line bytes + retained days * mutations/day * (revision + audit + idempotency + outbox + source-event bytes) + retained days * events/day * fan-out * inbox bytes",
+    "worked_example": "At 5,000,000 mutations per day a revisions-enabled event-producing workload adds roughly 5,000,000 daily rows to each of several independent ledgers before consumer fan-out; a 90-day window is about 450,000,000 rows in each unpruned stream. The document profile adds about 15,000,000 line rows per day.",
+    "required_publications": [
+      "measured bytes per row and per index entry, per engine",
+      "daily, monthly and yearly growth",
+      "write-ahead log or binary log and replica network amplification",
+      "backup size and time, and restore time",
+      "vacuum, purge and undo behaviour",
+      "online index rebuild and upgrade temporary-space need",
+      "forecast threshold and alert date"
+    ],
+    "free_space_reserve": 0.30,
+    "temporary_capacity_rule": "model up to 2x a hot-table size where the engine or operation can require it"
+  },
+  "retention_budget_rule": {
+    "maintenance_drain_multiple_of_peak_expiry": 2,
+    "applies_to": [
+      "business command idempotency",
+      "delivery and API idempotency",
+      "outbox source and sequenced journals",
+      "inbox and consumer receipts",
+      "revisions and line revision detail",
+      "audit chain and anchors",
+      "job attempts, process history, exports and projection rebuild sources",
+      "expired approvals, proofs, sessions and tokens"
+    ],
+    "current_shipped_ceiling": {
+      "store": "business-record command idempotency",
+      "seeded_schedule": "43 * * * *",
+      "seeded_payload": {"batch_size": 500, "maximum_batches": 10},
+      "daily_deletion_ceiling": 120000,
+      "source": "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
+      "verdict": "below the enterprise ingress of at least 5,000,000 command-ledger rows per day; superseded in phase 5"
+    }
+  },
+  "scale_before_sharding": {
+    "rule": "Sharding is not introduced by default. Remove known global serialization, bound query and ledger growth, use stateless application replicas, scale worker pools, optimise schemas and indexes, and qualify a correctly configured primary database first.",
+    "preserved_partition_path": [
+      "globally unique identifiers",
+      "explicit site and organization context",
+      "no cross-site atomic transaction assumption",
+      "durable integration for cross-partition work",
+      "policy-safe reporting through projections",
+      "routing behind an application-owned persistence boundary"
+    ],
+    "condition_for_sharding": "only when the measured target cannot be met economically on the approved topology, and only behind an architecture decision record that proves the migration, recovery, reporting and operational consequences"
+  }
+}

@@ -9,9 +9,17 @@ the one place they live so the standard stays unified.
 | Document | What it governs |
 | --- | --- |
 | [`docs/coding-standard.md`](docs/coding-standard.md) | **Normative.** Documentation blocks, types, naming, structure, errors, tests. |
+| [`docs/roadmap/`](docs/roadmap/README.md) | **Authoritative for programme sequencing.** What to build next, in what order, and what must be true before each gate. Start at [`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md). |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution workflow, commit structure, required checks. |
 | [`docs/architecture/principles.md`](docs/architecture/principles.md) | Dependency direction and layer boundaries. |
 | [`docs/development.md`](docs/development.md) | Local checks, database matrix, release gates. |
+
+`docs/roadmap/` is the single source of truth for what the programme does next. Its machine-readable
+ledger is `docs/roadmap/findings.json`; a change cites the finding identifiers it addresses and updates
+that ledger in the same change. [`docs/qualification/gap-matrix.md`](docs/qualification/gap-matrix.md) is
+retained as the executed evidence of the eight production-qualification waves — it is a record of work
+already proven, not a forward plan, and its entries are carried into the ledger with their closure
+commits.
 
 ## Non-negotiables
 

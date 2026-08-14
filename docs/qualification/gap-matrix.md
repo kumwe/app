@@ -1,5 +1,16 @@
 # Production-qualification gap matrix
 
+> **This file is executed evidence, not a forward plan.**
+> [`docs/roadmap/`](../roadmap/README.md) is authoritative for programme sequencing — what is built next,
+> in what order, and what must be true before each gate. This matrix is retained unchanged as the record of
+> the eight qualification waves that were executed, because its closed entries are the proof that the
+> controls they describe exist. Every entry below, closed or open, is carried into
+> [`docs/roadmap/findings.json`](../roadmap/findings.json) under a `GM-` identifier with its closure commit,
+> so one ledger answers both what is proven and what is left. Where an entry's conclusion has since been
+> superseded by a product-owner decision — `GM-BAK-01`, point-in-time recovery — the ledger records that;
+> the entry itself is left as it was written, because it is a historical record.
+> Do not plan from this file. Do not delete it.
+
 This matrix records the Session 7 opening analysis: what the merged runtime already provides in each control domain, and the specific gaps the qualification campaign must close. Every gap carries its evidence and the shape of its repository-owned fix. The matrix is a working campaign artifact; the campaign is complete when every critical and high entry is implemented and proven, and bounded residual risks are explicitly owned.
 
 Gap totals: 0 critical, 13 high, 27 medium, 21 low. Wave 1 (tamper-evident audit integrity, entries 1 to 7)
