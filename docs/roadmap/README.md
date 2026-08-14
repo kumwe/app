@@ -3,6 +3,36 @@
 **Verified against** `26a7b3963c255064754f541dc8286e75dd566b1f`
 **Machine-readable companions** [`findings.json`](findings.json), [`capacity-contract.json`](capacity-contract.json)
 **Current position** [`STATUS.md`](STATUS.md)
+**Work already finished** [`CHANGELOG.md`](../../CHANGELOG.md)
+
+---
+
+## How this document moves
+
+> **This directory holds forward work only. Completed work leaves it and lands in
+> [`CHANGELOG.md`](../../CHANGELOG.md).**
+>
+> There are exactly two places, and an agent must never confuse them:
+>
+> | | |
+> |---|---|
+> | **`docs/roadmap/`** | What is **still to do**. Objectives, gates, phases, work packages, and every open finding in [`findings.json`](findings.json). New ideas and new objectives are added **here** — this is where forward work lives, so nothing scatters into a sixth plan again. |
+> | **[`CHANGELOG.md`](../../CHANGELOG.md)** | What is **done**. Every completed work package, written for a reader of the product, grouped under Added, Changed, Fixed, Security, Deprecated and Removed, citing the commits that carried it. |
+>
+> **The rule.** When a work package completes, its entry moves out of this directory and into
+> `CHANGELOG.md` **in the same pull request that completes it**. A finding is not "closed here"; it is
+> *removed from here and recorded there*. The roadmap therefore shrinks as the programme advances and never
+> accumulates a growing tail of finished items.
+>
+> **It is enforced, not merely stated.** `findings.json` no longer admits the `closed` state, and
+> [`tools/verify-roadmap.php`](../../tools/verify-roadmap.php) — run as `composer roadmap:check`, inside
+> `composer qa`, and again by `tests/Architecture/RoadmapLifecycleTest.php` — fails the build if an entry
+> carries it, naming the entry and telling the author to move it to the changelog. This is deliberate: the
+> gap matrix rotted into a forward plan precisely because nothing mechanical stopped it.
+>
+> The one exception is [`docs/qualification/gap-matrix.md`](../qualification/gap-matrix.md), retained
+> unchanged as the historical evidence record of the executed qualification programme. Do not plan from it,
+> and do not delete it.
 
 ---
 
@@ -21,8 +51,9 @@ It consolidates and supersedes, for sequencing purposes:
 
 It does **not** supersede [`docs/qualification/gap-matrix.md`](../qualification/gap-matrix.md), which is
 retained unchanged as the executed evidence of the eight-wave production-qualification programme. Its
-closed entries are proof of work already done, not a forward plan. Every one of them is carried into
-[`findings.json`](findings.json) with its closure commit so one ledger answers both questions.
+closed entries are proof of work already done, not a forward plan. Their substance is recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them; the entries that are still
+conditional or open are carried into [`findings.json`](findings.json), which holds open work only.
 
 Nor does it supersede the normative rules. [`AGENTS.md`](../../AGENTS.md) and
 [`docs/coding-standard.md`](../coding-standard.md) still govern how code is written; this document governs
@@ -215,12 +246,16 @@ predicted is disqualifying for enterprise data entry, and because these are the 
 extension inherits it. Only the shape of the fix changes: extend an existing retention mechanism to the
 conflict path, and give the CMS content editor the mechanism it never had.
 
-### 3.4 The review's finding IDs are preserved, and the ledger is larger
+### 3.4 The review's finding IDs are preserved, and the ledger holds open work only
 
-[`findings.json`](findings.json) carries 114 entries: 27 from the review, 62 from the executed gap matrix,
-and 25 discovered while verifying this roadmap, during the qualification programme, or from the
-business-group decision. Review identifiers are unchanged so a reference to `V2-SCL-003` resolves the same
-way in both documents.
+The consolidation resolved 114 findings: 27 from the review, 62 from the executed gap matrix, and 25
+discovered while verifying this roadmap, during the qualification programme, or from the business-group
+decision. Fifty-six of them were already closed. Under the lifecycle rule above those left the ledger and
+their substance is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them, so
+[`findings.json`](findings.json) now carries **58 open entries**: 25 from the review, 12 from the gap
+matrix and 21 discovered here. Review identifiers are unchanged, so a reference to `V2-SCL-003` resolves
+the same way in both documents, and a reference to a closed identifier such as `GM-AUD-01` resolves in the
+changelog.
 
 ---
 
@@ -1448,14 +1483,28 @@ feature change. A collaborator that merely forwards lines is rejected.
 
 ### 10.1 The ledger is the state
 
-[`findings.json`](findings.json) is the programme's state. A change that alters a finding's state updates
-the ledger in the same change. Allowed states are `open`, `reproduced`, `decision_required`,
-`accepted_for_implementation`, `in_progress`, `verified`, `closed`, `conditional` and `external`. Every
-non-closed state requires a named owner, a next action, a detection method and a review date. **A finding
-that describes runtime behaviour cannot be closed by documentation alone.**
+[`findings.json`](findings.json) is the programme's **open** state. A change that alters a finding's state
+updates the ledger in the same change. Allowed states are `open`, `reproduced`, `decision_required`,
+`accepted_for_implementation`, `in_progress`, `verified`, `conditional` and `external`. Every one of them
+requires a named owner, a next action, a detection method and a review date. **A finding that describes
+runtime behaviour cannot be closed by documentation alone.**
+
+`closed` is not one of the allowed states, by design. Closing a finding means **deleting its entry here and
+writing its substance into [`CHANGELOG.md`](../../CHANGELOG.md) in the same pull request** — see
+[How this document moves](#how-this-document-moves). A `conditional` entry stays, because a bounded residual
+risk is still live work someone owns; it carries the commit that closed the rest of it.
 
 [`STATUS.md`](STATUS.md) is the short view an agent reads first. It is updated whenever a phase or gate
 moves, and it is mechanically derivable from the ledger.
+
+### 10.1.1 The lifecycle check
+
+[`tools/verify-roadmap.php`](../../tools/verify-roadmap.php) is dependency-free and runs as
+`composer roadmap:check`, inside `composer qa`, and again from
+`tests/Architecture/RoadmapLifecycleTest.php` in the architecture suite. It fails when `findings.json` or
+`capacity-contract.json` is not well-formed JSON, when an entry carries a state the ledger does not allow,
+and — the reason it exists — when an entry carries state `closed`. Its failure message names the entry and
+says what to do with it.
 
 ### 10.2 Every change cites its findings
 
@@ -1506,7 +1555,10 @@ A change is not complete until it contains all of the following.
 11. **A release note, security notice or migration guide** where the change is externally visible.
 12. **A clean working tree** after every generator and build has run.
 13. **The ledger updated**: `findings.json`, and `STATUS.md` if a phase or gate moved.
-14. **Reviewer sign-off from the owner of the affected invariant.**
+14. **Completed work moved to the changelog**: every finding this change finishes is deleted from
+    `findings.json` and written into `CHANGELOG.md` under the right category, citing this change's commits.
+    A pull request that finishes work without touching the changelog is incomplete.
+15. **Reviewer sign-off from the owner of the affected invariant.**
 
 And the standing prohibitions: never weaken, skip, retry away or delete a legitimate test to make a change
 pass; never combine an unrelated cleanup with a substantive change; never introduce service location or a
@@ -1566,6 +1618,12 @@ This roadmap was written against the repository at `26a7b39`. Every source ancho
 and current-state claim in it and in `findings.json` was resolved against that revision. Every closure
 commit was resolved with `git log` at that revision. The independent review's findings were re-verified
 rather than copied; where the review is now wrong, section 3 says so and says why.
+
+The fifty-six findings that were already closed at that revision have since been moved out of the ledger
+and into [`CHANGELOG.md`](../../CHANGELOG.md), which backfills the whole 2.0 programme from
+`cb9f0d5` — the commit that defined the architecture — to `26a7b39`. Nothing was dropped in the move: every
+closed finding's substance, including its named residual risks, is carried by a changelog entry citing the
+commits that closed it.
 
 `composer docs:api`, `composer architecture:policy`, `composer interface:programme`, `composer cs`,
 `composer analyse`, the unit suite and the architecture suite were all executed and are green at this
