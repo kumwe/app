@@ -30,14 +30,152 @@ Collect and alert on:
 
 Define engine-specific database dashboards for MariaDB, MySQL, or PostgreSQL while keeping the application-level service objectives the same.
 
+## Metrics
+
+Kumwe exposes a Prometheus text exposition (`text/plain; version=0.0.4`) on `GET /metrics`. The format is
+a pull format every mainstream collector already reads — Prometheus, the OpenTelemetry Collector's
+`prometheus` receiver, Grafana Agent, Datadog's OpenMetrics check, VictoriaMetrics — so it costs Kumwe no
+vendor dependency and costs you no adapter. Nothing is pushed: a scrape that does not happen is a gap in
+your monitoring, never a stall in the application.
+
+### Turning it on, and keeping it private
+
+The endpoint ships **off**. `config/observability.php` declares `metrics.enabled` false and
+`metrics.public` false, and those are the shipped defaults.
+
+| State | What `/metrics` answers |
+|---|---|
+| `KUMWE_METRICS_ENABLED` unset or false | `404`, with no body. The surface is invisible. |
+| Enabled, `metrics.public` false, no `KUMWE_METRICS_TOKEN` | `404`. A misconfigured deployment does not advertise that a metrics surface exists. |
+| Enabled, token set, wrong or absent credential | `401` with `WWW-Authenticate: Bearer`, no body. |
+| Enabled, token set, correct credential | `200` with the exposition. |
+
+Set `KUMWE_METRICS_TOKEN` (or `KUMWE_METRICS_TOKEN_FILE`) to at least 32 random bytes and give it to the
+scraper as `Authorization: Bearer …`. The comparison is constant-time and the token is never logged.
+
+A shared token is the control the application can enforce; it is not a substitute for keeping the port off
+the public internet. Do both. Network isolation alone was rejected as the only control because nothing in
+the application can verify it, so a single misconfigured ingress would fail open. Reusing Kumwe's own
+access tokens was rejected because it would put a database query and a capability check on the one path
+that must keep answering while the database is what is going wrong.
+
+### What is exposed
+
+Counters and histograms, accumulated across requests in Redis:
+
+- `kumwe_http_requests_total{method,status}` — the 5xx-rate source.
+- `kumwe_http_request_duration_seconds{method}` — histogram; use `histogram_quantile` over `_bucket`.
+
+Gauges, recomputed from the durable rows on each scrape:
+
+- `kumwe_build_info{release,runtime}`, `kumwe_ready`;
+- `kumwe_jobs_pending`, `kumwe_jobs_due`, `kumwe_jobs_oldest_due_age_seconds`, `kumwe_jobs_lease_expired`,
+  `kumwe_jobs_dead`, `kumwe_jobs_dead_lettered`;
+- `kumwe_workers_registered`, `kumwe_worker_heartbeat_age_seconds`;
+- `kumwe_schedules_due`, `kumwe_scheduler_lag_seconds`;
+- `kumwe_outbox_pending`, `kumwe_outbox_oldest_pending_age_seconds`, `kumwe_outbox_dead`;
+- `kumwe_inbox_pending`, `kumwe_inbox_oldest_pending_age_seconds`, `kumwe_inbox_poison`;
+- `kumwe_process_work_overdue`, `kumwe_process_work_oldest_overdue_age_seconds`;
+- `kumwe_export_queue_depth`, `kumwe_export_artifacts_expired`;
+- `kumwe_metrics_scrape_duration_seconds`, `kumwe_metrics_collection_failed`.
+
+`kumwe_metrics_collection_failed` is the one to wire first. It reports that the endpoint answered but
+could not read the durable gauges, which is the difference between "the queue is empty" and "I cannot see
+the queue".
+
+### Cardinality is a correctness property
+
+Every label a Kumwe metric can carry is enumerated in `src/Infrastructure/Observability/MetricCatalog.php`,
+and any value outside its enumeration folds into `other`. The whole exposition is bounded to well under
+two hundred time series regardless of traffic, and a unit test re-checks that bound on every change.
+
+There is deliberately **no** `path`, `route`, `site`, `user`, `record` or `tenant` label anywhere. A path
+label on this application would publish every business record identifier ever requested and mint a
+permanent time series for each. Correlation, event, process and artifact identifiers belong in structured
+log fields, which expire; a metric label does not. `config/observability.php` records the forbidden-label
+policy and the metric catalogue refuses at boot any metric that violates it.
+
+Queue depth answers *whether* something is stuck. The durable rows and the integration operations surface
+answer *which* one.
+
+### Cost
+
+Recording a response costs two pipelined Redis round trips: one for the counter, one covering the
+histogram's bucket, sum and count together. Measured on a local Redis over TCP that is **≈0.19 ms per
+response**, against **≈0.0001 ms** with metrics off, where the recorder is a no-op and the cost is one
+method call into an empty body. Reading every stored series back for a scrape measured ≈0.15 ms. Treat
+these as order-of-magnitude figures from a development machine, not a benchmark — the point is that the
+enabled cost is a fraction of a millisecond and the disabled cost is nothing.
+
+A scrape is a fixed number of bounded aggregates over indexes the claim path already maintains, so it does
+not grow with table size — ≈2.7 ms for all twenty-four gauges against a local MariaDB. It publishes its own
+duration as `kumwe_metrics_scrape_duration_seconds`; alert on that if you want to know when that
+assumption stops holding.
+
+Redis being unreachable never becomes an application failure: every recorder call swallows its own
+failure, and the readiness probe already reports Redis separately.
+
+### Alerting rules
+
+`deploy/observability/alerts.yaml` ships loadable Prometheus rules for every signal above, with concrete
+thresholds. Each rule names the runbook section that says what to do about it and states, in a `caught`
+annotation, the specific failure it would have caught — because an alert nobody can act on trains an
+on-call rotation to ignore the page that matters. Treat the thresholds as starting points and tune the
+`for` durations before the numbers.
+
 ## Logs
 
-Kumwe writes structured application logs to `php://stderr` through Monolog. Collect container or process logs off-host with retention, integrity controls, and restricted access. Correlate events with the request identifier and deployed release.
+Kumwe writes one JSON object per line to `php://stderr` through Monolog. Collect container or process logs
+off-host with retention, integrity controls, and restricted access.
 
-Never log request or event bodies by default. Credentials, authorization headers, cookies, passwords, secrets,
-session identifiers, plaintext tokens, extension signing material, report parameters, export contents, and sensitive
-business fields must be redacted. Correlation, event, process, and artifact IDs belong in structured fields, not
-high-cardinality metric labels. `config/observability.php` records the safe-context and forbidden-label policy.
+`config/observability.php` is the contract *and* the runtime behaviour — it is loaded at boot by
+`ObservabilityContract` and nothing else reads it, so changing the declaration changes what the process
+writes, and a declaration the runtime cannot honour stops the boot. A line looks like this:
+
+```json
+{"message":"Integration event dispatch failed.","context":{"event_id":"0199…","correlation_id":"7f3c…",
+"causation_id":"0199…","transport":"acme.queue","attempt":3,"classification":"transient",
+"will_retry":true,"exception":{"class":"RuntimeException","message":"could not connect to
+pgsql://[redacted]@db:5432/app","code":0,"file":"…/DoctrineConnectionFactory.php","line":61},
+"request_id":"7f3c…","release":"2.4.1","runtime":"console","outcome":"failure"},"level":300,
+"level_name":"WARNING","channel":"kumwe","datetime":"2026-08-14T09:31:02.114+00:00"}
+```
+
+Three things are guaranteed on every line and worth relying on when you build queries:
+
+- **`correlation_id`** — the same value across the HTTP request, the jobs it queued, the outbox events it
+  produced and the consumers that handled them, so one business operation is `grep`-able end to end.
+  `causation_id` names the event or request that directly caused this one. Both come from the durable
+  event envelope, not from a log-time guess.
+- **`release`, `runtime`, `outcome`** — which build wrote it, which surface (`http` or `console`), and
+  whether the thing succeeded. `outcome` is derived from severity when the caller did not state it, so
+  `outcome=failure` is a complete filter over failures rather than a partial one.
+- **redaction** — any context key naming `authorization`, `cookie`, `password`, `secret`, `set-cookie` or
+  `token` loses its value at every nesting level, and an attached exception is reduced to class, scrubbed
+  message, file and line with **no stack trace**. Traces carry frame arguments and frame arguments carry
+  secrets; the class, message and line are what you actually grep for, and a full trace belongs in a
+  debugger against a reproduction.
+
+Never log request or event bodies by default. Credentials, authorization headers, cookies, passwords,
+secrets, session identifiers, plaintext tokens, extension signing material, report parameters, export
+contents, and sensitive business fields must be redacted. Correlation, event, process, and artifact IDs
+belong in structured fields, not high-cardinality metric labels.
+
+Set `KUMWE_LOG_LEVEL` — not `APP_DEBUG` — to change verbosity. Debug also widens the detail a 500 response
+discloses, so raising verbosity through it turns a logging decision into a disclosure decision.
+
+### Trace context
+
+Kumwe ships **no tracer and no exporter**, and adding an OpenTelemetry SDK is a supply-chain decision this
+release does not take. What it does do is participate in a trace somebody else is recording: a well-formed
+W3C `traceparent` on an inbound request is accepted, its `trace_id` and `span_id` are stamped onto every
+log line that request writes, and the header is echoed back. A malformed or reserved-all-zero value is
+ignored entirely, and no trace identifier is ever invented — an identifier that joins to nothing is worse
+than an absent one.
+
+So if your proxy or an upstream service already emits `traceparent`, Kumwe's log stream joins that trace
+today. If nothing upstream emits one, `correlation_id` remains the identifier to stitch on. See
+`docs/qualification/gap-matrix.md` for what adopting a real tracer would require.
 
 Durable database rows and audit records are authoritative for event/job/process/export recovery. Redis is
 coordination state. Do not report a queue as healthy merely because Redis responds, and do not mutate outbox,

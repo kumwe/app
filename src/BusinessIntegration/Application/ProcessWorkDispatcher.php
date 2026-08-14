@@ -100,6 +100,7 @@ final readonly class ProcessWorkDispatcher
             });
             $this->logger->info('Process work completed.', [
                 'process_id' => $lease->processId,
+                'correlation_id' => $lease->correlationId,
                 'work_id' => $lease->work->id(),
                 'work_kind' => $lease->work->kind()->value,
                 'attempt' => $lease->attempts,
@@ -114,6 +115,7 @@ final readonly class ProcessWorkDispatcher
             $this->store->failWork($lease, $decision->classification, $failure, $decision->retryAt);
             $this->logger->warning('Process work failed.', [
                 'process_id' => $lease->processId,
+                'correlation_id' => $lease->correlationId,
                 'work_id' => $lease->work->id(),
                 'work_kind' => $lease->work->kind()->value,
                 'classification' => $decision->classification->value,

@@ -1,0 +1,313 @@
+# Kumwe alerting rules, in Prometheus rule format.
+#
+# Load this alongside a scrape job for the `/metrics` endpoint that `src/Http/Handler/MetricsHandler.php`
+# serves. Every rule here is written against a metric Kumwe actually emits — nothing in this file needs
+# an exporter, a sidecar, or a query against the application database.
+#
+# Two conventions make these rules operable rather than decorative:
+#
+#   * every alert names the runbook section that says what to do about it, so a page is never a dead end;
+#   * every alert carries a `caught` annotation stating the concrete failure it would have caught, because
+#     an alert nobody can act on is worse than no alert — it trains an on-call rotation to ignore the page
+#     that matters.
+#
+# Thresholds are starting points chosen to sit above normal operation and below user-visible damage. Tune
+# `for` durations before you tune thresholds: most false pages here come from a scrape gap, not from a
+# genuinely wrong number.
+#
+# `severity: page` means wake someone. `severity: ticket` means it will be worse tomorrow but not tonight.
+
+groups:
+  - name: kumwe.availability
+    rules:
+      - alert: KumweScrapeTargetDown
+        expr: up{job="kumwe"} == 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Kumwe replica {{ $labels.instance }} is not answering scrapes."
+          description: >-
+            The metrics endpoint has not answered for five minutes. Confirm the process is alive with
+            GET /health/live before treating this as an application fault: a scrape failure alone can also
+            mean the scrape credential or the network path changed.
+          runbook: docs/operations/monitoring.md#health-contract
+          caught: >-
+            A replica that PHP-FPM stopped accepting connections on while its container kept passing its
+            own liveness check, which the health probes alone would have reported as healthy.
+
+      - alert: KumweReadinessFailing
+        expr: max_over_time(kumwe_ready[5m]) == 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Kumwe replica {{ $labels.instance }} has reported itself unfit for traffic for 5 minutes."
+          description: >-
+            Readiness covers the database connection, the migration ledger, Redis, the extension trust
+            store and the compiled runtime map. The replica is being drained by the load balancer; a brief
+            failure during a deploy is expected, five sustained minutes is not.
+          runbook: docs/operations/incident-response.md
+          caught: >-
+            A replica left behind at an older extension runtime generation after an activation, which
+            would otherwise have kept serving pages rendered from the wrong extension set.
+
+      - alert: KumweReleaseSkew
+        expr: count(count by (release) (kumwe_build_info)) > 1
+        for: 30m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "More than one Kumwe release is serving traffic."
+          description: >-
+            Two releases have been answering scrapes for half an hour. A rolling deploy passes through this
+            state briefly; staying in it means a replica did not restart or a rollback stalled part-way.
+          runbook: docs/operations/deploy.md
+          caught: >-
+            A deploy where one worker container failed its pull and silently kept running the previous
+            release, producing intermittent behaviour that no single replica's logs explained.
+
+  - name: kumwe.http
+    rules:
+      - alert: KumweServerErrorRateElevated
+        expr: >-
+          sum(rate(kumwe_http_requests_total{status="5xx"}[5m]))
+          /
+          clamp_min(sum(rate(kumwe_http_requests_total[5m])), 0.001) > 0.02
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "More than 2% of Kumwe responses are server errors."
+          description: >-
+            Sustained above the level a healthy installation reaches from isolated faults. Correlate with
+            the log stream on `outcome=failure` and the request identifier before restarting anything.
+          runbook: docs/operations/incident-response.md
+          caught: >-
+            A misconfigured trusted-host list after a domain change, which returned 5xx to a fraction of
+            traffic while every health probe stayed green.
+
+      - alert: KumweServerErrorRateCritical
+        expr: >-
+          sum(rate(kumwe_http_requests_total{status="5xx"}[5m]))
+          /
+          clamp_min(sum(rate(kumwe_http_requests_total[5m])), 0.001) > 0.10
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "More than 10% of Kumwe responses are server errors."
+          description: >-
+            One request in ten is failing. Treat as an outage. Check readiness and the database first; the
+            error boundary logs every unhandled exception with its request identifier.
+          runbook: docs/operations/incident-response.md
+          caught: >-
+            A database credential rotation applied to the secret store but not to the running containers,
+            which readiness reported only after the connection pool had already started failing requests.
+
+      - alert: KumweRequestLatencyHigh
+        expr: >-
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(kumwe_http_request_duration_seconds_bucket[10m]))
+          ) > 2
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Kumwe 95th-percentile request duration is above 2 seconds."
+          description: >-
+            Latency this far above normal usually means database contention, a cold template cache after a
+            deploy, or a saturated worker pool. Check the database dashboard before the application.
+          runbook: docs/operations/monitoring.md#minimum-signals
+          caught: >-
+            A missing index after a business-schema plan executed, which showed up as slow pages long
+            before it showed up as an error.
+
+  - name: kumwe.queues
+    rules:
+      - alert: KumweNoLiveWorker
+        expr: kumwe_worker_heartbeat_age_seconds > 300
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "No Kumwe worker has recorded a heartbeat for 5 minutes."
+          description: >-
+            Queued work is accumulating with nothing consuming it. Scheduled jobs, integration dispatch and
+            long-running processes are all stopped. Check the worker container before the queue depth.
+          runbook: docs/operations/incident-response.md
+          caught: >-
+            A worker container that exited on a stale runtime generation and was not restarted, which the
+            queue-depth graph alone would have shown only after the backlog grew large enough to notice.
+
+      - alert: KumweJobQueueStalled
+        expr: kumwe_jobs_oldest_due_age_seconds > 900
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "The oldest due Kumwe job has been waiting more than 15 minutes."
+          description: >-
+            Either no worker is claiming, or one job type is failing and re-queueing ahead of everything
+            else. Check kumwe_worker_heartbeat_age_seconds first, then the failure classification in the log.
+          runbook: docs/automation.md
+          caught: >-
+            A poison job whose handler raised before settling, holding the head of the queue through every
+            retry while later jobs waited behind it.
+
+      - alert: KumweJobLeasesExpiring
+        expr: kumwe_jobs_lease_expired > 0
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Kumwe jobs are holding expired worker leases."
+          description: >-
+            A claimed job whose lease expired without settlement means the worker died mid-execution or the
+            handler outran its lease. The job is recoverable; a steady count means it is happening repeatedly.
+          runbook: docs/automation.md
+          caught: >-
+            A handler whose runtime grew past its lease after a data-volume increase, which silently
+            produced duplicated side effects on every retry.
+
+      - alert: KumweJobsDeadLettering
+        expr: increase(kumwe_jobs_dead_lettered[1h]) > 0
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Kumwe jobs are reaching the failed-job ledger."
+          description: >-
+            A dead-lettered job has exhausted its attempts and will not run again without an operator.
+            Nothing recovers this on its own.
+          runbook: docs/automation.md
+          caught: >-
+            A scheduled export job failing permanently on a retired site, which no other signal reported
+            because the queue drained normally.
+
+      - alert: KumweSchedulerLagging
+        expr: kumwe_scheduler_lag_seconds > 300
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "A Kumwe schedule is more than 5 minutes past its next run time."
+          description: >-
+            The scheduler container is not dispatching. Backups, audit-trail verification and retention all
+            ride on schedules, so this silently disables several controls at once.
+          runbook: docs/automation.md
+          caught: >-
+            A scheduler container stopped during a deploy and never restarted, which stopped the nightly
+            audit.trail.verify job — the exact control that is supposed to notice tampering.
+
+  - name: kumwe.integrations
+    rules:
+      - alert: KumweOutboxBacklogAging
+        expr: kumwe_outbox_oldest_pending_age_seconds > 300
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "The oldest undispatched Kumwe integration event is more than 5 minutes old."
+          description: >-
+            Events are durable, so nothing is lost, but downstream systems are working from stale data.
+            Distinguish transport backpressure from transport failure in the log before escalating.
+          runbook: docs/business-integrations.md#monitoring-and-failure-recovery
+          caught: >-
+            A downstream endpoint answering slowly rather than failing, which produced no errors at all and
+            would have gone unnoticed until a partner asked why their data was hours behind.
+
+      - alert: KumweOutboxDeadLetters
+        expr: kumwe_outbox_dead > 0
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Kumwe integration events have exhausted their delivery attempts."
+          description: >-
+            These events will never be delivered without an operator replaying them. Replay is audited and
+            available through the integration operations surface.
+          runbook: docs/business-integrations.md#monitoring-and-failure-recovery
+          caught: >-
+            A contract change on the receiving side that made every event of one type permanently
+            undeliverable, while every other event type kept flowing normally.
+
+      - alert: KumweInboxPoison
+        expr: kumwe_inbox_poison > 0
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Kumwe has quarantined inbound integration events as poison."
+          description: >-
+            A consumer refused an event repeatedly and it has been set aside rather than retried forever.
+            The event is preserved; the ordering checkpoint behind it may be held back.
+          runbook: docs/business-integrations.md#monitoring-and-failure-recovery
+          caught: >-
+            A handler-version upgrade that could not read events produced by the previous schema version,
+            which stalled one consumer's checkpoint without affecting any other consumer.
+
+      - alert: KumweProcessWorkOverdue
+        expr: kumwe_process_work_oldest_overdue_age_seconds > 900
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "A Kumwe long-running process has work more than 15 minutes past due."
+          description: >-
+            Timers, commands and compensations all live here. An overdue compensation is the serious case:
+            it means a process that already failed has not finished unwinding.
+          runbook: docs/business-integrations.md#monitoring-and-failure-recovery
+          caught: >-
+            A compensation step whose handler was removed by an extension being disabled, leaving business
+            processes half-rolled-back with no error anywhere in the request path.
+
+  - name: kumwe.reporting
+    rules:
+      - alert: KumweExportQueueBacklog
+        expr: kumwe_export_queue_depth > 25
+        for: 30m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Kumwe report exports are queueing faster than they complete."
+          description: >-
+            Export artifacts are produced by queued jobs, so check the job queue signals first — a backlog
+            here is usually a worker problem rather than a reporting problem.
+          runbook: docs/operations/monitoring.md#minimum-signals
+          caught: >-
+            An export job type whose handler stopped being registered after an extension upgrade, which
+            left users watching exports that never arrived and produced no failing request.
+
+      - alert: KumweExpiredExportsRetained
+        expr: kumwe_export_artifacts_expired > 0
+        for: 1h
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Kumwe is still storing report export artifacts past their expiry."
+          description: >-
+            Expiry is enforced by a scheduled cleanup. Artifacts outliving it means the cleanup schedule is
+            not running, which is a data-retention problem rather than an availability one.
+          runbook: docs/operations/monitoring.md#minimum-signals
+          caught: >-
+            A disabled retention schedule that kept generated business reports — including their row
+            contents — on disk indefinitely, well past the window the site's retention policy allowed.
+
+  - name: kumwe.observability
+    rules:
+      - alert: KumweMetricsCollectionFailing
+        expr: kumwe_metrics_collection_failed == 1
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Kumwe is serving metrics but cannot read its own durable gauges."
+          description: >-
+            The endpoint is answering, so the process is fine, but every queue, outbox and scheduler gauge
+            in this file is stale or absent. Treat the queue alerts as unreliable until this clears.
+          runbook: docs/operations/monitoring.md#metrics
+          caught: >-
+            A least-privilege database account that had been granted rights on the application tables but
+            not on the newer integration tables, which made half the alerting silently blind.

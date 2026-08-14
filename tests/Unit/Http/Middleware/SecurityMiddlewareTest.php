@@ -13,6 +13,7 @@ use Kumwe\CMS\Http\Middleware\SecurityHeadersMiddleware;
 use Kumwe\CMS\Http\Middleware\TrustedHostMiddleware;
 use Kumwe\CMS\Http\Security\TrustedHostMatcher;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\CMS\Infrastructure\Observability\CorrelationContext;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
@@ -140,7 +141,8 @@ final class SecurityMiddlewareTest extends TestCase
 
     public function testRequestIdIsGeneratedAndReturned(): void
     {
-        $response = (new RequestIdMiddleware())->process($this->request(), $this->successfulHandler());
+        $response = (new RequestIdMiddleware(new CorrelationContext()))
+            ->process($this->request(), $this->successfulHandler());
 
         self::assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $response->getHeaderLine('X-Request-ID'));
     }

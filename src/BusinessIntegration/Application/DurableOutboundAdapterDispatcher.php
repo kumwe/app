@@ -117,6 +117,8 @@ final readonly class DurableOutboundAdapterDispatcher
             $this->logger->info('Durable outbound adapter completed.', [
                 'adapter_id' => $definition->identifier(),
                 'event_id' => $event->eventId(),
+                'correlation_id' => $event->correlationId(),
+                'causation_id' => $event->causationId(),
                 'attempt' => $result->lease->attempts,
                 'runtime_generation' => $runtimeGeneration,
             ]);

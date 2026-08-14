@@ -21,7 +21,7 @@ use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
-use Psr\Log\NullLogger;
+use Psr\Log\AbstractLogger;
 use Ramsey\Uuid\Uuid;
 use Throwable;
 
@@ -67,19 +67,39 @@ final class OutboxDispatcherTest extends TestCase
                 'additionalProperties' => false,
             ],
         )], []);
+        $logger = new TestLogger();
         $dispatcher = new OutboxDispatcher(
             $outbox,
             $contracts,
             new AlwaysBackpressuredTransport(),
             new RetryPolicy(new OutboxDispatcherClock(), new OutboxDispatcherJitter()),
             new OutboxDispatcherRuntime(),
-            new NullLogger(),
+            $logger,
         );
 
         self::assertTrue($dispatcher->dispatchOne('outbox-worker-1', '7'));
         self::assertSame(5, $outbox->deferredSeconds);
         self::assertFalse($outbox->completed);
         self::assertFalse($outbox->failed);
+        // Without these two keys, stitching one business operation across HTTP, outbox and consumer
+        // logs means joining against database rows instead of grepping the log stream.
+        self::assertCount(1, $logger->records);
+        self::assertSame('correlation-1', $logger->records[0]['context']['correlation_id'] ?? null);
+        self::assertSame('request-1', $logger->records[0]['context']['causation_id'] ?? null);
+    }
+}
+
+final class TestLogger extends AbstractLogger
+{
+    /** @var list<array{level: mixed, message: string, context: array<string, mixed>}> */
+    public array $records = [];
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function log($level, string|\Stringable $message, array $context = []): void
+    {
+        $this->records[] = ['level' => $level, 'message' => (string) $message, 'context' => $context];
     }
 }
 

@@ -182,6 +182,7 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
             $this->buryExhausted($now);
             $row = $this->database->fetchAssociative(sprintf(
                 'SELECT w.*, p.site_identifier AS process_site_identifier, '
+                . 'p.correlation_id AS process_correlation_id, '
                 . 'p.organization_id AS process_organization_id FROM %s w '
                 . 'INNER JOIN %s p ON p.process_id = w.process_id '
                 . "WHERE (p.status = 'running' OR w.work_kind = 'compensation') "
@@ -224,6 +225,7 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
                 $workerId,
                 $token,
                 $runtimeGeneration,
+                $this->nullableString($row, 'process_correlation_id'),
             );
         });
     }

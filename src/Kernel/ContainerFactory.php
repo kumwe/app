@@ -422,12 +422,14 @@ use Kumwe\CMS\Http\Handler\HomePageHandler;
 use Kumwe\CMS\Http\Handler\ExtensionAssetHandler;
 use Kumwe\CMS\Http\Handler\LivenessHandler;
 use Kumwe\CMS\Http\Handler\MediaAssetHandler;
+use Kumwe\CMS\Http\Handler\MetricsHandler;
 use Kumwe\CMS\Http\Handler\NotFoundHandler;
 use Kumwe\CMS\Http\Handler\PublishedContentHandler;
 use Kumwe\CMS\Http\Handler\ReadinessHandler;
 use Kumwe\CMS\Http\Handler\RobotsHandler;
 use Kumwe\CMS\Http\Middleware\BodyLimitMiddleware;
 use Kumwe\CMS\Http\Middleware\BearerAuthenticationMiddleware;
+use Kumwe\CMS\Http\Middleware\MetricsMiddleware;
 use Kumwe\CMS\Http\Middleware\ProblemDetailsMiddleware;
 use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
 use Kumwe\CMS\Http\Middleware\SecurityHeadersMiddleware;
@@ -470,6 +472,17 @@ use Kumwe\CMS\Identity\Infrastructure\StepUp\NativeStepUpRandomSource;
 use Kumwe\CMS\Identity\Infrastructure\StepUp\Rfc6238Totp;
 use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpRecoveryCodeHasher;
 use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpSecretCipher;
+use Kumwe\CMS\Infrastructure\Observability\CorrelationContext;
+use Kumwe\CMS\Infrastructure\Observability\LogContextProcessor;
+use Kumwe\CMS\Infrastructure\Observability\LogRedactionProcessor;
+use Kumwe\CMS\Infrastructure\Observability\MetricCatalog;
+use Kumwe\CMS\Infrastructure\Observability\MetricRecorder;
+use Kumwe\CMS\Infrastructure\Observability\MetricsAccessPolicy;
+use Kumwe\CMS\Infrastructure\Observability\NullMetricRecorder;
+use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\CMS\Infrastructure\Observability\PrometheusExposition;
+use Kumwe\CMS\Infrastructure\Observability\RedisMetricRecorder;
+use Kumwe\CMS\Infrastructure\Observability\RuntimeMetricCollector;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineConnectionFactory;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
@@ -618,6 +631,7 @@ use Mezzio\Router\RouteCollector;
 use Mezzio\Router\RouteCollectorInterface;
 use Mezzio\Router\Route;
 use Mezzio\Router\RouterInterface;
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
@@ -731,6 +745,7 @@ final class ContainerFactory
         $container->share(Dispatcher::class, new Dispatcher(), true);
         $container->alias(DispatcherInterface::class, Dispatcher::class);
 
+        $this->registerObservability($container, $configuration, $root, $console);
         $this->registerLogging($container, $configuration);
         $this->registerPersistence($container, $configuration, $root, $kernelProof, $loadRuntime);
         $this->registerExtensions($container, $configuration, $root, $kernelProof, $loadRuntime);
@@ -802,14 +817,82 @@ final class ContainerFactory
     }
 
     /**
-     * Register the Monolog logger and its PSR-3 alias.
+     * Register the declared observability contract and everything composed from it.
      *
-     * Records go to `php://stderr` so the container runtime owns log shipping rather than the
-     * application. A debug deployment emits `Level::Debug` records; every other one starts at
-     * `Level::Info`.
+     * `config/observability.php` is loaded exactly here and nowhere else, which is what makes it the
+     * single source of truth rather than a second one: the logger's format, level and redaction, the
+     * metric catalogue's forbidden labels, and the exposition endpoint's exposure all read the same
+     * instance. A declaration the runtime cannot honour raises during composition, so the failure is a
+     * boot error an operator sees rather than a silent divergence they do not.
      *
      * @param   Container                 $container      Container being composed.
-     * @param   ApplicationConfiguration  $configuration  Boot configuration; only the debug flag is read.
+     * @param   ApplicationConfiguration  $configuration  Boot configuration for release and metric exposure.
+     * @param   string                    $root           Absolute repository root the contract is loaded from.
+     * @param   bool                      $console        Whether this process is a console rather than a request.
+     *
+     * @return  void
+     *
+     * @throws  \InvalidArgumentException  When the declared contract is missing or malformed.
+     *
+     * @since   2.0.0
+     */
+    private function registerObservability(
+        Container $container,
+        ApplicationConfiguration $configuration,
+        string $root,
+        bool $console,
+    ): void {
+        $contract = ObservabilityContract::load($root);
+        $surface = $console ? 'console' : 'http';
+        $correlation = new CorrelationContext();
+        $container->share(ObservabilityContract::class, $contract, true);
+        $container->share(CorrelationContext::class, $correlation, true);
+        // Both processors are invokable, which the container would otherwise read as a factory.
+        $redaction = new LogRedactionProcessor($contract);
+        $stamp = new LogContextProcessor($contract, $correlation, $configuration->release, $surface);
+        $container->share(LogRedactionProcessor::class, static fn (): LogRedactionProcessor => $redaction, true);
+        $container->share(LogContextProcessor::class, static fn (): LogContextProcessor => $stamp, true);
+        $catalog = MetricCatalog::create($contract, $configuration->release, $surface);
+        $container->share(MetricCatalog::class, $catalog, true);
+        $container->share(PrometheusExposition::class, new PrometheusExposition(), true);
+        $container->share(MetricsAccessPolicy::class, new MetricsAccessPolicy(
+            $configuration->metricsEnabled ?? $contract->metricsEnabled,
+            $contract->metricsPublic,
+            $configuration->metricsToken,
+        ), true);
+        $enabled = $configuration->metricsEnabled ?? $contract->metricsEnabled;
+        $container->share(MetricRecorder::class, static fn (Container $container): MetricRecorder =>
+            $enabled
+                ? new RedisMetricRecorder(self::service($container, RedisRuntime::class), $catalog)
+                : new NullMetricRecorder(), true);
+        $container->share(RuntimeMetricCollector::class, static fn (
+            Container $container,
+        ): RuntimeMetricCollector => new RuntimeMetricCollector(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ClockInterface::class),
+            new LocalRuntimeReadinessProbe(self::service($container, ExtensionRuntimeMapCompiler::class)),
+            $configuration->release,
+            $surface,
+        ), true);
+    }
+
+    /**
+     * Register the Monolog logger and its PSR-3 alias, wired to the declared logging contract.
+     *
+     * Records go to the destination the contract names — `php://stderr`, so the container runtime owns
+     * log shipping rather than the application — formatted as the JSON the contract declares, stamped
+     * with the required context, and passed through the redaction the contract lists. The emission
+     * level is the contract's `default_level`, raised to debug by a debug deployment and overridden
+     * outright by `KUMWE_LOG_LEVEL`, which is what lets an operator quieten or open up the log stream
+     * without also widening the response detail the debug flag controls.
+     *
+     * Processors run context-first and redaction-last, so nothing a processor adds can bypass the
+     * redaction list. Stack traces are switched off in the formatter as well as stripped by the
+     * processor, because a trace holds frame arguments and frame arguments hold secrets.
+     *
+     * @param   Container                 $container      Container being composed.
+     * @param   ApplicationConfiguration  $configuration  Boot configuration for debug, release and log level.
      *
      * @return  void
      *
@@ -817,16 +900,53 @@ final class ContainerFactory
      */
     private function registerLogging(Container $container, ApplicationConfiguration $configuration): void
     {
-        $container->share(Logger::class, static function () use ($configuration): Logger {
+        $container->share(Logger::class, static function (Container $container) use ($configuration): Logger {
+            $contract = self::service($container, ObservabilityContract::class);
+            $handler = new StreamHandler(
+                $contract->logDestination,
+                self::logLevel($configuration->logLevel ?? (
+                    $configuration->debug ? 'debug' : $contract->logDefaultLevel
+                )),
+            );
+            $handler->setFormatter(new JsonFormatter(JsonFormatter::BATCH_MODE_JSON, true, true, false));
             $logger = new Logger('kumwe');
-            $logger->pushHandler(new StreamHandler(
-                'php://stderr',
-                $configuration->debug ? Level::Debug : Level::Info,
-            ));
+            $logger->pushHandler($handler);
+            $logger->pushProcessor(self::service($container, LogRedactionProcessor::class));
+            $logger->pushProcessor(self::service($container, LogContextProcessor::class));
 
             return $logger;
         }, true);
         $container->alias(LoggerInterface::class, Logger::class);
+    }
+
+    /**
+     * Resolve a contract level name onto the Monolog level it selects.
+     *
+     * The mapping is explicit rather than delegated to `Level::fromName()` so the contract's
+     * lower-case vocabulary is the only spelling this kernel accepts, and so an unknown name is a
+     * refusal at composition rather than a level quietly resolving to something else.
+     *
+     * @param   string  $name  Level name from the contract or the `KUMWE_LOG_LEVEL` override.
+     *
+     * @return  Level  The selected Monolog level.
+     *
+     * @throws  \InvalidArgumentException  When the name is not one the contract declares.
+     *
+     * @since   2.0.0
+     */
+    private static function logLevel(string $name): Level
+    {
+        return match ($name) {
+            'debug' => Level::Debug,
+            'info' => Level::Info,
+            'notice' => Level::Notice,
+            'warning' => Level::Warning,
+            'error' => Level::Error,
+            'critical' => Level::Critical,
+            'alert' => Level::Alert,
+            'emergency' => Level::Emergency,
+            default => throw new \InvalidArgumentException('The configured log level is not a known level.'),
+        };
     }
 
     /**
@@ -2639,7 +2759,10 @@ final class ContainerFactory
         ApplicationConfiguration $configuration,
         bool $portalEnabled,
     ): void {
-        $container->share(RequestIdMiddleware::class, new RequestIdMiddleware(), true);
+        $container->share(RequestIdMiddleware::class, static fn (Container $container): RequestIdMiddleware =>
+            new RequestIdMiddleware(self::service($container, CorrelationContext::class)), true);
+        $container->share(MetricsMiddleware::class, static fn (Container $container): MetricsMiddleware =>
+            new MetricsMiddleware(self::service($container, MetricRecorder::class)), true);
         $container->share(ProblemDetailsMiddleware::class, static function (
             Container $container,
         ) use ($configuration): ProblemDetailsMiddleware {
@@ -2801,6 +2924,14 @@ final class ContainerFactory
                 self::service($container, ContentLayoutCatalog::class),
             ), true);
         $container->share(LivenessHandler::class, new LivenessHandler(), true);
+        $container->share(MetricsHandler::class, static fn (Container $container): MetricsHandler =>
+            new MetricsHandler(
+                self::service($container, MetricsAccessPolicy::class),
+                self::service($container, MetricCatalog::class),
+                self::service($container, MetricRecorder::class),
+                self::service($container, RuntimeMetricCollector::class),
+                self::service($container, PrometheusExposition::class),
+            ), true);
         $container->share(ApiIndexHandler::class, new ApiIndexHandler(), true);
         $container->share(NotFoundHandler::class, new NotFoundHandler(), true);
         $container->share(ReadinessHandler::class, static fn (Container $container): ReadinessHandler =>
@@ -3350,6 +3481,11 @@ final class ContainerFactory
      * declared core first, then the routes contributed by active extensions, then the catch-all
      * published-content route, so an extension can add a path but never shadow a core one.
      *
+     * Metric recording sits between request identity and the error boundary, which is the only place
+     * it counts every response including the ones the error boundary manufactured. The `/metrics`
+     * route is declared unconditionally so the compiled route graph never depends on a deployment
+     * flag; whether it answers is `MetricsAccessPolicy`'s decision, taken per request.
+     *
      * @param   Application  $application    Mezzio application to pipe middleware into and route.
      * @param   Container    $container      Container the application resolves handlers from.
      * @param   bool         $portalEnabled  Whether to pipe and declare the ordinary-user portal boundary.
@@ -3364,6 +3500,7 @@ final class ContainerFactory
         bool $portalEnabled,
     ): void {
         $application->pipe(RequestIdMiddleware::class);
+        $application->pipe(MetricsMiddleware::class);
         $application->pipe(ProblemDetailsMiddleware::class);
         $application->pipe(TrustedProxyMiddleware::class);
         $application->pipe(TrustedHostMiddleware::class);
@@ -3386,6 +3523,7 @@ final class ContainerFactory
         $application->get('/', HomePageHandler::class, 'site.home');
         $application->get('/health/live', LivenessHandler::class, 'health.live');
         $application->get('/health/ready', ReadinessHandler::class, 'health.ready');
+        $application->get('/metrics', MetricsHandler::class, 'observability.metrics');
         $application->get('/robots.txt', RobotsHandler::class, 'site.robots');
         $application->route(
             '/administrator/login',
