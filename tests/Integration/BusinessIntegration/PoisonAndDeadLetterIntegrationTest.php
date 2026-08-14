@@ -82,12 +82,12 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
 
         self::assertSame(
             'failed',
-            $this->attempt($dispatcher, $event, $failing, $context, $generation),
+            $this->attemptDelivery($dispatcher, $event, $failing, $context, $generation),
             'The first attempt must run the handler and be recorded as a failure.',
         );
         self::assertSame(
             'failed',
-            $this->attempt($dispatcher, $event, $failing, $context, $generation),
+            $this->attemptDelivery($dispatcher, $event, $failing, $context, $generation),
             'The last attempt of the budget must also run.',
         );
         self::assertSame(2, $failing->runs);
@@ -175,7 +175,7 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
     /**
      * Run one delivery that is expected to fail, and report which way it went.
      */
-    private function attempt(
+    private function attemptDelivery(
         IntegrationEventConsumerDispatcher $dispatcher,
         IntegrationEvent $event,
         IntegrationEventHandler $handler,
