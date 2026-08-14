@@ -13,6 +13,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\ComputationMode;
 use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
 use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
@@ -168,6 +169,7 @@ final readonly class RecordValueCodec
             'core.entity_reference' => $this->referenceIdentity($value, $field),
             'core.reference_identity', 'core.text', 'core.rich_text' =>
                 $this->boundedString($value, $field->length ?? ($field->type === 'core.rich_text' ? 1_000_000 : 191)),
+            'core.sequence' => $this->boundedString($value, NumberSequenceFormat::MAXIMUM_LENGTH),
             'core.computed' => $this->computed($value, $field),
             'core.integer' => $this->integer($value),
             'core.decimal' => $this->decimal($value, $field),

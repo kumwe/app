@@ -6,12 +6,14 @@ namespace Kumwe\CMS\BusinessDefinition\Application;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use InvalidArgumentException;
 use Kumwe\CMS\BusinessDefinition\Domain\ComputationMode;
 use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
@@ -356,6 +358,9 @@ final readonly class BusinessDefinitionValidator
                 'A virtual computed field cannot declare physical query, index, or uniqueness capabilities.',
             );
         }
+        if ($field->type === 'core.sequence') {
+            $this->validateSequence($field);
+        }
         if ($field->type === 'core.enum') {
             $options = $field->configuration['options'] ?? null;
             if (
@@ -467,6 +472,66 @@ final readonly class BusinessDefinitionValidator
                     );
                 }
             }
+        }
+    }
+
+    /**
+     * Hold an allocated-number field to the shape its allocator can actually honour.
+     *
+     * A `core.sequence` field is the only field type whose value is produced by taking a database lock, so
+     * the declaration has to be refused here rather than at the moment an invoice is created. Three things
+     * are checked. The format itself must parse, because a definition that reaches storage with
+     * `"reset": "quarterly"` would produce numbers that do not mean what the definition says. The field
+     * must be closed to callers — server-only, read-only, immutable after create and never defaulted —
+     * because an allocated number that a caller may supply or change is not an allocated number. And it
+     * must be required and non-null, since there is no such thing as an optional position in a contiguous
+     * run.
+     *
+     * Uniqueness is required as well. It is not what makes the run gapless — the counter row does that —
+     * but it is the independent check that says so: if the allocator, an import or an operator ever put
+     * the same number on two records, the index refuses the write instead of leaving two invoices sharing
+     * a number.
+     *
+     * @param   FieldDefinition  $field  Field declaring `core.sequence`.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the format is unusable, the field is open to callers, or it
+     *          is optional, nullable, non-unique or narrower than the numbers it would render.
+     *
+     * @since   2.0.0
+     */
+    private function validateSequence(FieldDefinition $field): void
+    {
+        try {
+            NumberSequenceFormat::fromConfiguration($field->configuration);
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidBusinessDefinition(sprintf(
+                'Business field %s declares an unusable number sequence: %s',
+                $field->handle,
+                $exception->getMessage(),
+            ), 0, $exception);
+        }
+        if (!$field->serverOnly || !$field->readOnly || !$field->immutableAfterCreate || $field->default !== null) {
+            throw new InvalidBusinessDefinition(
+                'An allocated-number field must be server-only, read-only, immutable after create, and undefaulted.',
+            );
+        }
+        if (!$field->required || $field->nullable || !$field->unique) {
+            throw new InvalidBusinessDefinition(
+                'An allocated-number field must be required, non-null and unique.',
+            );
+        }
+        if ($field->computed || $field->formula !== null) {
+            throw new InvalidBusinessDefinition(
+                'An allocated-number field is reserved by the allocator, never derived by a formula.',
+            );
+        }
+        if (($field->length ?? NumberSequenceFormat::MAXIMUM_LENGTH) < NumberSequenceFormat::MAXIMUM_LENGTH) {
+            throw new InvalidBusinessDefinition(sprintf(
+                'An allocated-number field needs at least %d characters to hold every number it can render.',
+                NumberSequenceFormat::MAXIMUM_LENGTH,
+            ));
         }
     }
 
@@ -653,6 +718,7 @@ final readonly class BusinessDefinitionValidator
         $maximum = match ($field->type) {
             'core.reference_identity', 'core.entity_reference', 'core.enum', 'core.phone' => 191,
             'core.email' => 320,
+            'core.sequence' => NumberSequenceFormat::MAXIMUM_LENGTH,
             'core.text' => 1000,
             'core.computed' => $field->formula?->type === 'string' ? 1000 : null,
             default => !str_starts_with($field->type, 'core.')
@@ -723,6 +789,7 @@ final readonly class BusinessDefinitionValidator
         $stringLength = match ($field->type) {
             'core.email' => $field->length ?? 320,
             'core.enum', 'core.phone', 'core.reference_identity', 'core.text' => $field->length ?? 191,
+            'core.sequence' => $field->length ?? NumberSequenceFormat::MAXIMUM_LENGTH,
             'core.computed' => $field->formula?->type === 'string' ? ($field->length ?? 191) : null,
             default => !str_starts_with($field->type, 'core.') && $fieldType->storageType === 'string'
                 ? ($field->length ?? 191)
@@ -781,7 +848,7 @@ final readonly class BusinessDefinitionValidator
                 && in_array($value, is_array($field->configuration['options'] ?? null)
                     ? $field->configuration['options'] : [], true),
             'core.embedded_value', 'core.bounded_json' => $this->jsonDefault($value, $field),
-            'core.computed', 'core.secret', 'core.ordered_lines' => false,
+            'core.computed', 'core.secret', 'core.ordered_lines', 'core.sequence' => false,
             default => $this->customDefault($value, $field),
         };
         if (!$valid) {

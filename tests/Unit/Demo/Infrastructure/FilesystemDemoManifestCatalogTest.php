@@ -235,7 +235,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-business-profile/v1', $manifest['format'] ?? null);
         self::assertSame('vdm', $manifest['profile'] ?? null);
-        self::assertSame(5, $manifest['version'] ?? null);
+        self::assertSame(6, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
         self::assertCount(12, $order);
         self::assertSame(count($order), $expected['definition_count'] ?? null);
@@ -426,6 +426,56 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
             self::assertNotSame([], $this->list($block['groups'] ?? null, 'document groups'));
             self::assertNotSame([], $this->list($block['parties'] ?? null, 'document parties'));
             self::assertSame(['subtotal', 'tax', 'total'], $block['totals'] ?? null);
+        }
+    }
+
+    /**
+     * Proves the released invoice and quotation numbers are allocated by the server, not sent by a caller.
+     *
+     * A document number that a fixture can state is a number a client can state, and the demonstration is
+     * what a reader takes the runtime to support. Both definitions therefore have to declare `core.sequence`
+     * closed to callers, and no record declaration may carry a value for either handle — otherwise the
+     * profile would install with numbers that only look allocated.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testVdmInvoiceAndQuotationNumbersAreServerAllocated(): void
+    {
+        $manifest = $this->catalog()->vdmBusiness()['manifest'];
+        $documents = $this->map($manifest['definition_documents'] ?? null, 'definition documents');
+        $records = $this->list(
+            $this->map($manifest['records_document'] ?? null, 'record document')['records'] ?? null,
+            'records',
+        );
+        foreach (
+            [
+                ['definition.invoice', 'invoice_number', 'INV-'],
+                ['definition.quotation', 'quote_number', 'QUO-'],
+            ] as [$fixtureKey, $handle, $prefix]
+        ) {
+            $definition = $this->map($documents[$fixtureKey] ?? null, 'definition document');
+            $field = $this->memberByHandle(
+                $this->list($definition['fields'] ?? null, 'definition fields'),
+                $handle,
+            );
+            self::assertSame('core.sequence', $field['type'] ?? null);
+            self::assertTrue($field['server_only'] ?? null);
+            self::assertTrue($field['read_only'] ?? null);
+            self::assertTrue($field['immutable_after_create'] ?? null);
+            self::assertTrue($field['unique'] ?? null);
+            self::assertFalse($field['create_visible'] ?? null);
+            self::assertSame(
+                ['scope' => 'site', 'reset' => 'yearly', 'prefix' => $prefix, 'padding' => 6,
+                    'timezone' => 'Africa/Windhoek'],
+                $field['configuration'] ?? null,
+            );
+        }
+        foreach ($records as $candidate) {
+            $values = $this->map($this->map($candidate, 'record declaration')['values'] ?? null, 'record values');
+            self::assertArrayNotHasKey('invoice_number', $values);
+            self::assertArrayNotHasKey('quote_number', $values);
         }
     }
 

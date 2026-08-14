@@ -21,6 +21,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
 use Kumwe\CMS\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
@@ -122,6 +123,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *         installation for the whole operation.
      * @param  BusinessRecordDefinitionResolver       $definitions    Resolver pairing a published definition
      *         version with its installed schema.
+     * @param  BusinessNumberSequenceAllocator        $numbers        Counter every `core.sequence` field
+     *         draws its gapless document number from, inside this service's own transaction.
      * @param  RecordValueCodec                       $values         Value codec, used here to normalize a
      *         caller-supplied record identity.
      * @param  RecordRuleValidator                    $rules          Field-rule validator that turns
@@ -153,6 +156,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         private BusinessRecordIdempotencyRepository $idempotency,
         private BusinessRecordMutationFence $mutationFence,
         private BusinessRecordDefinitionResolver $definitions,
+        private BusinessNumberSequenceAllocator $numbers,
         private RecordValueCodec $values,
         private RecordRuleValidator $rules,
         private BusinessRecordAccessController $recordAccess,
@@ -252,6 +256,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $resolved->definition->siteIdentifier,
                         $recordKey,
                         $recordId,
+                        $this->allocateNumbers($resolved, $scope, $now),
                     );
                 } catch (BusinessRecordValidationFailed $exception) {
                     throw $this->validationForAccess(
@@ -2537,6 +2542,60 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         }
 
         return [$resolved, $pinnedScope, $record, $access];
+    }
+
+    /**
+     * Reserve one document number for every `core.sequence` field the definition declares.
+     *
+     * This runs inside the create command's transaction, behind the mutation fence and after the record
+     * access plan, which is the whole point: the number, the row, the revision and the audit entry commit
+     * together, so a create that is later refused by policy, loses an optimistic check or fails validation
+     * gives its number straight back and leaves no hole in the run. It also means the allocation composes
+     * with authorization rather than bypassing it — a caller who may not create the record never reaches
+     * this method, and the counter it would have advanced is chosen from the record's own resolved scope
+     * rather than from anything the caller sent.
+     *
+     * A definition declaring no sequence field allocates nothing and takes no lock.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Definition and installed schema the record is being
+     *          created against.
+     * @param   RecordScope                 $scope     Resolved site and organization the record belongs to.
+     * @param   DateTimeImmutable           $now       Instant the command runs at; also what decides which
+     *          calendar period a resetting counter allocates from.
+     *
+     * @return  array<string, string>  Rendered numbers keyed by the field handle each belongs to; empty
+     *          when the definition declares no allocated-number field.
+     *
+     * @throws  \InvalidArgumentException  When a published definition carries a sequence declaration this
+     *          runtime cannot allocate under, which `BusinessDefinitionValidator` should have refused.
+     * @throws  BusinessRecordTemporarilyUnavailable  When another allocator holds the counter and this
+     *          command must be replayed rather than guess at a number.
+     *
+     * @since   2.0.0
+     */
+    private function allocateNumbers(
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        DateTimeImmutable $now,
+    ): array {
+        $allocated = [];
+        foreach ($resolved->definition->fields() as $field) {
+            if ($field->type !== 'core.sequence') {
+                continue;
+            }
+            $format = NumberSequenceFormat::fromConfiguration($field->configuration);
+            $counter = $format->counter($scope->organizationIdentifier, $now);
+            $allocated[$field->handle] = $format->render($this->numbers->allocate(
+                $scope->siteIdentifier ?? $resolved->definition->siteIdentifier,
+                $resolved->definition->id,
+                $field->handle,
+                $counter['scope'],
+                $counter['period'],
+                $now,
+            ), $counter['period']);
+        }
+
+        return $allocated;
     }
 
     /**

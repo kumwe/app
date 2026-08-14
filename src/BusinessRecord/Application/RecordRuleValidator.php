@@ -53,17 +53,20 @@ final readonly class RecordRuleValidator
      * field is reported rather than quietly ignored, so a caller learns its payload was not honoured. A
      * supplied writable field must also satisfy both of its conditions over the complete prospective record.
      *
-     * @param   EntityTypeDefinition  $definition      Published definition whose field rules apply.
-     * @param   array<string, mixed>  $input           Caller-supplied values keyed by field handle; an
+     * @param   EntityTypeDefinition   $definition      Published definition whose field rules apply.
+     * @param   array<string, mixed>   $input           Caller-supplied values keyed by field handle; an
      *          unrecognised handle is reported rather than dropped.
-     * @param   string                $siteIdentifier  Site the record belongs to, bound into encrypted
+     * @param   string                 $siteIdentifier  Site the record belongs to, bound into encrypted
      *          secret values as associated data.
-     * @param   string                $recordKey       Internal row key, bound into that same associated
+     * @param   string                 $recordKey       Internal row key, bound into that same associated
      *          data; equal to the record ID only under the UUID identity strategy.
-     * @param   string                $recordId        Public identity written into the identity field.
+     * @param   string                 $recordId        Public identity written into the identity field.
+     * @param   array<string, string>  $allocated       Numbers the caller's transaction has already reserved
+     *          from `BusinessNumberSequenceAllocator`, keyed by the `core.sequence` handle each belongs to;
+     *          a sequence field with no reserved number here is reported rather than left empty.
      *
-     * @return  array<string, mixed>  Normalized values by field handle, computed fields and identity
-     *          included, ready for `RecordValueCodec::encodeColumns()`.
+     * @return  array<string, mixed>  Normalized values by field handle, computed fields, allocated numbers
+     *          and identity included, ready for `RecordValueCodec::encodeColumns()`.
      *
      * @throws  BusinessRecordValidationFailed  When any field rule or record invariant was breached; it
      *          carries every breach the pass found, not only the first.
@@ -76,6 +79,7 @@ final readonly class RecordRuleValidator
         string $siteIdentifier,
         string $recordKey,
         string $recordId,
+        array $allocated = [],
     ): array {
         $violations = [];
         $fields = $this->fields($definition);
@@ -91,6 +95,35 @@ final readonly class RecordRuleValidator
             $isIdentity = in_array($field->type, ['core.uuid', 'core.reference_identity'], true);
             if ($isIdentity) {
                 $values[$field->handle] = $recordId;
+                continue;
+            }
+            if ($field->type === 'core.sequence') {
+                if (array_key_exists($field->handle, $input)) {
+                    $violations[] = new ValidationViolation(
+                        $field->handle,
+                        'read_only',
+                        'An allocated number cannot be supplied by a caller.',
+                    );
+                    continue;
+                }
+                $number = $allocated[$field->handle] ?? null;
+                if ($number === null) {
+                    $violations[] = new ValidationViolation(
+                        $field->handle,
+                        'allocation',
+                        'No number was allocated for this field.',
+                    );
+                    continue;
+                }
+                $this->normalizeField(
+                    $field,
+                    $number,
+                    $siteIdentifier,
+                    $definition->id,
+                    $recordKey,
+                    $values,
+                    $violations,
+                );
                 continue;
             }
             if ($field->computed || $field->formula !== null) {
