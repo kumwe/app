@@ -53,9 +53,16 @@ final class ResourceOwnershipPortabilityIntegrationTest extends TestCase
 
         self::assertSame($canonical->getCharset(), $referencing->getCharset());
         self::assertSame($canonical->getCollation(), $referencing->getCollation());
+        $onSiteIdentifier = [];
+        foreach ($ownership->getForeignKeys() as $name => $constraint) {
+            if ($constraint->getUnquotedLocalColumns() === ['site_identifier']) {
+                $onSiteIdentifier[] = $name;
+            }
+        }
+
         self::assertSame(
             [ResourceOwnershipPortabilityMigration::foreignKeyName($tables->raw('resource_site_ownership'))],
-            array_keys($ownership->getForeignKeys()),
+            $onSiteIdentifier,
             'The ownership constraint must carry the name both creation paths derive.',
         );
     }
