@@ -17,11 +17,23 @@ the one place they live so the standard stays unified.
 
 **Two places, and only two.** `docs/roadmap/` holds **forward work only** — objectives, gates, work packages
 and every open finding in `docs/roadmap/findings.json`, which is also where a new idea or objective is
-added. **When a work package completes, its entry moves out of the roadmap and into `CHANGELOG.md` in the
-same pull request that completes it**, so the roadmap shrinks as the programme advances and never
-accumulates a tail of finished items. `findings.json` therefore does not admit the `closed` state, and
-`composer roadmap:check` fails the build if one appears. A change cites the finding identifiers it
-addresses and updates both files in that same change.
+added. `CHANGELOG.md` holds what is finished.
+
+Work reaches the changelog by one of two paths, and both are normal:
+
+1. **Planned work.** It sits in the roadmap while it is open. **When it completes, its entry is deleted from
+   the roadmap and written into `CHANGELOG.md` in the same pull request that completes it.** A finding is
+   never marked done in place; it is removed from there and recorded here.
+2. **Unplanned work.** Not everything done to this project was planned — things come up, get fixed, and
+   never had a roadmap entry. That work is **written straight into `CHANGELOG.md`** when it completes. There
+   is nothing to remove, because it was never in the roadmap, and that is not a reason to leave it out of
+   the changelog.
+
+**The changelog is the single record of what has been done; the roadmap is the single record of what has
+not.** Nothing in the roadmap is ticked off — an item still written there is still outstanding. The roadmap
+therefore shrinks as the programme advances and never accumulates a tail of finished items. `findings.json`
+does not admit the `closed` state, and `composer roadmap:check` fails the build if one appears. A change
+cites the finding identifiers it addresses and updates both files in that same change.
 
 [`docs/qualification/gap-matrix.md`](docs/qualification/gap-matrix.md) is retained as the executed evidence
 of the eight production-qualification waves — a historical record of work already proven, not a forward
