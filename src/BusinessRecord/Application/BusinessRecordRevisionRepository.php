@@ -50,16 +50,16 @@ interface BusinessRecordRevisionRepository
      * organization because the storage key already names exactly one row. A caller that needs to know
      * whether older entries remain asks for one row more than it intends to return and compares.
      *
-     * @param   string  $definitionId   UUID of the entity type whose log is read.
-     * @param   string  $recordKey      Internal storage UUID of the record, not its caller-facing
-     *          identity.
-     * @param   int     $limit          Most rows to return; implementations reject an unbounded or
-     *          oversized window.
-     * @param   ?int    $beforeVersion  Exclusive upper bound on record version, taken from the oldest
-     *          entry of the previous page; null starts at the newest entry.
+     * @param   string                          $definitionId  UUID of the entity type whose log is read.
+     * @param   string                          $recordKey     Internal storage UUID of the record, not its
+     *          caller-facing identity.
+     * @param   int                             $limit         Most rows to return; implementations reject an
+     *          unbounded or oversized window.
+     * @param   ?BusinessRecordRevisionCursor   $before        Exclusive upper bound in the log's ordering
+     *          key, taken from the oldest entry of the previous page; null starts at the newest entry.
      *
-     * @return  list<BusinessRecordRevision>  Entries ordered by record version and then revision number,
-     *          both descending; empty when the record has no history in range.
+     * @return  list<BusinessRecordRevision>  Entries ordered by record version, then revision number, then
+     *          record key, all descending; empty when the record has no history in range.
      *
      * @throws  \InvalidArgumentException  When the requested window falls outside the bound the
      *          implementation accepts.
@@ -72,7 +72,7 @@ interface BusinessRecordRevisionRepository
         string $definitionId,
         string $recordKey,
         int $limit,
-        ?int $beforeVersion = null,
+        ?BusinessRecordRevisionCursor $before = null,
     ): array;
 
     /**
@@ -81,28 +81,30 @@ interface BusinessRecordRevisionRepository
      * This is the lookup that still answers once the record's row is gone, since the log stores the
      * identity only as a digest and never in the clear. Having no row to scope against, it takes the
      * site and organization the record belonged to as arguments instead. The digest identifies a
-     * record within that scope but is not proof of one: a caller that requires a single subject checks
-     * that the returned entries all carry the same record key.
+     * record within that scope but is not proof of one, which is why the ordering key ends in the record
+     * key: two generations of one reused identity number their versions independently, so nothing above
+     * that component is unique. A caller that requires a single subject settles that with
+     * `recordKeysForIdentityDigest()` before it asks for a page.
      *
      * The immutable row predicate is compiled against the stored revision snapshot and executes in the
      * same statement as the identity digest, scope, ordering and limit. A denied snapshot therefore never
      * leaves persistence and cannot trigger checksum mapping or a definition-version follow-up lookup.
      *
-     * @param   ResolvedBusinessDefinition  $resolved              Installed definition whose current
+     * @param   ResolvedBusinessDefinition     $resolved              Installed definition whose current
      *          immutable record policy is applied to the stored snapshot.
-     * @param   RecordScope                 $scope                 Site and organization the revision must
+     * @param   RecordScope                    $scope                 Site and organization the revision must
      *          belong to.
-     * @param   BusinessRecordAccessPlan    $access                Default-deny row decision compiled into
+     * @param   BusinessRecordAccessPlan       $access                Default-deny row decision compiled into
      *          the revision query before ordering and limiting.
-     * @param   string                      $recordIdentityDigest  Keyed 64-character digest of the record's
+     * @param   string                         $recordIdentityDigest  Keyed 64-character digest of the record's
      *          identity, as `RecordFingerprint::digest()` produces it.
-     * @param   int                         $limit                 Most rows to return; implementations reject an
-     *          unbounded or oversized window.
-     * @param   ?int                        $beforeVersion         Exclusive upper record-version bound from
-     *          the oldest entry of the previous page; null starts at the newest entry.
+     * @param   int                            $limit                 Most rows to return; implementations reject
+     *          an unbounded or oversized window.
+     * @param   ?BusinessRecordRevisionCursor  $before                Exclusive upper bound in the log's ordering
+     *          key from the oldest entry of the previous page; null starts at the newest entry.
      *
-     * @return  list<BusinessRecordRevision>  Entries ordered by record version and then revision number,
-     *          both descending; empty when no history matches the digest in this scope.
+     * @return  list<BusinessRecordRevision>  Entries ordered by record version, then revision number, then
+     *          record key, all descending; empty when no history matches the digest in this scope.
      *
      * @throws  \InvalidArgumentException  When the requested window falls outside the bound the
      *          implementation accepts, or the digest is not 64 hexadecimal characters.
@@ -117,6 +119,45 @@ interface BusinessRecordRevisionRepository
         BusinessRecordAccessPlan $access,
         string $recordIdentityDigest,
         int $limit,
-        ?int $beforeVersion = null,
+        ?BusinessRecordRevisionCursor $before = null,
+    ): array;
+
+    /**
+     * List the distinct internal record keys one identity digest covers in this scope.
+     *
+     * A public identity can be reused after the record carrying it is hard-deleted, and the revision log
+     * outlives the row, so one digest may name more than one generation. This answers that question over
+     * the whole scope rather than over a page, which is the difference that matters: a page-local check
+     * cannot see a generation the requested window happened to exclude, so it would hand back history
+     * that silently belongs to one subject while another exists. Callers bound the answer to two, because
+     * a caller only needs to know whether the digest resolves to exactly one generation.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved              Installed definition whose immutable
+     *          record policy is applied to the stored snapshot.
+     * @param   RecordScope                 $scope                 Site and organization the revision must
+     *          belong to.
+     * @param   BusinessRecordAccessPlan    $access                Default-deny row decision compiled into
+     *          the probe, so a denied revision names no generation.
+     * @param   string                      $recordIdentityDigest  Keyed 64-character digest of the record's
+     *          identity, as `RecordFingerprint::digest()` produces it.
+     * @param   int                         $limit                 Most distinct keys to return; two is
+     *          enough to separate one generation from several.
+     *
+     * @return  list<string>  Distinct record keys in ascending order; empty when the digest names no
+     *          readable revision in this scope.
+     *
+     * @throws  \InvalidArgumentException  When the bound is outside what the implementation accepts, or
+     *          the digest is not 64 hexadecimal characters.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When a
+     *          stored key is not a string.
+     *
+     * @since   2.0.0
+     */
+    public function recordKeysForIdentityDigest(
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        string $recordIdentityDigest,
+        int $limit,
     ): array;
 }

@@ -1729,9 +1729,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * lookup runs depends on whether the row is still there: while it resolves the log is addressed by its
      * internal storage key, and once it is gone the log is addressed by the keyed digest of the record's
      * identity instead — the only handle that survives a hard delete. A digest is not proof of a single
-     * subject, so entries under one digest that disagree about the record key are refused rather than
-     * merged. Each revision is rendered against the definition version it was written under, so a window
-     * spanning an upgrade holds views of different shapes.
+     * subject, so how many generations it covers is settled over the whole scope **before** the page bound
+     * is applied, and a digest naming more than one is refused rather than merged. Resolving it page-first
+     * could not see a generation the requested window happened to exclude, which is how a small page or a
+     * cursor deep in the log used to return one subject's history under an identity two subjects had held.
+     * Each revision is rendered against the definition version it was written under, so a window spanning
+     * an upgrade holds views of different shapes.
      *
      * @param   RecordHistoryQuery  $query  Validated history request: context, entity type, record
      *          identity, organization scope, window size and the version to page back from.
@@ -1779,6 +1782,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             } catch (InvalidArgumentException) {
                 throw new BusinessRecordNotFound();
             }
+            $cursor = $query->beforeVersion === null
+                ? null
+                : BusinessRecordRevisionCursor::atVersion($query->beforeVersion);
             $installedAccess = $this->recordAccess->plan(
                 $query->context,
                 'business.record.history',
@@ -1807,26 +1813,33 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $record->definitionId,
                     $record->recordKey,
                     $query->limit + 1,
-                    $query->beforeVersion,
+                    $cursor,
                 );
             } else {
+                $digest = $this->fingerprints->digest($recordId);
+                $generations = $this->revisions->recordKeysForIdentityDigest(
+                    $installed,
+                    $scope,
+                    $installedAccess,
+                    $digest,
+                    2,
+                );
+                if ($generations === []) {
+                    throw new BusinessRecordNotFound();
+                }
+                if (count($generations) !== 1) {
+                    throw new BusinessRecordReferenceConflict();
+                }
                 $revisions = $this->revisions->historyByIdentityDigest(
                     $installed,
                     $scope,
                     $installedAccess,
-                    $this->fingerprints->digest($recordId),
+                    $digest,
                     $query->limit + 1,
-                    $query->beforeVersion,
+                    $cursor,
                 );
                 if ($revisions === []) {
                     throw new BusinessRecordNotFound();
-                }
-                $recordKeys = array_values(array_unique(array_map(
-                    static fn (BusinessRecordRevision $revision): string => $revision->recordKey,
-                    $revisions,
-                )));
-                if (count($recordKeys) !== 1) {
-                    throw new BusinessRecordReferenceConflict();
                 }
                 $latest = $revisions[0];
                 $pinned = $this->definitions->forHistory(

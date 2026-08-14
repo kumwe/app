@@ -507,6 +507,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrat
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessNumberSequenceMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordHistoryWindowMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
@@ -533,6 +534,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipPortabilityMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
@@ -1640,6 +1642,8 @@ final class ContainerFactory
                     new CredentialLifecycleMigration(self::service($container, TableNames::class)),
                     new BusinessNumberSequenceMigration(self::service($container, TableNames::class)),
                     new ExtensionSupplyChainMigration(self::service($container, TableNames::class)),
+                    new ResourceOwnershipPortabilityMigration(self::service($container, TableNames::class)),
+                    new BusinessRecordHistoryWindowMigration(self::service($container, TableNames::class)),
                     new ResourceOwnershipScopeMigration(self::service($container, TableNames::class)),
                 ],
                 [

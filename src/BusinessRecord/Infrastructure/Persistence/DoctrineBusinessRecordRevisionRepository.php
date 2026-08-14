@@ -11,6 +11,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
 use InvalidArgumentException;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionCursor;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionRepository;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
@@ -27,9 +28,11 @@ use LogicException;
  * This adapter puts the port's guarantees onto SQL. An append asserts that the caller already holds an
  * open transaction and then joins it, so a revision cannot outlive a mutation that rolled back, and the
  * identifier, integer, JSON and timestamp columns carry explicit Doctrine types the driver cannot infer
- * from an object or an array. Reads come back as bounded windows ordered by record version and then
- * revision number, both descending; the row limit is range-checked before it is interpolated into the
- * statement, while every value the caller supplies is bound as a parameter. On the way back out nothing
+ * from an object or an array. Reads come back as bounded windows ordered by record version, then revision
+ * number, then record key, all descending — the record key is what keeps that order total where one
+ * identity digest covers more than one generation; the row limit is range-checked before it is
+ * interpolated into the statement, while every value the caller supplies is bound as a parameter. On the
+ * way back out nothing
  * is trusted: each row is rebuilt into a `BusinessRecordRevision`, its checksum re-derived and compared
  * with `hash_equals()`, and a column that is absent, wrongly typed, malformed as JSON or no longer
  * agrees with that digest is reported as `BusinessRecordSchemaUnavailable` rather than handed onward.
@@ -114,14 +117,15 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
      * page size to learn whether a further page exists — while the definition, record and version values
      * travel as bound parameters.
      *
-     * @param   string  $definitionId   UUID of the entity type whose log is read.
-     * @param   string  $recordKey      Internal storage UUID of the record, matched against `record_id`.
-     * @param   int     $limit          Most rows to return; 1 to 201.
-     * @param   ?int    $beforeVersion  Exclusive upper bound on `record_version`, taken from the oldest
-     *          entry of the previous page; null starts at the newest entry.
+     * @param   string                         $definitionId  UUID of the entity type whose log is read.
+     * @param   string                         $recordKey     Internal storage UUID of the record, matched
+     *          against `record_id`.
+     * @param   int                            $limit         Most rows to return; 1 to 201.
+     * @param   ?BusinessRecordRevisionCursor  $before        Exclusive upper bound in the ordering key,
+     *          taken from the oldest entry of the previous page; null starts at the newest entry.
      *
-     * @return  list<BusinessRecordRevision>  Entries ordered by record version and then revision number,
-     *          both descending; empty when the record has no history in range.
+     * @return  list<BusinessRecordRevision>  Entries ordered by record version, then revision number, then
+     *          record key, all descending; empty when the record has no history in range.
      *
      * @throws  InvalidArgumentException  When $limit falls outside 1 to 201, or a stored row is well typed
      *          but holds values the revision itself rejects.
@@ -134,24 +138,26 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
         string $definitionId,
         string $recordKey,
         int $limit,
-        ?int $beforeVersion = null,
+        ?BusinessRecordRevisionCursor $before = null,
     ): array {
         if ($limit < 1 || $limit > 201) {
             throw new InvalidArgumentException('A revision repository window must contain 1 to 201 rows.');
         }
         $parameters = [$definitionId, $recordKey];
         $types = [Types::GUID, Types::GUID];
-        $version = '';
-        if ($beforeVersion !== null) {
-            $version = ' AND record_version < ?';
-            $parameters[] = $beforeVersion;
-            $types[] = Types::INTEGER;
+        $seek = '';
+        if ($before !== null) {
+            $bound = $this->seek($before, '');
+            $seek = ' AND ' . $bound['sql'];
+            array_push($parameters, ...$bound['parameters']);
+            array_push($types, ...$bound['types']);
         }
         $rows = $this->database->fetchAllAssociative(sprintf(
             'SELECT * FROM %s WHERE definition_id = ? AND record_id = ?%s '
-            . 'ORDER BY record_version DESC, revision_number DESC LIMIT %d',
+            . 'ORDER BY %s LIMIT %d',
             $this->tables->quoted('business_record_revisions'),
-            $version,
+            $seek,
+            $this->ordering(''),
             $limit,
         ), $parameters, $types);
 
@@ -165,25 +171,28 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
      * organization to scope against rather than reading them off a row. A null organization is compiled to
      * `organization_identifier IS NULL`, which matches the entries written site-wide rather than every
      * organization, and the digest must be 64 lowercase hexadecimal characters before it reaches the
-     * statement. The digest is a scope, not proof of a single subject: a caller that needs one record
-     * checks that the returned entries all carry the same record key.
+     * statement. The digest is a scope, not proof of a single subject, which is why the statement orders by
+     * the record key as well: two generations of one reused identity number their versions independently,
+     * so a page boundary falling between two rows that agree on version and revision number would
+     * otherwise repeat or skip them. `recordKeysForIdentityDigest()` is how a caller settles which
+     * generation it is reading before it asks for a page.
      *
      * The row policy is compiled over the immutable JSON snapshot and joined to the digest and scope
      * predicates before ordering and limiting. A denied revision is consequently never mapped and never
      * used to initiate another lookup.
      *
-     * @param   ResolvedBusinessDefinition  $resolved              Installed definition whose row policy
+     * @param   ResolvedBusinessDefinition     $resolved              Installed definition whose row policy
      *          and field types are applied to the revision snapshot.
-     * @param   RecordScope                 $scope                 Exact site and organization scope.
-     * @param   BusinessRecordAccessPlan    $access                Immutable default-deny row decision.
-     * @param   string                      $recordIdentityDigest  Keyed 64-character digest of the record's business
-     *          identity, which the log stores in place of that identity.
-     * @param   int                         $limit                 Most rows to return; 1 to 201.
-     * @param   ?int                        $beforeVersion         Exclusive upper `record_version` bound from
-     *          the oldest entry of the previous page; null starts at the newest entry.
+     * @param   RecordScope                    $scope                 Exact site and organization scope.
+     * @param   BusinessRecordAccessPlan       $access                Immutable default-deny row decision.
+     * @param   string                         $recordIdentityDigest  Keyed 64-character digest of the record's
+     *          business identity, which the log stores in place of that identity.
+     * @param   int                            $limit                 Most rows to return; 1 to 201.
+     * @param   ?BusinessRecordRevisionCursor  $before                Exclusive upper bound in the ordering
+     *          key from the oldest entry of the previous page; null starts at the newest entry.
      *
-     * @return  list<BusinessRecordRevision>  Entries ordered by record version and then revision number,
-     *          both descending; empty when no history matches the digest in this scope.
+     * @return  list<BusinessRecordRevision>  Entries ordered by record version, then revision number, then
+     *          record key, all descending; empty when no history matches the digest in this scope.
      *
      * @throws  InvalidArgumentException  When $limit falls outside 1 to 201, the digest is not 64
      *          hexadecimal characters, or a stored row holds values the revision itself rejects.
@@ -198,9 +207,111 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
         BusinessRecordAccessPlan $access,
         string $recordIdentityDigest,
         int $limit,
-        ?int $beforeVersion = null,
+        ?BusinessRecordRevisionCursor $before = null,
     ): array {
-        if ($limit < 1 || $limit > 201 || preg_match('/^[a-f0-9]{64}$/D', $recordIdentityDigest) !== 1) {
+        if ($limit < 1 || $limit > 201) {
+            throw new InvalidArgumentException('A revision identity window is invalid.');
+        }
+        $window = $this->identityWindow($resolved, $scope, $access, $recordIdentityDigest);
+        $where = $window['where'];
+        $parameters = $window['parameters'];
+        $types = $window['types'];
+        if ($before !== null) {
+            $bound = $this->seek($before, 'rv0.');
+            $where[] = $bound['sql'];
+            array_push($parameters, ...$bound['parameters']);
+            array_push($types, ...$bound['types']);
+        }
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT rv0.* FROM %s rv0 WHERE %s ORDER BY %s LIMIT %d',
+            $this->tables->quoted('business_record_revisions'),
+            implode(' AND ', $where),
+            $this->ordering('rv0.'),
+            $limit,
+        ), $parameters, $types);
+
+        return array_map($this->map(...), $rows);
+    }
+
+    /**
+     * List the distinct record keys one identity digest covers, over the whole scope rather than a page.
+     *
+     * The probe carries the same digest, scope and row-policy predicates as the window, so a revision the
+     * caller may not read names no generation, and the caller bounds it because the only question being
+     * asked is whether the digest resolves to exactly one subject. Selecting and ordering the key alone
+     * keeps the answer inside the same index that serves the window.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved              Installed definition whose row policy and
+     *          field types are applied to the revision snapshot.
+     * @param   RecordScope                 $scope                 Exact site and organization scope.
+     * @param   BusinessRecordAccessPlan    $access                Immutable default-deny row decision.
+     * @param   string                      $recordIdentityDigest  Keyed 64-character digest of the record's
+     *          business identity.
+     * @param   int                         $limit                 Most distinct keys to return; 1 to 16.
+     *
+     * @return  list<string>  Distinct record keys in ascending order; empty when nothing readable matches.
+     *
+     * @throws  InvalidArgumentException  When $limit falls outside 1 to 16, or the digest is not 64
+     *          hexadecimal characters.
+     * @throws  BusinessRecordSchemaUnavailable  When a stored record key is not a string.
+     *
+     * @since   2.0.0
+     */
+    public function recordKeysForIdentityDigest(
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        string $recordIdentityDigest,
+        int $limit,
+    ): array {
+        if ($limit < 1 || $limit > 16) {
+            throw new InvalidArgumentException('A revision generation probe must return 1 to 16 keys.');
+        }
+        $window = $this->identityWindow($resolved, $scope, $access, $recordIdentityDigest);
+        $keys = $this->database->fetchFirstColumn(sprintf(
+            'SELECT DISTINCT rv0.record_id FROM %s rv0 WHERE %s ORDER BY rv0.record_id LIMIT %d',
+            $this->tables->quoted('business_record_revisions'),
+            implode(' AND ', $window['where']),
+            $limit,
+        ), $window['parameters'], $window['types']);
+
+        $result = [];
+        foreach ($keys as $key) {
+            if (!is_string($key)) {
+                throw new BusinessRecordSchemaUnavailable('A stored business-record revision key is invalid.');
+            }
+            $result[] = $key;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Compile the digest, scope and row-policy predicates both identity lookups share.
+     *
+     * Keeping them in one place is what makes the generation probe and the history window answer about
+     * exactly the same rows: a probe that saw more than the window could refuse a page the caller was
+     * entitled to, and one that saw less would miss the generation it exists to find.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved              Installed definition supplying the policy.
+     * @param   RecordScope                 $scope                 Exact site and organization scope.
+     * @param   BusinessRecordAccessPlan    $access                Immutable default-deny row decision.
+     * @param   string                      $recordIdentityDigest  Keyed 64-character identity digest.
+     *
+     * @return  array{where: list<string>, parameters: list<mixed>, types: list<string>}  Predicates and the
+     *          values they bind, in statement order.
+     *
+     * @throws  InvalidArgumentException  When the digest is not 64 lowercase hexadecimal characters.
+     *
+     * @since   2.0.0
+     */
+    private function identityWindow(
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        string $recordIdentityDigest,
+    ): array {
+        if (preg_match('/^[a-f0-9]{64}$/D', $recordIdentityDigest) !== 1) {
             throw new InvalidArgumentException('A revision identity window is invalid.');
         }
         $policy = $this->queries->compileRevisionAccessPredicate($resolved, $access);
@@ -225,20 +336,77 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
             $parameters[] = $scope->organizationIdentifier;
             $types[] = Types::STRING;
         }
-        if ($beforeVersion !== null) {
-            $where[] = 'rv0.record_version < ?';
-            $parameters[] = $beforeVersion;
-            $types[] = Types::INTEGER;
-        }
-        $rows = $this->database->fetchAllAssociative(sprintf(
-            'SELECT rv0.* FROM %s rv0 WHERE %s '
-            . 'ORDER BY rv0.record_version DESC, rv0.revision_number DESC LIMIT %d',
-            $this->tables->quoted('business_record_revisions'),
-            implode(' AND ', $where),
-            $limit,
-        ), $parameters, $types);
 
-        return array_map($this->map(...), $rows);
+        return ['where' => $where, 'parameters' => $parameters, 'types' => $types];
+    }
+
+    /**
+     * Spell the total ordering key a history window is read in.
+     *
+     * The record key is the component that makes the order total. Within one record it never varies, so it
+     * costs a window addressed by storage key nothing; across a reused identity it is the only thing
+     * separating two generations that agree on version and revision number.
+     *
+     * @param   string  $alias  Table alias with its trailing dot, or the empty string when unaliased.
+     *
+     * @return  string  `ORDER BY` list, newest first.
+     *
+     * @since   2.0.0
+     */
+    private function ordering(string $alias): string
+    {
+        return sprintf('%1$srecord_version DESC, %1$srevision_number DESC, %1$srecord_id DESC', $alias);
+    }
+
+    /**
+     * Compile the exclusive bound that resumes reading immediately after a cursor.
+     *
+     * A total cursor becomes the lexicographic comparison matching the ordering exactly, so the next page
+     * starts at the row after the one the caller last saw rather than at the next record version. A cursor
+     * carrying only a version keeps the original meaning — everything strictly below it — which is exact
+     * wherever the window covers a single generation.
+     *
+     * @param   BusinessRecordRevisionCursor  $before  Bound taken from the previous page.
+     * @param   string                        $alias   Table alias with its trailing dot, or the empty string.
+     *
+     * @return  array{sql: string, parameters: list<mixed>, types: list<string>}  One predicate and the
+     *          values it binds, in statement order.
+     *
+     * @since   2.0.0
+     */
+    private function seek(BusinessRecordRevisionCursor $before, string $alias): array
+    {
+        if (!$before->isTotal()) {
+            return [
+                'sql' => sprintf('%srecord_version < ?', $alias),
+                'parameters' => [$before->recordVersion],
+                'types' => [Types::INTEGER],
+            ];
+        }
+
+        return [
+            'sql' => sprintf(
+                '(%1$srecord_version < ? OR (%1$srecord_version = ? AND %1$srevision_number < ?) '
+                . 'OR (%1$srecord_version = ? AND %1$srevision_number = ? AND %1$srecord_id < ?))',
+                $alias,
+            ),
+            'parameters' => [
+                $before->recordVersion,
+                $before->recordVersion,
+                $before->revisionNumber,
+                $before->recordVersion,
+                $before->revisionNumber,
+                $before->recordKey,
+            ],
+            'types' => [
+                Types::INTEGER,
+                Types::INTEGER,
+                Types::INTEGER,
+                Types::INTEGER,
+                Types::INTEGER,
+                Types::GUID,
+            ],
+        ];
     }
 
     /**
