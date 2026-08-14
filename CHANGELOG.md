@@ -30,7 +30,7 @@ development programme, from the architecture decision that opened it to the curr
   operator writes down which sites are in one, groups may overlap freely, and both inclusion and exclusion
   are gated on the installation-wide `sites.group.manage` capability and audited. A group cannot be emptied
   of its last member, because everything it owns would become unreachable. An installation that never
-  declares a group behaves exactly as it did before. (`fde7ac5`)
+  declares a group behaves exactly as it did before. (`e46104b`)
 - **Accounting isolation that an operator cannot switch off.** Which ownership levels each kind of record may
   be held at is fixed in the build, not in configuration: accounting documents, ledgers and pay runs are
   site-owned only, while clients, people, price lists and products may be widened to a group. The table
@@ -38,7 +38,7 @@ development programme, from the architecture decision that opened it to the curr
   may declare its own once but may not restate a reserved one. An owner is assembled through
   `ResourceOwnership::of()`, which refuses an impermissible pairing at construction, so no code path exists
   that could write one; on the engines that support a table check constraint the row itself refuses to spell
-  no owner or two. (`fde7ac5`)
+  no owner or two. (`e46104b`)
 - **Widening and narrowing a record's owner, deliberately asymmetric.** Sharing changes after the fact with
   no rewiring and no data movement — the record stays where it is and only the scope that owns it changes.
   Widening costs an ownership change and an audit entry. Narrowing first proves that nothing in the sites
@@ -48,15 +48,15 @@ development programme, from the architecture decision that opened it to the curr
   record produce one change and one refusal. Leaving the installation scope is refused outright, because
   its membership is every site there is and an unbounded guard would answer that nothing is stranded for
   the wrong reason. Extensions contribute their own reference inspectors, so a narrowing is judged against
-  every kind of reference the installation actually holds. (`fde7ac5`)
+  every kind of reference the installation actually holds. (`e46104b`)
 - **Consolidated group reporting as a distinct read capability.** `reports.consolidated.read` is bound to the
   group and to nothing else, so holding it lets a report read across a group's member sites and authorizes no
   write anywhere, in any business, of any kind. Isolation stays at the write layer and unification happens at
   the read layer; no transaction spans sites, and a transfer between two businesses of a group remains two
-  transactions coordinated by a durable event. (`fde7ac5`)
+  transactions coordinated by a durable event. (`e46104b`)
 - **[Business groups](docs/business-groups.md),** explaining the model to an operator, stating the widening
   and narrowing asymmetry plainly, and telling an extension author the four things to do to make a new record
-  category take part. (`fde7ac5`)
+  category take part. (`e46104b`)
 
 - **A consolidated programme roadmap with a machine-readable findings ledger.** Six competing plans became
   one authority for sequencing: two gates, ten decisions, an enterprise capacity contract, a per-primitive
@@ -379,7 +379,7 @@ development programme, from the architecture decision that opened it to the curr
   the change replaced, written out as a reference; a single disagreement fails the build. The existing
   isolation tests were not rewritten. An instance owned at installation level now requires an
   installation-wide human grant, which is the same requirement the type-level `installationGlobal` flag
-  already expresses — the two are reconciled into one rule rather than left as two mechanisms. (`fde7ac5`)
+  already expresses — the two are reconciled into one rule rather than left as two mechanisms. (`e46104b`)
 - **The ownership registry stores a scope.** `resource_site_ownership` gains the level and the owning group
   beside the site it already carried; the primary key is unchanged, so one owner per resource stays
   structurally enforced. The forward migration gives every stored row the site scope it already meant, keeps
@@ -390,7 +390,7 @@ development programme, from the architecture decision that opened it to the curr
   membership is resolved once per process from a bounded declared set, so the containment test issues no
   extra query on the authorization hot path. Reading stays fail-closed on exactly the old terms: no row means
   unowned, a disabled site's resources stop resolving, and a group whose members are all disabled resolves to
-  nothing rather than to an empty owner. (`fde7ac5`)
+  nothing rather than to an empty owner. (`e46104b`)
 
 - **The restore drill stops comparing bytes and starts using the restored system.** Every check the backup
   acceptance manifest performed was satisfiable by a restore booted with the wrong keys, because ciphertext,
@@ -648,12 +648,12 @@ development programme, from the architecture decision that opened it to the curr
   setting, environment variable, manifest key or contribution that makes an accounting document, a ledger or
   a pay run shareable; the refusal is a property of the type system and, where the engine supports it, of the
   schema. A group-scoped ownership row for any of them cannot be assembled, so it never reaches storage to be
-  rejected there. (`fde7ac5`)
+  rejected there. (`e46104b`)
 - **Reading across a group buys no write across it.** The consolidated reporting capability is bound to the
   group resource alone. A caller holding it and nothing else is refused every write on a group-owned record
   and on another business's records alike, and the suite asserts both. Group membership also does not pool
   grants: a caller working in one member site cannot exercise a grant scoped at another member site, so
-  widening a record's owner never widens anybody's authority. (`fde7ac5`)
+  widening a record's owner never widens anybody's authority. (`e46104b`)
 
 - **Production refuses to boot with unsigned local extensions permitted.** Pairing the production environment
   with the unsigned-local flag now throws at configuration time, beside the existing HTTPS and
