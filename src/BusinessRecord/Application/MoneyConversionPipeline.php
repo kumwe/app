@@ -28,8 +28,8 @@ final readonly class MoneyConversionPipeline
     /**
      * Compose the pipeline from the core conversion rule and the active provider catalog.
      *
-     * @param  MoneyConverter           $converter  Core rule applying a rate and its declared rounding.
-     * @param  MoneyRateProviderCatalog  $catalog   Providers currently entitled to answer, in resolution order.
+     * @param  MoneyConverter            $converter  Core rule applying a rate and its declared rounding.
+     * @param  MoneyRateProviderCatalog  $catalog    Providers currently entitled to answer, in resolution order.
      *
      * @since  2.0.0
      */
