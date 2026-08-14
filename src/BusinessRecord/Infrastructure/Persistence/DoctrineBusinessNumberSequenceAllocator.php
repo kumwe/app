@@ -106,8 +106,8 @@ final readonly class DoctrineBusinessNumberSequenceAllocator implements Business
             }
             $next = $current + 1;
             $advanced = $this->database->executeStatement(sprintf(
-                'UPDATE %s SET last_value = ?, updated_at = ? WHERE site_identifier = ? AND definition_id = ? '
-                . 'AND field_handle = ? AND scope_key = ? AND period_key = ? AND last_value = ?',
+                'UPDATE %s SET current_value = ?, updated_at = ? WHERE site_identifier = ? AND definition_id = ? '
+                . 'AND field_handle = ? AND scope_key = ? AND period_key = ? AND current_value = ?',
                 $this->tables->quoted('business_number_sequences'),
             ), [$next, $now, ...$coordinates, $current], [
                 Types::BIGINT,
@@ -171,7 +171,7 @@ final readonly class DoctrineBusinessNumberSequenceAllocator implements Business
     private function locked(array $coordinates): ?int
     {
         $stored = $this->database->fetchOne(sprintf(
-            'SELECT last_value FROM %s WHERE site_identifier = ? AND definition_id = ? AND field_handle = ? '
+            'SELECT current_value FROM %s WHERE site_identifier = ? AND definition_id = ? AND field_handle = ? '
             . 'AND scope_key = ? AND period_key = ?%s',
             $this->tables->quoted('business_number_sequences'),
             $this->database->getDatabasePlatform() instanceof SQLitePlatform ? '' : ' FOR UPDATE',
@@ -209,13 +209,13 @@ final readonly class DoctrineBusinessNumberSequenceAllocator implements Business
             'field_handle' => $fieldHandle,
             'scope_key' => $scopeKey,
             'period_key' => $periodKey,
-            'last_value' => 0,
+            'current_value' => 0,
             'created_at' => $now,
             'updated_at' => $now,
         ], [
             'id' => Types::GUID,
             'definition_id' => Types::GUID,
-            'last_value' => Types::BIGINT,
+            'current_value' => Types::BIGINT,
             'created_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);

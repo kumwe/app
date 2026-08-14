@@ -65,7 +65,7 @@ final class BusinessRecordDeadlockIntegrationTest extends TestCase
             );
             $database->beginTransaction();
             $database->executeStatement(sprintf(
-                'UPDATE %s SET last_value = last_value + 1 WHERE id = ?',
+                'UPDATE %s SET current_value = current_value + 1 WHERE id = ?',
                 $this->tables($container)->quoted('business_number_sequences'),
             ), [$first], [Types::GUID]);
             file_put_contents($directory . '/test-holds-first', 'held');
@@ -74,7 +74,7 @@ final class BusinessRecordDeadlockIntegrationTest extends TestCase
             $caught = null;
             try {
                 $database->executeStatement(sprintf(
-                    'UPDATE %s SET last_value = last_value + 1 WHERE id = ?',
+                    'UPDATE %s SET current_value = current_value + 1 WHERE id = ?',
                     $this->tables($container)->quoted('business_number_sequences'),
                 ), [$second], [Types::GUID]);
                 $database->commit();
@@ -186,13 +186,13 @@ final class BusinessRecordDeadlockIntegrationTest extends TestCase
                 'field_handle' => 'deadlock_' . $label,
                 'scope_key' => '-',
                 'period_key' => (string) (2100 + $index),
-                'last_value' => 0,
+                'current_value' => 0,
                 'created_at' => $now,
                 'updated_at' => $now,
             ], [
                 'id' => Types::GUID,
                 'definition_id' => Types::GUID,
-                'last_value' => Types::BIGINT,
+                'current_value' => Types::BIGINT,
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'updated_at' => Types::DATETIME_IMMUTABLE,
             ]);

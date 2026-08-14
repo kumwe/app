@@ -334,7 +334,7 @@ final class BusinessNumberSequenceContentionIntegrationTest extends TestCase
     private function counter(Container $container, string $definitionId, string $period): int
     {
         $stored = $this->connection($container)->fetchOne(sprintf(
-            'SELECT last_value FROM %s WHERE definition_id = ? AND field_handle = ? AND period_key = ?',
+            'SELECT current_value FROM %s WHERE definition_id = ? AND field_handle = ? AND period_key = ?',
             $this->tables($container)->quoted('business_number_sequences'),
         ), [$definitionId, self::FIELD, $period]);
 

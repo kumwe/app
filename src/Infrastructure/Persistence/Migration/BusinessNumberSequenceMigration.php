@@ -26,6 +26,14 @@ use RuntimeException;
  * supported engines share — 371 characters, which is 1484 bytes at four bytes per character and well
  * inside InnoDB's 3072-byte limit.
  *
+ * The counter column is `current_value` rather than the more obvious `last_value` because MySQL 8.0
+ * reserved `LAST_VALUE` for the window function of that name. Doctrine quotes reserved identifiers in
+ * the DDL it generates, so the table would have been created either way; the hand-written statements
+ * `DoctrineBusinessNumberSequenceAllocator` needs for `FOR UPDATE` and its compare-and-set are the ones
+ * that would fail, and only on MySQL — MariaDB, PostgreSQL and SQLite all leave the word unreserved.
+ * Every other column in this schema is already a non-reserved word on all four engines, so naming the
+ * column out of the collision keeps that property rather than spreading identifier quoting into SQL text.
+ *
  * The table is created only when absent and nothing here is destructive, so an attempt interrupted on a
  * platform whose DDL commits implicitly may simply be replayed. Creating a table and its indexes needs
  * no privilege beyond the one the installation already holds over its own schema, so this runs unchanged
@@ -105,7 +113,15 @@ final readonly class BusinessNumberSequenceMigration implements RepeatableMigrat
             $manager->createTable($this->sequences($name));
         }
         $table = $manager->introspectTableByUnquotedName($name);
-        $columns = ['id', 'site_identifier', 'definition_id', 'field_handle', 'scope_key', 'period_key', 'last_value'];
+        $columns = [
+            'id',
+            'site_identifier',
+            'definition_id',
+            'field_handle',
+            'scope_key',
+            'period_key',
+            'current_value',
+        ];
         foreach ($columns as $column) {
             if (!$table->hasColumn($column)) {
                 throw new RuntimeException(sprintf(
@@ -137,7 +153,7 @@ final readonly class BusinessNumberSequenceMigration implements RepeatableMigrat
         $table->addColumn('field_handle', Types::STRING, ['length' => 64]);
         $table->addColumn('scope_key', Types::STRING, ['length' => 191]);
         $table->addColumn('period_key', Types::STRING, ['length' => 16]);
-        $table->addColumn('last_value', Types::BIGINT, ['default' => 0]);
+        $table->addColumn('current_value', Types::BIGINT, ['default' => 0]);
         $table->addColumn('created_at', Types::DATETIME_IMMUTABLE);
         $table->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
         $table->addPrimaryKeyConstraint(
