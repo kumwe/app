@@ -19,6 +19,7 @@ use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\OwnershipScope;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
@@ -177,13 +178,13 @@ final class WorkerTest extends TestCase
             {
             }
 
-            public function siteFor(AuthorizationResource $resource): SiteContext
+            public function scopeFor(AuthorizationResource $resource): OwnershipScope
             {
-                return match ($resource->identifier()) {
+                return OwnershipScope::site(match ($resource->identifier()) {
                     $this->firstId => SiteContext::fromString('corporate'),
                     $this->secondId => SiteContext::fromString('storefront'),
                     default => SiteContext::default(),
-                };
+                });
             }
         };
         $worker = new Worker(
@@ -207,7 +208,7 @@ final class WorkerTest extends TestCase
         $queue = new RecordingJobQueue([$this->job('site-aware')]);
         $handler = new SiteCapturingHandler();
         $ownership = new class implements ResourceSiteOwnership {
-            public function siteFor(AuthorizationResource $resource): SiteContext
+            public function scopeFor(AuthorizationResource $resource): OwnershipScope
             {
                 throw new AuthorizationResourceOwnershipUnknown($resource);
             }

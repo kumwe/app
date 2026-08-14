@@ -5,37 +5,38 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Application\Authorization;
 
 /**
- * Raised when ownership is withdrawn on behalf of a site that does not actually own the resource.
+ * Raised when ownership is changed on behalf of an owner that does not actually hold the resource.
  *
- * `ResourceSiteOwnershipWriter::remove()` matches on the resource *and* the site the caller expects to own
- * it, so a delete that affects no row while a record still exists means the caller was wrong about the
- * owner. Failing here instead of deleting by resource alone stops one site from severing another site's
- * ownership, which would leave that resource unreachable to everyone.
+ * `ResourceSiteOwnershipWriter::remove()` and `reassign()` both match on the resource *and* the owner the
+ * caller expects, so a statement that affects no row while a record still exists means the caller was
+ * wrong about the owner. Failing here instead of matching by resource alone stops one site from severing
+ * another site's ownership — which would leave that resource unreachable to everyone — and turns two
+ * concurrent scope changes into one change and one refusal rather than a last-writer-wins race.
  *
  * @since  2.0.0
  */
 final class ResourceSiteOwnershipConflict extends \RuntimeException
 {
     /**
-     * Name the resource and both sites in the operator-facing message.
+     * Name the resource and both owners in the operator-facing message.
      *
-     * @param  AuthorizationResource  $resource      Target whose ownership was being withdrawn.
-     * @param  SiteContext            $expectedSite  Site the caller believed owned the resource.
-     * @param  SiteContext            $actualSite    Site the surviving ownership record names.
+     * @param  AuthorizationResource  $resource  Target whose ownership was being changed.
+     * @param  OwnershipScope         $expected  Owner the caller believed held the resource.
+     * @param  OwnershipScope         $actual    Owner the surviving ownership record names.
      *
      * @since  2.0.0
      */
     public function __construct(
         AuthorizationResource $resource,
-        SiteContext $expectedSite,
-        SiteContext $actualSite,
+        OwnershipScope $expected,
+        OwnershipScope $actual,
     ) {
         parent::__construct(sprintf(
-            'Refusing to remove %s:%s ownership from site %s because it belongs to site %s.',
+            'Refusing to change %s:%s ownership held by %s on behalf of %s.',
             $resource->type(),
             $resource->identifier(),
-            $expectedSite->identifier(),
-            $actualSite->identifier(),
+            $actual->describe(),
+            $expected->describe(),
         ));
     }
 }

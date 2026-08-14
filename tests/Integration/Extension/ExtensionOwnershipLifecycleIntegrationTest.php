@@ -48,9 +48,9 @@ final class ExtensionOwnershipLifecycleIntegrationTest extends TestCase
             $first = $extensions->install($archive, $context);
             $installed = true;
             self::assertSame($identifier, $first['identifier']);
-            self::assertSame(SiteContext::DEFAULT, $ownership->siteFor(
+            self::assertSame(SiteContext::DEFAULT, $ownership->scopeFor(
                 AuthorizationResource::item('extension', $identifier),
-            )->identifier());
+            )->identifier);
 
             $extensions->uninstall($identifier, $context);
             $installed = false;
@@ -60,9 +60,9 @@ final class ExtensionOwnershipLifecycleIntegrationTest extends TestCase
             $installed = true;
             self::assertSame($identifier, $second['identifier']);
             self::assertSame('1.0.0', $second['installed_version']);
-            self::assertSame(SiteContext::DEFAULT, $ownership->siteFor(
+            self::assertSame(SiteContext::DEFAULT, $ownership->scopeFor(
                 AuthorizationResource::item('extension', $identifier),
-            )->identifier());
+            )->identifier);
 
             $extensions->uninstall($identifier, $context);
             $installed = false;
@@ -121,7 +121,7 @@ final class ExtensionOwnershipLifecycleIntegrationTest extends TestCase
         AuthorizationResource $resource,
     ): void {
         try {
-            $ownership->siteFor($resource);
+            $ownership->scopeFor($resource);
             self::fail('A physically deleted resource cannot leave an authorization ownership tombstone.');
         } catch (AuthorizationResourceOwnershipUnknown) {
             self::addToAssertionCount(1);

@@ -21,10 +21,10 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | | |
 |---|---|
 | **Current phase** | Phase 0 — Truth, contracts and decisions |
-| **In flight** | Nothing. Phase 0 work packages are unassigned. |
+| **In flight** | Phase 3's business-group ownership model has landed ahead of its phase; `P3-F` is reduced to its three-engine proof. Phase 0 work packages remain unassigned. |
 | **Next** | `P0-A` reproducible baseline, `P0-B` claim ledger, `P0-C` public contract classification and compatibility fixtures. These three are independent and may run in parallel. `P0-E` architecture and security decisions follows them, because several decisions depend on what the inventories find. |
 | **The one open decision** | `V2-POS-002` — whether a disconnected terminal receives its document number at synchronisation time or from a per-terminal reserved block. It trades against the shipped gapless guarantee, so it is the product owner's to make, in `P0-E` decision 12. |
-| **Gate A** | Not started. 12 exit criteria, 1 met. |
+| **Gate A** | Not started. 12 exit criteria, 1 met; criterion 7's ownership model is built and owes only its three-engine proof. |
 | **Gate B** | Not started. Blocked on Gate A. |
 
 ## Phase board
@@ -34,7 +34,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | 0 — Truth, contracts and decisions | A | Not started | — |
 | 1 — Correctness, security, data entry | A | Not started | Phase 0 decisions 3, 5, 6 |
 | 2 — Truthful gates | A | Not started | Phase 0 decisions 1, 7, 8 |
-| 3 — Seams and the ownership model | A | Not started | Phases 1 and 2. `P3-F` also needs decision 10's per-category scope table from `P0-C`. |
+| 3 — Seams and the ownership model | A | In progress — the business-group ownership model has landed; `P3-F` now only owes its three-engine proof | Phases 1 and 2 |
 | 4 — Atomic aggregate documents | A | Not started | Phase 3; phase 0 decision 2 |
 | E — Enterprise document primitives | A | Not started | Phase 3; phase 0 decisions 9 and 12, including the `V2-POS-002` choice. `PE-F` cannot run beside `P4-C` — both own numbering. |
 | L — Language, locale and multilingual content | A, with a B tail | Not started | Phase 0 decision 11; phase 2's `P2-E` locale axis. Otherwise parallel to 3, 4 and E. |
@@ -55,7 +55,7 @@ table when it completes, in the same change that writes it into the changelog.
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-EXT-001`, `V2-ERP-006`, `V2-ERP-007`, `V2-POS-002` |
 | 1 | `P1-A` … `P1-C`, `P1-E`, `P1-F` | `V2-COR-001`, `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-002`, `V2-DB-003` |
 | 2 | `P2-A` … `P2-I` | `V2-ARC-001`, `V2-QA-001` – `V2-QA-005`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
-| 3 | `P3-A` … `P3-F` | `V2-ARC-003`, `V2-GRP-001` – `V2-GRP-006` |
+| 3 | `P3-A` … `P3-F` | `V2-ARC-003` |
 | 4 | `P4-A` … `P4-D` | `V2-SCL-003`, `V2-ERP-001` |
 | E | `PE-A` … `PE-G` | `V2-ERP-002` – `V2-ERP-005`, `V2-CUR-001` – `V2-CUR-004`, `V2-POS-001`, `V2-POS-003`, `V2-POS-004` |
 | L | `PL-A` … `PL-G` | `V2-LNG-001` – `V2-LNG-010`, `V2-MLC-001` – `V2-MLC-004` |
@@ -143,7 +143,7 @@ that closed it.
 | 4 | Correctness and security contradictions fixed | No | `V2-COR-001`, `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-002`, `V2-DB-003` |
 | 5 | Quality gates are truthful | No | `V2-QA-001`, `V2-QA-002`, `V2-QA-003`, `V2-QA-004`, `V2-QA-005`, `V2-DB-001` |
 | 6 | Aggregate seams are clean | No | `V2-ARC-003` |
-| 7 | Business-group ownership model in place | No | `V2-GRP-001` – `V2-GRP-006` |
+| 7 | Business-group ownership model in place | Built; owes the three-engine proof in `P3-F` | — |
 | 8 | Enterprise document primitives exist and are enforced | No | `V2-ERP-001` – `V2-ERP-005` |
 | 9 | Multi-currency contract holds, with conversion provenance everywhere | No | `V2-CUR-001` – `V2-CUR-004` |
 | 10 | Language contract and machinery in place, `en-GB` extracted | No | `V2-LNG-001` – `V2-LNG-009`, `V2-MLC-001` – `V2-MLC-004` |

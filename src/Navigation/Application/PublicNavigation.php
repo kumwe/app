@@ -339,8 +339,8 @@ final readonly class PublicNavigation
             return true;
         }
         try {
-            return $this->ownership->siteFor(AuthorizationResource::item($type, $id))->identifier()
-                === ($this->site ?? SiteContext::default())->identifier();
+            return $this->ownership->scopeFor(AuthorizationResource::item($type, $id))
+                ->contains($this->site ?? SiteContext::default());
         } catch (AuthorizationResourceOwnershipUnknown) {
             return false;
         }

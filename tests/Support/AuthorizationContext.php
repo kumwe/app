@@ -13,6 +13,8 @@ use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\MembershipContext;
 use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
 use Kumwe\CMS\Application\Authorization\OrganizationContext;
+use Kumwe\CMS\Application\Authorization\OwnershipScope;
+use Kumwe\CMS\Application\Authorization\ResourceOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
@@ -171,9 +173,9 @@ final class AuthorizationContext
             {
             }
 
-            public function siteFor(AuthorizationResource $resource): SiteContext
+            public function scopeFor(AuthorizationResource $resource): OwnershipScope
             {
-                return SiteContext::fromString($this->site);
+                return OwnershipScope::site(SiteContext::fromString($this->site));
             }
         };
     }
@@ -186,6 +188,10 @@ final class AuthorizationContext
             }
 
             public function remove(AuthorizationResource $resource, SiteContext $expectedSite): void
+            {
+            }
+
+            public function reassign(ResourceOwnership $owner, OwnershipScope $expected): void
             {
             }
         };

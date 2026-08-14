@@ -519,10 +519,6 @@ residuals.
 | `V2-DB-003` | `ApplicationAuthorizationMigration` 106; `ApplicationAuthorizationMigrationRecovery` 443 | The primary migration names the constraint literally `fk_resource_site`; the recovery path already derives a hashed unique name. Foreign-key names are schema-global on MySQL and MariaDB. |
 | `V2-DR-003` | `tools/backup.sh` 149, 161, 198–202 | Four gzip tarballs; `pg_dump --format=custom` compresses by default; `--set-gtid-purged=OFF` on MySQL; no coordinate at all on MariaDB. |
 | `V2-ERP-001` | `Expression::OPERATORS` 58–80; `RecordRuleValidator` 167 | Twenty-one scalar operators, none of them an aggregation. Invariants evaluate over `RecordExpressionValues::from($values)`, the record's own fields. `RecordInvariantDefinition`'s docblock offers "a total agreeing with its lines" as an example the vocabulary cannot express. |
-| `V2-GRP-001` | `ResourceSiteOwnership::siteFor()` 31; `SiteContext` | The port returns a `SiteContext`, a value object over one identifier string. There is no scope type, and a grep across the authorization and site modules finds no group concept of any kind. |
-| `V2-GRP-002` | `ApplicationAuthorizationMigration` 91–107; `DoctrineResourceSiteOwnership::lookup()` 95–109 | The registry stores a bare `site_identifier`. Its primary key is `(resource_type, resource_id)`, so **one owner per resource is already structurally enforced** — the property the scope design rests on. The lookup's inner join on `sites.enabled` is what makes a withdrawn site fail closed. |
-| `V2-GRP-003` | `DenyByDefaultAuthorizationGateway::evaluate()` 240–243 | Cross-site isolation is one string equality between the owning site identifier and the caller's. `ResourcePolicyDefinition::$installationGlobal` (line 69) already expresses installation-wide-ness, but as a property of a resource *type* rather than a scope of a resource *instance*. |
-| `V2-GRP-004` | `ResourcePolicyDefinitionRegistry` | A resource category declares its capability bindings and its global flag. Nothing declares which ownership scopes it may be held at, because until now there was only one. |
 | Fence partitioning (positive) | `DoctrineBusinessRecordMutationFence::acquire()`; `BusinessTransactionalRuntimeMigration::installations()` 122–147 | The fence selects with `WHERE h.site_identifier = ?` on the site-scoped `business_definitions` table joined to `business_schema_installations`, and re-checks the installation's own site on the joined row. Four businesses running the same logical definition hold four definition rows and four installation rows, so a group **partitions** the `V2-SCL-001` hot spot rather than concentrating it. |
 
 ### 4.5 Currency, language and enterprise-primitive current state, verified
@@ -700,9 +696,9 @@ answer.
 |---|---|---|
 | Identity, roles, capabilities and grants with fresh revocation | Provided | grants re-read on every session resolve and token verify; security epoch |
 | Multi-site and multi-organisation scoping | Provided | `SiteContext`, `RecordScope`, `ScopeMode`, resource site ownership |
-| Business-group installation: several related businesses sharing selected master data | **Must add** | `V2-GRP-001`–`V2-GRP-006`; ADR 0001. One owner per resource is already structurally enforced by the `(resource_type, resource_id)` primary key; what is missing is the scope the owner may be held at |
-| Accounting isolated per legal entity by construction | **Must add** | `V2-GRP-004` — no per-category ownership-scope policy exists, so isolation is currently a matter of how an installation is configured rather than what the registry refuses |
-| Consolidated cross-business reporting without relaxing write isolation | **Must add** | `V2-GRP-006` — the projection machinery exists; the group-scoped read capability does not |
+| Business-group installation: several related businesses sharing selected master data | Provided | `OwnershipScope`, the declared-group registry and the containment decision in `DenyByDefaultAuthorizationGateway`; ADR 0001 |
+| Accounting isolated per legal entity by construction | Provided | `ResourceOwnershipScopePolicy` freezes the per-category table in source and `ResourceOwnership::of()` refuses an impermissible pairing at construction |
+| Consolidated cross-business reporting without relaxing write isolation | Provided | `reports.consolidated.read` bound to the group alone, resolved by `ConsolidatedGroupReportScope` |
 | Row, field and action policy applied before results, counts and aggregates | Provided | `BusinessRecordAccessController`, `FieldDisclosurePlan`, policy compiled into SQL |
 | External and customer self-service portal identity | Provided | portal sessions, membership-derived principals, opt-in per definition |
 | Delegated access and membership directory | Provided | `MembershipDirectory`; delegation preauthorizers re-run under lock |
@@ -912,12 +908,12 @@ intention.
 6. **The seams the aggregate command needs are clean.** The transaction abstraction is inward, automation
    Doctrine adapters sit in Infrastructure behind ports, and delivery and presentation leakage is removed.
    `V2-ARC-003` closed.
-7. **The business-group ownership model is in place.** Resource ownership resolves at site, group and
-   installation scope with the fail-closed contract unchanged; every existing isolation test passes
-   unmodified; site-owned-only categories refuse a group scope; consolidated reporting is a group-scoped
-   read; and a four-business group installation is exercised end to end on all three engines. The
-   per-category scope table and the non-atomic inter-business rule are both in the frozen contract.
-   `V2-GRP-001` through `V2-GRP-006` closed.
+7. **The business-group ownership model is in place.** Built: ownership resolves at site, group and
+   installation scope with the fail-closed contract unchanged, the existing isolation tests pass
+   unmodified, site-owned-only categories refuse a group scope, and consolidated reporting is a
+   group-scoped read. The per-category scope table and the non-atomic inter-business rule are both in the
+   frozen contract. What remains for the gate is the three-engine run of the four-business installation,
+   which belongs to phase 2's engine matrix rather than to the model itself.
 8. **The enterprise document primitives exist and are enforced.** An aggregate invariant sums a
    thousand-line document's lines and rejects a violating document atomically; an approved document refuses
    mutation and is corrected by a linked reversal; a closed period refuses a mutation dated inside it; a
@@ -1393,67 +1389,21 @@ facade signatures, errors, audit and event behaviour stable; run the full three-
 gates; delete obsolete private code only after equivalence is proven. A collaborator that merely forwards
 is not a seam and is rejected in review.
 
-**P3-F — Widen resource ownership from a site to a scope.** Findings: `V2-GRP-001` through `V2-GRP-006`.
-Decision D7, [ADR 0001](decisions/0001-resource-ownership-scope.md). Implements the business-group
-installation. It is here rather than in phase 0 because it changes a core port, the authorization gateway
-and a migration, and it needs phase 2's gates to prove no isolation regression. It must merge before Gate A
-because the frozen contract describes it.
+**P3-F — Prove the business-group ownership model on the full engine matrix.** Decision D7,
+[ADR 0001](decisions/0001-resource-ownership-scope.md). The model itself is built and recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md): ownership is held at a scope, groups are declared, the gateway decides
+by containment, the per-category table is frozen in source, scope changes are asymmetric and audited, and
+consolidated reporting is a distinct read capability. What remains here is the proof on the engine matrix,
+which belongs to phase 2's gates rather than to the model.
 
-Five changes, in this order, each its own pull request.
-
-1. **The scope type and the group registry.** `V2-GRP-001`. Introduce an ownership-scope value type with
-   three levels — site, named group, installation — from which a site scope is constructible from a
-   `SiteContext`, so every existing caller has a mechanical translation. Add the declared-group registry:
-   a group is a named set of sites, groups may overlap, and membership is administrative state with its own
-   capability and audit action rather than transactional state. Do not touch the gateway yet.
-2. **Widen the registry.** `V2-GRP-002`. `resource_site_ownership` carries a scope rather than a bare site
-   identifier. **The primary key `(resource_type, resource_id)` does not change** — one owner per resource
-   stays structurally enforced, which is the property the whole design rests on.
-   `DoctrineResourceSiteOwnership` keeps its fail-closed contract exactly: no row means unowned, and a
-   scope whose sites are all disabled resolves to nothing rather than to the caller. The existing inner
-   join on `sites.enabled` becomes a membership-and-enabled resolution with the same meaning. Migration is
-   forward-only and every existing row becomes a site scope, so an installation that never declares a group
-   is byte-for-byte equivalent in behaviour.
-3. **Widen the gateway.** `V2-GRP-003`. `DenyByDefaultAuthorizationGateway`'s single equality at lines
-   240–243 becomes a single containment test: is the caller's site inside the resource's owning scope. **For
-   a site scope the containment test must reduce to exactly that equality**, and the existing isolation
-   tests are the proof — they are not rewritten, and if one needs rewriting the widening is wrong. Reconcile
-   with `ResourcePolicyDefinition::$installationGlobal`, which today expresses installation-wide-ness as a
-   property of a resource *type*; the instance-level installation scope and the type-level flag must have
-   one documented relationship, not two overlapping mechanisms. Keep the containment test off any per-call
-   join: the scope resolves to a bounded, cacheable membership set, because group membership changes are
-   administrative events.
-4. **Per-category ownership policy.** `V2-GRP-004`. Each resource category declares which scopes it may be
-   owned at, alongside its existing resource-policy declaration. Clients, products and services, price
-   lists and staff or person master may be site- or group-owned. **Accounting documents, ledgers and pay
-   runs are site-owned only** — a group-scoped ownership row for any of them is refused by the registry, so
-   a legal entity's books cannot be jointly owned by construction rather than by discipline. An extension
-   contributing a category declares its permitted scopes the same way it declares everything else.
-5. **Scope change operations.** `V2-GRP-005`. Widening — site to group, group to installation — is an
-   ownership change plus an audit entry: no migration, no data movement. Narrowing is guarded: it first
-   proves no other member site's records reference the resource and refuses with the referencing sites
-   named when they do. Both operations are capability-gated and audited. The asymmetry is stated in the
-   operator documentation, because an operator who widens casually and expects to narrow casually will be
-   surprised at the worst possible moment.
-
-Then the read half. `V2-GRP-006`. Consolidated group reporting is a **group-scoped read capability served
-through the existing projection machinery** — authorized, audited and policy-filtered like any other read.
-It is never a relaxation of write isolation and never a transaction spanning sites. A group report reads
-across a group's sites because the reading capability is owned at group scope, not because the write path
-gave way.
-
-Required tests, on all three engines: two sites in one group both see a group-owned client while a third
-site does not; overlapping groups resolve independently; a site-owned resource behaves exactly as it does
-today, asserted by the unchanged existing isolation tests; a group-scoped ownership row for a ledger is
-refused; disabling one member site removes its access without affecting the others; widening is audited and
-reversible; narrowing is refused while another member site references the resource and succeeds once it
-does not; a group report returns exactly the union of what its member sites may each see, and no more; and
-the authorization hot path issues no additional query per call.
-
-**Worked example to include in the extension documentation.** Payroll. The person is group-owned;
-employment, cost allocation and pay run are site-owned. One employee works across several businesses of the
-group without their pay becoming ambiguous: one person, several employments, each belonging to exactly one
-legal entity, each paid from that entity's own pay run and posted to that entity's own books.
+Required, on MariaDB, MySQL and PostgreSQL: the forward migration applies and replays cleanly on each; two
+sites in one group both see a group-owned client while a third site does not; overlapping groups resolve
+independently; a site-owned resource behaves exactly as it does today, asserted by the unchanged existing
+isolation tests; a group-scoped ownership row for a ledger is refused; disabling one member site removes its
+access without affecting the others; widening is audited and reversible; narrowing is refused while another
+member site references the resource and succeeds once it does not; a group report returns exactly the union
+of what its member sites may each see, and no more; and the authorization hot path issues no additional
+query per call.
 
 **State in the Gate A extension contract, not in a covenant footnote.** A transfer between two businesses of
 a group is **two transactions coordinated by a durable event**, never one. No transaction spans sites. An

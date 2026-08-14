@@ -110,7 +110,7 @@ final readonly class Worker
                     $context->correlationId(),
                 )
                 : $this->system->context(
-                    $this->ownership->siteFor(AuthorizationResource::item('job', $job->id)),
+                    $this->ownership->scopeFor(AuthorizationResource::item('job', $job->id))->requireSite(),
                     'worker-job-' . $job->id,
                     $context->correlationId(),
                 );
