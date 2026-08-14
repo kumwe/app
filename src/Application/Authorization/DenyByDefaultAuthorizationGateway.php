@@ -13,9 +13,11 @@ use Kumwe\CMS\Identity\Domain\GrantScope;
  *
  * A decision is allowed only when four independent checks agree: the execution context was minted by this
  * installation's own authority, the policy registry declares the action legal on that resource type, the
- * site owning the resource is the site the caller is executing in, and the caller's authority covers the
- * request — a principal's scoped grants, or the system identities explicitly named by the matching
- * typed resource policy.
+ * site the caller is executing in is inside the scope that owns the resource, and the caller's authority
+ * covers the request — a principal's scoped grants, or the system identities explicitly named by the
+ * matching typed resource policy. For a resource owned by a single site — which is every resource on an
+ * installation that declares no group — the containment test is the identifier equality it replaced,
+ * evaluated on the same one value, so nothing an installation could reach before or after has changed.
  * Every other outcome denies, and each decision names the policy and reason that settled it, so the audit
  * trail explains itself rather than merely recording a verdict. Recording happens before the decision is
  * acted on, and an allowed decision whose audit record cannot be written is escalated rather than
@@ -34,7 +36,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
      *         registry shared with the contribution runtime.
      * @param  MembershipContextValidator     $memberships  Live authority that revalidates contextual
      *         organization and workspace scopes.
-     * @param  ResourceSiteOwnership          $ownership    Resolver for the site owning a given resource.
+     * @param  ResourceSiteOwnership          $ownership    Resolver for the scope owning a given resource.
      * @param  AuthorizationDecisionRecorder  $decisions    Sink every decision is written to before it is acted on.
      *
      * @since  2.0.0
@@ -162,7 +164,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
         try {
             $siteMatches = $scope->isGlobal()
                 || $scope->type() === 'site'
-                || $this->siteFor($context, $resource)->identifier() === $context->site()->identifier();
+                || $this->scopeFor($context, $resource)->contains($context->site());
         } catch (AuthorizationResourceOwnershipUnknown) {
             $decision = new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_unknown');
             $this->record($context, $action, $resource, $decision);
@@ -205,10 +207,12 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
      *
      * The order is deliberate and every step short-circuits: an untrusted context is rejected before
      * anything else is consulted, then an action that is not legal on this resource type at all, then
-     * site ownership, and only last the caller's own authority. Where the registry marks a resource
-     * installation-global, a human needs a grant that is itself global — a site-wide grant does not
-     * reach it. A system-only capability is refused to any human principal, and each unattended
-     * identity is confined to the exact action/resource bindings that name it.
+     * ownership, and only last the caller's own authority. Where the registry marks a resource type
+     * installation-global, or the resource instance is owned at installation scope, a human needs a grant
+     * that is itself global — a site-wide grant does not reach it, and the two express the same
+     * requirement rather than two overlapping ones. A system-only capability is refused to any human
+     * principal, and each unattended identity is confined to the exact action/resource bindings that
+     * name it.
      *
      * @param   ExecutionContext       $context   Caller identity, site and provenance the work runs under.
      * @param   Capability             $action    Capability being exercised.
@@ -233,12 +237,12 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
         }
 
         try {
-            $owner = $this->siteFor($context, $resource);
+            $owner = $this->scopeFor($context, $resource);
         } catch (AuthorizationResourceOwnershipUnknown) {
             return new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_unknown');
         }
-        $globalGrantRequired = $resourcePolicy->installationGlobal;
-        if (!$globalGrantRequired && $owner->identifier() !== $context->site()->identifier()) {
+        $globalGrantRequired = $resourcePolicy->installationGlobal || $owner->isInstallation();
+        if (!$globalGrantRequired && !$owner->contains($context->site())) {
             return new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_mismatch');
         }
 
@@ -252,7 +256,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
                 $action,
                 $globalGrantRequired
                     ? [GrantScope::global()]
-                    : $this->effectiveScopes($context, $owner, $resource),
+                    : $this->effectiveScopes($context, $resource),
             )
             : $identity !== null && $resourcePolicy->allowsSystemIdentity($identity);
 
@@ -275,8 +279,12 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
      * targets must also equal the selected context, preventing a valid membership from being reused to
      * name another tenant's target.
      *
+     * The site scope offered is the caller's own. This is only reached once containment has passed, so
+     * for a resource owned by a single site the caller's site *is* the owning site and the value is the
+     * one the owner supplied before. For a group-owned resource it is the member site the caller actually
+     * holds grants at, which is the only site whose authority the caller can honestly claim.
+     *
      * @param   ExecutionContext       $context   Human decision context carrying the optional membership.
-     * @param   SiteContext            $owner     Authoritative site owning the requested resource.
      * @param   AuthorizationResource  $resource  Exact resource the action is aimed at.
      *
      * @return  list<GrantScope>  Site and exact scopes, plus revalidated contextual scopes when available.
@@ -285,11 +293,10 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
      */
     private function effectiveScopes(
         ExecutionContext $context,
-        SiteContext $owner,
         AuthorizationResource $resource,
     ): array {
         $scopes = [
-            GrantScope::named('site', $owner->identifier()),
+            GrantScope::named('site', $context->site()->identifier()),
             GrantScope::named($resource->type(), $resource->identifier()),
         ];
         foreach ($this->currentMembershipScopes($context, $resource) as $membershipScope) {
@@ -379,7 +386,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
     }
 
     /**
-     * Resolve the site owning a resource, short-circuiting the targets that have no ownership record.
+     * Resolve the scope owning a resource, short-circuiting the targets that have no ownership record.
      *
      * A collection has no single owner, and a queue is a configured transport partition shared between
      * sites rather than a durable business resource, so both are treated as belonging to the calling site;
@@ -387,15 +394,15 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
      * by the ownership registry, which is authoritative and never guesses.
      *
      * @param   ExecutionContext       $context   Caller's context, used as the owner for the two shortcuts.
-     * @param   AuthorizationResource  $resource  Target whose owning site is being established.
+     * @param   AuthorizationResource  $resource  Target whose owning scope is being established.
      *
-     * @return  SiteContext  The site the resource belongs to.
+     * @return  OwnershipScope  The scope the resource belongs to.
      *
      * @throws  AuthorizationResourceOwnershipUnknown  When the registry records no owner for the resource.
      *
      * @since   2.0.0
      */
-    private function siteFor(ExecutionContext $context, AuthorizationResource $resource): SiteContext
+    private function scopeFor(ExecutionContext $context, AuthorizationResource $resource): OwnershipScope
     {
         // Collections are created/listed within the caller's site. Queues are configured transport
         // partitions shared by sites, while contributed report definitions are immutable runtime
@@ -405,10 +412,10 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
             $resource->identifier() === '*'
             || in_array($resource->type(), ['business_report', 'queue'], true)
         ) {
-            return $context->site();
+            return OwnershipScope::site($context->site());
         }
 
-        return $this->ownership->siteFor($resource);
+        return $this->ownership->scopeFor($resource);
     }
 
     /**

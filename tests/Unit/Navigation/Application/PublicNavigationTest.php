@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\Navigation\Application;
 
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\OwnershipScope;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
@@ -108,11 +109,11 @@ final class PublicNavigationTest extends TestCase
         ]);
 
         $ownership = new class implements ResourceSiteOwnership {
-            public function siteFor(AuthorizationResource $resource): SiteContext
+            public function scopeFor(AuthorizationResource $resource): OwnershipScope
             {
-                return $resource->identifier() === 'foreign'
+                return OwnershipScope::site($resource->identifier() === 'foreign'
                     ? SiteContext::fromString('other-site')
-                    : SiteContext::default();
+                    : SiteContext::default());
             }
         };
         $navigation = new PublicNavigation($repository, $ownership, SiteContext::default());

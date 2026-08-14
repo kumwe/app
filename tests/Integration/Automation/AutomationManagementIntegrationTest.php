@@ -272,7 +272,7 @@ final class AutomationManagementIntegrationTest extends TestCase
         self::assertSame(2, $disabled['version']);
         $automation->deleteSchedule($context, $scheduleId, 2);
         try {
-            $ownership->siteFor(AuthorizationResource::item('schedule', $scheduleId));
+            $ownership->scopeFor(AuthorizationResource::item('schedule', $scheduleId));
             self::fail('A deleted schedule cannot leave an authorization ownership tombstone.');
         } catch (AuthorizationResourceOwnershipUnknown) {
             self::addToAssertionCount(1);
@@ -372,7 +372,7 @@ final class AutomationManagementIntegrationTest extends TestCase
         self::assertIsString($jobId);
         self::assertSame(
             $site,
-            $ownership->siteFor(AuthorizationResource::item('job', $jobId))->identifier(),
+            $ownership->scopeFor(AuthorizationResource::item('job', $jobId))->identifier,
         );
     }
 
@@ -411,7 +411,7 @@ final class AutomationManagementIntegrationTest extends TestCase
         ), [$jobId]));
         self::assertSame(
             $site,
-            $ownership->siteFor(AuthorizationResource::item('job', $jobId))->identifier(),
+            $ownership->scopeFor(AuthorizationResource::item('job', $jobId))->identifier,
         );
     }
 

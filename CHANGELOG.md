@@ -23,6 +23,41 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **A business-group installation: several businesses on one Kumwe, sharing what they choose to share.**
+  A resource's owner is now held at a *level* — one site, a declared group of sites, or the installation —
+  rather than always at a single site. Every resource still has exactly one owner, so "who owns this?" keeps
+  one answer and every denial and audit entry still names it. Groups are declared, never inferred: an
+  operator writes down which sites are in one, groups may overlap freely, and both inclusion and exclusion
+  are gated on the installation-wide `sites.group.manage` capability and audited. A group cannot be emptied
+  of its last member, because everything it owns would become unreachable. An installation that never
+  declares a group behaves exactly as it did before. (`fde7ac5`)
+- **Accounting isolation that an operator cannot switch off.** Which ownership levels each kind of record may
+  be held at is fixed in the build, not in configuration: accounting documents, ledgers and pay runs are
+  site-owned only, while clients, people, price lists and products may be widened to a group. The table
+  covers every category this build carries, an undeclared category falls back to isolation, and an extension
+  may declare its own once but may not restate a reserved one. An owner is assembled through
+  `ResourceOwnership::of()`, which refuses an impermissible pairing at construction, so no code path exists
+  that could write one; on the engines that support a table check constraint the row itself refuses to spell
+  no owner or two. (`fde7ac5`)
+- **Widening and narrowing a record's owner, deliberately asymmetric.** Sharing changes after the fact with
+  no rewiring and no data movement — the record stays where it is and only the scope that owns it changes.
+  Widening costs an ownership change and an audit entry. Narrowing first proves that nothing in the sites
+  about to lose access still refers to the record and **refuses with those sites named** when something does,
+  rather than silently orphaning them. Both directions are gated on `ownership.scope.manage`, both are
+  audited, and both write through a compare-and-set on the current owner so two operators changing the same
+  record produce one change and one refusal. Leaving the installation scope is refused outright, because
+  its membership is every site there is and an unbounded guard would answer that nothing is stranded for
+  the wrong reason. Extensions contribute their own reference inspectors, so a narrowing is judged against
+  every kind of reference the installation actually holds. (`fde7ac5`)
+- **Consolidated group reporting as a distinct read capability.** `reports.consolidated.read` is bound to the
+  group and to nothing else, so holding it lets a report read across a group's member sites and authorizes no
+  write anywhere, in any business, of any kind. Isolation stays at the write layer and unification happens at
+  the read layer; no transaction spans sites, and a transfer between two businesses of a group remains two
+  transactions coordinated by a durable event. (`fde7ac5`)
+- **[Business groups](docs/business-groups.md),** explaining the model to an operator, stating the widening
+  and narrowing asymmetry plainly, and telling an extension author the four things to do to make a new record
+  category take part. (`fde7ac5`)
+
 - **A consolidated programme roadmap with a machine-readable findings ledger.** Six competing plans became
   one authority for sequencing: two gates, ten decisions, an enterprise capacity contract, a per-primitive
   judgement of what an enterprise resource planning system needs against what the code actually provides, and
@@ -335,6 +370,28 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **Cross-site isolation is decided by containment instead of string equality, and is provably no wider.**
+  The authorization gateway used to compare the owning site identifier with the caller's; it now asks whether
+  the caller's site is inside the owning scope. For a resource owned by one site — every resource on an
+  installation that declares no group, and every accounting resource on one that does — the containment test
+  is that comparison, on the same single value. A test enumerates every ordered owner, caller and grant
+  combination over a set of sites and compares the gateway's verdict and its stated reason against the rule
+  the change replaced, written out as a reference; a single disagreement fails the build. The existing
+  isolation tests were not rewritten. An instance owned at installation level now requires an
+  installation-wide human grant, which is the same requirement the type-level `installationGlobal` flag
+  already expresses — the two are reconciled into one rule rather than left as two mechanisms. (`fde7ac5`)
+- **The ownership registry stores a scope.** `resource_site_ownership` gains the level and the owning group
+  beside the site it already carried; the primary key is unchanged, so one owner per resource stays
+  structurally enforced. The forward migration gives every stored row the site scope it already meant, keeps
+  the foreign key and cascade on the site column, re-derives that column's character definition from
+  `sites.identifier` so the portability pin survives the alteration, and derives the same definition for the
+  new group column and the group tables — because MariaDB and MySQL otherwise resolve a new table's character
+  set from the database default and a correct-looking join fails as an illegal mix of collations. Group
+  membership is resolved once per process from a bounded declared set, so the containment test issues no
+  extra query on the authorization hot path. Reading stays fail-closed on exactly the old terms: no row means
+  unowned, a disabled site's resources stop resolving, and a group whose members are all disabled resolves to
+  nothing rather than to an empty owner. (`fde7ac5`)
+
 - **The restore drill stops comparing bytes and starts using the restored system.** Every check the backup
   acceptance manifest performed was satisfiable by a restore booted with the wrong keys, because ciphertext,
   nonce and row digests are key-independent — an installation whose `APP_SECRET` was lost passed the whole drill
@@ -586,6 +643,17 @@ development programme, from the architecture decision that opened it to the curr
   integration suite down before a single test ran, on every branch. (`1726ee1`)
 
 ### Security
+
+- **A legal entity's books cannot be jointly owned, by construction rather than by discipline.** There is no
+  setting, environment variable, manifest key or contribution that makes an accounting document, a ledger or
+  a pay run shareable; the refusal is a property of the type system and, where the engine supports it, of the
+  schema. A group-scoped ownership row for any of them cannot be assembled, so it never reaches storage to be
+  rejected there. (`fde7ac5`)
+- **Reading across a group buys no write across it.** The consolidated reporting capability is bound to the
+  group resource alone. A caller holding it and nothing else is refused every write on a group-owned record
+  and on another business's records alike, and the suite asserts both. Group membership also does not pool
+  grants: a caller working in one member site cannot exercise a grant scoped at another member site, so
+  widening a record's owner never widens anybody's authority. (`fde7ac5`)
 
 - **Production refuses to boot with unsigned local extensions permitted.** Pairing the production environment
   with the unsigned-local flag now throws at configuration time, beside the existing HTTPS and

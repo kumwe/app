@@ -41,6 +41,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
@@ -62,6 +63,7 @@ use ZipArchive;
 #[CoversClass(DoctrineMigrationRepository::class)]
 #[CoversClass(CoreSchemaMigration::class)]
 #[CoversClass(ContentModelIdentifierCollationMigration::class)]
+#[CoversClass(ResourceOwnershipScopeMigration::class)]
 #[CoversClass(ContentModelRuntimeMigration::class)]
 #[CoversClass(DynamicSiteContentMigration::class)]
 #[CoversClass(DatabaseDrivenPresentationMigration::class)]
@@ -476,6 +478,42 @@ final class MigrationIntegrationTest extends TestCase
             "SELECT COUNT(*) FROM %s WHERE handle LIKE 'site.default.vdm_%%'",
             $tables->quoted('business_definitions'),
         )));
+
+        self::assertSame(ResourceOwnershipScopeMigration::ID, $database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE version = ?',
+            $tables->quoted('schema_migrations'),
+        ), [ResourceOwnershipScopeMigration::ID]));
+        self::assertTrue($schema->tablesExist([
+            $tables->raw('site_groups'),
+            $tables->raw('site_group_members'),
+        ]));
+        $ownership = $schema->introspectTable($tables->raw('resource_site_ownership'));
+        self::assertTrue($ownership->hasColumn('scope_level'));
+        self::assertTrue($ownership->hasColumn('group_identifier'));
+        self::assertFalse($ownership->getColumn('site_identifier')->getNotnull());
+        self::assertSame('0', (string) $database->fetchOne(sprintf(
+            "SELECT COUNT(*) FROM %s WHERE scope_level <> 'site' OR site_identifier IS NULL",
+            $tables->quoted('resource_site_ownership'),
+        )));
+        self::assertSame('site', $database->fetchOne(sprintf(
+            'SELECT scope_level FROM %s WHERE resource_type = ? AND resource_id = ?',
+            $tables->quoted('resource_site_ownership'),
+        ), ['schedule', '00000000-0000-7000-8000-000000000801']));
+        foreach (['ownership.scope.manage', 'reports.consolidated.read', 'sites.group.manage'] as $capability) {
+            self::assertSame($capability, $database->fetchOne(sprintf(
+                'SELECT code FROM %s WHERE code = ?',
+                $tables->quoted('capabilities'),
+            ), [$capability]));
+        }
+        if ($database->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
+            $sitesIdentifier = $schema->introspectTable($tables->raw('sites'))->getColumn('identifier');
+            $groupIdentifier = $schema->introspectTable($tables->raw('site_groups'))->getColumn('identifier');
+            self::assertSame($sitesIdentifier->getCollation(), $groupIdentifier->getCollation());
+            self::assertSame(
+                $sitesIdentifier->getCollation(),
+                $ownership->getColumn('group_identifier')->getCollation(),
+            );
+        }
     }
 
     public function testBusinessSecuritySiteForeignKeyUsesTheExistingMariaDbCollation(): void

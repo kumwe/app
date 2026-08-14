@@ -15,6 +15,7 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\DenyByDefaultAuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
+use Kumwe\CMS\Application\Authorization\OwnershipScope;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
@@ -230,9 +231,9 @@ final class ApplicationAuthorizationTest extends TestCase
             (new ExtensionContributionRegistrySet())->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             new class implements ResourceSiteOwnership {
-                public function siteFor(AuthorizationResource $resource): SiteContext
+                public function scopeFor(AuthorizationResource $resource): OwnershipScope
                 {
-                    return SiteContext::fromString('resource-owner-site');
+                    return OwnershipScope::site(SiteContext::fromString('resource-owner-site'));
                 }
             },
             new class implements AuthorizationDecisionRecorder {

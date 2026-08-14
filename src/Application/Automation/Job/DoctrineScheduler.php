@@ -175,7 +175,9 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 $site = null;
                 if ($executionClass === JobExecutionClass::Site) {
                     try {
-                        $site = $this->ownership->siteFor(AuthorizationResource::item('schedule', $scheduleId));
+                        $site = $this->ownership
+                            ->scopeFor(AuthorizationResource::item('schedule', $scheduleId))
+                            ->requireSite();
                     } catch (AuthorizationResourceOwnershipUnknown) {
                         continue;
                     }

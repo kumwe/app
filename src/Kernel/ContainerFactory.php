@@ -38,11 +38,18 @@ use Kumwe\CMS\Application\Automation\Scheduler;
 use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\CMS\Application\Authorization\CompositeResourceOwnershipReferences;
 use Kumwe\CMS\Application\Authorization\DenyByDefaultAuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
+use Kumwe\CMS\Application\Authorization\ResourceOwnershipReferences;
+use Kumwe\CMS\Application\Authorization\ResourceOwnershipScopePolicy;
+use Kumwe\CMS\Application\Authorization\ResourceOwnershipScopeService;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SiteGroupAdministration;
+use Kumwe\CMS\Application\Authorization\SiteGroupRegistry;
+use Kumwe\CMS\Application\Authorization\SiteGroupWriter;
 use Kumwe\CMS\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
@@ -167,6 +174,7 @@ use Kumwe\CMS\BusinessIntegration\Infrastructure\ContributedScheduleSynchronizer
 use Kumwe\CMS\BusinessIntegration\Infrastructure\ContributedQueueRuntimePolicyCatalog;
 use Kumwe\CMS\BusinessIntegration\Infrastructure\ExtensionRuntimeGenerationGuard;
 use Kumwe\CMS\BusinessIntegration\Infrastructure\RuntimeIntegrationEventTransport;
+use Kumwe\CMS\BusinessReporting\Application\ConsolidatedGroupReportScope;
 use Kumwe\CMS\BusinessReporting\Application\ExportArtifactRepository;
 use Kumwe\CMS\BusinessReporting\Application\ExportArtifactStorage;
 use Kumwe\CMS\BusinessReporting\Application\ExportExecutionContextResolver;
@@ -520,6 +528,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationM
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
@@ -538,8 +547,11 @@ use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\CMS\Infrastructure\Mcp\ReportMcpHandlers;
+use Kumwe\CMS\Infrastructure\Authorization\DoctrineGrantScopeOwnershipReferences;
 use Kumwe\CMS\Infrastructure\Authorization\DoctrineResourceSiteOwnership;
 use Kumwe\CMS\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
+use Kumwe\CMS\Infrastructure\Authorization\DoctrineSiteGroupRegistry;
+use Kumwe\CMS\Infrastructure\Authorization\DoctrineSiteGroupWriter;
 use Kumwe\CMS\Infrastructure\Time\SystemClock;
 use Kumwe\CMS\OpenApi\Application\OpenApiContractCache;
 use Kumwe\CMS\OpenApi\Application\OpenApiComponentClaimAdmission;
@@ -1023,7 +1035,61 @@ final class ContainerFactory
             new DoctrineResourceSiteOwnership(
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
+                self::service($container, SiteGroupRegistry::class),
             ), true);
+        // Business-group ownership scope: declared groups, the frozen per-category scope table, the
+        // guarded scope-change operations and the consolidated read capability.
+        $container->share(DoctrineSiteGroupRegistry::class, static fn (
+            Container $container,
+        ): DoctrineSiteGroupRegistry => new DoctrineSiteGroupRegistry(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->alias(SiteGroupRegistry::class, DoctrineSiteGroupRegistry::class);
+        $container->share(SiteGroupWriter::class, static fn (Container $container): SiteGroupWriter =>
+            new DoctrineSiteGroupWriter(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, DoctrineSiteGroupRegistry::class),
+                self::service($container, ClockInterface::class),
+            ), true);
+        $container->share(ResourceOwnershipScopePolicy::class, new ResourceOwnershipScopePolicy(), true);
+        $container->share(ResourceOwnershipReferences::class, static fn (
+            Container $container,
+        ): ResourceOwnershipReferences => new CompositeResourceOwnershipReferences([
+            new DoctrineGrantScopeOwnershipReferences(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ),
+        ]), true);
+        $container->share(SiteGroupAdministration::class, static fn (
+            Container $container,
+        ): SiteGroupAdministration => new SiteGroupAdministration(
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, SiteGroupRegistry::class),
+            self::service($container, SiteGroupWriter::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(ResourceOwnershipScopeService::class, static fn (
+            Container $container,
+        ): ResourceOwnershipScopeService => new ResourceOwnershipScopeService(
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, ResourceSiteOwnership::class),
+            self::service($container, ResourceSiteOwnershipWriter::class),
+            self::service($container, ResourceOwnershipScopePolicy::class),
+            self::service($container, ResourceOwnershipReferences::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(ConsolidatedGroupReportScope::class, static fn (
+            Container $container,
+        ): ConsolidatedGroupReportScope => new ConsolidatedGroupReportScope(
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, SiteGroupRegistry::class),
+        ), true);
         $container->share(ResourceSiteOwnershipWriter::class, static fn (
             Container $container,
         ): ResourceSiteOwnershipWriter => new DoctrineResourceSiteOwnershipWriter(
@@ -1574,6 +1640,7 @@ final class ContainerFactory
                     new CredentialLifecycleMigration(self::service($container, TableNames::class)),
                     new BusinessNumberSequenceMigration(self::service($container, TableNames::class)),
                     new ExtensionSupplyChainMigration(self::service($container, TableNames::class)),
+                    new ResourceOwnershipScopeMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then

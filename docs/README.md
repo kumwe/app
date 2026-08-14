@@ -19,6 +19,7 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 - [Administrator](administration.md): content workflow, menus, users, groups, permissions, settings, tokens, extensions, and templates.
 - [Business definitions](business-definitions.md): typed entities, fields, relationships, safe formulas, publication, and extension ownership.
 - [Transactional business runtime](business-runtime.md): schema plans, typed relational records, bounded queries, recovery, and lifecycle.
+- [Business groups](business-groups.md): several related businesses on one installation, declared groups, shared master data, isolated accounting, and consolidated reporting.
 - [Business security](business-security.md): typed policy, field disclosure, record encryption keys, memberships, approvals, step-up, and tokens.
 - [Generated business surfaces](architecture/generated-business-surfaces.md): shared UI, REST/OpenAPI, CLI, MCP, and custom-handler runtime.
 - [Ordinary-user portal](portal.md): isolated sessions, account security, approvals, and trusted contributions.
