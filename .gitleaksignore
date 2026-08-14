@@ -17,3 +17,15 @@ a5a45e92ae8f131071d469608f595f43ccc489bd:config.php.example:generic-api-key:48
 99249899e63bff3cafad3dac22e61a049d5a0f49:.github/workflows/release.yml:kumwe-application-secret:52
 99249899e63bff3cafad3dac22e61a049d5a0f49:.github/workflows/security.yml:kumwe-application-secret:47
 b40d2afd6a0afcc6bcc914784464c109231a512e:.github/workflows/ci.yml:kumwe-application-secret:46
+
+# A changelog sentence, in the commit that first wrote the changelog. The default `generic-api-key` rule
+# read the prose `key, ` as an assignment and took the identifier after it as the value. That identifier
+# is `application-secret-v1` — the name of a key, never key material: it is the public
+# `ConfiguredSecretKeyRings::LEGACY_KEY_ID`, written into the `key_id` field of every envelope it sealed
+# and refused by `assertIdentifier()` when an operator tries to reuse it, so it is already published in
+# the database rows it labels and there is nothing in it to leak. The sentence now reads `key identified
+# as` at the tip, which the rule does not match, so the shape cannot come back; this entry covers only
+# the wording frozen in the commit that introduced it, which gitleaks still reads. Scoped to one commit,
+# one file, one rule and one line — a real credential added to CHANGELOG.md still fails. The entry
+# becomes wrong only if `application-secret-v1` ever names key material instead of naming a key.
+03dc2587e7cad4147c0f5a45c95efa0ed684a336:CHANGELOG.md:generic-api-key:631
