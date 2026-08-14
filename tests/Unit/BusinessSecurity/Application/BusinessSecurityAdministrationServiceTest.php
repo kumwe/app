@@ -172,7 +172,7 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
         $repository->method('definitionFieldTypes')->willReturn(['owner_id' => 'string']);
         $repository->method('definitionActions')->willReturn(['approve']);
         $repository->expects(self::once())->method('insertResourcePolicy')->with(
-            self::isType('string'),
+            self::isString(),
             'invoice.owner',
             'business.record.browse',
             'business.record.browse',
@@ -276,7 +276,7 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
         $repository->method('definitionFieldTypes')->willReturn(['owner_id' => 'string']);
         $repository->method('definitionActions')->willReturn([]);
         $repository->expects(self::once())->method('insertResourcePolicy')->with(
-            self::isType('string'),
+            self::isString(),
             'invoice.extension-audit',
             'acme.invoices.record.audit',
             'acme.invoices.record.audit',
@@ -284,7 +284,7 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
             null,
             self::DEFINITION,
             ['type' => 'constant', 'value' => true],
-            self::isType('array'),
+            self::isArray(),
             self::matchesRegularExpression('/^[0-9a-f]{64}$/D'),
             0,
             self::ACTOR,

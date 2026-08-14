@@ -159,7 +159,7 @@ final class DoctrineApprovalRepositoryTest extends TestCase
                 && $row['site_identifier'] === 'default'
                 && $row['resource_version'] === 8
                 && $row['status'] === 'pending'),
-            self::isType('array'),
+            self::isArray(),
         );
         $rule = new ApprovalRule(
             self::RULE,

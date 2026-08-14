@@ -68,7 +68,7 @@ final class ApprovalServiceTest extends TestCase
         $repository->expects(self::once())->method('lock')->with(self::REQUEST)->willReturn($request);
         $repository->expects(self::once())->method('approverEligible')->with($request, $context)->willReturn(true);
         $repository->expects(self::once())->method('vote')->with(
-            self::isType('string'),
+            self::isString(),
             self::REQUEST,
             self::APPROVER,
             'approve',

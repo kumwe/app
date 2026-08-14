@@ -58,7 +58,7 @@ final class AdministratorExtensionActionHandlerTest extends TestCase
 
     public function testManagerCapabilityRaceIsReturnedAsForbidden(): void
     {
-        $extensions = $this->createMock(ExtensionManager::class);
+        $extensions = $this->createStub(ExtensionManager::class);
         $extensions->method('activate')->willThrowException(
             new InsufficientCapability('themes.administrator.manage'),
         );

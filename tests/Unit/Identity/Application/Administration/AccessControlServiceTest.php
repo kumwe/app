@@ -45,7 +45,7 @@ final class AccessControlServiceTest extends TestCase
     {
         $repository = $this->createMock(AccessControlRepository::class);
         $repository->expects(self::once())->method('insertUser')->with(
-            self::isType('string'),
+            self::isString(),
             'editor@example.test',
             'Site Editor',
             'active',
@@ -97,7 +97,7 @@ final class AccessControlServiceTest extends TestCase
     public function testAppliesAPermittedLifecycleTransitionUnderTheUserLock(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);
-        $repository->method('userStatus')->with(self::USER)->willReturn('active');
+        $repository->expects(self::once())->method('userStatus')->with(self::USER)->willReturn('active');
         $repository->expects(self::once())->method('lockUser')->with(self::USER);
         $repository->expects(self::once())->method('updateUser')->with(
             self::USER,
@@ -121,7 +121,7 @@ final class AccessControlServiceTest extends TestCase
     public function testRefusesToReactivateADisabledUser(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);
-        $repository->method('userStatus')->with(self::USER)->willReturn('disabled');
+        $repository->expects(self::once())->method('userStatus')->with(self::USER)->willReturn('disabled');
         $repository->expects(self::never())->method('updateUser');
 
         $this->expectException(InvalidArgumentException::class);
@@ -140,7 +140,7 @@ final class AccessControlServiceTest extends TestCase
     public function testRefusesToSuspendAUserThatIsNotActive(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);
-        $repository->method('userStatus')->with(self::USER)->willReturn('pending');
+        $repository->expects(self::once())->method('userStatus')->with(self::USER)->willReturn('pending');
         $repository->expects(self::never())->method('updateUser');
 
         $this->expectException(InvalidArgumentException::class);
@@ -159,7 +159,7 @@ final class AccessControlServiceTest extends TestCase
     public function testRefusesToUpdateAUserThatNoLongerExists(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);
-        $repository->method('userStatus')->with(self::USER)->willReturn(null);
+        $repository->expects(self::once())->method('userStatus')->with(self::USER)->willReturn(null);
         $repository->expects(self::never())->method('updateUser');
 
         $this->expectException(InvalidArgumentException::class);
@@ -179,7 +179,7 @@ final class AccessControlServiceTest extends TestCase
     {
         $repository = $this->createMock(AccessControlRepository::class);
         $repository->expects(self::once())->method('grant')->with(
-            self::isType('string'),
+            self::isString(),
             self::ROLE,
             'content.update',
             'content',
@@ -248,7 +248,7 @@ final class AccessControlServiceTest extends TestCase
             ]]);
         $repository->expects(self::once())->method('revokeGrant')->with($removedId);
         $repository->expects(self::once())->method('grant')->with(
-            self::isType('string'),
+            self::isString(),
             self::ROLE,
             'content.publish',
             'global',
@@ -407,7 +407,7 @@ final class AccessControlServiceTest extends TestCase
     public function testManagerCannotAssignARoleContainingCapabilitiesItCannotDelegate(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);
-        $repository->method('roleGrants')->with(self::ROLE)->willReturn([[
+        $repository->expects(self::once())->method('roleGrants')->with(self::ROLE)->willReturn([[
             'capability' => 'extensions.manage',
             'scope_type' => 'global',
             'scope_identifier' => null,
@@ -603,7 +603,7 @@ final class AccessControlServiceTest extends TestCase
     {
         $repository = $this->createMock(AccessControlRepository::class);
         $repository->expects(self::never())->method('changePassword');
-        $credentials = $this->createMock(HighImpactCredentialGuard::class);
+        $credentials = $this->createStub(HighImpactCredentialGuard::class);
         $credentials->method('assertCurrentPassword')
             ->willThrowException(new HighImpactAuthenticationRequired('nope'));
 
@@ -636,7 +636,7 @@ final class AccessControlServiceTest extends TestCase
         $repository = $this->createMock(AccessControlRepository::class);
         $repository->expects(self::once())->method('lockUser')->with(self::USER);
         $repository->expects(self::once())->method('changePassword')->with(self::USER, 'issued-hash');
-        $passwords = $this->createMock(PasswordHasher::class);
+        $passwords = $this->createStub(PasswordHasher::class);
         $passwords->method('hash')->willReturn('issued-hash');
         $sessions = $this->createMock(AdministratorSessionStore::class);
         $sessions->expects(self::once())->method('deleteAllForUser')->willReturn(2);

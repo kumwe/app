@@ -72,7 +72,7 @@ final class ReadinessProbeTest extends TestCase
     ): ReadinessProbe {
         $schema = $this->createStub(AbstractSchemaManager::class);
         $schema->method('tablesExist')->willReturn($ledgerExists);
-        $database = $this->createMock(Connection::class);
+        $database = $this->createStub(Connection::class);
         $database->method('createSchemaManager')->willReturn($schema);
         $database->method('quoteSingleIdentifier')->willReturn('"kumwe_schema_migrations"');
         $database->method('fetchOne')->willReturn(1);

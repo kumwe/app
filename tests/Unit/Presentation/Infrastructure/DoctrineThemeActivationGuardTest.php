@@ -29,7 +29,7 @@ final class DoctrineThemeActivationGuardTest extends TestCase
             $database,
             new TableNames($database, 'kumwe_'),
             $this->createStub(PasswordHasher::class),
-            $this->createMock(AuthenticationRateLimiter::class),
+            $this->createStub(AuthenticationRateLimiter::class),
         );
 
         $guard->assertAllowed(
@@ -52,8 +52,8 @@ final class DoctrineThemeActivationGuardTest extends TestCase
         $rateLimiter = $this->createMock(AuthenticationRateLimiter::class);
         $rateLimiter->expects(self::once())->method('assertAllowed');
         $rateLimiter->expects(self::once())->method('record')->with(
-            self::isType('string'),
-            self::isType('string'),
+            self::isString(),
+            self::isString(),
             true,
         );
         $guard = new DoctrineThemeActivationGuard(

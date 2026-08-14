@@ -50,8 +50,8 @@
     "phpstan/phpstan": "^2.1",
     "phpstan/phpstan-deprecation-rules": "^2.0",
     "phpstan/phpstan-strict-rules": "^2.0",
-    "phpunit/phpunit": "^11.5",
-    "squizlabs/php_codesniffer": "^3.13"
+    "phpunit/phpunit": "^13.3",
+    "squizlabs/php_codesniffer": "^4.0"
   },
   "suggest": {
     "ext-pdo_mysql": "Required when Kumwe uses MariaDB or MySQL.",

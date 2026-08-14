@@ -81,7 +81,7 @@ final class ExtensionApiHandlerTest extends TestCase
 
     public function testRestMapsStepUpThrottlingToControlledProblem(): void
     {
-        $extensions = $this->createMock(ExtensionManager::class);
+        $extensions = $this->createStub(ExtensionManager::class);
         $extensions->method('activate')->willThrowException(new AuthenticationThrottled());
         $handler = new ExtensionApiHandler(
             $extensions,
