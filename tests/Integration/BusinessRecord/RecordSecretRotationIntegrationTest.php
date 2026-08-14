@@ -53,6 +53,17 @@ final class RecordSecretRotationIntegrationTest extends TestCase
     private const string ROTATED_KEY_ID = 'record-encryption-v2';
 
     /**
+     * Bounded passes the rollback may spend before it reports the installation as still stranded.
+     *
+     * Generous enough that no plausible fixture database exhausts it, finite so a rotation that cannot
+     * make progress fails the test instead of spinning.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int ROLLBACK_PASSES = 64;
+
+    /**
      * Restore the process environment so a later test still boots the unrotated deployment.
      *
      * @return  void
@@ -63,6 +74,60 @@ final class RecordSecretRotationIntegrationTest extends TestCase
     {
         putenv('RECORD_ENCRYPTION_KEY');
         putenv('RECORD_ENCRYPTION_KEY_ID');
+    }
+
+    /**
+     * Hand the shared installation back sealed under the key an unconfigured deployment holds.
+     *
+     * A pass covers every installation of the caller's site, so this class does not move its own
+     * fixture rows alone: it moves every stored record secret this database holds, including the rows
+     * the rest of the suite and the deployment-acceptance drill share it with. The dedicated key
+     * material exists only inside this process, so a rotation left behind strands all of them for
+     * everything that runs afterwards — silently, because a key that is merely absent leaves the
+     * ciphertext intact and only makes it useless, which is how a stranded fixture database once
+     * reached the backup drill as a restore failure.
+     *
+     * Rolling it back is the same supported operation in the other direction, and is worth proving in
+     * its own right: with no active key configured the ring makes `application-secret-v1` active again
+     * while `RECORD_ENCRYPTION_PREVIOUS_KEYS` keeps the dedicated key readable, which is exactly the
+     * shape an operator needs to abandon a rotation part way through. It runs once the whole class is
+     * finished rather than after each test, so the tests keep the state they hand each other.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the rotation port is unavailable, or a bounded campaign does not
+     *          finish, which would leave the shared installation sealed under a discarded key.
+     *
+     * @since   2.0.0
+     */
+    public static function tearDownAfterClass(): void
+    {
+        putenv('RECORD_ENCRYPTION_KEY');
+        putenv('RECORD_ENCRYPTION_KEY_ID');
+        // Both halves are fixture literals drawn from `[A-Za-z0-9-]`, so the object needs no escaping.
+        putenv(sprintf(
+            'RECORD_ENCRYPTION_PREVIOUS_KEYS={"%s":"%s"}',
+            self::ROTATED_KEY_ID,
+            str_repeat(self::RECORD_SECRET_STEM, 3),
+        ));
+
+        try {
+            $container = TestKernelFactory::create(Environment::fromGlobals());
+            $rotation = $container->get(RecordSecretRotation::class);
+            if (!$rotation instanceof RecordSecretRotation) {
+                throw new RuntimeException('The record secret rotation port is unavailable.');
+            }
+            $context = TestKernelFactory::administratorContext($container);
+            for ($pass = 0; $pass < self::ROLLBACK_PASSES; $pass++) {
+                if ($rotation->rotate($context, 500)->complete) {
+                    return;
+                }
+            }
+
+            throw new RuntimeException('The fixture rotation did not roll back within its pass budget.');
+        } finally {
+            putenv('RECORD_ENCRYPTION_PREVIOUS_KEYS');
+        }
     }
 
     /**
