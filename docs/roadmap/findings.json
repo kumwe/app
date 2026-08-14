@@ -18,30 +18,6 @@
   "owner_placeholder": "UNASSIGNED",
   "findings": [
     {
-      "id": "V2-COR-001",
-      "title": "Record history can page across an ambiguous identity generation",
-      "severity": "critical",
-      "state": "reproduced",
-      "phase": "1",
-      "gate": "A",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "BusinessRecordService::history()",
-          "note": "Lines 1813-1829 on the verified SHA. historyByIdentityDigest() is called with $query->limit + 1 and $query->beforeVersion, then array_unique() over the returned page derives $recordKeys and refuses when count() !== 1. The uniqueness check is therefore page-local: a second generation outside the requested page is not observed."
-        },
-        {
-          "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordRevisionRepository.php",
-          "symbol": "DoctrineBusinessRecordRevisionRepository::historyByIdentityDigest()",
-          "note": "Line 195. Applies the caller's limit and cursor to the SQL, so the repository never sees the full generation set."
-        }
-      ],
-      "acceptance_test": "A three-engine integration reproduction that creates a record under a public identity, produces multiple revision pages, hard-deletes it, reuses the identity for a new internal record key, and requests history with a page size that returns one generation. Before the fix it returns a page; after the fix the request fails closed on ambiguity regardless of page size, cursor direction or page position. Plus: page size 1, middle and last pages, reverse order, empty page, cross-site and cross-organization isolation, forbidden-record behaviour with no existence leak, hard-delete racing identity reuse, and stable errors on REST, CLI, MCP, administrator and portal.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
       "id": "V2-SEC-001",
       "title": "MCP transports a raw current password in published tool schemas and handler signatures",
       "severity": "high",
@@ -482,30 +458,6 @@
       "closure_sha": null
     },
     {
-      "id": "V2-DB-002",
-      "title": "Scheduler dispatch joins two textual columns whose collation is not pinned, failing on a freshly created MariaDB database",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "1",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Application/Automation/Job/DoctrineScheduler.php",
-          "symbol": "DoctrineScheduler::dispatch()",
-          "note": "Lines 140-141: 'INNER JOIN %s site ON site.identifier = o.site_identifier'. MariaDB raises error 1267, illegal mix of collations, when the two columns resolve to different collations."
-        },
-        {
-          "file": "src/Infrastructure/Persistence/Migration/ApplicationAuthorizationMigration.php",
-          "symbol": "the resource_site_ownership table",
-          "note": "Line 94 declares site_identifier as a plain Types::STRING of length 191 with no charset or collation copied from sites.identifier. Contrast src/Infrastructure/Persistence/Migration/BusinessSecurityPortalMigration.php:1188 siteIdentifierOptions(), which introspects the canonical column and reproduces its charset and collation precisely because 'relying on equal logical DBAL types is insufficient'."
-        }
-      ],
-      "acceptance_test": "A migration integration test that installs into a freshly created MariaDB database whose server or schema default collation differs from the one Doctrine resolves, then runs a scheduler dispatch pass and asserts it succeeds. The ownership column adopts the canonical site-identifier character definition through the same introspection the portal migration already uses.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
       "id": "V2-DB-003",
       "title": "A foreign-key constraint name is hard-coded where MySQL and MariaDB treat the name as schema-global",
       "severity": "medium",
@@ -597,7 +549,9 @@
       "owner": "UNASSIGNED",
       "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
       "correction_to_review": "The review, pinned at 309db888, listed key-restoration order and post-restore proofs as incomplete. Wave 8 closed both — the documented order and an end-to-end envelope decryption through the production cipher — after that revision. Only the two named residuals remain.",
-      "cross_reference": ["GM-BAK-04"],
+      "cross_reference": [
+        "GM-BAK-04"
+      ],
       "completed_reference": "GM-BAK-02 and GM-BAK-03 closed in 687707c; their substance is in CHANGELOG.md."
     },
     {
@@ -799,7 +753,9 @@
       "work_package": "PE-F",
       "product_owner_decision": "Decision D13.4 — core. Small, because the allocator already exists and already derives its counter row from a scope key and a period key.",
       "enforcing_check": "Existing gapless concurrency tests run unmodified across every new scope and reset combination; a forward-migration test proving one-to-one counter mapping with values intact.",
-      "cross_reference": ["V2-POS-002"]
+      "cross_reference": [
+        "V2-POS-002"
+      ]
     },
     {
       "id": "V2-ERP-003",
@@ -822,7 +778,9 @@
       "work_package": "PE-E",
       "product_owner_decision": "Decision D13.3 — core mechanism, extension policy.",
       "enforcing_check": "Three-engine integration test of the refusal on every surface; an architecture test asserting the lock is consulted on every mutation entry point, enumerated from the same table the mutation guard already uses, so a new entry point that skips it fails.",
-      "cross_reference": ["V2-ERP-005"]
+      "cross_reference": [
+        "V2-ERP-005"
+      ]
     },
     {
       "id": "V2-ERP-004",
@@ -888,7 +846,11 @@
       "work_package": "PE-D",
       "product_owner_decision": "Decision D13.2 — core. This is an audit property, not an accounting feature: a platform whose identity is auditability cannot allow an approved document to be edited. Recorded in docs/roadmap/decisions/0003-immutable-correction-by-reversal.md.",
       "enforcing_check": "An architecture test asserting no mutation path in src/ can write a record whose definition declares it immutable in its current state, so a new write path cannot bypass the rule silently; a three-engine integration test proving update, owned-line mutation and archive are refused with a stable error on every surface and that the reversal path succeeds; a conformance-fixture assertion failing an extension that corrects by mutation.",
-      "cross_reference": ["V2-ERP-003", "V2-ERP-002", "V2-SCL-003"]
+      "cross_reference": [
+        "V2-ERP-003",
+        "V2-ERP-002",
+        "V2-SCL-003"
+      ]
     },
     {
       "id": "V2-ERP-006",
@@ -1194,7 +1156,9 @@
       "work_package": "PL-C",
       "product_owner_decision": "Decision D11 — en-GB extracted at Gate A to prove extraction works at scale; the other eight catalogues are Gate B.",
       "enforcing_check": "V2-LNG-007's gate passing on a clean tree. Extraction is complete when the check passes, which makes completion an observable fact rather than a judgement.",
-      "cross_reference": ["V2-LNG-007"]
+      "cross_reference": [
+        "V2-LNG-007"
+      ]
     },
     {
       "id": "V2-LNG-009",
@@ -1222,7 +1186,9 @@
       "work_package": "PL-F",
       "product_owner_decision": "Decision D11 — Hebrew and Arabic are both in scope and are done together.",
       "enforcing_check": "A stylesheet check failing the build on a new physical inline-axis declaration in assets/, with an allowlist for the cases where physical is genuinely correct and each entry naming why. Plus the per-locale visual baselines on the P2-E matrix.",
-      "cross_reference": ["V2-DB-001"]
+      "cross_reference": [
+        "V2-DB-001"
+      ]
     },
     {
       "id": "V2-LNG-010",
@@ -1272,7 +1238,10 @@
       "work_package": "PL-D",
       "product_owner_decision": "Decision D12 — content is multilingual too, modelled as a translation group.",
       "enforcing_check": "The three-engine integration test above, plus a slug-uniqueness constraint proven at the database level rather than in application code.",
-      "cross_reference": ["V2-MLC-002", "V2-MLC-004"]
+      "cross_reference": [
+        "V2-MLC-002",
+        "V2-MLC-004"
+      ]
     },
     {
       "id": "V2-MLC-002",
@@ -1300,7 +1269,10 @@
       "work_package": "PL-D",
       "product_owner_decision": "Decision D12 — content translation must work for content contributed by extensions, not only core content.",
       "enforcing_check": "A conformance-fixture assertion in the extension-contributed multilingual content portfolio entry, run by the existing extension-conformance runner; plus P0-C's frozen-contract classification covering the translation-group declaration.",
-      "cross_reference": ["V2-EXT-001", "V2-MLC-003"]
+      "cross_reference": [
+        "V2-EXT-001",
+        "V2-MLC-003"
+      ]
     },
     {
       "id": "V2-MLC-003",
@@ -1333,7 +1305,9 @@
       "work_package": "PL-D",
       "product_owner_decision": "Decision D12 — business definition labels carry locales, and because definitions are immutable versioned documents this is Gate A contract.",
       "enforcing_check": "A byte-stability test on CanonicalDefinitionJson proving an unchanged single-locale definition produces an unchanged checksum across the widening; plus P0-C's frozen-contract classification covering the label locale dimension.",
-      "cross_reference": ["V2-MLC-002"]
+      "cross_reference": [
+        "V2-MLC-002"
+      ]
     },
     {
       "id": "V2-MLC-004",
@@ -1356,7 +1330,9 @@
       "work_package": "PL-D",
       "product_owner_decision": "Decision D12 — automatic hreflang and a shipped language selector, by default rather than later.",
       "enforcing_check": "A functional test asserting hreflang lists exactly the published members of the group and no others, and that the selector offers exactly those locales.",
-      "cross_reference": ["V2-MLC-001"]
+      "cross_reference": [
+        "V2-MLC-001"
+      ]
     },
     {
       "id": "V2-POS-001",
@@ -1389,7 +1365,9 @@
       "work_package": "PE-G",
       "product_owner_decision": "Decision D14 — point of sale is deferred as a product, but a terminal creating a document offline must be able to mint the operation identifier itself and submit later, with replay yielding one effect.",
       "enforcing_check": "The three-engine replay test above, covering both inside and outside the declared window, and covering a replay submitted after re-authentication.",
-      "cross_reference": ["V2-ERP-007"]
+      "cross_reference": [
+        "V2-ERP-007"
+      ]
     },
     {
       "id": "V2-POS-002",
@@ -1417,7 +1395,10 @@
       "work_package": "P0-E decision 12; implemented in PE-F",
       "product_owner_decision": "Decision D14 records the constraint and the two viable shapes and explicitly leaves the choice open. It must be taken in P0-E, because both shapes change the allocator and one of them changes a shipped promise.",
       "enforcing_check": "Once decided: if synchronisation-time allocation, the existing gapless concurrency tests run unmodified. If reserved blocks, a test asserts a sequence declaring them reports itself as non-gapless through the same declaration an operator reads, so the forfeit cannot be silent.",
-      "cross_reference": ["V2-ERP-002", "V2-ERP-007"]
+      "cross_reference": [
+        "V2-ERP-002",
+        "V2-ERP-007"
+      ]
     },
     {
       "id": "V2-POS-003",
@@ -1445,7 +1426,10 @@
       "work_package": "PE-G",
       "product_owner_decision": "Decision D14 — late and out-of-order arrival tolerance, and untrusted client clocks.",
       "enforcing_check": "An architecture test asserting no ordering, expiry or numbering path reads a client-asserted instant, enumerated from the paths that consume an instant; plus an integration test submitting a batch out of capture order and asserting the resulting order.",
-      "cross_reference": ["V2-ERP-007", "V2-SCL-002"]
+      "cross_reference": [
+        "V2-ERP-007",
+        "V2-SCL-002"
+      ]
     },
     {
       "id": "V2-POS-004",
@@ -1468,7 +1452,9 @@
       "work_package": "PE-G",
       "product_owner_decision": "Decision D14 — stock and pricing cannot be authoritative offline, so the design must accept a sale and reconcile rather than assume live validation.",
       "enforcing_check": "Not mechanically enforceable, and stated as such. Covered by the P0-C frozen-contract review, which classifies the deferrable and non-deferrable validation categories, and by a worked example in the extension documentation. The non-deferrable half IS mechanically enforced: an architecture test asserts authorization, policy and definition-shape validation have no bypass path.",
-      "cross_reference": ["V2-ERP-007"]
+      "cross_reference": [
+        "V2-ERP-007"
+      ]
     },
     {
       "id": "GM-AUD-02",
@@ -1477,7 +1463,12 @@
       "state": "conditional",
       "phase": "evidence",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Audit/Infrastructure/Persistence/AuditAppendOnlyGuard.php", "symbol": "AuditAppendOnlyGuard"}],
+      "source_anchors": [
+        {
+          "file": "src/Audit/Infrastructure/Persistence/AuditAppendOnlyGuard.php",
+          "symbol": "AuditAppendOnlyGuard"
+        }
+      ],
       "acceptance_test": "Triggers install where the server grants the privilege; where it refuses, audit:verify exits 2 and reports append_only_enforcement: not_installed, observed from the server catalog on every run.",
       "owner": "UNASSIGNED",
       "closure_sha": "ae4b92bbfb64906bb42de08fdbfacbef2464c7cd",
@@ -1490,7 +1481,13 @@
       "state": "open",
       "phase": "7",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Audit/Domain/AuditEvent.php", "symbol": "the metadata property", "note": "Stored verbatim; enforcement is per-service discipline. src/Audit/Application/AuditMetadataRedactor.php redacts on the way out of an export only."}],
+      "source_anchors": [
+        {
+          "file": "src/Audit/Domain/AuditEvent.php",
+          "symbol": "the metadata property",
+          "note": "Stored verbatim; enforcement is per-service discipline. src/Audit/Application/AuditMetadataRedactor.php redacts on the way out of an export only."
+        }
+      ],
       "acceptance_test": "A denylist decorator around AuditRecorder, or a constructor check, rejecting credential-shaped metadata keys and values, plus unit assertions on each writing service's recorded metadata.",
       "owner": "UNASSIGNED",
       "closure_sha": null
@@ -1502,7 +1499,13 @@
       "state": "open",
       "phase": "7",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Administrator/Http/Handler/AdministratorLoginHandler.php", "symbol": "handle()", "note": "Reads only email, password and User-Agent. The portal login already implements the pre-session double-submit token."}],
+      "source_anchors": [
+        {
+          "file": "src/Administrator/Http/Handler/AdministratorLoginHandler.php",
+          "symbol": "handle()",
+          "note": "Reads only email, password and User-Agent. The portal login already implements the pre-session double-submit token."
+        }
+      ],
       "acceptance_test": "Mirror the portal pattern: set a path-scoped HttpOnly SameSite=Strict CSRF cookie on GET, render it as a hidden field, and hash_equals-compare and rotate on POST before authenticating.",
       "owner": "UNASSIGNED",
       "closure_sha": null
@@ -1514,7 +1517,13 @@
       "state": "open",
       "phase": "7",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Kernel/Configuration/ApplicationConfiguration.php", "symbol": "the production assertions", "note": "Secure is derived solely from the configured base-URL scheme. last_seen_at is stamped but never used in the resolve predicate."}],
+      "source_anchors": [
+        {
+          "file": "src/Kernel/Configuration/ApplicationConfiguration.php",
+          "symbol": "the production assertions",
+          "note": "Secure is derived solely from the configured base-URL scheme. last_seen_at is stamped but never used in the resolve predicate."
+        }
+      ],
       "acceptance_test": "Production configuration refuses a base URL that would serve session cookies without Secure. An idle-window predicate is added to the resolve path or its absence is stated as a deliberate, documented property.",
       "owner": "UNASSIGNED",
       "closure_sha": null
@@ -1526,7 +1535,13 @@
       "state": "open",
       "phase": "7",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Administrator/Http/Middleware/", "symbol": "AdministratorCsrfMiddleware", "note": "No dedicated comparison or rejection tests. No test anywhere asserts the session cookie attribute string."}],
+      "source_anchors": [
+        {
+          "file": "src/Administrator/Http/Middleware/",
+          "symbol": "AdministratorCsrfMiddleware",
+          "note": "No dedicated comparison or rejection tests. No test anywhere asserts the session cookie attribute string."
+        }
+      ],
       "acceptance_test": "Dedicated tests for both CSRF middlewares, the Redis rate-limiter window arithmetic, the portal session store find and rotate rejection matrix, the logout handlers, and the session cookie attribute string.",
       "owner": "UNASSIGNED",
       "closure_sha": null
@@ -1538,7 +1553,13 @@
       "state": "open",
       "phase": "7",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Kernel/ContainerFactory.php", "symbol": "the /administrator/access route registration", "note": "Both verbs are gated on users.manage. The portal has a security screen but no password path at all."}],
+      "source_anchors": [
+        {
+          "file": "src/Kernel/ContainerFactory.php",
+          "symbol": "the /administrator/access route registration",
+          "note": "Both verbs are gated on users.manage. The portal has a security screen but no password path at all."
+        }
+      ],
       "acceptance_test": "An ordinary portal member and a narrowly scoped administrator can rotate their own password without an identity administrator performing a reset.",
       "owner": "UNASSIGNED",
       "closure_sha": null
@@ -1550,7 +1571,13 @@
       "state": "open",
       "phase": "7",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Extension/Runtime/RestrictedExtensionContainer.php", "symbol": "RestrictedExtensionContainer", "note": "Curation covers service resolution only. Admitted PHP executes with the ambient authority of the process."}],
+      "source_anchors": [
+        {
+          "file": "src/Extension/Runtime/RestrictedExtensionContainer.php",
+          "symbol": "RestrictedExtensionContainer",
+          "note": "Curation covers service resolution only. Admitted PHP executes with the ambient authority of the process."
+        }
+      ],
       "acceptance_test": "Cannot be closed by repository-owned code. Until an isolated runtime exists, installing an extension means trusting its publisher with the application process, and the documentation, UI and operator prompts must all say exactly that.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
@@ -1563,7 +1590,13 @@
       "state": "conditional",
       "phase": "7",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "src/Http/Security/SecurityHeaders.php", "symbol": "the style directives", "note": "Now style-src 'self', style-src-elem 'self' and style-src-attr 'unsafe-inline' in place of one permissive directive."}],
+      "source_anchors": [
+        {
+          "file": "src/Http/Security/SecurityHeaders.php",
+          "symbol": "the style directives",
+          "note": "Now style-src 'self', style-src-elem 'self' and style-src-attr 'unsafe-inline' in place of one permissive directive."
+        }
+      ],
       "acceptance_test": "The exfiltration class is removed. The narrowed residual — inline style attributes — is named and owned.",
       "owner": "UNASSIGNED",
       "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
@@ -1575,7 +1608,13 @@
       "state": "open",
       "phase": "2",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": ".github/workflows/security.yml", "symbol": "the SBOM upload", "note": "14-day artifact retention; no workflow step reads it."}],
+      "source_anchors": [
+        {
+          "file": ".github/workflows/security.yml",
+          "symbol": "the SBOM upload",
+          "note": "14-day artifact retention; no workflow step reads it."
+        }
+      ],
       "acceptance_test": "A license-and-policy evaluation over the CycloneDX output, and publication as a build attestation or with longer retention. Blocked on a license policy nobody has agreed; a gate over an undecided policy would be scanning theatre.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
@@ -1588,7 +1627,13 @@
       "state": "open",
       "phase": "7",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "config/observability.php", "symbol": "the tracing block", "note": "Exporter none, sampling declared. W3C trace-context propagation exists and must not be overstated as distributed tracing."}],
+      "source_anchors": [
+        {
+          "file": "config/observability.php",
+          "symbol": "the tracing block",
+          "note": "Exporter none, sampling declared. W3C trace-context propagation exists and must not be overstated as distributed tracing."
+        }
+      ],
       "acceptance_test": "Open by decision. Adopting an exporter is a separately reviewed dependency and configuration decision. Until then, documentation states propagation, never tracing.",
       "owner": "UNASSIGNED",
       "closure_sha": null
@@ -1600,7 +1645,12 @@
       "state": "conditional",
       "phase": "6",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "tests/Support/RestoreSecurityAcceptance.php", "symbol": "RestoreSecurityAcceptance"}],
+      "source_anchors": [
+        {
+          "file": "tests/Support/RestoreSecurityAcceptance.php",
+          "symbol": "RestoreSecurityAcceptance"
+        }
+      ],
       "acceptance_test": "Still open: approval spent state, which needs an approval-rule administration surface first, and an HTTP replay of one login and one Idempotency-Key mutation against the restored container.",
       "owner": "UNASSIGNED",
       "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
@@ -1613,7 +1663,12 @@
       "state": "conditional",
       "phase": "6",
       "origin": "gap-matrix",
-      "source_anchors": [{"file": "docs/operations/backup-restore.md", "symbol": "Scheduling, retention, and off-host copies"}],
+      "source_anchors": [
+        {
+          "file": "docs/operations/backup-restore.md",
+          "symbol": "Scheduling, retention, and off-host copies"
+        }
+      ],
       "acceptance_test": "Documented: a reference hourly timer and unit, the four-step cycle, a retention prune that refuses to empty the directory, and an explicit list of what stays operator-owned. Open by choice: whole-table row-count parity is not in the acceptance manifest.",
       "owner": "UNASSIGNED",
       "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",

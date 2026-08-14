@@ -53,7 +53,7 @@ table when it completes, in the same change that writes it into the changelog.
 | Phase | Packages | Findings |
 |---|---|---|
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-EXT-001`, `V2-ERP-006`, `V2-ERP-007`, `V2-POS-002` |
-| 1 | `P1-A` … `P1-C`, `P1-E`, `P1-F` | `V2-COR-001`, `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-002`, `V2-DB-003` |
+| 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-003` |
 | 2 | `P2-A` … `P2-I` | `V2-ARC-001`, `V2-QA-001` – `V2-QA-005`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
 | 3 | `P3-A` … `P3-F` | `V2-ARC-003` |
 | 4 | `P4-A` … `P4-D` | `V2-SCL-003`, `V2-ERP-001` |
@@ -88,12 +88,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 ## Ledger snapshot
 
-**76 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**68 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 32 |
-| `reproduced` | 17 |
+| `accepted_for_implementation` | 26 |
+| `reproduced` | 15 |
 | `open` | 17 |
 | `conditional` | 7 |
 | `decision_required` | 2 |
@@ -105,7 +105,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 | Phase | Findings |
 |---|---|
 | 0 | 5 |
-| 1 | 6 |
+| 1 | 4 |
 | 2 | 9 |
 | 3 | 7 |
 | 4 | 2 |
@@ -119,12 +119,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 | Gate | Findings |
 |---|---|
-| A | 38 |
+| A | 30 |
 | B | 23 |
 | none | 15 |
 
-By severity: 2 critical, 40 high, 25 medium, 9 low.
-By origin: 25 from the independent review, 12 still-open entries from the executed gap matrix, 39 discovered
+By severity: 1 critical, 34 high, 24 medium, 9 low.
+By origin: 24 from the independent review, 12 still-open entries from the executed gap matrix, 32 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
@@ -140,7 +140,7 @@ that closed it.
 | 1 | Extension contract frozen with passing compatibility fixtures | No | `V2-EXT-001` |
 | 2 | Atomic aggregate command exists and matches the recorded shape | No | `V2-SCL-003` |
 | 3 | Data-entry integrity holds on all three browser surfaces | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
-| 4 | Correctness and security contradictions fixed | No | `V2-COR-001`, `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-002`, `V2-DB-003` |
+| 4 | Correctness and security contradictions fixed | No | `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-003` |
 | 5 | Quality gates are truthful | No | `V2-QA-001`, `V2-QA-002`, `V2-QA-003`, `V2-QA-004`, `V2-QA-005`, `V2-DB-001` |
 | 6 | Aggregate seams are clean | No | `V2-ARC-003` |
 | 7 | Business-group ownership model in place | Built; owes the three-engine proof in `P3-F` | — |
@@ -161,7 +161,7 @@ Gate B's ten criteria are unchanged and are listed in [`README.md`](README.md) s
 ## Baseline health at this revision
 
 Green: `composer docs:api` (100% across 1,172 classes and 6,365 methods), `composer architecture:policy`,
-`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (76 open
+`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (68 open
 findings), `composer openapi:check`, `composer cs`, `composer analyse` (PHPStan level `max`, no errors),
 unit suite (1,555 tests, 22,316 assertions), architecture suite (114 tests, 9,386 assertions).
 

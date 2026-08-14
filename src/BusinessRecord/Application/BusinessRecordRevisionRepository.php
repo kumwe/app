@@ -50,12 +50,12 @@ interface BusinessRecordRevisionRepository
      * organization because the storage key already names exactly one row. A caller that needs to know
      * whether older entries remain asks for one row more than it intends to return and compares.
      *
-     * @param   string                          $definitionId  UUID of the entity type whose log is read.
-     * @param   string                          $recordKey     Internal storage UUID of the record, not its
+     * @param   string                         $definitionId  UUID of the entity type whose log is read.
+     * @param   string                         $recordKey     Internal storage UUID of the record, not its
      *          caller-facing identity.
-     * @param   int                             $limit         Most rows to return; implementations reject an
+     * @param   int                            $limit         Most rows to return; implementations reject an
      *          unbounded or oversized window.
-     * @param   ?BusinessRecordRevisionCursor   $before        Exclusive upper bound in the log's ordering
+     * @param   ?BusinessRecordRevisionCursor  $before        Exclusive upper bound in the log's ordering
      *          key, taken from the oldest entry of the previous page; null starts at the newest entry.
      *
      * @return  list<BusinessRecordRevision>  Entries ordered by record version, then revision number, then

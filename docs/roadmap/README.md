@@ -510,7 +510,6 @@ residuals.
 
 | Finding | Verified anchor | What is true at `26a7b39` |
 |---|---|---|
-| `V2-COR-001` | `BusinessRecordService::history()` 1813–1829 | The generation-uniqueness check runs over the returned page, not the full scope. `historyByIdentityDigest()` receives `limit + 1` and the cursor, then `array_unique()` over that page decides ambiguity. A second generation outside the page is not observed. |
 | `V2-SEC-001` | `McpCapabilityCatalog` 518, 535, 552, 2057; `KumweMcpHandlers` 1439–1576 | `currentPassword` is in three published extension-lifecycle input schemas and thirteen handler positions. `writeOnly` is set, which describes an output property and prevents nothing inbound. |
 | `V2-ARC-001`, `V2-QA-002` | `tools/verify-policy.sh` | The architecture gate is four grep predicates: product-name spelling, forbidden direct dependencies, forbidden framework imports, two static-locator symbols. It evaluates no dependency edge and prints "Kumwe architecture policy verified." |
 | `V2-ARC-003` | `BusinessRecordService` 73 and three peers; `src/Application/Automation/Job/Doctrine*` | Application imports `Kumwe\CMS\Infrastructure\Persistence\TransactionManager`. Three Doctrine adapters live under `src/Application`. |
@@ -523,7 +522,6 @@ residuals.
 | `V2-SCL-007` | `DoctrineJobQueue` 968, 985, 990 | A contributed queue with a declared ceiling locks its policy row `FOR UPDATE` and counts live leases before claiming. The ordinary claim at line 270 already uses `FOR UPDATE SKIP LOCKED`. |
 | `V2-QA-001` | 148 `#[CoversNothing]` across 74 files; `ci.yml` 271, 433 | 36 of those files are integration tests exercising real behaviour. Coverage is collected on the PostgreSQL leg only and the workflow itself says "No threshold is enforced yet". |
 | `V2-DB-001` | `ci.yml` 63–167 | Browser journeys run against one PostgreSQL service, Chromium only, while MariaDB is the canonical engine. |
-| `V2-DB-002` | `DoctrineScheduler::dispatch()` 140–141; `ApplicationAuthorizationMigration` 94 | The ownership join compares two textual columns. `resource_site_ownership.site_identifier` is a bare `STRING(191)` with no charset or collation copied from `sites.identifier`, while `BusinessSecurityPortalMigration::siteIdentifierOptions()` introspects and reproduces them for exactly this reason. MariaDB raises 1267. |
 | `V2-DB-003` | `ApplicationAuthorizationMigration` 106; `ApplicationAuthorizationMigrationRecovery` 443 | The primary migration names the constraint literally `fk_resource_site`; the recovery path already derives a hashed unique name. Foreign-key names are schema-global on MySQL and MariaDB. |
 | `V2-DR-003` | `tools/backup.sh` 149, 161, 198–202 | Four gzip tarballs; `pg_dump --format=custom` compresses by default; `--set-gtid-purged=OFF` on MySQL; no coordinate at all on MariaDB. |
 | `V2-ERP-001` | `Expression::OPERATORS` 58–80; `RecordRuleValidator` 167 | Twenty-one scalar operators, none of them an aggregation. Invariants evaluate over `RecordExpressionValues::from($values)`, the record's own fields. `RecordInvariantDefinition`'s docblock offers "a total agreeing with its lines" as an example the vocabulary cannot express. |
@@ -694,7 +692,7 @@ answer.
 | Step-up re-authentication on high-impact actions | Provided | RFC 6238 TOTP, recovery codes, five-minute single-use nonce proofs bound to purpose, site, organization, session and epoch |
 | Optimistic concurrency on every mutation | Provided | expected version on every write path; `BusinessRecordVersionConflict` |
 | Idempotent command replay | Provided | `BusinessRecordIdempotency` with `key_reused`, `in_progress` and `corrupt` outcomes |
-| Point-in-time record history and revisions | Partial | `BusinessRecordRevision` and `history()`, but see `V2-COR-001` |
+| Point-in-time record history and revisions | Provided | `BusinessRecordRevision` and `history()`; a reused public identity is settled over the whole scope before a page is read, and pages walk a total ordering key; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Immutable correction by linked reversal | **Must add** | `V2-ERP-005`, decision D13.2, [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) — an approved document is corrected by mutating it, and that is an audit defect |
 | Period close and posting lock | **Must add** | `V2-ERP-003`, decision D13.3 — core provides the temporal lock; the extension decides what a period is and when it closes |
 | Client-minted operation identity durable across a long disconnection | Partial | `V2-POS-001` — the caller already mints the identifier, but the claim expires after `P1D` and its digest binds the actor |
@@ -759,7 +757,7 @@ answer.
 | Operational diagnostics: where the system is struggling | **Must add** | `V2-OPS-001` under decision D6 |
 | Proven capacity at the enterprise envelope | **Must add** | phase 5 and phase 7 |
 
-**Summary.** Of the 69 primitives above: **39 provided, 7 partial, 21 must add, 1 decision required, 1
+**Summary.** Of the 69 primitives above: **40 provided, 6 partial, 21 must add, 1 decision required, 1
 deferred but not foreclosed.**
 
 The count of open boundary questions fell from seven to one because decisions D10 through D14 answered
@@ -777,9 +775,9 @@ contract and ownership work** — a frozen public contract, the business-group o
 per-category isolation and its consolidated read. And the **operational capabilities** — point-in-time
 recovery, operational diagnostics, and proven capacity at the enterprise envelope.
 
-Two of the seven partials — record history and client-minted operation identity across a long
-disconnection — are corrections to something that already works rather than missing capability. A third,
-data-entry integrity, was corrected the same way and has left this table.
+One of the six partials — client-minted operation identity across a long disconnection — is a correction to
+something that already works rather than missing capability. Two others, data-entry integrity and record
+history, were corrected the same way and have left this table.
 
 The one remaining decision is `V2-POS-002`: whether a disconnected terminal receives its document number at
 synchronisation time or from a reserved block. It is left open deliberately, because it trades against the
@@ -910,8 +908,10 @@ intention.
    the operator's submitted values on the generated administrator surface, the generated portal surface
    and the CMS content editor, proven by browser tests on all three, including a hundred-line document.
    Met; recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
-4. **Correctness and security contradictions are fixed.** `V2-COR-001`, `V2-SEC-001`, `V2-SEC-002`,
-   `V2-DB-002` and `V2-DB-003` closed. `V2-SEC-003` resolved to an honest, consistently worded posture.
+4. **Correctness and security contradictions are fixed.** `V2-SEC-001`, `V2-SEC-002` and `V2-DB-003`
+   closed. `V2-SEC-003` resolved to an honest, consistently worded posture. Record-history generation
+   ambiguity and the unpinned ownership collation are already recorded in
+   [`CHANGELOG.md`](../../CHANGELOG.md).
 5. **The gates are truthful.** Coverage attribution is real and ratcheted, semantic dependency checking
    fails new violations, the browser and coverage matrix covers the primary engines, and one manifest
    defines what local, CI, nightly and release runs execute.
@@ -1098,7 +1098,8 @@ follow.
    allocation, and retry behaviour. This is the contract extension authors build against from Gate A, so it
    is settled here even though it is implemented in phase 4.
 3. **Record identity generations.** Public identity reuse after hard deletion, tombstones, history
-   ambiguity and fail-closed behaviour. Resolves `V2-COR-001`'s long-term model.
+   ambiguity and fail-closed behaviour. The shipped behaviour refuses an ambiguous digest; the decision
+   settles whether a reused identity should be addressable per generation instead.
 4. **Concurrency and event ordering.** Schema-generation fencing, per-record concurrency, event sequencing,
    aggregate ordering and projection checkpoint semantics.
 5. **Extension trust posture.** Core, trusted in-process and untrusted out-of-process tiers, and the exact
@@ -1167,17 +1168,6 @@ or scales. Every legitimate use case keeps a supported safe path.
 
 **Entry conditions.** Phase 0 decisions 3, 5 and 6 recorded. May run in parallel with phase 2.
 
-**P1-A — Record history generation ambiguity.** Findings: `V2-COR-001`. Reproduce first on all three
-engines: create under a public identity, produce multiple revision pages, hard-delete through the
-authorized lifecycle, reuse the identity, then request history with page sizes and cursors that return one
-generation, and demonstrate that the page-local check selects or pages the wrong subject. Then implement a
-fail-closed contract that resolves generation ambiguity **before** applying the page limit — a full-scope
-distinct record-key query bounded to two results, followed by history retrieval only when exactly one
-generation is valid. The query must be portable and indexed on all three engines. Tests: page size one,
-middle and last pages, reverse order, empty page, one and several internal keys under one digest,
-cross-site and cross-organization isolation, forbidden records with no existence leak, hard-delete racing
-identity reuse, stable errors on every surface exposing history, and a query-count assertion.
-
 **P1-B — Remove raw credential transport from the machine surface.** Findings: `V2-SEC-001`. Remove
 `currentPassword` from every input schema, handler signature, example, generated description, fixture and
 documentation path. Add a recursive scan of the serialized catalog that fails on any password, secret,
@@ -1196,12 +1186,15 @@ logs or audit diffs; decide execute versus plan-and-status only; and document th
 validator that rejects duplicate names, missing handlers, wrong annotations, unclosed schemas, mutation
 tools without operation identifiers, and risk-versus-surface violations.
 
-**P1-E — Portability defects on a freshly created database.** Findings: `V2-DB-002`, `V2-DB-003`. Give
-`resource_site_ownership.site_identifier` the canonical site-identifier character definition through the
-same introspection `BusinessSecurityPortalMigration::siteIdentifierOptions()` already performs, and derive
-the foreign-key constraint name the way `ApplicationAuthorizationMigrationRecovery` already derives it. Add
-migration integration tests that install into a freshly created MariaDB database whose default collation
-differs, run a scheduler dispatch pass, and install two prefixed installations into one schema.
+**P1-E — Schema-global constraint names.** Findings: `V2-DB-003`. The ownership constraint now derives a
+per-table name, but fifty-four constraint names across the shipped migrations are still literal, and a
+foreign-key name is schema-global on MySQL and MariaDB. `MigrationIntegrationTest::testBusinessSecurity`
+`SiteForeignKeyUsesTheExistingMariaDbCollation` demonstrates it today: building a second prefixed
+installation's `organizations` table beside an installed one fails with errno 121 on `fk_org_site`. Derive
+every remaining name from the table it sits on, in a forward migration that renames the installed
+constraints — which is also what frees the literal names for the next installation, since the immutable
+Core migration will always try to create them. Prove it by installing two prefixed installations into one
+MariaDB schema, in that order, and succeeding.
 
 **P1-F — Extension trust posture.** Findings: `V2-SEC-003`, cross-referencing `GM-SUP-05`. Change every
 document, prompt and operator message to say "trusted in-process extension code". Require an explicit
