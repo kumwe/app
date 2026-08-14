@@ -25,4 +25,14 @@ final class SecurityHeadersTest extends TestCase
     {
         self::assertArrayNotHasKey('Strict-Transport-Security', (new SecurityHeaders(false))->values());
     }
+
+    public function testInjectedStyleElementsAreRefusedWhileStyleAttributesRemainAdmitted(): void
+    {
+        $policy = (new SecurityHeaders(true))->values()['Content-Security-Policy'];
+
+        self::assertStringContainsString("style-src 'self';", $policy);
+        self::assertStringContainsString("style-src-elem 'self'", $policy);
+        self::assertStringContainsString("style-src-attr 'unsafe-inline'", $policy);
+        self::assertStringNotContainsString("style-src 'self' 'unsafe-inline'", $policy);
+    }
 }

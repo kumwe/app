@@ -20,6 +20,7 @@ use Kumwe\CMS\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
 use Kumwe\CMS\Application\Automation\Job\RecordAuditAnchorHandler;
 use Kumwe\CMS\Application\Automation\Job\RotateRecordSecretsHandler;
 use Kumwe\CMS\Application\Automation\Job\RebuildExtensionMapHandler;
+use Kumwe\CMS\Application\Automation\Job\SynchronizeTrustRevocationsHandler;
 use Kumwe\CMS\Application\Automation\Job\VerifyAuditTrailHandler;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Application\Automation\Job\TransitionContentHandler;
@@ -294,21 +295,32 @@ use Kumwe\CMS\Demo\Infrastructure\VdmBusinessDemoInstaller;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
+use Kumwe\CMS\Extension\Application\Package\ArchiveContentReader;
 use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
 use Kumwe\CMS\Extension\Application\Package\ExtensionActivationAdmission;
+use Kumwe\CMS\Extension\Application\Package\PackageAdmissionScanner;
+use Kumwe\CMS\Extension\Application\Package\PackageCodeConformance;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\CMS\Extension\Application\Trust\ExtensionArtifactVerifier;
+use Kumwe\CMS\Extension\Application\Trust\RevocationFeedSource;
+use Kumwe\CMS\Extension\Application\Trust\RevocationFeedStateStore;
+use Kumwe\CMS\Extension\Application\Trust\RevocationFeedSynchronizer;
+use Kumwe\CMS\Extension\Application\Trust\RevocationListVerifier;
 use Kumwe\CMS\Extension\Application\Trust\TrustKeySignatureVerifier;
 use Kumwe\CMS\Extension\Application\Trust\TrustRuntimeInvalidator;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\CMS\Extension\Infrastructure\DoctrineExtensionManager;
+use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveContentReader;
 use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
 use Kumwe\CMS\Extension\Infrastructure\ExtensionRegistryFenceAllocator;
 use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
+use Kumwe\CMS\Extension\Infrastructure\Trust\DoctrineRevocationFeedStateStore;
 use Kumwe\CMS\Extension\Infrastructure\Trust\DoctrineTrustStoreRepository;
 use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
+use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumRevocationListVerifier;
 use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
+use Kumwe\CMS\Extension\Infrastructure\Trust\StreamRevocationFeedSource;
 use Kumwe\CMS\Extension\Development\ComponentScaffolder;
 use Kumwe\CMS\Extension\Development\DeterministicPackageBuilder;
 use Kumwe\CMS\Extension\Development\PackageInspector;
@@ -492,6 +504,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfacePresentationPreferen
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
@@ -1435,6 +1448,7 @@ final class ContainerFactory
                     new RecordEncryptionKeyRingMigration(self::service($container, TableNames::class)),
                     new CredentialLifecycleMigration(self::service($container, TableNames::class)),
                     new BusinessNumberSequenceMigration(self::service($container, TableNames::class)),
+                    new ExtensionSupplyChainMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -1698,7 +1712,16 @@ final class ContainerFactory
             true,
         );
         $container->share(ArchiveReader::class, new ZipArchiveReader(), true);
+        $container->share(ArchiveContentReader::class, new ZipArchiveContentReader(), true);
         $container->share(PackageSafetyPolicy::class, new PackageSafetyPolicy(), true);
+        $container->share(PackageCodeConformance::class, new PackageCodeConformance(), true);
+        $container->share(PackageAdmissionScanner::class, static fn (
+            Container $container,
+        ): PackageAdmissionScanner => new PackageAdmissionScanner(
+            self::service($container, ArchiveContentReader::class),
+            self::service($container, PackageCodeConformance::class),
+            $configuration->packageConformanceAdmission,
+        ), true);
         $container->share(ComponentScaffolder::class, new ComponentScaffolder(), true);
         $container->share(PackageInspector::class, static fn (Container $container): PackageInspector =>
             new PackageInspector(
@@ -1778,6 +1801,26 @@ final class ContainerFactory
             self::service($container, AuthorizationGateway::class),
             $configuration->allowUnsignedLocalExtensions,
             self::service($container, PackageDefinitionSynchronizer::class),
+        ), true);
+        $container->share(RevocationListVerifier::class, new SodiumRevocationListVerifier(), true);
+        $container->share(RevocationFeedSource::class, new StreamRevocationFeedSource(), true);
+        $container->share(RevocationFeedStateStore::class, static fn (
+            Container $container,
+        ): RevocationFeedStateStore => new DoctrineRevocationFeedStateStore(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(RevocationFeedSynchronizer::class, static fn (
+            Container $container,
+        ): RevocationFeedSynchronizer => new RevocationFeedSynchronizer(
+            $configuration->revocationFeed,
+            self::service($container, RevocationFeedSource::class),
+            self::service($container, RevocationListVerifier::class),
+            self::service($container, RevocationFeedStateStore::class),
+            self::service($container, TrustStore::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, LoggerInterface::class),
         ), true);
         $contributionRegistries = new ExtensionContributionRegistrySet(
             self::service($container, TrustStore::class),
@@ -2182,6 +2225,7 @@ final class ContainerFactory
                     self::service($container, ResourceSiteOwnershipWriter::class),
                     self::service($container, PackageDefinitionSynchronizer::class),
                     self::service($container, ExtensionActivationAdmission::class),
+                    self::service($container, PackageAdmissionScanner::class),
                 ),
                 self::service($container, RedisRuntime::class),
                 self::service($container, AuthorizationGateway::class),
@@ -3150,6 +3194,8 @@ final class ContainerFactory
             self::service($container, TrustStore::class),
             self::service($container, AdministratorRenderer::class),
             dirname(__DIR__, 2) . '/storage/tmp',
+            self::service($container, RevocationFeedSynchronizer::class),
+            self::service($container, ClockInterface::class),
         ), true);
         $container->share(AdministratorExtensionActionHandler::class, static fn (
             Container $container,
@@ -4534,6 +4580,11 @@ final class ContainerFactory
             self::service($container, ExtensionRuntimeMapCompiler::class),
             self::service($container, AuthorizationGateway::class),
         ), true);
+        $container->share(SynchronizeTrustRevocationsHandler::class, static fn (
+            Container $container,
+        ): SynchronizeTrustRevocationsHandler => new SynchronizeTrustRevocationsHandler(
+            self::service($container, RevocationFeedSynchronizer::class),
+        ), true);
         $container->share(TransitionContentHandler::class, static fn (
             Container $container,
         ): TransitionContentHandler => new TransitionContentHandler(
@@ -4551,6 +4602,7 @@ final class ContainerFactory
                 self::service($container, EnforceAuditRetentionHandler::class),
                 self::service($container, RotateRecordSecretsHandler::class),
                 self::service($container, RebuildExtensionMapHandler::class),
+                self::service($container, SynchronizeTrustRevocationsHandler::class),
                 self::service($container, TransitionContentHandler::class),
                 self::service($container, GenerateReportExportHandler::class),
             ];

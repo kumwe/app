@@ -4,12 +4,20 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Extension\Development;
 
-use ParseError;
+use Kumwe\CMS\Extension\Application\Package\PackageBillOfMaterials;
+use Kumwe\CMS\Extension\Application\Package\PackageCodeConformance;
+use Kumwe\CMS\Extension\Application\Package\PackageProvenance;
 use RuntimeException;
 use ZipArchive;
 
 /**
  * Performs bounded static conformance checks without loading or executing extension code.
+ *
+ * The per-file checks are not implemented here: they live in `PackageCodeConformance`, which
+ * install-time admission runs as well, so what an author sees from `extension:conformance` and what an
+ * installation refuses are the same findings produced by the same code. What stays here is everything
+ * only a publisher cares about — deterministic entry order, ZIP metadata normalization, and the
+ * authoring README — plus the report shape the SDK's own tests are written against.
  *
  * @since  2.0.0
  */
@@ -24,14 +32,17 @@ final readonly class StaticConformanceRunner
     private const ZIP_EPOCH = 315532800;
 
     /**
-     * Bind conformance to the production package inspector.
+     * Bind conformance to the production package inspector and the shared static checks.
      *
-     * @param  PackageInspector  $inspector  Safe archive and manifest inspection boundary.
+     * @param  PackageInspector        $inspector    Safe archive and manifest inspection boundary.
+     * @param  PackageCodeConformance  $conformance  Per-file checks shared with install-time admission.
      *
      * @since  2.0.0
      */
-    public function __construct(private PackageInspector $inspector)
-    {
+    public function __construct(
+        private PackageInspector $inspector,
+        private PackageCodeConformance $conformance = new PackageCodeConformance(),
+    ) {
     }
 
     /**
@@ -76,11 +87,11 @@ final readonly class StaticConformanceRunner
                 if (!is_string($contents)) {
                     throw new RuntimeException(sprintf('Package entry %s could not be read.', $path));
                 }
-                if ($this->textPath($path)) {
-                    $this->checkMarkers($path, $contents, $violations);
+                if ($this->conformance->isTextPath($path)) {
+                    $violations = [...$violations, ...$this->conformance->markerViolations($path, $contents)];
                 }
-                if (str_ends_with(strtolower($path), '.php')) {
-                    $this->checkPhp($path, $contents, $violations);
+                if ($this->conformance->isPhpPath($path)) {
+                    $violations = [...$violations, ...$this->conformance->phpViolations($path, $contents)];
                 }
             }
         } finally {
@@ -91,7 +102,10 @@ final readonly class StaticConformanceRunner
             throw new RuntimeException('The extension package changed during conformance checks.');
         }
 
-        $this->checkReferences($inspection, $violations);
+        $violations = [
+            ...$violations,
+            ...$this->conformance->referenceViolations($inspection->manifest, $inspection->paths),
+        ];
         sort($violations, SORT_STRING);
         $checks = [
             'production_package_safety' => true,
@@ -103,7 +117,19 @@ final readonly class StaticConformanceRunner
             'complete_sources' => !$this->containsPrefix($violations, 'Unresolved marker'),
             'manifest_references' => !$this->containsPrefix($violations, 'Manifest reference'),
             'authoring_readme' => in_array('README.md', $paths, true),
+            'package_bill_of_materials' => in_array(PackageBillOfMaterials::PATH, $paths, true),
+            'package_provenance' => in_array(PackageProvenance::PATH, $paths, true),
         ];
+        foreach (
+            [
+                'package_bill_of_materials' => PackageBillOfMaterials::PATH,
+                'package_provenance' => PackageProvenance::PATH,
+            ] as $check => $path
+        ) {
+            if (!$checks[$check]) {
+                $violations[] = sprintf('Attestation document %s is missing; rebuild with extension:build.', $path);
+            }
+        }
         if (!$checks['authoring_readme']) {
             $violations[] = 'Manifest reference README.md is missing.';
             sort($violations, SORT_STRING);
@@ -165,174 +191,6 @@ final readonly class StaticConformanceRunner
         }
 
         return ['operating_system' => $operatingSystem, 'attributes' => $attributes];
-    }
-
-    /**
-     * Check package references that can be resolved without autoloading extension classes.
-     *
-     * @param   PackageInspection  $inspection  Parsed manifest and path inventory.
-     * @param   list<string>       $violations  Accumulated violations.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    private function checkReferences(PackageInspection $inspection, array &$violations): void
-    {
-        $paths = array_fill_keys($inspection->paths, true);
-        $autoload = $inspection->manifest->autoload();
-        $classes = [$inspection->manifest->serviceProvider(), ...$inspection->manifest->migrations()];
-        foreach ($classes as $class) {
-            $resolved = false;
-            foreach ($autoload as $prefix => $directory) {
-                if (!str_starts_with($class, $prefix)) {
-                    continue;
-                }
-                $candidate = rtrim($directory, '/') . '/' . str_replace('\\', '/', substr($class, strlen($prefix)))
-                    . '.php';
-                if (isset($paths[$candidate])) {
-                    $resolved = true;
-                    break;
-                }
-            }
-            if (!$resolved) {
-                $violations[] = sprintf('Manifest reference class %s does not resolve to a packaged PHP file.', $class);
-            }
-        }
-        foreach ($inspection->manifest->assets() as $asset) {
-            if (!isset($paths[$asset])) {
-                $violations[] = sprintf('Manifest reference asset %s is missing.', $asset);
-            }
-        }
-        $contributions = $inspection->manifest->contributions();
-        foreach ($contributions->views() as $view) {
-            $this->requirePath('templates/views/administrator/' . $view->template, $paths, $violations);
-        }
-        foreach ($contributions->portalTemplates() as $template) {
-            $this->requirePath('templates/views/portal/' . $template->template, $paths, $violations);
-        }
-    }
-
-    /**
-     * Require one manifest-declared package path.
-     *
-     * @param   string               $path        Required package path.
-     * @param   array<string, bool>  $paths       Packaged path set.
-     * @param   list<string>         $violations  Accumulated violations.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    private function requirePath(string $path, array $paths, array &$violations): void
-    {
-        if (!isset($paths[$path])) {
-            $violations[] = sprintf('Manifest reference template %s is missing.', $path);
-        }
-    }
-
-    /**
-     * Parse one PHP source file and require strict scalar semantics.
-     *
-     * @param   string        $path        Package path.
-     * @param   string        $contents    PHP source bytes.
-     * @param   list<string>  $violations  Accumulated violations.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    private function checkPhp(string $path, string $contents, array &$violations): void
-    {
-        $tokens = null;
-        try {
-            $tokens = token_get_all($contents, TOKEN_PARSE);
-        } catch (ParseError $failure) {
-            $violations[] = sprintf('PHP syntax failure in %s: %s', $path, $failure->getMessage());
-        }
-        if (!is_array($tokens) || !$this->declaresStrictTypes($tokens)) {
-            $violations[] = sprintf('PHP file %s must declare strict_types=1.', $path);
-        }
-    }
-
-    /**
-     * Require strict scalar semantics as the first executable source declaration.
-     *
-     * Token inspection prevents a comment or string containing `declare(strict_types=1)` from satisfying
-     * the gate. PHP's parser separately rejects a real strict-types declaration that appears too late.
-     *
-     * @param   list<array{int, string, int}|string>  $tokens  Parsed PHP source tokens.
-     *
-     * @return  bool  True only for an actual leading `declare(strict_types=1);` statement.
-     *
-     * @since   2.0.0
-     */
-    private function declaresStrictTypes(array $tokens): bool
-    {
-        $significant = [];
-        foreach ($tokens as $token) {
-            if (
-                is_array($token)
-                && in_array($token[0], [T_OPEN_TAG, T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)
-            ) {
-                continue;
-            }
-            $significant[] = $token;
-        }
-        if (count($significant) < 7) {
-            return false;
-        }
-
-        return is_array($significant[0])
-            && $significant[0][0] === T_DECLARE
-            && $significant[1] === '('
-            && is_array($significant[2])
-            && $significant[2][0] === T_STRING
-            && strtolower($significant[2][1]) === 'strict_types'
-            && $significant[3] === '='
-            && is_array($significant[4])
-            && $significant[4][0] === T_LNUMBER
-            && $significant[4][1] === '1'
-            && $significant[5] === ')'
-            && $significant[6] === ';';
-    }
-
-    /**
-     * Detect unresolved scaffold and unfinished-work markers.
-     *
-     * @param   string        $path        Package path.
-     * @param   string        $contents    Text contents.
-     * @param   list<string>  $violations  Accumulated violations.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    private function checkMarkers(string $path, string $contents, array &$violations): void
-    {
-        if (
-            preg_match('/@@[A-Z0-9_]+@@|\{\{[A-Z0-9_]+\}\}/D', $contents) === 1
-            || preg_match('/\b(?:TODO|FIXME)\b/', $contents) === 1
-        ) {
-            $violations[] = sprintf('Unresolved marker remains in %s.', $path);
-        }
-    }
-
-    /**
-     * Decide whether an entry is a text format subject to marker scanning.
-     *
-     * @param   string  $path  Package path.
-     *
-     * @return  bool  True for supported text extensions and conventional text file names.
-     *
-     * @since   2.0.0
-     */
-    private function textPath(string $path): bool
-    {
-        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
-        return in_array($extension, ['php', 'json', 'md', 'twig', 'yaml', 'yml', 'xml', 'css', 'js'], true)
-            || in_array(basename($path), ['README', 'LICENSE'], true);
     }
 
     /**

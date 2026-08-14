@@ -1,0 +1,109 @@
+# Kumwe secret-scanning configuration.
+#
+# The default gitleaks ruleset knows about other people's credential formats. It does not know about
+# Kumwe's, and the values that matter most here carry no vendor prefix to recognise them by: the
+# extension runtime signing key, the application secret, the record-encryption key ring, the Ed25519
+# secret key an extension publisher signs packages with, and an issued administrator session token. Each
+# is an arbitrary high-entropy string assigned to a known variable name or written in a known encoding,
+# so the rules below key on the assignment or the encoding rather than on the value — the only thing
+# that generalises when there is no prefix to match.
+#
+# Three properties are deliberate.
+#
+# `useDefault` keeps every upstream rule active, so this file only adds coverage; it never replaces the
+# baseline, and the fingerprints already recorded in `.gitleaksignore` keep resolving.
+#
+# Every allowlist below exempts a *shape that cannot be a live credential* — a documented `change-this`
+# placeholder, a shell or Compose interpolation, a value assembled by `str_repeat` — and never a path and
+# never a rule. Exempting either of those would remove the control instead of the finding, which
+# `AGENTS.md` states as a house rule and this file honours rather than restating.
+#
+# Every regex is RE2, so no backreferences and no lookaround. Repeated-character placeholders are
+# excluded by the per-rule entropy floor rather than by a `(.)\1{n}` pattern that would not compile.
+#
+# `composer security:secrets` and the "Scan repository for secrets" step of `.github/workflows/security.yml`
+# both run gitleaks from the repository root and pick this file up automatically. Verify any change to it
+# with `composer security:secrets`, which reads history rather than the working tree.
+title = "Kumwe CMS"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "kumwe-extension-runtime-signing-key"
+description = "Kumwe extension runtime signing key assigned inline"
+regex = '''(?i)EXTENSION_RUNTIME_SIGNING_KEY[ \t]*[:=][ \t]*["']?([^\s"'#]{24,})'''
+secretGroup = 1
+entropy = 3.0
+keywords = ["extension_runtime_signing_key"]
+tags = ["kumwe", "signing-key"]
+
+[rules.allowlist]
+regexTarget = "match"
+regexes = [
+  '''EXTENSION_RUNTIME_SIGNING_KEY[ \t]*[:=][ \t]*["']?(?:use-a-different|change-this|testing|kumwe-)''',
+  '''EXTENSION_RUNTIME_SIGNING_KEY[ \t]*[:=][ \t]*["']?[$]''',
+  '''EXTENSION_RUNTIME_SIGNING_KEY[ \t]*[:=][ \t]*["']?str_repeat''',
+]
+
+[[rules]]
+id = "kumwe-record-encryption-key"
+description = "Kumwe record-encryption key or retired key ring assigned inline"
+regex = '''(?i)RECORD_ENCRYPTION_(?:KEY|PREVIOUS_KEYS|LEGACY_SECRET)[ \t]*[:=][ \t]*["']?([^\s"'#]{24,})'''
+secretGroup = 1
+entropy = 3.0
+keywords = ["record_encryption_key", "record_encryption_previous_keys", "record_encryption_legacy_secret"]
+tags = ["kumwe", "encryption-key"]
+
+[rules.allowlist]
+regexTarget = "match"
+regexes = [
+  '''RECORD_ENCRYPTION_[A-Z_]+[ \t]*[:=][ \t]*["']?(?:change-this|testing|kumwe-)''',
+  '''RECORD_ENCRYPTION_[A-Z_]+[ \t]*[:=][ \t]*["']?[$]''',
+  '''RECORD_ENCRYPTION_[A-Z_]+[ \t]*[:=][ \t]*["']?str_repeat''',
+]
+
+[[rules]]
+id = "kumwe-application-secret"
+description = "Kumwe application signing secret assigned inline"
+regex = '''(?i)APP_SECRET[ \t]*[:=][ \t]*["']?([^\s"'#]{24,})'''
+secretGroup = 1
+entropy = 3.0
+keywords = ["app_secret"]
+tags = ["kumwe", "application-secret"]
+
+[rules.allowlist]
+regexTarget = "match"
+regexes = [
+  '''APP_SECRET[ \t]*[:=][ \t]*["']?(?:change-this|testing|kumwe-)''',
+  '''APP_SECRET[ \t]*[:=][ \t]*["']?[$]''',
+  '''APP_SECRET[ \t]*[:=][ \t]*["']?str_repeat''',
+]
+
+[[rules]]
+id = "kumwe-extension-package-signing-key"
+description = "Ed25519 extension package signing key in the hexadecimal form the SDK key reader accepts"
+# ProtectedSigningKeyReader accepts a 32-byte seed or a 64-byte secret key, in hexadecimal or base64.
+# Only the 64-byte secret-key length is matched. A 32-byte value is indistinguishable from a public key
+# or a SHA-256 digest, and this repository is full of both, so matching that length would bury the
+# finding that matters under checksum noise rather than surfacing it.
+regex = '''(?i)\b([a-f0-9]{128})\b'''
+secretGroup = 1
+entropy = 3.5
+tags = ["kumwe", "signing-key"]
+
+[[rules]]
+id = "kumwe-administrator-session-token"
+description = "Kumwe administrator session or CSRF token in its issued base64url form"
+regex = '''(?i)(?:session_token|csrf_secret|csrf_token)[ \t]*[:=][ \t]*["']?([A-Za-z0-9_-]{43,86})'''
+secretGroup = 1
+entropy = 4.0
+keywords = ["session_token", "csrf_secret", "csrf_token"]
+tags = ["kumwe", "session-token"]
+
+[rules.allowlist]
+regexTarget = "match"
+regexes = [
+  '''(?:session_token|csrf_secret|csrf_token)[ \t]*[:=][ \t]*["']?[$]''',
+  '''(?:session_token|csrf_secret|csrf_token)[ \t]*[:=][ \t]*["']?str_repeat''',
+]

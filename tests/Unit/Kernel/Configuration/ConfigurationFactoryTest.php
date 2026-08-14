@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Kernel\Configuration;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Kernel\Configuration\DatabaseConfiguration;
 use Kumwe\CMS\Kernel\Configuration\RuntimeEnvironment;
 use Kumwe\CMS\Kernel\Configuration\RedisConfiguration;
+use Kumwe\CMS\Kernel\Configuration\RevocationFeedConfiguration;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -19,6 +21,8 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(DatabaseConfiguration::class)]
 #[CoversClass(RedisConfiguration::class)]
 #[CoversClass(RuntimeEnvironment::class)]
+#[CoversClass(RevocationFeedConfiguration::class)]
+#[CoversClass(PackageConformanceMode::class)]
 final class ConfigurationFactoryTest extends TestCase
 {
     public function testCreatesProductionConfiguration(): void
@@ -44,6 +48,87 @@ final class ConfigurationFactoryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    public function testProductionRefusesUnsignedLocalExtensions(): void
+    {
+        $values = $this->values();
+        $values['EXTENSIONS_ALLOW_UNSIGNED_LOCAL'] = 'true';
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('EXTENSIONS_ALLOW_UNSIGNED_LOCAL must be false when APP_ENV=production');
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    public function testDevelopmentAndTestingStillAllowUnsignedLocalExtensions(): void
+    {
+        foreach (['development', 'testing'] as $runtime) {
+            $values = $this->values();
+            $values['APP_ENV'] = $runtime;
+            $values['APP_BASE_URL'] = 'http://localhost:8080';
+            $values['EXTENSIONS_ALLOW_UNSIGNED_LOCAL'] = 'true';
+            $configuration = (new ConfigurationFactory())->create(new Environment($values));
+
+            self::assertTrue($configuration->allowUnsignedLocalExtensions);
+            self::assertFalse($configuration->isProduction());
+        }
+    }
+
+    public function testProductionRefusesDisablingInstallTimeConformanceScanning(): void
+    {
+        $values = $this->values();
+        $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'off';
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('EXTENSIONS_CONFORMANCE_ADMISSION must be enforce or warn');
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    public function testConformanceAdmissionDefaultsToEnforceAndAcceptsWarn(): void
+    {
+        $configuration = (new ConfigurationFactory())->create(new Environment($this->values()));
+        self::assertSame(PackageConformanceMode::Enforce, $configuration->packageConformanceAdmission);
+
+        $values = $this->values();
+        $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'warn';
+        $warned = (new ConfigurationFactory())->create(new Environment($values));
+        self::assertSame(PackageConformanceMode::Warn, $warned->packageConformanceAdmission);
+    }
+
+    public function testUnknownConformanceAdmissionModeIsRefusedRatherThanDefaulted(): void
+    {
+        $values = $this->values();
+        $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'enforced';
+        $this->expectException(InvalidArgumentException::class);
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    public function testRevocationFeedIsDisabledUntilBothOriginAndKeyAreConfigured(): void
+    {
+        $configuration = (new ConfigurationFactory())->create(new Environment($this->values()));
+        self::assertFalse($configuration->revocationFeed->isEnabled());
+
+        $values = $this->values();
+        $values['EXTENSIONS_REVOCATION_FEED_URL'] = 'https://revocations.kumwe.test/list.json';
+        $this->expectException(InvalidArgumentException::class);
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    public function testConfiguredRevocationFeedIsAcceptedWithItsPinnedKey(): void
+    {
+        $values = $this->values();
+        $values['EXTENSIONS_REVOCATION_FEED_URL'] = 'https://revocations.kumwe.test/list.json';
+        $values['EXTENSIONS_REVOCATION_FEED_KEY'] = base64_encode(
+            str_repeat("\x07", SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES),
+        );
+        $values['EXTENSIONS_REVOCATION_FEED_MAX_STALE_SECONDS'] = '86400';
+        $configuration = (new ConfigurationFactory())->create(new Environment($values));
+
+        self::assertTrue($configuration->revocationFeed->isEnabled());
+        self::assertSame('https://revocations.kumwe.test/list.json', $configuration->revocationFeed->origin);
+        self::assertSame(86_400, $configuration->revocationFeed->maxStaleSeconds);
     }
 
     public function testSecretMustContainAtLeastThirtyTwoBytes(): void

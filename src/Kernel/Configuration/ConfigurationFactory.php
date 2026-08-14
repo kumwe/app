@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Kernel\Configuration;
 
+use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use JsonException;
 use InvalidArgumentException;
@@ -96,6 +97,59 @@ final class ConfigurationFactory
                 namespace: $environment->string('REDIS_NAMESPACE', 'kumwe.cms'),
             ),
             recordEncryption: $this->recordEncryption($environment),
+            packageConformanceAdmission: $this->packageConformanceAdmission($environment),
+            revocationFeed: $this->revocationFeed($environment),
+        );
+    }
+
+    /**
+     * Resolve how install-time admission treats the static conformance scan of packaged code.
+     *
+     * Omitting the variable selects `Enforce`, so an installation that says nothing gets the scan and
+     * gets it as a gate. An unknown spelling is a configuration error rather than a silent fall back to
+     * the default, because the difference between `warn` and a typo is the difference between recording
+     * a finding and refusing an install.
+     *
+     * @param   Environment  $environment  Allow-listed variables resolved from the process and dotenv file.
+     *
+     * @return  PackageConformanceMode  The selected admission posture.
+     *
+     * @throws  InvalidArgumentException  When the variable names no supported mode.
+     *
+     * @since   2.0.0
+     */
+    private function packageConformanceAdmission(Environment $environment): PackageConformanceMode
+    {
+        $mode = $environment->string('EXTENSIONS_CONFORMANCE_ADMISSION', PackageConformanceMode::Enforce->value);
+
+        return PackageConformanceMode::tryFrom(strtolower($mode)) ?? throw new InvalidArgumentException(
+            'EXTENSIONS_CONFORMANCE_ADMISSION must be enforce, warn, or off.',
+        );
+    }
+
+    /**
+     * Assemble the upstream revocation-feed settings, all of which a deployment may omit.
+     *
+     * The pinned verification key follows the same by-value-or-by-file discipline as every other secret
+     * here, even though a public key is not confidential: an operator who mounts trust material as files
+     * should not have to make an exception for this one, and a key read from a mounted file is far
+     * harder to mistype into an installation than one pasted into an environment variable.
+     *
+     * @param   Environment  $environment  Allow-listed variables resolved from the process and dotenv file.
+     *
+     * @return  RevocationFeedConfiguration  The configured feed, or a disabled one when nothing is set.
+     *
+     * @throws  InvalidArgumentException  When the key names both a value and a file, the named file is not
+     *          a readable regular file or is blank, or the resulting feed settings are incoherent.
+     *
+     * @since   2.0.0
+     */
+    private function revocationFeed(Environment $environment): RevocationFeedConfiguration
+    {
+        return new RevocationFeedConfiguration(
+            origin: $environment->optionalString('EXTENSIONS_REVOCATION_FEED_URL'),
+            publicKeyBase64: $this->fileBackedSecret($environment, 'EXTENSIONS_REVOCATION_FEED_KEY'),
+            maxStaleSeconds: $environment->positiveInteger('EXTENSIONS_REVOCATION_FEED_MAX_STALE_SECONDS', 172_800),
         );
     }
 

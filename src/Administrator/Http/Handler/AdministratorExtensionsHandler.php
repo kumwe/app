@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Administrator\Http\Handler;
 
+use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Application\Trust\RevocationFeedState;
+use Kumwe\CMS\Extension\Application\Trust\RevocationFeedSynchronizer;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Psr\Clock\ClockInterface;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -35,11 +39,16 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
     /**
      * Wire the screen to the registry, the trust store, the renderer and the upload staging area.
      *
-     * @param  ExtensionManager       $extensions          Lists installed extensions and installs uploaded ones.
-     * @param  TrustStore             $trust               Supplies the signing keys the screen lists.
-     * @param  AdministratorRenderer  $renderer            Renders the `extensions` template.
-     * @param  string                 $temporaryDirectory  Private directory uploaded archives are staged in; it
-     *         is created mode 0700 when it does not yet exist.
+     * @param  ExtensionManager             $extensions          Lists installed extensions and installs uploaded
+     *         ones.
+     * @param  TrustStore                   $trust               Supplies the signing keys the screen lists.
+     * @param  AdministratorRenderer        $renderer            Renders the `extensions` template.
+     * @param  string                       $temporaryDirectory  Private directory uploaded archives are staged in;
+     *         it is created mode 0700 when it does not yet exist.
+     * @param  ?RevocationFeedSynchronizer  $revocations         Supplies the upstream revocation feed's position
+     *         and freshness; null renders the screen with no feed section rather than failing.
+     * @param  ?ClockInterface              $clock               Clock feed staleness is judged against; null falls
+     *         back to the system clock only for the display of that one banner.
      *
      * @since  2.0.0
      */
@@ -48,6 +57,8 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
         private TrustStore $trust,
         private AdministratorRenderer $renderer,
         private string $temporaryDirectory,
+        private ?RevocationFeedSynchronizer $revocations = null,
+        private ?ClockInterface $clock = null,
     ) {
     }
 
@@ -78,6 +89,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
                 'capabilities' => AdministratorRequest::capabilityMap($request),
                 'extensions' => $this->extensions->installed(AdministratorRequest::context($request)),
                 'trust_keys' => $this->trust->keys(AdministratorRequest::context($request)),
+                'revocation_feed' => $this->revocationFeed(),
             ]), 200, ['Cache-Control' => 'no-store']);
         }
 
@@ -108,6 +120,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
                 'capabilities' => AdministratorRequest::capabilityMap($request),
                 'extensions' => $this->extensions->installed(AdministratorRequest::context($request)),
                 'trust_keys' => $this->trust->keys(AdministratorRequest::context($request)),
+                'revocation_feed' => $this->revocationFeed(),
                 'error' => $exception->getMessage(),
             ]), 422, ['Cache-Control' => 'no-store']);
         } finally {
@@ -117,5 +130,34 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
         }
 
         return new RedirectResponse('/administrator/extensions', 303);
+    }
+
+    /**
+     * Summarise the upstream revocation feed for the trust section of the screen.
+     *
+     * The feed is the one supply-chain control whose failure mode is silence, so it is rendered even
+     * when nothing is configured: an operator should be able to tell "no feed" from "a feed we have not
+     * heard from in a week" without reading a log. A store that cannot be read reports as unconfigured
+     * rather than failing the page, because the screen's other job — installing and disabling
+     * extensions — is exactly what an operator needs during the incident that broke it.
+     *
+     * @return  array{configured: bool, origin: ?string, issuer: ?string, sequence: int, stale: bool,
+     *          last_success_at: ?string, last_failure_at: ?string, last_failure_reason: ?string,
+     *          consecutive_failures: int, revoked_keys: int}  Flat summary for the template.
+     *
+     * @since   2.0.0
+     */
+    private function revocationFeed(): array
+    {
+        $clock = $this->clock;
+        if ($this->revocations === null || $clock === null) {
+            return RevocationFeedState::unconfigured()->toArray(new DateTimeImmutable());
+        }
+
+        try {
+            return $this->revocations->state()->toArray($clock->now());
+        } catch (Throwable) {
+            return RevocationFeedState::unconfigured()->toArray($clock->now());
+        }
     }
 }

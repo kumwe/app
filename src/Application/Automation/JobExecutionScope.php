@@ -32,6 +32,7 @@ final class JobExecutionScope
         'audit.trail.verify' => SystemIdentity::InstallationMaintenance,
         'business.record.idempotency.purge' => SystemIdentity::InstallationMaintenance,
         'extensions.runtime.rebuild' => SystemIdentity::ExtensionMaterializer,
+        'extensions.trust.revocations.synchronize' => SystemIdentity::ExtensionMaterializer,
         'system.idempotency.purge' => SystemIdentity::InstallationMaintenance,
     ];
 

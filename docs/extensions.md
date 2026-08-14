@@ -381,9 +381,106 @@ php bin/kumwe extension:uninstall acme/announcements \
   --token-file=/run/secrets/kumwe-extension-token
 ```
 
-The signature covers the lowercase SHA-256 package digest. Production requires an enabled Ed25519 trust key; development may explicitly allow unsigned local packages. Installation first snapshots caller-owned bytes into private staging, then verifies the immutable snapshot before migration, extraction, or public asset publication. It checks compatibility and dependencies, applies migrations under the lifecycle fence, persists the release, and stages an immutable signed runtime publication in the same registry operation. A failed local publication write cannot roll back or outrun committed registry state: startup reconciliation rematerializes the database generation, and readiness stays unhealthy until the process has loaded that exact trusted generation. A pre-commit failure compensates newly applied migrations and removes staging without replacing the active version; interrupted install records are reconciled to committed or rolled-back state on startup.
+The signature covers the lowercase SHA-256 package digest. Production requires an enabled Ed25519 trust key; development may explicitly allow unsigned local packages. That is now enforced rather than documented: a process started with `APP_ENV=production` and `EXTENSIONS_ALLOW_UNSIGNED_LOCAL=true` refuses to boot, and says which command to use to register a key instead. Use `APP_ENV=development` or `APP_ENV=testing` for the unsigned local workflow. Installation first snapshots caller-owned bytes into private staging, then verifies the immutable snapshot before migration, extraction, or public asset publication. It checks compatibility and dependencies, applies migrations under the lifecycle fence, persists the release, and stages an immutable signed runtime publication in the same registry operation. A failed local publication write cannot roll back or outrun committed registry state: startup reconciliation rematerializes the database generation, and readiness stays unhealthy until the process has loaded that exact trusted generation. A pre-commit failure compensates newly applied migrations and removes staging without replacing the active version; interrupted install records are reconciled to committed or rolled-back state on startup.
 
 Active plugin and module upgrades keep the old version root until the replacement generation has converged and the retention lease expires. Disable and uninstall follow the same retained-root rule, so old replicas never point at prematurely deleted code. Restart workers and schedulers after installing, activating, disabling, or removing extension code.
+
+## What a package says about itself
+
+`extension:build` writes two documents into every package it produces. They are ordinary archive
+entries, so the package digest covers them and the detached signature therefore vouches for them; there
+is no second signature format and no extra sidecar to move alongside the ZIP.
+
+`kumwe.sbom.json` is a **CycloneDX 1.6** bill of materials listing every other packaged file with its
+SHA-256. CycloneDX rather than SPDX because the release pipeline already emits CycloneDX for the core
+images and source tree, its JSON is small enough to embed in every package and store on a release row,
+and its `file` component type with a hash list is the honest unit of inventory for an extension — the
+builder refuses a packaged `vendor/` or `node_modules/` tree, so bundled third-party code arrives as
+vendored source files. Declared Kumwe dependencies appear in the `dependencies` graph carrying their
+version *constraint*, never an invented resolved version.
+
+`kumwe.provenance.json` is a `kumwe-extension-provenance-v1` statement: build type, builder identity,
+the subject it describes, and the digest of the bill of materials beside it. The field set mirrors the
+SLSA provenance predicate without the in-toto envelope, because that envelope exists to carry a
+signature from a build service in a different trust domain than the publisher, and here they are the
+same party running the same SDK. The claim it supports is therefore "the publisher asserts this", not
+"an independent builder observed this", and Kumwe records it as such.
+
+Neither document carries a timestamp, so the builder's byte-reproducibility contract is unchanged: the
+same source tree still builds to the same bytes. Neither lists itself or the other, because a document
+cannot carry its own digest — and installation verifies that exclusion rather than trusting it.
+
+## Install-time admission
+
+Installation reads packaged bytes before it unpacks any of them, in one bounded pass, and there are two
+different failure semantics inside it.
+
+**Attestations fail closed, in every mode.** Every packaged file must appear in the bill of materials
+with a matching digest, no listed component may be missing, and the provenance statement must name this
+manifest and this bill of materials. A package carrying neither document installs and is recorded as
+`absent` — packages built before attestations shipped must keep working — but a document that is present
+and does not reconcile refuses the install outright.
+
+**The static code scan follows `EXTENSIONS_CONFORMANCE_ADMISSION`.** It runs the same checks
+`extension:conformance` reports, so what an author fixes is what an installation stops refusing. Exactly
+two findings block: PHP that does not parse, and a manifest naming a class, asset, or template the
+package does not carry. Both describe a package that is already broken and whose breakage would
+otherwise surface as a fatal error on a live request after publication. Everything else the scan finds —
+a missing `strict_types` declaration, an unresolved authoring marker, an absent README — is recorded as
+advisory, because refusing another vendor's package over house style is not a policy this project has
+standing to enforce. `warn` records the blocking findings and admits the package anyway; `off` skips the
+scan entirely and is refused under production rules, so the mode cannot become the silent bypass the
+signature flag once was.
+
+Both results are stored on the release and shown on the Extensions screen, per extension: bill of
+materials state, provenance state, scan outcome, inventory size, asserted builder, and the findings. A
+release installed before this shipped reads `unscanned` rather than borrowing the wording of one that
+passed. The `extension.install` audit record carries the same summary.
+
+## Upstream revocation feed
+
+Local revocation has always worked, and an operator can still revoke a key from the Extensions screen or
+`extension:trust`. What the feed adds is the upstream half: a signed list a vendor or distributor
+publishes, which an installation consumes without waiting for its own operator to notice.
+
+Point `EXTENSIONS_REVOCATION_FEED_URL` at an `https://` URL or at an absolute path to a local mirror,
+and pin the issuer's Ed25519 public key in `EXTENSIONS_REVOCATION_FEED_KEY`. The key is pinned in
+configuration and never read from the trust store, because the store is what the feed revokes; a feed
+key living inside it would be revocable by the very compromise the feed exists to announce. Schedule the
+`extensions.trust.revocations.synchronize` job to consume it.
+
+The wire format is an envelope carrying the statement as an opaque string plus a detached signature over
+exactly those bytes, which keeps canonicalization out of the trust decision:
+
+```json
+{
+  "format": "kumwe-extension-revocation-envelope-v1",
+  "algorithm": "ed25519",
+  "key_id": "acme-security-2026",
+  "document": "{\"format\":\"kumwe-extension-revocation-v1\",\"issuer\":\"acme-security\",\"sequence\":7,\"issued_at\":\"2026-08-01T00:00:00+00:00\",\"valid_until\":\"2026-08-31T00:00:00+00:00\",\"revoked_keys\":[{\"key_id\":\"acme.release.2026\",\"reason\":\"The publisher reported the key lost.\"}]}",
+  "signature": "BASE64_ED25519_SIGNATURE"
+}
+```
+
+`sequence` is monotonic and is the rollback defence: a list at or below the sequence already applied is
+refused, so serving stale bytes cannot un-revoke a key. `valid_until` bounds how long a list may be
+believed even inside its sequence. Each key the list withdraws that this installation still trusts is
+passed to the same emergency revocation an operator would run, which quarantines the extensions
+depending on it.
+
+**When the feed is unreachable, the last applied list stays in force.** Kumwe does not stop serving
+because an upstream origin is down. Fail-closed here would mean any vendor outage, network partition or
+dropped packet could take unrelated installations offline, handing a remote kill switch to whoever can
+interrupt a connection — a strictly worse exposure than the one the feed mitigates, given the local
+trust store is already authoritative and already fails closed on what it can prove. The price is that
+silence has to be loud: the failure is recorded with its reason, logged on every run, and once
+`EXTENSIONS_REVOCATION_FEED_MAX_STALE_SECONDS` has passed since the last verified fetch the Extensions
+screen shows the feed as stale. Treat that banner as an incident, not as background noise.
+
+**A document that is served and does not verify is refused outright.** A bad signature, an unsupported
+format, an expired `valid_until` and a rolled-back sequence are all recorded, audited, and raised as a
+permanent job failure so the occurrence is visible rather than retried. Integrity fails closed;
+availability does not.
 
 ## Test an extension
 

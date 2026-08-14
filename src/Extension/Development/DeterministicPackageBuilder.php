@@ -6,6 +6,9 @@ namespace Kumwe\CMS\Extension\Development;
 
 use FilesystemIterator;
 use InvalidArgumentException;
+use JsonException;
+use Kumwe\CMS\Extension\Application\Package\PackageBillOfMaterials;
+use Kumwe\CMS\Extension\Application\Package\PackageProvenance;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -19,6 +22,15 @@ use ZipArchive;
  *
  * Entries are sorted, stored without compressor variance, stamped with the ZIP epoch, and assigned a
  * fixed regular-file mode. The finished archive is re-read through `PackageInspector` before publication.
+ *
+ * Two documents are generated rather than copied from the source tree: a CycloneDX bill of materials at
+ * `kumwe.sbom.json` inventorying every packaged file by SHA-256, and a provenance statement at
+ * `kumwe.provenance.json` naming the builder and binding itself to that inventory. Both are ordinary
+ * archive entries, so the package digest covers them and the detached signature therefore vouches for
+ * them without a second signature format; both are excluded from the inventory they participate in,
+ * because a document cannot carry its own digest, and installation verifies that exclusion rather than
+ * trusting it. Neither carries a timestamp, so the reproducibility contract is unchanged: the same
+ * source tree still builds to the same bytes.
  *
  * @since  2.0.0
  */
@@ -93,10 +105,18 @@ final readonly class DeterministicPackageBuilder
         }
 
         $files = $this->sourceFiles($source);
-        $manifest = $this->readStableFile($files['kumwe.json'] ?? throw new RuntimeException(
+        $manifestJson = $this->readStableFile($files['kumwe.json'] ?? throw new RuntimeException(
             'The extension source must contain kumwe.json at its root.',
         ));
-        ExtensionManifest::fromJson($manifest);
+        $manifest = ExtensionManifest::fromJson($manifestJson);
+        $entries = [];
+        foreach ($files as $relative => $path) {
+            $contents = $this->readStableFile($path);
+            $this->assertComplete($contents, $relative);
+            $entries[$relative] = $contents;
+        }
+        $entries = [...$entries, ...$this->attestations($manifest, $entries)];
+        ksort($entries, SORT_STRING);
         $temporary = $outputParent . '/.' . basename($output) . '.kumwe-build-' . bin2hex(random_bytes(12));
         $zip = new ZipArchive();
         if ($zip->open($temporary, ZipArchive::CREATE | ZipArchive::EXCL) !== true) {
@@ -105,9 +125,7 @@ final readonly class DeterministicPackageBuilder
         $archiveOpen = true;
 
         try {
-            foreach ($files as $relative => $path) {
-                $contents = $this->readStableFile($path);
-                $this->assertComplete($contents, $relative);
+            foreach ($entries as $relative => $contents) {
                 if (!$zip->addFromString($relative, $contents)) {
                     throw new RuntimeException('An extension package entry could not be added.');
                 }
@@ -151,6 +169,47 @@ final readonly class DeterministicPackageBuilder
     }
 
     /**
+     * Generate the bill of materials and the provenance statement that ship inside the package.
+     *
+     * Order matters and is the reason these are built together. The inventory covers the source entries
+     * only, so it can be digested; the statement then binds itself to that digest, so the two cannot be
+     * mixed between builds. Neither document lists the other, and neither lists itself — installation
+     * re-derives both facts from the archive rather than accepting them.
+     *
+     * @param   ExtensionManifest      $manifest  Parsed manifest naming the component being described.
+     * @param   array<string, string>  $entries   Source entry bytes keyed by package path.
+     *
+     * @return  array<string, string>  The two attestation documents keyed by their package paths.
+     *
+     * @throws  RuntimeException  When either document cannot be encoded.
+     *
+     * @since   2.0.0
+     */
+    private function attestations(ExtensionManifest $manifest, array $entries): array
+    {
+        $digests = [];
+        $expandedBytes = 0;
+        foreach ($entries as $relative => $contents) {
+            $digests[$relative] = hash('sha256', $contents);
+            $expandedBytes += strlen($contents);
+        }
+
+        try {
+            $sbom = PackageBillOfMaterials::forPackage($manifest, $digests)->toJson();
+            $provenance = PackageProvenance::forPackage(
+                $manifest,
+                hash('sha256', $sbom),
+                count($digests),
+                $expandedBytes,
+            )->toJson();
+        } catch (InvalidArgumentException | JsonException $failure) {
+            throw new RuntimeException('The extension package attestations could not be built.', 0, $failure);
+        }
+
+        return [PackageBillOfMaterials::PATH => $sbom, PackageProvenance::PATH => $provenance];
+    }
+
+    /**
      * Enumerate and validate regular source files in archive order.
      *
      * @param   string  $root  Canonical source root.
@@ -180,6 +239,12 @@ final readonly class DeterministicPackageBuilder
             }
             if ($this->sensitivePath($relative)) {
                 throw new RuntimeException(sprintf('Extension source path %s contains sensitive material.', $relative));
+            }
+            if (in_array($relative, [PackageBillOfMaterials::PATH, PackageProvenance::PATH], true)) {
+                throw new RuntimeException(sprintf(
+                    'Extension source path %s is generated at build time and cannot be authored.',
+                    $relative,
+                ));
             }
             $files[$relative] = $file->getPathname();
             if (count($files) > self::MAXIMUM_FILES) {

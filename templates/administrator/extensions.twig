@@ -80,6 +80,24 @@
                 {% endif %}
               </div>
 
+              <div class="kis-phase-five-supply-chain stack">
+                <h4>Supply chain</h4>
+                {% set supply = extension.supply_chain|default({}) %}
+                <p class="kis-phase-five-status-line">
+                  <span class="status status-{{ supply.sbom|default('unscanned') == 'verified' ? 'active' : 'disabled' }}">Bill of materials: {{ supply.sbom|default('unscanned') }}</span>
+                  <span class="status status-{{ supply.provenance|default('unscanned') == 'verified' ? 'active' : 'disabled' }}">Provenance: {{ supply.provenance|default('unscanned') }}</span>
+                  <span class="status status-{{ supply.conformance|default('unscanned') == 'passed' ? 'active' : 'disabled' }}">Code scan: {{ supply.conformance|default('unscanned') }}</span>
+                </p>
+                {% if supply.components|default(0) > 0 %}<p class="text-muted text-small">{{ supply.components }} packaged files inventoried{% if supply.builder %} · built by <code>{{ supply.builder }}</code>{% endif %}.</p>{% endif %}
+                {% if supply.sbom|default('unscanned') == 'unscanned' %}<p class="text-muted text-small">This release predates install-time admission recording, so nothing was inventoried or scanned. Reinstall the package to record a result.</p>{% endif %}
+                {% if supply.findings|default([]) is not empty %}
+                  <details class="advanced-definition">
+                    <summary>Admission findings ({{ supply.findings|length }})</summary>
+                    <ul>{% for finding in supply.findings %}<li>{{ finding }}</li>{% endfor %}</ul>
+                  </details>
+                {% endif %}
+              </div>
+
               <div class="kis-phase-five-contribution-map stack">
                 <h4>Where this extension appears</h4>
                 {% if extension.contribution_summary is defined and extension.contribution_summary is not empty %}
@@ -161,6 +179,18 @@
     <div id="extension-trust" class="editor-grid kis-phase-five-card">
       <section class="panel stack" aria-labelledby="extension-trust-title">
         <div><p class="eyebrow">Supply chain</p><h2 id="extension-trust-title">Extension trust keys</h2><p class="text-muted">Rotation and emergency revocation are explicit, auditable operations.</p></div>
+        {% set feed = revocation_feed|default({'configured': false}) %}
+        {% if feed.configured %}
+          <div class="notice {{ feed.stale ? 'danger' : 'info' }}" role="status">
+            <p><strong>Upstream revocation feed{{ feed.stale ? ' is stale' : '' }}.</strong>
+            Issuer {{ feed.issuer|default('none yet') }} · list {{ feed.sequence }} · {{ feed.revoked_keys }} keys withdrawn upstream.
+            Last verified fetch {{ feed.last_success_at|default('never') }}.</p>
+            {% if feed.stale %}<p>The last applied list stays in force; Kumwe does not stop serving because an upstream feed is unreachable. Restore access to <code>{{ feed.origin }}</code> or revoke affected keys manually.</p>{% endif %}
+            {% if feed.last_failure_reason %}<p class="text-small">Last failure ({{ feed.last_failure_at }}, {{ feed.consecutive_failures }} consecutive): {{ feed.last_failure_reason }}</p>{% endif %}
+          </div>
+        {% else %}
+          <p class="text-muted text-small">No upstream revocation feed is configured. Revocation is local only; set <code>EXTENSIONS_REVOCATION_FEED_URL</code> and <code>EXTENSIONS_REVOCATION_FEED_KEY</code> to consume one.</p>
+        {% endif %}
         {% if trust_keys is empty %}
           {% include '@kis/empty-state.twig' with {
             title: 'No trusted signing keys',
