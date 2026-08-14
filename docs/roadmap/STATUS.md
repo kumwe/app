@@ -107,10 +107,10 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 | 0 | 5 |
 | 1 | 4 |
 | 2 | 9 |
-| 3 | 7 |
-| 4 | 2 |
+| 3 | 1 |
+| 4 | 0 |
 | E | 8 |
-| L | 14 |
+| L | 10 |
 | 5 | 7 |
 | 6 | 7 |
 | 7 | 9 |
@@ -144,9 +144,9 @@ that closed it.
 | 5 | Quality gates are truthful | No | `V2-QA-001`, `V2-QA-002`, `V2-QA-003`, `V2-QA-004`, `V2-QA-005`, `V2-DB-001` |
 | 6 | Aggregate seams are clean | No | `V2-ARC-003` |
 | 7 | Business-group ownership model in place | Built; owes the three-engine proof in `P3-F` | — |
-| 8 | Enterprise document primitives exist and are enforced | No | `V2-ERP-001` – `V2-ERP-005` |
+| 8 | Enterprise document primitives exist and are enforced | Partly — the aggregate invariant is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); correction, period close, sequence scoping and unit conversion remain | `V2-ERP-002` – `V2-ERP-005` |
 | 9 | Multi-currency contract holds, with conversion provenance everywhere | Partly — contract, port, pipeline, reports and exports delivered; rendering half open | `V2-CUR-005` |
-| 10 | Language contract and machinery in place, `en-GB` extracted | No | `V2-LNG-001` – `V2-LNG-009`, `V2-MLC-001` – `V2-MLC-004` |
+| 10 | Language contract and machinery in place, `en-GB` extracted | Partly — locale negotiation, the identifier grammar, the compiled catalogue and ICU formatting are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-LNG-001`, `V2-LNG-006` – `V2-LNG-009`, `V2-MLC-001` – `V2-MLC-004` |
 | 11 | Point of sale not foreclosed | No | `V2-POS-001`, `V2-POS-003`, `V2-POS-004`; `V2-POS-002` decided |
 | 12 | Nothing regressed on three engines | Not assessed | — |
 

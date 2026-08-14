@@ -30,7 +30,7 @@ development programme, from the architecture decision that opened it to the curr
   operator writes down which sites are in one, groups may overlap freely, and both inclusion and exclusion
   are gated on the installation-wide `sites.group.manage` capability and audited. A group cannot be emptied
   of its last member, because everything it owns would become unreachable. An installation that never
-  declares a group behaves exactly as it did before. (`e46104b`)
+  declares a group behaves exactly as it did before. (`944652a`)
 - **Accounting isolation that an operator cannot switch off.** Which ownership levels each kind of record may
   be held at is fixed in the build, not in configuration: accounting documents, ledgers and pay runs are
   site-owned only, while clients, people, price lists and products may be widened to a group. The table
@@ -38,7 +38,7 @@ development programme, from the architecture decision that opened it to the curr
   may declare its own once but may not restate a reserved one. An owner is assembled through
   `ResourceOwnership::of()`, which refuses an impermissible pairing at construction, so no code path exists
   that could write one; on the engines that support a table check constraint the row itself refuses to spell
-  no owner or two. (`e46104b`)
+  no owner or two. (`944652a`)
 - **Widening and narrowing a record's owner, deliberately asymmetric.** Sharing changes after the fact with
   no rewiring and no data movement — the record stays where it is and only the scope that owns it changes.
   Widening costs an ownership change and an audit entry. Narrowing first proves that nothing in the sites
@@ -48,15 +48,15 @@ development programme, from the architecture decision that opened it to the curr
   record produce one change and one refusal. Leaving the installation scope is refused outright, because
   its membership is every site there is and an unbounded guard would answer that nothing is stranded for
   the wrong reason. Extensions contribute their own reference inspectors, so a narrowing is judged against
-  every kind of reference the installation actually holds. (`e46104b`)
+  every kind of reference the installation actually holds. (`944652a`)
 - **Consolidated group reporting as a distinct read capability.** `reports.consolidated.read` is bound to the
   group and to nothing else, so holding it lets a report read across a group's member sites and authorizes no
   write anywhere, in any business, of any kind. Isolation stays at the write layer and unification happens at
   the read layer; no transaction spans sites, and a transfer between two businesses of a group remains two
-  transactions coordinated by a durable event. (`e46104b`)
+  transactions coordinated by a durable event. (`944652a`)
 - **[Business groups](docs/business-groups.md),** explaining the model to an operator, stating the widening
   and narrowing asymmetry plainly, and telling an extension author the four things to do to make a new record
-  category take part. (`e46104b`)
+  category take part. (`944652a`)
 - **A business document is written as one thing: a header and its owned lines, in one command.** Nearly
   every demanding business object is a document — an invoice, a purchase order, an attendance batch, a job
   card, a stock movement, a pay run — and every one of them is a header plus the lines that belong to it.
@@ -97,7 +97,7 @@ development programme, from the architecture decision that opened it to the curr
 - **A consolidated programme roadmap with a machine-readable findings ledger.** Six competing plans became
   one authority for sequencing: two gates, ten decisions, an enterprise capacity contract, a per-primitive
   judgement of what an enterprise resource planning system needs against what the code actually provides, and
-  an architecture decision record for resource-ownership scope. (`45b0fee`)
+  an architecture decision record for resource-ownership scope. (`fa86362`)
 - **This changelog, and the lifecycle rule that keeps it and the roadmap apart.** `docs/roadmap/` holds
   forward work only; a completed work package leaves it and lands here in the same pull request that completes
   it, so the roadmap shrinks as the programme advances instead of accumulating a tail of finished items. The
@@ -394,7 +394,7 @@ development programme, from the architecture decision that opened it to the curr
   the first. The arithmetic is exact from end to end; no conversion passes through a floating-point number, and
   rounding is a declared step with a named mode rather than something that happens on the way past.
   Conversion is presentation and reporting only: it never writes back, and a converted amount offered where a
-  stored money value belongs is refused. (`8acec2c`)
+  stored money value belongs is refused. (`72cc3e6`)
 - **Exchange rates come from extensions, and Kumwe ships none.** A package declares the currencies it prices
   and its place in the resolution order in its signed manifest, implements one port, and registers it through
   the same contribution registrar every other extension surface uses. An external rate service, a manually
@@ -402,7 +402,7 @@ development programme, from the architecture decision that opened it to the curr
   wired into the product. A package cannot price a currency it did not declare, cannot attribute a rate to
   another package, and cannot supply a rate dated after the moment that was asked about. Rates disappear with
   their package on disable, uninstall or trust revocation, in the same sweep as everything else it
-  contributed. With no rate package installed, a conversion is refused rather than guessed. (`8acec2c`)
+  contributed. With no rate package installed, a conversion is refused rather than guessed. (`72cc3e6`)
 - **A translation layer, so the interface can be presented in a language other than English.** Until now
   there was none at all: no catalogue, no translator, and no localizable helper on any of the three
   rendering surfaces. Interface text is now authored as XLIFF 2.0 — the format every professional
@@ -411,7 +411,7 @@ development programme, from the architecture decision that opened it to the curr
   PHP arrays the opcode cache holds. A lookup is an array access: the request path parses no XML, reads no
   file per message and warms no cache. `composer translation:compile` produces the compiled catalogue and
   `composer translation:check` fails the build when it drifts from its source, in the same shape
-  `composer openapi:check` already guards the API contract. (`64989c4`)
+  `composer openapi:check` already guards the API contract. (`0fa700d`)
 - **Messages that are correct in every language's grammar, not only in English's.** Plurals, gender and
   other selections, ordinals, numbers, currencies and dates go through ICU MessageFormat via the
   already-required `ext-intl`. The reason is arithmetic rather than preference: the nine languages in scope
@@ -419,7 +419,7 @@ development programme, from the architecture decision that opened it to the curr
   other. A whole sentence is one message, so a translator is never handed two halves of a sentence to
   reassemble in a language that orders it differently. Without `ext-intl` the formatter refuses to start and
   says why; it never degrades to a substituting formatter, because substitution is wrong rather than
-  approximate. (`64989c4`)
+  approximate. (`0fa700d`)
 - **A stable message identifier, frozen before translation starts.** A message is looked up by a
   namespaced, lowercase, dotted identifier — `core.administrator.settings.save_action` — and never by its
   own English text. If the text were the key, correcting a typographical error in English would orphan that
@@ -427,7 +427,7 @@ development programme, from the architecture decision that opened it to the curr
   meaning. The grammar refuses source text by name, refuses an identifier an extension may not claim,
   refuses fewer than three segments, and admits only lowercase, so two identifiers can never differ from
   each other only by case. It is the same namespacing rule every other contributed identifier already
-  follows, and it is written down for extension authors in `docs/interface-translation.md`. (`64989c4`)
+  follows, and it is written down for extension authors in `docs/interface-translation.md`. (`0fa700d`)
 - **A four-step override chain, which is also how a vertical speaks its own language.** Lookup resolves
   core, then extension, then site, then organization, most specific first and **per identifier rather than
   per file** — so changing one word leaves every other message in that catalogue alone, and a later release
@@ -437,7 +437,7 @@ development programme, from the architecture decision that opened it to the curr
   resolving several hundred messages performs one catalogue load, not several hundred. A message no layer
   carries comes back as its own identifier and never as an empty string: a visibly untranslated interface
   is a defect anyone can report, and a silently blank one is a defect nobody notices until a customer does.
-  (`64989c4`)
+  (`0fa700d`)
 - **The language of a page is now decided per request, and `default_locale` finally decides something.**
   The site setting has existed, been validated and been administered since 2.0.0 while nothing consumed it.
   Negotiation now takes an explicit `locale` choice, then the client's accepted languages with their
@@ -445,14 +445,14 @@ development programme, from the architecture decision that opened it to the curr
   renders exactly as it did, and a site set to Hebrew renders in Hebrew with no further configuration. The
   resolved locale is published on the request and on a request-scoped holder that is closed when the
   request ends, and it is always an argument to a call rather than process state, so two jobs in one
-  long-lived worker cannot end up sharing a language. (`64989c4`)
+  long-lived worker cannot end up sharing a language. (`0fa700d`)
 - **Right-to-left presentation, finished rather than begun.** Every remaining physical inline-axis
   declaration across the stylesheets is now a logical property — margins, padding, borders, offsets,
   alignment and corner radii — so there is no second right-to-left stylesheet to keep in step: the whole
   mirroring follows from the `dir` attribute the three layouts now emit from the resolved locale.
   `composer assets:direction` fails the build on a new physical declaration, with an allowlist that ships
   empty. A browser journey opens the public, administrator and portal entry surfaces in Hebrew and in
-  Arabic and asserts both the direction and the absence of horizontal overflow. (`64989c4`)
+  Arabic and asserts both the direction and the absence of horizontal overflow. (`0fa700d`)
 - **A gate that stops hardcoded interface text coming back.** `composer translation:strings` walks every
   Twig template, refuses user-facing text nodes, translatable attributes and prose written into a Twig
   expression, and proves both directions of the catalogue contract — no template may reference an
@@ -462,12 +462,12 @@ development programme, from the architecture decision that opened it to the curr
   `tools/translation-extraction.json`. A template that appears in neither the enforced set nor the register
   of work still to do is enforced, so a new template cannot quietly reintroduce inline text, and a
   registered template that becomes clean must leave the register. The gate is proven in both directions:
-  green on this tree, and red with a useful message on a tree that puts back what it forbids. (`64989c4`)
+  green on this tree, and red with a useful message on a tree that puts back what it forbids. (`0fa700d`)
 - **`en-GB` extracted across the public and shared surfaces:** 89 messages covering the whole public site,
   the eleven shared interface-standard partials, and the chrome, sign-in and access-denied surfaces of the
   administrator and the portal. Extraction of the remaining record surfaces, the console and the
   user-facing error paths stays in the roadmap with the register naming every template still to do.
-  (`64989c4`)
+  (`0fa700d`)
 
 ### Changed
 
@@ -480,7 +480,7 @@ development programme, from the architecture decision that opened it to the curr
   the change replaced, written out as a reference; a single disagreement fails the build. The existing
   isolation tests were not rewritten. An instance owned at installation level now requires an
   installation-wide human grant, which is the same requirement the type-level `installationGlobal` flag
-  already expresses — the two are reconciled into one rule rather than left as two mechanisms. (`e46104b`)
+  already expresses — the two are reconciled into one rule rather than left as two mechanisms. (`944652a`)
 - **The ownership registry stores a scope.** `resource_site_ownership` gains the level and the owning group
   beside the site it already carried; the primary key is unchanged, so one owner per resource stays
   structurally enforced. The forward migration gives every stored row the site scope it already meant, keeps
@@ -491,7 +491,7 @@ development programme, from the architecture decision that opened it to the curr
   membership is resolved once per process from a bounded declared set, so the containment test issues no
   extra query on the authorization hot path. Reading stays fail-closed on exactly the old terms: no row means
   unowned, a disabled site's resources stop resolving, and a group whose members are all disabled resolves to
-  nothing rather than to an empty owner. (`e46104b`)
+  nothing rather than to an empty owner. (`944652a`)
 
 - **The restore drill stops comparing bytes and starts using the restored system.** Every check the backup
   acceptance manifest performed was satisfiable by a restore booted with the wrong keys, because ciphertext,
@@ -561,7 +561,7 @@ development programme, from the architecture decision that opened it to the curr
   with no access to the installation that produced it, can tell a converted figure from an agreed one and
   reproduce it. A bare number in such a column fails the column's own declared type, so it is a refused report
   rather than a quietly weaker artifact. This widens the export payload for that column type; existing report
-  and export payloads are unchanged. (`8acec2c`)
+  and export payloads are unchanged. (`72cc3e6`)
 
 ### Fixed
 
@@ -578,7 +578,7 @@ development programme, from the architecture decision that opened it to the curr
   through, so the newer record is never silently overwritten and a hundred-line document loses no line. A
   write-only secret is still never echoed back, so that one field is re-entered; everything else survives.
   Operations that carry nothing typed — archive, delete, restore, an action confirmation — still fail
-  closed, because there is nothing to keep and no form to return to. (`847576a`)
+  closed, because there is nothing to keep and no form to return to. (`4a3ad85`)
 - **Record history could show one record's past under a reference another record had since taken over.** A
   business reference such as an invoice number can be used again once the record holding it has been deleted
   outright, and the revision log deliberately outlives the record, so a single reference can name more than
@@ -591,7 +591,7 @@ development programme, from the architecture decision that opened it to the curr
   two records under one reference number their versions independently: history is now ordered on a key that
   can never tie, and a page boundary that lands between two entries agreeing on version repeats neither and
   skips neither. A new index carries that order, so the stricter guarantee costs a history page nothing.
-  (`731c99d`)
+  (`57e79a0`)
 - **A freshly created database could refuse to schedule work.** Site ownership is recorded in its own table,
   and the column naming the owning site was never tied to the site table's own identifier column. On MariaDB
   and MySQL that tie is only ever enforced by a foreign key — one a partially recovered installation may
@@ -602,7 +602,7 @@ development programme, from the architecture decision that opened it to the curr
   migration proves the two agree before it finishes, and the check runs on every supported engine rather
   than being a MariaDB special case. The same repair gives the ownership constraint the per-installation
   name the recovery path already used, so the two routes that create it no longer disagree about what it is
-  called. (`731c99d`)
+  called. (`57e79a0`)
 - **A broken record rule said only that "one or more submitted fields are unavailable".** A rule spanning
   several fields is named and carries wording its author wrote for an operator to read, and none of that
   reached anybody: because a rule's name is not a field name, every breach of one was collapsed into the
@@ -784,12 +784,12 @@ development programme, from the architecture decision that opened it to the curr
   setting, environment variable, manifest key or contribution that makes an accounting document, a ledger or
   a pay run shareable; the refusal is a property of the type system and, where the engine supports it, of the
   schema. A group-scoped ownership row for any of them cannot be assembled, so it never reaches storage to be
-  rejected there. (`e46104b`)
+  rejected there. (`944652a`)
 - **Reading across a group buys no write across it.** The consolidated reporting capability is bound to the
   group resource alone. A caller holding it and nothing else is refused every write on a group-owned record
   and on another business's records alike, and the suite asserts both. Group membership also does not pool
   grants: a caller working in one member site cannot exercise a grant scoped at another member site, so
-  widening a record's owner never widens anybody's authority. (`e46104b`)
+  widening a record's owner never widens anybody's authority. (`944652a`)
 
 - **Production refuses to boot with unsigned local extensions permitted.** Pairing the production environment
   with the unsigned-local flag now throws at configuration time, beside the existing HTTPS and
