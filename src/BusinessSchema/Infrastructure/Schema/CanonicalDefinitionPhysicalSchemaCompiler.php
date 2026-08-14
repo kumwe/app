@@ -12,6 +12,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
@@ -693,7 +694,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             'core.reference_identity' => [$column($field->handle, 'string', [
                 'length' => min($field->length ?? 191, 191),
             ])],
-            'core.text', 'core.email', 'core.phone', 'core.enum' => [$column(
+            'core.text', 'core.email', 'core.phone', 'core.enum', 'core.sequence' => [$column(
                 $field->handle,
                 'string',
                 ['length' => $this->stringLength($field)],
@@ -914,8 +915,9 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
      *
      * @param   FieldDefinition  $field  Field whose declared length is being clamped.
      *
-     * @return  int  At most 320 for an email address, 191 for a phone number or an enumeration, and 1000
-     *          for every other string-backed type.
+     * @return  int  At most 320 for an email address, 191 for a phone number or an enumeration, exactly the
+     *          widest number an allocated-number format can render, and 1000 for every other string-backed
+     *          type.
      *
      * @since   2.0.0
      */
@@ -925,6 +927,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             'core.email' => min($field->length ?? 320, 320),
             'core.phone' => min($field->length ?? 64, 191),
             'core.enum' => min($field->length ?? 191, 191),
+            'core.sequence' => NumberSequenceFormat::MAXIMUM_LENGTH,
             default => min($field->length ?? 191, 1000),
         };
     }

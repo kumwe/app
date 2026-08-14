@@ -40,17 +40,25 @@
     {
       "handle": "invoice_number",
       "label": "Invoice number",
-      "type": "core.text",
+      "description": "Allocated on create from the site's yearly invoice run; contiguous and never reused.",
+      "type": "core.sequence",
+      "configuration": {
+        "scope": "site",
+        "reset": "yearly",
+        "prefix": "INV-",
+        "padding": 6,
+        "timezone": "Africa/Windhoek"
+      },
       "required": true,
       "nullable": false,
-      "length": 40,
-      "normalizers": [
-        "trim",
-        "uppercase"
-      ],
+      "length": 36,
       "unique": true,
       "indexed": true,
       "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
       "searchable": true,
       "filterable": true,
       "sortable": true,
@@ -61,7 +69,6 @@
       "order": 10,
       "placements": [
         "detail",
-        "form",
         "history",
         "list",
         "relation"

@@ -107,6 +107,7 @@ use Kumwe\CMS\BusinessDefinition\Delivery\Administrator\BusinessDefinitionsHandl
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrineBusinessDefinitionRepository;
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrinePackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrinePersistedFieldTypeDefinitionResolver;
+use Kumwe\CMS\BusinessRecord\Application\BusinessNumberSequenceAllocator;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
@@ -123,6 +124,7 @@ use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\CMS\BusinessRecord\Application\RecordSecretRotation;
 use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
 use Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordIdempotencyRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordMutationFence;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordQueryCompiler;
@@ -467,6 +469,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessNumberSequenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
@@ -1431,6 +1434,7 @@ final class ContainerFactory
                     new AuditTamperEvidenceMigration(self::service($container, TableNames::class)),
                     new RecordEncryptionKeyRingMigration(self::service($container, TableNames::class)),
                     new CredentialLifecycleMigration(self::service($container, TableNames::class)),
+                    new BusinessNumberSequenceMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -2076,6 +2080,12 @@ final class ContainerFactory
             self::service($container, MembershipDirectory::class),
             self::service($container, ClockInterface::class),
         ), true);
+        $container->share(BusinessNumberSequenceAllocator::class, static fn (
+            Container $container,
+        ): BusinessNumberSequenceAllocator => new DoctrineBusinessNumberSequenceAllocator(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
         $container->share(BusinessRecordService::class, static fn (
             Container $container,
         ): BusinessRecordService => new BusinessRecordService(
@@ -2085,6 +2095,7 @@ final class ContainerFactory
             self::service($container, BusinessRecordIdempotencyRepository::class),
             self::service($container, BusinessRecordMutationFence::class),
             self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, BusinessNumberSequenceAllocator::class),
             self::service($container, RecordValueCodec::class),
             self::service($container, RecordRuleValidator::class),
             self::service($container, BusinessRecordAccessController::class),

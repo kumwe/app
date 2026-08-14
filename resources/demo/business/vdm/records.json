@@ -693,7 +693,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001701",
       "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-001",
       "values": {
-        "quote_number": "QUO-2026-001",
         "title": "Classroom seating refresh",
         "issued_on": "2026-05-04",
         "valid_until": "2026-06-30",
@@ -710,7 +709,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001702",
       "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-002",
       "values": {
-        "quote_number": "QUO-2026-002",
         "title": "Boardroom fit-out",
         "issued_on": "2026-07-06",
         "valid_until": "2026-08-31",
@@ -727,7 +725,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001703",
       "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-003",
       "values": {
-        "quote_number": "QUO-2026-003",
         "title": "Inventory platform rollout",
         "issued_on": "2026-04-13",
         "valid_until": "2026-05-31",
@@ -744,7 +741,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001704",
       "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-004",
       "values": {
-        "quote_number": "QUO-2026-004",
         "title": "Field application pilot",
         "issued_on": "2026-03-02",
         "valid_until": "2026-04-15",
@@ -759,7 +755,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001705",
       "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-005",
       "values": {
-        "quote_number": "QUO-2026-005",
         "title": "Depot shelving concept",
         "issued_on": "2026-02-09",
         "valid_until": "2026-03-31",
@@ -774,7 +769,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001901",
       "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-101",
       "values": {
-        "invoice_number": "INV-2026-101",
         "issued_on": "2026-06-08",
         "due_on": "2026-07-08",
         "subtotal": {"amount": "88720.00", "currency": "NAD"},
@@ -791,7 +785,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001902",
       "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-102",
       "values": {
-        "invoice_number": "INV-2026-102",
         "issued_on": "2026-05-11",
         "due_on": "2026-06-10",
         "subtotal": {"amount": "33380.00", "currency": "NAD"},
@@ -806,7 +799,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001903",
       "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-103",
       "values": {
-        "invoice_number": "INV-2026-103",
         "issued_on": "2026-04-01",
         "due_on": "2026-04-30",
         "subtotal": {"amount": "5550.00", "currency": "NAD"},
@@ -821,7 +813,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001904",
       "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-104",
       "values": {
-        "invoice_number": "INV-2026-104",
         "issued_on": "2026-03-09",
         "due_on": "2026-04-08",
         "subtotal": {"amount": "17840.00", "currency": "NAD"},
@@ -837,7 +828,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001905",
       "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-105",
       "values": {
-        "invoice_number": "INV-2026-105",
         "issued_on": "2026-02-16",
         "due_on": "2026-03-18",
         "subtotal": {"amount": "3720.00", "currency": "NAD"},
@@ -1101,7 +1091,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001706",
       "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-006",
       "values": {
-        "quote_number": "QUO-2026-006",
         "title": "Warehouse racking fit-out",
         "issued_on": "2026-06-10",
         "valid_until": "2026-07-31",
@@ -1118,7 +1107,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001707",
       "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-007",
       "values": {
-        "quote_number": "QUO-2026-007",
         "title": "Guest lounge furnishing",
         "issued_on": "2026-06-24",
         "valid_until": "2026-08-15",
@@ -1135,7 +1123,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001708",
       "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-008",
       "values": {
-        "quote_number": "QUO-2026-008",
         "title": "Stock control software rollout",
         "issued_on": "2026-05-20",
         "valid_until": "2026-07-01",
@@ -1152,7 +1139,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001906",
       "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-106",
       "values": {
-        "invoice_number": "INV-2026-106",
         "issued_on": "2026-07-08",
         "due_on": "2026-08-07",
         "subtotal": {"amount": "82800.00", "currency": "NAD"},
@@ -1169,7 +1155,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001907",
       "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-107",
       "values": {
-        "invoice_number": "INV-2026-107",
         "issued_on": "2026-07-21",
         "due_on": "2026-08-20",
         "subtotal": {"amount": "29080.00", "currency": "NAD"},
@@ -1184,7 +1169,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001908",
       "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-108",
       "values": {
-        "invoice_number": "INV-2026-108",
         "issued_on": "2026-05-12",
         "due_on": "2026-06-11",
         "subtotal": {"amount": "11160.00", "currency": "NAD"},
@@ -1199,7 +1183,6 @@
       "record_id": "019c7000-0000-7000-8000-000000001909",
       "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-109",
       "values": {
-        "invoice_number": "INV-2026-109",
         "issued_on": "2026-06-02",
         "due_on": "2026-07-02",
         "subtotal": {"amount": "1850.00", "currency": "NAD"},

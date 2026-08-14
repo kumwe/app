@@ -135,6 +135,14 @@ final class BuiltInFieldTypes
                 'string',
                 'string',
             ),
+            self::type(
+                'sequence',
+                'Allocated number',
+                'A server-allocated gapless document number.',
+                'string',
+                'string',
+                ['scope', 'reset', 'prefix', 'padding', 'timezone'],
+            ),
         ];
     }
 
