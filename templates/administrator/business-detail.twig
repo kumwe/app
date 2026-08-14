@@ -49,6 +49,15 @@
         <div><h2>The relationship could not be saved</h2><p>{{ error_summary }}</p></div>
       </section>
     {% endif %}
+    {% if version_conflict is defined %}
+      <section class="notice warning business-version-conflict" data-kis-state="conflict" role="alert" tabindex="-1">
+        <div>
+          <h2>Another actor saved a newer version</h2>
+          <p>{{ version_conflict.summary }} You composed this form against version {{ version_conflict.expected_version }}; the stored record is now at version {{ record.version }}.</p>
+          <p>Your entries are kept in the form below. Submit again to apply them to version {{ record.version }}, or <a href="{{ record_path }}?task=relations">reload version {{ record.version }}</a> and lose what you typed here.</p>
+        </div>
+      </section>
+    {% endif %}
 
     {% set record_tasks = [
       {id: 'summary', label: 'Summary', href: record_path ~ '?task=summary'},

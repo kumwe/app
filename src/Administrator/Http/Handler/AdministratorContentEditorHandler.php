@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Administrator\Http\Handler;
 
+use Kumwe\CMS\Administrator\Content\ContentEditorSubmission;
 use Kumwe\CMS\Administrator\Content\ContentFormPresenter;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
@@ -22,12 +23,17 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Serves the administrator content editor, for both a brand new entry and an existing one.
  *
  * The same screen backs `/administrator/content/new` and `/administrator/content/{id}/edit`; the
- * presence of an `id` route attribute is what decides which. It is read-only — the rendered form
+ * presence of an `id` route attribute is what decides which. It writes nothing — the rendered form
  * posts to the separate create and update handlers — so this class exists purely to assemble
  * everything the form needs in one place: the stored entry, the content type it is pinned to, the
  * workflow governing it, the field descriptors derived from that type's schema, and the media
  * library to pick from. Definitions are read at the versions the entry pinned rather than at head,
  * which is what keeps an older entry editable after its type or workflow was republished.
+ *
+ * Assembling the screen in one place is also what lets a refused save come back to it. `render()`
+ * takes an optional `ContentEditorSubmission`, and a create or update handler whose write was
+ * rejected returns the operator to this same editor with their submitted values in the inputs rather
+ * than to an error page that would lose them.
  *
  * @since  2.0.0
  */
@@ -56,11 +62,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
     }
 
     /**
-     * Assemble and render the editor for a new entry or for the entry the route names.
-     *
-     * An existing entry is loaded with trashed entries included, so an operator about to restore one
-     * can still see it. Stored entry data is filtered down to string keys before it reaches the
-     * presenter, because a numeric key could never correspond to a schema field.
+     * Serve the editor as its own GET route, with nothing retained.
      *
      * @param   ServerRequestInterface  $request  Administrator request; an `id` attribute selects edit mode.
      *
@@ -73,6 +75,40 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        return $this->render($request);
+    }
+
+    /**
+     * Assemble and render the editor for a new entry or for the entry the route names.
+     *
+     * An existing entry is loaded with trashed entries included, so an operator about to restore one
+     * can still see it. Stored entry data is filtered down to string keys before it reaches the
+     * presenter, because a numeric key could never correspond to a schema field.
+     *
+     * A `$submission` re-renders the same screen after a refused save. Its values are laid over the
+     * stored ones, so every input shows what the operator typed rather than what the store still
+     * holds, while the entry itself — and therefore the version the form quotes and the workflow
+     * controls beside it — is re-read. That re-read is what makes the conflict screen actionable:
+     * saving again applies the retained values to the version another writer left behind.
+     *
+     * @param   ServerRequestInterface    $request     Administrator request; an `id` attribute selects
+     *          edit mode.
+     * @param   ?ContentEditorSubmission  $submission  Refused submission to retain, or null for a
+     *          first visit.
+     * @param   int                       $status      HTTP status; a refused save re-renders at 422 or 409.
+     *
+     * @return  ResponseInterface  The rendered editor, marked `no-store` because it carries a CSRF token.
+     *
+     * @throws  \RuntimeException  When the stored entry's pinned type or workflow reference is unusable.
+     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When the route names an entry out of reach.
+     *
+     * @since   2.0.0
+     */
+    public function render(
+        ServerRequestInterface $request,
+        ?ContentEditorSubmission $submission = null,
+        int $status = 200,
+    ): ResponseInterface {
         $session = AdministratorRequest::session($request);
         $id = $request->getAttribute('id');
         $entry = null;
@@ -85,7 +121,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         $context = AdministratorRequest::context($request);
         $definitions = $this->models->contentTypes($context);
         $types = array_map(static fn (ContentTypeDefinition $type): array => $type->toArray(), $definitions);
-        $selectedType = $this->selectedType($request, $definitions, $entry);
+        $selectedType = $this->selectedType($request, $definitions, $entry, $submission);
         $workflow = null;
         if (is_array($entry)) {
             $workflowId = $entry['workflow_id'] ?? null;
@@ -108,6 +144,9 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
                 }
             }
         }
+        if ($submission !== null) {
+            $values = [...$values, ...$submission->values];
+        }
 
         return new HtmlResponse($this->renderer->render('content-form', [
             'csrf' => $session->csrfToken,
@@ -115,6 +154,9 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
             'entry' => $entry,
             'content_types' => $types,
             'content_type' => $selectedType->toArray(),
+            'editor_input' => $this->editorInput($submission),
+            'content_violations' => $submission === null ? [] : $submission->violations,
+            'version_conflict' => $this->versionConflict($entry, $submission),
             'fields' => ($this->form ?? new ContentFormPresenter())->fields(
                 $selectedType,
                 $values,
@@ -124,7 +166,63 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
                 static fn (MediaAsset $asset): array => $asset->toArray(),
                 $this->media->browse($context, perPage: 48)->items,
             ),
-        ]), 200, ['Cache-Control' => 'no-store']);
+        ]), $status, ['Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * Hand the identity and scheduling inputs the text the operator submitted, when there was one.
+     *
+     * Null is returned for a first visit so the template keeps reading the stored entry exactly as it
+     * always has; only a refused save replaces those bindings. A submitted value then wins even when
+     * it is blank, because clearing a field is an edit the operator expects to see preserved, and the
+     * publication timestamps are handed back in the `datetime-local` shape the inputs posted so a
+     * rejected save never silently reformats them.
+     *
+     * @param   ?ContentEditorSubmission  $submission  Refused submission to retain, or null.
+     *
+     * @return  array{title: string, slug: string, publish_at: string, unpublish_at: string}|null  Values
+     *          for the identity and scheduling inputs, or null to keep the stored entry's own values.
+     *
+     * @since   2.0.0
+     */
+    private function editorInput(?ContentEditorSubmission $submission): ?array
+    {
+        if ($submission === null) {
+            return null;
+        }
+
+        return [
+            'title' => $submission->title,
+            'slug' => $submission->slug,
+            'publish_at' => $submission->publishAt,
+            'unpublish_at' => $submission->unpublishAt,
+        ];
+    }
+
+    /**
+     * Describe an optimistic-concurrency refusal for the editor to explain and offer choices for.
+     *
+     * The version the operator composed against comes from the refused submission; the version the
+     * entry carries now comes from the re-read above, so the two are always the pair that failed to
+     * match rather than a snapshot taken at the moment of the conflict.
+     *
+     * @param   array<string, mixed>|null  $entry       Re-read entry, or null while creating.
+     * @param   ?ContentEditorSubmission   $submission  Refused submission to retain, or null.
+     *
+     * @return  array{expected_version: int, current_version: int}|null  Conflict pair, or null when the
+     *          refusal was not a version conflict.
+     *
+     * @since   2.0.0
+     */
+    private function versionConflict(?array $entry, ?ContentEditorSubmission $submission): ?array
+    {
+        $stale = $submission?->staleVersion;
+        $current = $entry['version'] ?? null;
+        if ($stale === null || !is_int($current)) {
+            return null;
+        }
+
+        return ['expected_version' => $stale, 'current_version' => $current];
     }
 
     /**
@@ -132,7 +230,9 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      *
      * An existing entry always wins, and is resolved at the version it pinned, so opening an old
      * entry never quietly migrates it onto a newer schema. For a new entry the `content_type` query
-     * parameter selects by UUID or handle — that is how the "new entry of this type" links work.
+     * parameter selects by UUID or handle — that is how the "new entry of this type" links work — and
+     * a refused submission names its own type instead, because a create is posted with the type in
+     * the body and would otherwise come back rendered against the default type's fields.
      * When nothing was asked for, the core Page type is the ambient default so seeding further
      * layout types never changes what an unqualified `/administrator/content/new` creates; the
      * first defined type remains the fallback only on sites that removed the core type.
@@ -140,6 +240,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      * @param   ServerRequestInterface       $request      Request whose query string may name a type.
      * @param   list<ContentTypeDefinition>  $definitions  Head versions available to the acting site.
      * @param   array<string, mixed>|null    $entry        Stored entry being edited, or null when creating.
+     * @param   ?ContentEditorSubmission     $submission   Refused submission naming its own type, or null.
      *
      * @return  ContentTypeDefinition  The definition whose schema the rendered form is built from.
      *
@@ -151,6 +252,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         ServerRequestInterface $request,
         array $definitions,
         ?array $entry,
+        ?ContentEditorSubmission $submission = null,
     ): ContentTypeDefinition {
         if ($entry !== null) {
             $id = $entry['content_type_id'] ?? null;
@@ -163,7 +265,10 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         if ($definitions === []) {
             throw new \RuntimeException('At least one content type is required before content can be created.');
         }
-        $requested = $request->getQueryParams()['content_type'] ?? '';
+        $requested = $submission === null ? '' : $submission->contentType;
+        if ($requested === '') {
+            $requested = $request->getQueryParams()['content_type'] ?? '';
+        }
         if (is_string($requested) && $requested !== '') {
             foreach ($definitions as $definition) {
                 if ($definition->id === $requested || $definition->handle === $requested) {

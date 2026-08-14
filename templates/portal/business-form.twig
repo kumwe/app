@@ -14,6 +14,19 @@
     <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">Cancel</a>
 </header>
 
+{% if version_conflict is defined and record %}
+    <section class="portal-alert portal-business-version-conflict" data-kis-state="conflict" role="alert" aria-labelledby="portal-business-conflict-title" tabindex="-1">
+        <h2 id="portal-business-conflict-title">Another actor saved a newer version</h2>
+        <p>{{ version_conflict.summary }} You composed this form against version {{ version_conflict.expected_version }}; the stored record is now at version {{ record.version }}.</p>
+        <p>Everything you typed is still below. Choose one:</p>
+        <ul>
+            <li>Save changes again to apply your entries on top of version {{ record.version }}.</li>
+            <li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?edit=1">Reload version {{ record.version }}</a> and lose what you typed here.</li>
+            {% if available_operations.history is defined %}<li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?task=history">Review what changed</a> before you decide.</li>{% endif %}
+        </ul>
+    </section>
+{% endif %}
+
 {% if error_summary is defined %}
     <section class="portal-alert portal-business-error-summary kis-validation-summary" data-kis-component="validation-summary" role="alert" aria-labelledby="portal-business-error-title" tabindex="-1">
         <h2 id="portal-business-error-title">The record could not be saved</h2>

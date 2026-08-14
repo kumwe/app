@@ -3296,6 +3296,7 @@ final class ContainerFactory
             self::service($container, ContentService::class),
             self::service($container, ContentModelService::class),
             self::service($container, ContentFormDataMapper::class),
+            self::service($container, AdministratorContentEditorHandler::class),
         ), true);
         $container->share(AdministratorUpdateContentHandler::class, static fn (
             Container $container,
@@ -3303,6 +3304,7 @@ final class ContainerFactory
             self::service($container, ContentService::class),
             self::service($container, ContentModelService::class),
             self::service($container, ContentFormDataMapper::class),
+            self::service($container, AdministratorContentEditorHandler::class),
         ), true);
         $container->share(AdministratorTransitionContentHandler::class, static fn (
             Container $container,
