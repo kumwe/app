@@ -64,7 +64,7 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
                 $parameters[0] === 'administrator_session'
                 && $parameters[1] === SiteContext::DEFAULT
                 && $parameters[2] instanceof DateTimeImmutable),
-            self::isType('array'),
+            self::isArray(),
         )->willReturn([self::SESSION_ONE, self::SESSION_TWO]);
         $deleted = [];
         $database->expects(self::exactly(2))->method('delete')->willReturnCallback(
@@ -193,8 +193,8 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
 
                 return true;
             }),
-            self::isType('array'),
-            self::isType('array'),
+            self::isArray(),
+            self::isArray(),
         )->willReturn(false);
         $database->expects(self::never())->method('update');
 
@@ -217,7 +217,7 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
                 return true;
             }),
             [self::USER],
-            self::isType('array'),
+            self::isArray(),
         )->willReturn([
             ['id' => self::SESSION_ONE, 'site_identifier' => SiteContext::DEFAULT],
             ['id' => self::SESSION_TWO, 'site_identifier' => 'secondary'],

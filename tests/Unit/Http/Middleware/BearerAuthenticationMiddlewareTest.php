@@ -48,7 +48,7 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
 
     public function testMissingTokenReturnsBearerChallengeWithoutErrorCode(): void
     {
-        $verifier = $this->createMock(AccessTokenVerifier::class);
+        $verifier = $this->createStub(AccessTokenVerifier::class);
         $response = (new BearerAuthenticationMiddleware($verifier))->process(
             $this->protectedRequest(),
             $this->neverHandler(),
@@ -113,7 +113,10 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
     {
         $principal = AuthorizationContext::principal(['content.read', 'content.update'], self::SUBJECT);
         $verifier = $this->createMock(AccessTokenVerifier::class);
-        $verifier->method('verify')->with(self::TOKEN, 'kumwe-http', 'api', 'default')->willReturn($principal);
+        $verifier->expects(self::once())
+            ->method('verify')
+            ->with(self::TOKEN, 'kumwe-http', 'api', 'default')
+            ->willReturn($principal);
         $handler = $this->createMock(RequestHandlerInterface::class);
         $handler->expects(self::once())->method('handle')->with(self::callback(
             static function (ServerRequestInterface $request) use ($principal): bool {
@@ -137,7 +140,7 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
     public function testMissingExactCapabilityReturnsInsufficientScope(): void
     {
         $principal = AuthorizationContext::principal(['content.read'], self::SUBJECT);
-        $verifier = $this->createMock(AccessTokenVerifier::class);
+        $verifier = $this->createStub(AccessTokenVerifier::class);
         $verifier->method('verify')->willReturn($principal);
         $response = (new BearerAuthenticationMiddleware($verifier))->process(
             $this->protectedRequest(['content.update', 'content.read'])
@@ -155,7 +158,7 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
     public function testWildcardRouteCapabilityIsRejectedAsConfigurationError(): void
     {
         $principal = AuthorizationContext::principal(['content.read'], self::SUBJECT);
-        $verifier = $this->createMock(AccessTokenVerifier::class);
+        $verifier = $this->createStub(AccessTokenVerifier::class);
         $verifier->method('verify')->willReturn($principal);
 
         $this->expectException(LogicException::class);
@@ -172,7 +175,7 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         new BearerAuthenticationMiddleware(
-            $this->createMock(AccessTokenVerifier::class),
+            $this->createStub(AccessTokenVerifier::class),
             "kumwe\"\r\nX-Evil: injected",
         );
     }

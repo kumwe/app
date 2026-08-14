@@ -60,7 +60,7 @@ final class DoctrineStepUpProofConsumerTest extends TestCase
         $database->expects(self::once())->method('executeStatement')->with(
             self::stringContains('consumed_at IS NULL AND revoked_at IS NULL'),
             self::callback(static fn (array $parameters): bool => $parameters[1] === self::PROOF),
-            self::isType('array'),
+            self::isArray(),
         )->willReturn(1);
         [$context, $proof, $now] = $this->context();
 
@@ -129,8 +129,8 @@ final class DoctrineStepUpProofConsumerTest extends TestCase
                 $sql,
                 'INNER JOIN kumwe_portal_sessions s ON s.id = p.session_id',
             ) && str_contains($sql, 's.security_epoch = p.security_epoch')),
-            self::isType('array'),
-            self::isType('array'),
+            self::isArray(),
+            self::isArray(),
         )->willReturn(['id' => self::PROOF]);
         $database->expects(self::once())->method('executeStatement')->willReturn(1);
         [$context, $proof, $now] = $this->context(AuthenticatedSurface::Portal);

@@ -67,7 +67,7 @@ final class DurableOutboundAdapterDispatcherTest extends TestCase
             '7',
             60,
         )->willReturn(new InboxClaimResult(InboxDisposition::DUPLICATE));
-        $adapter = $this->createMock(IntegrationEventTransport::class);
+        $adapter = $this->createStub(IntegrationEventTransport::class);
         $adapter->method('identifier')->willReturn($definition->identifier());
         $contracts = new EventContractRegistry([new EventSchemaDefinition(
             'acme.record.changed',

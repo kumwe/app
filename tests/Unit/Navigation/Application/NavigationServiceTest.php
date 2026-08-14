@@ -75,7 +75,7 @@ final class NavigationServiceTest extends TestCase
             'https://example.com/guides',
         );
         $repository = $this->createMock(NavigationRepository::class);
-        $repository->method('item')->with(self::ITEM)->willReturn($stored);
+        $repository->expects(self::once())->method('item')->with(self::ITEM)->willReturn($stored);
         $repository->expects(self::once())->method('assertMoveIsAcyclic')->with(
             self::ITEM,
             self::MENU,
@@ -122,7 +122,7 @@ final class NavigationServiceTest extends TestCase
     {
         $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
         $repository = $this->createMock(NavigationRepository::class);
-        $repository->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
+        $repository->expects(self::once())->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
             self::MENU,
             'main',
             'Main',
@@ -165,7 +165,7 @@ final class NavigationServiceTest extends TestCase
     {
         $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
         $repository = $this->createMock(NavigationRepository::class);
-        $repository->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
+        $repository->expects(self::once())->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
             self::MENU,
             'main',
             'Main',
@@ -199,7 +199,7 @@ final class NavigationServiceTest extends TestCase
     {
         $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
         $repository = $this->createMock(NavigationRepository::class);
-        $repository->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
+        $repository->expects(self::once())->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
             self::MENU,
             'main',
             'Main',
@@ -259,7 +259,7 @@ final class NavigationServiceTest extends TestCase
     {
         $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
         $repository = $this->createMock(NavigationRepository::class);
-        $repository->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
+        $repository->expects(self::once())->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
             self::MENU,
             'main',
             'Main',
@@ -301,7 +301,7 @@ final class NavigationServiceTest extends TestCase
     {
         $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
         $repository = $this->createMock(NavigationRepository::class);
-        $repository->method('item')->with(self::ITEM)->willReturn(new MenuItemRecord(
+        $repository->expects(self::once())->method('item')->with(self::ITEM)->willReturn(new MenuItemRecord(
             self::ITEM,
             self::MENU,
             null,

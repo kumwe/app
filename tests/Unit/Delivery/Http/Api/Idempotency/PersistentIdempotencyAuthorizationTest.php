@@ -191,7 +191,7 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
         $database->expects(self::once())->method('insert');
         $database->expects(self::once())->method('executeStatement')->with(
             self::stringContains('DELETE FROM'),
-            self::isType('array'),
+            self::isArray(),
         )->willReturn(1);
         $request = (new ServerRequestFactory())
             ->createServerRequest('POST', '/api/v1/content')

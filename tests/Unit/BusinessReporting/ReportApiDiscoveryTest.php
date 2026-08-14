@@ -191,7 +191,7 @@ final class ReportApiDiscoveryTest extends TestCase
         ?BusinessRecordReportReader $reader = null,
         bool $allowed = true,
     ): ReportApiHandler {
-        $authorization = $this->createMock(AuthorizationGateway::class);
+        $authorization = $this->createStub(AuthorizationGateway::class);
         $authorization->method('decide')->willReturnCallback(
             static fn (): AuthorizationDecision => new AuthorizationDecision(
                 $allowed,

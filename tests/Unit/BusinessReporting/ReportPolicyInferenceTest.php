@@ -288,7 +288,7 @@ final class ReportPolicyInferenceTest extends TestCase
 
     private function authorization(): AuthorizationGateway
     {
-        $authorization = $this->createMock(AuthorizationGateway::class);
+        $authorization = $this->createStub(AuthorizationGateway::class);
         $authorization->method('decide')->willReturnCallback(
             static fn (): AuthorizationDecision => new AuthorizationDecision(true, 'test.report', 'allowed'),
         );

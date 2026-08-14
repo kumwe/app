@@ -25,14 +25,14 @@ final class PublicNavigationTest extends TestCase
 {
     public function testBuildsTheManagedMainMenuRecursivelyInPositionOrder(): void
     {
-        $repository = $this->createStub(NavigationRepository::class);
+        $repository = $this->createMock(NavigationRepository::class);
         $time = new DateTimeImmutable('2026-08-06T12:00:00+00:00');
         $menu = new MenuRecord('main-menu', 'main', 'Main menu', 1, $time, $time);
-        $repository->method('menus')->willReturn([
+        $repository->expects(self::exactly(3))->method('menus')->willReturn([
             new MenuRecord('foreign', 'main', 'Other site menu', 1, $time, $time),
             $menu,
         ]);
-        $repository->method('items')->with('main-menu')->willReturn([
+        $repository->expects(self::exactly(3))->method('items')->with('main-menu')->willReturn([
             new MenuItemRecord(
                 'about',
                 'main-menu',

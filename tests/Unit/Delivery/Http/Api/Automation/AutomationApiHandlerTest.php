@@ -34,8 +34,8 @@ final class AutomationApiHandlerTest extends TestCase
 
     public function testReadsScheduleWithStrongVersionEtag(): void
     {
-        $schedules = $this->createStub(ScheduleRepository::class);
-        $schedules->method('find')->with(
+        $schedules = $this->createMock(ScheduleRepository::class);
+        $schedules->expects(self::once())->method('find')->with(
             self::isInstanceOf(ExecutionContext::class),
             self::SCHEDULE,
         )->willReturn($this->schedule());
@@ -55,7 +55,7 @@ final class AutomationApiHandlerTest extends TestCase
     public function testRejectsStaleScheduleMutationWithoutWriting(): void
     {
         $schedules = $this->createMock(ScheduleRepository::class);
-        $schedules->method('find')->with(
+        $schedules->expects(self::once())->method('find')->with(
             self::isInstanceOf(ExecutionContext::class),
             self::SCHEDULE,
         )->willReturn($this->schedule());

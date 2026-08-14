@@ -170,7 +170,7 @@ final class RuntimeLeaseWriterTest extends TestCase
 
     private function tables(): TableNames
     {
-        $connection = $this->createMock(Connection::class);
+        $connection = $this->createStub(Connection::class);
         $connection->method('quoteSingleIdentifier')
             ->willReturnCallback(static fn (string $name): string => '`' . $name . '`');
 
@@ -188,7 +188,7 @@ final class RuntimeLeaseWriterTest extends TestCase
         array &$statements,
         array $failures = [],
     ): Connection {
-        $connection = $this->createMock(Connection::class);
+        $connection = $this->createStub(Connection::class);
         $connection->method('getDatabasePlatform')->willReturn($platform);
         $connection->method('executeStatement')->willReturnCallback(
             static function (string $sql, array $parameters, array $types) use (&$statements, &$failures): int {

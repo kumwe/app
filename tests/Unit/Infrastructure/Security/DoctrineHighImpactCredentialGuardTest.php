@@ -31,8 +31,8 @@ final class DoctrineHighImpactCredentialGuardTest extends TestCase
         $limiter = $this->createMock(AuthenticationRateLimiter::class);
         $limiter->expects(self::once())->method('assertAllowed');
         $limiter->expects(self::once())->method('record')->with(
-            self::isType('string'),
-            self::isType('string'),
+            self::isString(),
+            self::isString(),
             true,
         );
         $guard = new DoctrineHighImpactCredentialGuard(

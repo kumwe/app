@@ -37,7 +37,7 @@ final class DoctrineAccessControlRepositoryTest extends TestCase
             'kumwe_role_capability_grants',
             self::callback(static fn (array $row): bool => $row['role_id'] === $roleId
                 && $row['capability_code'] === 'content.read'),
-            self::isType('array'),
+            self::isArray(),
         )->willReturn(1);
         $database->expects(self::once())->method('fetchFirstColumn')->with(
             self::callback(static function (string $sql): bool {
