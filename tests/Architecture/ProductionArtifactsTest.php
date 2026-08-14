@@ -220,6 +220,54 @@ final class ProductionArtifactsTest extends TestCase
     }
 
     /**
+     * Require the deployment drills to resolve their own classes inside the production image.
+     *
+     * The image installs with `--no-dev` and an authoritative classmap, so no class under
+     * `Kumwe\CMS\Tests\` is autoloadable there even though the drill's directory is mounted into it.
+     * The entry points once compensated with a list of `require` lines naming each collaborator, and
+     * a drill that gained a class without gaining a line still passed every cheaper job — those run
+     * under the dev autoloader — before dying in the deployed image with "class not found". Holding
+     * the entry points to the shared loader, and refusing a list that grows back, keeps the failure
+     * mode retired rather than merely repaired.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDeploymentDrillsResolveTheirClassesWithoutTheDevelopmentAutoloader(): void
+    {
+        $loader = $this->contents('tests/Support/deployment-drill-autoload.php');
+
+        self::assertStringContainsString("require dirname(__DIR__, 2) . '/vendor/autoload.php';", $loader);
+        self::assertStringContainsString('spl_autoload_register(', $loader);
+        self::assertStringContainsString('\'Kumwe\\\\CMS\\\\Tests\\\\\'', $loader);
+
+        self::assertStringContainsString(
+            '/tests/Support:/var/www/kumwe/tests/Support:ro',
+            $this->contents('.github/workflows/deployment-acceptance.yml'),
+        );
+
+        foreach (
+            [
+                'tests/Support/business-runtime-backup-acceptance.php',
+                'tests/Support/asset-inspection-deployment-acceptance.php',
+            ] as $entryPoint
+        ) {
+            $contents = $this->contents($entryPoint);
+            self::assertStringContainsString(
+                "require __DIR__ . '/deployment-drill-autoload.php';",
+                $contents,
+                sprintf('%s must reach its classes through the shared drill loader.', $entryPoint),
+            );
+            self::assertDoesNotMatchRegularExpression(
+                '#require __DIR__ \. \'/[A-Z][A-Za-z]*\.php\';#',
+                $contents,
+                sprintf('%s must not name collaborators by hand; the loader resolves them.', $entryPoint),
+            );
+        }
+    }
+
+    /**
      * Proves CI deploys every supported database and both released distribution formats.
      *
      * @return  void
