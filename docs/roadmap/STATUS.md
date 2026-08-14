@@ -24,7 +24,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | **In flight** | Nothing. Phase 0 work packages are unassigned. |
 | **Next** | `P0-A` reproducible baseline, `P0-B` claim ledger, `P0-C` public contract classification and compatibility fixtures. These three are independent and may run in parallel. `P0-E` architecture and security decisions follows them, because several decisions depend on what the inventories find. |
 | **The one open decision** | `V2-POS-002` — whether a disconnected terminal receives its document number at synchronisation time or from a per-terminal reserved block. It trades against the shipped gapless guarantee, so it is the product owner's to make, in `P0-E` decision 12. |
-| **Gate A** | Not started. 12 exit criteria, 0 met. |
+| **Gate A** | Not started. 12 exit criteria, 1 met. |
 | **Gate B** | Not started. Blocked on Gate A. |
 
 ## Phase board
@@ -53,7 +53,7 @@ table when it completes, in the same change that writes it into the changelog.
 | Phase | Packages | Findings |
 |---|---|---|
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-EXT-001`, `V2-ERP-006`, `V2-ERP-007`, `V2-POS-002` |
-| 1 | `P1-A` … `P1-F` | `V2-COR-001`, `V2-COR-002`, `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-002`, `V2-DB-003` |
+| 1 | `P1-A` … `P1-C`, `P1-E`, `P1-F` | `V2-COR-001`, `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-002`, `V2-DB-003` |
 | 2 | `P2-A` … `P2-I` | `V2-ARC-001`, `V2-QA-001` – `V2-QA-005`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
 | 3 | `P3-A` … `P3-F` | `V2-ARC-003`, `V2-GRP-001` – `V2-GRP-006` |
 | 4 | `P4-A` … `P4-D` | `V2-SCL-003`, `V2-ERP-001` |
@@ -88,12 +88,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 ## Ledger snapshot
 
-**80 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**79 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
 | `accepted_for_implementation` | 35 |
-| `reproduced` | 18 |
+| `reproduced` | 17 |
 | `open` | 17 |
 | `conditional` | 7 |
 | `decision_required` | 2 |
@@ -105,7 +105,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 | Phase | Findings |
 |---|---|
 | 0 | 5 |
-| 1 | 7 |
+| 1 | 6 |
 | 2 | 9 |
 | 3 | 7 |
 | 4 | 2 |
@@ -119,12 +119,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 | Gate | Findings |
 |---|---|
-| A | 42 |
+| A | 41 |
 | B | 23 |
 | none | 15 |
 
-By severity: 2 critical, 43 high, 26 medium, 9 low.
-By origin: 25 from the independent review, 12 still-open entries from the executed gap matrix, 43 discovered
+By severity: 2 critical, 42 high, 26 medium, 9 low.
+By origin: 25 from the independent review, 12 still-open entries from the executed gap matrix, 42 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
@@ -139,7 +139,7 @@ that closed it.
 |---|---|---|---|
 | 1 | Extension contract frozen with passing compatibility fixtures | No | `V2-EXT-001` |
 | 2 | Atomic aggregate command exists and matches the recorded shape | No | `V2-SCL-003` |
-| 3 | Data-entry integrity holds on all three browser surfaces | No | `V2-COR-002` |
+| 3 | Data-entry integrity holds on all three browser surfaces | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
 | 4 | Correctness and security contradictions fixed | No | `V2-COR-001`, `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-002`, `V2-DB-003` |
 | 5 | Quality gates are truthful | No | `V2-QA-001`, `V2-QA-002`, `V2-QA-003`, `V2-QA-004`, `V2-QA-005`, `V2-DB-001` |
 | 6 | Aggregate seams are clean | No | `V2-ARC-003` |
@@ -160,13 +160,14 @@ Gate B's ten criteria are unchanged and are listed in [`README.md`](README.md) s
 
 ## Baseline health at this revision
 
-Green: `composer docs:api` (100% across 1,158 classes and 6,315 methods), `composer architecture:policy`,
-`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (80 open
+Green: `composer docs:api` (100% across 1,159 classes and 6,323 methods), `composer architecture:policy`,
+`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (79 open
 findings), `composer openapi:check`, `composer cs`, `composer analyse` (PHPStan level `max`, no errors),
-unit suite (1,534 tests, 22,160 assertions), architecture suite (112 tests, 6,958 assertions).
+unit suite (1,538 tests, 22,191 assertions), architecture suite (112 tests, 6,958 assertions), functional
+suite (16 tests, 755 assertions) against a freshly migrated database.
 
-Not executed here: integration, functional and browser suites, which need live database and browser
-services.
+Not executed here: the integration suite and the full browser suite, which need the whole live service
+matrix.
 
 ---
 

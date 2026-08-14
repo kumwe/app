@@ -42,41 +42,6 @@
       "closure_sha": null
     },
     {
-      "id": "V2-COR-002",
-      "title": "Data-entry integrity: a stale-version conflict discards everything the operator typed, and the CMS content editor discards it on validation failure too",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "1",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php",
-          "symbol": "GeneratedBusinessBrowserController::write()",
-          "note": "Line 1150 catches BusinessRecordValidationFailed only. Lines 1183-1184 retain submitted values for that one case. BusinessRecordVersionConflict has no catch here, so a stale-version update leaves the controller as an unhandled exception and the operator's input is lost. The exception is mapped only at src/Delivery/Http/Api/Business/BusinessRecordApiResponder.php:253 (REST) and src/Delivery/Console/Command/BusinessConsoleFailureMapper.php:167 (CLI)."
-        },
-        {
-          "file": "src/Administrator/Http/Handler/AdministratorUpdateContentHandler.php",
-          "symbol": "AdministratorUpdateContentHandler::handle()",
-          "note": "Lines 74-102. Neither Kumwe\\CMS\\Content\\Domain\\VersionConflict nor Kumwe\\CMS\\Content\\Domain\\InvalidContentData is caught; both are declared as escaping @throws."
-        },
-        {
-          "file": "src/Administrator/Http/Handler/AdministratorContentEditorHandler.php",
-          "symbol": "AdministratorContentEditorHandler::handle()",
-          "note": "Lines 102-120. $values is assembled from $entry['data'] only. There is no retained-input parameter on this surface at all."
-        },
-        {
-          "file": "templates/administrator/content-form.twig",
-          "symbol": "title and slug inputs",
-          "note": "Lines 39-40 bind value=\"{{ entry.title|default('') }}\" and value=\"{{ entry.slug|default('') }}\" — the persisted entry, never the submitted body."
-        }
-      ],
-      "acceptance_test": "Browser tests on both generated surfaces (administrator and portal) and on the CMS content editor. (1) Submit a document form with a value that fails a definition rule and assert every other typed value survives the re-render. (2) Open the same record in two sessions, save the first, then submit the second and assert the conflict is re-rendered as a form carrying the submitted values plus the current version, not an error page. (3) Repeat both on the CMS content editor. (4) Assert on a 100-line owned-line document that no line is lost on either failure path.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "correction_to_review": "The pre-work claim that the generated business forms contain no reference to submitted input is true of templates/administrator/business-form.twig and templates/portal/business-form.twig as files, but misleading as a behaviour claim: retention lives in the shared macro templates/administrator/_business-fields.twig via field.input_value, which BusinessSurfaceService::form() populates from its $retained argument. Validation failure on the generated surfaces is already handled. The defect that remains is the version conflict on every browser surface, and both failure classes on the CMS content editor."
-    },
-    {
       "id": "V2-SEC-001",
       "title": "MCP transports a raw current password in published tool schemas and handler signatures",
       "severity": "high",

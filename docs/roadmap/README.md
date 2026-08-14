@@ -503,7 +503,6 @@ residuals.
 | Finding | Verified anchor | What is true at `26a7b39` |
 |---|---|---|
 | `V2-COR-001` | `BusinessRecordService::history()` 1813–1829 | The generation-uniqueness check runs over the returned page, not the full scope. `historyByIdentityDigest()` receives `limit + 1` and the cursor, then `array_unique()` over that page decides ambiguity. A second generation outside the page is not observed. |
-| `V2-COR-002` | `GeneratedBusinessBrowserController::write()` 1150, 1183–1184; `AdministratorUpdateContentHandler::handle()`; `content-form.twig` 39–40 | Validation failure is retained on the generated surfaces. A version conflict is retained nowhere on a browser surface. The CMS content editor retains nothing on either failure. |
 | `V2-SEC-001` | `McpCapabilityCatalog` 518, 535, 552, 2057; `KumweMcpHandlers` 1439–1576 | `currentPassword` is in three published extension-lifecycle input schemas and thirteen handler positions. `writeOnly` is set, which describes an output property and prevents nothing inbound. |
 | `V2-ARC-001`, `V2-QA-002` | `tools/verify-policy.sh` | The architecture gate is four grep predicates: product-name spelling, forbidden direct dependencies, forbidden framework imports, two static-locator symbols. It evaluates no dependency edge and prints "Kumwe architecture policy verified." |
 | `V2-ARC-003` | `BusinessRecordService` 73 and three peers; `src/Application/Automation/Job/Doctrine*` | Application imports `Kumwe\CMS\Infrastructure\Persistence\TransactionManager`. Three Doctrine adapters live under `src/Application`. |
@@ -719,7 +718,7 @@ answer.
 | REST with generated OpenAPI | Provided | `composer openapi:check` guards drift |
 | Console | Provided | 47 commands with stable JSON and exit codes |
 | Model-context tooling | Partial | 76 tools, but `V2-SEC-001` and `V2-SEC-002` are open |
-| Data-entry integrity across a failed submission | Partial | `V2-COR-002` — conflicts discard input on every browser surface |
+| Data-entry integrity across a failed submission | Provided | validation failure and stale-version conflict both re-render with the submitted values on both generated surfaces and the CMS content editor; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Role-specific dashboards | Partial | `V2-ERP-006` — workspaces are navigation groups, and the dashboard handler is one fixed capability-filtered page |
 | Offline-tolerant capture for point of sale | Deferred, not foreclosed | `V2-ERP-007` under decision D14 — deferred beyond Version 2 as a product; the constraints that keep it possible are `V2-POS-001`–`V2-POS-004` and they are Gate A |
 | A translated interface | **Must add** | `V2-LNG-001`–`V2-LNG-010`, decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) — no translation layer of any kind exists |
@@ -754,7 +753,7 @@ answer.
 | Operational diagnostics: where the system is struggling | **Must add** | `V2-OPS-001` under decision D6 |
 | Proven capacity at the enterprise envelope | **Must add** | phase 5 and phase 7 |
 
-**Summary.** Of the 69 primitives above: **38 provided, 8 partial, 21 must add, 1 decision required, 1
+**Summary.** Of the 69 primitives above: **39 provided, 7 partial, 21 must add, 1 decision required, 1
 deferred but not foreclosed.**
 
 The count of open boundary questions fell from seven to one because decisions D10 through D14 answered
@@ -772,9 +771,9 @@ contract and ownership work** — a frozen public contract, the business-group o
 per-category isolation and its consolidated read. And the **operational capabilities** — point-in-time
 recovery, operational diagnostics, and proven capacity at the enterprise envelope.
 
-Three of the eight partials — record history, data-entry integrity, and client-minted operation identity
-across a long disconnection — are corrections to something that already works rather than missing
-capability.
+Two of the seven partials — record history and client-minted operation identity across a long
+disconnection — are corrections to something that already works rather than missing capability. A third,
+data-entry integrity, was corrected the same way and has left this table.
 
 The one remaining decision is `V2-POS-002`: whether a disconnected terminal receives its document number at
 synchronisation time or from a reserved block. It is left open deliberately, because it trades against the
@@ -904,7 +903,7 @@ intention.
 3. **Data-entry integrity holds.** A validation failure and a stale-version conflict both re-render with
    the operator's submitted values on the generated administrator surface, the generated portal surface
    and the CMS content editor, proven by browser tests on all three, including a hundred-line document.
-   `V2-COR-002` closed.
+   Met; recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
 4. **Correctness and security contradictions are fixed.** `V2-COR-001`, `V2-SEC-001`, `V2-SEC-002`,
    `V2-DB-002` and `V2-DB-003` closed. `V2-SEC-003` resolved to an honest, consistently worded posture.
 5. **The gates are truthful.** Coverage attribution is real and ratcheted, semantic dependency checking
@@ -1189,23 +1188,6 @@ stale; confirm bounded closed schemas; prove secrets cannot appear in schemas, e
 logs or audit diffs; decide execute versus plan-and-status only; and document the safe alternative. Add a
 validator that rejects duplicate names, missing handlers, wrong annotations, unclosed schemas, mutation
 tools without operation identifiers, and risk-versus-surface violations.
-
-**P1-D — Data-entry integrity.** Findings: `V2-COR-002`. Three pieces of work, in order.
-
-1. **Preserve unsaved work across a stale-version conflict.** `GeneratedBusinessBrowserController::write()`
-   catches `BusinessRecordVersionConflict` and re-renders the form with the submitted values, the field
-   errors, the current version and an explanation of what changed underneath — not an error page. The
-   existing `$retained` path already carries the values; this extends it to a second failure class.
-2. **Give the CMS content editor the mechanism it never had.** `AdministratorCreateContentHandler` and
-   `AdministratorUpdateContentHandler` catch `InvalidContentData` and `VersionConflict`.
-   `AdministratorContentEditorHandler` and `ContentFormPresenter` accept retained values and field errors.
-   `content-form.twig` binds submitted values where they exist and persisted values otherwise.
-3. **Cover it by browser tests on both generated surfaces and the content editor.** Validation failure and
-   version conflict, each asserting no typed value is lost, including on a document with a hundred owned
-   lines.
-
-Because these are the generated surfaces, closing this closes it for every extension that will ever be
-built on them. That is why it is a Gate A criterion rather than an interface-polish item.
 
 **P1-E — Portability defects on a freshly created database.** Findings: `V2-DB-002`, `V2-DB-003`. Give
 `resource_site_ownership.site_identifier` the canonical site-identifier character definition through the
