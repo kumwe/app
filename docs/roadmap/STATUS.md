@@ -4,10 +4,15 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
 **Updated at** `26a7b3963c255064754f541dc8286e75dd566b1f`
 
-> **Open work is here. Finished work is in [`CHANGELOG.md`](../../CHANGELOG.md).** A work package leaves this
-> directory and lands in the changelog in the pull request that completes it — see
-> [How this document moves](README.md#how-this-document-moves). `findings.json` no longer admits the `closed`
-> state and `composer roadmap:check` fails if one appears.
+> **Open work is here. Finished work is in [`CHANGELOG.md`](../../CHANGELOG.md).** Two paths, and both end in
+> the changelog. **Planned work** lives here while it is open and its entry is deleted from this directory
+> and written into the changelog in the pull request that completes it. **Unplanned work** — the things that
+> come up, get fixed, and never had a roadmap entry — goes straight into the changelog, with nothing to
+> remove because it was never here. Either way, **the changelog is the single record of what has been done
+> and this directory is the single record of what has not.** See
+> [How this document moves](README.md#how-this-document-moves). Nothing here is ticked off: an item that is
+> still written down is still outstanding. `findings.json` does not admit the `closed` state and
+> `composer roadmap:check` fails if one appears.
 
 ---
 
@@ -18,29 +23,50 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | **Current phase** | Phase 0 — Truth, contracts and decisions |
 | **In flight** | Nothing. Phase 0 work packages are unassigned. |
 | **Next** | `P0-A` reproducible baseline, `P0-B` claim ledger, `P0-C` public contract classification and compatibility fixtures. These three are independent and may run in parallel. `P0-E` architecture and security decisions follows them, because several decisions depend on what the inventories find. |
-| **Gate A** | Not started. 8 exit criteria, 0 met. |
+| **The one open decision** | `V2-POS-002` — whether a disconnected terminal receives its document number at synchronisation time or from a per-terminal reserved block. It trades against the shipped gapless guarantee, so it is the product owner's to make, in `P0-E` decision 12. |
+| **Gate A** | Not started. 12 exit criteria, 0 met. |
 | **Gate B** | Not started. Blocked on Gate A. |
 
 ## Phase board
 
-| Phase | State | Blocked on |
+| Phase | Gate | State | Blocked on |
+|---|---|---|---|
+| 0 — Truth, contracts and decisions | A | Not started | — |
+| 1 — Correctness, security, data entry | A | Not started | Phase 0 decisions 3, 5, 6 |
+| 2 — Truthful gates | A | Not started | Phase 0 decisions 1, 7, 8 |
+| 3 — Seams and the ownership model | A | Not started | Phases 1 and 2. `P3-F` also needs decision 10's per-category scope table from `P0-C`. |
+| 4 — Atomic aggregate documents | A | Not started | Phase 3; phase 0 decision 2 |
+| E — Enterprise document primitives | A | Not started | Phase 3; phase 0 decisions 9 and 12, including the `V2-POS-002` choice. `PE-F` cannot run beside `P4-C` — both own numbering. |
+| L — Language, locale and multilingual content | A, with a B tail | Not started | Phase 0 decision 11; phase 2's `P2-E` locale axis. Otherwise parallel to 3, 4 and E. |
+| **Gate A** | | **Not assessed** | **Phases 4, E and L** |
+| 5 — Enterprise scale | B | Not started | Gate A |
+| 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
+| 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
+| **Gate B** | | **Not assessed** | **Phase 7** |
+| M — Maintainability | — | Not started | Phase 3 seams settled. Blocks nothing. |
+
+## Open work packages by phase
+
+The roadmap holds only what is outstanding, so every package listed here is open. A package leaves this
+table when it completes, in the same change that writes it into the changelog.
+
+| Phase | Packages | Findings |
 |---|---|---|
-| 0 — Truth, contracts and decisions | Not started | — |
-| 1 — Correctness, security, data entry | Not started | Phase 0 decisions 3, 5, 6 |
-| 2 — Truthful gates | Not started | Phase 0 decisions 1, 7, 8 |
-| 3 — Seams and the ownership model | Not started | Phases 1 and 2. `P3-F` also needs decision 10's per-category scope table from `P0-C`. |
-| 4 — Atomic aggregate documents | Not started | Phase 3; phase 0 decision 2 |
-| **Gate A** | **Not assessed** | **Phase 4** |
-| 5 — Enterprise scale | Not started | Gate A |
-| 6 — Continuity and introspection | Not started | Phase 2 gates (may run parallel to 3–5) |
-| 7 — Qualification | Not started | Phases 5 and 6 |
-| **Gate B** | **Not assessed** | **Phase 7** |
-| M — Maintainability | Not started | Phase 3 seams settled. Blocks nothing. |
+| 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-EXT-001`, `V2-ERP-006`, `V2-ERP-007`, `V2-POS-002` |
+| 1 | `P1-A` … `P1-F` | `V2-COR-001`, `V2-COR-002`, `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-002`, `V2-DB-003` |
+| 2 | `P2-A` … `P2-I` | `V2-ARC-001`, `V2-QA-001` – `V2-QA-005`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
+| 3 | `P3-A` … `P3-F` | `V2-ARC-003`, `V2-GRP-001` – `V2-GRP-006` |
+| 4 | `P4-A` … `P4-D` | `V2-SCL-003`, `V2-ERP-001` |
+| E | `PE-A` … `PE-G` | `V2-ERP-002` – `V2-ERP-005`, `V2-CUR-001` – `V2-CUR-004`, `V2-POS-001`, `V2-POS-003`, `V2-POS-004` |
+| L | `PL-A` … `PL-G` | `V2-LNG-001` – `V2-LNG-010`, `V2-MLC-001` – `V2-MLC-004` |
+| 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
+| 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
+| 7 | `P7-A` … `P7-I` | `V2-UX-001`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05` |
+| M | Lane M, no packages assigned yet | `V2-ARC-002` |
 
 ## Decisions
 
-Ten, all recorded in [`README.md`](README.md) section 2. Nine are settled there; one has a full decision
-record.
+Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full decision record.
 
 | | Decision | Record |
 |---|---|---|
@@ -52,20 +78,25 @@ record.
 | D6 | Runtime operational introspection is a distinct deliverable | README section 2 |
 | D7 | A business-group installation is supported, through ownership scopes | [ADR 0001](decisions/0001-resource-ownership-scope.md) |
 | D8 | The atomic aggregate contract is designed before it is built | README section 2; ADR due in `P0-E` |
-| D9 | Competing products are never named in repository documentation | README section 2 |
-| — | The remaining eight `P0-E` decisions | Not yet written |
+| D9 | Capabilities are described on their own merits | README section 2 |
+| D10 | Multi-currency is core: the type and the conversion contract | [ADR 0004](decisions/0004-money-conversion-contract.md) |
+| D11 | The interface is multilingual, with a decided architecture | [ADR 0002](decisions/0002-interface-translation-architecture.md) |
+| D12 | Content is multilingual too, including extension-contributed content | [ADR 0002](decisions/0002-interface-translation-architecture.md) |
+| D13 | The seven enterprise-primitive boundary questions are decided | README section 2; [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) for D13.2 |
+| D14 | Point of sale is deferred but not foreclosed | README section 2 |
+| — | The remaining `P0-E` decisions | Not yet written |
 
 ## Ledger snapshot
 
-**58 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**80 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
+| `accepted_for_implementation` | 35 |
 | `reproduced` | 18 |
 | `open` | 17 |
-| `accepted_for_implementation` | 9 |
-| `decision_required` | 7 |
-| `conditional` | 6 |
+| `conditional` | 7 |
+| `decision_required` | 2 |
 | `in_progress` | 1 |
 | `verified` | 0 |
 | `external` | 0 |
@@ -73,20 +104,28 @@ record.
 
 | Phase | Findings |
 |---|---|
-| 0 | 8 |
+| 0 | 5 |
 | 1 | 7 |
 | 2 | 9 |
 | 3 | 7 |
 | 4 | 2 |
+| E | 11 |
+| L | 14 |
 | 5 | 7 |
 | 6 | 7 |
 | 7 | 9 |
 | M | 1 |
 | evidence (`GM-AUD-02`, conditional residual) | 1 |
 
-By severity: 2 critical, 30 high, 18 medium, 8 low.
-By origin: 25 from the independent review, 12 still-open entries from the executed gap matrix, 21 discovered
-while verifying this roadmap or during the qualification programme.
+| Gate | Findings |
+|---|---|
+| A | 42 |
+| B | 23 |
+| none | 15 |
+
+By severity: 2 critical, 43 high, 26 medium, 9 low.
+By origin: 25 from the independent review, 12 still-open entries from the executed gap matrix, 43 discovered
+while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
 the tamper-evident audit work, the record-secret key ring and rotation, the credential lifecycle, the
@@ -105,14 +144,26 @@ that closed it.
 | 5 | Quality gates are truthful | No | `V2-QA-001`, `V2-QA-002`, `V2-QA-003`, `V2-QA-004`, `V2-QA-005`, `V2-DB-001` |
 | 6 | Aggregate seams are clean | No | `V2-ARC-003` |
 | 7 | Business-group ownership model in place | No | `V2-GRP-001` – `V2-GRP-006` |
-| 8 | Nothing regressed on three engines | Not assessed | — |
+| 8 | Enterprise document primitives exist and are enforced | No | `V2-ERP-001` – `V2-ERP-005` |
+| 9 | Multi-currency contract holds, with conversion provenance everywhere | No | `V2-CUR-001` – `V2-CUR-004` |
+| 10 | Language contract and machinery in place, `en-GB` extracted | No | `V2-LNG-001` – `V2-LNG-009`, `V2-MLC-001` – `V2-MLC-004` |
+| 11 | Point of sale not foreclosed | No | `V2-POS-001`, `V2-POS-003`, `V2-POS-004`; `V2-POS-002` decided |
+| 12 | Nothing regressed on three engines | Not assessed | — |
+
+## Gate B criteria that moved
+
+Gate B's ten criteria are unchanged and are listed in [`README.md`](README.md) section 8. One was added:
+
+| # | Criterion | Met | Findings |
+|---|---|---|---|
+| 11 | All nine languages ship and each is qualified in its own right | No | `V2-LNG-010` |
 
 ## Baseline health at this revision
 
 Green: `composer docs:api` (100% across 1,158 classes and 6,315 methods), `composer architecture:policy`,
-`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer cs`, `composer analyse`
-(PHPStan level `max`, no errors), unit suite (1,534 tests, 22,160 assertions), architecture suite (106
-tests, 6,918 assertions).
+`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (80 open
+findings), `composer openapi:check`, `composer cs`, `composer analyse` (PHPStan level `max`, no errors),
+unit suite (1,534 tests, 22,160 assertions), architecture suite (112 tests, 6,958 assertions).
 
 Not executed here: integration, functional and browser suites, which need live database and browser
 services.
@@ -122,9 +173,10 @@ services.
 ## How to update this file
 
 It is derivable from [`findings.json`](findings.json) plus the phase board. When a phase or gate moves,
-change the two tables at the top, the affected phase row, and the ledger snapshot counts. Do not add
-narrative here — narrative belongs in [`README.md`](README.md).
+change the tables at the top, the affected phase row, the open-package table, and the ledger snapshot
+counts. Do not add narrative here — narrative belongs in [`README.md`](README.md).
 
-When a work package finishes, delete its findings from `findings.json`, write them into
-[`CHANGELOG.md`](../../CHANGELOG.md), and lower the counts here in the same change. `composer roadmap:check`
-fails if a finished finding is left behind as `closed`.
+When a work package finishes, delete its findings from `findings.json`, remove its row from the open-package
+table, write what changed into [`CHANGELOG.md`](../../CHANGELOG.md), and lower the counts here in the same
+change. Work that was never planned skips the first two steps and goes straight to the changelog.
+`composer roadmap:check` fails if a finished finding is left behind as `closed`.

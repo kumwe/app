@@ -1,9 +1,17 @@
 {
   "contract": "kumwe-capacity-contract",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "status": "approved",
   "authority": "docs/roadmap/README.md, section 7",
   "baseline_sha": "26a7b3963c255064754f541dc8286e75dd566b1f",
+  "amendments": [
+    {
+      "version": "1.1.0",
+      "decisions": ["D10", "D11", "D12"],
+      "change": "Three additions, none of which changes the five-million target or any latency objective. A translation group is declared as one logical content item so nine languages do not inflate the headline figure. Content row volume is declared to scale with published locales so the storage forecast states it rather than discovering it. And undeclared_currency_conversions joins the integrity objectives at zero, which is what makes D10's audit rule a measured property instead of an intention.",
+      "not_changed": "The envelope, the service level objectives, the workload mix, the reference installation shape and every topology requirement are untouched."
+    }
+  ],
   "supersedes": {
     "document": "KUMWE_CMS_ENTERPRISE_STABILIZATION_AND_SCALE_ROADMAP_V2.md",
     "section": "6",
@@ -33,6 +41,11 @@
     },
     "active_concurrency": {
       "definition": "Requests or jobs executing simultaneously, not registered accounts and not logged-in sessions."
+    },
+    "translation_group": {
+      "definition": "One logical content item together with its per-locale entries.",
+      "counting_rule": "A translation group is exactly ONE logical content item, never one per locale. Its per-locale entries are rows and are reported as rows, in the same way a 1,000-line document's lines are reported separately from the single LBT that committed them. Publishing nine languages does not multiply the headline figure and may never be reported as if it did.",
+      "decision": "D12"
     }
   },
   "counting_formulae": {
@@ -150,6 +163,22 @@
       "independently_owned_extension_packages": 100,
       "published_definitions_or_versions": 1000
     },
+    "localization": {
+      "decisions": ["D11", "D12"],
+      "supported_locales": ["en-GB", "en-US", "af", "de", "he", "ar", "es", "pt-BR", "zh-Hans"],
+      "source_locale": "en-GB",
+      "right_to_left_locales": ["he", "ar"],
+      "content_row_multiplier": {
+        "rule": "Content row volume scales with the number of PUBLISHED locales in a translation group, not with the number of supported locales. An installation publishing three of the nine carries roughly three times the content rows of a single-language installation, and the storage forecast states the multiplier it was measured at.",
+        "measured_at_publications": 3,
+        "obligation": "The dataset generator declares how many locales each translation group publishes, and the storage forecast publishes the resulting content-row figure alongside the single-language figure so the multiplier is visible rather than inferred."
+      },
+      "catalogue_lookup_budget": {
+        "rule": "A message lookup is an array access against a compiled PHP catalogue served from the opcode cache. It adds NO file read and NO database query per message, and no per-request parse. The site- and organization-level override chain resolves once per request against a bounded cacheable set, because group and site overrides are administrative state rather than transactional state.",
+        "failure_condition": "A render path issuing a query or a file read per message is a scale defect and fails the qualification, not merely a performance note."
+      },
+      "presentation_only": "Locale affects presentation and formatting. It never affects a stored exact value, a checksum, an identifier, a machine error code, an audit action name or an ordering decision."
+    },
     "events": {
       "events_per_mutation": 1,
       "consumer_fan_out_normal": 3,
@@ -189,7 +218,11 @@
     "unauthorized_disclosures": 0,
     "silent_partial_document_commits": 0,
     "audit_omissions": 0,
-    "exact_value_drift": 0
+    "exact_value_drift": 0,
+    "undeclared_currency_conversions": 0
+  },
+  "integrity_objective_notes": {
+    "undeclared_currency_conversions": "Decision D10. Counts every converted money amount presented on any surface — screen, report, export, API response or event payload — without its converted marker, the rate applied and the as-at instant of that rate. A run that presents one fails qualification; it is not reported with a caveat. Conversion is a presentation and reporting concern layered above stored exact values and never a mutation of them, so this objective is the companion to exact_value_drift rather than a relaxation of it."
   },
   "availability_and_recovery": {
     "baseline_availability": "99.9% on the documented baseline deployment",

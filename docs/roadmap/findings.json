@@ -930,7 +930,7 @@
       "id": "V2-ERP-001",
       "title": "A record invariant cannot aggregate over an owned-line collection",
       "severity": "high",
-      "state": "decision_required",
+      "state": "accepted_for_implementation",
       "phase": "4",
       "gate": "A",
       "origin": "new",
@@ -951,16 +951,19 @@
           "note": "Offers 'a total agreeing with its lines' as an example of what an invariant expresses. The vocabulary above cannot express it. The docblock overstates the capability and must be corrected whichever way the decision goes."
         }
       ],
-      "acceptance_test": "Decide whether core supplies a bounded aggregation operator over owned lines, evaluated inside the aggregate commit, or whether the document-total invariant is extension-owned and core states so plainly. If core supplies it: a definition declares 'total equals the sum of line amounts', a 1,000-line document violating it is rejected atomically with no partial commit, the check runs once per aggregate command rather than once per line, and exact decimal semantics are preserved.",
+      "acceptance_test": "Core supplies a bounded aggregation over an owned-line collection: over exactly one declared owned-line relation, over exactly one line field, under the vocabulary's existing 32KB encoded ceiling and node-count discipline. A definition declares 'total equals the sum of line amounts'; a 1,000-line document violating it is rejected atomically with no partial commit and a stable named error identifying the invariant rather than the row; the evaluation runs once per aggregate command rather than once per line, proven by a query-count assertion so a per-line regression fails on the count rather than on a timing threshold; exact decimal semantics hold end to end, the sum of 1,000 ExactDecimal values being an ExactDecimal and never a float. A unit test proves Expression refuses an aggregation naming a relation the definition does not declare or a field the line entity does not carry. RecordInvariantDefinition's docblock becomes accurate in the same change.",
       "owner": "UNASSIGNED",
-      "closure_sha": null
+      "closure_sha": null,
+      "work_package": "P4-D",
+      "product_owner_decision": "Decision D13.1 — core, and urgent. Without it every extension reimplements the most fundamental document rule differently and none provably.",
+      "enforcing_check": "Unit test on Expression's aggregation validation; three-engine integration test asserting atomic rejection of a violating 1,000-line document; query-count assertion proving once-per-command evaluation."
     },
     {
       "id": "V2-ERP-002",
       "title": "Number sequences cannot be scoped by document type or legal entity, and reset only never, yearly or monthly",
       "severity": "medium",
-      "state": "decision_required",
-      "phase": "0",
+      "state": "accepted_for_implementation",
+      "phase": "E",
       "gate": "A",
       "origin": "new",
       "source_anchors": [
@@ -975,17 +978,21 @@
           "note": "Never, Yearly and Monthly only. There is no fiscal-period reset, and no concept of a fiscal period anywhere in src/."
         }
       ],
-      "acceptance_test": "Decide whether the scope and reset vocabularies extend, and record the business consequence either way. A legally required single sequence that cannot meet the enterprise target must state that limit explicitly rather than weaken gapless semantics.",
+      "acceptance_test": "The counter identity widens to include document type and legal entity, and the reset vocabulary gains a fiscal-period reset resolved through the PE-E period declaration. The allocator's advance mechanism is unchanged: only what the scope key and period key are composed from changes. Every existing gapless concurrency test runs unmodified against every new scope and reset combination — if one needs rewriting, the widening is wrong. A migration test proves every existing counter maps forward to exactly one widened counter with its current value intact. A widened scope means more counters each contended less, which is a throughput improvement obtained honestly; the meaning of an existing sequence is never changed for throughput alone.",
       "owner": "UNASSIGNED",
-      "closure_sha": null
+      "closure_sha": null,
+      "work_package": "PE-F",
+      "product_owner_decision": "Decision D13.4 — core. Small, because the allocator already exists and already derives its counter row from a scope key and a period key.",
+      "enforcing_check": "Existing gapless concurrency tests run unmodified across every new scope and reset combination; a forward-migration test proving one-to-one counter mapping with values intact.",
+      "cross_reference": ["V2-POS-002"]
     },
     {
       "id": "V2-ERP-003",
       "title": "No period-close or posting-lock primitive",
       "severity": "medium",
-      "state": "decision_required",
-      "phase": "0",
-      "gate": null,
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
       "origin": "new",
       "source_anchors": [
         {
@@ -994,47 +1001,79 @@
           "note": "Provides a per-record state machine with capability-gated transitions. There is no cross-record temporal lock — nothing that makes every record whose date falls in a closed range refuse mutation."
         }
       ],
-      "acceptance_test": "Decide whether core supplies a declarative temporal posting lock or whether it stays extension-owned. If extension-owned, confirm an extension can enforce it without a core edit, using record invariants, policy and actions, and prove it in the conformance fixture.",
+      "acceptance_test": "Core supplies a declarative temporal lock that refuses a mutation to a record whose declared date field falls inside a closed range, evaluated before the mutation fence rather than after it. Core gains NO fiscal calendar: what a period is, when it closes, who may close it and what re-opening means are the extension's, expressed through the lock's administrative surface. A three-engine integration test proves a mutation dated inside a closed period is refused on every surface, that closing a period is capability-gated and audited, and that a record dated outside the range is unaffected. Its interaction with V2-ERP-005 is a required test rather than an emergent behaviour: a correction issued after its original's period closed is dated in an open period, and neither mechanism special-cases the other.",
       "owner": "UNASSIGNED",
-      "closure_sha": null
+      "closure_sha": null,
+      "work_package": "PE-E",
+      "product_owner_decision": "Decision D13.3 — core mechanism, extension policy.",
+      "enforcing_check": "Three-engine integration test of the refusal on every surface; an architecture test asserting the lock is consulted on every mutation entry point, enumerated from the same table the mutation guard already uses, so a new entry point that skips it fails.",
+      "cross_reference": ["V2-ERP-005"]
     },
     {
       "id": "V2-ERP-004",
       "title": "No unit-of-measure conversion and no currency conversion primitive",
       "severity": "medium",
-      "state": "decision_required",
-      "phase": "0",
-      "gate": null,
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
       "origin": "new",
       "source_anchors": [
         {
           "file": "src/BusinessDefinition/Domain/BuiltInFieldTypes.php",
           "symbol": "the money and quantity types",
-          "note": "core.money pairs an exact amount with an ISO 4217 currency; core.quantity pairs an exact quantity with a declared unit. Both carry the unit, neither converts. There is no rate table and no conversion operator."
+          "note": "core.money pairs an exact amount with an ISO 4217 currency and configures precision, scale and currency; core.quantity pairs an exact quantity with a declared unit and configures precision, scale and unit. Both carry the denomination, neither converts. There is no rate table, no rate row, no rate provider, no conversion operator and no conversion service anywhere under src/."
+        },
+        {
+          "file": "src/BusinessRecord/Domain/QuantityValue.php",
+          "symbol": "the class docblock",
+          "note": "States the limit itself: 'The unit is an opaque portable identifier — nothing here converts between units, so two quantities are only comparable when their units are identical.' The same is true of MoneyValue and is not written down anywhere."
+        },
+        {
+          "file": "src/BusinessSchema/Infrastructure/Schema/CanonicalDefinitionPhysicalSchemaCompiler.php",
+          "symbol": "the composite column emission",
+          "note": "Line 706 emits core.money as an exact decimal .amount column beside a fixed three-character ascii .currency column; line 710 does the same for core.quantity with a .unit column. Exact storage is already correct and this work must not alter it."
         }
       ],
-      "acceptance_test": "Decide the boundary. Core's position is that the typed value and its exactness are core, and the rate source, the rate policy and the conversion event are extension-owned. If that is the position, state it in the extension documentation and prove in the conformance fixture that an extension can hold a rate table and convert without a core edit.",
+      "acceptance_test": "Core owns the typed value — it already does — and additionally owns the conversion contract for both money and quantity: the shape of a conversion request, the shape of a converted result, and the rules a conversion obeys. Extensions own the rate tables and the unit conversion tables. A conformance fixture proves an extension holds a conversion table and converts with no core edit, for a quantity in the mobile assignment fixture and for a money amount in the catalogue and order fixture. Stored exact values are untouched: MoneyValue, QuantityValue, ExactDecimal, the split physical columns and the pinned-denomination refusal are unchanged, and an architecture test asserts no src/ write path accepts a converted value where a core.money or core.quantity field value is expected.",
       "owner": "UNASSIGNED",
-      "closure_sha": null
+      "closure_sha": null,
+      "work_package": "PE-A, PE-C",
+      "product_owner_decision": "Decisions D10 and D13.5 — core owns the typed value and the conversion contract; extensions own the tables and the rates. Recorded in docs/roadmap/decisions/0004-money-conversion-contract.md. If core does not own the contract, extensions invent incompatible ones and cannot exchange data: a stock extension and a sales extension would disagree about what a case of a product is.",
+      "enforcing_check": "Construction and serialization tests proving the converted type cannot exist without its provenance; an architecture test proving conversion cannot leak into storage; conformance-fixture assertions for both the quantity and the money case.",
+      "cross_reference": ["V2-CUR-001", "V2-CUR-002", "V2-CUR-003", "V2-CUR-004"]
     },
     {
       "id": "V2-ERP-005",
       "title": "No immutable-correction primitive: an approved document is corrected by mutating it",
-      "severity": "medium",
-      "state": "decision_required",
-      "phase": "0",
-      "gate": null,
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
       "origin": "new",
       "source_anchors": [
         {
           "file": "src/BusinessRecord/Application/BusinessRecordService.php",
           "symbol": "the update and archive paths",
           "note": "Revisions record what changed, and the audit chain proves the record was not tampered with, but there is no declared 'this document is immutable after this transition; correct it by issuing a linked reversing document' primitive."
+        },
+        {
+          "file": "src/BusinessDefinition/Domain/FieldDefinition.php",
+          "symbol": "FieldDefinition::$immutableAfterCreate",
+          "note": "Line 130. Freezes one field from creation, which is a different rule from freezing a whole document from a transition. A document is mutable while it is a draft and frozen once approved; no existing declaration expresses that."
+        },
+        {
+          "file": "src/BusinessDefinition/Domain/WorkflowBinding.php",
+          "symbol": "WorkflowBinding",
+          "note": "Supplies the per-record state machine whose transitions run only through an action whose capability the actor holds. The declaration the reversal model needs hangs here, so the mechanism is an addition to an existing shape rather than a new one."
         }
       ],
-      "acceptance_test": "Decide whether core supplies a post-transition immutability declaration plus a linked-reversal relationship, or whether the pattern is composed from the existing workflow binding, field immutability and relationships. Either way, prove it in the exact-value approved-document conformance fixture.",
+      "acceptance_test": "A workflow binding may declare that entering a state makes the record immutable. After that transition every mutation of the record's own fields and its owned lines is refused on every surface, including surfaces an extension contributes, with a stable named error rather than a policy denial — the caller may be fully authorized; the document is closed. Correction is a new record of the same definition carrying a first-class typed link to the record it reverses, with its own approval path; the original is never rewritten and never suppressed, and both remain readable and in history. A 1,000-line reversal commits through the P4-A aggregate command; no separate reversal write path exists. Core knows nothing about what reversing means for a ledger or a balance. Definitions that do not declare post-transition immutability are unaffected, so nothing regresses for a definition that never opts in.",
       "owner": "UNASSIGNED",
-      "closure_sha": null
+      "closure_sha": null,
+      "work_package": "PE-D",
+      "product_owner_decision": "Decision D13.2 — core. This is an audit property, not an accounting feature: a platform whose identity is auditability cannot allow an approved document to be edited. Recorded in docs/roadmap/decisions/0003-immutable-correction-by-reversal.md.",
+      "enforcing_check": "An architecture test asserting no mutation path in src/ can write a record whose definition declares it immutable in its current state, so a new write path cannot bypass the rule silently; a three-engine integration test proving update, owned-line mutation and archive are refused with a stable error on every surface and that the reversal path succeeds; a conformance-fixture assertion failing an extension that corrects by mutation.",
+      "cross_reference": ["V2-ERP-003", "V2-ERP-002", "V2-SCL-003"]
     },
     {
       "id": "V2-ERP-006",
@@ -1064,7 +1103,7 @@
       "id": "V2-ERP-007",
       "title": "No offline-tolerant capture primitive for point-of-sale-style surfaces",
       "severity": "low",
-      "state": "decision_required",
+      "state": "conditional",
       "phase": "0",
       "gate": null,
       "origin": "new",
@@ -1072,12 +1111,633 @@
         {
           "file": "src/",
           "symbol": "absence",
-          "note": "No offline queue, no client-side durable store, no reconciliation or conflict-resolution primitive exists anywhere under src/. Idempotency keys and operation identifiers give a retried command a stable outcome, which is the foundation an offline client needs but is not itself offline support."
+          "note": "No offline queue, no client-side durable store, no reconciliation or conflict-resolution primitive exists anywhere under src/. Client-supplied operation identifiers and the idempotency ledger give a retried command a stable outcome, which is the foundation an offline client needs but is not itself offline support."
         }
       ],
-      "acceptance_test": "Decide and record whether an offline-tolerant capture surface is a core capability or an extension concern built on operation identifiers and idempotency. A point-of-sale extension must be able to state its supported behaviour under network loss without a core edit.",
+      "acceptance_test": "Nothing is built for this in Version 2. What must hold is that Version 2 does not foreclose it: the four constraints in V2-POS-001 through V2-POS-004 are the entire residual, and this entry stays open until all four are settled so the deferral is a decision someone owns rather than an omission nobody noticed. The reviewer of any Gate A contract change asks whether it makes an offline terminal impossible; if it does, this entry is the place that objection is raised.",
       "owner": "UNASSIGNED",
-      "closure_sha": null
+      "closure_sha": null,
+      "product_owner_decision": "Decision D14 — deferred beyond Version 2 as a product. Offline point of sale will be a separate long-standing application talking to the platform over the API. Version 2 does not build it and must not design in a way that forecloses it.",
+      "residual": "The platform must remain positioned to accommodate an offline terminal. That positioning is carried by V2-POS-001 through V2-POS-004, all of which are Gate A. This entry is the standing reminder that the deferral has a cost somebody is paying attention to.",
+      "forward_reference": "V2-POS-001, V2-POS-002, V2-POS-003, V2-POS-004"
+    },
+    {
+      "id": "V2-CUR-001",
+      "title": "Money carries its currency but nothing converts it, so a price cannot be presented in another currency",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessRecord/Domain/MoneyValue.php",
+          "symbol": "MoneyValue",
+          "note": "Binds an ExactDecimal amount to an uppercase ISO 4217 alphabetic code, refusing anything that is not exactly three uppercase letters. The pair is the whole value of a core.money field. There is no second denomination, no rate and no conversion."
+        },
+        {
+          "file": "src/BusinessDefinition/Application/BusinessDefinitionValidator.php",
+          "symbol": "the money default check",
+          "note": "Line 977 compares a field's configured currency against a declared default with hash_equals(), so a field may pin exactly one denomination and refuses any other. That is a correct exactness control and it is also, today, the whole of the currency model."
+        },
+        {
+          "file": "src/BusinessDefinition/Domain/Expression.php",
+          "symbol": "Expression::OPERATORS",
+          "note": "Twenty-one scalar operators, none of which converts anything. There is no conversion operator, no rate table and no rate provider anywhere under src/."
+        }
+      ],
+      "acceptance_test": "Core gains the conversion contract: the shape of a conversion request, the shape of a converted result, and the rules a conversion obeys, plus the port a rate provider implements. Core ships no rate provider, no rate table and no rate policy. A product priced in one currency is presentable in another through the contract, and two extensions converting the same amount produce results with the same shape and the same provenance. Stored exact values are untouched: MoneyValue, ExactDecimal, the split .amount and .currency columns and the pinned-currency refusal are unchanged, and a diff of this work touching one line of them is a defect.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PE-A",
+      "product_owner_decision": "Decision D10 — multi-currency is core. Core owns money-with-currency as a type and the conversion contract; rate providers and rate sourcing are extension and integration concerns, so an external rate service plugs into a pipeline rather than being wired into core. Recorded in docs/roadmap/decisions/0004-money-conversion-contract.md.",
+      "enforcing_check": "An architecture test asserting no src/ write path accepts a converted value where a core.money field value is expected, so conversion cannot leak into storage.",
+      "cross_reference": ["V2-ERP-004", "V2-CUR-002"]
+    },
+    {
+      "id": "V2-CUR-002",
+      "title": "A converted amount would be indistinguishable from a stored one, which is an audit defect rather than a formatting choice",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessRecord/Domain/MoneyValue.php",
+          "symbol": "MoneyValue::toArray()",
+          "note": "Exports exactly two members, amount and currency, in the canonical shape used for storage, checksums and API output. There is nowhere in the value for a marker, a rate or an as-at instant to live, because nothing produces a converted amount yet."
+        },
+        {
+          "file": "src/BusinessReporting/Application/RecordExportReportProvider.php",
+          "symbol": "the report value mapping",
+          "note": "Line 193 maps core.decimal to a report value type. Report and export payloads carry the value shape they are given, so widening the value is what widens the artifact; there is no separate provenance channel to add one to."
+        }
+      ],
+      "acceptance_test": "A converted amount is always marked as converted and carries the rate applied and the as-at instant of that rate, alongside the source currency and amount it was derived from. The type is constructible only in that complete shape, so an incomplete converted value cannot exist to be serialized. The provenance travels everywhere the figure does: the generated administrator and portal surfaces, the document view kind, report columns, export artifacts, the generated REST schemas, the machine surface and event payloads. A reader of a downloaded export can tell a converted figure from an agreed one without access to the system that produced it. A displayed price that silently drifts from its stored value is a qualification failure, not a rendering difference.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PE-A, PE-B",
+      "product_owner_decision": "Decision D10, the non-negotiable rule: a converted amount is always marked as converted and carries its rate and as-at instant. An operator must be able to tell, without asking anyone, whether they are looking at what was agreed or at what it is worth today, and if the latter, at what rate and as at when.",
+      "enforcing_check": "A unit test proving the converted type cannot be constructed without its rate and as-at instant; a serialization test proving the encoder emits all of them or fails, so a dropped field is a test failure rather than a rendering difference; a cross-surface test driven from one table of surfaces, so a surface added later without provenance fails rather than being missed; composer openapi:check for the generated REST half; and the capacity contract's undeclared_currency_conversions integrity objective at zero.",
+      "cross_reference": ["V2-CUR-001", "V2-CUR-004"]
+    },
+    {
+      "id": "V2-CUR-003",
+      "title": "No rate-provider extension point, so rate sourcing has nowhere to plug in",
+      "severity": "medium",
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Extension/Contribution/ExtensionContributionRegistrar.php",
+          "symbol": "the contribution surface",
+          "note": "Twenty-four contribution methods covering capabilities, resource policies, workspaces, navigation, views, routes, field types, field presentations, business definitions, custom view and action handlers, event schemas, listeners, consumers, job handlers, queues, schedules, projections, reports and webhooks. None of them registers a rate provider or a conversion table, because no conversion contract exists for one to serve."
+        }
+      ],
+      "acceptance_test": "An extension registers a rate provider through the contribution registrar the same way it registers everything else, and a conformance fixture proves an extension can hold a rate table and convert without a core edit. Core takes no dependency on any rate source: an external rate service, a manually administered table, a bank feed and a contractual fixed rate are all implementations of one port, and none is wired into core. Which rate, from whom, applying when, rounded how and approved by whom stay entirely with the extension that owns the rate.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PE-B",
+      "product_owner_decision": "Decision D10 — rate providers and rate sourcing are extension and integration concerns.",
+      "enforcing_check": "A conformance-fixture assertion in the catalogue, order and payment portfolio entry: an extension-held rate provider presents a price in a second currency with its rate and as-at instant, with no core edit. The existing extension-conformance runner is the gate.",
+      "cross_reference": ["V2-CUR-001"]
+    },
+    {
+      "id": "V2-CUR-004",
+      "title": "Reports and exports would carry a converted figure without the provenance that makes it readable after it leaves the system",
+      "severity": "medium",
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessReporting/Application/ReportService.php",
+          "symbol": "the report value pipeline",
+          "note": "Report columns carry the value shape the record supplies. A converted amount rendered as a bare number in an exported artifact is unreadable once the artifact is separated from the system that produced it, and there is no place in the current shape for the rate and instant to travel."
+        },
+        {
+          "file": "src/BusinessReporting/Application/ExportGenerationService.php",
+          "symbol": "the export artifact",
+          "note": "Exports are queued, stored and checksummed artifacts that outlive the request. Provenance omitted here is provenance lost permanently, because the artifact is the record the recipient keeps."
+        }
+      ],
+      "acceptance_test": "Report columns and export artifacts holding a converted amount carry the rate and the as-at instant as part of the value, so an exported artifact stays self-describing after it leaves the system. The export payload widening is stated in the work package and in the migration guidance rather than discovered by a consumer. A report combining stored and converted figures distinguishes them without the reader having to know which column is which.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PE-B",
+      "product_owner_decision": "Decision D10. The audit rule is only worth stating if it is universal; a rule half the surfaces follow is not a rule.",
+      "enforcing_check": "The same cross-surface provenance test as V2-CUR-002, with report and export among the enumerated surfaces, plus an export-artifact assertion that a downloaded artifact carries the provenance inline.",
+      "cross_reference": ["V2-CUR-002"]
+    },
+    {
+      "id": "V2-LNG-001",
+      "title": "There is no translation layer at all, and every user-facing string is hardcoded English",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Presentation/Twig/",
+          "symbol": "the three rendering environments",
+          "note": "AdministratorTwigEnvironment, SiteTwigEnvironment and RecoveryAdministratorTwigEnvironment, assembled by IsolatedTwigEnvironmentFactory. A grep for addFilter across src/ matches nothing on any of them, so no translation filter or function is registered on any surface. There is no catalogue format, no catalogue loader and no translator service anywhere under src/."
+        },
+        {
+          "file": "templates/",
+          "symbol": "75 templates",
+          "note": "Every user-facing string is inline. templates/administrator/settings.twig line 100 renders 'Save settings and design' directly."
+        },
+        {
+          "file": "src/Delivery/Console/Command/",
+          "symbol": "47 commands",
+          "note": "Console output text is inline in the command classes."
+        },
+        {
+          "file": "src/",
+          "symbol": "error message construction",
+          "note": "1,852 InvalidArgumentException constructions carry their text inline. Not all of them are user-facing, and separating the ones that are is part of the work."
+        }
+      ],
+      "acceptance_test": "A translator service exists, is bound into the Twig environments and the console, and resolves a message by stable semantic identifier. Every user-facing string on a translatable surface is looked up rather than written inline. Text that exists for a developer or a machine — a stable machine error code, an audit action name, a log line, a developer exception — is NOT translated, and the allowlist that says so names its reason per category: a translated error code is a broken contract.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-B, PL-C",
+      "product_owner_decision": "Decision D11 — the interface is multilingual. Recorded in docs/roadmap/decisions/0002-interface-translation-architecture.md.",
+      "enforcing_check": "V2-LNG-007's hardcoded-string gate passing on a clean tree is the completion criterion for extraction. Extraction is finished when the check passes, not when someone judges it finished."
+    },
+    {
+      "id": "V2-LNG-002",
+      "title": "The default_locale site setting is stored, validated and echoed, and consumed by nothing",
+      "severity": "medium",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Site/Infrastructure/Persistence/DoctrineSiteSettings.php",
+          "symbol": "the default_locale setting",
+          "note": "Line 94 defaults it to 'en', line 284 reads it in validate(), and line 314 normalises underscores to hyphens and stores it. validate() refuses anything that does not match a language subtag with optional subtags, so the value is a genuine locale tag rather than free text."
+        },
+        {
+          "file": "src/Infrastructure/Persistence/Migration/DynamicSiteContentMigration.php",
+          "symbol": "the seed",
+          "note": "Line 59 seeds site.default_locale as 'en'."
+        },
+        {
+          "file": "templates/administrator/settings.twig",
+          "symbol": "the regional defaults fieldset",
+          "note": "Line 97 is its only appearance in any template: it echoes the stored value back into its own form input. Nothing else reads it to select a language."
+        },
+        {
+          "file": "templates/site/layout.twig",
+          "symbol": "the document element",
+          "note": "Line 2 hardcodes <html lang=\"en\">, as do templates/administrator/layout.twig and templates/portal/layout.twig. No template emits a dir attribute or an hreflang link."
+        }
+      ],
+      "acceptance_test": "default_locale becomes the input to locale resolution rather than a stored string nobody reads. The three layouts emit lang and dir from the resolved locale instead of hardcoding en. A site whose default_locale is he renders right-to-left without any further configuration, and a site whose default_locale is unchanged renders exactly as it does today.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-B",
+      "product_owner_decision": "Decision D11.",
+      "enforcing_check": "A functional test asserting the rendered document element carries lang and dir derived from the resolved locale on all three surfaces, for a left-to-right and a right-to-left site."
+    },
+    {
+      "id": "V2-LNG-003",
+      "title": "No authored catalogue format and no compiled runtime catalogue",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/",
+          "symbol": "absence",
+          "note": "No catalogue format of any kind exists. There is nothing to author against, nothing to compile and nothing to load."
+        },
+        {
+          "file": "composer.json",
+          "symbol": "the generated-artifact checks",
+          "note": "openapi:check already proves a generated artifact matches its source, which is the shape the catalogue compiler's drift check reuses rather than inventing."
+        }
+      ],
+      "acceptance_test": "XLIFF 2.0 is the authored and interchange format, so a translator never opens a source file and an external translation platform or an AI-assisted pipeline connects through a format it already reads. The build compiles XLIFF to plain PHP array catalogues, so a runtime lookup is an array access served from the opcode cache with no XML parsing, no file I/O and no cache warm-up on the request path. XLIFF is never parsed at runtime. The compiled catalogue is generated output and is read before it is merged, like every other generated artifact this programme produces. The file layout core and an extension each ship is part of the frozen contract.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-A",
+      "product_owner_decision": "Decision D11 — XLIFF 2.0 authored, compiled to plain PHP arrays at build time.",
+      "enforcing_check": "A build check failing when a compiled catalogue drifts from its XLIFF source, in the same shape composer openapi:check already uses for the API contract."
+    },
+    {
+      "id": "V2-LNG-004",
+      "title": "No message formatter, so plurals, gender, ordinals, numbers and dates cannot be expressed",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "composer.json",
+          "symbol": "ext-intl",
+          "note": "Line 19 requires ext-intl unconditionally. It is a hard requirement already paid for."
+        },
+        {
+          "file": "src/BusinessRecord/Application/RecordValueCodec.php",
+          "symbol": "RecordValueCodec::unicodeNfc()",
+          "note": "Line 521 calls Normalizer::normalize(). This is the only use of ext-intl anywhere in src/. No MessageFormatter, NumberFormatter, IntlDateFormatter or Collator appears anywhere."
+        }
+      ],
+      "acceptance_test": "ICU MessageFormat, through the already-required ext-intl, formats plurals, gender, ordinals, numbers, currencies and dates. The reason is arithmetic rather than preference: the nine languages span one plural category (zh-Hans), two (the European set), three (he, which distinguishes a dual) and six (ar, which distinguishes zero, one, two, few, many and other), and the four-category Russian class is the next step outward. sprintf substitutes; it does not select. A test asserts correct category selection for each of the nine on a message with a count, including all six Arabic categories. Adding a four-category language later must be a catalogue change and not an engineering change.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-B",
+      "product_owner_decision": "Decision D11 — ICU MessageFormat via ext-intl, already a hard requirement so this adds no dependency. gettext is explicitly rejected: it depends on operating-system generated locales and setlocale() is process-global, which is unsafe in the long-running queue workers this platform runs by design, where one job's locale would still be in effect when the next begins. The argument is recorded in full in docs/roadmap/decisions/0002-interface-translation-architecture.md.",
+      "enforcing_check": "A unit test asserting plural-category selection per locale for all nine, and a worker-isolation test asserting two jobs processed in one long-lived worker under different locales each render in their own — the defect gettext would have introduced, proven absent."
+    },
+    {
+      "id": "V2-LNG-005",
+      "title": "No message-identifier grammar, and using source text as the identifier would be irreversible once translation exists",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Extension/Contribution/ContributionDefinition.php",
+          "symbol": "the namespacing rule",
+          "note": "Every contributed identifier is already namespaced by its owner, which is the pattern the message-identifier grammar follows rather than inventing a second convention."
+        }
+      ],
+      "acceptance_test": "A message is looked up by a stable semantic identifier, namespaced by owner. The source text is NEVER the lookup identifier. If it were, correcting a typographical error in English would invalidate that message in all eight other languages and every translator would redo work for a change that altered no meaning — irreversible in practice once real translation exists, which is why the rule is in the Gate A contract rather than in a style guide. The grammar refuses an identifier that is the source text, refuses an unnamespaced identifier contributed by an extension, and refuses an identifier differing from another only by case.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-A",
+      "product_owner_decision": "Decision D11 — stable, semantic message identifiers, never source text as the identifier. Part of the frozen contract at Gate A.",
+      "enforcing_check": "A unit test on the identifier grammar covering all three refusals, wired into the same gate that proves the catalogue compiles."
+    },
+    {
+      "id": "V2-LNG-006",
+      "title": "No catalogue override chain, so an operator cannot change wording and a vertical cannot adapt terminology without forking",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Site/Application/SiteSettings.php",
+          "symbol": "the seven public settings",
+          "note": "Site settings carry site_name, homepage_content_id, homepage_slug, default_locale, timezone, search_indexing_enabled and presentation. There is no per-site message override and nowhere for one to live."
+        },
+        {
+          "file": "src/Extension/Contribution/OwnedExtensionContributionRegistrar.php",
+          "symbol": "the owned contribution surface",
+          "note": "An extension contributes through an owned registrar that namespaces what it registers. A catalogue contribution follows the same shape; today there is no catalogue to contribute."
+        }
+      ],
+      "acceptance_test": "Lookup resolves core, then extension, then site, then organization, last wins. Core ships the base catalogue; an extension may add and override its own and core's messages; a site may override either; an organization within a site may override again. Site- and organization-level overrides are stored in the database, so an operator changes wording through an administered surface with no file edit and no deployment. The strategic consequence is recorded in the operator and extension documentation rather than as a footnote: the same mechanism is TERMINOLOGY ADAPTATION — relabelling 'Client' as 'Patient', 'Learner' or 'Guest' for a vertical, in one language or in all nine, without forking core and without an extension shipping a parallel string table. An operator who does not know this will fork something.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-B",
+      "product_owner_decision": "Decision D11 — a four-step override chain, deliberately, because the fourth step is what makes vertical terminology adaptation possible without a fork.",
+      "enforcing_check": "A unit test asserting the chain resolves in the declared order and that a missing message falls back to the declared fallback locale and then to the identifier, never to an empty string — a silently blank interface is worse than an untranslated one. A performance test asserting the render path issues no database query and no file read per message, because an override chain that becomes a per-message lookup is a scale defect wearing a feature's name."
+    },
+    {
+      "id": "V2-LNG-007",
+      "title": "Nothing would stop a new hardcoded user-facing string being introduced after extraction",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "tools/verify-roadmap.php",
+          "symbol": "the two-directional proof",
+          "note": "The roadmap lifecycle check is the pattern: a test asserting it passes on the committed tree and a test asserting it fails, with a useful message, on a fixture that reintroduces what it forbids. The hardcoded-string gate is proven the same way."
+        },
+        {
+          "file": "docs/qualification/gap-matrix.md",
+          "symbol": "the historical record",
+          "note": "The gap matrix rotted into a forward plan precisely because nothing mechanical stopped it. That is the argument for gating this convention rather than documenting it."
+        }
+      ],
+      "acceptance_test": "A check fails the build when a new user-facing string is introduced without going through a catalogue. It scans templates, console output and the user-facing error paths, and carries an explicit allowlist for the categories deliberately not translatable — machine error codes, audit action names, log messages, developer exceptions — with every allowlist entry naming its reason. A convention without a gate is a suggestion, and a translation programme protected only by review decays one merge at a time.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-E",
+      "product_owner_decision": "Decision D11 — enforcement is part of the decision, not an optional follow-up.",
+      "enforcing_check": "The check is itself the deliverable. It is proven in both directions: a test asserting it passes on the committed tree, and a test asserting it fails with a useful message on a fixture that reintroduces a hardcoded string. It joins composer qa."
+    },
+    {
+      "id": "V2-LNG-008",
+      "title": "en-GB source extraction is unproven at the real surface area",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "templates/",
+          "symbol": "75 templates",
+          "note": "The full template surface area extraction must cover."
+        },
+        {
+          "file": "src/Delivery/Console/Command/",
+          "symbol": "47 commands",
+          "note": "Console output is a translatable surface; exit codes and stable JSON field names are not."
+        }
+      ],
+      "acceptance_test": "en-GB is the source catalogue and is extracted in full: every user-facing string in the 75 templates, the 47 console commands and the user-facing error paths of src/ has an identifier and a catalogue entry. This is the single largest mechanical change in the programme, and it is delivered at Gate A because if extraction does not work at scale then everything downstream of it is a guess. Only user-facing text moves; a developer exception, a log line, a stable machine error code and an audit action name are not user-facing text.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-C",
+      "product_owner_decision": "Decision D11 — en-GB extracted at Gate A to prove extraction works at scale; the other eight catalogues are Gate B.",
+      "enforcing_check": "V2-LNG-007's gate passing on a clean tree. Extraction is complete when the check passes, which makes completion an observable fact rather than a judgement.",
+      "cross_reference": ["V2-LNG-007"]
+    },
+    {
+      "id": "V2-LNG-009",
+      "title": "Right-to-left is unsupported, but the stylesheets are most of the way to direction independence",
+      "severity": "medium",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "assets/",
+          "symbol": "the eight stylesheets",
+          "note": "Counted at the verified revision: 16 logical inline-axis declarations (margin-inline, padding-inline) and 2 direction-relative alignments (text-align: start, text-align: end), against 20 physical margin-left, margin-right, padding-left and padding-right declarations, 11 physical border-left and border-right, 5 text-align: left, and ZERO floats. Right-to-left is a conversion of about three dozen declarations, not a rebuild."
+        },
+        {
+          "file": "templates/administrator/layout.twig",
+          "symbol": "the document element",
+          "note": "Line 2 hardcodes lang and emits no dir attribute, as do the site and portal layouts."
+        }
+      ],
+      "acceptance_test": "Hebrew and Arabic are converted together, because the layout work is the same work and splitting it would mean doing it twice. The remaining physical inline-axis declarations become logical ones; the layouts emit dir from the resolved locale. Right-to-left gets ITS OWN visual-regression baselines: a right-to-left screenshot compared against a left-to-right baseline proves nothing. The P2-E matrix runs he and ar against those baselines with the same zero-horizontal-overflow and zero-inaccessible-critical-control acceptance as every other locale.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-F",
+      "product_owner_decision": "Decision D11 — Hebrew and Arabic are both in scope and are done together.",
+      "enforcing_check": "A stylesheet check failing the build on a new physical inline-axis declaration in assets/, with an allowlist for the cases where physical is genuinely correct and each entry naming why. Plus the per-locale visual baselines on the P2-E matrix.",
+      "cross_reference": ["V2-DB-001"]
+    },
+    {
+      "id": "V2-LNG-010",
+      "title": "The eight non-source catalogues and per-locale qualification are unbuilt",
+      "severity": "medium",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "B",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "docs/roadmap/decisions/0002-interface-translation-architecture.md",
+          "symbol": "the Version 2 language set",
+          "note": "Nine: en-GB (source), en-US, af, de, he, ar, es, pt-BR, zh-Hans. Traditional Chinese (zh-Hant) is not in Version 2 scope."
+        }
+      ],
+      "acceptance_test": "All nine catalogues are complete with no identifier missing that the source catalogue declares, and the browser, accessibility and visual matrix runs per locale with right-to-left carrying its own baselines. Zero horizontal overflow and zero inaccessible critical control in any of the nine. The proof-set sequencing is the point: en-GB, af, de and he first, because together they stress every hard axis — source extraction at scale, a smaller language with a thin tooling ecosystem, a layout-stressing language of long compounds, and a right-to-left script. After those four the remaining five are translation work rather than engineering work, and are scheduled and resourced as translation.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-G",
+      "product_owner_decision": "Decision D11 — the translated catalogues for the nine languages and per-locale visual qualification are Gate B; everything that shapes a contract is Gate A.",
+      "enforcing_check": "A catalogue-completeness check failing when any of the nine is missing an identifier the source catalogue declares, so 'we shipped eight and a half languages' is not a state the build permits."
+    },
+    {
+      "id": "V2-MLC-001",
+      "title": "Content carries no locale, no translation group and no per-locale publication state",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Content/Domain/ContentEntry.php",
+          "symbol": "ContentEntry",
+          "note": "Holds an identifier, title, slug, body, workflow state, publication window and version. Its own docblock enumerates what is deliberately absent — owning site, content type, workflow version, storage time — and no locale appears in either list. There is no translation group, no per-locale slug and no fallback declaration."
+        },
+        {
+          "file": "src/Infrastructure/Persistence/Migration/DynamicSiteContentMigration.php",
+          "symbol": "the content columns",
+          "note": "Line 313 writes a slug with no locale dimension. One entry, one slug, one publication window."
+        }
+      ],
+      "acceptance_test": "One logical item, one entry per locale: per-locale slugs, per-locale publication state so English may be live while another language is still drafting, and a declared fallback locale used when a translation is missing. A three-engine integration test proves a translation group publishes one locale while another drafts, that a missing translation resolves to the declared fallback, and that per-locale slugs do not collide across the locales of one group. Content translation is in Version 2 and is not deferred.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-D",
+      "product_owner_decision": "Decision D12 — content is multilingual too, modelled as a translation group.",
+      "enforcing_check": "The three-engine integration test above, plus a slug-uniqueness constraint proven at the database level rather than in application code.",
+      "cross_reference": ["V2-MLC-002", "V2-MLC-004"]
+    },
+    {
+      "id": "V2-MLC-002",
+      "title": "Extension-contributed content has no way to declare locale variants, which is why the model cannot wait for Gate B",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Extension/Contribution/ExtensionContributionRegistrar.php",
+          "symbol": "businessDefinition() and the view and template contributions",
+          "note": "An extension contributes business definitions, administrator and portal views and templates, and custom view and action handlers. None of those declarations carries a locale dimension or a translation-group behaviour, because neither exists."
+        },
+        {
+          "file": "src/Extension/Contribution/ContributionDefinitionChecksum.php",
+          "symbol": "the contribution checksum",
+          "note": "Contributions are checksummed as declarations. Widening a declaration after extensions are published against it is exactly the class of change Gate A exists to make unnecessary."
+        }
+      ],
+      "acceptance_test": "The translation-group model is part of the EXTENSION CONTRIBUTION CONTRACT, not only of core content. An extension contributing content declares its translation-group behaviour the same way it declares everything else, and a conformance fixture proves extension-contributed content gets locale variants with no core edit. This is the strongest reason none of the language work can wait for Gate B: an extension published against a contract with no locale dimension would have to be migrated.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-D",
+      "product_owner_decision": "Decision D12 — content translation must work for content contributed by extensions, not only core content.",
+      "enforcing_check": "A conformance-fixture assertion in the extension-contributed multilingual content portfolio entry, run by the existing extension-conformance runner; plus P0-C's frozen-contract classification covering the translation-group declaration.",
+      "cross_reference": ["V2-EXT-001", "V2-MLC-003"]
+    },
+    {
+      "id": "V2-MLC-003",
+      "title": "Business definition labels are single strings inside an immutable checksummed document",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessDefinition/Domain/EntityTypeDefinition.php",
+          "symbol": "singularLabel and pluralLabel",
+          "note": "Lines 148-149, each bounded to 120 bytes and validated at line 181. Both are members of the document exported at line 269 and encoded for the checksum."
+        },
+        {
+          "file": "src/BusinessDefinition/Domain/FieldDefinition.php",
+          "symbol": "label, description and helpText",
+          "note": "Line 116 promotes the label; line 156 bounds it to 120 bytes and the description and help text to 1,000. All three are members of the exported document."
+        },
+        {
+          "file": "src/BusinessDefinition/Domain/CanonicalDefinitionJson.php",
+          "symbol": "CanonicalDefinitionJson::encode()",
+          "note": "A published definition version is immutable and identified by a SHA-256 over these bytes, and package synchronization decides whether a declaration changed by comparing a stored checksum against a freshly encoded one. Adding a locale dimension after extensions publish would mean migrating live immutable documents."
+        }
+      ],
+      "acceptance_test": "Definition labels carry locales: EntityTypeDefinition's singular and plural labels and FieldDefinition's label, description and help text. Because a published version is immutable and identified by a checksum over the canonical bytes, the dimension must exist before the first extension publishes a definition. A checksum test proves a definition carrying single-locale labels encodes to the same bytes it did before the dimension existed, so no already-published version is invalidated by the change itself.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-D",
+      "product_owner_decision": "Decision D12 — business definition labels carry locales, and because definitions are immutable versioned documents this is Gate A contract.",
+      "enforcing_check": "A byte-stability test on CanonicalDefinitionJson proving an unchanged single-locale definition produces an unchanged checksum across the widening; plus P0-C's frozen-contract classification covering the label locale dimension.",
+      "cross_reference": ["V2-MLC-002"]
+    },
+    {
+      "id": "V2-MLC-004",
+      "title": "No hreflang and no front-end language selector",
+      "severity": "medium",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "templates/",
+          "symbol": "the layouts and the site templates",
+          "note": "No template emits an hreflang link and none renders a language selector, because there are no alternate-language documents for either to point at."
+        }
+      ],
+      "acceptance_test": "hreflang is emitted automatically from the translation group's members and lists exactly the published ones, so a drafting locale is not advertised. A front-end language selector ships by default rather than being added later, and it offers exactly the locales the group publishes. Both are proven by a functional test on the public surface.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-D",
+      "product_owner_decision": "Decision D12 — automatic hreflang and a shipped language selector, by default rather than later.",
+      "enforcing_check": "A functional test asserting hreflang lists exactly the published members of the group and no others, and that the selector offers exactly those locales.",
+      "cross_reference": ["V2-MLC-001"]
+    },
+    {
+      "id": "V2-POS-001",
+      "title": "The idempotency claim expires after a fixed day, so a terminal reconnecting later replays into a second effect",
+      "severity": "medium",
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessRecord/Domain/BusinessRecordIdempotency.php",
+          "symbol": "the claim's operationId and scopeDigest",
+          "note": "operationId is documented as 'the idempotency key the caller supplied, 8 to 128 characters', so the operation identifier is ALREADY client-minted. The scope digest is taken over site, organization, actor, operation and identifier, and the request payload and authorization context are fingerprinted alongside and re-checked before a replay is trusted."
+        },
+        {
+          "file": "src/Delivery/Http/Api/Idempotency/RequireIdempotencyKeyMiddleware.php",
+          "symbol": "the header contract",
+          "note": "Parses the client-supplied Idempotency-Key header once and publishes the validated value on the request. A missing header is answered idempotency-key-required and a malformed one invalid-idempotency-key, both 400, because neither is fixed by repeating the request."
+        },
+        {
+          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
+          "symbol": "the claim window",
+          "note": "Lines 2212 and 2325 construct the claim with new DateInterval('P1D'). Lines 2370 and 2431 treat an entry at or past expiresAt as absent. A terminal reconnecting after 24 hours therefore replays into a fresh claim and produces a second effect."
+        }
+      ],
+      "acceptance_test": "The contract states plainly who mints the operation identifier — the caller already does — and for how long a replay is honoured. The fixed P1D window becomes a declared, bounded, configurable retention with a stated maximum, and the contract says what happens to a replay arriving after it. What the actor component of the scope digest means for a terminal that re-authenticated while disconnected is stated rather than left to be discovered. A three-engine integration test proves a replay inside the declared window yields exactly one effect and a replay outside it is REFUSED with a stable named error rather than silently creating a second: the refusal is the property, and an implementation that quietly duplicates fails.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PE-G",
+      "product_owner_decision": "Decision D14 — point of sale is deferred as a product, but a terminal creating a document offline must be able to mint the operation identifier itself and submit later, with replay yielding one effect.",
+      "enforcing_check": "The three-engine replay test above, covering both inside and outside the declared window, and covering a replay submitted after re-authentication.",
+      "cross_reference": ["V2-ERP-007"]
+    },
+    {
+      "id": "V2-POS-002",
+      "title": "Numbering under disconnection: the gapless allocator commits inside the caller's transaction, so a disconnected terminal cannot call it",
+      "severity": "medium",
+      "state": "decision_required",
+      "phase": "0",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessNumberSequenceAllocator.php",
+          "symbol": "the class docblock and allocate()",
+          "note": "States it explicitly: 'this class opens none. It joins the transaction BusinessRecordService already has open around the whole create command'. It takes the counter row FOR UPDATE and holds the lock until that transaction ends, which is what makes a rolled-back create hand its number straight back. A disconnected terminal has no such transaction to join."
+        },
+        {
+          "file": "src/BusinessRecord/Application/BusinessNumberSequenceAllocator.php",
+          "symbol": "the documented guarantee",
+          "note": "The shipped promise, stated exactly: within one counter the values handed to committed records are contiguous from one, with no duplicates and no gaps. Either candidate shape changes what that promise means, which is why this is a decision rather than an implementation detail."
+        }
+      ],
+      "acceptance_test": "Choose between two viable shapes and record the consequence of the one chosen. (1) Allocate the human document number at SYNCHRONISATION TIME: the terminal carries its own client reference until then, that reference becomes a declared field with its own uniqueness scope, and the number is allocated by the receiving command exactly as it is today, preserving gaplessness in full. (2) Issue PER-TERMINAL RESERVED BLOCKS: the terminal allocates from its own block while disconnected, which FORFEITS GAPLESSNESS for those counters. If (2) is chosen, the forfeit is declared on the sequence itself and stated in the supported envelope, never left implicit. This interacts directly with the gapless guarantee already documented and shipped, and that trade is the product owner's to make; it is not decided here.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "P0-E decision 12; implemented in PE-F",
+      "product_owner_decision": "Decision D14 records the constraint and the two viable shapes and explicitly leaves the choice open. It must be taken in P0-E, because both shapes change the allocator and one of them changes a shipped promise.",
+      "enforcing_check": "Once decided: if synchronisation-time allocation, the existing gapless concurrency tests run unmodified. If reserved blocks, a test asserts a sequence declaring them reports itself as non-gapless through the same declaration an operator reads, so the forfeit cannot be silent.",
+      "cross_reference": ["V2-ERP-002", "V2-ERP-007"]
+    },
+    {
+      "id": "V2-POS-003",
+      "title": "No declared home for a client-asserted occurrence instant, and no stated tolerance for late or out-of-order arrival",
+      "severity": "medium",
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
+          "symbol": "the injected clock",
+          "note": "Takes a PSR ClockInterface and stamps one instant per command from it at lines 2187 and 2300. No surface accepts a client-asserted occurrence instant, so there is currently nowhere for one to live — which is the gap, not a protection."
+        },
+        {
+          "file": "src/BusinessIntegration/",
+          "symbol": "the sequenced journal and projection checkpoints",
+          "note": "Event ordering is by allocated sequence, and projections consume in that order. Nothing states whether a document captured days earlier and submitted now is ordered by capture or by arrival, because nothing yet arrives late by design."
+        }
+      ],
+      "acceptance_test": "A client-asserted captured-at instant has a declared place to live beside the server's own, is never substituted for it, and is never used for ordering, expiry, period assignment or numbering — a terminal's clock cannot be authoritative. Late and out-of-order arrival is accepted: a document captured on Friday and submitted on Monday is acceptable and is not ordered by when it arrived. Both are statements about the aggregate command's contract and about event sequencing, and both are tested rather than assumed.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PE-G",
+      "product_owner_decision": "Decision D14 — late and out-of-order arrival tolerance, and untrusted client clocks.",
+      "enforcing_check": "An architecture test asserting no ordering, expiry or numbering path reads a client-asserted instant, enumerated from the paths that consume an instant; plus an integration test submitting a batch out of capture order and asserting the resulting order.",
+      "cross_reference": ["V2-ERP-007", "V2-SCL-002"]
+    },
+    {
+      "id": "V2-POS-004",
+      "title": "Nothing states which validations may be deferred to reconciliation, so accept-and-reconcile is not a supportable posture",
+      "severity": "low",
+      "state": "accepted_for_implementation",
+      "phase": "E",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessRecord/Application/RecordRuleValidator.php",
+          "symbol": "the validation pass",
+          "note": "Every declared rule is evaluated at command time. There is no notion of a validation an extension may legitimately defer, and no statement of which validations can never be deferred."
+        }
+      ],
+      "acceptance_test": "The contract states which validations an extension may defer to reconciliation and which can never be deferred. Authorization, policy and definition-shape validity are never deferrable. Stock and pricing cannot be authoritative offline, so the design accepts a sale and reconciles rather than assuming live validation was possible at capture time. This is the one rule in the set that cannot be checked mechanically, because it is a statement about what an extension may CHOOSE; it is covered by the extension-contract review in P0-C and by a worked example in the extension documentation, and the work package says so rather than leaving the question silent.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PE-G",
+      "product_owner_decision": "Decision D14 — stock and pricing cannot be authoritative offline, so the design must accept a sale and reconcile rather than assume live validation.",
+      "enforcing_check": "Not mechanically enforceable, and stated as such. Covered by the P0-C frozen-contract review, which classifies the deferrable and non-deferrable validation categories, and by a worked example in the extension documentation. The non-deferrable half IS mechanically enforced: an architecture test asserts authorization, policy and definition-shape validation have no bypass path.",
+      "cross_reference": ["V2-ERP-007"]
     },
     {
       "id": "GM-AUD-02",
