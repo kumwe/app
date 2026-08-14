@@ -323,7 +323,7 @@ development programme, from the architecture decision that opened it to the curr
   the first. The arithmetic is exact from end to end; no conversion passes through a floating-point number, and
   rounding is a declared step with a named mode rather than something that happens on the way past.
   Conversion is presentation and reporting only: it never writes back, and a converted amount offered where a
-  stored money value belongs is refused. (`0000000`)
+  stored money value belongs is refused. (`8acec2c`)
 - **Exchange rates come from extensions, and Kumwe ships none.** A package declares the currencies it prices
   and its place in the resolution order in its signed manifest, implements one port, and registers it through
   the same contribution registrar every other extension surface uses. An external rate service, a manually
@@ -331,7 +331,7 @@ development programme, from the architecture decision that opened it to the curr
   wired into the product. A package cannot price a currency it did not declare, cannot attribute a rate to
   another package, and cannot supply a rate dated after the moment that was asked about. Rates disappear with
   their package on disable, uninstall or trust revocation, in the same sweep as everything else it
-  contributed. With no rate package installed, a conversion is refused rather than guessed. (`0000000`)
+  contributed. With no rate package installed, a conversion is refused rather than guessed. (`8acec2c`)
 
 ### Changed
 
@@ -403,7 +403,7 @@ development programme, from the architecture decision that opened it to the curr
   with no access to the installation that produced it, can tell a converted figure from an agreed one and
   reproduce it. A bare number in such a column fails the column's own declared type, so it is a refused report
   rather than a quietly weaker artifact. This widens the export payload for that column type; existing report
-  and export payloads are unchanged. (`0000000`)
+  and export payloads are unchanged. (`8acec2c`)
 
 ### Fixed
 
