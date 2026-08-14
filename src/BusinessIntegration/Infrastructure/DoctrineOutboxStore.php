@@ -38,6 +38,18 @@ use Throwable;
 final readonly class DoctrineOutboxStore implements OutboxStore
 {
     /**
+     * Most exhausted events one claim's quarantine pass will bury before getting on with its own work.
+     *
+     * The pass is a courtesy the claiming dispatcher performs for the queue, so it is bounded: a large
+     * backlog of exhausted events is buried over several claims rather than turning one claim into a
+     * table-wide write.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int BURY_BATCH = 100;
+
+    /**
      * Bind the durable store to its transaction and schema collaborators.
      *
      * @param   Connection             $database       Shared authoritative connection.
@@ -473,6 +485,14 @@ final readonly class DoctrineOutboxStore implements OutboxStore
     /**
      * Quarantine eligible records that exhausted their attempt budget.
      *
+     * Candidates are gathered first, under the same `SKIP LOCKED` clause the claim itself uses, and only
+     * then updated by primary key. The obvious single `UPDATE ... WHERE attempts >= maximum_attempts` is
+     * what this replaces, and the reason is contention rather than tidiness: comparing two columns cannot
+     * use the claim index, so the engine scans the table and takes a lock on what it reads. Because this
+     * pass runs at the head of every `claim()`, one dispatcher holding a row would make every other
+     * dispatcher wait behind it here — before ever reaching the `SKIP LOCKED` select that exists precisely
+     * so they do not. Skipping a locked candidate costs nothing: it is still exhausted on the next pass.
+     *
      * @param   DateTimeImmutable  $now  Authoritative timestamp for the state transition.
      *
      * @return  void
@@ -481,19 +501,39 @@ final readonly class DoctrineOutboxStore implements OutboxStore
      */
     private function buryExhausted(DateTimeImmutable $now): void
     {
+        $condition = 'attempts >= maximum_attempts AND ('
+            . "status = 'pending' OR (status = 'reserved' AND (lease_expires_at IS NULL OR lease_expires_at <= ?)))";
+        $exhausted = $this->database->fetchFirstColumn(sprintf(
+            'SELECT event_id FROM %s WHERE %s ORDER BY available_at, created_at, event_id LIMIT %d%s',
+            $this->tables->quoted('integration_outbox'),
+            $condition,
+            self::BURY_BATCH,
+            $this->lockClause(),
+        ), [$now], [Types::DATETIME_IMMUTABLE]);
+        if ($exhausted === []) {
+            return;
+        }
         $this->database->executeStatement(sprintf(
             "UPDATE %s SET status = 'dead', lease_owner = NULL, lease_token = NULL, lease_acquired_at = NULL, "
             . 'lease_expires_at = NULL, runtime_generation = NULL, failure_classification = ?, '
-            . 'exception_type = ?, error_message = ?, updated_at = ? WHERE attempts >= maximum_attempts AND ('
-            . "status = 'pending' OR (status = 'reserved' AND (lease_expires_at IS NULL OR lease_expires_at <= ?)))",
+            . 'exception_type = ?, error_message = ?, updated_at = ? WHERE event_id IN (?) AND %s',
             $this->tables->quoted('integration_outbox'),
+            $condition,
         ), [
             FailureClassification::TRANSIENT->value,
             self::class . '\\ExpiredOutboxLease',
             'The final outbox lease expired before dispatch completed.',
             $now,
+            $exhausted,
             $now,
-        ], [Types::STRING, Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE]);
+        ], [
+            Types::STRING,
+            Types::STRING,
+            Types::STRING,
+            Types::DATETIME_IMMUTABLE,
+            ArrayParameterType::STRING,
+            Types::DATETIME_IMMUTABLE,
+        ]);
     }
 
     /**
