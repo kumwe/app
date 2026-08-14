@@ -928,7 +928,7 @@
     },
     {
       "id": "V2-LNG-001",
-      "title": "There is no translation layer at all, and every user-facing string is hardcoded English",
+      "title": "User-facing text on the record surfaces, in the console and in the error paths is still hardcoded English",
       "severity": "high",
       "state": "accepted_for_implementation",
       "phase": "L",
@@ -936,36 +936,58 @@
       "origin": "new",
       "source_anchors": [
         {
-          "file": "src/Presentation/Twig/",
-          "symbol": "the three rendering environments",
-          "note": "AdministratorTwigEnvironment, SiteTwigEnvironment and RecoveryAdministratorTwigEnvironment, assembled by IsolatedTwigEnvironmentFactory. A grep for addFilter across src/ matches nothing on any of them, so no translation filter or function is registered on any surface. There is no catalogue format, no catalogue loader and no translator service anywhere under src/."
-        },
-        {
-          "file": "templates/",
-          "symbol": "75 templates",
-          "note": "Every user-facing string is inline. templates/administrator/settings.twig line 100 renders 'Save settings and design' directly."
+          "file": "tools/translation-extraction.json",
+          "symbol": "the pending_extraction register",
+          "note": "48 of the 75 templates still carry their text inline and are listed there, each with the reason it is not extracted yet. Five of them are held because another branch is changing them. The other 27 templates are extracted and enforced."
         },
         {
           "file": "src/Delivery/Console/Command/",
           "symbol": "47 commands",
-          "note": "Console output text is inline in the command classes."
+          "note": "Console output text is still inline in the command classes. Nothing binds the translator to the console, and the hardcoded-string gate does not scan it."
         },
         {
           "file": "src/",
           "symbol": "error message construction",
-          "note": "1,852 InvalidArgumentException constructions carry their text inline. Not all of them are user-facing, and separating the ones that are is part of the work."
+          "note": "The user-facing error paths still carry their text inline. Separating them from the developer exceptions, the log lines and the stable machine error codes is part of the work; docs/interface-translation.md states the categories the gate must treat as not translatable."
         }
       ],
-      "acceptance_test": "A translator service exists, is bound into the Twig environments and the console, and resolves a message by stable semantic identifier. Every user-facing string on a translatable surface is looked up rather than written inline. Text that exists for a developer or a machine — a stable machine error code, an audit action name, a log line, a developer exception — is NOT translated, and the allowlist that says so names its reason per category: a translated error code is a broken contract.",
+      "acceptance_test": "Every user-facing string on a translatable surface is looked up rather than written inline: the 48 remaining templates, the 47 console commands, and the user-facing error paths of src/. The translator is bound into the console the way it is already bound into the three Twig environments. Text that exists for a developer or a machine — a stable machine error code, an audit action name, a log line, a developer exception — is NOT translated, and the allowlist that says so names its reason per category: a translated error code is a broken contract.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
-      "work_package": "PL-B, PL-C",
+      "work_package": "PL-C",
       "product_owner_decision": "Decision D11 — the interface is multilingual. Recorded in docs/roadmap/decisions/0002-interface-translation-architecture.md.",
-      "enforcing_check": "V2-LNG-007's hardcoded-string gate passing on a clean tree is the completion criterion for extraction. Extraction is finished when the check passes, not when someone judges it finished."
+      "enforcing_check": "V2-LNG-007's gate passing with an empty pending_extraction register and with console output and the error paths inside its scope. Extraction is finished when the check passes, not when someone judges it finished."
     },
     {
-      "id": "V2-LNG-002",
-      "title": "The default_locale site setting is stored, validated and echoed, and consumed by nothing",
+      "id": "V2-LNG-006",
+      "title": "Site and organization message overrides have no store and no administered surface, and extension catalogues are not discovered",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Localization/Application/CatalogueTranslator.php",
+          "symbol": "the resolved chain",
+          "note": "The four-layer chain resolves core, then extension, then site, then organization, per identifier, and is proven at each level. What is missing is where the two upper layers come from: MessageOverrideRepository is served by ArrayMessageOverrideRepository, which holds nothing an operator can write to."
+        },
+        {
+          "file": "src/Kernel/ContainerFactory.php",
+          "symbol": "the CompiledMessageCatalogueRepository registration",
+          "note": "The repository accepts an ordered list of extension catalogue directories and is wired with none. ActiveExtensionSet exposes theme, view and portal-template paths but no catalogue path, so an extension cannot yet contribute a catalogue."
+        }
+      ],
+      "acceptance_test": "Site- and organization-level overrides are stored in the database, so an operator changes wording through an administered surface with no file edit and no deployment, and an extension contributes its compiled catalogue through the owned contribution registrar the same way it contributes everything else. The strategic consequence is already recorded in docs/interface-translation.md and stays recorded: the same mechanism is TERMINOLOGY ADAPTATION — relabelling 'Client' as 'Patient', 'Learner' or 'Guest' for a vertical, in one language or in all nine, without forking core and without an extension shipping a parallel string table.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "PL-B",
+      "product_owner_decision": "Decision D11 — a four-step override chain, deliberately, because the fourth step is what makes vertical terminology adaptation possible without a fork.",
+      "enforcing_check": "A three-engine integration test proving a stored site override changes one word and leaves every other message in that catalogue alone, and that an organization override beats it. The ordering and the no-query-per-message property are already pinned by tests/Unit/Localization/Application/CatalogueTranslatorTest.php and must stay pinned."
+    },
+    {
+      "id": "V2-LNG-007",
+      "title": "The hardcoded-string gate covers templates but not console output or the user-facing error paths",
       "severity": "medium",
       "state": "accepted_for_implementation",
       "phase": "L",
@@ -973,166 +995,26 @@
       "origin": "new",
       "source_anchors": [
         {
-          "file": "src/Site/Infrastructure/Persistence/DoctrineSiteSettings.php",
-          "symbol": "the default_locale setting",
-          "note": "Line 94 defaults it to 'en', line 284 reads it in validate(), and line 314 normalises underscores to hyphens and stores it. validate() refuses anything that does not match a language subtag with optional subtags, so the value is a genuine locale tag rather than free text."
+          "file": "tools/verify-translated-strings.php",
+          "symbol": "the template scanner",
+          "note": "It scans templates/, refuses user-facing text nodes and translatable attributes, refuses prose in Twig expressions, and proves both directions of the catalogue contract. It does not look at src/ at all, so console output and error messages are outside it."
         },
         {
-          "file": "src/Infrastructure/Persistence/Migration/DynamicSiteContentMigration.php",
-          "symbol": "the seed",
-          "note": "Line 59 seeds site.default_locale as 'en'."
-        },
-        {
-          "file": "templates/administrator/settings.twig",
-          "symbol": "the regional defaults fieldset",
-          "note": "Line 97 is its only appearance in any template: it echoes the stored value back into its own form input. Nothing else reads it to select a language."
-        },
-        {
-          "file": "templates/site/layout.twig",
-          "symbol": "the document element",
-          "note": "Line 2 hardcodes <html lang=\"en\">, as do templates/administrator/layout.twig and templates/portal/layout.twig. No template emits a dir attribute or an hreflang link."
+          "file": "src/Delivery/Console/Command/",
+          "symbol": "47 commands",
+          "note": "Console output is a translatable surface; exit codes and stable JSON field names are not. Distinguishing them mechanically is the work that remains."
         }
       ],
-      "acceptance_test": "default_locale becomes the input to locale resolution rather than a stored string nobody reads. The three layouts emit lang and dir from the resolved locale instead of hardcoding en. A site whose default_locale is he renders right-to-left without any further configuration, and a site whose default_locale is unchanged renders exactly as it does today.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-B",
-      "product_owner_decision": "Decision D11.",
-      "enforcing_check": "A functional test asserting the rendered document element carries lang and dir derived from the resolved locale on all three surfaces, for a left-to-right and a right-to-left site."
-    },
-    {
-      "id": "V2-LNG-003",
-      "title": "No authored catalogue format and no compiled runtime catalogue",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/",
-          "symbol": "absence",
-          "note": "No catalogue format of any kind exists. There is nothing to author against, nothing to compile and nothing to load."
-        },
-        {
-          "file": "composer.json",
-          "symbol": "the generated-artifact checks",
-          "note": "openapi:check already proves a generated artifact matches its source, which is the shape the catalogue compiler's drift check reuses rather than inventing."
-        }
-      ],
-      "acceptance_test": "XLIFF 2.0 is the authored and interchange format, so a translator never opens a source file and an external translation platform or an AI-assisted pipeline connects through a format it already reads. The build compiles XLIFF to plain PHP array catalogues, so a runtime lookup is an array access served from the opcode cache with no XML parsing, no file I/O and no cache warm-up on the request path. XLIFF is never parsed at runtime. The compiled catalogue is generated output and is read before it is merged, like every other generated artifact this programme produces. The file layout core and an extension each ship is part of the frozen contract.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-A",
-      "product_owner_decision": "Decision D11 — XLIFF 2.0 authored, compiled to plain PHP arrays at build time.",
-      "enforcing_check": "A build check failing when a compiled catalogue drifts from its XLIFF source, in the same shape composer openapi:check already uses for the API contract."
-    },
-    {
-      "id": "V2-LNG-004",
-      "title": "No message formatter, so plurals, gender, ordinals, numbers and dates cannot be expressed",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "composer.json",
-          "symbol": "ext-intl",
-          "note": "Line 19 requires ext-intl unconditionally. It is a hard requirement already paid for."
-        },
-        {
-          "file": "src/BusinessRecord/Application/RecordValueCodec.php",
-          "symbol": "RecordValueCodec::unicodeNfc()",
-          "note": "Line 521 calls Normalizer::normalize(). This is the only use of ext-intl anywhere in src/. No MessageFormatter, NumberFormatter, IntlDateFormatter or Collator appears anywhere."
-        }
-      ],
-      "acceptance_test": "ICU MessageFormat, through the already-required ext-intl, formats plurals, gender, ordinals, numbers, currencies and dates. The reason is arithmetic rather than preference: the nine languages span one plural category (zh-Hans), two (the European set), three (he, which distinguishes a dual) and six (ar, which distinguishes zero, one, two, few, many and other), and the four-category Russian class is the next step outward. sprintf substitutes; it does not select. A test asserts correct category selection for each of the nine on a message with a count, including all six Arabic categories. Adding a four-category language later must be a catalogue change and not an engineering change.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-B",
-      "product_owner_decision": "Decision D11 — ICU MessageFormat via ext-intl, already a hard requirement so this adds no dependency. gettext is explicitly rejected: it depends on operating-system generated locales and setlocale() is process-global, which is unsafe in the long-running queue workers this platform runs by design, where one job's locale would still be in effect when the next begins. The argument is recorded in full in docs/roadmap/decisions/0002-interface-translation-architecture.md.",
-      "enforcing_check": "A unit test asserting plural-category selection per locale for all nine, and a worker-isolation test asserting two jobs processed in one long-lived worker under different locales each render in their own — the defect gettext would have introduced, proven absent."
-    },
-    {
-      "id": "V2-LNG-005",
-      "title": "No message-identifier grammar, and using source text as the identifier would be irreversible once translation exists",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Extension/Contribution/ContributionDefinition.php",
-          "symbol": "the namespacing rule",
-          "note": "Every contributed identifier is already namespaced by its owner, which is the pattern the message-identifier grammar follows rather than inventing a second convention."
-        }
-      ],
-      "acceptance_test": "A message is looked up by a stable semantic identifier, namespaced by owner. The source text is NEVER the lookup identifier. If it were, correcting a typographical error in English would invalidate that message in all eight other languages and every translator would redo work for a change that altered no meaning — irreversible in practice once real translation exists, which is why the rule is in the Gate A contract rather than in a style guide. The grammar refuses an identifier that is the source text, refuses an unnamespaced identifier contributed by an extension, and refuses an identifier differing from another only by case.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-A",
-      "product_owner_decision": "Decision D11 — stable, semantic message identifiers, never source text as the identifier. Part of the frozen contract at Gate A.",
-      "enforcing_check": "A unit test on the identifier grammar covering all three refusals, wired into the same gate that proves the catalogue compiles."
-    },
-    {
-      "id": "V2-LNG-006",
-      "title": "No catalogue override chain, so an operator cannot change wording and a vertical cannot adapt terminology without forking",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Site/Application/SiteSettings.php",
-          "symbol": "the seven public settings",
-          "note": "Site settings carry site_name, homepage_content_id, homepage_slug, default_locale, timezone, search_indexing_enabled and presentation. There is no per-site message override and nowhere for one to live."
-        },
-        {
-          "file": "src/Extension/Contribution/OwnedExtensionContributionRegistrar.php",
-          "symbol": "the owned contribution surface",
-          "note": "An extension contributes through an owned registrar that namespaces what it registers. A catalogue contribution follows the same shape; today there is no catalogue to contribute."
-        }
-      ],
-      "acceptance_test": "Lookup resolves core, then extension, then site, then organization, last wins. Core ships the base catalogue; an extension may add and override its own and core's messages; a site may override either; an organization within a site may override again. Site- and organization-level overrides are stored in the database, so an operator changes wording through an administered surface with no file edit and no deployment. The strategic consequence is recorded in the operator and extension documentation rather than as a footnote: the same mechanism is TERMINOLOGY ADAPTATION — relabelling 'Client' as 'Patient', 'Learner' or 'Guest' for a vertical, in one language or in all nine, without forking core and without an extension shipping a parallel string table. An operator who does not know this will fork something.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-B",
-      "product_owner_decision": "Decision D11 — a four-step override chain, deliberately, because the fourth step is what makes vertical terminology adaptation possible without a fork.",
-      "enforcing_check": "A unit test asserting the chain resolves in the declared order and that a missing message falls back to the declared fallback locale and then to the identifier, never to an empty string — a silently blank interface is worse than an untranslated one. A performance test asserting the render path issues no database query and no file read per message, because an override chain that becomes a per-message lookup is a scale defect wearing a feature's name."
-    },
-    {
-      "id": "V2-LNG-007",
-      "title": "Nothing would stop a new hardcoded user-facing string being introduced after extraction",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "tools/verify-roadmap.php",
-          "symbol": "the two-directional proof",
-          "note": "The roadmap lifecycle check is the pattern: a test asserting it passes on the committed tree and a test asserting it fails, with a useful message, on a fixture that reintroduces what it forbids. The hardcoded-string gate is proven the same way."
-        },
-        {
-          "file": "docs/qualification/gap-matrix.md",
-          "symbol": "the historical record",
-          "note": "The gap matrix rotted into a forward plan precisely because nothing mechanical stopped it. That is the argument for gating this convention rather than documenting it."
-        }
-      ],
-      "acceptance_test": "A check fails the build when a new user-facing string is introduced without going through a catalogue. It scans templates, console output and the user-facing error paths, and carries an explicit allowlist for the categories deliberately not translatable — machine error codes, audit action names, log messages, developer exceptions — with every allowlist entry naming its reason. A convention without a gate is a suggestion, and a translation programme protected only by review decays one merge at a time.",
+      "acceptance_test": "The gate additionally scans console output and the user-facing error paths of src/, with an explicit allowlist for the categories deliberately not translatable — machine error codes, audit action names, log messages, developer exceptions — and every allowlist entry naming its reason. The template half already does this and is proven in both directions; the same proof is required of the new scope.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "work_package": "PL-E",
       "product_owner_decision": "Decision D11 — enforcement is part of the decision, not an optional follow-up.",
-      "enforcing_check": "The check is itself the deliverable. It is proven in both directions: a test asserting it passes on the committed tree, and a test asserting it fails with a useful message on a fixture that reintroduces a hardcoded string. It joins composer qa."
+      "enforcing_check": "A test asserting the widened gate passes on the committed tree, and a test asserting it fails with a useful message on a fixture that reintroduces a hardcoded console string — the shape tests/Architecture/InterfaceTranslationGateTest.php already uses for templates."
     },
     {
       "id": "V2-LNG-008",
-      "title": "en-GB source extraction is unproven at the real surface area",
+      "title": "en-GB extraction is proven on the public and chrome surfaces but not on the record surfaces, the console or the error paths",
       "severity": "high",
       "state": "accepted_for_implementation",
       "phase": "L",
@@ -1140,9 +1022,14 @@
       "origin": "new",
       "source_anchors": [
         {
-          "file": "templates/",
-          "symbol": "75 templates",
-          "note": "The full template surface area extraction must cover."
+          "file": "resources/localization/messages/en-GB.xlf",
+          "symbol": "the source catalogue",
+          "note": "89 messages across 27 templates: the whole public site surface, the eleven shared interface-standard partials, and the chrome, login and access-denied surfaces of the administrator and the portal. Extraction is proven to work; what remains is volume."
+        },
+        {
+          "file": "tools/translation-extraction.json",
+          "symbol": "the pending_extraction register",
+          "note": "The 48 templates still to extract, each with its reason. Five are held open because another branch is changing them: templates/administrator/business-detail.twig, business-form.twig and content-form.twig, and templates/portal/business-detail.twig and business-form.twig. They are extracted once that change has landed."
         },
         {
           "file": "src/Delivery/Console/Command/",
@@ -1150,7 +1037,7 @@
           "note": "Console output is a translatable surface; exit codes and stable JSON field names are not."
         }
       ],
-      "acceptance_test": "en-GB is the source catalogue and is extracted in full: every user-facing string in the 75 templates, the 47 console commands and the user-facing error paths of src/ has an identifier and a catalogue entry. This is the single largest mechanical change in the programme, and it is delivered at Gate A because if extraction does not work at scale then everything downstream of it is a guess. Only user-facing text moves; a developer exception, a log line, a stable machine error code and an audit action name are not user-facing text.",
+      "acceptance_test": "en-GB is extracted in full: the 48 remaining templates, the 47 console commands and the user-facing error paths of src/ each have an identifier and a catalogue entry, and the pending_extraction register is empty. Only user-facing text moves; a developer exception, a log line, a stable machine error code and an audit action name are not user-facing text.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "work_package": "PL-C",
@@ -1162,7 +1049,7 @@
     },
     {
       "id": "V2-LNG-009",
-      "title": "Right-to-left is unsupported, but the stylesheets are most of the way to direction independence",
+      "title": "Right-to-left has no visual-regression baselines of its own",
       "severity": "medium",
       "state": "accepted_for_implementation",
       "phase": "L",
@@ -1172,15 +1059,15 @@
         {
           "file": "assets/",
           "symbol": "the eight stylesheets",
-          "note": "Counted at the verified revision: 16 logical inline-axis declarations (margin-inline, padding-inline) and 2 direction-relative alignments (text-align: start, text-align: end), against 20 physical margin-left, margin-right, padding-left and padding-right declarations, 11 physical border-left and border-right, 5 text-align: left, and ZERO floats. Right-to-left is a conversion of about three dozen declarations, not a rebuild."
+          "note": "Every inline-axis declaration is now logical: 96 logical declarations and zero physical ones, guarded by composer assets:direction. The three layouts emit dir from the resolved locale and tests/Browser/right-to-left.spec.ts asserts direction and zero horizontal overflow in he and ar."
         },
         {
-          "file": "templates/administrator/layout.twig",
-          "symbol": "the document element",
-          "note": "Line 2 hardcodes lang and emits no dir attribute, as do the site and portal layouts."
+          "file": "playwright.config.ts",
+          "symbol": "snapshotPathTemplate",
+          "note": "Screenshot baselines are stored per project, not per locale. A right-to-left screenshot compared against a left-to-right baseline proves nothing, so he and ar need baselines of their own before the visual matrix can include them."
         }
       ],
-      "acceptance_test": "Hebrew and Arabic are converted together, because the layout work is the same work and splitting it would mean doing it twice. The remaining physical inline-axis declarations become logical ones; the layouts emit dir from the resolved locale. Right-to-left gets ITS OWN visual-regression baselines: a right-to-left screenshot compared against a left-to-right baseline proves nothing. The P2-E matrix runs he and ar against those baselines with the same zero-horizontal-overflow and zero-inaccessible-critical-control acceptance as every other locale.",
+      "acceptance_test": "Right-to-left gets ITS OWN visual-regression baselines. The P2-E matrix runs he and ar against those baselines with the same zero-horizontal-overflow and zero-inaccessible-critical-control acceptance as every other locale.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "work_package": "PL-F",

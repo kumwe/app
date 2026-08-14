@@ -201,6 +201,12 @@ jobs:
       - name: Verify deterministic OpenAPI artifact
         run: composer openapi:check
 
+      - name: Verify deterministic message catalogues and the translation gates
+        run: |
+          composer translation:check
+          composer translation:strings
+          composer assets:direction
+
       - name: Generate coding-standard normalization evidence
         run: |
           composer cs:fix || true

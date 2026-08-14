@@ -37,6 +37,9 @@ Individual checks:
 composer architecture:policy
 composer docs:api
 composer openapi:check
+composer translation:check
+composer translation:strings
+composer assets:direction
 composer cs
 composer analyse
 composer test:unit
@@ -52,6 +55,22 @@ commit still fails after a later commit changes it, so fixing one means rewritin
 introduced it. It requires a Docker daemon and fails loudly without one, which is why it is not part of
 `composer qa` — that suite is documented above as running inside the application container, where no
 daemon is available.
+
+For a change that touches a template, a stylesheet or a user-facing string, recompile the message
+catalogues and re-run the two translation gates. `composer translation:compile` rewrites
+`resources/localization/compiled/` from the XLIFF under `resources/localization/messages/`, and the
+compiled artifact is committed like every other generated output:
+
+```bash
+composer translation:compile
+composer translation:check
+composer translation:strings
+composer assets:direction
+git diff --exit-code resources/localization
+```
+
+[`docs/interface-translation.md`](interface-translation.md) states the message-identifier grammar, what
+the gate treats as user-facing, and how the override chain resolves.
 
 For a generated-business change, also run focused record/surface/OpenAPI/CLI/MCP tests, compile the golden contract,
 and execute the neutral cross-surface browser fixture with JavaScript enabled and disabled:
