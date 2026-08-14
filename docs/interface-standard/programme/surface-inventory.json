@@ -11,7 +11,7 @@
   },
   "coverage_scope": {
     "included_areas": ["administrator", "portal", "public", "generated", "extension", "template-override"],
-    "excluded_delivery": ["REST", "OpenAPI", "MCP", "CLI", "health", "asset bytes", "media bytes"],
+    "excluded_delivery": ["REST", "OpenAPI", "MCP", "CLI", "health", "metrics", "asset bytes", "media bytes"],
     "excluded_delivery_disposition": "Retain adapter parity and security evidence on the graphical task that invokes the delivery surface."
   },
   "fixture_profiles": [

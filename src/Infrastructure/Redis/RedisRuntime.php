@@ -348,4 +348,76 @@ final readonly class RedisRuntime
             throw new RuntimeException(self::UNREACHABLE, 0, $failure);
         }
     }
+
+    /**
+     * Add to several metric fields in one round trip.
+     *
+     * Metrics are the fourth kind of key this class owns, and the only one that is deliberately not
+     * expired: a counter that reset itself every few minutes would report a rate of zero for a healthy
+     * system. It is still not authoritative — losing the server loses the counts, and a scrape simply
+     * starts again from a lower value, which is the reset semantics every Prometheus client already
+     * has. The whole batch is pipelined because the caller is on a request path: a histogram observation
+     * updates its bucket, its sum and its count in one round trip rather than three.
+     *
+     * @param   array<string, float>  $increments  Amount to add, keyed by metric field name.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the server refuses the pipeline.
+     *
+     * @since   2.0.0
+     */
+    public function incrementMetrics(array $increments): void
+    {
+        if ($increments === []) {
+            return;
+        }
+        $pipeline = $this->redis->multi(Redis::PIPELINE);
+        foreach ($increments as $field => $value) {
+            $pipeline->hIncrByFloat('metrics', $field, $value);
+        }
+        if ($pipeline->exec() === false) {
+            throw new RuntimeException('Redis could not record metrics.');
+        }
+    }
+
+    /**
+     * Read every recorded metric field.
+     *
+     * @return  array<string, float>  Current value keyed by metric field name; empty when nothing is recorded.
+     *
+     * @throws  RuntimeException  When the server returns something other than a field map.
+     *
+     * @since   2.0.0
+     */
+    public function metrics(): array
+    {
+        $fields = $this->redis->hGetAll('metrics');
+        if ($fields === false) {
+            throw new RuntimeException('Redis could not read metrics.');
+        }
+        $values = [];
+        foreach ($fields as $field => $value) {
+            if (is_string($field) && (is_string($value) || is_int($value) || is_float($value))) {
+                $values[$field] = (float) $value;
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * Discard every recorded metric field.
+     *
+     * Only a test harness and an operator resetting a replaced deployment have any business calling
+     * this; a counter an application resets on its own is not a counter.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function forgetMetrics(): void
+    {
+        $this->redis->del('metrics');
+    }
 }

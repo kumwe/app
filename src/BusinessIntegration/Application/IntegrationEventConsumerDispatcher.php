@@ -95,6 +95,8 @@ final readonly class IntegrationEventConsumerDispatcher
             $this->logger->info('Integration event consumer completed.', [
                 'consumer_id' => $registered->identifier(),
                 'event_id' => $event->eventId(),
+                'correlation_id' => $event->correlationId(),
+                'causation_id' => $event->causationId(),
                 'attempt' => $lease->attempts,
                 'runtime_generation' => $lease->runtimeGeneration,
             ]);
@@ -108,6 +110,8 @@ final readonly class IntegrationEventConsumerDispatcher
             $this->logger->warning('Integration event consumer failed.', [
                 'consumer_id' => $registered->identifier(),
                 'event_id' => $event->eventId(),
+                'correlation_id' => $event->correlationId(),
+                'causation_id' => $event->causationId(),
                 'attempt' => $lease->attempts,
                 'classification' => $decision->classification->value,
                 'will_retry' => $decision->shouldRetry,

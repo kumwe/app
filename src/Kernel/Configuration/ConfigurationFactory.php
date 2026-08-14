@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Kernel\Configuration;
 
 use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
+use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use JsonException;
 use InvalidArgumentException;
@@ -99,6 +100,11 @@ final class ConfigurationFactory
             recordEncryption: $this->recordEncryption($environment),
             packageConformanceAdmission: $this->packageConformanceAdmission($environment),
             revocationFeed: $this->revocationFeed($environment),
+            logLevel: $this->logLevel($environment),
+            metricsEnabled: $environment->optionalString('KUMWE_METRICS_ENABLED') === null
+                ? null
+                : $environment->boolean('KUMWE_METRICS_ENABLED'),
+            metricsToken: $this->fileBackedSecret($environment, 'KUMWE_METRICS_TOKEN'),
         );
     }
 
@@ -151,6 +157,36 @@ final class ConfigurationFactory
             publicKeyBase64: $this->fileBackedSecret($environment, 'EXTENSIONS_REVOCATION_FEED_KEY'),
             maxStaleSeconds: $environment->positiveInteger('EXTENSIONS_REVOCATION_FEED_MAX_STALE_SECONDS', 172_800),
         );
+    }
+
+    /**
+     * Read the log-level override, normalised to the vocabulary the contract declares.
+     *
+     * The override exists so verbosity stops riding on `APP_DEBUG`. Raising an installation to
+     * `warning` for a noisy afternoon, or dropping it to `debug` to chase one incident, previously
+     * meant redeploying with debug on — which also widens the detail `ProblemDetailsMiddleware` puts
+     * into a 500 response, turning a logging decision into a disclosure decision.
+     *
+     * @param   Environment  $environment  Allow-listed variables resolved from the process and dotenv file.
+     *
+     * @return  ?string  Lower-cased level name, or null to take the level the contract declares.
+     *
+     * @throws  InvalidArgumentException  When the variable is set but names no known level.
+     *
+     * @since   2.0.0
+     */
+    private function logLevel(Environment $environment): ?string
+    {
+        $declared = $environment->optionalString('KUMWE_LOG_LEVEL');
+        if ($declared === null) {
+            return null;
+        }
+        $level = strtolower(trim($declared));
+        if (!in_array($level, ObservabilityContract::LEVELS, true)) {
+            throw new InvalidArgumentException('KUMWE_LOG_LEVEL must name a known log level.');
+        }
+
+        return $level;
     }
 
     /**

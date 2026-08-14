@@ -63,6 +63,16 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `EXTENSIONS_REVOCATION_FEED_URL` | Upstream revocation list origin | Absolute `https://` URL or absolute path to a local mirror; unset consumes no feed |
 | `EXTENSIONS_REVOCATION_FEED_KEY` | Pinned Ed25519 public key the feed is verified against | Base64 32-byte key, or `_FILE`; required with the URL and never taken from the trust store |
 | `EXTENSIONS_REVOCATION_FEED_MAX_STALE_SECONDS` | How long a verified fetch stays fresh | 3600 to 2592000; default 172800, after which the feed reads as stale |
+| `KUMWE_LOG_LEVEL` | Lowest severity written to the log stream | Unset; `config/observability.php` declares `info`. Set it — not `APP_DEBUG` — to change verbosity |
+| `KUMWE_METRICS_ENABLED` | Whether `/metrics` answers at all | Unset (off). Set `true` only where a scraper exists |
+| `KUMWE_METRICS_TOKEN` | Bearer token a private `/metrics` requires | 32+ random bytes; prefer `KUMWE_METRICS_TOKEN_FILE` in containers |
+| `EXTENSIONS_ALLOW_UNSIGNED_LOCAL` | Allow unsigned local packages | `false` in production |
+
+`KUMWE_LOG_LEVEL` exists so log verbosity stops riding on `APP_DEBUG`. Turning debug on to chase one
+incident also widens the detail `ProblemDetailsMiddleware` puts into a 500 response, which turns a
+logging decision into a disclosure decision; the level variable changes only what is written. It accepts
+the Monolog names in lower case — `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`,
+`emergency` — and a value outside that set stops the boot rather than defaulting.
 
 ### Initial data profiles
 

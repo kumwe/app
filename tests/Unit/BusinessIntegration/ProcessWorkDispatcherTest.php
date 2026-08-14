@@ -50,6 +50,7 @@ final class ProcessWorkDispatcherTest extends TestCase
             'process-worker-1',
             Uuid::uuid7()->toString(),
             '7',
+            'process-correlation-identifier',
         );
         $transactions = new RecordingProcessTransactions();
         $store = $this->createMock(ProcessManagerStore::class);
@@ -75,6 +76,7 @@ final class ProcessWorkDispatcherTest extends TestCase
             },
         );
         $proof = new \stdClass();
+        $logger = new TestLogger();
         $dispatcher = new ProcessWorkDispatcher(
             $store,
             [$handler],
@@ -82,12 +84,15 @@ final class ProcessWorkDispatcherTest extends TestCase
             new RetryPolicy($clock, new ProcessDispatcherZeroJitter()),
             new ProcessDispatcherCurrentRuntime(),
             $transactions,
-            new NullLogger(),
+            $logger,
         );
 
         self::assertTrue($dispatcher->dispatchOne('process-worker-1', '7'));
         self::assertFalse($transactions->active);
         self::assertSame(1, $transactions->calls);
+        // The work item's log line has to name the business operation, not just the process row.
+        self::assertCount(1, $logger->records);
+        self::assertSame('process-correlation-identifier', $logger->records[0]['context']['correlation_id'] ?? null);
     }
 
     public function testJobEnvelopePreservesTheLeaseTenantPartition(): void

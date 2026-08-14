@@ -29,6 +29,9 @@ final readonly class ProcessWorkLease
      * @param   string           $workerId           Lease owner.
      * @param   string           $leaseToken         Fencing token.
      * @param   string           $runtimeGeneration  Exact runtime generation selecting the handler.
+     * @param   ?string          $correlationId      End-to-end identifier the parent process was opened
+     *          under, carried so a work item's log lines join the business operation that started it
+     *          without a query against the process table; null when the store did not supply one.
      *
      * @throws  InvalidArgumentException  When lease metadata is malformed.
      *
@@ -44,6 +47,7 @@ final readonly class ProcessWorkLease
         public string $workerId,
         public string $leaseToken,
         public string $runtimeGeneration,
+        public ?string $correlationId = null,
     ) {
         $site = SiteContext::fromString($siteIdentifier)->identifier();
         $organization = $organizationId === null

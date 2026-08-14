@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
 use Kumwe\CMS\Http\Security\TrustedProxyMatcher;
+use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
 
 /**
  * The complete, already-validated settings one Kumwe process runs on.
@@ -75,6 +76,13 @@ final readonly class ApplicationConfiguration
      *          static conformance scan of packaged code; production refuses `Off`.
      * @param   RevocationFeedConfiguration    $revocationFeed                Upstream signing-key revocation list this
      *          installation consumes, if any, with the key it is pinned to.
+     * @param   ?string                        $logLevel                      Level records are emitted from, overriding
+     *          the level `config/observability.php` declares, or null to take the declared one. Deliberately
+     *          separate from `$debug`, which also widens error-response detail.
+     * @param ?bool $metricsEnabled Whether this deployment exposes the metrics
+     *          endpoint, overriding the contract's shipped state, or null to take the declared one.
+     * @param   ?string                        $metricsToken                  Shared bearer token a non-public metrics
+     *          endpoint requires; null leaves the endpoint invisible rather than open.
      *
      * @throws  InvalidArgumentException  When a setting is malformed, a secret is too short or
      *          reused, an identity is not a stable identifier, or a production-only rule is violated.
@@ -107,6 +115,9 @@ final readonly class ApplicationConfiguration
         public RecordEncryptionConfiguration $recordEncryption = new RecordEncryptionConfiguration(),
         public PackageConformanceMode $packageConformanceAdmission = PackageConformanceMode::Enforce,
         public RevocationFeedConfiguration $revocationFeed = new RevocationFeedConfiguration(),
+        public ?string $logLevel = null,
+        public ?bool $metricsEnabled = null,
+        public ?string $metricsToken = null,
     ) {
         if (filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
             throw new InvalidArgumentException('APP_BASE_URL must contain an absolute URL.');
@@ -186,6 +197,13 @@ final readonly class ApplicationConfiguration
             throw new InvalidArgumentException(
                 'APP_ADMIN_SESSION_SECONDS must be between 300 and 604800 seconds.',
             );
+        }
+        if ($logLevel !== null && !in_array($logLevel, ObservabilityContract::LEVELS, true)) {
+            throw new InvalidArgumentException('KUMWE_LOG_LEVEL must name a known log level.');
+        }
+        // A short shared token is a guessable one, and this endpoint answers before any rate limiter.
+        if ($metricsToken !== null && strlen($metricsToken) < 32) {
+            throw new InvalidArgumentException('KUMWE_METRICS_TOKEN must contain at least 32 bytes.');
         }
     }
 

@@ -461,6 +461,92 @@ final class ProductionArtifactsTest extends TestCase
         self::assertSame('php://stderr', $configuration['logging']['destination']);
     }
 
+    public function testTheDeclaredObservabilityContractIsTheOneTheKernelActuallyWires(): void
+    {
+        // The contract used to be read only by this test. If it stops being loaded by the composition
+        // root, it goes back to being a statement of intent that the running process ignores.
+        $kernel = $this->contents('src/Kernel/ContainerFactory.php');
+
+        self::assertStringContainsString('ObservabilityContract::load($root)', $kernel);
+        self::assertStringContainsString('new JsonFormatter(', $kernel);
+        foreach (['LogRedactionProcessor', 'LogContextProcessor'] as $processor) {
+            self::assertStringContainsString(
+                sprintf('pushProcessor(self::service($container, %s::class))', $processor),
+                $kernel,
+            );
+        }
+        self::assertStringNotContainsString('$configuration->debug ? Level::Debug : Level::Info', $kernel);
+    }
+
+    public function testAlertRulesShipForEveryDocumentedSignalAndNameTheirRunbook(): void
+    {
+        $rules = $this->contents('deploy/observability/alerts.yaml');
+
+        foreach (
+            [
+                'kumwe_ready',
+                'kumwe_http_requests_total',
+                'kumwe_http_request_duration_seconds_bucket',
+                'kumwe_jobs_oldest_due_age_seconds',
+                'kumwe_jobs_dead_lettered',
+                'kumwe_worker_heartbeat_age_seconds',
+                'kumwe_scheduler_lag_seconds',
+                'kumwe_outbox_oldest_pending_age_seconds',
+                'kumwe_inbox_poison',
+                'kumwe_process_work_oldest_overdue_age_seconds',
+                'kumwe_export_queue_depth',
+                'kumwe_metrics_collection_failed',
+            ] as $signal
+        ) {
+            self::assertStringContainsString($signal, $rules, sprintf('%s has no alert rule.', $signal));
+        }
+
+        // An alert nobody can act on is worse than none, so every rule states its runbook and the
+        // concrete failure it would have caught.
+        $alerts = substr_count($rules, '- alert: ');
+        self::assertGreaterThan(10, $alerts);
+        self::assertSame($alerts, substr_count($rules, 'runbook: '));
+        self::assertSame($alerts, substr_count($rules, 'caught: '));
+        self::assertStringContainsString('deploy/observability/alerts.yaml', $this->contents(
+            'docs/operations/monitoring.md',
+        ));
+    }
+
+    public function testNoAlertRuleReferencesARunbookThatDoesNotExist(): void
+    {
+        $rules = $this->contents('deploy/observability/alerts.yaml');
+        preg_match_all('/runbook: (\S+)/', $rules, $matches);
+        self::assertNotSame([], $matches[1]);
+
+        foreach (array_unique($matches[1]) as $reference) {
+            [$path, $anchor] = array_pad(explode('#', $reference, 2), 2, null);
+            self::assertFileExists($this->root . '/' . $path);
+            if ($anchor === null) {
+                continue;
+            }
+            $headings = [];
+            preg_match_all('/^#{2,4} (.+)$/m', $this->contents($path), $found);
+            foreach ($found[1] as $heading) {
+                $headings[] = strtolower((string) preg_replace('/[^a-z0-9]+/i', '-', trim($heading)));
+            }
+            self::assertContains($anchor, $headings, sprintf('%s names a missing section.', $reference));
+        }
+    }
+
+    public function testNoMetricNameOrLabelInTheCatalogueIsUnbounded(): void
+    {
+        $catalog = $this->contents('src/Infrastructure/Observability/MetricCatalog.php');
+
+        // These are the label names that would turn one series into one per row or per account.
+        foreach (['path', 'route', 'user', 'record', 'tenant', 'site', 'email', 'session'] as $unbounded) {
+            self::assertStringNotContainsString(
+                sprintf("'%s' => ", $unbounded),
+                $catalog,
+                sprintf('The %s label would be unbounded.', $unbounded),
+            );
+        }
+    }
+
     private function contents(string $path): string
     {
         $contents = file_get_contents($this->root . '/' . $path);

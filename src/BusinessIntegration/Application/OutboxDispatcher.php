@@ -66,6 +66,8 @@ final readonly class OutboxDispatcher
             $this->outbox->complete($lease);
             $this->logger->info('Integration event dispatched.', [
                 'event_id' => $lease->event->eventId(),
+                'correlation_id' => $lease->event->correlationId(),
+                'causation_id' => $lease->event->causationId(),
                 'event_type' => $lease->event->eventType(),
                 'transport' => $this->transport->identifier(),
                 'attempt' => $lease->attempts,
@@ -75,6 +77,8 @@ final readonly class OutboxDispatcher
             $this->outbox->defer($lease, $backpressure->delaySeconds);
             $this->logger->info('Integration event delivery deferred by queue backpressure.', [
                 'event_id' => $lease->event->eventId(),
+                'correlation_id' => $lease->event->correlationId(),
+                'causation_id' => $lease->event->causationId(),
                 'event_type' => $lease->event->eventType(),
                 'transport' => $this->transport->identifier(),
                 'delay_seconds' => $backpressure->delaySeconds,
@@ -85,6 +89,8 @@ final readonly class OutboxDispatcher
             $this->outbox->fail($lease, $decision->classification, $failure, $decision->retryAt);
             $this->logger->warning('Integration event dispatch failed.', [
                 'event_id' => $lease->event->eventId(),
+                'correlation_id' => $lease->event->correlationId(),
+                'causation_id' => $lease->event->causationId(),
                 'event_type' => $lease->event->eventType(),
                 'transport' => $this->transport->identifier(),
                 'attempt' => $lease->attempts,
