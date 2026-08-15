@@ -42,6 +42,23 @@ final readonly class TableNames
     }
 
     /**
+     * Return the validated prefix every physical name this compiler produces begins with.
+     *
+     * Reach for this only where the prefix is the subject rather than part of a name — deciding which
+     * of the tables in a shared schema belong to this installation, for instance, which is how a
+     * parent-schema install keeps its schema repairs off a neighbour's tables. Composing a name by
+     * concatenating this yourself defeats the point of the compiler; call `raw()` or `quoted()` instead.
+     *
+     * @return  string  Prefix as configured, already proven valid by `DatabaseTablePrefix`.
+     *
+     * @since   2.0.0
+     */
+    public function prefix(): string
+    {
+        return $this->prefix;
+    }
+
+    /**
      * Compile the unquoted physical table name for a logical name.
      *
      * @param   string  $name  Logical table name as the codebase spells it, such as `api_tokens`:
