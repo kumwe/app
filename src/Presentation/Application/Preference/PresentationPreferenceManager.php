@@ -43,6 +43,7 @@ final readonly class PresentationPreferenceManager
      * @param  ClockInterface                    $clock          Source of durable update and audit timestamps.
      * @param  TransactionManager                $transactions   Atomic scope joining preference and audit writes.
      * @param  MembershipContextValidator        $memberships    Live authority for role/workspace scope identity.
+     * @param  PresentationAccessGroupRepository  $accessGroups   Canonical role projection and lock boundary.
      *
      * @since  2.0.0
      */
@@ -54,6 +55,7 @@ final readonly class PresentationPreferenceManager
         private ClockInterface $clock,
         private TransactionManager $transactions,
         private MembershipContextValidator $memberships,
+        private PresentationAccessGroupRepository $accessGroups,
     ) {
     }
 
@@ -291,12 +293,13 @@ final readonly class PresentationPreferenceManager
      *
      * A user may manage only its own user-scoped value. Site defaults require site-scoped settings
      * authority, administrator defaults require installation-global administrator-theme authority, and
-     * role/workspace defaults additionally require the exact live membership selection carried by the
-     * execution context. Mutation paths call this both before and inside their write transaction.
+     * workspace defaults additionally require the exact live membership selection carried by the execution
+     * context. A `role:<uuid>` access-group default instead requires `users.manage` on that exact current role.
+     * Mutation paths call this both before and inside their write transaction.
      *
      * @param   ExecutionContext           $context         Authenticated actor and current site.
      * @param   PresentationPreferenceKey  $key             Layer being read with attribution or mutated.
-     * @param   bool                       $lockMembership  Whether a live workspace membership is locked for write.
+     * @param   bool                       $lockMembership  Whether live workspace or role identity is locked for write.
      *
      * @return  void
      *
@@ -330,6 +333,28 @@ final readonly class PresentationPreferenceManager
             }
             $this->assertSiteSettingsAuthority($context);
             return;
+        }
+
+        $scopeId = $key->scopeId;
+        if ($scopeId === null) {
+            throw new InvalidArgumentException('A role/workspace preference requires a named scope identity.');
+        }
+        $roleId = PresentationAccessGroup::roleIdFromIdentifier($scopeId);
+        if ($roleId !== null) {
+            $this->authorization->assertAllowed(
+                $context,
+                Capability::fromString('users.manage'),
+                AuthorizationResource::item('role', $roleId),
+            );
+            if (!$this->accessGroups->exists($scopeId, $lockMembership)) {
+                throw new InvalidArgumentException(
+                    'A role/workspace preference requires a current presentation access group.',
+                );
+            }
+            return;
+        }
+        if (str_starts_with($scopeId, 'role:')) {
+            throw new InvalidArgumentException('A presentation access-group preference identity is invalid.');
         }
 
         $membership = $context->membership();

@@ -72,6 +72,7 @@ use Kumwe\CMS\Administrator\Http\Handler\AdministratorBusinessSecurityHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorAutomationHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorCreateContentHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorDashboardHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorDashboardPreferencesHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorExtensionActionHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorExtensionsHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorInterfaceStandardHandler;
@@ -592,6 +593,9 @@ use Kumwe\CMS\Media\Infrastructure\FilesystemMediaStorage;
 use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
 use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
 use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Presentation\Application\Preference\PresentationAccessGroupRepository;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceManager;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceRepository;
@@ -603,6 +607,7 @@ use Kumwe\CMS\Presentation\Infrastructure\ConsoleAdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
 use Kumwe\CMS\Presentation\Infrastructure\Persistence\DoctrinePresentationPreferenceRepository;
+use Kumwe\CMS\Presentation\Infrastructure\Persistence\DoctrinePresentationAccessGroupRepository;
 use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
 use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
@@ -623,6 +628,7 @@ use Kumwe\CMS\Portal\Application\PortalSessionIdentityLoader;
 use Kumwe\CMS\Portal\Application\PortalSessionStore;
 use Kumwe\CMS\Portal\Application\SharedIdentityPortalAuthenticator;
 use Kumwe\CMS\Portal\Http\Handler\PortalHomeHandler;
+use Kumwe\CMS\Portal\Http\Handler\PortalDashboardPreferencesHandler;
 use Kumwe\CMS\Portal\Http\Handler\PortalApprovalHandler;
 use Kumwe\CMS\Portal\Http\Handler\PortalLoginHandler;
 use Kumwe\CMS\Portal\Http\Handler\PortalLogoutHandler;
@@ -2168,6 +2174,16 @@ final class ContainerFactory
             PresentationPreferenceRepository::class,
             DoctrinePresentationPreferenceRepository::class,
         );
+        $container->share(DoctrinePresentationAccessGroupRepository::class, static fn (
+            Container $container,
+        ): DoctrinePresentationAccessGroupRepository => new DoctrinePresentationAccessGroupRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->alias(
+            PresentationAccessGroupRepository::class,
+            DoctrinePresentationAccessGroupRepository::class,
+        );
         $container->share(
             PresentationPreferencePolicy::class,
             new RegisteredPresentationPreferencePolicy($contributionRegistries->interfaceSurfaces()),
@@ -2179,6 +2195,11 @@ final class ContainerFactory
             self::service($container, PresentationPreferenceRepository::class),
             self::service($container, PresentationPreferencePolicy::class),
         ), true);
+        $container->share(DashboardComposer::class, static fn (Container $container): DashboardComposer =>
+            new DashboardComposer(
+                self::service($container, PresentationPreferenceResolver::class),
+                self::service($container, PresentationAccessGroupRepository::class),
+            ), true);
         $container->share(PresentationPreferenceManager::class, static fn (
             Container $container,
         ): PresentationPreferenceManager => new PresentationPreferenceManager(
@@ -2189,6 +2210,13 @@ final class ContainerFactory
             self::service($container, ClockInterface::class),
             self::service($container, TransactionManager::class),
             self::service($container, MembershipContextValidator::class),
+            self::service($container, PresentationAccessGroupRepository::class),
+        ), true);
+        $container->share(DashboardPreferenceService::class, static fn (
+            Container $container,
+        ): DashboardPreferenceService => new DashboardPreferenceService(
+            self::service($container, PresentationPreferenceManager::class),
+            self::service($container, PresentationAccessGroupRepository::class),
         ), true);
         $eventContracts = $contributionRegistries->validateIntegrationContributions();
         $container->share(EventContractRegistry::class, $eventContracts, true);
@@ -3294,6 +3322,14 @@ final class ContainerFactory
                 Container $container,
             ): PortalHomeHandler => new PortalHomeHandler(
                 self::service($container, PortalRenderer::class),
+                self::service($container, DashboardComposer::class),
+                self::service($container, DashboardPreferenceService::class),
+            ), true);
+            $container->share(PortalDashboardPreferencesHandler::class, static fn (
+                Container $container,
+            ): PortalDashboardPreferencesHandler => new PortalDashboardPreferencesHandler(
+                self::service($container, DashboardPreferenceService::class),
+                self::service($container, PortalRenderer::class),
             ), true);
             $container->share(PortalSecurityHandler::class, static fn (
                 Container $container,
@@ -3331,7 +3367,14 @@ final class ContainerFactory
             self::service($container, ContentService::class),
             self::service($container, ContentModelService::class),
             self::service($container, AdministratorRenderer::class),
-            self::service($container, PublicPageLocator::class),
+            self::service($container, DashboardComposer::class),
+            self::service($container, DashboardPreferenceService::class),
+        ), true);
+        $container->share(AdministratorDashboardPreferencesHandler::class, static fn (
+            Container $container,
+        ): AdministratorDashboardPreferencesHandler => new AdministratorDashboardPreferencesHandler(
+            self::service($container, DashboardPreferenceService::class),
+            self::service($container, AdministratorRenderer::class),
         ), true);
         $container->share(AdministratorInterfaceStandardHandler::class, static fn (
             Container $container,
@@ -3808,6 +3851,11 @@ final class ContainerFactory
             $application->route('/portal/login', PortalLoginHandler::class, ['GET', 'POST'], 'portal.login');
             self::portalRoute($application->get('/portal', PortalHomeHandler::class, 'portal.index'), 'portal.access');
             self::portalRoute($application->post(
+                '/portal/dashboard/preferences',
+                [PortalCsrfMiddleware::class, PortalDashboardPreferencesHandler::class],
+                'portal.dashboard.preferences',
+            ), 'portal.access');
+            self::portalRoute($application->post(
                 '/portal/logout',
                 [PortalCsrfMiddleware::class, PortalLogoutHandler::class],
                 'portal.logout',
@@ -3955,6 +4003,11 @@ final class ContainerFactory
             $application->get('/administrator', AdministratorDashboardHandler::class, 'administrator.index'),
             'administrator.access',
         );
+        self::administratorRoute($application->post(
+            '/administrator/dashboard/preferences',
+            [AdministratorCsrfMiddleware::class, AdministratorDashboardPreferencesHandler::class],
+            'administrator.dashboard.preferences',
+        ), 'administrator.access');
         self::administratorRoute(
             $application->get(
                 '/administrator/interface-standard',

@@ -1,5 +1,6 @@
 @import "../../public/assets/portal.css";
 @import "../interface-standard/styles.css";
+@import "../interface-standard/dashboard.css";
 @import "./phase-five.css";
 
 :root {

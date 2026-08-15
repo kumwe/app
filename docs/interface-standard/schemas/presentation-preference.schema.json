@@ -116,7 +116,7 @@
       "properties": {
         "slot": {"const": "dashboard-cards"},
         "scope": {"enum": ["administrator", "role-workspace", "user"]},
-        "value": {"$ref": "#/$defs/semanticNameList"}
+        "value": {"$ref": "#/$defs/dashboardIdentifierList"}
       }
     },
     {
@@ -182,6 +182,12 @@
     "dottedNameList": {
       "type": "array",
       "maxItems": 32,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/dottedName"}
+    },
+    "dashboardIdentifierList": {
+      "type": "array",
+      "maxItems": 64,
       "uniqueItems": true,
       "items": {"$ref": "#/$defs/dottedName"}
     }

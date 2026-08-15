@@ -13,7 +13,8 @@ use Kumwe\CMS\InterfaceStandard\SurfaceId;
  * Live surface-admission boundary for stored presentation preferences.
  *
  * A schema-valid record is not automatically active: its owner must still contribute the surface and
- * that declaration must still expose the exact slot and scope. Mutations require `assertAllowed()`;
+ * that declaration must still expose the slot at a legal layer no higher than its declared ceiling.
+ * Mutations require `assertAllowed()`;
  * resolution uses `allows()` so a removed slot falls back safely instead of breaking rendering.
  *
  * @since  2.0.0
@@ -21,14 +22,14 @@ use Kumwe\CMS\InterfaceStandard\SurfaceId;
 interface PresentationPreferencePolicy
 {
     /**
-     * Determine whether the current owner-bound surface admits an exact customization pair.
+     * Determine whether the current owner-bound surface admits a customization layer under its ceiling.
      *
      * @param   SurfaceId           $surface  Current semantic surface.
      * @param   ContributionOwner   $owner    Expected active owner.
      * @param   CustomizationSlot   $slot     Presentation choice being considered.
      * @param   CustomizationScope  $scope    Hierarchy layer being considered.
      *
-     * @return  bool  True only when the live admitted declaration contains the pair.
+     * @return  bool  True only when the live declaration's slot ceiling admits this area-safe layer.
      *
      * @since   2.0.0
      */
@@ -40,7 +41,7 @@ interface PresentationPreferencePolicy
     ): bool;
 
     /**
-     * Require a live owner-bound declaration to expose an exact customization pair.
+     * Require a live owner-bound declaration to expose a slot at this layer or a higher legal layer.
      *
      * @param   SurfaceId           $surface  Current semantic surface.
      * @param   ContributionOwner   $owner    Expected active owner.

@@ -125,6 +125,24 @@ final readonly class AdministratorRenderer
     }
 
     /**
+     * Project the same capability- and live-trust-filtered navigation used by the administrator shell.
+     *
+     * Dashboard composition consumes this method so workflow widgets and shortcut choices cannot drift
+     * from the command palette or sidebar, and no handler needs direct mutable access to the contribution
+     * registry. The returned hrefs have already passed the registry's owner confinement rules.
+     *
+     * @param   array<string, true>  $capabilities  Current actor capability lookup.
+     *
+     * @return  list<array<string, int|string>>  Navigation rows safe to present to this actor.
+     *
+     * @since   2.0.0
+     */
+    public function visibleNavigation(array $capabilities): array
+    {
+        return ($this->navigation ?? AdministratorNavigationRegistry::core())->visible($capabilities);
+    }
+
+    /**
      * Map a core template name to the menu entry the shell should mark as the current screen.
      *
      * Both content screens resolve to the same `core.content` entry, so opening the editor keeps the
@@ -227,7 +245,9 @@ final readonly class AdministratorRenderer
         }
         /** @var array<string, true> $capabilities */
         $registry = $navigationRegistry ?? $this->navigation ?? AdministratorNavigationRegistry::core();
-        $navigation = $registry->visible($capabilities);
+        $navigation = $navigationRegistry === null
+            ? $this->visibleNavigation($capabilities)
+            : $registry->visible($capabilities);
         $assetEntry = ($this->assets ?? new ViteAssetManifest(''))->entry(
             'assets/administrator/main.ts',
             '/assets/administrator.css',

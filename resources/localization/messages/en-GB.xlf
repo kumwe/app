@@ -228,6 +228,122 @@
         <source>Review the highlighted fields</source>
       </segment>
     </unit>
+    <unit id="core.interface_standard.dashboard.customize_action">
+      <segment>
+        <source>Customize dashboard</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.fallback_notice">
+      <notes>
+        <note category="context">Shown when saved dashboard choices contain entries that are no longer available.</note>
+      </notes>
+      <segment>
+        <source>Some saved dashboard items are no longer available. Current permitted choices are shown instead.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.open_action">
+      <notes>
+        <note category="context">Action on a workflow widget. {area} is the visible destination name.</note>
+      </notes>
+      <segment>
+        <source>Open {area}</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.customize_heading">
+      <segment>
+        <source>Customize this dashboard</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.customize_help">
+      <segment>
+        <source>Choose the widgets and shortcuts that support this work, then set their order.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.saved_notice">
+      <segment>
+        <source>Dashboard preferences saved.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.widgets_legend">
+      <segment>
+        <source>Dashboard widgets</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.widgets_help">
+      <segment>
+        <source>Select the widgets to show. Lower order numbers appear first.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.order_label">
+      <segment>
+        <source>Order</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.save_widgets">
+      <segment>
+        <source>Save widgets</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.reset_widgets">
+      <segment>
+        <source>Reset widgets</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.shortcuts_legend">
+      <segment>
+        <source>Quick links</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.shortcuts_help">
+      <segment>
+        <source>Select the permitted destinations to pin. Lower order numbers appear first.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.save_shortcuts">
+      <segment>
+        <source>Save quick links</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.reset_shortcuts">
+      <segment>
+        <source>Reset quick links</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.personal_eyebrow">
+      <segment>
+        <source>Personal</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.personal_label">
+      <segment>
+        <source>Your dashboard</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.personal_help">
+      <segment>
+        <source>Choose the widgets and shortcuts that work best for you. Your choices replace group defaults.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_eyebrow">
+      <segment>
+        <source>Access group</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_help">
+      <segment>
+        <source>These defaults are combined with other assigned groups and can be replaced by a personal dashboard.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.conflict_notice">
+      <segment>
+        <source>The dashboard changed in another session. Review the latest choices and try again.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.invalid_notice">
+      <segment>
+        <source>The dashboard choices could not be saved. Review the selection and try again.</source>
+      </segment>
+    </unit>
   </file>
   <file id="core-administrator">
     <unit id="core.administrator.layout.document_title">
@@ -295,6 +411,190 @@
     <unit id="core.administrator.layout.sign_out">
       <segment>
         <source>Sign out</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.document_title">
+      <segment>
+        <source>Dashboard · Kumwe</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.context_title">
+      <segment>
+        <source>Dashboard</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.eyebrow">
+      <segment>
+        <source>Workspace overview</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.heading">
+      <segment>
+        <source>Your work, at a glance</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.purpose">
+      <segment>
+        <source>See current content and business activity, then go directly to every area your access allows.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.widgets_eyebrow">
+      <segment>
+        <source>Access-aware</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.widgets_heading">
+      <segment>
+        <source>Current work</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.widgets_help">
+      <segment>
+        <source>Dashboard widgets are selected from the areas and information available to your account.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.empty_heading">
+      <segment>
+        <source>No dashboard widgets selected</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.empty_message">
+      <segment>
+        <source>Customize this dashboard to add permitted work areas, or use the quick links below.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.shortcuts_heading">
+      <segment>
+        <source>Quick links</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.shortcuts_help">
+      <segment>
+        <source>Open the destinations you use most without searching the full navigation.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.shortcuts_empty">
+      <segment>
+        <source>No quick links are selected for this dashboard.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.shortcuts_label">
+      <notes>
+        <note category="context">Accessible name of the administrator dashboard shortcut navigation.</note>
+      </notes>
+      <segment>
+        <source>Dashboard quick links</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.access_context.title">
+      <segment>
+        <source>Your access context</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.access_context.description">
+      <segment>
+        <source>The site, workspace and permitted workflows governing this administrator session.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.access_context.site_label">
+      <segment>
+        <source>Site</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.access_context.workspace_label">
+      <segment>
+        <source>Workspace</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.access_context.workflows_label">
+      <segment>
+        <source>Available workflows</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.title">
+      <segment>
+        <source>Content overview</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.description">
+      <segment>
+        <source>Publication work you are allowed to see.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.total_metric">
+      <segment>
+        <source>Readable items</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.published_metric">
+      <segment>
+        <source>Published</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.review_metric">
+      <segment>
+        <source>In review</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.types_metric">
+      <segment>
+        <source>Content types</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.search_label">
+      <segment>
+        <source>Search content</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.search_placeholder">
+      <segment>
+        <source>Search titles and content</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.search_button">
+      <segment>
+        <source>Search</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.publication_progress">
+      <notes>
+        <note category="context">Publishing progress summary. {percent} is an integer from zero to one hundred.</note>
+      </notes>
+      <segment>
+        <source>{percent}% published</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.content_summary.publication_progress_help">
+      <notes>
+        <note category="context">Supporting publishing progress text. {count} is the number of content items the actor may read.</note>
+      </notes>
+      <segment>
+        <source>Calculated from the latest {count, plural, one {# readable item} other {# readable items}}.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.title">
+      <segment>
+        <source>Recently updated content</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.description">
+      <segment>
+        <source>Continue your latest publication work.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.empty_title">
+      <segment>
+        <source>No recent content</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.empty_message">
+      <segment>
+        <source>Readable content activity will appear here.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.view_all">
+      <segment>
+        <source>View all content</source>
       </segment>
     </unit>
     <unit id="core.administrator.login.document_title">
@@ -681,6 +981,104 @@
     <unit id="core.portal.layout.navigation_label">
       <segment>
         <source>Portal navigation</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.document_title">
+      <segment>
+        <source>Dashboard · Kumwe Portal</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.eyebrow">
+      <segment>
+        <source>Business workspace</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.heading">
+      <segment>
+        <source>Welcome to your workspace</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.purpose">
+      <segment>
+        <source>See your current access context and open only the business areas available to you.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.widgets_eyebrow">
+      <segment>
+        <source>Permitted work</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.widgets_heading">
+      <segment>
+        <source>What you can do</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.widgets_help">
+      <segment>
+        <source>Each widget comes from a business area available in this portal session.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.empty_heading">
+      <segment>
+        <source>No dashboard widgets selected</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.empty_message">
+      <segment>
+        <source>Customize this dashboard to add permitted work areas, or use the quick links below.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.shortcuts_heading">
+      <segment>
+        <source>Quick links</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.shortcuts_help">
+      <segment>
+        <source>Return directly to the permitted areas you use most.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.shortcuts_empty">
+      <segment>
+        <source>No quick links are selected for this dashboard.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.shortcuts_label">
+      <notes>
+        <note category="context">Accessible name of the portal dashboard shortcut navigation.</note>
+      </notes>
+      <segment>
+        <source>Portal dashboard quick links</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.access_context.title">
+      <segment>
+        <source>Your access context</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.access_context.description">
+      <segment>
+        <source>The organization and workspace governing this portal session.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.access_context.site_label">
+      <segment>
+        <source>Site</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.access_context.organization_label">
+      <segment>
+        <source>Organization</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.access_context.workspace_label">
+      <segment>
+        <source>Workspace</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.dashboard.access_context.areas_label">
+      <segment>
+        <source>Available areas</source>
       </segment>
     </unit>
     <unit id="core.portal.login.document_title">

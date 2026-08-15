@@ -1,78 +1,79 @@
 {% extends "layout.twig" %}
-{% block title %}Dashboard · Kumwe{% endblock %}
-{% block context_title %}Dashboard{% endblock %}
+{% block title %}{{ t('core.administrator.dashboard.document_title') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.dashboard.context_title') }}{% endblock %}
 {% block content %}
-  <div class="kis-phase-five" data-kis-surface="core.administrator.dashboard">
+  <div class="kis-phase-five kis-dashboard" data-kis-surface="core.administrator.dashboard">
     {% embed '@kis/page-header.twig' with {
-      eyebrow: 'Your publishing workspace',
-      title: 'Good work starts with a clear view.',
-      purpose: 'See what needs attention, continue editing, and move content from an idea to the public website.',
+      eyebrow: t('core.administrator.dashboard.eyebrow'),
+      title: t('core.administrator.dashboard.heading'),
+      purpose: t('core.administrator.dashboard.purpose'),
       capabilities: capabilities
     } only %}
       {% block actions %}
-        <div class="page-actions">
-          {% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new"><svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>Create content</a>{% endif %}
-          {% if capabilities['content.read'] is defined %}<a class="button" href="/administrator/content">Browse all content</a>{% endif %}
-        </div>
+        {% if dashboard.preference_forms|default([]) is not empty %}
+          <div class="page-actions">
+            <a class="button" href="#dashboard-customization">
+              <svg aria-hidden="true"><use href="#kumwe-icon-settings"></use></svg>
+              {{ t('core.interface_standard.dashboard.customize_action') }}
+            </a>
+          </div>
+        {% endif %}
       {% endblock %}
     {% endembed %}
 
-    {% if capabilities['content.read'] is defined %}
-    <section class="panel kis-phase-five-summary" aria-label="Content discovery and publication progress">
-      <form class="dashboard-search" action="/administrator/content" method="get" role="search">
-        <label class="sr-only" for="dashboard-content-search">Search content</label>
-        <input id="dashboard-content-search" type="search" name="q" placeholder="Search titles and URLs">
-        <button type="submit">Search</button>
-      </form>
-      <div class="hero-progress">
-        <strong>{{ published_percent }}% published</strong>
-        <span>{{ counts.published }} of {{ counts.total - counts.trashed }} active items are public</span>
-        <div class="progress-track" aria-hidden="true"><span style="--progress: {{ published_percent }}%"></span></div>
+    {% if dashboard.diagnostics|default([]) is not empty %}
+      <p class="notice info" role="status">{{ t('core.interface_standard.dashboard.fallback_notice') }}</p>
+    {% endif %}
+
+    <section class="kis-dashboard-workspace" aria-labelledby="dashboard-widgets-title">
+      <header class="kis-dashboard-section-heading">
+        <div>
+          <p class="eyebrow">{{ t('core.administrator.dashboard.widgets_eyebrow') }}</p>
+          <h2 id="dashboard-widgets-title">{{ t('core.administrator.dashboard.widgets_heading') }}</h2>
+          <p>{{ t('core.administrator.dashboard.widgets_help') }}</p>
+        </div>
+      </header>
+      {% if dashboard.widgets is empty %}
+        {% include '@kis/empty-state.twig' with {
+          title: t('core.administrator.dashboard.empty_heading'),
+          message: t('core.administrator.dashboard.empty_message')
+        } only %}
+      {% else %}
+        <div class="kis-dashboard-widget-grid">
+          {% for widget in dashboard.widgets %}
+            {% include '@kis/dashboard-widget.twig' with {widget: widget, widget_index: loop.index} only %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="panel kis-dashboard-shortcuts" aria-labelledby="dashboard-shortcuts-title">
+      <header class="panel-header">
+        <div>
+          <h2 id="dashboard-shortcuts-title">{{ t('core.administrator.dashboard.shortcuts_heading') }}</h2>
+          <p>{{ t('core.administrator.dashboard.shortcuts_help') }}</p>
+        </div>
+      </header>
+      <div class="panel-body">
+        {% if dashboard.shortcuts is empty %}
+          <p>{{ t('core.administrator.dashboard.shortcuts_empty') }}</p>
+        {% else %}
+          <nav aria-label="{{ t('core.administrator.dashboard.shortcuts_label') }}">
+            <ul class="kis-dashboard-shortcut-list">
+              {% for item in dashboard.shortcuts %}
+                <li>
+                  <a href="{{ item.href }}">
+                    <svg aria-hidden="true"><use href="#kumwe-icon-{{ item.icon }}"></use></svg>
+                    <span><strong>{{ item.title }}</strong><span>{{ item.description }}</span></span>
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </nav>
+        {% endif %}
       </div>
     </section>
 
-    <section class="metric-grid" aria-label="Content summary">
-      <article class="panel metric-card"><span class="metric-icon"><svg aria-hidden="true"><use href="#kumwe-icon-content"></use></svg></span><span class="metric-copy"><strong class="metric-value">{{ counts.total }}</strong><span class="metric-label">Total content</span></span></article>
-      <article class="panel metric-card"><span class="metric-icon info"><svg aria-hidden="true"><use href="#kumwe-icon-external"></use></svg></span><span class="metric-copy"><strong class="metric-value">{{ counts.published }}</strong><span class="metric-label">Published</span></span></article>
-      <article class="panel metric-card"><span class="metric-icon warning"><svg aria-hidden="true"><use href="#kumwe-icon-automation"></use></svg></span><span class="metric-copy"><strong class="metric-value">{{ counts.review }}</strong><span class="metric-label">Awaiting review</span></span></article>
-      <article class="panel metric-card"><span class="metric-icon violet"><svg aria-hidden="true"><use href="#kumwe-icon-models"></use></svg></span><span class="metric-copy"><strong class="metric-value">{{ content_types|length }}</strong><span class="metric-label">Content types</span></span></article>
-    </section>
-    {% endif %}
-
-    <div class="dashboard-grid">
-      {% if capabilities['content.read'] is defined %}
-      <section class="panel">
-        <header class="panel-header"><div><h2>Recently updated</h2><p>Continue where your team left off.</p></div><a href="/administrator/content">View all</a></header>
-        {% if entries is empty %}
-          {% embed '@kis/empty-state.twig' with {
-            title: 'No content yet',
-            message: 'Create the first item to begin publishing.',
-            capabilities: capabilities
-          } only %}
-            {% block action %}{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new">Create content</a>{% endif %}{% endblock %}
-          {% endembed %}
-        {% else %}
-          <div class="table-wrap" tabindex="0" role="region" aria-label="Recently updated content"><table><thead><tr><th scope="col">Content</th><th scope="col">Status</th><th scope="col">Updated</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead><tbody>
-            {% for entry in entries %}<tr><td><span class="content-title"><strong>{{ entry.title }}</strong><span>{{ entry.public_url|default('/' ~ entry.slug) }}</span></span></td><td><span class="status status-{{ entry.deleted_at ? 'trashed' : entry.status }}">{{ entry.deleted_at ? 'Trashed' : entry.status|replace({'_': ' '})|title }}</span></td><td><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('M j, H:i') }}</time></td><td class="actions">{% if not entry.deleted_at and capabilities['content.update'] is defined %}<a href="/administrator/content/{{ entry.id }}/edit" aria-label="Edit {{ entry.title }}">Edit</a>{% endif %}</td></tr>{% endfor %}
-          </tbody></table></div>
-        {% endif %}
-      </section>
-      {% else %}
-      <section class="panel" data-permission-reduced>
-        <header class="panel-header"><div><h2>Your workspace</h2><p>Everything you are permitted to use is listed in the navigation.</p></div></header>
-        <div class="panel-body">
-          <p>Content summaries stay hidden because your account does not hold the <code>content.read</code> capability. Pick a screen from the navigation to begin working.</p>
-        </div>
-      </section>
-      {% endif %}
-      <aside class="panel">
-        <header class="panel-header"><div><h2>Quick actions</h2><p>Common site-management tasks.</p></div></header>
-        <div class="panel-body quick-actions">
-          {% for item in administrator_navigation %}
-            {% if item.id in ['create-content', 'media', 'navigation', 'models', 'access', 'settings'] %}<a class="quick-action" href="{{ item.href }}"><svg aria-hidden="true"><use href="#kumwe-icon-{{ item.icon }}"></use></svg><span><strong>{{ item.label }}</strong><span>{{ item.description }}</span></span></a>{% endif %}
-          {% endfor %}
-        </div>
-      </aside>
-    </div>
+    {% include '@kis/dashboard-preferences.twig' with {dashboard: dashboard, csrf: csrf} only %}
   </div>
 {% endblock %}

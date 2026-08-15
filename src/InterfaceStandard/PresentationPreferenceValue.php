@@ -44,8 +44,8 @@ final readonly class PresentationPreferenceValue
     public static function from(CustomizationSlot $slot, mixed $value): self
     {
         $normalized = match ($slot) {
-            CustomizationSlot::Columns,
-            CustomizationSlot::DashboardCards => self::semanticNameList($value, 64),
+            CustomizationSlot::Columns => self::semanticNameList($value, 64),
+            CustomizationSlot::DashboardCards => self::dottedNameList($value, 64),
             CustomizationSlot::Density => self::choice($value, ['comfortable', 'compact', 'touch'], $slot),
             CustomizationSlot::SavedViews => self::savedView($value),
             CustomizationSlot::Layout => self::choice(
@@ -192,7 +192,7 @@ final readonly class PresentationPreferenceValue
     }
 
     /**
-     * Normalize a list of unique dotted surface or workspace names.
+     * Normalize a list of unique dotted surface, workspace, navigation, or widget names.
      *
      * @param   mixed  $value    Candidate list.
      * @param   int    $maximum  Maximum entries admitted by the selected schema definition.
