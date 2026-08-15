@@ -4,14 +4,24 @@
   "authority": "docs/roadmap/README.md",
   "note": "The integration suite is not idempotent against a database another run already used. That is the finding, and this file is its reproduction: the tests that fail when the suite runs a second time against the database the first run left behind. It is a record, not a permission. tools/verify-suite-idempotency.php fails on any test outside this list, fails when a listed test stops needing the exemption, and fails when an entry passes its expiry, so the list can only ever shrink and phase 2 empties it.",
   "recorded_at": "2026-08-15",
-  "recorded_from": "https://github.com/kumwe/cms/actions/runs/31876448442",
+  "recorded_from": [
+    "https://github.com/kumwe/cms/actions/runs/31876448442",
+    "https://github.com/kumwe/cms/actions/runs/31877919073"
+  ],
   "scope": {
-    "note": "Two fields carry two different claims, and conflating them would make the gate lie in one direction or the other. `observed_on` is fact: the engines on which this exact failure was seen. `applies_to` is scope: the engines on which the entry excuses a failure. A test failing on an engine outside `applies_to` is a new violation; an entry whose test passes on an engine inside `observed_on` is stale and must be deleted. An engine in `applies_to` but not in `observed_on` is therefore neither excused into silence nor asserted as fact — the first run on that engine settles it either way.",
-    "passes": [
-      "repeat",
-      "reverse"
+    "enforced_passes": [
+      "repeat"
     ],
-    "passes_note": "`repeat` runs the integration suite again against the database the first run left behind. `reverse` runs it once more in reverse class order. An entry is stale only when its test passed in every pass, because a test that leaves state behind need not fail in both."
+    "note": "`repeat` runs the integration suite again against the database the first run left behind. That is the property this check enforces, and the entries below are what it found.",
+    "engines_note": "Two fields carry two different claims, and conflating them would make the gate lie in one direction or the other. `observed_on` is fact: the engines on which this exact failure was seen. `applies_to` is scope: the engines on which the entry excuses a failure. A test failing on an engine outside `applies_to` is a new violation; an entry whose test passes on an engine inside `observed_on` is stale and must be deleted. An engine in `applies_to` but not in `observed_on` is therefore neither excused into silence nor asserted as fact.",
+    "not_yet_enforced": {
+      "pass": "reverse",
+      "statement": "The suite gives the same result when its classes run in a different order.",
+      "finding": "V2-QA-004",
+      "owner": "quality-engineering",
+      "why_not_enforced": "It has never been executed in a form that tests the stated property. The first attempt used PHPUnit's --order-by=reverse, which also reverses the order of the tests inside each class, so a class whose methods are written to run in declaration order fails for a reason that has nothing to do with a reused database. That run reported 38 failures across roughly 21 classes — seven of them methods of one class, five of another — which is the signature of intra-class ordering rather than database residue. Recording 21 classes as exemptions would have been a blanket permission rather than a record, and enforcing an unmeasured property is what produced the wrong measurement in the first place. The mechanism is corrected and ready: tools/verify-suite-idempotency.php generates a configuration that lists the integration classes in reverse and leaves method order alone, verified to collect the same 283 tests. What is owed is one measured run of it, and then either a green pass or entries recorded the way the six below were.",
+      "how_to_run": "php tools/verify-suite-idempotency.php --engine=ID --pass=reverse"
+    }
   },
   "entries": [
     {

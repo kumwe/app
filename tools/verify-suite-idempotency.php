@@ -14,12 +14,17 @@
  * whose test now passes, or an entry that has outlived its expiry. The list only ever shrinks. It is the
  * same shape the dependency baseline uses, for the same reason.
  *
- * Both passes always run. Aborting at the first failure would hide whatever the second pass has to say, and
- * the second pass — reverse class order — is the one nothing has ever executed.
+ * Which passes are enforced is declared in the baseline rather than here, so turning one on is a recorded
+ * decision. Today that is the `repeat` pass. The `reverse` pass — the suite run with its classes in a
+ * different order — is described in the baseline as not yet enforced, with the reason: the first attempt at
+ * it used `--order-by=reverse`, which reverses the tests inside each class as well and therefore measured
+ * something other than the stated property. `--pass=reverse` runs it on demand so it can be measured before
+ * anything claims it holds.
  *
  * Usage:
  *   php tools/verify-suite-idempotency.php --engine=mariadb|mysql|pgsql|postgresql
- *   php tools/verify-suite-idempotency.php --engine=ID --junit=repeat:PATH --junit=reverse:PATH
+ *   php tools/verify-suite-idempotency.php --engine=ID --pass=reverse
+ *   php tools/verify-suite-idempotency.php --engine=ID --junit=repeat:PATH
  *
  * The second form judges results that were collected elsewhere, which is how the architecture suite proves
  * this check fails in the right direction without needing a database.
@@ -35,6 +40,7 @@ $engine = null;
 $today = date('Y-m-d');
 $supplied = [];
 $startup = [];
+$only = null;
 
 foreach (array_slice($argv, 1) as $argument) {
     if (str_starts_with($argument, '--engine=')) {
@@ -48,6 +54,14 @@ foreach (array_slice($argv, 1) as $argument) {
     if (str_starts_with($argument, '--today=')) {
         $today = substr($argument, strlen('--today='));
         continue;
+    }
+    if (str_starts_with($argument, '--pass=')) {
+        $only = substr($argument, strlen('--pass='));
+        continue;
+    }
+    if ($argument === '--emit-reverse-configuration') {
+        fwrite(STDOUT, reversedClassOrderConfiguration($root) . "\n");
+        exit(0);
     }
     if (str_starts_with($argument, '--junit=')) {
         $value = substr($argument, strlen('--junit='));
@@ -74,7 +88,10 @@ if ($startup !== []) {
 $engine = normalizeEngine($engine);
 $baseline = readIdempotencyBaseline($baselinePath);
 $entries = readIdempotencyEntries($baseline, $engine, $today);
-$passes = declaredPasses($baseline);
+// The enforced passes come from the baseline, so turning one on is a decision recorded there rather than a
+// flag somebody remembered to add. --pass runs one that is not yet enforced, which is how the next one gets
+// its first measurement without the gate claiming it already holds.
+$passes = $only === null ? declaredPasses($baseline) : [$only];
 
 $observed = $supplied === []
     ? executePasses($root, $passes)
@@ -135,9 +152,9 @@ function declaredPasses(array $baseline): array
     /** @var mixed $scope */
     $scope = $baseline['scope'] ?? null;
     /** @var mixed $passes */
-    $passes = is_array($scope) ? ($scope['passes'] ?? null) : null;
+    $passes = is_array($scope) ? ($scope['enforced_passes'] ?? null) : null;
     if (!is_array($passes) || !array_is_list($passes) || $passes === []) {
-        reportIdempotencyFailure(['The baseline must declare scope.passes.']);
+        reportIdempotencyFailure(['The baseline must declare scope.enforced_passes.']);
     }
 
     $names = [];
@@ -264,19 +281,29 @@ function engineList(array $entry, string $field): array
 function executePasses(string $root, array $passes): array
 {
     $observed = [];
+    $generated = null;
     foreach ($passes as $pass) {
         $log = sprintf('%s/build/idempotency/%s.junit.xml', $root, $pass);
         @mkdir(dirname($log), 0o755, true);
+        $configuration = null;
+        if ($pass === 'reverse') {
+            $configuration = $generated = reversedClassOrderConfiguration($root);
+        }
         $command = sprintf(
             'cd %s && vendor/bin/phpunit --testsuite integration --colors=never --log-junit %s%s',
             escapeshellarg($root),
             escapeshellarg($log),
-            $pass === 'reverse' ? ' --order-by=reverse' : '',
+            $configuration === null ? '' : ' --configuration ' . escapeshellarg($configuration),
         );
 
         fwrite(STDOUT, sprintf("== idempotency pass \"%s\"\n", $pass));
         $status = 0;
         passthru($command, $status);
+
+        if ($generated !== null) {
+            @unlink($generated);
+            $generated = null;
+        }
 
         if (!is_file($log)) {
             reportIdempotencyFailure([sprintf(
@@ -290,6 +317,75 @@ function executePasses(string $root, array $passes): array
     }
 
     return $observed;
+}
+
+/**
+ * Write a configuration that runs the integration suite with its classes in reverse order.
+ *
+ * The property the roadmap states is that the suite gives the same result "in a different class order".
+ * `--order-by=reverse` is not that: it reverses the order of the individual tests as well, so a class whose
+ * methods are written to run in declaration order fails for a reason that has nothing to do with a reused
+ * database. The first execution of this check made exactly that mistake and reported 38 failures, most of
+ * them several methods deep inside one class.
+ *
+ * PHPUnit runs the `<file>` entries of a test suite in the order they are listed, so listing the classes
+ * backwards varies class order and leaves the order of methods inside each class alone. The configuration is
+ * written beside `phpunit.xml.dist` so that its relative bootstrap, cache and source paths keep resolving,
+ * and it is removed as soon as the pass has run.
+ *
+ * @param   string  $root  Repository root.
+ *
+ * @return  string  Absolute path to the generated configuration.
+ *
+ * @since   2.0.0
+ */
+function reversedClassOrderConfiguration(string $root): string
+{
+    $files = [];
+    /** @var iterable<string, SplFileInfo> $found */
+    $found = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($root . '/tests/Integration', FilesystemIterator::SKIP_DOTS),
+    );
+    foreach ($found as $file) {
+        if (str_ends_with($file->getFilename(), 'Test.php')) {
+            $files[] = $file->getPathname();
+        }
+    }
+
+    if ($files === []) {
+        reportIdempotencyFailure(['The integration suite has no test classes, so a class order cannot be varied.']);
+    }
+
+    sort($files, SORT_STRING);
+    $files = array_reverse($files);
+
+    $entries = '';
+    foreach ($files as $file) {
+        $entries .= sprintf("            <file>%s</file>\n", htmlspecialchars($file, ENT_XML1));
+    }
+
+    $template = file_get_contents($root . '/phpunit.xml.dist');
+    if ($template === false) {
+        reportIdempotencyFailure(['phpunit.xml.dist could not be read.']);
+    }
+
+    $replaced = preg_replace(
+        '#<testsuite name="integration">.*?</testsuite>#s',
+        sprintf("<testsuite name=\"integration\">\n%s        </testsuite>", $entries),
+        $template,
+        1,
+        $count,
+    );
+    if (!is_string($replaced) || $count !== 1) {
+        reportIdempotencyFailure(['phpunit.xml.dist declares no "integration" test suite to reorder.']);
+    }
+
+    $path = $root . '/.phpunit.idempotency.xml';
+    if (file_put_contents($path, $replaced) === false) {
+        reportIdempotencyFailure([sprintf('The reversed configuration could not be written to %s.', $path)]);
+    }
+
+    return $path;
 }
 
 /**
