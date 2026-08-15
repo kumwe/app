@@ -270,7 +270,33 @@ test.describe('authenticated administrator', () => {
   test.beforeEach(async ({ page }) => signIn(page));
 
   test('dashboard supports desktop and responsive navigation', async ({ page, isMobile }, testInfo) => {
-    await expect(page.getByRole('heading', { name: 'Good work starts with a clear view.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your work, at a glance' })).toBeVisible();
+    await expect(page.locator('[data-kis-dashboard-widget="core.dashboard.content-summary"]')).toBeVisible();
+    const quickLinks = page.locator('.kis-dashboard-shortcut-list a');
+    await expect(quickLinks.first()).toBeVisible();
+    expect(await quickLinks.count()).toBeGreaterThan(0);
+    await expect(quickLinks.filter({ hasText: 'Content' }).first()).toHaveAttribute(
+      'href',
+      '/administrator/content',
+    );
+
+    const search = page.getByRole('searchbox', { name: 'Search content' });
+    await expect(search).toBeVisible();
+    const searchStyle = await search.evaluate((input) => {
+      const style = getComputedStyle(input);
+      return {
+        background: style.backgroundColor,
+        color: style.color,
+        border: style.borderColor,
+      };
+    });
+    expect(searchStyle.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(searchStyle.color).not.toBe(searchStyle.background);
+    expect(searchStyle.border).not.toBe(searchStyle.background);
+    await search.fill('launch');
+    await page.getByRole('button', { name: 'Search', exact: true }).click();
+    await expect(page).toHaveURL(/\/administrator\/content\?q=launch$/u);
+    await page.goto('/administrator');
     await expectStylesLoaded(page);
     if (isMobile) {
       const toggle = page.getByRole('button', { name: 'Open administrator navigation' });

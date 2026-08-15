@@ -7,6 +7,10 @@ namespace Kumwe\CMS\Tests\Unit\InterfaceStandard;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
+use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
+use Kumwe\CMS\Application\Authorization\AuthorizationDecisionRecorder;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\MembershipContext;
 use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
 use Kumwe\CMS\Application\Authorization\SiteContext;
@@ -14,6 +18,7 @@ use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\InterfaceStandard\CustomizationScope;
 use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
 use Kumwe\CMS\InterfaceStandard\PresentationPreference;
@@ -21,12 +26,14 @@ use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\CMS\InterfaceStandard\SurfaceArea;
 use Kumwe\CMS\InterfaceStandard\SurfaceId;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceContext;
+use Kumwe\CMS\Presentation\Application\Preference\PresentationAccessGroup;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceManager;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceVersionConflict;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Kumwe\CMS\Tests\Support\ImmediateTransactionManager;
+use Kumwe\CMS\Tests\Support\InMemoryPresentationAccessGroupRepository;
 use Kumwe\CMS\Tests\Support\InMemoryPresentationPreferenceRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -40,6 +47,14 @@ use Psr\Clock\ClockInterface;
 #[CoversClass(PresentationPreferenceManager::class)]
 final class PresentationPreferenceManagerTest extends TestCase
 {
+    /**
+     * Canonical role selected by access-group authorization scenarios.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const ACCESS_GROUP_ROLE_ID = '018f22e2-7c8b-7ab0-8f3a-88e8026bb303';
+
     /**
      * Proves an authenticated actor may create, update, export, and reset only its own user layer.
      *
@@ -341,6 +356,135 @@ final class PresentationPreferenceManagerTest extends TestCase
     }
 
     /**
+     * Proves a role access-group default uses exact-role authority and locks live role existence for write.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRoleAccessGroupScopeRequiresExactAuthorityAndLockedExistence(): void
+    {
+        $group = PresentationAccessGroup::fromRole(
+            self::ACCESS_GROUP_ROLE_ID,
+            'operations',
+            'Operations',
+        );
+        $groups = new InMemoryPresentationAccessGroupRepository([$group]);
+        $decisions = new PreferenceAuthorizationDecisionRecorder();
+        $manager = $this->manager(
+            new InMemoryPresentationPreferenceRepository(),
+            new PreferenceAuditRecorder(),
+            accessGroups: $groups,
+            decisions: $decisions,
+        );
+        $context = AuthorizationContext::human(['users.manage']);
+        $key = new PresentationPreferenceKey(
+            SurfaceId::fromString('core.administrator.settings'),
+            CustomizationSlot::Density,
+            CustomizationScope::RoleWorkspace,
+            $group->id,
+        );
+
+        $stored = $manager->put($context, ContributionOwner::core(), $key, 'compact', 0);
+
+        self::assertSame('compact', $stored->value()->value());
+        self::assertSame(['group:' . $group->id], $groups->locks());
+        self::assertSame([
+            'users.manage:role:' . self::ACCESS_GROUP_ROLE_ID,
+            'users.manage:role:' . self::ACCESS_GROUP_ROLE_ID,
+        ], $decisions->targets);
+    }
+
+    /**
+     * Proves a deleted access group cannot receive a preference even when the actor manages roles.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRoleAccessGroupScopeRequiresCurrentRoleExistence(): void
+    {
+        $manager = $this->manager(
+            new InMemoryPresentationPreferenceRepository(),
+            new PreferenceAuditRecorder(),
+            accessGroups: new InMemoryPresentationAccessGroupRepository(),
+        );
+        $context = AuthorizationContext::human(['users.manage']);
+        $key = new PresentationPreferenceKey(
+            SurfaceId::fromString('core.administrator.settings'),
+            CustomizationSlot::Density,
+            CustomizationScope::RoleWorkspace,
+            'role:' . self::ACCESS_GROUP_ROLE_ID,
+        );
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('current presentation access group');
+
+        $manager->put($context, ContributionOwner::core(), $key, 'compact', 0);
+    }
+
+    /**
+     * Proves role existence cannot be probed through a preference write without canonical role authority.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRoleAccessGroupScopeChecksAuthorityBeforeExistence(): void
+    {
+        $group = PresentationAccessGroup::fromRole(
+            self::ACCESS_GROUP_ROLE_ID,
+            'operations',
+            'Operations',
+        );
+        $groups = new InMemoryPresentationAccessGroupRepository([$group]);
+        $manager = $this->manager(
+            new InMemoryPresentationPreferenceRepository(),
+            new PreferenceAuditRecorder(),
+            accessGroups: $groups,
+        );
+        $context = AuthorizationContext::human([]);
+        $key = new PresentationPreferenceKey(
+            SurfaceId::fromString('core.administrator.settings'),
+            CustomizationSlot::Density,
+            CustomizationScope::RoleWorkspace,
+            $group->id,
+        );
+        $this->expectException(AuthorizationDenied::class);
+
+        try {
+            $manager->put($context, ContributionOwner::core(), $key, 'compact', 0);
+        } finally {
+            self::assertSame([], $groups->locks());
+        }
+    }
+
+    /**
+     * Proves a malformed reserved role identity cannot fall through to current-workspace authorization.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMalformedRoleAccessGroupIdentityFailsClosed(): void
+    {
+        $manager = $this->manager(new InMemoryPresentationPreferenceRepository(), new PreferenceAuditRecorder());
+        $context = AuthorizationContext::human(
+            ['settings.manage', 'users.manage'],
+            membership: AuthorizationContext::membership(workspace: 'role:operations'),
+        );
+        $key = new PresentationPreferenceKey(
+            SurfaceId::fromString('core.administrator.settings'),
+            CustomizationSlot::Density,
+            CustomizationScope::RoleWorkspace,
+            'role:operations',
+        );
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('identity is invalid');
+
+        $manager->put($context, ContributionOwner::core(), $key, 'compact', 0);
+    }
+
+    /**
      * Proves reset remains available after an upgrade removes a previously allowed slot.
      *
      * @return  void
@@ -372,6 +516,7 @@ final class PresentationPreferenceManagerTest extends TestCase
             new PreferenceClock(),
             new ImmediateTransactionManager(),
             new PreferenceMembershipValidator(true),
+            new InMemoryPresentationAccessGroupRepository(),
         );
 
         $manager->reset($context, $owner, PresentationPreferenceKey::fromPreference($preference), 1);
@@ -385,6 +530,8 @@ final class PresentationPreferenceManagerTest extends TestCase
      * @param   InMemoryPresentationPreferenceRepository  $repository   Preference store for the test.
      * @param   PreferenceAuditRecorder                   $audit        Capturing audit sink.
      * @param   ?PreferenceMembershipValidator            $memberships  Optional live membership decision.
+     * @param   ?InMemoryPresentationAccessGroupRepository  $accessGroups  Optional canonical role projection.
+     * @param   ?AuthorizationDecisionRecorder              $decisions     Optional authorization evidence sink.
      *
      * @return  PresentationPreferenceManager
      *
@@ -394,18 +541,48 @@ final class PresentationPreferenceManagerTest extends TestCase
         InMemoryPresentationPreferenceRepository $repository,
         PreferenceAuditRecorder $audit,
         ?PreferenceMembershipValidator $memberships = null,
+        ?InMemoryPresentationAccessGroupRepository $accessGroups = null,
+        ?AuthorizationDecisionRecorder $decisions = null,
     ): PresentationPreferenceManager {
         $memberships ??= new PreferenceMembershipValidator(true);
+        $accessGroups ??= new InMemoryPresentationAccessGroupRepository();
 
         return new PresentationPreferenceManager(
             $repository,
             new ManagerAllowAllPresentationPreferencePolicy(),
-            AuthorizationContext::gateway(memberships: $memberships),
+            AuthorizationContext::gateway($decisions, memberships: $memberships),
             $audit,
             new PreferenceClock(),
             new ImmediateTransactionManager(),
             $memberships,
+            $accessGroups,
         );
+    }
+}
+
+/**
+ * Captures the exact capability and resource identities preference authorization evaluates.
+ *
+ * @since  2.0.0
+ */
+final class PreferenceAuthorizationDecisionRecorder implements AuthorizationDecisionRecorder
+{
+    /**
+     * Capability, resource type, and identifier triplets observed in decision order.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public array $targets = [];
+
+    /** @inheritDoc */
+    public function record(
+        ExecutionContext $context,
+        Capability $action,
+        AuthorizationResource $resource,
+        AuthorizationDecision $decision,
+    ): void {
+        $this->targets[] = $action->value() . ':' . $resource->type() . ':' . $resource->identifier();
     }
 }
 

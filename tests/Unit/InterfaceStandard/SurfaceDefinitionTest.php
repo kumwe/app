@@ -121,6 +121,44 @@ final class SurfaceDefinitionTest extends TestCase
     }
 
     /**
+     * Proves customization ceilings follow each slot's legal scope order rather than a global rank.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCustomizationScopeCeilingUsesSlotSpecificLegalOrder(): void
+    {
+        foreach (CustomizationScope::cases() as $scope) {
+            self::assertTrue(SurfaceConformanceValidator::allowsCustomizationAtOrBelow(
+                CustomizationSlot::Density,
+                CustomizationScope::User,
+                $scope,
+            ));
+        }
+        self::assertTrue(SurfaceConformanceValidator::allowsCustomizationAtOrBelow(
+            CustomizationSlot::Columns,
+            CustomizationScope::RoleWorkspace,
+            CustomizationScope::Administrator,
+        ));
+        self::assertTrue(SurfaceConformanceValidator::allowsCustomizationAtOrBelow(
+            CustomizationSlot::Columns,
+            CustomizationScope::RoleWorkspace,
+            CustomizationScope::RoleWorkspace,
+        ));
+        self::assertFalse(SurfaceConformanceValidator::allowsCustomizationAtOrBelow(
+            CustomizationSlot::Columns,
+            CustomizationScope::RoleWorkspace,
+            CustomizationScope::Site,
+        ));
+        self::assertFalse(SurfaceConformanceValidator::allowsCustomizationAtOrBelow(
+            CustomizationSlot::Columns,
+            CustomizationScope::RoleWorkspace,
+            CustomizationScope::User,
+        ));
+    }
+
+    /**
      * Strict parsing refuses unversioned, unsupported, unknown, executable-shaped, and foreign metadata.
      *
      * @return  void

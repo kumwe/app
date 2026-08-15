@@ -1,0 +1,245 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Handler;
+
+use DateTimeImmutable;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorDashboardPreferencesHandler;
+use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
+use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
+use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceDefinition;
+use Kumwe\CMS\Extension\Contribution\ContributionOwner;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
+use Kumwe\CMS\InterfaceStandard\CustomizationScope;
+use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
+use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
+use Kumwe\CMS\InterfaceStandard\SurfaceId;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\CMS\Tests\Support\DashboardPreferenceTestRuntime;
+use Laminas\Diactoros\ServerRequestFactory;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
+use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ServerRequestInterface;
+use Twig\Loader\ArrayLoader;
+
+/**
+ * Verifies administrator POST delivery derives a live catalog and exposes only closed redirect results.
+ *
+ * @since  2.0.0
+ */
+#[CoversClass(AdministratorDashboardPreferencesHandler::class)]
+#[UsesClass(AdministratorRenderer::class)]
+#[UsesClass(DashboardComposer::class)]
+#[UsesClass(DashboardPreferenceService::class)]
+final class AdministratorDashboardPreferencesHandlerTest extends TestCase
+{
+    /**
+     * Proves a capability-backed core widget is persisted and returns the saved dashboard fragment.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSavesFromTheLiveCapabilityFilteredCatalog(): void
+    {
+        $runtime = new DashboardPreferenceTestRuntime();
+        $handler = new AdministratorDashboardPreferencesHandler($runtime->service, $this->renderer());
+        $request = $this->request([
+            'action' => 'dashboard-cards.save',
+            'scope' => 'user',
+            'scope_id' => AuthorizationContext::SUBJECT,
+            'expected_version' => '0',
+            'item_0' => 'core.dashboard.content-summary',
+            'selected_0' => '1',
+            'order_0' => '1',
+        ], ['administrator.access', 'content.read']);
+
+        $response = $handler->handle($request);
+
+        self::assertSame(303, $response->getStatusCode());
+        self::assertSame(
+            '/administrator?dashboard-saved=1#dashboard-customization',
+            $response->getHeaderLine('Location'),
+        );
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        $stored = $runtime->preferences->find(new PresentationPreferenceKey(
+            SurfaceId::fromString('core.administrator.dashboard'),
+            CustomizationSlot::DashboardCards,
+            CustomizationScope::User,
+            AuthorizationContext::SUBJECT,
+        ));
+        self::assertSame(['core.dashboard.content-summary'], $stored?->value()->value());
+    }
+
+    /**
+     * Proves a withdrawn or forged identifier is translated to the stable invalid-result redirect.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRejectsAnIdentifierOutsideTheLiveCatalog(): void
+    {
+        $runtime = new DashboardPreferenceTestRuntime();
+        $handler = new AdministratorDashboardPreferencesHandler($runtime->service, $this->renderer());
+        $request = $this->request([
+            'action' => 'dashboard-cards.save',
+            'scope' => 'user',
+            'scope_id' => AuthorizationContext::SUBJECT,
+            'expected_version' => '0',
+            'item_0' => 'vendor.withdrawn-widget',
+            'selected_0' => '1',
+            'order_0' => '1',
+        ], ['administrator.access']);
+
+        $response = $handler->handle($request);
+
+        self::assertSame(
+            '/administrator?dashboard-error=invalid#dashboard-customization',
+            $response->getHeaderLine('Location'),
+        );
+    }
+
+    /**
+     * Proves POST validation uses the same first 128 renderer rows as dashboard composition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRejectsAWorkflowBeyondTheBoundedRendererCatalog(): void
+    {
+        $registries = new ExtensionContributionRegistrySet();
+        $owner = ContributionOwner::core();
+        $registrar = $registries->registrar($owner, new ManifestContributionSet($owner), false);
+        $registrar->administratorWorkspace(new AdministratorWorkspaceDefinition(
+            'core.dashboard-volume',
+            'Dashboard volume',
+            'Regression workflows for the bounded administrator dashboard catalog.',
+            100,
+        ));
+        for ($index = 1; $index <= 130; $index++) {
+            $suffix = str_pad((string) $index, 3, '0', STR_PAD_LEFT);
+            $registrar->administratorNavigation(new AdministratorNavigationDefinition(
+                'core.dashboard-volume-' . $suffix,
+                'core.dashboard-volume',
+                'Workflow ' . $suffix,
+                'Open bounded workflow ' . $suffix . '.',
+                '/administrator/dashboard-volume-' . $suffix,
+                'dashboard',
+                'administrator.access',
+                $index,
+            ));
+        }
+        $registrar->complete();
+        $runtime = new DashboardPreferenceTestRuntime();
+        $handler = new AdministratorDashboardPreferencesHandler(
+            $runtime->service,
+            $this->renderer($registries->navigation()),
+        );
+        $request = $this->request([
+            'action' => 'navigation-shortcuts.save',
+            'scope' => 'user',
+            'scope_id' => AuthorizationContext::SUBJECT,
+            'expected_version' => '0',
+            'item_0' => 'core.dashboard-volume-128',
+            'selected_0' => '1',
+            'order_0' => '1',
+        ], ['administrator.access']);
+
+        $response = $handler->handle($request);
+
+        self::assertSame(
+            '/administrator?dashboard-error=invalid#dashboard-customization',
+            $response->getHeaderLine('Location'),
+        );
+    }
+
+    /**
+     * Proves an optimistic mismatch is translated separately from malformed form input.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRedirectsAnOptimisticMismatchAsAConflict(): void
+    {
+        $runtime = new DashboardPreferenceTestRuntime();
+        $handler = new AdministratorDashboardPreferencesHandler($runtime->service, $this->renderer());
+        $request = $this->request([
+            'action' => 'dashboard-cards.save',
+            'scope' => 'user',
+            'scope_id' => AuthorizationContext::SUBJECT,
+            'expected_version' => '1',
+        ], ['administrator.access']);
+
+        $response = $handler->handle($request);
+
+        self::assertSame(
+            '/administrator?dashboard-error=conflict#dashboard-customization',
+            $response->getHeaderLine('Location'),
+        );
+    }
+
+    /**
+     * Build the request shape emitted by administrator authentication and CSRF middleware.
+     *
+     * @param   array<string, string>  $form          Flat dashboard preference form.
+     * @param   list<string>           $capabilities  Capabilities carried by the administrator principal.
+     *
+     * @return  ServerRequestInterface  Authenticated POST request with parsed form data.
+     *
+     * @since   2.0.0
+     */
+    private function request(array $form, array $capabilities): ServerRequestInterface
+    {
+        $principal = AuthorizationContext::principal($capabilities);
+        $session = new AdministratorSession(
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
+            $principal,
+            'csrf-token',
+            new DateTimeImmutable('+1 hour'),
+        );
+
+        return (new ServerRequestFactory())
+            ->createServerRequest('POST', 'https://kumwe.test/administrator/dashboard/preferences')
+            ->withParsedBody($form)
+            ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, $session)
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $principal->context(
+                SiteContext::default(),
+                AuthenticationStrength::Password,
+                'test-dashboard-preferences',
+            ));
+    }
+
+    /**
+     * Build the renderer used only for its canonical live administrator navigation projection.
+     *
+     * @param   ?AdministratorNavigationRegistry  $navigation  Optional contribution catalog for a scale scenario.
+     *
+     * @return  AdministratorRenderer  Core or supplied registry-backed renderer.
+     *
+     * @since   2.0.0
+     */
+    private function renderer(?AdministratorNavigationRegistry $navigation = null): AdministratorRenderer
+    {
+        return new AdministratorRenderer(
+            new AdministratorTwigEnvironment(new ArrayLoader()),
+            new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(new ArrayLoader())),
+            $navigation,
+        );
+    }
+}

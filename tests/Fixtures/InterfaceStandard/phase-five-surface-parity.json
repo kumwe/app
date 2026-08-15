@@ -6,8 +6,8 @@
     {
       "path": "templates/administrator/dashboard.twig",
       "surface_ids": ["core.administrator.dashboard"],
-      "must_contain": ["data-kis-surface=\"core.administrator.dashboard\"", "@kis/page-header.twig", "action=\"/administrator/content\"", "Create content", "Recently updated"],
-      "must_not_contain": []
+      "must_contain": ["data-kis-surface=\"core.administrator.dashboard\"", "class=\"kis-phase-five kis-dashboard\"", "@kis/page-header.twig", "dashboard.preference_forms", "dashboard.widgets", "dashboard.shortcuts", "@kis/dashboard-widget.twig", "@kis/dashboard-preferences.twig"],
+      "must_not_contain": ["capabilities['content", "administrator_navigation", "action=\"/administrator/content\""]
     },
     {
       "path": "templates/administrator/content-list.twig",
@@ -60,8 +60,20 @@
     {
       "path": "templates/portal/home.twig",
       "surface_ids": ["core.portal.home"],
-      "must_contain": ["Access context and readiness", "portal_site", "portal_organization", "portal_workspace", "portal_navigation", "@kis/empty-state.twig"],
-      "must_not_contain": ["capability"]
+      "must_contain": ["data-kis-surface=\"core.portal.home\"", "class=\"kis-phase-five-portal kis-dashboard\"", "@kis/page-header.twig", "dashboard.preference_forms", "dashboard.widgets", "dashboard.shortcuts", "@kis/dashboard-widget.twig", "@kis/dashboard-preferences.twig", "@kis/empty-state.twig"],
+      "must_not_contain": ["capability", "portal_navigation", "active_navigation"]
+    },
+    {
+      "path": "templates/interface-standard/dashboard-widget.twig",
+      "surface_ids": ["core.administrator.dashboard", "core.portal.home"],
+      "must_contain": ["data-kis-dashboard-widget=\"{{ widget.id }}\"", "widget.message_ids", "core.administrator.dashboard.access_context.title", "widget.kind == 'workflow'", "widget.kind == 'summary'", "widget.kind == 'activity'", "widget.kind == 'context'", "href=\"{{ widget.href }}\""],
+      "must_not_contain": ["|raw", "javascript:"]
+    },
+    {
+      "path": "templates/interface-standard/dashboard-preferences.twig",
+      "surface_ids": ["core.administrator.dashboard", "core.portal.home"],
+      "must_contain": ["id=\"dashboard-customization\"", "dashboard.preference_forms", "dashboard.preference_action", "name=\"_csrf\"", "name=\"scope\"", "name=\"scope_id\"", "name=\"expected_version\"", "dashboard-cards.save", "dashboard-cards.reset", "navigation-shortcuts.save", "navigation-shortcuts.reset"],
+      "must_not_contain": ["|raw", "javascript:"]
     },
     {
       "path": "templates/portal/security.twig",

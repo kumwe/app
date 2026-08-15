@@ -173,7 +173,7 @@ final class PresentationPreferenceTest extends TestCase
         yield 'dashboard cards' => [
             CustomizationSlot::DashboardCards,
             CustomizationScope::Administrator,
-            ['work-queue', 'recent-changes'],
+            ['core.dashboard.work-queue', '9ac.me.2-orders_v1.dashboard_card'],
         ];
         yield 'landing workspace' => [
             CustomizationSlot::LandingWorkspace,

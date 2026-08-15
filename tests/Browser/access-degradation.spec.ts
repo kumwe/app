@@ -35,9 +35,12 @@ test.describe('capability-degraded administrator access', () => {
     await signIn(page, minimalEmail, minimalPassword);
 
     await expect(page.locator('.administrator-shell')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Good work starts with a clear view.' })).toBeVisible();
-    await expect(page.locator('[data-permission-reduced]')).toBeVisible();
-    await expect(page.getByText('Recently updated')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Your work, at a glance' })).toBeVisible();
+    await expect(page.locator('[data-kis-surface="core.administrator.dashboard"]')).toBeVisible();
+    await expect(
+      page.locator('[data-kis-dashboard-widget="core.dashboard.administrator-context"]'),
+    ).toBeVisible();
+    await expect(page.getByText('Recently updated content')).toHaveCount(0);
     await expect(page.getByText('% published')).toHaveCount(0);
 
     await openNavigation(page, isMobile);
@@ -73,8 +76,8 @@ test.describe('capability-degraded administrator access', () => {
     await page.goto('/administrator/settings');
     await page.getByRole('link', { name: 'Back to the dashboard' }).click();
     await expect(page).toHaveURL(/\/administrator$/);
-    await expect(page.getByRole('heading', { name: 'Good work starts with a clear view.' })).toBeVisible();
-    await expect(page.getByText('Recently updated')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your work, at a glance' })).toBeVisible();
+    await expect(page.getByText('Recently updated content')).toBeVisible();
   });
 
   test('non-browser callers still receive the machine-readable problem document', async ({ page }) => {

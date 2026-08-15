@@ -247,14 +247,17 @@ test('portal login rejects a forged pre-authentication token', async ({ request 
 
 test('portal shell keeps sessions isolated and protects mutations', async ({ page, isMobile }, testInfo) => {
   await signIn(page);
-  await expect(page.getByRole('heading', { name: 'Welcome to Kumwe Portal' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to your workspace' })).toBeVisible();
   const navigation = page.getByRole('navigation', { name: 'Portal navigation' });
   await expect(navigation.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
   await expect(navigation.getByRole('link', { name: 'Approvals' })).toBeVisible();
   await expect(navigation.getByRole('link', { name: 'Account security' })).toBeVisible();
-  await expect(page.getByLabel('Active portal context')).toContainText('default');
-  await expect(page.getByLabel('Active portal context')).toContainText('acme');
-  await expect(page.getByLabel('Active portal context')).toContainText('north');
+  const accessContext = page.locator('[data-kis-dashboard-widget="core.dashboard.access-context"]');
+  await expect(accessContext).toContainText('default');
+  await expect(accessContext).toContainText('acme');
+  await expect(accessContext).toContainText('north');
+  await expect(page.locator('.kis-dashboard-shortcut-list a[href="/portal"]')).toHaveCount(0);
+  await expect(page.locator('.kis-dashboard-shortcut-list a[href="/portal/business"]')).toBeVisible();
   await expectStylesLoaded(page);
   await expectAccessible(page);
 
@@ -292,7 +295,7 @@ test('portal shell keeps sessions isolated and protects mutations', async ({ pag
   expect((await page.context().cookies())
     .find((cookie) => cookie.name === 'kumwe_administrator')).toBeUndefined();
   await page.goto('/portal');
-  await expect(page.getByRole('heading', { name: 'Welcome to Kumwe Portal' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to your workspace' })).toBeVisible();
 
   const rejected = await page.evaluate(async () => {
     const response = await fetch('/portal/logout', {
@@ -304,7 +307,7 @@ test('portal shell keeps sessions isolated and protects mutations', async ({ pag
   });
   expect(rejected.status).toBe(403);
   expect(rejected.body).toContain('portal security token is invalid');
-  await expect(page.getByRole('heading', { name: 'Welcome to Kumwe Portal' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to your workspace' })).toBeVisible();
 
   await page.screenshot({
     path: testInfo.outputPath('portal-shell.png'),
