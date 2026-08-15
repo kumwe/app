@@ -573,11 +573,13 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
         } catch (RuntimeException) {
             $shape = null;
         }
-        if (!in_array($shape, [
-            'or(and(A,B),and(C,D,E))',
-            'or(and(A,B),and(and(C,D),E))',
-            'or(and(A,B),and(C,and(D,E)))',
-        ], true)) {
+        if (
+            !in_array($shape, [
+                'or(and(A,B),and(C,D,E))',
+                'or(and(A,B),and(and(C,D),E))',
+                'or(and(A,B),and(C,and(D,E)))',
+            ], true)
+        ) {
             throw new RuntimeException(sprintf(
                 'Content-entry ownership check "%s" on table "%s" has an incompatible shape.',
                 $constraint,
