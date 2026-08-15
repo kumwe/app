@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\CMS\Infrastructure\Automation;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -25,10 +25,11 @@ use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\ScheduleOccurrenceKey;
 use Kumwe\CMS\Application\Automation\Scheduler;
+use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

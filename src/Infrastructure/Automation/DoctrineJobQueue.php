@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\CMS\Infrastructure\Automation;
 
 use DateInterval;
 use DateTimeImmutable;
