@@ -21,8 +21,15 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   workers: 1,
+  // The JSON report is what tools/summarize-browser-attempts.mjs reads to separate a journey that passed
+  // on its first attempt from one that only passed on a retry. Reporting the two together hides the
+  // difference, and the difference is the whole signal.
   reporter: process.env.CI
-    ? [['line'], ['html', { outputFolder: 'test-results/playwright-report', open: 'never' }]]
+    ? [
+        ['line'],
+        ['html', { outputFolder: 'test-results/playwright-report', open: 'never' }],
+        ['json', { outputFile: 'test-results/browser-results.json' }],
+      ]
     : 'list',
   expect: {
     timeout: 10_000,
@@ -85,6 +92,19 @@ export default defineConfig({
       name: 'mobile-chromium-ar',
       testMatch: rightToLeftSpec,
       use: { ...devices['Pixel 7'], locale: 'ar-EG' },
+    // The nightly breadth projects. `ignoreSnapshots` is deliberate and is not a weakening: a pixel
+    // baseline belongs to the browser that recorded it, so comparing a Firefox or WebKit render against a
+    // Chromium baseline reports font hinting rather than the product. Behaviour and accessibility are
+    // asserted identically here; only the pixel comparison stays with the browser that owns the baselines.
+    {
+      name: 'desktop-firefox',
+      ignoreSnapshots: true,
+      use: { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 960 } },
+    },
+    {
+      name: 'desktop-webkit',
+      ignoreSnapshots: true,
+      use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 960 } },
     },
   ],
 });

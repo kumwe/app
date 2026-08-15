@@ -11,7 +11,8 @@
     "check": "npm run check:types && npm run check:schemas",
     "check:types": "tsc --noEmit",
     "check:schemas": "node tools/verify-interface-schemas.mjs",
-    "test:browser": "playwright test",
+    "test:browser": "playwright test --project=desktop-chromium --project=mobile-chromium",
+    "test:browser:breadth": "playwright test --project=desktop-firefox --project=desktop-webkit",
     "test:browser:report": "playwright show-report test-results/playwright-report",
     "test:browser:update": "playwright test --update-snapshots"
   },

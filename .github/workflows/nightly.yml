@@ -1,0 +1,181 @@
+name: Kumwe nightly
+
+# The nightly lane exists so that checks which do not fit a merge budget still run on a known cadence, and
+# so that "nightly" is a thing this repository executes rather than a thing its documentation mentions. It
+# does not restate what to run: the first job executes the nightly lane of docs/quality/contract.json, and a
+# check joins that lane by declaring the cadence there and nowhere else.
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  quality-contract:
+    name: Nightly quality contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.5'
+          extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Verify the contract before executing it
+        run: composer quality:contract
+
+      # Every check whose cadence includes "nightly". The suites that need a live database are not in that
+      # lane, because a lane that cannot run what it claims is the defect this contract removes.
+      - name: Execute the nightly lane
+        env:
+          KUMWE_ARTIFACT_MEMORY: 256M
+        run: php tools/quality-contract.php --run --cadence=nightly
+
+  browser:
+    name: Nightly browser breadth / ${{ matrix.database.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - name: MariaDB LTS
+            driver: mariadb
+            image: mariadb:lts
+            port: 3306
+            server-version: mariadb-12.3.2
+            health: >-
+              --health-cmd "healthcheck.sh --connect --innodb_initialized"
+              --health-interval 5s --health-timeout 5s --health-retries 20
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          MARIADB_DATABASE: kumwe_browser
+          MARIADB_USER: kumwe
+          MARIADB_PASSWORD: kumwe_browser
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+        ports:
+          - '${{ matrix.database.port }}:${{ matrix.database.port }}'
+        options: ${{ matrix.database.health }}
+      redis:
+        image: redis:8-alpine
+        ports:
+          - '6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_BASE_URL: http://127.0.0.1:8080
+      APP_PUBLIC_SITE: default
+      APP_TRUSTED_HOSTS: 127.0.0.1,localhost
+      EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'true'
+      DB_DRIVER: ${{ matrix.database.driver }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.database.port }}
+      DB_NAME: kumwe_browser
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_browser
+      DB_TABLE_PREFIX: kumwe_
+      DB_SSLMODE: disable
+      DB_SERVER_VERSION: ${{ matrix.database.server-version }}
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 0
+      REDIS_NAMESPACE: kumwe.nightly
+      KUMWE_SITE_CONTENT_PROFILE: placeholder
+      KUMWE_BUSINESS_DEMO: 'false'
+      KUMWE_BROWSER_ADMIN_EMAIL: browser-administrator@kumwe.test
+      KUMWE_BROWSER_ADMIN_PASSWORD: browser administrator password
+      KUMWE_BROWSER_LIMITED_EMAIL: browser-limited@kumwe.test
+      KUMWE_BROWSER_LIMITED_PASSWORD: browser limited password
+      KUMWE_BROWSER_START_SERVER: '1'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.5'
+          extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.12.0'
+
+      - name: Install locked application dependencies
+        run: |
+          composer install --no-interaction --prefer-dist
+          npm ci
+
+      - name: Type-check and build immutable browser assets
+        run: |
+          npm run check
+          npm run build
+
+      - name: Migrate and create the browser-test administrator
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_secret="$(openssl rand -base64 48 | tr -d '\n')"
+          echo "APP_SECRET=$app_secret" >> "$GITHUB_ENV"
+          export APP_SECRET="$app_secret"
+          password_file="$RUNNER_TEMP/browser-administrator-password"
+          install -m 0600 /dev/null "$password_file"
+          printf %s "$KUMWE_BROWSER_ADMIN_PASSWORD" > "$password_file"
+          php bin/kumwe database:migrate
+          php bin/kumwe user:create-admin \
+            --site=default \
+            --email="$KUMWE_BROWSER_ADMIN_EMAIL" \
+            --name="Browser Administrator" \
+            --password-file="$password_file"
+          php tests/Support/prepare-browser-contribution.php
+
+      - name: Install the Firefox and WebKit test runtimes
+        run: npx playwright install --with-deps firefox webkit
+
+      # These two projects declare ignoreSnapshots, and that is deliberate rather than a weakening: pixel
+      # baselines belong to the browser that recorded them, and comparing a Firefox render against a
+      # Chromium baseline produces a failure about font hinting rather than about the product. Behaviour
+      # and accessibility are asserted identically on all three engines; only the pixels stay with Chromium.
+      - name: Exercise the journeys on Firefox and WebKit
+        run: npm run test:browser:breadth
+
+      - name: Summarize first-attempt and retried results
+        if: always()
+        env:
+          KUMWE_BROWSER_ENGINE: ${{ matrix.database.driver }}
+        run: node tools/summarize-browser-attempts.mjs
+
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nightly-browser-evidence-${{ matrix.database.driver }}
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 14
