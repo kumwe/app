@@ -6,6 +6,8 @@ const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL ?? 'browser-adm
 const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD ?? 'browser administrator password';
 const limitedEmail = process.env.KUMWE_BROWSER_LIMITED_EMAIL ?? 'browser-limited@kumwe.test';
 const limitedPassword = process.env.KUMWE_BROWSER_LIMITED_PASSWORD ?? 'browser limited password';
+const dashboardGroupEmail = 'browser-dashboard@kumwe.test';
+const dashboardGroupPassword = 'browser dashboard password';
 const businessDefinitionHandle = 'site.default.session5_order';
 const assetInspectionDefinition = 'kumwe.asset-inspection-example.inspection';
 const assetInspectionReport = 'kumwe.asset-inspection-example.inspection-summary';
@@ -161,6 +163,20 @@ async function ensureAnnouncementsActive(page: Page): Promise<void> {
   await page.goto('/administrator/extensions');
 }
 
+async function resetPersonalAdministratorDashboard(page: Page): Promise<void> {
+  await page.goto('/administrator?dashboard-saved=1#dashboard-customization');
+  const personal = page.locator('.kis-dashboard-preference-scope').filter({
+    has: page.locator('input[name="scope"][value="user"]'),
+  }).first();
+  for (const name of ['Reset widgets', 'Reset shortcuts']) {
+    const reset = personal.getByRole('button', { name, exact: true });
+    if (await reset.count()) {
+      await reset.click();
+      await expect(page).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    }
+  }
+}
+
 test('login is accessible and visually stable', async ({ page }, testInfo) => {
   await page.goto('/administrator/login');
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -266,10 +282,164 @@ test('policy authoring retains a complete native no-JavaScript path', async ({ b
   }
 });
 
+test('dashboard preferences save and reset through the native no-JavaScript workflow', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  let signedIn = false;
+  try {
+    await signIn(page);
+    signedIn = true;
+    const forged = await context.request.post('/administrator/dashboard/preferences', {
+      form: {
+        _csrf: 'forged-dashboard-token',
+        action: 'dashboard-cards.save',
+        scope: 'user',
+        scope_id: 'forged',
+        expected_version: '0',
+      },
+    });
+    expect(forged.status()).toBe(403);
+
+    const customization = page.locator('#dashboard-customization');
+    await customization.locator('summary').click();
+    const personal = customization.locator('.kis-dashboard-preference-scope').filter({
+      has: page.locator('input[name="scope"][value="user"]'),
+    }).first();
+    const widgetForm = personal.locator('form').filter({
+      has: page.locator('button[value="dashboard-cards.save"]'),
+    });
+    const staleVersion = await widgetForm.locator('input[name="expected_version"]').inputValue();
+    const scopeId = await widgetForm.locator('input[name="scope_id"]').inputValue();
+    for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
+      await checkbox.uncheck();
+    }
+    const contextChoice = widgetForm.locator('.kis-dashboard-choice').filter({
+      has: page.locator('input[type="hidden"][value="core.dashboard.administrator-context"]'),
+    });
+    await contextChoice.locator('input[type="checkbox"]').check();
+    await contextChoice.locator('input[type="number"]').fill('1');
+    await widgetForm.getByRole('button', { name: 'Save widgets' }).click();
+
+    await expect(page).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    await expect(page.locator(
+      '[data-kis-dashboard-widget="core.dashboard.administrator-context"]',
+    )).toBeVisible();
+    await expect(page.locator(
+      '[data-kis-dashboard-widget="core.dashboard.content-summary"]',
+    )).toHaveCount(0);
+
+    const conflict = await context.request.post('/administrator/dashboard/preferences', {
+      maxRedirects: 0,
+      form: {
+        _csrf: await widgetForm.locator('input[name="_csrf"]').inputValue(),
+        action: 'dashboard-cards.save',
+        scope: 'user',
+        scope_id: scopeId,
+        expected_version: staleVersion,
+        item_0: 'core.dashboard.administrator-context',
+        selected_0: '1',
+        order_0: '1',
+      },
+    });
+    expect(conflict.status()).toBe(303);
+    const conflictLocation = conflict.headers().location;
+    expect(conflictLocation)
+      .toBe('/administrator?dashboard-error=conflict#dashboard-customization');
+    if (conflictLocation === undefined) {
+      throw new Error('The dashboard conflict response did not provide a redirect location.');
+    }
+    await page.goto(conflictLocation);
+    await expect(page.getByRole('alert')).toHaveText(
+      'The dashboard changed in another session. Review the latest choices and try again.',
+    );
+
+    await personal.getByRole('button', { name: 'Reset widgets' }).click();
+    await expect(page).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    await expect(page.locator(
+      '[data-kis-dashboard-widget="core.dashboard.content-summary"]',
+    )).toBeVisible();
+  } finally {
+    try {
+      if (signedIn) {
+        await resetPersonalAdministratorDashboard(page);
+      }
+    } finally {
+      await context.close();
+    }
+  }
+});
+
+test('an access-group dashboard default reaches its member and can be reset', async ({ browser }) => {
+  const managerContext = await browser.newContext();
+  const memberContext = await browser.newContext();
+  const manager = await managerContext.newPage();
+  const member = await memberContext.newPage();
+  let managerSignedIn = false;
+  try {
+    await signIn(manager);
+    managerSignedIn = true;
+    const customization = manager.locator('#dashboard-customization');
+    await customization.locator('summary').click();
+    const group = customization.locator('.kis-dashboard-preference-scope').filter({
+      has: manager.getByRole('heading', { name: 'Browser Dashboard Group', exact: true }),
+    });
+    const widgetForm = group.locator('form').filter({
+      has: manager.locator('button[value="dashboard-cards.save"]'),
+    });
+    for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
+      await checkbox.uncheck();
+    }
+    const contextChoice = widgetForm.locator('.kis-dashboard-choice').filter({
+      has: manager.locator('input[type="hidden"][value="core.dashboard.administrator-context"]'),
+    });
+    await contextChoice.locator('input[type="checkbox"]').check();
+    await contextChoice.locator('input[type="number"]').fill('1');
+    await widgetForm.getByRole('button', { name: 'Save widgets' }).click();
+    await expect(manager).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+
+    await signIn(member, dashboardGroupEmail, dashboardGroupPassword);
+    await expect(member.locator(
+      '[data-kis-dashboard-widget="core.dashboard.administrator-context"]',
+    )).toBeVisible();
+    await expect(member.locator(
+      '[data-kis-dashboard-widget="core.dashboard.content-summary"]',
+    )).toHaveCount(0);
+
+    await manager.goto('/administrator?dashboard-saved=1#dashboard-customization');
+    const savedGroup = manager.locator('.kis-dashboard-preference-scope').filter({
+      has: manager.getByRole('heading', { name: 'Browser Dashboard Group', exact: true }),
+    });
+    await savedGroup.getByRole('button', { name: 'Reset widgets' }).click();
+    await expect(manager).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+
+    await member.reload();
+    await expect(member.locator(
+      '[data-kis-dashboard-widget="core.dashboard.content-summary"]',
+    )).toBeVisible();
+  } finally {
+    try {
+      if (managerSignedIn) {
+        await manager.goto('/administrator?dashboard-saved=1#dashboard-customization');
+        const group = manager.locator('.kis-dashboard-preference-scope').filter({
+          has: manager.getByRole('heading', { name: 'Browser Dashboard Group', exact: true }),
+        });
+        const reset = group.getByRole('button', { name: 'Reset widgets' });
+        if (await reset.count()) {
+          await reset.click();
+          await expect(manager).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+        }
+      }
+    } finally {
+      await managerContext.close();
+      await memberContext.close();
+    }
+  }
+});
+
 test.describe('authenticated administrator', () => {
   test.beforeEach(async ({ page }) => signIn(page));
 
-  test('dashboard supports desktop and responsive navigation', async ({ page, isMobile }, testInfo) => {
+  test('dashboard supports desktop and responsive navigation', async ({ page, isMobile }) => {
     await expect(page.getByRole('heading', { name: 'Your work, at a glance' })).toBeVisible();
     await expect(page.locator('[data-kis-dashboard-widget="core.dashboard.content-summary"]')).toBeVisible();
     const quickLinks = page.locator('.kis-dashboard-shortcut-list a');
@@ -306,7 +476,7 @@ test.describe('authenticated administrator', () => {
       await expect(toggle).toBeFocused();
     }
     await expectAccessible(page);
-    await page.screenshot({ path: testInfo.outputPath('dashboard.png'), fullPage: true });
+    await expect(page).toHaveScreenshot('dashboard.png', { fullPage: true });
   });
 
   test('content discovery and graphical editor work without raw JSON', async ({ page }, testInfo) => {
@@ -1671,31 +1841,116 @@ test.describe('authenticated administrator', () => {
     // KIS-EVIDENCE-BEGIN p6-003-extension-reactivation-ui
     test.setTimeout(90_000);
     await ensureAnnouncementsActive(page);
+    await resetPersonalAdministratorDashboard(page);
     try {
-      const extension = page.locator('article').filter({ hasText: 'kumwe/announcements-example' }).first();
-      await extension.getByRole('button', { name: 'Disable' }).click();
-      await expect(page).toHaveURL(/\/administrator\/extensions$/);
-      await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
-
-      await expect.poll(async () => {
+      try {
         await page.goto('/administrator');
-        return page.getByRole('link', { name: 'Announcements', exact: true }).count();
-      }, {
-        message: 'the disabled extension navigation to leave the local signed runtime map',
-        timeout: 25_000,
-      }).toBe(0);
+        const customization = page.locator('#dashboard-customization');
+        await customization.locator('summary').click();
+        const personalDashboard = customization.locator('.kis-dashboard-preference-scope').filter({
+          has: page.locator('input[name="scope"][value="user"]'),
+        }).first();
+        const widgetForm = personalDashboard.locator('form').filter({
+          has: page.locator('button[value="dashboard-cards.save"]'),
+        });
+        const widgetChoice = widgetForm.locator('.kis-dashboard-choice').filter({
+          has: page.locator(
+            'input[type="hidden"][value="kumwe.announcements-example.navigation"]',
+          ),
+        });
+        for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
+          await checkbox.uncheck();
+        }
+        await widgetChoice.locator('input[type="checkbox"]').check();
+        await widgetChoice.locator('input[type="number"]').fill('1');
+        await widgetForm.getByRole('button', { name: 'Save widgets' }).click();
+
+        const shortcutForm = personalDashboard.locator('form').filter({
+          has: page.locator('button[value="navigation-shortcuts.save"]'),
+        });
+        const shortcutChoice = shortcutForm.locator('.kis-dashboard-choice').filter({
+          has: page.locator(
+            'input[type="hidden"][value="kumwe.announcements-example.navigation"]',
+          ),
+        });
+        for (const checkbox of await shortcutForm.locator('input[type="checkbox"]:checked').all()) {
+          await checkbox.uncheck();
+        }
+        await shortcutChoice.locator('input[type="checkbox"]').check();
+        await shortcutChoice.locator('input[type="number"]').fill('1');
+        await shortcutForm.getByRole('button', { name: 'Save shortcuts' }).click();
+
+        await expect(page.locator(
+          '[data-kis-dashboard-widget="kumwe.announcements-example.navigation"]',
+        )).toBeVisible();
+        await expect(page.locator(
+          '.kis-dashboard-shortcut-list a[href="/administrator/extensions/kumwe/announcements-example"]',
+        )).toBeVisible();
+
+        await page.goto('/administrator/extensions');
+        const extension = page.locator('article').filter({
+          hasText: 'kumwe/announcements-example',
+        }).first();
+        await extension.getByRole('button', { name: 'Disable' }).click();
+        await expect(page).toHaveURL(/\/administrator\/extensions$/);
+        await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
+
+        await expect.poll(async () => {
+          await page.goto('/administrator');
+          return page.getByRole('link', { name: 'Announcements', exact: true }).count();
+        }, {
+          message: 'the disabled extension navigation to leave the local signed runtime map',
+          timeout: 25_000,
+        }).toBe(0);
+        if (isMobile) {
+          await page.getByRole('button', { name: 'Open administrator navigation' }).click();
+        }
+        await expect(page.getByRole('link', { name: 'Announcements' })).toHaveCount(0);
+        await expect(page.locator(
+          '[data-kis-dashboard-widget="kumwe.announcements-example.navigation"]',
+        )).toHaveCount(0);
+        await expect(page.locator(
+          '.kis-dashboard-shortcut-list a[href="/administrator/extensions/kumwe/announcements-example"]',
+        )).toHaveCount(0);
+        await expect(page.locator(
+          '[data-kis-dashboard-widget="core.dashboard.content-summary"]',
+        )).toBeVisible();
+        await expect(page.getByText(
+          'This dashboard was adjusted to the current permitted catalogue and preference limits.',
+          { exact: true },
+        )).toBeVisible();
+        await expect(personalDashboard.locator(
+          'input[type="hidden"][name^="item_"]'
+            + '[value="kumwe.announcements-example.navigation"]',
+        )).toHaveCount(0);
+      } finally {
+        await ensureAnnouncementsActive(page);
+      }
+      await page.goto('/administrator');
+      await expect(page.locator(
+        '[data-kis-dashboard-widget="kumwe.announcements-example.navigation"]',
+      )).toBeVisible();
+      await expect(page.locator(
+        '.kis-dashboard-shortcut-list a[href="/administrator/extensions/kumwe/announcements-example"]',
+      )).toBeVisible();
+      const extensionDashboardChoices = page.locator('.kis-dashboard-preference-scope').filter({
+        has: page.locator('input[name="scope"][value="user"]'),
+      }).first().locator(
+        'input[type="hidden"][name^="item_"]'
+          + '[value="kumwe.announcements-example.navigation"]',
+      );
+      await expect(extensionDashboardChoices).toHaveCount(2);
       if (isMobile) {
         await page.getByRole('button', { name: 'Open administrator navigation' }).click();
       }
-      await expect(page.getByRole('link', { name: 'Announcements' })).toHaveCount(0);
+      await expect(page.getByRole('link', { name: 'Announcements' })).toBeVisible();
     } finally {
-      await ensureAnnouncementsActive(page);
+      try {
+        await ensureAnnouncementsActive(page);
+      } finally {
+        await resetPersonalAdministratorDashboard(page);
+      }
     }
-    await page.goto('/administrator');
-    if (isMobile) {
-      await page.getByRole('button', { name: 'Open administrator navigation' }).click();
-    }
-    await expect(page.getByRole('link', { name: 'Announcements' })).toBeVisible();
     // KIS-EVIDENCE-END p6-003-extension-reactivation-ui
   });
 });

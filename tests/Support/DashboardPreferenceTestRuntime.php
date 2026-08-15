@@ -7,17 +7,20 @@ namespace Kumwe\CMS\Tests\Support;
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\MembershipContext;
 use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceManager;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferencePolicy;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\InterfaceStandard\CustomizationScope;
 use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
 use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceManager;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
+use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -52,28 +55,48 @@ final readonly class DashboardPreferenceTestRuntime
     public DashboardPreferenceService $service;
 
     /**
+     * Real presentation mapper used by dashboard form projection scenarios.
+     *
+     * @var    DashboardPreferenceFormPresenter
+     * @since  2.0.0
+     */
+    public DashboardPreferenceFormPresenter $presenter;
+
+    /**
+     * Real browser-form decoder used by delivery and protocol-refusal scenarios.
+     *
+     * @var    DashboardPreferenceFormDecoder
+     * @since  2.0.0
+     */
+    public DashboardPreferenceFormDecoder $decoder;
+
+    /**
      * Build the runtime with optional stable role projections.
      *
-     * @param  list<PresentationAccessGroup>  $groups  Live access groups visible to preference delivery.
+     * @param  list<PresentationAccessGroup>  $groups         Live access groups visible to preference delivery.
+     * @param  ?AuthorizationGateway          $authorization  Optional decision boundary for denial scenarios.
      *
      * @since  2.0.0
      */
-    public function __construct(array $groups = [])
+    public function __construct(array $groups = [], ?AuthorizationGateway $authorization = null)
     {
         $this->preferences = new InMemoryPresentationPreferenceRepository();
         $this->groups = new InMemoryPresentationAccessGroupRepository($groups);
         $memberships = new DashboardPreferenceCurrentMemberships();
+        $authorization ??= AuthorizationContext::gateway(memberships: $memberships);
         $manager = new PresentationPreferenceManager(
             $this->preferences,
             new DashboardPreferenceAllowAllPolicy(),
-            AuthorizationContext::gateway(memberships: $memberships),
+            $authorization,
             new DashboardPreferenceNullAuditRecorder(),
             new DashboardPreferenceFixedClock(),
             new ImmediateTransactionManager(),
             $memberships,
             $this->groups,
         );
-        $this->service = new DashboardPreferenceService($manager, $this->groups);
+        $this->service = new DashboardPreferenceService($manager, $this->groups, $authorization);
+        $this->presenter = new DashboardPreferenceFormPresenter();
+        $this->decoder = new DashboardPreferenceFormDecoder();
     }
 }
 

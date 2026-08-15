@@ -83,6 +83,15 @@ cross-area destinations and intersects saved semantic identifiers with the remai
 extension therefore becomes selectable by contributing its ordinary owned KIS surface and navigation item;
 it does not contribute dashboard HTML, an unfiltered URL or a second navigation record.
 
+The preference disclosure pages that same complete current catalogue instead of retaining a fixed prefix.
+Workflow-card and shortcut choices share an independent query with 32 results on each of the first 100 numeric
+pages. Bounded normalized search of at most 191 characters scans the complete already-filtered catalogue by
+identifier, title, description and group, so targeted work remains reachable beyond the 3,200-item numeric
+window. Each personal or access-group form prepends only its own still-live off-page selections, adds core
+widgets where applicable, then adds the current page without duplicates. Disabled or stale contributions are
+absent. Search, clear, previous and next URLs remain fixed to the current delivery area and preserve validated
+access-group browser state without accepting a return destination.
+
 The `dashboard-cards` and `navigation-shortcuts` slots select and order identifiers only. Dashboard cards
 use the bounded dotted surface/navigation grammar rather than a core-only component vocabulary, so every
 valid contributed navigation identifier can participate. Administrator and portal defaults may be
@@ -92,10 +101,31 @@ diagnostic and disappears rather than retaining its old destination. Saving and 
 optimistic versions, ordinary authorization and audit through the presentation-preference mutation boundary,
 and remain usable without JavaScript.
 
-Access-group editing stays inside the dashboard area being configured. The forms appear only to an actor who
-holds `users.manage`, and the mutation boundary rechecks that capability against the exact canonical role.
-This means a portal group default is selected from the destinations visible in that real portal session; an
-administrator surface never guesses which portal navigation another context could discover.
+Effective-role composition reads at most 250 canonical roles plus one overflow row. A complete set is resolved
+through one preference batch per slot. If a later role exists, composition emits the non-sensitive
+`kis.preference.access-group-catalog-incomplete` diagnostic and skips the entire projected-role aggregate; it
+never presents a prefix union as the actor's effective dashboard. Current-workspace and personal precedence
+remain available, so overflow cannot silently change the meaning of an applied role selection.
+
+Access-group editing stays inside the dashboard area being configured. The role browser appears only after a
+collection-level `users.manage` decision; denial does not query or disclose the role catalogue, its count or
+its paging state. `users.manage` is installation-global and the role resource policy is installation-global,
+so collection and canonical-item reads require the same grant and cannot express a role-specific subset. The
+response reads and renders at most one canonical group on each of the first 100 numeric pages through a constant
+collection authorization budget. Bounded literal search over canonical role code or name lets an operator
+target groups beyond that numeric window without hydrating the identity catalogue into the page; it is not an
+assertion that every role is listed in one response. The protected component renders search, clear, previous,
+next, no-result and genuine browse-limit states as translated server-rendered controls, and visibly pairs a
+possibly non-unique role name with its canonical role code.
+
+The preference manager validates every batched role key against the typed canonical rows supplied by that
+bounded query and repeats one collection decision, never one decision per row. Canonical role creation records
+its ownership in the same `AccessControlService::createRole()` identity transaction, while mutations separately
+recheck `users.manage` against the exact role and lock live role existence. This means a portal group default is
+selected from the destinations visible in that real portal session; an administrator surface never guesses
+which portal navigation another context could discover. Query fields and continuation links remain fixed to the
+current area, and saving or resetting preserves only the validated role browser state rather than accepting a
+return destination.
 
 Every rendered widget has a programmatic heading and its visual size is a responsive hint, never reading
 order. Search has a visible label, quick links remain a labelled navigation landmark, progress exposes its

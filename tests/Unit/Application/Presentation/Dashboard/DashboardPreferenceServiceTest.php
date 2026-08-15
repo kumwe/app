@@ -2,11 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Presentation\Application\Dashboard;
+namespace Kumwe\CMS\Tests\Unit\Application\Presentation\Dashboard;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceAccessGroupState;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceMutation;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceState;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupCatalog;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceManager;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\InterfaceStandard\CustomizationScope;
 use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
@@ -14,9 +25,8 @@ use Kumwe\CMS\InterfaceStandard\PresentationPreference;
 use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\CMS\InterfaceStandard\SurfaceArea;
 use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceManager;
+use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Kumwe\CMS\Tests\Support\DashboardPreferenceTestRuntime;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -30,6 +40,11 @@ use PHPUnit\Framework\TestCase;
  * @since  2.0.0
  */
 #[CoversClass(DashboardPreferenceService::class)]
+#[CoversClass(DashboardPreferenceState::class)]
+#[CoversClass(DashboardPreferenceAccessGroupState::class)]
+#[CoversClass(DashboardPreferenceMutation::class)]
+#[CoversClass(PresentationAccessGroupCatalog::class)]
+#[UsesClass(DashboardPreferenceFormDecoder::class)]
 #[UsesClass(PresentationPreferenceManager::class)]
 final class DashboardPreferenceServiceTest extends TestCase
 {
@@ -42,7 +57,7 @@ final class DashboardPreferenceServiceTest extends TestCase
     private const ROLE_ID = '018f22e2-7c8b-7ab0-8f3a-88e8026bb303';
 
     /**
-     * Proves exact rows retain their own versions and order while only missing personal rows use fallbacks.
+     * Proves exact rows retain their own versions while personal absence remains typed as inheritance.
      *
      * Portal deliberately exercises access-group forms too: area does not grant authority, `users.manage` does.
      *
@@ -75,50 +90,32 @@ final class DashboardPreferenceServiceTest extends TestCase
             2,
         );
 
-        $forms = $runtime->service->formModels(
+        $state = $runtime->service->read(
             $context,
             SurfaceArea::Portal,
             $surface,
             ContributionOwner::core(),
             true,
-            ['core.dashboard.access-context'],
-            ['2acme.sales__orders', 'core.portal-approvals'],
         );
 
-        self::assertCount(2, $forms);
-        self::assertSame('user', $forms[0]['scope']);
-        self::assertSame('core.interface_standard.dashboard.personal_label', $forms[0]['label']);
-        self::assertTrue($forms[0]['message_ids']);
+        self::assertCount(1, $state->accessGroups);
         self::assertSame(
             ['core.portal-approvals', 'core.dashboard.access-context'],
-            $forms[0]['selected_widget_ids'],
+            $state->personalWidgets?->value()->value(),
         );
-        self::assertSame([
-            'core.portal-approvals' => 1,
-            'core.dashboard.access-context' => 2,
-        ], $forms[0]['widget_order']);
-        self::assertSame(4, $forms[0]['widget_version']);
+        self::assertSame(4, $state->personalWidgets?->version());
+        self::assertNull($state->personalShortcuts);
+        self::assertSame($group->id, $state->accessGroups[0]->group->id);
+        self::assertNull($state->accessGroups[0]->widgets);
         self::assertSame(
-            ['2acme.sales__orders', 'core.portal-approvals'],
-            $forms[0]['selected_shortcut_ids'],
+            ['core.portal-business-records'],
+            $state->accessGroups[0]->shortcuts?->value()->value(),
         );
-        self::assertSame(['2acme.sales__orders' => 1, 'core.portal-approvals' => 2], $forms[0]['shortcut_order']);
-        self::assertSame(0, $forms[0]['shortcut_version']);
-
-        self::assertSame('role-workspace', $forms[1]['scope']);
-        self::assertSame($group->id, $forms[1]['scope_id']);
-        self::assertSame('Operations', $forms[1]['label']);
-        self::assertFalse($forms[1]['message_ids']);
-        self::assertSame([], $forms[1]['selected_widget_ids']);
-        self::assertSame([], $forms[1]['widget_order']);
-        self::assertSame(0, $forms[1]['widget_version']);
-        self::assertSame(['core.portal-business-records'], $forms[1]['selected_shortcut_ids']);
-        self::assertSame(['core.portal-business-records' => 1], $forms[1]['shortcut_order']);
-        self::assertSame(2, $forms[1]['shortcut_version']);
+        self::assertSame(2, $state->accessGroups[0]->shortcuts?->version());
     }
 
     /**
-     * Proves requested groups are individually omitted when manager authorization refuses exact role export.
+     * Proves collection denial preserves the personal form while omitting the entire role catalogue.
      *
      * @return  void
      *
@@ -130,23 +127,236 @@ final class DashboardPreferenceServiceTest extends TestCase
         $runtime = new DashboardPreferenceTestRuntime([$group]);
         $context = AuthorizationContext::human(['portal.access']);
 
-        $forms = $runtime->service->formModels(
+        $state = $runtime->service->read(
             $context,
             SurfaceArea::Portal,
             SurfaceId::fromString('core.portal.home'),
             ContributionOwner::core(),
             true,
-            ['core.dashboard.access-context'],
-            [],
         );
 
-        self::assertCount(1, $forms);
-        self::assertSame($context->actorId(), $forms[0]['scope_id']);
-        self::assertSame(['core.dashboard.access-context'], $forms[0]['selected_widget_ids']);
+        self::assertSame($context->actorId(), $state->userScopeId);
+        self::assertNull($state->personalWidgets);
+        self::assertSame([], $state->accessGroups);
     }
 
     /**
-     * Proves a stored intentional empty personal list wins over a non-empty effective fallback.
+     * Proves a large role catalogue stays one compact form per page and roles beyond 64 remain reachable.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBoundsAccessGroupFormsAndBatchesTheirPreferenceRead(): void
+    {
+        $groups = [];
+        for ($index = 1; $index <= 65; $index++) {
+            $groups[] = PresentationAccessGroup::fromRole(
+                sprintf('018f22e2-7c8b-7ab0-8f3a-%012x', $index),
+                sprintf('group-%03d', $index),
+                sprintf('Group %03d', $index),
+            );
+        }
+        $runtime = new DashboardPreferenceTestRuntime(array_reverse($groups));
+        $first = $runtime->service->read(
+            AuthorizationContext::human(['users.manage']),
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            ContributionOwner::core(),
+            true,
+        );
+        $tail = $runtime->service->read(
+            AuthorizationContext::human(['users.manage']),
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            ContributionOwner::core(),
+            true,
+            new DashboardPreferenceQuery(65),
+        );
+
+        self::assertCount(1, $first->accessGroups);
+        self::assertSame($groups[0]->id, $first->accessGroups[0]->group->id);
+        self::assertFalse($first->accessGroupHasPrevious);
+        self::assertTrue($first->accessGroupHasNext);
+        self::assertCount(1, $tail->accessGroups);
+        self::assertSame($groups[64]->id, $tail->accessGroups[0]->group->id);
+        self::assertTrue($tail->accessGroupHasPrevious);
+        self::assertFalse($tail->accessGroupHasNext);
+        self::assertSame([
+            ['limit' => 1, 'offset' => 0, 'search' => ''],
+            ['limit' => 1, 'offset' => 64, 'search' => ''],
+        ], $runtime->groups->catalogQueries());
+        self::assertSame(['find' => 0, 'find_many' => 2], $runtime->preferences->readCounts());
+    }
+
+    /**
+     * Proves a scoped grant never leaks role names, counts, or forward-page state through the catalogue.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCollectionDenialReturnsPersonalStateWithoutReadingTheRoleCatalog(): void
+    {
+        $group = PresentationAccessGroup::fromRole(self::ROLE_ID, 'operations', 'Operations');
+        $runtime = new DashboardPreferenceTestRuntime([$group]);
+
+        $state = $runtime->service->read(
+            AuthorizationContext::siteScoped('users.manage'),
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            ContributionOwner::core(),
+            true,
+            new DashboardPreferenceQuery(2, 'Operations'),
+        );
+
+        self::assertFalse($state->accessGroupAdministration);
+        self::assertSame([], $state->accessGroups);
+        self::assertFalse($state->accessGroupHasPrevious);
+        self::assertFalse($state->accessGroupHasNext);
+        self::assertSame([], $runtime->groups->catalogQueries());
+        self::assertSame(['find' => 0, 'find_many' => 1], $runtime->preferences->readCounts());
+    }
+
+    /**
+     * Proves role catalogue reads use only the installation-global collection decision.
+     *
+     * `users.manage` is global-only and its role policy is installation-global, so canonical role rows all
+     * require the same grant. Exact item authorization is deliberately reserved for a mutation and its lock.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRoleCatalogUsesAConstantCollectionAuthorizationBudget(): void
+    {
+        $group = PresentationAccessGroup::fromRole(
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb304',
+            'group-001',
+            'Canonical global role',
+        );
+        $targets = [];
+        $authorization = $this->createStub(AuthorizationGateway::class);
+        $authorization->method('assertAllowed')->willReturnCallback(static function (
+            ExecutionContext $context,
+            Capability $capability,
+            AuthorizationResource $resource,
+        ) use (&$targets): void {
+            $targets[] = $capability->value() . ':' . $resource->type() . ':' . $resource->identifier();
+        });
+        $runtime = new DashboardPreferenceTestRuntime([$group], $authorization);
+
+        $state = $runtime->service->read(
+            AuthorizationContext::human(['users.manage']),
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            ContributionOwner::core(),
+            true,
+            new DashboardPreferenceQuery(),
+        );
+
+        self::assertTrue($state->accessGroupAdministration);
+        self::assertSame([$group->id], array_map(
+            static fn (DashboardPreferenceAccessGroupState $group): string => $group->group->id,
+            $state->accessGroups,
+        ));
+        self::assertFalse($state->accessGroupHasPrevious);
+        self::assertFalse($state->accessGroupHasNext);
+        self::assertFalse($state->accessGroupBrowseLimit);
+        self::assertSame(['users.manage:role:*', 'users.manage:role:*'], $targets);
+        self::assertSame(['find' => 0, 'find_many' => 1], $runtime->preferences->readCounts());
+    }
+
+    /**
+     * Proves raw forward evidence at the numeric browse cap becomes a search instruction, never an unsafe link.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMaximumBrowsePageClampsForwardNavigationToTargetedSearch(): void
+    {
+        $groups = [];
+        for ($index = 1; $index <= DashboardPreferenceQuery::MAXIMUM_PAGE + 1; $index++) {
+            $groups[] = PresentationAccessGroup::fromRole(
+                sprintf('018f22e2-7c8b-7ab0-8f3b-%012x', $index),
+                sprintf('maximum-page-%05d', $index),
+                sprintf('Maximum page %05d', $index),
+            );
+        }
+        $completeRuntime = new DashboardPreferenceTestRuntime(array_slice($groups, 0, -1));
+        $complete = $completeRuntime->service->read(
+            AuthorizationContext::human(['users.manage']),
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            ContributionOwner::core(),
+            true,
+            new DashboardPreferenceQuery(DashboardPreferenceQuery::MAXIMUM_PAGE),
+        );
+        $runtime = new DashboardPreferenceTestRuntime($groups);
+
+        $state = $runtime->service->read(
+            AuthorizationContext::human(['users.manage']),
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            ContributionOwner::core(),
+            true,
+            new DashboardPreferenceQuery(DashboardPreferenceQuery::MAXIMUM_PAGE),
+        );
+
+        self::assertCount(1, $complete->accessGroups);
+        self::assertFalse($complete->accessGroupHasNext);
+        self::assertFalse($complete->accessGroupBrowseLimit);
+        self::assertCount(1, $state->accessGroups);
+        self::assertTrue($state->accessGroupHasPrevious);
+        self::assertFalse($state->accessGroupHasNext);
+        self::assertTrue($state->accessGroupBrowseLimit);
+        self::assertSame([[
+            'limit' => 1,
+            'offset' => 99,
+            'search' => '',
+        ]], $runtime->groups->catalogQueries());
+    }
+
+    /**
+     * Proves an exact code search reaches a canonical role beyond the numeric browse window.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUniqueSearchReachesRoleBeyondTheNumericBrowseWindow(): void
+    {
+        $groups = [];
+        for ($index = 1; $index <= 128; $index++) {
+            $groups[] = PresentationAccessGroup::fromRole(
+                sprintf('018f22e2-7c8b-7ab0-8f3c-%012x', $index),
+                sprintf('searchable-role-%03d', $index),
+                sprintf('Searchable role %03d', $index),
+            );
+        }
+        $runtime = new DashboardPreferenceTestRuntime($groups);
+
+        $state = $runtime->service->read(
+            AuthorizationContext::human(['users.manage']),
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            ContributionOwner::core(),
+            true,
+            new DashboardPreferenceQuery(1, 'searchable-role-128'),
+        );
+
+        self::assertSame($groups[127]->id, $state->accessGroups[0]->group->id);
+        self::assertFalse($state->accessGroupHasNext);
+        self::assertSame([[
+            'limit' => 1,
+            'offset' => 0,
+            'search' => 'searchable-role-128',
+        ]], $runtime->groups->catalogQueries());
+    }
+
+    /**
+     * Proves an intentional empty personal list remains distinct from an absent inherited row.
      *
      * @return  void
      *
@@ -167,19 +377,16 @@ final class DashboardPreferenceServiceTest extends TestCase
             3,
         );
 
-        $forms = $runtime->service->formModels(
+        $state = $runtime->service->read(
             $context,
             SurfaceArea::Portal,
             $surface,
             ContributionOwner::core(),
             false,
-            ['core.dashboard.access-context'],
-            [],
         );
 
-        self::assertSame([], $forms[0]['selected_widget_ids']);
-        self::assertSame([], $forms[0]['widget_order']);
-        self::assertSame(3, $forms[0]['widget_version']);
+        self::assertSame([], $state->personalWidgets?->value()->value());
+        self::assertSame(3, $state->personalWidgets?->version());
     }
 
     /**
@@ -205,7 +412,7 @@ final class DashboardPreferenceServiceTest extends TestCase
             SurfaceArea::Administrator,
             $surface,
             ContributionOwner::core(),
-            [
+            $runtime->decoder->decode([
                 'action' => 'dashboard-cards.save',
                 'scope' => 'user',
                 'scope_id' => $context->actorId(),
@@ -218,7 +425,7 @@ final class DashboardPreferenceServiceTest extends TestCase
                 'order_1' => '10',
                 'item_2' => 'core.settings',
                 'order_2' => '1',
-            ],
+            ]),
             ['core.dashboard.content-summary', '2acme.sales__orders', 'core.settings'],
             [],
         );
@@ -234,13 +441,13 @@ final class DashboardPreferenceServiceTest extends TestCase
             SurfaceArea::Administrator,
             $surface,
             ContributionOwner::core(),
-            [
+            $runtime->decoder->decode([
                 'action' => 'dashboard-cards.reset',
                 'scope' => 'user',
                 'scope_id' => $context->actorId(),
                 'expected_version' => '1',
                 'item_stale' => 'withdrawn.widget',
-            ],
+            ]),
             [],
             [],
         );
@@ -266,7 +473,7 @@ final class DashboardPreferenceServiceTest extends TestCase
             SurfaceArea::Portal,
             $surface,
             ContributionOwner::core(),
-            [
+            $runtime->decoder->decode([
                 'action' => 'dashboard-cards.save',
                 'scope' => 'role-workspace',
                 'scope_id' => $group->id,
@@ -274,7 +481,7 @@ final class DashboardPreferenceServiceTest extends TestCase
                 'item_0' => 'core.dashboard.access-context',
                 'selected_0' => '1',
                 'order_0' => '1',
-            ],
+            ]),
             ['core.dashboard.access-context'],
             [],
         );
@@ -308,37 +515,13 @@ final class DashboardPreferenceServiceTest extends TestCase
             SurfaceArea::Portal,
             SurfaceId::fromString('core.portal.home'),
             ContributionOwner::core(),
-            [
+            $runtime->decoder->decode([
                 'action' => 'dashboard-cards.save',
                 'scope' => 'role-workspace',
                 'scope_id' => $group->id,
                 'expected_version' => '0',
-            ],
+            ]),
             [],
-            [],
-        );
-    }
-
-    /**
-     * Proves an effective personal fallback is subject to the canonical `SurfaceId` grammar too.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testRejectsAMalformedEffectiveFallbackIdentifier(): void
-    {
-        $runtime = new DashboardPreferenceTestRuntime();
-        $context = AuthorizationContext::human(['portal.access']);
-        $this->expectException(InvalidArgumentException::class);
-
-        $runtime->service->formModels(
-            $context,
-            SurfaceArea::Portal,
-            SurfaceId::fromString('core.portal.home'),
-            ContributionOwner::core(),
-            false,
-            ['not-dotted'],
             [],
         );
     }
@@ -365,7 +548,7 @@ final class DashboardPreferenceServiceTest extends TestCase
             SurfaceArea::Administrator,
             SurfaceId::fromString('core.administrator.dashboard'),
             ContributionOwner::core(),
-            $form,
+            $runtime->decoder->decode($form),
             $allowed,
             [],
         );
@@ -485,7 +668,7 @@ final class DashboardPreferenceServiceTest extends TestCase
             SurfaceArea::Administrator,
             SurfaceId::fromString('core.administrator.dashboard'),
             ContributionOwner::core(),
-            $form,
+            $runtime->decoder->decode($form),
             $allowed,
             [],
         );

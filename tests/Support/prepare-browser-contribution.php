@@ -266,6 +266,17 @@ try {
     $access->grant($context, $limitedRole, 'content.read');
     $access->assignRole($context, $limitedUser, $limitedRole);
 
+    $dashboardUser = $access->createUser(
+        $context,
+        'browser-dashboard@kumwe.test',
+        'Browser Dashboard Group Member',
+        'browser dashboard password',
+    );
+    $dashboardRole = $access->createRole($context, 'browser-dashboard', 'Browser Dashboard Group');
+    $access->grant($context, $dashboardRole, 'administrator.access');
+    $access->grant($context, $dashboardRole, 'content.read');
+    $access->assignRole($context, $dashboardUser, $dashboardRole);
+
     // The minimal administrator proves the shell degrades: administrator.access and nothing else.
     $minimalUser = $access->createUser(
         $context,
@@ -296,18 +307,35 @@ try {
         new DateTimeImmutable(),
     );
     $ownership->record(AuthorizationResource::item('grant', $portalReportGrant), SiteContext::default());
+    $portalDashboardManager = $access->createUser(
+        $context,
+        'browser-portal-dashboard-manager@kumwe.test',
+        'Browser Portal Dashboard Manager',
+        'browser portal dashboard manager password',
+    );
+    $portalDashboardManagerRole = $access->createRole(
+        $context,
+        'browser-portal-dashboard-manager',
+        'Browser Portal Dashboard Manager',
+    );
+    $access->grant($context, $portalDashboardManagerRole, 'portal.access', 'site', 'default');
+    $access->grant($context, $portalDashboardManagerRole, 'users.manage');
     $security = new DoctrineBusinessSecurityAdministrationRepository($database, $tables, $ownership);
     $organizationId = Uuid::uuid7()->toString();
     $workspaceId = Uuid::uuid7()->toString();
     $membershipId = Uuid::uuid7()->toString();
+    $portalDashboardManagerMembershipId = Uuid::uuid7()->toString();
     $at = new DateTimeImmutable();
     $transactions->transactional(function () use (
         $security,
         $organizationId,
         $workspaceId,
         $membershipId,
+        $portalDashboardManagerMembershipId,
         $portalUser,
         $portalRole,
+        $portalDashboardManager,
+        $portalDashboardManagerRole,
         $context,
         $at,
     ): void {
@@ -333,6 +361,30 @@ try {
         $security->assignMembershipRole(
             $membershipId,
             $portalRole,
+            'default',
+            $context->actorId(),
+            $at,
+        );
+        $security->insertMembership(
+            $portalDashboardManagerMembershipId,
+            $organizationId,
+            'default',
+            $portalDashboardManager,
+            $at->modify('-1 minute'),
+            $at->modify('+1 day'),
+            $context->actorId(),
+            $at,
+        );
+        $security->assignMembershipWorkspace(
+            $portalDashboardManagerMembershipId,
+            $workspaceId,
+            'default',
+            $context->actorId(),
+            $at,
+        );
+        $security->assignMembershipRole(
+            $portalDashboardManagerMembershipId,
+            $portalDashboardManagerRole,
             'default',
             $context->actorId(),
             $at,

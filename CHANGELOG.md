@@ -36,8 +36,12 @@ development programme, from the architecture decision that opened it to the curr
   CSRF-protected, capability-bound, compare-and-swap audited mutations with a reset path and no JavaScript
   dependency; stored values contain identifiers and order, never markup or URLs. The shared translated Twig
   contract, responsive widget grid and visible content-search control repair the broken shortcut selection
-  and unreadable search presentation while keeping templates free of policy decisions. Closes `V2-ERP-006`.
-  (`4f0e96f`)
+  and unreadable search presentation while keeping templates free of policy decisions. [KIS decision
+  0001](docs/interface-standard/decisions/0001-dashboard-customization-compatibility.md) retains `kis-1.0` by
+  correcting the already-documented scope ceiling and keeping every schema-one card identifier readable while
+  admitting existing dotted contribution identifiers; roadmap [ADR
+  0006](docs/roadmap/decisions/0006-unified-dashboard-composition.md) records why the dashboard composes that
+  unified catalogue instead of adding a parallel extension SPI. Closes `V2-ERP-006`. (`4f0e96f`)
 - **One quality contract, and every lane held to it.** What this repository checks used to be written in
   four places: `composer qa` carried a hand-assembled list, the merge workflow reassembled its own sequence
   and left out the interface programme, the roadmap ledger and the documentation gate, the release job

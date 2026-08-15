@@ -7,22 +7,33 @@ namespace Kumwe\CMS\Infrastructure\Presentation\Persistence;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
+use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupCatalog;
 use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupRepository;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**
- * DBAL projection of canonical roles and direct user-role assignments into presentation access groups.
+ * DBAL projection of canonical direct-user and current-membership roles into presentation access groups.
  *
- * No presentation-owned membership rows are introduced: group existence comes from `roles`, and user
- * membership comes from `user_roles`. Locking appends `FOR UPDATE` on databases that support it and is a
- * plain deterministic read on SQLite; this adapter never opens or commits the surrounding transaction.
+ * No presentation-owned membership rows are introduced: group existence comes from `roles`, while effective
+ * assignment comes from `user_roles` plus only the execution context's exact `membership_roles` row set.
+ * Exact existence locks append `FOR UPDATE` where supported and never open or commit a transaction.
  *
  * @since  2.0.0
  */
 final readonly class DoctrinePresentationAccessGroupRepository implements PresentationAccessGroupRepository
 {
+    /**
+     * Largest portable deterministic offset accepted from bounded application paging.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const MAXIMUM_CATALOG_OFFSET = 10_000;
+
     /**
      * Bind the projection to the canonical application connection and prefixed table resolver.
      *
@@ -36,54 +47,111 @@ final readonly class DoctrinePresentationAccessGroupRepository implements Presen
     }
 
     /**
-     * Project the roles assigned directly to one user.
+     * Project direct roles and roles from only the actor's current server-resolved membership.
      *
-     * @param   string  $userId  Canonical user UUID whose assignments are selected.
-     * @param   bool    $lock    Whether supported databases should hold role and assignment rows.
+     * @param   ExecutionContext  $context  Authenticated actor and optional exact membership selection.
+     * @param   int               $limit    Maximum effective groups returned, from one through 250.
      *
-     * @return  list<PresentationAccessGroup>  Assigned groups ordered by name, code, then UUID.
+     * @return  PresentationAccessGroupCatalog  Bounded effective groups and explicit overflow evidence.
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
+     * @throws  InvalidArgumentException  When a system context reaches the human dashboard projection.
      * @throws  RuntimeException  When a stored role row does not contain strings.
      * @throws  \InvalidArgumentException  When stored role fields violate their canonical schema.
      *
      * @since   2.0.0
      */
-    public function listForUser(string $userId, bool $lock = false): array
+    public function listForContext(ExecutionContext $context, int $limit): PresentationAccessGroupCatalog
     {
+        self::assertLimit($limit);
+        $principal = $context->principal();
+        if ($principal === null) {
+            throw new InvalidArgumentException('Presentation access groups require an authenticated human actor.');
+        }
+        $membershipId = $context->membership()?->membershipId();
+        $membershipPredicate = '';
+        $parameters = [$principal->subject()];
+        $types = [Types::GUID];
+        if ($membershipId !== null) {
+            $membershipPredicate = sprintf(
+                ' OR EXISTS (SELECT 1 FROM %s mr WHERE mr.role_id = r.id AND mr.membership_id = ?)',
+                $this->tables->quoted('membership_roles'),
+            );
+            $parameters[] = $membershipId;
+            $types[] = Types::GUID;
+        }
         $rows = $this->database->fetchAllAssociative(sprintf(
-            'SELECT r.id, r.code, r.name FROM %s r INNER JOIN %s ur ON ur.role_id = r.id '
-            . 'WHERE ur.user_id = ? ORDER BY r.name, r.code, r.id%s',
+            'SELECT r.id, r.code, r.name FROM %s r WHERE '
+            . 'EXISTS (SELECT 1 FROM %s ur WHERE ur.role_id = r.id AND ur.user_id = ?)%s '
+            . 'ORDER BY r.code, r.id LIMIT %d',
             $this->tables->quoted('roles'),
             $this->tables->quoted('user_roles'),
-            $this->lockClause($lock),
-        ), [$userId], [Types::GUID]);
+            $membershipPredicate,
+            $limit + 1,
+        ), $parameters, $types);
+        $groups = $this->groups($rows);
 
-        return $this->groups($rows);
+        return new PresentationAccessGroupCatalog(
+            array_slice($groups, 0, $limit),
+            count($groups) > $limit ? $groups[$limit] : null,
+        );
     }
 
     /**
-     * Project every canonical role as a presentation access group.
+     * Project a bounded page of canonical roles and inspect one extra row for forward navigation.
      *
-     * @param   bool  $lock  Whether supported databases should hold the selected role rows.
+     * @param   int     $limit   Maximum returned groups, from one through 250.
+     * @param   int     $offset  Zero-based deterministic role offset.
+     * @param   string  $search  Optional normalized literal search across role code and name.
      *
-     * @return  list<PresentationAccessGroup>  All groups ordered by name, code, then UUID.
+     * @return  PresentationAccessGroupCatalog  Canonically ordered page and whether another role exists.
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
+     * @throws  InvalidArgumentException  When the requested bound is outside the contract.
      * @throws  RuntimeException  When a stored role row does not contain strings.
      * @throws  \InvalidArgumentException  When stored role fields violate their canonical schema.
      *
      * @since   2.0.0
      */
-    public function listAll(bool $lock = false): array
+    public function catalog(int $limit, int $offset = 0, string $search = ''): PresentationAccessGroupCatalog
     {
+        self::assertLimit($limit);
+        if ($offset < 0 || $offset > self::MAXIMUM_CATALOG_OFFSET) {
+            throw new InvalidArgumentException('A presentation access-group catalogue offset is out of range.');
+        }
+        if (
+            !mb_check_encoding($search, 'UTF-8')
+            || mb_strlen($search, 'UTF-8') > 64
+            || trim($search) !== $search
+            || preg_match('/[\x00-\x1f\x7f]/u', $search) === 1
+            || preg_match('/\s{2,}/u', $search) === 1
+        ) {
+            throw new InvalidArgumentException('A presentation access-group catalogue search must be normalized.');
+        }
+        $where = '';
+        $parameters = [];
+        $types = [];
+        if ($search !== '') {
+            $where = " WHERE (LOWER(code) LIKE ? ESCAPE '!' OR LOWER(name) LIKE ? ESCAPE '!')";
+            $literal = '%' . str_replace(
+                ['!', '%', '_'],
+                ['!!', '!%', '!_'],
+                mb_strtolower($search, 'UTF-8'),
+            ) . '%';
+            $parameters = [$literal, $literal];
+            $types = [Types::STRING, Types::STRING];
+        }
         $rows = $this->database->fetchAllAssociative(sprintf(
-            'SELECT id, code, name FROM %s ORDER BY name, code, id%s',
+            'SELECT id, code, name FROM %s%s ORDER BY code, id LIMIT %d OFFSET %d',
             $this->tables->quoted('roles'),
-            $this->lockClause($lock),
-        ));
+            $where,
+            $limit + 1,
+            $offset,
+        ), $parameters, $types);
+        $groups = $this->groups($rows);
+        $lookahead = count($groups) > $limit ? $groups[$limit] : null;
 
-        return $this->groups($rows);
+        return new PresentationAccessGroupCatalog(array_slice($groups, 0, $limit), $lookahead);
     }
 
     /**
@@ -139,6 +207,27 @@ final readonly class DoctrinePresentationAccessGroupRepository implements Presen
         }
 
         return $groups;
+    }
+
+    /**
+     * Require one portable access-group catalogue bound.
+     *
+     * The 250-row ceiling leaves room for site, administrator, current-workspace, and user keys in the
+     * preference repository's 256-key batch contract.
+     *
+     * @param   int  $limit  Candidate row bound.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the bound is outside one through 250.
+     *
+     * @since   2.0.0
+     */
+    private static function assertLimit(int $limit): void
+    {
+        if ($limit < 1 || $limit > 250) {
+            throw new InvalidArgumentException('A presentation access-group catalogue limit must be 1 to 250.');
+        }
     }
 
     /**

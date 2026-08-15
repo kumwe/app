@@ -66,7 +66,7 @@ table when it completes, in the same change that writes it into the changelog.
 
 ## Decisions
 
-Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full decision record.
+Fifteen, all recorded in [`README.md`](README.md) section 2. Six carry a full decision record.
 
 | | Decision | Record |
 |---|---|---|
@@ -84,6 +84,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 | D12 | Content is multilingual too, including extension-contributed content | [ADR 0002](decisions/0002-interface-translation-architecture.md) |
 | D13 | The seven enterprise-primitive boundary questions are decided | README section 2; [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) for D13.2 |
 | D14 | Point of sale is deferred but not foreclosed | README section 2 |
+| D15 | Role-specific dashboards compose the unified contribution runtime | [ADR 0006](decisions/0006-unified-dashboard-composition.md) |
 | — | The remaining `P0-E` decisions | Not yet written |
 
 ## Ledger snapshot

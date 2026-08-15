@@ -641,6 +641,565 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
   }
 }
 @layer components {
+  .kis-dashboard-workspace,
+  .kis-dashboard-widget-body,
+  .kis-dashboard-customization-body,
+  .kis-dashboard-preference-scope {
+    display: grid;
+    min-width: 0;
+    gap: 1rem;
+  }
+
+  .kis-dashboard-section-heading {
+    display: flex;
+    min-width: 0;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .kis-dashboard-section-heading :is(h2, p) {
+    margin: 0;
+  }
+
+  .kis-dashboard-section-heading > div > p:last-child {
+    max-width: 52rem;
+    margin-block-start: .25rem;
+    color: var(--kumwe-text-muted);
+  }
+
+  .kis-dashboard-widget-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .kis-dashboard-widget {
+    display: grid;
+    grid-column: span 6;
+    min-width: 0;
+    align-content: start;
+    overflow: hidden;
+  }
+
+  .kis-dashboard-widget-small {
+    grid-column: span 4;
+  }
+
+  .kis-dashboard-widget-large,
+  .kis-dashboard-widget-wide {
+    grid-column: 1 / -1;
+  }
+
+  .kis-dashboard-widget-header {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: .85rem;
+    padding: 1rem 1.15rem;
+    border-block-end: 1px solid var(--kumwe-border);
+  }
+
+  .kis-dashboard-widget-header > div {
+    min-width: 0;
+  }
+
+  .kis-dashboard-widget-header :is(h2, p) {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .kis-dashboard-widget-header h2 {
+    font-size: 1rem;
+  }
+
+  .kis-dashboard-widget-header p:last-child {
+    margin-block-start: .24rem;
+    color: var(--kumwe-text-muted);
+    font-size: .8rem;
+  }
+
+  .kis-dashboard-widget-icon {
+    display: grid;
+    width: 2.6rem;
+    height: 2.6rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: var(--kumwe-radius-md);
+    background: var(--kumwe-accent-soft);
+    color: var(--kumwe-accent-strong);
+  }
+
+  .kis-dashboard-widget-icon svg,
+  .kis-dashboard-shortcut-list svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+
+  .kis-dashboard-widget-body {
+    padding: 1rem 1.15rem;
+  }
+
+  .kis-dashboard-workflow {
+    align-content: end;
+  }
+
+  .kis-dashboard-workflow .button {
+    justify-self: start;
+  }
+
+  .kis-dashboard .dashboard-search {
+    display: grid;
+    max-width: none;
+    gap: .45rem;
+    margin: 0;
+  }
+
+  .kis-dashboard .dashboard-search > label {
+    color: var(--kumwe-text);
+    font-size: .82rem;
+    font-weight: 680;
+  }
+
+  .kis-dashboard-search-control {
+    display: flex;
+    min-width: 0;
+    gap: .5rem;
+  }
+
+  .kis-dashboard .dashboard-search input {
+    min-width: 0;
+    border-color: var(--kumwe-border-strong);
+    background: var(--kumwe-surface);
+    color: var(--kumwe-text);
+  }
+
+  .kis-dashboard .dashboard-search input::placeholder {
+    color: var(--kumwe-text-muted);
+    opacity: 1;
+  }
+
+  .kis-dashboard .dashboard-search button {
+    flex: 0 0 auto;
+    border-color: var(--kumwe-accent);
+    background: var(--kumwe-accent-strong);
+    color: var(--kumwe-surface);
+  }
+
+  .kis-dashboard-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: .65rem;
+    margin: 0;
+  }
+
+  .kis-dashboard-metric {
+    display: grid;
+    gap: .2rem;
+    padding: .75rem;
+    border: 1px solid var(--kumwe-border);
+    border-radius: var(--kumwe-radius-md);
+    background: var(--kumwe-surface-subtle);
+  }
+
+  .kis-dashboard-metric dt {
+    color: var(--kumwe-text-muted);
+    font-size: .72rem;
+    font-weight: 650;
+  }
+
+  .kis-dashboard-metric dd {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 780;
+    line-height: 1.1;
+  }
+
+  .kis-dashboard-metric[data-tone="warning"] {
+    border-color: color-mix(in srgb, var(--kumwe-warning), transparent 55%);
+    background: var(--kumwe-warning-soft);
+  }
+
+  .kis-dashboard-progress {
+    display: grid;
+    gap: .55rem;
+    padding: .8rem;
+    border-radius: var(--kumwe-radius-md);
+    background: var(--kumwe-surface-subtle);
+  }
+
+  .kis-dashboard-progress strong,
+  .kis-dashboard-progress span {
+    display: block;
+  }
+
+  .kis-dashboard-progress span {
+    margin-block-start: .15rem;
+    color: var(--kumwe-text-muted);
+    font-size: .78rem;
+  }
+
+  .kis-dashboard-progress .progress-track {
+    height: .42rem;
+    margin: 0;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--kumwe-border);
+  }
+
+  .kis-dashboard-progress .progress-track span {
+    display: block;
+    width: var(--progress, 0%);
+    height: 100%;
+    margin: 0;
+    border-radius: inherit;
+    background: var(--kumwe-accent);
+  }
+
+  .kis-dashboard-activity-list,
+  .kis-dashboard-shortcut-list {
+    display: grid;
+    gap: .6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .kis-dashboard-activity-list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: .65rem;
+    align-items: center;
+    padding-block: .65rem;
+    border-block-end: 1px solid var(--kumwe-border);
+  }
+
+  .kis-dashboard-activity-list li:last-child {
+    border-block-end: 0;
+  }
+
+  .kis-dashboard-activity-list li > div,
+  .kis-dashboard-activity-list li > div > span {
+    display: block;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .kis-dashboard-activity-list li > div > span {
+    margin-block-start: .15rem;
+    color: var(--kumwe-text-muted);
+    font-size: .76rem;
+  }
+
+  .kis-dashboard-activity-list .status {
+    display: inline-flex;
+    width: fit-content;
+    padding: .34rem .55rem;
+    border-radius: 999px;
+    background: var(--kumwe-surface-subtle);
+    color: var(--kumwe-text-muted);
+    font-size: .68rem;
+    font-weight: 720;
+    line-height: 1;
+    text-transform: capitalize;
+  }
+
+  .kis-dashboard-activity-list :is(.status-review, .status-pending, .status-warning) {
+    background: var(--kumwe-warning-soft);
+    color: var(--kumwe-warning);
+  }
+
+  .kis-dashboard-activity-list :is(.status-published, .status-success) {
+    background: var(--kumwe-success-soft);
+    color: var(--kumwe-success);
+  }
+
+  .kis-dashboard-activity-list :is(.status-failed, .status-danger, .status-trashed) {
+    background: var(--kumwe-danger-soft);
+    color: var(--kumwe-danger);
+  }
+
+  .kis-dashboard-widget-action {
+    margin: .85rem 0 0;
+  }
+
+  .kis-dashboard-context-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: .65rem;
+    margin: 0;
+  }
+
+  .kis-dashboard-context-list > div {
+    min-width: 0;
+    padding: .7rem;
+    border-radius: var(--kumwe-radius-md);
+    background: var(--kumwe-surface-subtle);
+  }
+
+  .kis-dashboard-context-list dt {
+    color: var(--kumwe-text-muted);
+    font-size: .72rem;
+    font-weight: 650;
+  }
+
+  .kis-dashboard-context-list dd {
+    margin: .2rem 0 0;
+    overflow-wrap: anywhere;
+    font-weight: 680;
+  }
+
+  .kis-dashboard-shortcut-list {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  }
+
+  .kis-dashboard-shortcut-list a {
+    display: flex;
+    min-height: var(--kis-touch-target);
+    align-items: flex-start;
+    gap: .65rem;
+    padding: .75rem;
+    border: 1px solid var(--kumwe-border);
+    border-radius: var(--kumwe-radius-md);
+    color: var(--kumwe-text);
+    text-decoration: none;
+  }
+
+  .kis-dashboard-shortcut-list a:hover,
+  .kis-dashboard-shortcut-list a:focus-visible {
+    border-color: var(--kumwe-accent);
+    background: var(--kumwe-accent-soft);
+  }
+
+  .kis-dashboard-shortcut-list a > span,
+  .kis-dashboard-shortcut-list a > span > span {
+    display: block;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .kis-dashboard-shortcut-list a > span > span {
+    margin-block-start: .16rem;
+    color: var(--kumwe-text-muted);
+    font-size: .76rem;
+  }
+
+  .kis-dashboard-shortcuts .panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: 1rem 1.15rem;
+    border-block-end: 1px solid var(--kumwe-border);
+  }
+
+  .kis-dashboard-shortcuts .panel-header :is(h2, p) {
+    margin: 0;
+  }
+
+  .kis-dashboard-shortcuts .panel-header p {
+    margin-block-start: .2rem;
+    color: var(--kumwe-text-muted);
+  }
+
+  .kis-dashboard-shortcuts .panel-body {
+    padding: 1rem 1.15rem;
+  }
+
+  .kis-dashboard-customization > summary {
+    padding: 1rem 1.15rem;
+    cursor: pointer;
+  }
+
+  .kis-dashboard-customization > summary > span,
+  .kis-dashboard-customization > summary span span {
+    display: block;
+  }
+
+  .kis-dashboard-customization > summary span span {
+    margin-block-start: .2rem;
+    color: var(--kumwe-text-muted);
+    font-size: .8rem;
+  }
+
+  .kis-dashboard-customization-body {
+    padding: 0 1.15rem 1.15rem;
+  }
+
+  .kis-dashboard-preference-scope {
+    padding-block-start: 1rem;
+    border-block-start: 1px solid var(--kumwe-border);
+  }
+
+  .kis-dashboard-preference-scope header :is(h3, p) {
+    margin: 0;
+  }
+
+  .kis-dashboard-preference-scope header > p:last-child {
+    margin-block-start: .25rem;
+    color: var(--kumwe-text-muted);
+  }
+
+  .kis-dashboard-choice-list {
+    display: grid;
+    gap: .55rem;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .kis-dashboard-choice-list > legend {
+    margin-block-end: .25rem;
+    padding: 0;
+    font-weight: 720;
+  }
+
+  .kis-dashboard-choice-list > .field-help {
+    margin: 0 0 .25rem;
+    color: var(--kumwe-text-muted);
+  }
+
+  .kis-dashboard-choice {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(6rem, 8rem);
+    gap: .75rem;
+    align-items: center;
+    padding: .65rem;
+    border: 1px solid var(--kumwe-border);
+    border-radius: var(--kumwe-radius-md);
+  }
+
+  .kis-dashboard-choice > label:first-of-type {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: .55rem;
+  }
+
+  .kis-dashboard-choice label span,
+  .kis-dashboard-choice label small {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .kis-dashboard-choice label small {
+    color: var(--kumwe-text-muted);
+  }
+
+  .kis-dashboard-choice input[type="checkbox"] {
+    width: 1.35rem !important;
+    min-height: 1.35rem !important;
+    flex: 0 0 1.35rem;
+    margin: .1rem 0 0;
+    accent-color: var(--kumwe-accent);
+  }
+}
+
+@layer overrides {
+  @media (max-width: 62rem) {
+    .kis-dashboard-widget-small {
+      grid-column: span 6;
+    }
+  }
+
+  @media (max-width: 48rem) {
+    .kis-dashboard-widget,
+    .kis-dashboard-widget-small {
+      grid-column: 1 / -1;
+    }
+
+    .kis-dashboard-section-heading,
+    .kis-dashboard-activity-list li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .kis-dashboard-search-control,
+    .kis-dashboard-choice {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kis-dashboard-search-control button {
+      width: 100%;
+    }
+  }
+
+  @media (pointer: coarse) {
+    .kis-dashboard-shortcut-list a,
+    .kis-dashboard-customization summary,
+    .kis-dashboard-choice :is(input:not([type="checkbox"]), button) {
+      min-height: var(--kis-touch-target);
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .kis-dashboard-widget,
+    .kis-dashboard-shortcut-list a,
+    .kis-dashboard-choice,
+    .kis-dashboard-customization {
+      border-width: 2px;
+      border-color: var(--kumwe-text);
+    }
+
+    .kis-dashboard .dashboard-search input,
+    .kis-dashboard .dashboard-search button {
+      border-width: 2px;
+      border-color: var(--kumwe-text);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .kis-dashboard-widget,
+    .kis-dashboard-widget-icon,
+    .kis-dashboard-shortcut-list a,
+    .kis-dashboard-choice,
+    .kis-dashboard-customization,
+    .kis-dashboard .dashboard-search :is(input, button) {
+      border: 2px solid CanvasText;
+    }
+
+    .kis-dashboard-widget-icon,
+    .kis-dashboard .dashboard-search button {
+      background: Canvas;
+      color: CanvasText;
+    }
+  }
+
+  @media print {
+    .kis-dashboard-widget-grid,
+    .kis-dashboard-workspace {
+      display: block;
+    }
+
+    .kis-dashboard-widget,
+    .kis-dashboard-shortcut-list li {
+      break-inside: avoid;
+    }
+
+    .kis-dashboard-widget {
+      margin-block-end: 1rem;
+      box-shadow: none;
+    }
+
+    .kis-dashboard-customization,
+    .kis-dashboard .dashboard-search,
+    .kis-dashboard-widget-action,
+    .kis-dashboard-workflow .button {
+      display: none !important;
+    }
+  }
+}
+@layer components {
   .kis-phase-five-portal {
     display: grid;
     min-width: 0;

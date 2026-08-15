@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\Presentation\Application\Dashboard;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\InterfaceStandard\CustomizationScope;
 use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
@@ -15,8 +16,10 @@ use Kumwe\CMS\InterfaceStandard\SurfaceId;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardView;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowPage;
 use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Kumwe\CMS\Tests\Support\InMemoryPresentationAccessGroupRepository;
@@ -32,6 +35,8 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(DashboardComposer::class)]
 #[CoversClass(DashboardView::class)]
 #[CoversClass(DashboardWidget::class)]
+#[CoversClass(DashboardWorkflowCatalog::class)]
+#[CoversClass(DashboardWorkflowPage::class)]
 final class DashboardComposerTest extends TestCase
 {
     /**
@@ -85,16 +90,16 @@ final class DashboardComposerTest extends TestCase
     }
 
     /**
-     * Proves an aggregate extension catalog is truncated deterministically instead of failing the dashboard.
+     * Proves candidates beyond the former 128-row prefix remain reachable through page and full search.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testTruncatesLargeNavigationCatalogWithStableDiagnostic(): void
+    public function testPagesAndSearchesTheCompleteLiveNavigationCatalog(): void
     {
         $navigation = [];
-        for ($index = 1; $index <= 130; $index++) {
+        for ($index = 1; $index <= 500; $index++) {
             $suffix = str_pad((string) $index, 3, '0', STR_PAD_LEFT);
             $navigation[] = $this->navigation(
                 'acme.workflow-' . $suffix,
@@ -118,16 +123,80 @@ final class DashboardComposerTest extends TestCase
             [],
             [],
             [],
+            new DashboardPreferenceQuery(workflowPage: 5),
         );
         $available = $view->toArray()['available_shortcuts'];
 
-        self::assertCount(128, $identifiers);
+        self::assertCount(500, $identifiers);
         self::assertSame('acme.workflow-001', $identifiers[0]);
-        self::assertSame('acme.workflow-128', $identifiers[127]);
-        self::assertCount(128, $available);
-        self::assertSame('acme.workflow-001', $available[0]['id']);
-        self::assertSame('acme.workflow-128', $available[127]['id']);
-        self::assertSame(['dashboard.navigation.catalog-truncated'], $view->diagnostics);
+        self::assertSame('acme.workflow-500', $identifiers[499]);
+        self::assertCount(32, $available);
+        self::assertSame('acme.workflow-129', $available[0]['id']);
+        self::assertSame('acme.workflow-160', $available[31]['id']);
+        self::assertSame([], $view->diagnostics);
+
+        $searched = $this->composer()->compose(
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            ContributionOwner::core(),
+            AuthorizationContext::human([]),
+            $navigation,
+            [],
+            [],
+            [],
+            new DashboardPreferenceQuery(workflowSearch: 'acme.workflow-500'),
+        );
+        self::assertSame(
+            ['acme.workflow-500'],
+            array_column($searched->toArray()['available_shortcuts'], 'id'),
+        );
+    }
+
+    /**
+     * Proves the numeric workflow window is explicit and exact search reaches candidates beyond it.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testWorkflowBrowseLimitRequiresSearchBeyondTheNumericWindow(): void
+    {
+        $navigation = [];
+        for ($index = 1; $index <= 3_201; $index++) {
+            $suffix = str_pad((string) $index, 4, '0', STR_PAD_LEFT);
+            $navigation[] = $this->navigation(
+                'acme.workflow-' . $suffix,
+                '/administrator/workflow-' . $suffix,
+                'Workflow ' . $suffix,
+            );
+        }
+        $catalog = new DashboardWorkflowCatalog(
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            $navigation,
+        );
+        $lastNumericPage = $catalog->page(new DashboardPreferenceQuery(
+            workflowPage: DashboardPreferenceQuery::MAXIMUM_PAGE,
+        ));
+
+        self::assertCount(32, $lastNumericPage->candidates);
+        self::assertFalse($lastNumericPage->hasNext);
+        self::assertTrue($lastNumericPage->browseLimit);
+
+        $exact = $catalog->page(new DashboardPreferenceQuery(workflowSearch: 'acme.workflow-3201'));
+        self::assertSame(['acme.workflow-3201'], array_map(
+            static fn (DashboardWidget $widget): string => $widget->id,
+            $exact->candidates,
+        ));
+
+        $completeAtLimit = new DashboardWorkflowCatalog(
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            array_slice($navigation, 0, 3_200),
+        );
+        self::assertFalse($completeAtLimit->page(new DashboardPreferenceQuery(
+            workflowPage: DashboardPreferenceQuery::MAXIMUM_PAGE,
+        ))->browseLimit);
     }
 
     /**
@@ -374,7 +443,7 @@ final class DashboardComposerTest extends TestCase
     }
 
     /**
-     * Proves multiple assigned access-group lists form one stable first-occurrence union.
+     * Proves direct and exact-current-membership group lists form one stable union without cross-membership leakage.
      *
      * @return  void
      *
@@ -382,7 +451,12 @@ final class DashboardComposerTest extends TestCase
      */
     public function testAccessGroupSelectionsUnionDeterministically(): void
     {
-        $context = AuthorizationContext::human([]);
+        $currentMembershipId = '018f22e2-7c8b-7ab0-8f3a-88e8026bb305';
+        $unrelatedMembershipId = '018f22e2-7c8b-7ab0-8f3a-88e8026bb306';
+        $context = AuthorizationContext::human(
+            [],
+            membership: AuthorizationContext::membership(membershipId: $currentMembershipId),
+        );
         $surface = SurfaceId::fromString('core.administrator.dashboard');
         $owner = ContributionOwner::core();
         $preferences = new InMemoryPresentationPreferenceRepository();
@@ -395,6 +469,11 @@ final class DashboardComposerTest extends TestCase
             '018f22e2-7c8b-7ab0-8f3a-88e8026bb304',
             'editors',
             'Editors',
+        );
+        $unrelated = PresentationAccessGroup::fromRole(
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb307',
+            'finance',
+            'Finance',
         );
         $this->seed(
             $preferences,
@@ -414,9 +493,22 @@ final class DashboardComposerTest extends TestCase
             CustomizationScope::RoleWorkspace,
             4,
         );
+        $this->seed(
+            $preferences,
+            $surface,
+            $unrelated->id,
+            CustomizationSlot::DashboardCards,
+            ['core.access'],
+            CustomizationScope::RoleWorkspace,
+            5,
+        );
         $groups = new InMemoryPresentationAccessGroupRepository(
-            [$late, $early],
-            [$context->actorId() => [$late->id, $early->id]],
+            [$late, $early, $unrelated],
+            [$context->actorId() => [$early->id]],
+            [
+                $currentMembershipId => [$late->id],
+                $unrelatedMembershipId => [$unrelated->id],
+            ],
         );
 
         $view = $this->composer($preferences, $groups)->compose(
@@ -427,6 +519,7 @@ final class DashboardComposerTest extends TestCase
             [
                 $this->navigation('core.content', '/administrator/content', 'Content'),
                 $this->navigation('core.settings', '/administrator/settings', 'Settings'),
+                $this->navigation('core.access', '/administrator/access', 'Access'),
             ],
             [$this->summaryWidget()],
         );
@@ -435,8 +528,11 @@ final class DashboardComposerTest extends TestCase
             ['core.settings', 'core.dashboard.content-summary', 'core.content'],
             $view->selectedWidgetIds,
         );
+        self::assertNotContains('core.access', $view->selectedWidgetIds);
         self::assertSame(CustomizationScope::RoleWorkspace, $view->widgetSource);
         self::assertNull($view->widgetVersion);
+        self::assertSame(1, $groups->contextQueryCount());
+        self::assertSame(['find' => 0, 'find_many' => 2], $preferences->readCounts());
     }
 
     /**

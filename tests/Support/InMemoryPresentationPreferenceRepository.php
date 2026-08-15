@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Support;
 
+use InvalidArgumentException;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceRepository;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\InterfaceStandard\PresentationPreference;
 use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceRepository;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceVersionConflict;
 
 /**
  * Deterministic in-memory preference repository for application and resolver tests.
@@ -24,6 +25,22 @@ final class InMemoryPresentationPreferenceRepository implements PresentationPref
      * @since  2.0.0
      */
     private array $records = [];
+
+    /**
+     * Number of exact single-row reads requested by the scenario.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private int $findCalls = 0;
+
+    /**
+     * Number of bounded batch reads requested by the scenario.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private int $findManyCalls = 0;
 
     /**
      * Insert a fixture record without optimistic mutation behavior.
@@ -51,7 +68,54 @@ final class InMemoryPresentationPreferenceRepository implements PresentationPref
      */
     public function find(PresentationPreferenceKey $key): ?PresentationPreference
     {
+        $this->findCalls++;
+
         return $this->records[$key->auditSubjectId()] ?? null;
+    }
+
+    /**
+     * Read a bounded unique key set without issuing one logical read per key.
+     *
+     * @param   list<PresentationPreferenceKey>  $keys  Exact fixture identities to select.
+     *
+     * @return  array<string, PresentationPreference>  Present rows keyed by durable identity.
+     *
+     * @throws  InvalidArgumentException  When the key set is malformed, duplicated, or unbounded.
+     *
+     * @since   2.0.0
+     */
+    public function findMany(array $keys): array
+    {
+        $this->findManyCalls++;
+        if (!array_is_list($keys) || count($keys) > 256) {
+            throw new InvalidArgumentException('A preference batch read must be a bounded list.');
+        }
+        $result = [];
+        $seen = [];
+        foreach ($keys as $key) {
+            if (!$key instanceof PresentationPreferenceKey || isset($seen[$key->auditSubjectId()])) {
+                throw new InvalidArgumentException('A preference batch read contains an invalid key.');
+            }
+            $seen[$key->auditSubjectId()] = true;
+            $preference = $this->records[$key->auditSubjectId()] ?? null;
+            if ($preference !== null) {
+                $result[$key->auditSubjectId()] = $preference;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Report exact and batch read counts for query-budget assertions.
+     *
+     * @return  array{find: int, find_many: int}  Logical repository read counts.
+     *
+     * @since   2.0.0
+     */
+    public function readCounts(): array
+    {
+        return ['find' => $this->findCalls, 'find_many' => $this->findManyCalls];
     }
 
     /**

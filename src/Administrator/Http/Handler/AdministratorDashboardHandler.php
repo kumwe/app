@@ -7,15 +7,19 @@ namespace Kumwe\CMS\Administrator\Http\Handler;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
 use Kumwe\CMS\Content\Application\ContentModelService;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\InterfaceStandard\SurfaceArea;
 use Kumwe\CMS\InterfaceStandard\SurfaceId;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormProjection;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -37,11 +41,13 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
     /**
      * Bind content summaries and the administrator contribution projection to one dashboard composer.
      *
-     * @param  ContentService             $content      Supplies only policy-authorized content records.
-     * @param  ContentModelService        $models       Supplies only policy-authorized content-type definitions.
-     * @param  AdministratorRenderer      $renderer     Renders the shell and projects its visible navigation.
-     * @param  DashboardComposer          $dashboard    Resolves groups, user choices, and live widgets.
-     * @param  DashboardPreferenceService $preferences Builds authorized personal and access-group controls.
+     * @param  ContentService                    $content          Policy-authorized content records.
+     * @param  ContentModelService               $models           Policy-authorized content-type definitions.
+     * @param  AdministratorRenderer             $renderer         Shell and visible-navigation renderer.
+     * @param  DashboardComposer                 $dashboard        Group-aware widget composer.
+     * @param  DashboardPreferenceService        $preferences      Authorized query and mutation use case.
+     * @param  DashboardPreferenceFormPresenter  $preferenceForms  Typed-state form mapper.
+     * @param  DashboardPreferenceQueryDecoder   $preferenceQuery  Defensive GET and same-area URL codec.
      *
      * @since  2.0.0
      */
@@ -51,6 +57,8 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
         private AdministratorRenderer $renderer,
         private DashboardComposer $dashboard,
         private DashboardPreferenceService $preferences,
+        private DashboardPreferenceFormPresenter $preferenceForms,
+        private DashboardPreferenceQueryDecoder $preferenceQuery,
     ) {
     }
 
@@ -75,11 +83,13 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
         $capabilities = AdministratorRequest::capabilityMap($request);
         $navigation = $this->renderer->visibleNavigation($capabilities);
         $surface = SurfaceId::fromString('core.administrator.dashboard');
-        $workflowIds = DashboardComposer::workflowIdentifiers(
+        $preferenceQuery = $this->preferenceQuery->decode($request->getQueryParams());
+        $workflowCatalog = new DashboardWorkflowCatalog(
             SurfaceArea::Administrator,
             $surface,
             $navigation,
         );
+        $workflowIds = $workflowCatalog->identifiers();
         $coreWidgets = [$this->accessContextWidget($context, count($workflowIds))];
         $defaultWidgets = ['core.dashboard.administrator-context'];
 
@@ -140,19 +150,45 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
             $coreWidgets,
             $defaultWidgets,
             $defaultShortcuts,
+            $preferenceQuery,
         );
         $view = $dashboard->toArray();
-        $view['preference_forms'] = $this->preferences->formModels(
-            $context,
-            SurfaceArea::Administrator,
-            $surface,
-            ContributionOwner::core(),
-            isset($capabilities['users.manage']),
+        $preferenceForms = $this->preferenceForms->present(
+            $this->preferences->read(
+                $context,
+                SurfaceArea::Administrator,
+                $surface,
+                ContributionOwner::core(),
+                isset($capabilities['users.manage']),
+                $preferenceQuery,
+            ),
             $dashboard->selectedWidgetIds,
             $dashboard->selectedShortcutIds,
+            $workflowCatalog,
+            $coreWidgets,
         );
-        $view['preference_action'] = '/administrator/dashboard/preferences';
-        $this->applyPreferenceNotice($view, $request->getQueryParams());
+        $view['preference_forms'] = $preferenceForms->forms;
+        $view['preference_diagnostics'] = $preferenceForms->diagnostics;
+        $view['access_group_browser'] = $this->accessGroupBrowser(
+            SurfaceArea::Administrator,
+            $preferenceForms,
+        );
+        $view['workflow_browser'] = $this->workflowBrowser(
+            SurfaceArea::Administrator,
+            $preferenceForms,
+        );
+        $view['preference_action'] = $this->preferenceQuery->mutationAction(
+            SurfaceArea::Administrator,
+            $preferenceQuery,
+        );
+        $this->applyPreferenceNotice(
+            $view,
+            $request->getQueryParams(),
+            ($preferenceForms->accessGroupAdministration
+                && ($preferenceQuery->search !== '' || $preferenceQuery->page > 1))
+                || $preferenceQuery->workflowSearch !== ''
+                || $preferenceQuery->workflowPage > 1,
+        );
 
         return new HtmlResponse($this->renderer->render('dashboard', [
             'csrf' => $session->csrfToken,
@@ -279,20 +315,29 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
                 size: DashboardWidget::SIZE_LARGE,
                 data: [
                     'items' => array_map(
-                        static fn (ContentRecord $record): array => [
-                            'title' => $record->entry->title(),
-                            'detail' => $record->updatedAt->format('Y-m-d H:i'),
-                            'status' => $record->deletedAt !== null
-                                ? 'trashed'
-                                : $record->entry->statusKey(),
-                            'status_tone' => $record->deletedAt !== null
-                                ? 'danger'
-                                : match ($record->entry->statusKey()) {
+                        static function (ContentRecord $record): array {
+                            $status = $record->deletedAt !== null ? 'trashed' : $record->entry->statusKey();
+                            $known = in_array($status, ['archived', 'draft', 'published', 'review', 'trashed'], true);
+
+                            return [
+                                'title' => $record->entry->title(),
+                                'detail' => $record->updatedAt->format(DATE_ATOM),
+                                'detail_label' => 'core.administrator.dashboard.recent_content.updated_at',
+                                'detail_parameters' => ['at' => $record->updatedAt->getTimestamp()],
+                                'status' => $status,
+                                'status_label' => 'core.administrator.dashboard.recent_content.status_'
+                                    . ($known ? $status : 'other'),
+                                'status_parameters' => $known
+                                    ? []
+                                    : ['status' => str_replace('_', ' ', $status)],
+                                'status_tone' => match ($status) {
                                     'published' => 'success',
                                     'review' => 'warning',
+                                    'trashed' => 'danger',
                                     default => 'neutral',
                                 },
-                        ],
+                            ];
+                        },
                         array_slice($records, 0, 6),
                     ),
                     'empty_title' => 'core.administrator.dashboard.recent_content.empty_title',
@@ -309,14 +354,15 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
     /**
      * Add only closed, server-selected preference result notices to the dashboard contract.
      *
-     * @param   array<string, mixed>    $view   Dashboard view updated in place.
-     * @param   array<array-key, mixed> $query  Untrusted query values inspected only as exact flags.
+     * @param   array<string, mixed>     $view           Dashboard view updated in place.
+     * @param   array<array-key, mixed>  $query          Untrusted query values inspected only as exact flags.
+     * @param   bool                     $browserActive  Whether validated group browse state is active.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    private function applyPreferenceNotice(array &$view, array $query): void
+    private function applyPreferenceNotice(array &$view, array $query, bool $browserActive): void
     {
         $view['preference_saved'] = ($query['dashboard-saved'] ?? null) === '1';
         $error = $query['dashboard-error'] ?? null;
@@ -325,6 +371,87 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
             'invalid' => 'core.interface_standard.dashboard.invalid_notice',
             default => '',
         };
-        $view['preference_open'] = $view['preference_saved'] || $view['preference_error'] !== '';
+        $view['preference_open'] = $view['preference_saved']
+            || $view['preference_error'] !== ''
+            || $browserActive;
+    }
+
+    /**
+     * Map typed paging state to fixed administrator links for the shared protected component.
+     *
+     * @param   SurfaceArea                        $area        Fixed delivery area.
+     * @param   DashboardPreferenceFormProjection  $projection  Typed form projection.
+     *
+     * @return  array<string, bool|int|string>  No-JavaScript access-group browser contract.
+     *
+     * @since   2.0.0
+     */
+    private function accessGroupBrowser(
+        SurfaceArea $area,
+        DashboardPreferenceFormProjection $projection,
+    ): array {
+        $query = $projection->accessGroupQuery;
+
+        return [
+            'available' => $projection->accessGroupAdministration,
+            'active' => $query->search !== '' || $query->page > 1,
+            'search' => $query->search,
+            'page' => $query->page,
+            'result_count' => $projection->accessGroupResultCount,
+            'has_previous' => $projection->accessGroupHasPrevious,
+            'has_next' => $projection->accessGroupHasNext,
+            'browse_limit' => $projection->accessGroupBrowseLimit,
+            'action' => $this->preferenceQuery->browseAction($area),
+            'clear_href' => $this->preferenceQuery->browseHref(
+                $area,
+                $query->withoutAccessGroupBrowser(),
+            ),
+            'previous_href' => $projection->accessGroupHasPrevious
+                ? $this->preferenceQuery->browseHref($area, $query->previous())
+                : '',
+            'next_href' => $projection->accessGroupHasNext
+                ? $this->preferenceQuery->browseHref($area, $query->next())
+                : '',
+        ];
+    }
+
+    /**
+     * Map the shared bounded workflow page to fixed administrator no-JavaScript links.
+     *
+     * @param   SurfaceArea                        $area        Fixed delivery area.
+     * @param   DashboardPreferenceFormProjection  $projection  Typed form and browser projection.
+     *
+     * @return  array<string, bool|int|string>  Independent workflow browser contract.
+     *
+     * @since   2.0.0
+     */
+    private function workflowBrowser(
+        SurfaceArea $area,
+        DashboardPreferenceFormProjection $projection,
+    ): array {
+        $page = $projection->workflowPage;
+        if ($page === null) {
+            return ['available' => false];
+        }
+        $query = $page->query;
+
+        return [
+            'available' => true,
+            'active' => $query->workflowSearch !== '' || $query->workflowPage > 1,
+            'search' => $query->workflowSearch,
+            'page' => $query->workflowPage,
+            'result_count' => count($page->candidates),
+            'has_previous' => $page->hasPrevious(),
+            'has_next' => $page->hasNext,
+            'browse_limit' => $page->browseLimit,
+            'action' => $this->preferenceQuery->browseAction($area),
+            'clear_href' => $this->preferenceQuery->browseHref($area, $query->withoutWorkflowBrowser()),
+            'previous_href' => $page->hasPrevious()
+                ? $this->preferenceQuery->browseHref($area, $query->workflowPrevious())
+                : '',
+            'next_href' => $page->hasNext
+                ? $this->preferenceQuery->browseHref($area, $query->workflowNext())
+                : '',
+        ];
     }
 }

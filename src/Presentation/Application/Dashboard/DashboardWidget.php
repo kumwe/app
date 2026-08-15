@@ -148,16 +148,16 @@ final readonly class DashboardWidget
      * composition refuses caller-supplied workflow widgets, while `fromNavigation()` uses the final
      * parameter only after the shell registries have applied capability, trust, and policy filtering.
      *
-     * @param   string                $id          Canonical dotted widget or navigation identifier.
-     * @param   string                $kind        One closed widget kind.
-     * @param   string                $title       Message identifier, or navigation display text.
-     * @param   string                $description Message identifier, or navigation display text.
-     * @param   string                $icon        Approved semantic KIS icon name.
-     * @param   string                $group       Optional plain-text catalog group.
-     * @param   string                $size        Closed responsive card size.
-     * @param   array<string, mixed>  $data        Exact per-kind markup-free semantic template contract.
-     * @param   bool                  $messageIds  Whether translatable strings are message identifiers.
-     * @param   ?string               $href        Filtered navigation destination for a workflow widget only.
+     * @param   string                $id           Canonical dotted widget or navigation identifier.
+     * @param   string                $kind         One closed widget kind.
+     * @param   string                $title        Message identifier, or navigation display text.
+     * @param   string                $description  Message identifier, or navigation display text.
+     * @param   string                $icon         Approved semantic KIS icon name.
+     * @param   string                $group        Optional plain-text catalog group.
+     * @param   string                $size         Closed responsive card size.
+     * @param   array<string, mixed>  $data         Exact per-kind markup-free semantic template contract.
+     * @param   bool                  $messageIds   Whether translatable strings are message identifiers.
+     * @param   ?string               $href         Filtered navigation destination for a workflow widget only.
      *
      * @throws  InvalidArgumentException  When identity, vocabulary, text, data, or href is unsafe or unbounded.
      *
@@ -364,10 +364,10 @@ final readonly class DashboardWidget
     /**
      * Validate bounded display text without treating it as markup.
      *
-     * @param   string  $value       Candidate plain text.
-     * @param   string  $field       Field name used in a stable failure message.
-     * @param   int     $maximum     Maximum UTF-8 character count.
-     * @param   bool    $allowsEmpty Whether an absent catalog group is valid.
+     * @param   string  $value        Candidate plain text.
+     * @param   string  $field        Field name used in a stable failure message.
+     * @param   int     $maximum      Maximum UTF-8 character count.
+     * @param   bool    $allowsEmpty  Whether an absent catalog group is valid.
      *
      * @return  void
      *
@@ -595,7 +595,18 @@ final readonly class DashboardWidget
             $item = self::objectValue($item, 'activity item');
             self::assertObject(
                 $item,
-                ['title', 'detail', 'status', 'status_tone', 'href', 'action_label'],
+                [
+                    'title',
+                    'detail',
+                    'detail_label',
+                    'detail_parameters',
+                    'status',
+                    'status_label',
+                    'status_parameters',
+                    'status_tone',
+                    'href',
+                    'action_label',
+                ],
                 ['title'],
                 'activity item',
             );
@@ -603,11 +614,42 @@ final readonly class DashboardWidget
             if (array_key_exists('detail', $item)) {
                 self::stringValue($item['detail'], 'activity item detail', true);
             }
+            if (array_key_exists('detail_label', $item)) {
+                if (!array_key_exists('detail', $item)) {
+                    throw new InvalidArgumentException('A dashboard activity detail label requires a detail value.');
+                }
+                self::stringValue($item['detail_label'], 'activity item detail label');
+            }
+            if (array_key_exists('detail_parameters', $item)) {
+                if (!array_key_exists('detail_label', $item)) {
+                    throw new InvalidArgumentException(
+                        'Dashboard activity detail parameters require a detail label.',
+                    );
+                }
+                self::assertParameters($item['detail_parameters'], 'activity item detail parameters');
+            }
             if (array_key_exists('status', $item)) {
                 $status = self::stringValue($item['status'], 'activity item status');
                 if (preg_match('/^[a-z][a-z0-9_-]{0,39}$/D', $status) !== 1) {
                     throw new InvalidArgumentException('A dashboard activity status is invalid.');
                 }
+                if (!array_key_exists('status_label', $item)) {
+                    throw new InvalidArgumentException('A dashboard activity status requires a display label.');
+                }
+            }
+            if (array_key_exists('status_label', $item)) {
+                if (!array_key_exists('status', $item)) {
+                    throw new InvalidArgumentException('A dashboard activity status label requires a status.');
+                }
+                self::stringValue($item['status_label'], 'activity item status label');
+            }
+            if (array_key_exists('status_parameters', $item)) {
+                if (!array_key_exists('status_label', $item)) {
+                    throw new InvalidArgumentException(
+                        'Dashboard activity status parameters require a status label.',
+                    );
+                }
+                self::assertParameters($item['status_parameters'], 'activity item status parameters');
             }
             if (array_key_exists('status_tone', $item)) {
                 if (!array_key_exists('status', $item)) {
@@ -877,15 +919,27 @@ final readonly class DashboardWidget
             $items = $data['items'] ?? [];
             if (is_array($items)) {
                 foreach ($items as $item) {
-                    if (!is_array($item) || !array_key_exists('action_label', $item)) {
+                    if (!is_array($item)) {
                         continue;
                     }
-                    if (!is_string($item['action_label'])) {
-                        throw new InvalidArgumentException(
-                            'A translated dashboard widget activity action label must be a message identifier.',
-                        );
+                    foreach (
+                        [
+                            'detail_label' => 'activity item detail label',
+                            'status_label' => 'activity item status label',
+                            'action_label' => 'activity item action label',
+                        ] as $key => $field
+                    ) {
+                        if (!array_key_exists($key, $item)) {
+                            continue;
+                        }
+                        if (!is_string($item[$key])) {
+                            throw new InvalidArgumentException(sprintf(
+                                'A translated dashboard widget %s must be a message identifier.',
+                                $field,
+                            ));
+                        }
+                        self::assertMessageId($item[$key], $field);
                     }
-                    self::assertMessageId($item['action_label'], 'activity item action label');
                 }
             }
         }

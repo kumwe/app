@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Application\Presentation\Preference;
 
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+
 /**
  * Read-only boundary projecting access-control roles as KIS presentation access groups.
  *
@@ -16,27 +18,39 @@ namespace Kumwe\CMS\Application\Presentation\Preference;
 interface PresentationAccessGroupRepository
 {
     /**
-     * List the presentation access groups assigned directly to one user.
+     * List roles effective in one server-resolved actor and membership context.
      *
-     * @param   string  $userId  Canonical user UUID whose direct role assignments are projected.
-     * @param   bool    $lock    Whether supported databases should hold the selected rows for the transaction.
+     * Direct user roles are combined with roles from only the exact current membership carried by the
+     * execution context. Implementations must not union assignments from another organization membership.
      *
-     * @return  list<PresentationAccessGroup>  Assigned groups in deterministic display order.
+     * @param   ExecutionContext  $context  Authenticated actor and optional current membership selection.
+     * @param   int               $limit    Maximum effective groups returned, from one through 250.
+     *
+     * @return  PresentationAccessGroupCatalog  Bounded effective groups plus explicit overflow evidence.
+     *
+     * @throws  \InvalidArgumentException  When the requested bound is outside the contract.
      *
      * @since   2.0.0
      */
-    public function listForUser(string $userId, bool $lock = false): array;
+    public function listForContext(ExecutionContext $context, int $limit): PresentationAccessGroupCatalog;
 
     /**
-     * List every role available as a presentation access group.
+     * Read a bounded deterministic page of roles available for preference administration.
      *
-     * @param   bool  $lock  Whether supported databases should hold the selected rows for the transaction.
+     * One extra row is inspected so the returned value can report forward navigation. Search matches
+     * normalized text literally in canonical role code or name; SQL wildcard characters have no special meaning.
      *
-     * @return  list<PresentationAccessGroup>  All groups in deterministic display order.
+     * @param   int     $limit   Maximum groups returned, from one through 250.
+     * @param   int     $offset  Zero-based deterministic row offset.
+     * @param   string  $search  Optional normalized role-code or role-name search, up to 64 characters.
+     *
+     * @return  PresentationAccessGroupCatalog  Bounded groups and an explicit forward-page signal.
+     *
+     * @throws  \InvalidArgumentException  When the requested bound is outside the contract.
      *
      * @since   2.0.0
      */
-    public function listAll(bool $lock = false): array;
+    public function catalog(int $limit, int $offset = 0, string $search = ''): PresentationAccessGroupCatalog;
 
     /**
      * Determine whether one stable presentation access-group identity still names a live role.

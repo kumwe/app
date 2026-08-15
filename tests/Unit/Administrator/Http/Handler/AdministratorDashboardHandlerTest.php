@@ -11,11 +11,15 @@ use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceAccessGroupState;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceState;
 use Kumwe\CMS\Content\Application\ContentModelRepository;
 use Kumwe\CMS\Content\Application\ContentModelService;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentRepository;
 use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
 use Kumwe\CMS\Content\Domain\ContentEntry;
 use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
@@ -24,10 +28,11 @@ use Kumwe\CMS\Workflow\Domain\Workflow;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormProjection;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardView;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
 use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
@@ -52,7 +57,11 @@ use Twig\Loader\ArrayLoader;
 #[UsesClass(ContentRecord::class)]
 #[UsesClass(RecoveryAdministratorRenderer::class)]
 #[UsesClass(DashboardComposer::class)]
+#[UsesClass(DashboardPreferenceAccessGroupState::class)]
 #[UsesClass(DashboardPreferenceService::class)]
+#[UsesClass(DashboardPreferenceFormPresenter::class)]
+#[UsesClass(DashboardPreferenceFormProjection::class)]
+#[UsesClass(DashboardPreferenceState::class)]
 #[UsesClass(DashboardView::class)]
 #[UsesClass(DashboardWidget::class)]
 final class AdministratorDashboardHandlerTest extends TestCase
@@ -69,6 +78,8 @@ final class AdministratorDashboardHandlerTest extends TestCase
             $this->renderer(),
             $this->dashboard(),
             (new DashboardPreferenceTestRuntime())->service,
+            new DashboardPreferenceFormPresenter(),
+            new DashboardPreferenceQueryDecoder(),
         );
 
         $response = $handler->handle($this->request(['administrator.access']));
@@ -93,6 +104,8 @@ final class AdministratorDashboardHandlerTest extends TestCase
             $this->renderer(),
             $this->dashboard(),
             (new DashboardPreferenceTestRuntime())->service,
+            new DashboardPreferenceFormPresenter(),
+            new DashboardPreferenceQueryDecoder(),
         );
 
         $response = $handler->handle($this->request(['administrator.access', 'content.read']));
@@ -115,8 +128,14 @@ final class AdministratorDashboardHandlerTest extends TestCase
     public function testRecentContentNeverProjectsPerRecordDestinations(): void
     {
         $template = "{% for item in dashboard.widgets[1].data.items %}"
-            . "{{ item.status }}:{{ item.status_tone }}:{{ item.href|default('none') }};{% endfor %}";
-        $expectedStatuses = 'draft:neutral:%s;review:warning:%s;published:success:%s;trashed:danger:%s;';
+            . "{{ item.status }}:{{ item.status_label }}:{{ item.status_tone }}:"
+            . "{{ item.href|default('none') }};{% endfor %}";
+        $expectedStatuses = 'draft:core.administrator.dashboard.recent_content.status_draft:neutral:%s;'
+            . 'review:core.administrator.dashboard.recent_content.status_review:warning:%s;'
+            . 'published:core.administrator.dashboard.recent_content.status_published:success:%s;'
+            . 'archived:core.administrator.dashboard.recent_content.status_archived:neutral:%s;'
+            . 'site_review:core.administrator.dashboard.recent_content.status_other:neutral:%s;'
+            . 'trashed:core.administrator.dashboard.recent_content.status_trashed:danger:%s;';
         foreach ([false, true] as $canUpdate) {
             $records = $this->records();
             $contentRepository = $this->createMock(ContentRepository::class);
@@ -129,6 +148,8 @@ final class AdministratorDashboardHandlerTest extends TestCase
                 $this->renderer($template),
                 $this->dashboard(),
                 (new DashboardPreferenceTestRuntime())->service,
+                new DashboardPreferenceFormPresenter(),
+                new DashboardPreferenceQueryDecoder(),
             );
             $capabilities = ['administrator.access', 'content.read'];
             if ($canUpdate) {
@@ -165,6 +186,8 @@ final class AdministratorDashboardHandlerTest extends TestCase
             $this->renderer($template),
             $this->dashboard(),
             (new DashboardPreferenceTestRuntime())->service,
+            new DashboardPreferenceFormPresenter(),
+            new DashboardPreferenceQueryDecoder(),
         );
         $cases = [
             [['dashboard-saved' => '1'], 'saved:yes;error:none;open:yes'],
@@ -320,11 +343,13 @@ final class AdministratorDashboardHandlerTest extends TestCase
             ContentStatus::Draft,
             ContentStatus::Review,
             ContentStatus::Published,
+            ContentStatus::Archived,
+            'site_review',
             ContentStatus::Draft,
         ];
 
         return array_map(
-            static fn (ContentStatus $status, int $index): ContentRecord => new ContentRecord(
+            static fn (ContentStatus|string $status, int $index): ContentRecord => new ContentRecord(
                 ContentEntry::create(
                     '018f22e2-7c8b-7ab0-8f3a-88e8026bb4' . (string) (10 + $index),
                     'Dashboard item ' . (string) ($index + 1),
@@ -335,7 +360,7 @@ final class AdministratorDashboardHandlerTest extends TestCase
                 ContentService::CORE_WORKFLOW_ID,
                 $at,
                 $at,
-                $index === 3 ? $at : null,
+                $index === 5 ? $at : null,
             ),
             $statuses,
             array_keys($statuses),

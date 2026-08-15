@@ -235,10 +235,10 @@
     </unit>
     <unit id="core.interface_standard.dashboard.fallback_notice">
       <notes>
-        <note category="context">Shown when saved dashboard choices contain entries that are no longer available.</note>
+        <note category="context">Shown when any bounded catalogue or preference diagnostic adjusted composition.</note>
       </notes>
       <segment>
-        <source>Some saved dashboard items are no longer available. Current permitted choices are shown instead.</source>
+        <source>This dashboard was adjusted to the current permitted catalogue and preference limits.</source>
       </segment>
     </unit>
     <unit id="core.interface_standard.dashboard.open_action">
@@ -332,6 +332,151 @@
     <unit id="core.interface_standard.dashboard.access_group_help">
       <segment>
         <source>These defaults are combined with other assigned groups and can be replaced by a personal dashboard.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_code">
+      <segment>
+        <source>Role code: {code}</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_browser_heading">
+      <segment>
+        <source>Access-group defaults</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_browser_help">
+      <segment>
+        <source>One access group is loaded at a time so even a dense dashboard remains easy to review. Browse in role-code order or search by role code or name.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_search_label">
+      <segment>
+        <source>Find an access group</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_search_placeholder">
+      <segment>
+        <source>Role code or name</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_search_action">
+      <segment>
+        <source>Search groups</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_search_clear">
+      <segment>
+        <source>Clear search</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_page_status">
+      <segment>
+        <source>{count, plural, one {Page {page} shows # access group.} other {Page {page} shows # access groups.}}</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_search_status">
+      <segment>
+        <source>{count, plural, one {Page {page} shows # access group matching “{query}”.} other {Page {page} shows # access groups matching “{query}”.}}</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_search_empty">
+      <segment>
+        <source>No access groups match “{query}”.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_page_empty">
+      <segment>
+        <source>No access group is available on page {page}. Return to a previous page or search by role code or name.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_page_limit">
+      <segment>
+        <source>The browse limit has been reached. Search by role code or name to find later access groups.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_pagination_label">
+      <segment>
+        <source>Access-group pages</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_previous">
+      <segment>
+        <source>Previous group</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.access_group_next">
+      <segment>
+        <source>Next group</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_browser_heading">
+      <segment>
+        <source>Workflow choices</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_browser_help">
+      <segment>
+        <source>Browse a manageable page of permitted work or search the complete live catalogue. Choices already saved to each form remain available when they are outside this page.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_search_label">
+      <segment>
+        <source>Find a workflow</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_search_placeholder">
+      <segment>
+        <source>Workflow code, title, description or group</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_search_action">
+      <segment>
+        <source>Search workflows</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_search_clear">
+      <segment>
+        <source>Clear workflow search</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_page_status">
+      <segment>
+        <source>{count, plural, one {Page {page} shows # workflow choice.} other {Page {page} shows # workflow choices.}}</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_search_status">
+      <segment>
+        <source>{count, plural, one {Page {page} shows # workflow matching “{query}”.} other {Page {page} shows # workflows matching “{query}”.}}</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_search_empty">
+      <segment>
+        <source>No permitted workflows match “{query}”. Refine or clear the search.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_page_empty">
+      <segment>
+        <source>No permitted workflow is available on page {page}. Return to a previous page or search the catalogue.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_page_limit">
+      <segment>
+        <source>The workflow browse limit has been reached. Search by the complete workflow code or visible text to find later choices.</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_pagination_label">
+      <segment>
+        <source>Workflow choice pages</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_previous">
+      <segment>
+        <source>Previous workflows</source>
+      </segment>
+    </unit>
+    <unit id="core.interface_standard.dashboard.workflow_next">
+      <segment>
+        <source>Next workflows</source>
       </segment>
     </unit>
     <unit id="core.interface_standard.dashboard.conflict_notice">
@@ -435,7 +580,7 @@
     </unit>
     <unit id="core.administrator.dashboard.purpose">
       <segment>
-        <source>See current content and business activity, then go directly to every area your access allows.</source>
+        <source>See current content and permitted business work, then go directly to the areas selected for this dashboard.</source>
       </segment>
     </unit>
     <unit id="core.administrator.dashboard.widgets_eyebrow">
@@ -590,6 +735,47 @@
     <unit id="core.administrator.dashboard.recent_content.empty_message">
       <segment>
         <source>Readable content activity will appear here.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.updated_at">
+      <notes>
+        <note category="context">Recent content timestamp. {at} is a Unix timestamp formatted by ICU.</note>
+      </notes>
+      <segment>
+        <source>Updated {at, date, medium} at {at, time, short}</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.status_archived">
+      <segment>
+        <source>Archived</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.status_draft">
+      <segment>
+        <source>Draft</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.status_review">
+      <segment>
+        <source>In review</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.status_published">
+      <segment>
+        <source>Published</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.status_trashed">
+      <segment>
+        <source>Trashed</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.dashboard.recent_content.status_other">
+      <notes>
+        <note category="context">Fallback for a site-defined workflow state. {status} is its safe state key.</note>
+      </notes>
+      <segment>
+        <source>Workflow state: {status}</source>
       </segment>
     </unit>
     <unit id="core.administrator.dashboard.recent_content.view_all">

@@ -44,6 +44,32 @@ test.describe('KIS production component gallery', () => {
       await expect(page.locator(`[data-kis-component="${component}"]`).first()).toBeAttached();
     }
 
+    const dashboardGallery = page.locator('[data-kis-dashboard-gallery]');
+    for (const widget of ['summary', 'activity', 'context', 'workflow']) {
+      await expect(dashboardGallery.locator(`[data-kis-dashboard-widget$="gallery-${widget}"]`))
+        .toBeVisible();
+    }
+    await expect(dashboardGallery.locator('[data-kis-dashboard-icon-fallback="true"]'))
+      .toHaveAttribute('data-kis-dashboard-icon', 'dashboard');
+    const readOnlyPreferences = dashboardGallery.locator('[data-kis-dashboard-preferences-read-only]');
+    await expect(readOnlyPreferences).toBeVisible();
+    await expect(readOnlyPreferences).toHaveAttribute('disabled', '');
+    await expect(readOnlyPreferences.locator('[name="dashboard_workflow_search"]')).toBeDisabled();
+    await expect(readOnlyPreferences.locator('[name="dashboard_group_search"]')).toBeDisabled();
+    for (const control of await readOnlyPreferences.locator('button, input, select, textarea').all()) {
+      await expect(control).toBeDisabled();
+    }
+    await expect(dashboardGallery.getByText('Operations reviewers', { exact: true })).toBeVisible();
+    const overviewReport = await expectNoDocumentOverflow(page, { root: '#administrator-content' });
+    expect(
+      overviewReport.findings.filter((finding) => finding.kind !== 'control-overlap'),
+      JSON.stringify(overviewReport, null, 2),
+    ).toEqual([]);
+    await expectAccessible(page);
+    await expect(page).toHaveScreenshot('kis-gallery-overview.png', {
+      fullPage: true,
+    });
+
     const overview = page.getByRole('tab', { name: 'Overview' });
     await overview.focus();
     await page.keyboard.press('ArrowRight');

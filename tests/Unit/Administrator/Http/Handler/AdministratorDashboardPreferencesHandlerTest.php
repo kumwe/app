@@ -23,7 +23,8 @@ use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
 use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\CMS\InterfaceStandard\SurfaceId;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
 use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
@@ -56,7 +57,12 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
     public function testSavesFromTheLiveCapabilityFilteredCatalog(): void
     {
         $runtime = new DashboardPreferenceTestRuntime();
-        $handler = new AdministratorDashboardPreferencesHandler($runtime->service, $this->renderer());
+        $handler = new AdministratorDashboardPreferencesHandler(
+            $runtime->service,
+            $runtime->decoder,
+            new DashboardPreferenceQueryDecoder(),
+            $this->renderer(),
+        );
         $request = $this->request([
             'action' => 'dashboard-cards.save',
             'scope' => 'user',
@@ -65,13 +71,21 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
             'item_0' => 'core.dashboard.content-summary',
             'selected_0' => '1',
             'order_0' => '1',
-        ], ['administrator.access', 'content.read']);
+        ], ['administrator.access', 'content.read'], [
+            'dashboard_group_page' => '65',
+            'dashboard_group_search' => 'Finance & review',
+            'dashboard_workflow_page' => '16',
+            'dashboard_workflow_search' => 'Sales orders',
+            'return' => 'https://attacker.example/',
+        ]);
 
         $response = $handler->handle($request);
 
         self::assertSame(303, $response->getStatusCode());
         self::assertSame(
-            '/administrator?dashboard-saved=1#dashboard-customization',
+            '/administrator?dashboard_group_search=Finance%20%26%20review&dashboard_group_page=65'
+                . '&dashboard_workflow_search=Sales%20orders&dashboard_workflow_page=16'
+                . '&dashboard-saved=1#dashboard-customization',
             $response->getHeaderLine('Location'),
         );
         self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
@@ -94,7 +108,12 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
     public function testRejectsAnIdentifierOutsideTheLiveCatalog(): void
     {
         $runtime = new DashboardPreferenceTestRuntime();
-        $handler = new AdministratorDashboardPreferencesHandler($runtime->service, $this->renderer());
+        $handler = new AdministratorDashboardPreferencesHandler(
+            $runtime->service,
+            $runtime->decoder,
+            new DashboardPreferenceQueryDecoder(),
+            $this->renderer(),
+        );
         $request = $this->request([
             'action' => 'dashboard-cards.save',
             'scope' => 'user',
@@ -114,13 +133,13 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
     }
 
     /**
-     * Proves POST validation uses the same first 128 renderer rows as dashboard composition.
+     * Proves POST validates a bounded submission against the complete current filtered catalogue.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testRejectsAWorkflowBeyondTheBoundedRendererCatalog(): void
+    public function testSavesAWorkflowBeyondTheFormerRendererPrefix(): void
     {
         $registries = new ExtensionContributionRegistrySet();
         $owner = ContributionOwner::core();
@@ -131,7 +150,7 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
             'Regression workflows for the bounded administrator dashboard catalog.',
             100,
         ));
-        for ($index = 1; $index <= 130; $index++) {
+        for ($index = 1; $index <= 500; $index++) {
             $suffix = str_pad((string) $index, 3, '0', STR_PAD_LEFT);
             $registrar->administratorNavigation(new AdministratorNavigationDefinition(
                 'core.dashboard-volume-' . $suffix,
@@ -148,6 +167,8 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
         $runtime = new DashboardPreferenceTestRuntime();
         $handler = new AdministratorDashboardPreferencesHandler(
             $runtime->service,
+            $runtime->decoder,
+            new DashboardPreferenceQueryDecoder(),
             $this->renderer($registries->navigation()),
         );
         $request = $this->request([
@@ -155,7 +176,7 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
             'scope' => 'user',
             'scope_id' => AuthorizationContext::SUBJECT,
             'expected_version' => '0',
-            'item_0' => 'core.dashboard-volume-128',
+            'item_0' => 'core.dashboard-volume-500',
             'selected_0' => '1',
             'order_0' => '1',
         ], ['administrator.access']);
@@ -163,9 +184,16 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
         $response = $handler->handle($request);
 
         self::assertSame(
-            '/administrator?dashboard-error=invalid#dashboard-customization',
+            '/administrator?dashboard-saved=1#dashboard-customization',
             $response->getHeaderLine('Location'),
         );
+        $stored = $runtime->preferences->find(new PresentationPreferenceKey(
+            SurfaceId::fromString('core.administrator.dashboard'),
+            CustomizationSlot::NavigationShortcuts,
+            CustomizationScope::User,
+            AuthorizationContext::SUBJECT,
+        ));
+        self::assertSame(['core.dashboard-volume-500'], $stored?->value()->value());
     }
 
     /**
@@ -178,7 +206,12 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
     public function testRedirectsAnOptimisticMismatchAsAConflict(): void
     {
         $runtime = new DashboardPreferenceTestRuntime();
-        $handler = new AdministratorDashboardPreferencesHandler($runtime->service, $this->renderer());
+        $handler = new AdministratorDashboardPreferencesHandler(
+            $runtime->service,
+            $runtime->decoder,
+            new DashboardPreferenceQueryDecoder(),
+            $this->renderer(),
+        );
         $request = $this->request([
             'action' => 'dashboard-cards.save',
             'scope' => 'user',
@@ -199,12 +232,13 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
      *
      * @param   array<string, string>  $form          Flat dashboard preference form.
      * @param   list<string>           $capabilities  Capabilities carried by the administrator principal.
+     * @param   array<string, string>  $query         Optional untrusted continuation query.
      *
      * @return  ServerRequestInterface  Authenticated POST request with parsed form data.
      *
      * @since   2.0.0
      */
-    private function request(array $form, array $capabilities): ServerRequestInterface
+    private function request(array $form, array $capabilities, array $query = []): ServerRequestInterface
     {
         $principal = AuthorizationContext::principal($capabilities);
         $session = new AdministratorSession(
@@ -216,6 +250,7 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
 
         return (new ServerRequestFactory())
             ->createServerRequest('POST', 'https://kumwe.test/administrator/dashboard/preferences')
+            ->withQueryParams($query)
             ->withParsedBody($form)
             ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, $session)
             ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $principal->context(

@@ -5,6 +5,35 @@
   {{ t('core.interface_standard.dashboard.personal_help') }}
   {{ t('core.interface_standard.dashboard.access_group_eyebrow') }}
   {{ t('core.interface_standard.dashboard.access_group_help') }}
+  {{ t('core.interface_standard.dashboard.access_group_code') }}
+  {{ t('core.interface_standard.dashboard.access_group_browser_heading') }}
+  {{ t('core.interface_standard.dashboard.access_group_browser_help') }}
+  {{ t('core.interface_standard.dashboard.access_group_search_label') }}
+  {{ t('core.interface_standard.dashboard.access_group_search_placeholder') }}
+  {{ t('core.interface_standard.dashboard.access_group_search_action') }}
+  {{ t('core.interface_standard.dashboard.access_group_search_clear') }}
+  {{ t('core.interface_standard.dashboard.access_group_page_status') }}
+  {{ t('core.interface_standard.dashboard.access_group_search_status') }}
+  {{ t('core.interface_standard.dashboard.access_group_search_empty') }}
+  {{ t('core.interface_standard.dashboard.access_group_page_empty') }}
+  {{ t('core.interface_standard.dashboard.access_group_page_limit') }}
+  {{ t('core.interface_standard.dashboard.access_group_pagination_label') }}
+  {{ t('core.interface_standard.dashboard.access_group_previous') }}
+  {{ t('core.interface_standard.dashboard.access_group_next') }}
+  {{ t('core.interface_standard.dashboard.workflow_browser_heading') }}
+  {{ t('core.interface_standard.dashboard.workflow_browser_help') }}
+  {{ t('core.interface_standard.dashboard.workflow_search_label') }}
+  {{ t('core.interface_standard.dashboard.workflow_search_placeholder') }}
+  {{ t('core.interface_standard.dashboard.workflow_search_action') }}
+  {{ t('core.interface_standard.dashboard.workflow_search_clear') }}
+  {{ t('core.interface_standard.dashboard.workflow_page_status') }}
+  {{ t('core.interface_standard.dashboard.workflow_search_status') }}
+  {{ t('core.interface_standard.dashboard.workflow_search_empty') }}
+  {{ t('core.interface_standard.dashboard.workflow_page_empty') }}
+  {{ t('core.interface_standard.dashboard.workflow_page_limit') }}
+  {{ t('core.interface_standard.dashboard.workflow_pagination_label') }}
+  {{ t('core.interface_standard.dashboard.workflow_previous') }}
+  {{ t('core.interface_standard.dashboard.workflow_next') }}
   {{ t('core.interface_standard.dashboard.conflict_notice') }}
   {{ t('core.interface_standard.dashboard.invalid_notice') }}
 #}
@@ -28,6 +57,192 @@
         <p class="notice error" role="alert">{{ t(dashboard.preference_error) }}</p>
       {% endif %}
 
+      {% set access_group_browser = dashboard.access_group_browser|default({available: false}) %}
+      {% set workflow_browser = dashboard.workflow_browser|default({available: false}) %}
+      {% if workflow_browser.available %}
+        <section class="kis-dashboard-preference-browser stack" aria-labelledby="dashboard-workflows-title">
+          <header>
+            <h3 id="dashboard-workflows-title">
+              {{ t('core.interface_standard.dashboard.workflow_browser_heading') }}
+            </h3>
+            <p>{{ t('core.interface_standard.dashboard.workflow_browser_help') }}</p>
+          </header>
+          <form action="{{ workflow_browser.action }}" method="get" role="search" class="stack">
+            {% if access_group_browser.search|default('') is not empty %}
+              <input type="hidden" name="dashboard_group_search" value="{{ access_group_browser.search }}">
+            {% endif %}
+            {% if access_group_browser.page|default(1) > 1 %}
+              <input type="hidden" name="dashboard_group_page" value="{{ access_group_browser.page }}">
+            {% endif %}
+            <label class="search-field" for="dashboard-workflow-search">
+              {{ t('core.interface_standard.dashboard.workflow_search_label') }}
+              <input
+                id="dashboard-workflow-search"
+                type="search"
+                name="dashboard_workflow_search"
+                value="{{ workflow_browser.search }}"
+                placeholder="{{ t('core.interface_standard.dashboard.workflow_search_placeholder') }}"
+                maxlength="191"
+              >
+            </label>
+            <div class="page-actions">
+              <button class="primary" type="submit">
+                {{ t('core.interface_standard.dashboard.workflow_search_action') }}
+              </button>
+              {% if workflow_browser.search is not empty or workflow_browser.page > 1 %}
+                <a class="button" href="{{ workflow_browser.clear_href }}">
+                  {{ t('core.interface_standard.dashboard.workflow_search_clear') }}
+                </a>
+              {% endif %}
+            </div>
+          </form>
+
+          {% if workflow_browser.result_count == 0 %}
+            <p role="status">
+              {% if workflow_browser.search is not empty %}
+                {{ t('core.interface_standard.dashboard.workflow_search_empty', {
+                  query: workflow_browser.search
+                }) }}
+              {% else %}
+                {{ t('core.interface_standard.dashboard.workflow_page_empty', {
+                  page: workflow_browser.page
+                }) }}
+              {% endif %}
+            </p>
+          {% elseif workflow_browser.search is not empty %}
+            <p role="status">
+              {{ t('core.interface_standard.dashboard.workflow_search_status', {
+                count: workflow_browser.result_count,
+                page: workflow_browser.page,
+                query: workflow_browser.search
+              }) }}
+            </p>
+          {% else %}
+            <p role="status">
+              {{ t('core.interface_standard.dashboard.workflow_page_status', {
+                count: workflow_browser.result_count,
+                page: workflow_browser.page
+              }) }}
+            </p>
+          {% endif %}
+
+          {% if workflow_browser.browse_limit %}
+            <p class="notice warning" role="status">
+              {{ t('core.interface_standard.dashboard.workflow_page_limit') }}
+            </p>
+          {% endif %}
+
+          {% if workflow_browser.has_previous or workflow_browser.has_next %}
+            <nav class="pagination-actions" aria-label="{{
+              t('core.interface_standard.dashboard.workflow_pagination_label')
+            }}">
+              {% if workflow_browser.has_previous %}
+                <a class="button" href="{{ workflow_browser.previous_href }}" rel="prev">
+                  {{ t('core.interface_standard.dashboard.workflow_previous') }}
+                </a>
+              {% endif %}
+              {% if workflow_browser.has_next %}
+                <a class="button" href="{{ workflow_browser.next_href }}" rel="next">
+                  {{ t('core.interface_standard.dashboard.workflow_next') }}
+                </a>
+              {% endif %}
+            </nav>
+          {% endif %}
+        </section>
+      {% endif %}
+
+      {% if access_group_browser.available %}
+        <section class="kis-dashboard-preference-browser stack" aria-labelledby="dashboard-access-groups-title">
+          <header>
+            <h3 id="dashboard-access-groups-title">
+              {{ t('core.interface_standard.dashboard.access_group_browser_heading') }}
+            </h3>
+            <p>{{ t('core.interface_standard.dashboard.access_group_browser_help') }}</p>
+          </header>
+          <form action="{{ access_group_browser.action }}" method="get" role="search" class="stack">
+            {% if workflow_browser.search|default('') is not empty %}
+              <input type="hidden" name="dashboard_workflow_search" value="{{ workflow_browser.search }}">
+            {% endif %}
+            {% if workflow_browser.page|default(1) > 1 %}
+              <input type="hidden" name="dashboard_workflow_page" value="{{ workflow_browser.page }}">
+            {% endif %}
+            <label class="search-field" for="dashboard-access-group-search">
+              {{ t('core.interface_standard.dashboard.access_group_search_label') }}
+              <input
+                id="dashboard-access-group-search"
+                type="search"
+                name="dashboard_group_search"
+                value="{{ access_group_browser.search }}"
+                placeholder="{{ t('core.interface_standard.dashboard.access_group_search_placeholder') }}"
+                maxlength="64"
+              >
+            </label>
+            <div class="page-actions">
+              <button class="primary" type="submit">
+                {{ t('core.interface_standard.dashboard.access_group_search_action') }}
+              </button>
+              {% if access_group_browser.search is not empty or access_group_browser.page > 1 %}
+                <a class="button" href="{{ access_group_browser.clear_href }}">
+                  {{ t('core.interface_standard.dashboard.access_group_search_clear') }}
+                </a>
+              {% endif %}
+            </div>
+          </form>
+
+          {% if access_group_browser.result_count == 0 %}
+            <p role="status">
+              {% if access_group_browser.search is not empty %}
+                {{ t('core.interface_standard.dashboard.access_group_search_empty', {
+                  query: access_group_browser.search
+                }) }}
+              {% else %}
+                {{ t('core.interface_standard.dashboard.access_group_page_empty', {
+                  page: access_group_browser.page
+                }) }}
+              {% endif %}
+            </p>
+          {% elseif access_group_browser.search is not empty %}
+            <p role="status">
+              {{ t('core.interface_standard.dashboard.access_group_search_status', {
+                count: access_group_browser.result_count,
+                page: access_group_browser.page,
+                query: access_group_browser.search
+              }) }}
+            </p>
+          {% else %}
+            <p role="status">
+              {{ t('core.interface_standard.dashboard.access_group_page_status', {
+                count: access_group_browser.result_count,
+                page: access_group_browser.page
+              }) }}
+            </p>
+          {% endif %}
+
+          {% if access_group_browser.browse_limit %}
+            <p class="notice warning" role="status">
+              {{ t('core.interface_standard.dashboard.access_group_page_limit') }}
+            </p>
+          {% endif %}
+
+          {% if access_group_browser.has_previous or access_group_browser.has_next %}
+            <nav class="pagination-actions" aria-label="{{
+              t('core.interface_standard.dashboard.access_group_pagination_label')
+            }}">
+              {% if access_group_browser.has_previous %}
+                <a class="button" href="{{ access_group_browser.previous_href }}" rel="prev">
+                  {{ t('core.interface_standard.dashboard.access_group_previous') }}
+                </a>
+              {% endif %}
+              {% if access_group_browser.has_next %}
+                <a class="button" href="{{ access_group_browser.next_href }}" rel="next">
+                  {{ t('core.interface_standard.dashboard.access_group_next') }}
+                </a>
+              {% endif %}
+            </nav>
+          {% endif %}
+        </section>
+      {% endif %}
+
       {% for preference in dashboard.preference_forms %}
         <section class="kis-dashboard-preference-scope" aria-labelledby="dashboard-preference-{{ loop.index }}-title">
           <header>
@@ -35,6 +250,11 @@
             <h3 id="dashboard-preference-{{ loop.index }}-title">
               {{ preference.message_ids ? t(preference.label) : preference.label }}
             </h3>
+            {% if preference.group_code|default('') is not empty %}
+              <p>{{ t('core.interface_standard.dashboard.access_group_code', {
+                code: preference.group_code
+              }) }}</p>
+            {% endif %}
             <p>{{ t(preference.help) }}</p>
           </header>
 
@@ -46,7 +266,7 @@
             <fieldset class="kis-dashboard-choice-list">
               <legend>{{ t('core.interface_standard.dashboard.widgets_legend') }}</legend>
               <p class="field-help">{{ t('core.interface_standard.dashboard.widgets_help') }}</p>
-              {% for available in dashboard.available_widgets %}
+              {% for available in preference.available_widgets %}
                 {% set available_title = available.message_ids ? t(available.title) : available.title %}
                 <div class="kis-dashboard-choice">
                   <input type="hidden" name="item_{{ loop.index0 }}" value="{{ available.id }}">
@@ -93,7 +313,7 @@
             <fieldset class="kis-dashboard-choice-list">
               <legend>{{ t('core.interface_standard.dashboard.shortcuts_legend') }}</legend>
               <p class="field-help">{{ t('core.interface_standard.dashboard.shortcuts_help') }}</p>
-              {% for available in dashboard.available_shortcuts %}
+              {% for available in preference.available_shortcuts %}
                 <div class="kis-dashboard-choice">
                   <input type="hidden" name="item_{{ loop.index0 }}" value="{{ available.id }}">
                   <label>

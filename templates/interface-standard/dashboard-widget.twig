@@ -21,6 +21,13 @@
   {{ t('core.administrator.dashboard.recent_content.description') }}
   {{ t('core.administrator.dashboard.recent_content.empty_title') }}
   {{ t('core.administrator.dashboard.recent_content.empty_message') }}
+  {{ t('core.administrator.dashboard.recent_content.updated_at') }}
+  {{ t('core.administrator.dashboard.recent_content.status_archived') }}
+  {{ t('core.administrator.dashboard.recent_content.status_draft') }}
+  {{ t('core.administrator.dashboard.recent_content.status_review') }}
+  {{ t('core.administrator.dashboard.recent_content.status_published') }}
+  {{ t('core.administrator.dashboard.recent_content.status_trashed') }}
+  {{ t('core.administrator.dashboard.recent_content.status_other') }}
   {{ t('core.administrator.dashboard.recent_content.view_all') }}
   {{ t('core.portal.dashboard.access_context.title') }}
   {{ t('core.portal.dashboard.access_context.description') }}
@@ -40,7 +47,7 @@
 >
   <header class="kis-dashboard-widget-header">
     <span class="kis-dashboard-widget-icon" aria-hidden="true">
-      <svg><use href="#kumwe-icon-{{ widget.icon }}"></use></svg>
+      {% include '@kis/dashboard-icon.twig' with {icon: widget.icon} only %}
     </span>
     <div>
       {% if widget.group is not empty %}<p class="eyebrow">{{ widget.group }}</p>{% endif %}
@@ -114,10 +121,26 @@
             <li>
               <div>
                 <strong>{{ item.title }}</strong>
-                {% if item.detail|default('') is not empty %}<span>{{ item.detail }}</span>{% endif %}
+                {% if item.detail|default('') is not empty %}
+                  <span>
+                    {% if item.detail_label|default('') is not empty %}
+                      <time datetime="{{ item.detail }}">
+                        {{ widget.message_ids
+                          ? t(item.detail_label, item.detail_parameters|default({}))
+                          : item.detail_label }}
+                      </time>
+                    {% else %}
+                      {{ item.detail }}
+                    {% endif %}
+                  </span>
+                {% endif %}
               </div>
               {% if item.status|default('') is not empty %}
-                <span class="status status-{{ item.status_tone|default('neutral') }}">{{ item.status }}</span>
+                <span class="status status-{{ item.status_tone|default('neutral') }}">
+                  {{ widget.message_ids
+                    ? t(item.status_label, item.status_parameters|default({}))
+                    : item.status_label }}
+                </span>
               {% endif %}
               {% if item.href|default('') is not empty %}
                 <a href="{{ item.href }}">{{ t(item.action_label) }}</a>

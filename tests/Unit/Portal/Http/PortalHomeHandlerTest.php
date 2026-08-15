@@ -8,6 +8,10 @@ use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceAccessGroupState;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceState;
+use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
@@ -21,10 +25,11 @@ use Kumwe\CMS\Portal\Http\Handler\PortalHomeHandler;
 use Kumwe\CMS\Portal\Presentation\PortalNavigationVisibility;
 use Kumwe\CMS\Portal\Presentation\PortalRenderer;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormProjection;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardView;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
 use Kumwe\CMS\Tests\Support\InMemoryPresentationAccessGroupRepository;
 use Kumwe\CMS\Tests\Support\InMemoryPresentationPreferenceRepository;
@@ -44,7 +49,11 @@ use Twig\Loader\ArrayLoader;
 #[CoversClass(PortalHomeHandler::class)]
 #[CoversClass(PortalRenderer::class)]
 #[UsesClass(DashboardComposer::class)]
+#[UsesClass(DashboardPreferenceAccessGroupState::class)]
 #[UsesClass(DashboardPreferenceService::class)]
+#[UsesClass(DashboardPreferenceFormPresenter::class)]
+#[UsesClass(DashboardPreferenceFormProjection::class)]
+#[UsesClass(DashboardPreferenceState::class)]
 #[UsesClass(DashboardView::class)]
 #[UsesClass(DashboardWidget::class)]
 final class PortalHomeHandlerTest extends TestCase
@@ -78,6 +87,8 @@ final class PortalHomeHandlerTest extends TestCase
             $renderer,
             $this->dashboard(),
             (new DashboardPreferenceTestRuntime())->service,
+            new DashboardPreferenceFormPresenter(),
+            new DashboardPreferenceQueryDecoder(),
         );
         $principal = $session->identity->principal;
         $request = (new ServerRequestFactory())
@@ -148,6 +159,8 @@ final class PortalHomeHandlerTest extends TestCase
             $renderer,
             $this->dashboard(),
             (new DashboardPreferenceTestRuntime())->service,
+            new DashboardPreferenceFormPresenter(),
+            new DashboardPreferenceQueryDecoder(),
         );
         $principal = $session->identity->principal;
         $request = (new ServerRequestFactory())
@@ -164,8 +177,8 @@ final class PortalHomeHandlerTest extends TestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertStringContainsString('selected:64', $body);
-        self::assertStringContainsString('available:128', $body);
-        self::assertStringContainsString('areas:127', $body);
+        self::assertStringContainsString('available:64', $body);
+        self::assertStringContainsString('areas:144', $body);
     }
 
     /**
@@ -195,6 +208,8 @@ final class PortalHomeHandlerTest extends TestCase
             $renderer,
             $this->dashboard(),
             (new DashboardPreferenceTestRuntime())->service,
+            new DashboardPreferenceFormPresenter(),
+            new DashboardPreferenceQueryDecoder(),
         );
         $principal = $session->identity->principal;
         $cases = [

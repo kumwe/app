@@ -198,7 +198,7 @@
         {"name": "administrator.logout", "methods": ["POST"], "path": "/administrator/logout", "source_anchor": "/administrator/logout"}
       ],
       "handler_sources": ["src/Administrator/Http/Handler/AdministratorDashboardHandler.php", "src/Administrator/Http/Handler/AdministratorDashboardPreferencesHandler.php", "src/Administrator/Http/Handler/AdministratorLogoutHandler.php"],
-      "templates": ["templates/administrator/dashboard.twig", "templates/administrator/layout.twig", "templates/interface-standard/dashboard-preferences.twig", "templates/interface-standard/dashboard-widget.twig"],
+      "templates": ["templates/administrator/dashboard.twig", "templates/administrator/layout.twig", "templates/interface-standard/dashboard-icon.twig", "templates/interface-standard/dashboard-preferences.twig", "templates/interface-standard/dashboard-widget.twig"],
       "navigation_ids": ["core.dashboard"],
       "capabilities": ["administrator.access"],
       "kis_contract": {"standard":"kis-1.0","area":"administrator","actor":"administrator","intent":"monitor","resource":"administrator-shell","purpose":"Orient an authenticated actor and provide a clear entry into current permitted work.","pattern":"status-workspace","capabilities":["administrator.access"],"states":["default","empty","sparse","dense","error","permission-reduced","read-only"],"customization":[{"slot":"density","scope":"user"},{"slot":"dashboard-cards","scope":"user"},{"slot":"navigation-shortcuts","scope":"user"}],"responsive":[{"element":"status-summary","priority":"essential","may_collapse":false},{"element":"next-action","priority":"primary","may_collapse":false},{"element":"technical-evidence","priority":"secondary","may_collapse":true}],"icon":"dashboard"},
@@ -851,7 +851,7 @@
         {"name": "administrator.interface-standard", "methods": ["GET"], "path": "/administrator/interface-standard", "source_anchor": "/administrator/interface-standard"}
       ],
       "handler_sources": ["src/Administrator/Http/Handler/AdministratorInterfaceStandardHandler.php"],
-      "templates": ["templates/administrator/interface-standard.twig", "templates/administrator/layout.twig"],
+      "templates": ["templates/administrator/interface-standard.twig", "templates/administrator/layout.twig", "templates/interface-standard/dashboard-icon.twig", "templates/interface-standard/dashboard-preferences.twig", "templates/interface-standard/dashboard-widget.twig"],
       "navigation_ids": [],
       "capabilities": ["administrator.access"],
       "kis_contract": {"standard": "kis-1.0", "area": "administrator", "actor": "administrator", "intent": "diagnostics", "resource": "interface-standard", "purpose": "Inspect the production KIS components, patterns, and representative states.", "pattern": "tabs", "capabilities": ["administrator.access"], "states": ["default", "error", "permission-reduced"], "customization": [{"slot": "density", "scope": "user"}], "responsive": [{"element": "example-task", "priority": "essential", "may_collapse": false}, {"element": "technical-evidence", "priority": "secondary", "may_collapse": true}], "icon": null},
@@ -859,13 +859,13 @@
       "primary_task_id": "task.template.customize",
       "secondary_task_ids": ["task.extension.surface"],
       "journey_ids": ["journey.presentation-customization", "journey.extension-lifecycle"],
-      "current_elements": {"forms": "reference-fixture-driven", "tables": "reference-fixture-driven", "disclosures": "reference-fixture-driven", "dialogs": "reference-fixture-driven", "field_model": "sanitized production component states", "actions": ["inspect pattern", "exercise keyboard behavior", "compare state and density"], "technical_data": ["KIS version", "pattern ID", "component contract"]},
+      "current_elements": {"forms": "reference-fixture-driven", "tables": "reference-fixture-driven", "disclosures": "reference-fixture-driven", "dialogs": "reference-fixture-driven", "field_model": "sanitized production component and typed dashboard states", "actions": ["inspect pattern", "exercise keyboard behavior", "compare state and density", "inspect read-only dashboard preferences"], "technical_data": ["KIS version", "pattern ID", "component contract", "dashboard widget kind", "preference scope and version", "bounded browser state"]},
       "fixture_profile_ids": ["fixture.empty", "fixture.sparse", "fixture.representative", "fixture.dense", "fixture.extreme"],
-      "coverage": {"responsive": "in_progress", "accessibility": "in_progress", "visual": "in_progress", "security": "covered", "browser_tests": []},
+      "coverage": {"responsive": "covered", "accessibility": "covered", "visual": "covered", "security": "covered", "browser_tests": ["tests/Browser/interface-standard.spec.ts"]},
       "finding_ids": [],
-      "dependencies": ["KIS component contracts", "shared tokens", "representative fixtures", "administrator shell"],
-      "target": {"patterns": ["reference-gallery", "workspace", "tabs", "master-detail", "resource-toolbar", "technical-value", "drawer", "validation-summary"], "phase": 1, "complexity": "high", "migration_status": "complete"},
-      "test_disposition": ["desktop", "mobile", "light", "dark", "keyboard", "no-javascript", "empty", "dense", "long-label", "permission-reduced"]
+      "dependencies": ["KIS component contracts", "shared tokens", "representative fixtures", "administrator shell", "typed dashboard widget contract", "dashboard preference projection"],
+      "target": {"patterns": ["reference-gallery", "workspace", "tabs", "master-detail", "resource-toolbar", "technical-value", "drawer", "validation-summary", "semantic-widget-grid", "preference-disclosure"], "phase": 1, "complexity": "high", "migration_status": "complete"},
+      "test_disposition": ["desktop", "mobile", "light", "dark", "keyboard", "no-javascript", "empty", "dense", "long-label", "permission-reduced", "dashboard-components", "read-only-preferences", "bounded-browsers"]
     },
     {
       "id": "core.portal.login",
@@ -909,7 +909,7 @@
         {"name": "portal.logout", "methods": ["POST"], "path": "/portal/logout", "source_anchor": "/portal/logout"}
       ],
       "handler_sources": ["src/Portal/Http/Handler/PortalHomeHandler.php", "src/Portal/Http/Handler/PortalDashboardPreferencesHandler.php", "src/Portal/Http/Handler/PortalLogoutHandler.php"],
-      "templates": ["templates/portal/home.twig", "templates/portal/layout.twig", "templates/interface-standard/dashboard-preferences.twig", "templates/interface-standard/dashboard-widget.twig"],
+      "templates": ["templates/portal/home.twig", "templates/portal/layout.twig", "templates/interface-standard/dashboard-icon.twig", "templates/interface-standard/dashboard-preferences.twig", "templates/interface-standard/dashboard-widget.twig"],
       "navigation_ids": ["core.portal-home"],
       "capabilities": ["portal.access"],
       "kis_contract": {"standard":"kis-1.0","area":"portal","actor":"portal","intent":"monitor","resource":"portal","purpose":"Orient an authenticated ordinary user using plain-language permitted work destinations.","pattern":"status-workspace","capabilities":["portal.access"],"states":["default","empty","sparse","dense","error","permission-reduced","read-only"],"customization":[{"slot":"density","scope":"user"},{"slot":"theme-mode","scope":"user"},{"slot":"dashboard-cards","scope":"user"},{"slot":"navigation-shortcuts","scope":"user"}],"responsive":[{"element":"status-summary","priority":"essential","may_collapse":false},{"element":"next-action","priority":"primary","may_collapse":false},{"element":"technical-evidence","priority":"secondary","may_collapse":true}],"icon":"home"},
@@ -1402,8 +1402,9 @@
     {"path": "templates/administrator/navigation.twig", "kind": "surface", "surface_ids": ["core.administrator.navigation"]},
     {"path": "templates/administrator/wording.twig", "kind": "surface", "surface_ids": ["core.administrator.wording"]},
     {"path": "templates/administrator/settings.twig", "kind": "surface", "surface_ids": ["core.administrator.settings"]},
-    {"path": "templates/interface-standard/dashboard-preferences.twig", "kind": "kis-component", "surface_ids": ["core.administrator.dashboard", "core.portal.home"]},
-    {"path": "templates/interface-standard/dashboard-widget.twig", "kind": "kis-component", "surface_ids": ["core.administrator.dashboard", "core.portal.home"]},
+    {"path": "templates/interface-standard/dashboard-icon.twig", "kind": "kis-component", "surface_ids": ["core.administrator.dashboard", "core.interface-standard.gallery", "core.portal.home"]},
+    {"path": "templates/interface-standard/dashboard-preferences.twig", "kind": "kis-component", "surface_ids": ["core.administrator.dashboard", "core.interface-standard.gallery", "core.portal.home"]},
+    {"path": "templates/interface-standard/dashboard-widget.twig", "kind": "kis-component", "surface_ids": ["core.administrator.dashboard", "core.interface-standard.gallery", "core.portal.home"]},
     {"path": "templates/interface-standard/drawer.twig", "kind": "kis-component", "surface_ids": ["core.interface-standard.gallery"]},
     {"path": "templates/interface-standard/empty-state.twig", "kind": "kis-component", "surface_ids": ["core.interface-standard.gallery"]},
     {"path": "templates/interface-standard/master-detail.twig", "kind": "kis-component", "surface_ids": ["core.interface-standard.gallery"]},

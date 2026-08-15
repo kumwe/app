@@ -12,16 +12,16 @@ KIS surface.
 | Portable record | `PresentationPreference` | Exact schema and KIS version, surface ownership, scope/slot compatibility, optimistic version and audit attribution |
 | Slot value | `PresentationPreferenceValue` | Closed, bounded value grammar with no CSS, script, markup, template, URL, selector, component or policy channel |
 | Durable identity | `PresentationPreferenceKey` | Exact surface/slot/scope identity and a database-neutral null-scope key |
-| Access-group projection | `PresentationAccessGroupRepository` | Read-only `role:<uuid>` groups projected from canonical `roles` and `user_roles`, with optional caller-owned locks |
+| Access-group projection | `PresentationAccessGroupRepository` | Read-only `role:<uuid>` groups projected from canonical `roles`, direct `user_roles` and only the actor's exact current `membership_roles`, with optional caller-owned locks |
 | Live admission | `RegisteredPresentationPreferencePolicy` | Current contribution owner must still declare the slot with an area-safe legal scope ceiling at or above the requested layer |
 | Resolution | `PresentationPreferenceResolver` | Low-to-high hierarchy, safe fallback and stable diagnostics for stale owners or removed slots |
 | Mutation use case | `PresentationPreferenceManager` | Scope authorization, compare-and-swap, transaction-coupled audit, validated import/export and reset |
 | Persistence | `DoctrinePresentationPreferenceRepository` | Atomic create/update/delete and read-time revalidation across supported DBAL platforms |
 | Schema | `InterfacePresentationPreferenceMigration` | Portable JSON value, optimistic version, attribution and composite identity columns |
 
-The portable value, record and key live under `Kumwe\CMS\InterfaceStandard`. Preference orchestration
-lives under `Kumwe\CMS\Presentation\Application\Preference`, while the canonical role-projection port and
-value live under `Kumwe\CMS\Application\Presentation\Preference`. DBAL role projection lives under
+The portable value, record and key live under `Kumwe\CMS\InterfaceStandard`. Preference orchestration and
+the canonical role-projection port and value live under `Kumwe\CMS\Application\Presentation\Preference`.
+DBAL preference persistence and role projection live under
 `Kumwe\CMS\Infrastructure\Presentation\Persistence`; neither persistence nor delivery is part of the
 portable KIS semantic contract.
 
@@ -41,19 +41,27 @@ Role/workspace identity must come from current membership or another server-owne
 field accepted without authorization.
 
 Dashboard cards and navigation shortcuts additionally support multiple direct role access groups through
-`resolveListForAccessGroups()`. It preserves ordinary site and administrator precedence, sorts the current
-workspace plus `role:<uuid>` identities by that stable identifier, and unions their whole list values while
+`resolveListForAccessGroups()`. Dashboard cards preserve their ordinary administrator precedence; navigation
+shortcuts begin at their first legal role/workspace layer. One bounded effective-role projection reads at most
+250 canonical groups plus one overflow row. When that projection is complete, the resolver sorts the current
+workspace plus `role:<uuid>` identities by that stable identifier and unions their whole list values while
 preserving the first occurrence of each item. The first valid role/workspace row replaces the lower layer;
 a valid user list still replaces the complete aggregate. A one-row group result exposes that row's version,
 while a synthetic multi-row union has no single optimistic version. The aggregate remains within the slot's
-ordinary bound; deterministic overflow is omitted with `kis.preference.group-list-truncated`. Scalar slots,
-including `landing-workspace`, deliberately retain ordinary single-workspace resolution rather than inventing
-an implicit winner among several roles.
+ordinary bound; deterministic value overflow is omitted with `kis.preference.group-list-truncated`.
 
-Dashboard-card values use the bounded dotted surface/navigation identifier grammar, up to sixty-four unique
-entries. This admits every already-valid owned navigation contribution without admitting a URL, component,
-selector or markup channel. Navigation shortcuts use the same grammar with their existing thirty-two-entry
-bound.
+An effective-role lookahead means the role set is incomplete. The resolver never applies that misleading
+prefix: it emits `kis.preference.access-group-catalog-incomplete`, skips every projected-role row, and continues
+with the current workspace, lower layers and any user override. Each slot reads all applicable keys in one
+bounded `findMany()` call, so one dashboard composition performs one effective-role projection and two
+preference batch reads regardless of role count. Scalar slots, including `landing-workspace`, deliberately
+retain ordinary single-workspace resolution rather than inventing an implicit winner among several roles.
+
+Dashboard-card values retain the complete schema-one semantic-name grammar and additionally accept the dotted
+surface/navigation identifier grammar, up to sixty-four unique entries. New graphical dashboard forms write
+only live dotted identifiers, while hydration and import continue to preserve legacy semantic values without
+admitting a URL, component, selector or markup channel. Navigation shortcuts retain their dotted grammar and
+existing thirty-two-entry bound.
 
 If an upgraded or disabled extension no longer owns a stored surface, resolution ignores that record and
 emits `kis.preference.owner-stale`. If the current surface no longer exposes the slot at that layer, it
@@ -119,15 +127,25 @@ preference mechanism. These invariants must remain true as dashboard delivery ev
 - share `PresentationPreferenceResolver` with the same repository and live policy;
 - compose both graphical areas through `DashboardComposer` using their already capability-, owner-, trust-,
   lifecycle- and area-filtered navigation, then intersect all stored identifiers with that live catalogue;
-- build personal and authorized access-group forms and execute their mutations only through
+- query typed authorized personal and access-group state and execute mutations only through the application
   `DashboardPreferenceService`, which delegates persistence, authorization, compare-and-swap and audit to
   `PresentationPreferenceManager`;
+- map that typed state into server-rendered form and diagnostic view models only through the presentation
+  `DashboardPreferenceFormPresenter`, which owns no request decoding, authorization or persistence;
+- project the complete already-filtered current navigation through request-local `DashboardWorkflowCatalog`
+  before candidate paging; expose 32 workflows on each of 100 numeric pages, let normalized 191-character
+  search scan that complete live catalogue, and let each form prepend its own surviving selected choices before
+  core/current-page candidates without duplicates; preserve independent validated group/workflow query state in
+  fixed same-area links and recheck every submitted identifier against the complete current catalogue;
 - build resolution contexts only from the current `SiteContext`, authenticated principal and validated
   membership/workspace state;
 - keep the same-area POST routes behind existing authentication and CSRF middleware, rebuild the live
   selectable catalogue on submission and never let a UI or route write the repository directly;
 - keep personal and access-group forms server-rendered and usable without JavaScript; expose access-group
-  forms only with `users.manage` and recheck exact-role authority at mutation time; and
+  browsing only after installation-global collection-level `users.manage`, read one role-code-ordered canonical
+  row on each of the first 100 numeric pages through a constant collection authorization budget, provide bounded
+  literal role-code/name search for targeted groups outside that window, show the canonical role code, and
+  retain an exact-role authorization plus live-existence lock for every mutation; and
 - retain unit, SQLite persistence, supported-database, backup/restore, template-reset and graphical dashboard
   qualification as release gates.
 

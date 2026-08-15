@@ -596,18 +596,21 @@ use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
 use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
 use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceManager;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceRepository;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
+use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceManager;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferencePolicy;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceRepository;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
-use Kumwe\CMS\Presentation\Application\Preference\RegisteredPresentationPreferencePolicy;
+use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
+use Kumwe\CMS\Application\Presentation\Preference\RegisteredPresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeActivationGuard;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineAdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Infrastructure\ConsoleAdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
-use Kumwe\CMS\Presentation\Infrastructure\Persistence\DoctrinePresentationPreferenceRepository;
+use Kumwe\CMS\Infrastructure\Presentation\Persistence\DoctrinePresentationPreferenceRepository;
 use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
 use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
@@ -2217,7 +2220,15 @@ final class ContainerFactory
         ): DashboardPreferenceService => new DashboardPreferenceService(
             self::service($container, PresentationPreferenceManager::class),
             self::service($container, PresentationAccessGroupRepository::class),
+            self::service($container, AuthorizationGateway::class),
         ), true);
+        $container->share(
+            DashboardPreferenceFormPresenter::class,
+            new DashboardPreferenceFormPresenter(),
+            true,
+        );
+        $container->share(DashboardPreferenceFormDecoder::class, new DashboardPreferenceFormDecoder(), true);
+        $container->share(DashboardPreferenceQueryDecoder::class, new DashboardPreferenceQueryDecoder(), true);
         $eventContracts = $contributionRegistries->validateIntegrationContributions();
         $container->share(EventContractRegistry::class, $eventContracts, true);
         $container->share(OutboxStore::class, static fn (Container $container): OutboxStore =>
@@ -3324,11 +3335,15 @@ final class ContainerFactory
                 self::service($container, PortalRenderer::class),
                 self::service($container, DashboardComposer::class),
                 self::service($container, DashboardPreferenceService::class),
+                self::service($container, DashboardPreferenceFormPresenter::class),
+                self::service($container, DashboardPreferenceQueryDecoder::class),
             ), true);
             $container->share(PortalDashboardPreferencesHandler::class, static fn (
                 Container $container,
             ): PortalDashboardPreferencesHandler => new PortalDashboardPreferencesHandler(
                 self::service($container, DashboardPreferenceService::class),
+                self::service($container, DashboardPreferenceFormDecoder::class),
+                self::service($container, DashboardPreferenceQueryDecoder::class),
                 self::service($container, PortalRenderer::class),
             ), true);
             $container->share(PortalSecurityHandler::class, static fn (
@@ -3369,11 +3384,15 @@ final class ContainerFactory
             self::service($container, AdministratorRenderer::class),
             self::service($container, DashboardComposer::class),
             self::service($container, DashboardPreferenceService::class),
+            self::service($container, DashboardPreferenceFormPresenter::class),
+            self::service($container, DashboardPreferenceQueryDecoder::class),
         ), true);
         $container->share(AdministratorDashboardPreferencesHandler::class, static fn (
             Container $container,
         ): AdministratorDashboardPreferencesHandler => new AdministratorDashboardPreferencesHandler(
             self::service($container, DashboardPreferenceService::class),
+            self::service($container, DashboardPreferenceFormDecoder::class),
+            self::service($container, DashboardPreferenceQueryDecoder::class),
             self::service($container, AdministratorRenderer::class),
         ), true);
         $container->share(AdministratorInterfaceStandardHandler::class, static fn (

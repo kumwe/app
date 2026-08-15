@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
 use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupRepository;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
@@ -53,21 +54,22 @@ final readonly class DashboardComposer
     private const DERIVED_SHORTCUT_LIMIT = 6;
 
     /**
-     * Maximum renderer-filtered navigation rows projected into one dashboard catalog.
+     * Maximum effective canonical roles considered as one complete dashboard aggregate.
      *
-     * The shell may aggregate more rows across many extensions. Keeping the first deterministic registry
-     * rows bounds preference delivery without making a large installation's dashboard fail completely.
+     * The preference resolver batches one key per role and keeps site, administrator, current-workspace,
+     * and user layers inside the repository's 256-key read ceiling. A later role makes the catalogue
+     * explicitly incomplete; the resolver then skips the projected-role aggregate rather than using a prefix.
      *
      * @var    int
      * @since  2.0.0
      */
-    private const MAX_NAVIGATION_ROWS = 128;
+    private const MAX_EFFECTIVE_ACCESS_GROUPS = 250;
 
     /**
      * Bind composition to live presentation preferences and canonical access-group projections.
      *
-     * @param  PresentationPreferenceResolver    $preferences  Group-aware preference resolver.
-     * @param  PresentationAccessGroupRepository $groups       Current identity-role projection.
+     * @param  PresentationPreferenceResolver     $preferences  Group-aware preference resolver.
+     * @param  PresentationAccessGroupRepository  $groups       Current identity-role projection.
      *
      * @since  2.0.0
      */
@@ -86,16 +88,17 @@ final readonly class DashboardComposer
      * in preference order. A non-empty customized selection whose every entry became stale falls back to the
      * current default, while an intentionally empty selection never does.
      *
-     * @param   SurfaceArea                    $area                Administrator or portal dashboard area.
-     * @param   SurfaceId                      $surface             Exact owner-bound KIS dashboard surface.
-     * @param   ContributionOwner              $owner               Current surface owner.
-     * @param   ExecutionContext               $context             Authenticated site and actor context.
-     * @param   list<array<string, int|string>> $filteredNavigation Capability-, trust-, and policy-filtered rows.
-     * @param   list<DashboardWidget>           $coreWidgets         Safe summary, activity, or context widgets.
-     * @param   ?list<string>                   $defaultWidgetIds    Curated widget defaults, or null to derive.
-     * @param   ?list<string>                   $defaultShortcutIds  Curated shortcut defaults, or null to derive.
+     * @param   SurfaceArea                      $area                Administrator or portal dashboard area.
+     * @param   SurfaceId                        $surface             Exact owner-bound KIS dashboard surface.
+     * @param   ContributionOwner                $owner               Current surface owner.
+     * @param   ExecutionContext                 $context             Authenticated site and actor context.
+     * @param   list<array<string, int|string>>  $filteredNavigation  Capability-, trust-, and policy-filtered rows.
+     * @param   list<DashboardWidget>            $coreWidgets         Safe summary, activity, or context widgets.
+     * @param   ?list<string>                    $defaultWidgetIds    Curated widget defaults, or null to derive.
+     * @param   ?list<string>                    $defaultShortcutIds  Curated shortcut defaults, or null to derive.
+     * @param   ?DashboardPreferenceQuery        $query               Independent workflow-candidate browse state.
      *
-     * @return  DashboardView  Selected models, live catalogs, and non-sensitive preference evidence.
+     * @return  DashboardView  Selected models, bounded candidates, and non-sensitive preference evidence.
      *
      * @throws  InvalidArgumentException  When area, context, widgets, navigation, or defaults are malformed.
      * @throws  RuntimeException  When preference storage violates its typed list contract.
@@ -111,6 +114,7 @@ final readonly class DashboardComposer
         array $coreWidgets = [],
         ?array $defaultWidgetIds = null,
         ?array $defaultShortcutIds = null,
+        ?DashboardPreferenceQuery $query = null,
     ): DashboardView {
         if (!in_array($area, [SurfaceArea::Administrator, SurfaceArea::Portal], true)) {
             throw new InvalidArgumentException(
@@ -122,9 +126,13 @@ final readonly class DashboardComposer
             throw new InvalidArgumentException('Dashboard composition requires an authenticated human actor.');
         }
 
-        $diagnostics = [];
+        $query ??= new DashboardPreferenceQuery();
+        $workflowCatalog = new DashboardWorkflowCatalog($area, $surface, $filteredNavigation);
+        $workflowPage = $workflowCatalog->page($query);
+        $diagnostics = $workflowCatalog->diagnostics;
         $widgetCatalog = $this->coreCatalog($coreWidgets);
-        $shortcutCatalog = self::navigationCatalog($area, $surface, $filteredNavigation, $diagnostics);
+        $coreCatalog = $widgetCatalog;
+        $shortcutCatalog = $workflowCatalog->modelMap();
         foreach ($shortcutCatalog as $id => $widget) {
             if (isset($widgetCatalog[$id])) {
                 throw new InvalidArgumentException('A core dashboard widget collides with a navigation identifier.');
@@ -145,7 +153,7 @@ final readonly class DashboardComposer
         self::assertIdentifierList($defaultShortcutIds, self::MAX_SHORTCUT_DEFAULTS, 'shortcut defaults');
 
         $preferenceContext = PresentationPreferenceContext::fromExecutionContext($area, $context);
-        $groups = $this->groups->listForUser($principal->subject());
+        $groups = $this->groups->listForContext($context, self::MAX_EFFECTIVE_ACCESS_GROUPS);
         $widgetPreference = $this->preferences->resolveListForAccessGroups(
             $surface,
             $owner,
@@ -185,11 +193,16 @@ final readonly class DashboardComposer
             $diagnostics,
         );
 
+        $workflowCandidates = [];
+        foreach ($workflowPage->candidates as $candidate) {
+            $workflowCandidates[$candidate->id] = $candidate;
+        }
+
         return new DashboardView(
             $widgets,
-            self::selectionFirst($widgets, $widgetCatalog),
+            self::selectionFirst($widgets, [...$coreCatalog, ...$workflowCandidates]),
             $shortcuts,
-            self::selectionFirst($shortcuts, $shortcutCatalog),
+            self::selectionFirst($shortcuts, $workflowCandidates),
             array_values(array_unique($diagnostics)),
             $widgetPreference,
             $shortcutPreference,
@@ -199,14 +212,13 @@ final readonly class DashboardComposer
     /**
      * Project renderer-filtered navigation through the exact workflow boundary used by composition.
      *
-     * Dashboard preference mutations call this pure projection again for the current request. They therefore
-     * inherit the same deterministic catalog bound, self-link removal, area confinement, identifier validation,
-     * and duplicate rejection as GET composition without accepting hrefs or identifiers from submitted data.
-     * Diagnostics are intentionally omitted because mutation delivery exposes only closed redirect results.
+     * Delivery and tests may use this pure projection when they need the deterministic complete live identifier
+     * order. Mutation handlers instead validate only their bounded submitted IDs against `DashboardWorkflowCatalog`
+     * so the application service never receives an unbounded allowlist.
      *
-     * @param   SurfaceArea                     $area        Administrator or portal dashboard area.
-     * @param   SurfaceId                       $surface     Exact dashboard surface whose own links are removed.
-     * @param   list<array<string, int|string>> $navigation Renderer-filtered live navigation rows.
+     * @param   SurfaceArea                      $area        Administrator or portal dashboard area.
+     * @param   SurfaceId                        $surface     Exact dashboard surface whose own links are removed.
+     * @param   list<array<string, int|string>>  $navigation  Renderer-filtered live navigation rows.
      *
      * @return  list<string>  Live workflow identifiers in their deterministic dashboard-catalog order.
      *
@@ -219,14 +231,7 @@ final readonly class DashboardComposer
         SurfaceId $surface,
         array $navigation,
     ): array {
-        if (!in_array($area, [SurfaceArea::Administrator, SurfaceArea::Portal], true)) {
-            throw new InvalidArgumentException(
-                'Dashboard workflow projection is available only to administrator and portal areas.',
-            );
-        }
-        $diagnostics = [];
-
-        return array_keys(self::navigationCatalog($area, $surface, $navigation, $diagnostics));
+        return (new DashboardWorkflowCatalog($area, $surface, $navigation))->identifiers();
     }
 
     /**
@@ -254,65 +259,6 @@ final readonly class DashboardComposer
             }
             if (isset($catalog[$widget->id])) {
                 throw new InvalidArgumentException('A caller-supplied dashboard widget identifier is duplicated.');
-            }
-            $catalog[$widget->id] = $widget;
-        }
-
-        return $catalog;
-    }
-
-    /**
-     * Project safe same-area navigation rows and remove home-page self links.
-     *
-     * The first 128 deterministic registry rows form the bounded catalog and truncation adds a stable
-     * diagnostic. Cross-area paths are dropped rather than rendered. A malformed retained row still raises
-     * because it violates the filtered-navigation contract between the shell and this service.
-     *
-     * @param   SurfaceArea                     $area         Dashboard delivery area.
-     * @param   SurfaceId                       $surface      Current dashboard surface excluded from workflows.
-     * @param   list<array<string, int|string>> $navigation   Filtered navigation rows in registry order.
-     * @param   list<string>                    $diagnostics  Non-sensitive codes accumulated by the caller.
-     *
-     * @return  array<string, DashboardWidget>  Workflow models keyed in navigation order.
-     *
-     * @throws  InvalidArgumentException  When the list shape or a retained row is malformed or duplicated.
-     *
-     * @since   2.0.0
-     */
-    private static function navigationCatalog(
-        SurfaceArea $area,
-        SurfaceId $surface,
-        array $navigation,
-        array &$diagnostics,
-    ): array {
-        if (!array_is_list($navigation)) {
-            throw new InvalidArgumentException('Filtered dashboard navigation must be a list.');
-        }
-        if (count($navigation) > self::MAX_NAVIGATION_ROWS) {
-            $navigation = array_slice($navigation, 0, self::MAX_NAVIGATION_ROWS);
-            $diagnostics[] = 'dashboard.navigation.catalog-truncated';
-        }
-        $home = self::homePath($area);
-        $catalog = [];
-        foreach ($navigation as $item) {
-            if (!is_array($item)) {
-                throw new InvalidArgumentException('Filtered dashboard navigation contains an invalid row.');
-            }
-            $widget = DashboardWidget::fromNavigation($item);
-            $path = self::pathWithoutQuery($widget->href ?? '');
-            if (
-                rtrim($path, '/') === $home
-                || ($item['surface'] ?? null) === $surface->value()
-                || $widget->id === self::homeNavigationId($area)
-            ) {
-                continue;
-            }
-            if (!str_starts_with($path, $home . '/')) {
-                $diagnostics[] = 'dashboard.navigation.area-mismatch';
-                continue;
-            }
-            if (isset($catalog[$widget->id])) {
-                throw new InvalidArgumentException('Filtered dashboard navigation contains a duplicate identifier.');
             }
             $catalog[$widget->id] = $widget;
         }
@@ -383,8 +329,8 @@ final readonly class DashboardComposer
     /**
      * Order a selectable catalog with current selections first and remaining items in catalog order.
      *
-     * @param   list<DashboardWidget>            $selected  Current selected models.
-     * @param   array<string, DashboardWidget>   $catalog   Live candidates in deterministic catalog order.
+     * @param   list<DashboardWidget>           $selected  Current selected models.
+     * @param   array<string, DashboardWidget>  $catalog   Live candidates in deterministic catalog order.
      *
      * @return  list<DashboardWidget>  Selection-first catalog without duplicates.
      *
@@ -468,52 +414,5 @@ final readonly class DashboardComposer
             SurfaceId::fromString($identifier);
             $seen[$identifier] = true;
         }
-    }
-
-    /**
-     * Return the canonical dashboard home path for one supported delivery area.
-     *
-     * @param   SurfaceArea  $area  Validated administrator or portal area.
-     *
-     * @return  string  `/administrator` or `/portal`.
-     *
-     * @since   2.0.0
-     */
-    private static function homePath(SurfaceArea $area): string
-    {
-        return $area === SurfaceArea::Administrator ? '/administrator' : '/portal';
-    }
-
-    /**
-     * Return the core navigation identifier reserved for one dashboard home.
-     *
-     * @param   SurfaceArea  $area  Validated administrator or portal area.
-     *
-     * @return  string  `core.dashboard` or `core.portal-home`.
-     *
-     * @since   2.0.0
-     */
-    private static function homeNavigationId(SurfaceArea $area): string
-    {
-        return $area === SurfaceArea::Administrator ? 'core.dashboard' : 'core.portal-home';
-    }
-
-    /**
-     * Remove query and fragment suffixes before area and self-link comparison.
-     *
-     * Full href validation remains in `DashboardWidget::fromNavigation()`, so this helper only identifies
-     * the path prefix and cannot turn an unsafe destination into an admitted one.
-     *
-     * @param   string  $href  Candidate filtered navigation href.
-     *
-     * @return  string  Path portion before `?` or `#`.
-     *
-     * @since   2.0.0
-     */
-    private static function pathWithoutQuery(string $href): string
-    {
-        $parts = preg_split('/[?#]/', $href, 2);
-
-        return $parts === false ? $href : ($parts[0] ?? $href);
     }
 }

@@ -32,7 +32,7 @@ final readonly class DashboardView
     public array $widgets;
 
     /**
-     * Live selectable widgets, selected entries first and the remainder in catalog order.
+     * Selected live widgets followed by core and current workflow-page candidates without duplicates.
      *
      * @var    list<DashboardWidget>
      * @since  2.0.0
@@ -48,7 +48,7 @@ final readonly class DashboardView
     public array $shortcuts;
 
     /**
-     * Live selectable shortcuts, selected entries first and the remainder in navigation order.
+     * Selected live shortcuts followed by current workflow-page candidates without duplicates.
      *
      * @var    list<DashboardWidget>
      * @since  2.0.0
@@ -130,11 +130,11 @@ final readonly class DashboardView
     /**
      * Capture one complete dashboard composition and preference resolution evidence.
      *
-     * @param   list<DashboardWidget>              $widgets             Selected widgets.
-     * @param   list<DashboardWidget>              $availableWidgets    Live selectable widgets.
-     * @param   list<DashboardWidget>              $shortcuts           Selected workflow shortcuts.
-     * @param   list<DashboardWidget>              $availableShortcuts  Live selectable workflow shortcuts.
-     * @param   list<string>                       $diagnostics         Non-sensitive stable diagnostic codes.
+     * @param   list<DashboardWidget>             $widgets             Selected widgets.
+     * @param   list<DashboardWidget>             $availableWidgets    Live selectable widgets.
+     * @param   list<DashboardWidget>             $shortcuts           Selected workflow shortcuts.
+     * @param   list<DashboardWidget>             $availableShortcuts  Live selectable workflow shortcuts.
+     * @param   list<string>                      $diagnostics         Non-sensitive stable diagnostic codes.
      * @param   PresentationPreferenceResolution  $widgetPreference    Dashboard-card preference evidence.
      * @param   PresentationPreferenceResolution  $shortcutPreference  Navigation-shortcut preference evidence.
      *

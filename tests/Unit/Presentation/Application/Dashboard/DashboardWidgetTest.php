@@ -127,8 +127,11 @@ final class DashboardWidgetTest extends TestCase
                 data: [
                     'items' => [[
                         'title' => 'Quarterly report',
-                        'detail' => '2026-08-15 10:00',
+                        'detail' => '2026-08-15T10:00:00+00:00',
+                        'detail_label' => 'core.dashboard.activity.updated_at',
+                        'detail_parameters' => ['at' => 1_776_247_200],
                         'status' => 'review',
+                        'status_label' => 'core.dashboard.activity.status_review',
                         'status_tone' => 'warning',
                         'href' => '/administrator/reports/quarterly',
                         'action_label' => 'core.dashboard.activity.open',
@@ -235,7 +238,25 @@ final class DashboardWidgetTest extends TestCase
                 'empty_message' => 'core.dashboard.activity.empty_message',
             ]],
             'activity status is bounded' => [DashboardWidget::KIND_ACTIVITY, [
-                'items' => [['title' => 'Report', 'status' => 'Review now']],
+                'items' => [[
+                    'title' => 'Report',
+                    'status' => 'Review now',
+                    'status_label' => 'core.dashboard.activity.status_review',
+                ]],
+                'empty_title' => 'core.dashboard.activity.empty_title',
+                'empty_message' => 'core.dashboard.activity.empty_message',
+            ]],
+            'activity status needs display label' => [DashboardWidget::KIND_ACTIVITY, [
+                'items' => [['title' => 'Report', 'status' => 'review']],
+                'empty_title' => 'core.dashboard.activity.empty_title',
+                'empty_message' => 'core.dashboard.activity.empty_message',
+            ]],
+            'activity detail parameters need label' => [DashboardWidget::KIND_ACTIVITY, [
+                'items' => [[
+                    'title' => 'Report',
+                    'detail' => '2026-08-15T10:00:00+00:00',
+                    'detail_parameters' => ['at' => '2026-08-15 10:00'],
+                ]],
                 'empty_title' => 'core.dashboard.activity.empty_title',
                 'empty_message' => 'core.dashboard.activity.empty_message',
             ]],

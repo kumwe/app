@@ -4,7 +4,7 @@
     "name": "reveal-validation"
   },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-CsOoUwF4.js",
+    "file": "js/administrator-ChxWh1_8.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
@@ -12,11 +12,11 @@
       "_reveal-validation-DkoA-GGU.js"
     ],
     "css": [
-      "css/administrator-D5jyK8fp.css"
+      "css/administrator-BBjnndt7.css"
     ]
   },
   "assets/portal/main.ts": {
-    "file": "js/portal-Cc6B4Bjp.js",
+    "file": "js/portal-BirwKa3G.js",
     "name": "portal",
     "src": "assets/portal/main.ts",
     "isEntry": true,
@@ -24,7 +24,7 @@
       "_reveal-validation-DkoA-GGU.js"
     ],
     "css": [
-      "css/portal-Pl6s611n.css"
+      "css/portal-Baq-5Adc.css"
     ]
   },
   "assets/site/main.ts": {

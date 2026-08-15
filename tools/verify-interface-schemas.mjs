@@ -157,6 +157,19 @@ const invalidPreferenceValue = clone(preferenceExample);
 invalidPreferenceValue.value = ['reference', '<script>'];
 requireInvalid('unsafe preference value', preference, invalidPreferenceValue);
 
+const legacyDashboardCards = clone(preferenceExample);
+legacyDashboardCards.slot = 'dashboard-cards';
+legacyDashboardCards.value = ['summary', 'work-queue', 'core.content'];
+requireValid('schema-one dashboard card identifiers', preference, legacyDashboardCards);
+
+const contributionDashboardCards = clone(legacyDashboardCards);
+contributionDashboardCards.value = ['9ac.me.2-orders_v1.dashboard_card', 'a...b.workspace'];
+requireValid('contribution dashboard card identifiers', preference, contributionDashboardCards);
+
+const executableDashboardCard = clone(legacyDashboardCards);
+executableDashboardCard.value = ['<script>'];
+requireInvalid('unsafe dashboard card identifier', preference, executableDashboardCard);
+
 const invalidPreferenceScope = clone(preferenceExample);
 invalidPreferenceScope.scope = 'site';
 requireInvalid('slot-incompatible preference scope', preference, invalidPreferenceScope);

@@ -10,6 +10,12 @@
       "must_not_contain": ["capabilities['content", "administrator_navigation", "action=\"/administrator/content\""]
     },
     {
+      "path": "templates/administrator/interface-standard.twig",
+      "surface_ids": ["core.interface-standard.gallery"],
+      "must_contain": ["data-kis-dashboard-gallery", "data-kis-dashboard-preferences-read-only", "disabled", "@kis/dashboard-widget.twig", "@kis/dashboard-preferences.twig", "dashboard_gallery.widgets"],
+      "must_not_contain": ["/administrator/dashboard/preferences", "/portal/dashboard/preferences", "|raw"]
+    },
+    {
       "path": "templates/administrator/content-list.twig",
       "surface_ids": ["core.administrator.content-collection"],
       "must_contain": ["@kis/resource-toolbar.twig", "name=\"q\"", "name=\"status\"", "name=\"type\"", "name=\"scope\"", "name=\"sort\"", "name=\"version\"", "name=\"_csrf\"", "/trash", "/restore"],
@@ -64,15 +70,21 @@
       "must_not_contain": ["capability", "portal_navigation", "active_navigation"]
     },
     {
+      "path": "templates/interface-standard/dashboard-icon.twig",
+      "surface_ids": [],
+      "must_contain": ["data-kis-dashboard-icon=\"{{ resolved_icon }}\"", "data-kis-dashboard-icon-fallback=\"{{ resolved_icon == icon ? 'false' : 'true' }}\"", "? icon : 'dashboard'", "resolved_icon == 'extensions'", "resolved_icon in ['check-circle', 'status']"],
+      "must_not_contain": ["<use", "|raw", "javascript:"]
+    },
+    {
       "path": "templates/interface-standard/dashboard-widget.twig",
       "surface_ids": [],
-      "must_contain": ["data-kis-dashboard-widget=\"{{ widget.id }}\"", "widget.message_ids", "core.administrator.dashboard.access_context.title", "core.portal.dashboard.access_context.title", "widget.kind == 'workflow'", "widget.kind == 'summary'", "widget.kind == 'activity'", "widget.kind == 'context'", "href=\"{{ widget.href }}\""],
-      "must_not_contain": ["|raw", "javascript:"]
+      "must_contain": ["data-kis-dashboard-widget=\"{{ widget.id }}\"", "widget.message_ids", "core.administrator.dashboard.access_context.title", "core.portal.dashboard.access_context.title", "widget.kind == 'workflow'", "widget.kind == 'summary'", "widget.kind == 'activity'", "widget.kind == 'context'", "href=\"{{ widget.href }}\"", "@kis/dashboard-icon.twig"],
+      "must_not_contain": ["#kumwe-icon-{{", "|raw", "javascript:"]
     },
     {
       "path": "templates/interface-standard/dashboard-preferences.twig",
       "surface_ids": [],
-      "must_contain": ["id=\"dashboard-customization\"", "dashboard.preference_forms", "dashboard.preference_action", "name=\"_csrf\"", "name=\"scope\"", "name=\"scope_id\"", "name=\"expected_version\"", "dashboard-cards.save", "dashboard-cards.reset", "navigation-shortcuts.save", "navigation-shortcuts.reset"],
+      "must_contain": ["id=\"dashboard-customization\"", "dashboard.preference_forms", "dashboard.preference_action", "dashboard.access_group_browser", "dashboard.workflow_browser", "name=\"dashboard_group_search\"", "name=\"dashboard_workflow_search\"", "access_group_browser.previous_href", "access_group_browser.next_href", "workflow_browser.previous_href", "workflow_browser.next_href", "preference.group_code", "preference.available_widgets", "preference.available_shortcuts", "name=\"_csrf\"", "name=\"scope\"", "name=\"scope_id\"", "name=\"expected_version\"", "dashboard-cards.save", "dashboard-cards.reset", "navigation-shortcuts.save", "navigation-shortcuts.reset"],
       "must_not_contain": ["|raw", "javascript:"]
     },
     {

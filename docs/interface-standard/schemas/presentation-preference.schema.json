@@ -189,7 +189,14 @@
       "type": "array",
       "maxItems": 64,
       "uniqueItems": true,
-      "items": {"$ref": "#/$defs/dottedName"}
+      "items": {"$ref": "#/$defs/dashboardIdentifier"}
+    },
+    "dashboardIdentifier": {
+      "description": "A schema-one semantic card name or an existing dotted contribution identifier.",
+      "anyOf": [
+        {"$ref": "#/$defs/semanticName"},
+        {"$ref": "#/$defs/dottedName"}
+      ]
     }
   }
 }
