@@ -13,6 +13,31 @@ signed compatibility package that is driven through install, activate, upgrade, 
 uninstall on every build, and `composer extension:contract` fails when the frozen surface moves without a
 deliberate generation change.
 
+## Trust posture: read this before you publish
+
+An installed extension is **trusted in-process extension code**. Its PHP runs inside the request, worker
+and scheduler processes with the full ambient authority of the runtime user, and installing it means the
+operator has trusted you with that process.
+
+`RestrictedExtensionContainer`, which hands your provider its services, is an **API compatibility
+boundary and not a sandbox**. It decides which host services you may resolve — which is what stops you
+depending on internals that move under you, and stops two extensions colliding — and it constrains
+nothing about what your code does once it is running. Do not design against it as though it were a
+security boundary, and do not describe it to your users as one.
+
+Two consequences for an author:
+
+- **Your package's security posture is your publisher reputation.** The signature, the trust store and the
+  revocation feed prove the package came from you and is still vouched for. They prove nothing about its
+  behaviour. Write it as code that will hold database credentials, because it will.
+- **Third-party logic you do not control belongs out of process.** Untrusted and marketplace PHP is not a
+  supported tier and stays unsupported until an isolated runtime exists. Reach for the authenticated
+  outbound-adapter and webhook contracts in [Business integrations](business-integrations.md) instead, so
+  that code runs in its own process and reaches Kumwe through an authenticated contract.
+
+The full inventory of the ambient authority an admitted extension inherits, and the deployment controls
+that bound it, is in [Architecture: extensions](architecture/extensions.md#trust-posture).
+
 ## Shipped examples
 
 The repository contains small, inspectable packages under [`examples/extensions`](../examples/extensions):

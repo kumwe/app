@@ -53,6 +53,29 @@ For a managed database, keep the application variables but omit or profile out t
 - Match request-size limits at the proxy, nginx, PHP, and Kumwe boundary.
 - Apply connection and rate controls at the edge in addition to Kumwe's account and token controls.
 
+## Extension trust boundary
+
+Installing an extension means trusting its publisher with the application process. Kumwe's controls decide
+what is **admitted** — signature, trust store, revocation feed, install-time admission — and what stays
+admitted. They are not a runtime boundary around code that has already been admitted, and Kumwe does not
+claim to be one. The supported tier is **trusted in-process extension code**; untrusted and marketplace
+PHP is unsupported.
+
+The consequence for this deployment is that the controls bounding an admitted extension are yours, not the
+application's. The full inventory of the ambient authority such code inherits — filesystem, network,
+environment, database and process — sits in
+[Architecture: extensions](../architecture/extensions.md#trust-posture) beside the control for each. Five
+of them belong on the deployment checklist:
+
+- run the application, worker and scheduler as a dedicated unprivileged user, and mount the source
+  read-only;
+- default-deny outbound network egress and allowlist only the destinations the installation needs;
+- grant the application's database account only the rights it uses, keeping DDL, backup and administrative
+  rights on separate accounts, as the audit-trail triggers already require;
+- disable the PHP process functions for the application SAPI where the deployment does not need them;
+- treat every extension install as a change with the same review as a code deployment, because that is
+  what it is.
+
 ## Deploy
 
 ```bash
