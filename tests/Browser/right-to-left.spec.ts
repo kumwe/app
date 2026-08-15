@@ -14,6 +14,9 @@ import { expectNoDocumentOverflow } from './support/interface-diagnostics';
  * language is an axis of the matrix and not a loop inside one cell. That is what gives `he` and `ar`
  * their own screenshot directory: a baseline is filed under the project name, and a right-to-left
  * page has nothing to prove when it is compared against a left-to-right one.
+ *
+ * The project supplies the browser's accepted language as well as the name, so these journeys also
+ * exercise negotiation as a real client drives it, rather than only the explicit `locale` parameter.
  */
 
 const surfaces = [
@@ -22,16 +25,29 @@ const surfaces = [
   { id: 'portal-login', path: '/portal/login' },
 ] as const;
 
+/** Locales this suite knows to be written from the right, keyed by the subtag a project name carries. */
+const rightToLeftLocales = ['he', 'ar'] as const;
+
+type RightToLeftLocale = (typeof rightToLeftLocales)[number];
+
 /**
  * The interface language this project exercises, taken from the project name's trailing subtag.
  *
- * A project whose name carries no language suffix is a source-language project, and the right-to-left
- * journeys are not part of its matrix cell at all.
+ * A project whose name carries no right-to-left subtag is a source-language project, and these
+ * journeys are not part of its matrix cell at all — `playwright.config.ts` runs this file only under
+ * the four locale-scoped projects, so an unrecognised name here means the matrix and this file have
+ * drifted apart and the run should say so rather than quietly test Hebrew twice.
  */
-function projectLocale(projectName: string): string {
+function projectLocale(projectName: string): RightToLeftLocale {
   const suffix = projectName.split('-').pop() ?? '';
+  const locale = rightToLeftLocales.find((candidate) => candidate === suffix);
+  if (locale === undefined) {
+    throw new Error(
+      `Project ${projectName} runs the right-to-left journeys but names no right-to-left locale.`,
+    );
+  }
 
-  return /^[a-z]{2}$/.test(suffix) && suffix !== 'chromium' ? suffix : 'he';
+  return locale;
 }
 
 async function open(page: Page, path: string, locale: string): Promise<void> {
@@ -53,7 +69,9 @@ test.describe('Right-to-left presentation', () => {
     });
   }
 
-  test('the same surfaces stay left-to-right in the source language', async ({ page }) => {
+  test('an explicit source-language choice overrules the language the client asked for', async ({
+    page,
+  }) => {
     for (const surface of surfaces) {
       await open(page, surface.path, 'en-GB');
 
@@ -63,10 +81,22 @@ test.describe('Right-to-left presentation', () => {
     }
   });
 
-  test('an unrecognised locale falls back rather than rendering a blank interface', async ({ page }) => {
+  test('an unrecognised locale falls back rather than rendering a blank interface', async ({
+    page,
+  }, testInfo) => {
+    // An unrecognised explicit choice is discarded, and negotiation carries on to the next input
+    // rather than giving up: the client's accepted language, which this project sets to its own
+    // right-to-left locale. Asserting an absolute direction here would assert that a stale bookmark
+    // throws away what the browser asked for, which is the opposite of the intended behaviour.
+    const locale = projectLocale(testInfo.project.name);
     await open(page, '/administrator/login', 'not-a-locale');
 
-    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    const root = page.locator('html');
+    await expect(root).toHaveAttribute('lang', locale);
+    await expect(root).toHaveAttribute('dir', 'rtl');
+    // The interface is what must survive the unusable value. Until the translated catalogues land
+    // the wording is still the source language, and that is the point: a message no layer carries
+    // renders as the source text rather than as nothing.
     await expect(page.getByRole('button', { name: 'Sign in to Kumwe' })).toBeVisible();
   });
 });
