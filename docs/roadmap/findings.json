@@ -764,40 +764,12 @@
           "note": "No offline queue, no client-side durable store, no reconciliation or conflict-resolution primitive exists anywhere under src/. Client-supplied operation identifiers and the idempotency ledger give a retried command a stable outcome, which is the foundation an offline client needs but is not itself offline support."
         }
       ],
-      "acceptance_test": "Nothing is built for this in Version 2. What must hold is that Version 2 does not foreclose it: the four constraints in V2-POS-001 through V2-POS-004 are the entire residual, and this entry stays open until all four are settled so the deferral is a decision someone owns rather than an omission nobody noticed. The reviewer of any Gate A contract change asks whether it makes an offline terminal impossible; if it does, this entry is the place that objection is raised.",
+      "acceptance_test": "Nothing is built for this in Version 2. What must hold is that Version 2 does not foreclose it. Three of the four constraints are settled and recorded in CHANGELOG.md: the caller-minted operation identifier now replays over a declared, bounded, configurable window and a repeat arriving after it is refused by name rather than applied twice; a client-asserted capture instant has a declared home beside the server's own and is proved unreachable from every ordering, expiry, period and numbering path; and the deferrable and non-deferrable validation split is written into the extension-facing contract with the non-deferrable half held by an architecture test. This entry stays open on the one that remains, V2-POS-002, because the deferral is only a decision somebody owns once the numbering shape under disconnection is chosen. The reviewer of any Gate A contract change asks whether it makes an offline terminal impossible; if it does, this entry is the place that objection is raised.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "product_owner_decision": "Decision D14 — deferred beyond Version 2 as a product. Offline point of sale will be a separate long-standing application talking to the platform over the API. Version 2 does not build it and must not design in a way that forecloses it.",
-      "residual": "The platform must remain positioned to accommodate an offline terminal. That positioning is carried by V2-POS-001 through V2-POS-004, all of which are Gate A. This entry is the standing reminder that the deferral has a cost somebody is paying attention to.",
-      "forward_reference": "V2-POS-001, V2-POS-002, V2-POS-003, V2-POS-004"
-    },
-    {
-      "id": "V2-CUR-005",
-      "title": "Conversion provenance is guaranteed by the value but not yet rendered by the graphical, REST and machine surfaces",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Domain/ConvertedMoneyValue.php",
-          "symbol": "toArray() and toPortableString()",
-          "note": "The type cannot exist or be exported without its converted marker, rate, as-at instant, provider identity and declared rounding, so provenance is inseparable from the figure wherever the value itself travels. Report columns and export artifacts carry it, and ReportValueType::ConvertedMoney refuses a bare figure."
-        },
-        {
-          "file": "src/BusinessSurface/Presentation/Field",
-          "symbol": "the field presentation surface",
-          "note": "No presenter renders a converted amount, so no generated administrator or portal screen, no document view kind, no generated REST schema and no machine-surface response yet shows the marker, the rate and the as-at instant beside the figure. Nothing renders one incorrectly today because nothing renders one at all; the risk is a renderer added later that prints only the amount."
-        }
-      ],
-      "acceptance_test": "Every surface that renders a converted amount renders its provenance with it: the generated administrator and portal surfaces, the document view kind, the generated REST schemas, the machine surface and event payloads. The check is driven from one table of surfaces, so a surface added later without provenance fails rather than being missed, and composer openapi:check covers the generated REST half. The value contract, the rate-provider port, the pipeline and the report and export carriage are already delivered and are not reopened by this entry.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-B",
-      "product_owner_decision": "Decision D10, the non-negotiable rule: a converted amount is always marked as converted and carries its rate and as-at instant, everywhere it appears. The rule is only worth stating if it is universal, so the rendering half is tracked rather than assumed.",
-      "enforcing_check": "A cross-surface provenance test driven from one enumerated table of surfaces; composer openapi:check for the generated REST half; and the capacity contract's undeclared_currency_conversions integrity objective at zero.",
-      "cross_reference": []
+      "residual": "The platform must remain positioned to accommodate an offline terminal. Three of the four constraints that carry that positioning are delivered; V2-POS-002 alone remains, and it is the product owner's decision rather than an implementation task. This entry is the standing reminder that the deferral has a cost somebody is paying attention to.",
+      "forward_reference": "V2-POS-002"
     },
     {
       "id": "V2-LNG-001",
@@ -1068,41 +1040,6 @@
       ]
     },
     {
-      "id": "V2-POS-001",
-      "title": "The idempotency claim expires after a fixed day, so a terminal reconnecting later replays into a second effect",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Domain/BusinessRecordIdempotency.php",
-          "symbol": "the claim's operationId and scopeDigest",
-          "note": "operationId is documented as 'the idempotency key the caller supplied, 8 to 128 characters', so the operation identifier is ALREADY client-minted. The scope digest is taken over site, organization, actor, operation and identifier, and the request payload and authorization context are fingerprinted alongside and re-checked before a replay is trusted."
-        },
-        {
-          "file": "src/Delivery/Http/Api/Idempotency/RequireIdempotencyKeyMiddleware.php",
-          "symbol": "the header contract",
-          "note": "Parses the client-supplied Idempotency-Key header once and publishes the validated value on the request. A missing header is answered idempotency-key-required and a malformed one invalid-idempotency-key, both 400, because neither is fixed by repeating the request."
-        },
-        {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "the claim window",
-          "note": "Lines 2212 and 2325 construct the claim with new DateInterval('P1D'). Lines 2370 and 2431 treat an entry at or past expiresAt as absent. A terminal reconnecting after 24 hours therefore replays into a fresh claim and produces a second effect."
-        }
-      ],
-      "acceptance_test": "The contract states plainly who mints the operation identifier — the caller already does — and for how long a replay is honoured. The fixed P1D window becomes a declared, bounded, configurable retention with a stated maximum, and the contract says what happens to a replay arriving after it. What the actor component of the scope digest means for a terminal that re-authenticated while disconnected is stated rather than left to be discovered. A three-engine integration test proves a replay inside the declared window yields exactly one effect and a replay outside it is REFUSED with a stable named error rather than silently creating a second: the refusal is the property, and an implementation that quietly duplicates fails.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-G",
-      "product_owner_decision": "Decision D14 — point of sale is deferred as a product, but a terminal creating a document offline must be able to mint the operation identifier itself and submit later, with replay yielding one effect.",
-      "enforcing_check": "The three-engine replay test above, covering both inside and outside the declared window, and covering a replay submitted after re-authentication.",
-      "cross_reference": [
-        "V2-ERP-007"
-      ]
-    },
-    {
       "id": "V2-POS-002",
       "title": "Numbering under disconnection: the gapless allocator commits inside the caller's transaction, so a disconnected terminal cannot call it",
       "severity": "medium",
@@ -1130,62 +1067,6 @@
       "enforcing_check": "Once decided: if synchronisation-time allocation, the existing gapless concurrency tests run unmodified. If reserved blocks, a test asserts a sequence declaring them reports itself as non-gapless through the same declaration an operator reads, so the forfeit cannot be silent.",
       "cross_reference": [
         "V2-ERP-002",
-        "V2-ERP-007"
-      ]
-    },
-    {
-      "id": "V2-POS-003",
-      "title": "No declared home for a client-asserted occurrence instant, and no stated tolerance for late or out-of-order arrival",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "the injected clock",
-          "note": "Takes a PSR ClockInterface and stamps one instant per command from it at lines 2187 and 2300. No surface accepts a client-asserted occurrence instant, so there is currently nowhere for one to live — which is the gap, not a protection."
-        },
-        {
-          "file": "src/BusinessIntegration/",
-          "symbol": "the sequenced journal and projection checkpoints",
-          "note": "Event ordering is by allocated sequence, and projections consume in that order. Nothing states whether a document captured days earlier and submitted now is ordered by capture or by arrival, because nothing yet arrives late by design."
-        }
-      ],
-      "acceptance_test": "A client-asserted captured-at instant has a declared place to live beside the server's own, is never substituted for it, and is never used for ordering, expiry, period assignment or numbering — a terminal's clock cannot be authoritative. Late and out-of-order arrival is accepted: a document captured on Friday and submitted on Monday is acceptable and is not ordered by when it arrived. Both are statements about the aggregate command's contract and about event sequencing, and both are tested rather than assumed.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-G",
-      "product_owner_decision": "Decision D14 — late and out-of-order arrival tolerance, and untrusted client clocks.",
-      "enforcing_check": "An architecture test asserting no ordering, expiry or numbering path reads a client-asserted instant, enumerated from the paths that consume an instant; plus an integration test submitting a batch out of capture order and asserting the resulting order.",
-      "cross_reference": [
-        "V2-ERP-007",
-        "V2-SCL-002"
-      ]
-    },
-    {
-      "id": "V2-POS-004",
-      "title": "Nothing states which validations may be deferred to reconciliation, so accept-and-reconcile is not a supportable posture",
-      "severity": "low",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Application/RecordRuleValidator.php",
-          "symbol": "the validation pass",
-          "note": "Every declared rule is evaluated at command time. There is no notion of a validation an extension may legitimately defer, and no statement of which validations can never be deferred."
-        }
-      ],
-      "acceptance_test": "The contract states which validations an extension may defer to reconciliation and which can never be deferred. Authorization, policy and definition-shape validity are never deferrable. Stock and pricing cannot be authoritative offline, so the design accepts a sale and reconciles rather than assuming live validation was possible at capture time. This is the one rule in the set that cannot be checked mechanically, because it is a statement about what an extension may CHOOSE; it is covered by the extension-contract review in P0-C and by a worked example in the extension documentation, and the work package says so rather than leaving the question silent.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-G",
-      "product_owner_decision": "Decision D14 — stock and pricing cannot be authoritative offline, so the design must accept a sale and reconcile rather than assume live validation.",
-      "enforcing_check": "Not mechanically enforceable, and stated as such. Covered by the P0-C frozen-contract review, which classifies the deferrable and non-deferrable validation categories, and by a worked example in the extension documentation. The non-deferrable half IS mechanically enforced: an architecture test asserts authorization, policy and definition-shape validation have no bypass path.",
-      "cross_reference": [
         "V2-ERP-007"
       ]
     },

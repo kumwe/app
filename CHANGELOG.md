@@ -438,6 +438,63 @@ development programme, from the architecture decision that opened it to the curr
   rounding is a declared step with a named mode rather than something that happens on the way past.
   Conversion is presentation and reporting only: it never writes back, and a converted amount offered where a
   stored money value belongs is refused. (`72cc3e6`)
+- **A converted price says what produced it on every screen, document, response and export that shows
+  it.** The conversion contract already guaranteed that a converted amount could not exist without its
+  rate, as-at instant, provider and rounding; what was missing was anything that rendered one, which meant
+  the rule held only until somebody wrote the first renderer. A converted figure now renders as its own
+  self-describing sentence — `EUR 1234.56 converted from ZAR 25000.00 at 0.04938240 as at ... by
+  acme.rates.ecb rounded half_up from ...` — so a surface showing nothing but the figure still shows the
+  evidence, and somebody holding a printed page can reproduce the number without the system that made it.
+  The structured evidence travels beside it wherever there is room to lay it out: the generated
+  administrator and portal record screens, the document view kind's meta blocks, line cells and totals,
+  and the one record projection that REST, the model-context tools and the console all serialize through.
+  A converted amount is never offered as an editor on any surface, which is the presentation-side half of
+  the rule that no write path stores one. (`d3215fe`)
+- **The rule is held by the build rather than by whoever writes the next renderer.** Three things enforce
+  it. A field presentation whose provenance and display have come apart is refused at construction. Any
+  presenter handed a converted amount — core's or an extension's — is refused if it hands back a figure
+  without the evidence, so a package cannot reduce one to a bare number by writing its own renderer. And
+  one table enumerates the surfaces a converted amount can reach, with the files each is made of; its
+  coverage test walks every entry, exercises it with a real converted figure, and fails the build when a
+  file under `src/` reads a converted amount without appearing in the table. A surface added later without
+  provenance is a red build, not an audit finding. (`d3215fe`)
+- **The published REST contract describes a converted amount, and refuses one as an input.** The generated
+  OpenAPI document gains `GeneratedBusinessConvertedMoney`, a closed schema with every member required, and
+  a money field's read schema admits either the stored amount-and-currency pair or that. The create and
+  update schemas admit only the stored pair, so a client validating against the contract refuses a
+  converted figure exactly where the write path does. The report column vocabulary is now enumerated from
+  the value types the report engine actually emits instead of being repeated by hand — which is what the
+  hand-kept list had already got wrong, omitting `converted_money` from the contract while the runtime
+  emitted it. (`d3215fe`)
+- **A terminal that was disconnected for a week can submit its work without creating it twice.** An
+  idempotency claim used to be constructed with a fixed one-day interval, so a client that captured work
+  offline and reconnected after that found nothing, took a fresh claim and produced a second effect nobody
+  was told about. The fixed day becomes two declared horizons: how long a claim replays its recorded
+  outcome, and how long it is then remembered so a later repeat is **refused by name** —
+  `business_record.idempotency_replay_window_elapsed` — rather than applied again. Refusal is the point: a
+  duplicate that is announced can be reconciled, and one that is not becomes a document nobody knows
+  about. Seven days of replay behind thirty days of memory by default, bounded at ninety days and one year,
+  set with `BUSINESS_IDEMPOTENCY_REPLAY_SECONDS` and `BUSINESS_IDEMPOTENCY_RETENTION_SECONDS`. A
+  configuration whose memory would run out before its replay window does is refused rather than accepted.
+  (`3264898`)
+- **A client's clock has somewhere to live and decides nothing.** The aggregate document command accepts an
+  optional instant saying when the caller believes the work happened. It is recorded in the audit trail
+  beside the server's own instant, marked as the client's, and never substituted for it. It is never read
+  to decide ordering, expiry, period assignment or numbering, and that is proved rather than intended: an
+  architecture test enumerates the paths that make each of those four decisions and fails the build if any
+  of them can reach the type. Late and out-of-order arrival is therefore ordinary rather than exceptional —
+  a document captured on Friday and submitted on Monday is validated, numbered, sequenced and audited where
+  it arrives, and the capture instant explains the gap instead of reopening the sequence. (`3264898`)
+- **Which checks an extension may leave until later is written down, and which it may never leave is
+  enforced.** A client that was offline could not have consulted live stock or a live price, so a platform
+  that assumes it did cannot accept the sale. `docs/business-runtime.md` now states the split as a table an
+  extension author reads: stock, price and discount, credit limits and outside enrichment are deferrable to
+  reconciliation; authorization, row and field policy, definition-shape validity and the idempotency claim
+  itself never are. The non-deferrable half is not advice — an architecture test proves every mutation
+  entry point demands its capability before anything else, that policy is planned for every operation, that
+  the rule validator offers no way to defer a declared rule, and that stored record state has exactly one
+  door. An extension may accept a sale and reconcile it; it may not accept one from an actor who was
+  refused. (`3264898`)
 - **Exchange rates come from extensions, and Kumwe ships none.** A package declares the currencies it prices
   and its place in the resolution order in its signed manifest, implements one port, and registers it through
   the same contribution registrar every other extension surface uses. An external rate service, a manually
