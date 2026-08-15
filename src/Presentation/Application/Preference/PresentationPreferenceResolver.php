@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Presentation\Application\Preference;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\InterfaceStandard\CustomizationScope;
 use Kumwe\CMS\InterfaceStandard\CustomizationSlot;

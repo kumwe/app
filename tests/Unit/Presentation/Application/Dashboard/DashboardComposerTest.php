@@ -15,7 +15,7 @@ use Kumwe\CMS\InterfaceStandard\SurfaceId;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardView;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationAccessGroup;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;

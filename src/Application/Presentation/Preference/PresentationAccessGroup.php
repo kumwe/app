@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Preference;
+namespace Kumwe\CMS\Application\Presentation\Preference;
 
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;

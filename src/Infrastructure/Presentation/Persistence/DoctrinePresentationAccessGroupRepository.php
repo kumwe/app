@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Infrastructure\Persistence;
+namespace Kumwe\CMS\Infrastructure\Presentation\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupRepository;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationAccessGroupRepository;
 use RuntimeException;
 
 /**

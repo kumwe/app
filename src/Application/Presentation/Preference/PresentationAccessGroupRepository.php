@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Preference;
+namespace Kumwe\CMS\Application\Presentation\Preference;
 
 /**
  * Read-only boundary projecting access-control roles as KIS presentation access groups.

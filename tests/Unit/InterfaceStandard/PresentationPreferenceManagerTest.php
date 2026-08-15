@@ -26,7 +26,7 @@ use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\CMS\InterfaceStandard\SurfaceArea;
 use Kumwe\CMS\InterfaceStandard\SurfaceId;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceContext;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationAccessGroup;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceManager;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;

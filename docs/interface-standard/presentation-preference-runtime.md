@@ -19,9 +19,10 @@ KIS surface.
 | Persistence | `DoctrinePresentationPreferenceRepository` | Atomic create/update/delete and read-time revalidation across supported DBAL platforms |
 | Schema | `InterfacePresentationPreferenceMigration` | Portable JSON value, optimistic version, attribution and composite identity columns |
 
-The portable value, record and key live under `Kumwe\CMS\InterfaceStandard`. Application orchestration
-lives under `Kumwe\CMS\Presentation\Application\Preference`, and the DBAL adapter lives under
-`Kumwe\CMS\Presentation\Infrastructure\Persistence`; neither persistence nor delivery is part of the
+The portable value, record and key live under `Kumwe\CMS\InterfaceStandard`. Preference orchestration
+lives under `Kumwe\CMS\Presentation\Application\Preference`, while the canonical role-projection port and
+value live under `Kumwe\CMS\Application\Presentation\Preference`. DBAL role projection lives under
+`Kumwe\CMS\Infrastructure\Presentation\Persistence`; neither persistence nor delivery is part of the
 portable KIS semantic contract.
 
 ## Resolution order

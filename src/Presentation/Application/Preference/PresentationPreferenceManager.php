@@ -10,6 +10,8 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
 use Kumwe\CMS\Application\Persistence\TransactionManager;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupRepository;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;

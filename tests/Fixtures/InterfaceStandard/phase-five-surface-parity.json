@@ -65,13 +65,13 @@
     },
     {
       "path": "templates/interface-standard/dashboard-widget.twig",
-      "surface_ids": ["core.administrator.dashboard", "core.portal.home"],
-      "must_contain": ["data-kis-dashboard-widget=\"{{ widget.id }}\"", "widget.message_ids", "core.administrator.dashboard.access_context.title", "widget.kind == 'workflow'", "widget.kind == 'summary'", "widget.kind == 'activity'", "widget.kind == 'context'", "href=\"{{ widget.href }}\""],
+      "surface_ids": [],
+      "must_contain": ["data-kis-dashboard-widget=\"{{ widget.id }}\"", "widget.message_ids", "core.administrator.dashboard.access_context.title", "core.portal.dashboard.access_context.title", "widget.kind == 'workflow'", "widget.kind == 'summary'", "widget.kind == 'activity'", "widget.kind == 'context'", "href=\"{{ widget.href }}\""],
       "must_not_contain": ["|raw", "javascript:"]
     },
     {
       "path": "templates/interface-standard/dashboard-preferences.twig",
-      "surface_ids": ["core.administrator.dashboard", "core.portal.home"],
+      "surface_ids": [],
       "must_contain": ["id=\"dashboard-customization\"", "dashboard.preference_forms", "dashboard.preference_action", "name=\"_csrf\"", "name=\"scope\"", "name=\"scope_id\"", "name=\"expected_version\"", "dashboard-cards.save", "dashboard-cards.reset", "navigation-shortcuts.save", "navigation-shortcuts.reset"],
       "must_not_contain": ["|raw", "javascript:"]
     },

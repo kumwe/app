@@ -17,7 +17,7 @@ use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\CMS\InterfaceStandard\SurfaceArea;
 use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
 use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationAccessGroup;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceContext;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
@@ -246,10 +246,10 @@ final class PresentationPreferenceResolverTest extends TestCase
             'Operations',
         );
         foreach ([
-            [CustomizationScope::Administrator, null, ['administrator'], 1],
-            [CustomizationScope::RoleWorkspace, $first->id, ['finance', 'shared'], 2],
-            [CustomizationScope::RoleWorkspace, $second->id, ['operations', 'shared'], 3],
-            [CustomizationScope::RoleWorkspace, 'workspace:operations', ['workspace'], 4],
+            [CustomizationScope::Administrator, null, ['core.dashboard.administrator'], 1],
+            [CustomizationScope::RoleWorkspace, $first->id, ['core.dashboard.finance', 'core.dashboard.shared'], 2],
+            [CustomizationScope::RoleWorkspace, $second->id, ['core.dashboard.operations', 'core.dashboard.shared'], 3],
+            [CustomizationScope::RoleWorkspace, 'workspace:operations', ['core.dashboard.workspace'], 4],
         ] as [$scope, $scopeId, $cards, $version]) {
             $repository->seed(PresentationPreference::create(
                 $surface,
@@ -273,12 +273,17 @@ final class PresentationPreferenceResolverTest extends TestCase
             $surface,
             $owner,
             CustomizationSlot::DashboardCards,
-            ['default'],
+            ['core.dashboard.default'],
             $preferenceContext,
             [$second, $first],
         );
 
-        self::assertSame(['finance', 'shared', 'operations', 'workspace'], $resolution->value->value());
+        self::assertSame([
+            'core.dashboard.finance',
+            'core.dashboard.shared',
+            'core.dashboard.operations',
+            'core.dashboard.workspace',
+        ], $resolution->value->value());
         self::assertSame(CustomizationScope::RoleWorkspace, $resolution->source);
         self::assertNull($resolution->version);
         self::assertSame([], $resolution->diagnostics);
@@ -289,7 +294,7 @@ final class PresentationPreferenceResolverTest extends TestCase
             CustomizationScope::User,
             $context->actorId(),
             CustomizationSlot::DashboardCards,
-            ['personal'],
+            ['core.dashboard.personal'],
             9,
             $context->actorId(),
             new DateTimeImmutable('2026-08-11T12:00:00Z'),
@@ -298,12 +303,12 @@ final class PresentationPreferenceResolverTest extends TestCase
             $surface,
             $owner,
             CustomizationSlot::DashboardCards,
-            ['default'],
+            ['core.dashboard.default'],
             $preferenceContext,
             [$second, $first],
         );
 
-        self::assertSame(['personal'], $personal->value->value());
+        self::assertSame(['core.dashboard.personal'], $personal->value->value());
         self::assertSame(CustomizationScope::User, $personal->source);
         self::assertSame(9, $personal->version);
     }
@@ -337,7 +342,7 @@ final class PresentationPreferenceResolverTest extends TestCase
             CustomizationScope::Administrator,
             null,
             CustomizationSlot::DashboardCards,
-            ['administrator'],
+            ['core.dashboard.administrator'],
             1,
             $context->actorId(),
             new DateTimeImmutable('2026-08-11T12:00:00Z'),
@@ -348,7 +353,7 @@ final class PresentationPreferenceResolverTest extends TestCase
             CustomizationScope::RoleWorkspace,
             $first->id,
             CustomizationSlot::DashboardCards,
-            ['removed'],
+            ['core.dashboard.removed'],
             2,
             $context->actorId(),
             new DateTimeImmutable('2026-08-11T12:00:00Z'),
@@ -360,19 +365,19 @@ final class PresentationPreferenceResolverTest extends TestCase
             $surface,
             $owner,
             CustomizationSlot::DashboardCards,
-            ['default'],
+            ['core.dashboard.default'],
             PresentationPreferenceContext::fromExecutionContext(SurfaceArea::Administrator, $context),
             [$first],
         );
 
-        self::assertSame(['administrator'], $fallback->value->value());
+        self::assertSame(['core.dashboard.administrator'], $fallback->value->value());
         self::assertSame(CustomizationScope::Administrator, $fallback->source);
         self::assertSame(['kis.preference.slot-removed'], $fallback->diagnostics);
 
         $boundedRepository = new InMemoryPresentationPreferenceRepository();
         foreach ([
-            [$first, array_map(static fn (int $index): string => 'finance-' . $index, range(1, 40))],
-            [$second, array_map(static fn (int $index): string => 'operations-' . $index, range(1, 40))],
+            [$first, array_map(static fn (int $index): string => 'core.dashboard.finance-' . $index, range(1, 40))],
+            [$second, array_map(static fn (int $index): string => 'core.dashboard.operations-' . $index, range(1, 40))],
         ] as $index => [$group, $cards]) {
             $boundedRepository->seed(PresentationPreference::create(
                 $surface,
@@ -399,8 +404,8 @@ final class PresentationPreferenceResolverTest extends TestCase
         );
 
         self::assertCount(64, $bounded->value->value());
-        self::assertSame('finance-1', $bounded->value->value()[0] ?? null);
-        self::assertSame('operations-24', $bounded->value->value()[63] ?? null);
+        self::assertSame('core.dashboard.finance-1', $bounded->value->value()[0] ?? null);
+        self::assertSame('core.dashboard.operations-24', $bounded->value->value()[63] ?? null);
         self::assertSame(['kis.preference.group-list-truncated'], $bounded->diagnostics);
     }
 
@@ -455,7 +460,7 @@ final class PresentationPreferenceResolverTest extends TestCase
             CustomizationScope::RoleWorkspace,
             $group->id,
             CustomizationSlot::DashboardCards,
-            ['stale'],
+            ['acme.tools.widgets.stale'],
             1,
             AuthorizationContext::SUBJECT,
             new DateTimeImmutable('2026-08-11T12:00:00Z'),
@@ -467,7 +472,7 @@ final class PresentationPreferenceResolverTest extends TestCase
             $surface,
             ContributionOwner::extension('acme/tools.widgets'),
             CustomizationSlot::DashboardCards,
-            ['default'],
+            ['acme.tools.widgets.default'],
             PresentationPreferenceContext::fromExecutionContext(
                 SurfaceArea::Administrator,
                 AuthorizationContext::human([]),
@@ -475,7 +480,7 @@ final class PresentationPreferenceResolverTest extends TestCase
             [$group],
         );
 
-        self::assertSame(['default'], $resolution->value->value());
+        self::assertSame(['acme.tools.widgets.default'], $resolution->value->value());
         self::assertNull($resolution->source);
         self::assertSame(['kis.preference.owner-stale'], $resolution->diagnostics);
     }

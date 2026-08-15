@@ -15,7 +15,7 @@ use Kumwe\CMS\InterfaceStandard\CustomizationScope;
 use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
 use Kumwe\CMS\InterfaceStandard\SurfaceId;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceService;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationAccessGroup;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceManager;
 use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
 use Psr\Clock\ClockInterface;
