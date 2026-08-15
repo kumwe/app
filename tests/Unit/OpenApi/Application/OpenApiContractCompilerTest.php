@@ -441,6 +441,120 @@ final class OpenApiContractCompilerTest extends TestCase
     }
 
     /**
+     * A read schema admits a converted amount beside the stored pair; a write schema admits only the pair.
+     *
+     * The asymmetry is the contract's way of saying what the write path already enforces: conversion is a
+     * presentation of a stored amount and is never stored itself. A client generated from this document
+     * therefore refuses a converted figure as an input in the same place the server does.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMoneyFieldReadsAsEitherAStoredOrAConvertedAmountAndWritesOnlyStored(): void
+    {
+        $compiled = (new OpenApiContractCompiler())->compile(
+            $this->core(),
+            [$this->moneyDefinition()],
+            str_repeat('f', 64),
+        );
+        /** @var array<string, mixed> $document */
+        $document = json_decode($compiled->json, true, 64, JSON_THROW_ON_ERROR);
+        $schemas = $document['components']['schemas'];
+        $reference = ['$ref' => '#/components/schemas/GeneratedBusinessConvertedMoney'];
+
+        $read = $schemas['Business_acme_receipt_Record']['properties']['total'];
+        self::assertArrayHasKey('oneOf', $read);
+        self::assertEquals($this->storedMoneySchema(), $read['oneOf'][0]);
+        self::assertEquals($reference, $read['oneOf'][1]);
+
+        foreach (['Business_acme_receipt_Create', 'Business_acme_receipt_Update'] as $write) {
+            $written = $schemas[$write]['properties']['total'];
+            self::assertArrayNotHasKey('oneOf', $written, $write . ' admits a converted amount as input.');
+            self::assertEquals($this->storedMoneySchema(), $written);
+        }
+    }
+
+    /**
+     * A read-only money field keeps its marker on the union rather than losing it to a branch.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAReadOnlyMoneyFieldCarriesItsMarkerOnTheUnion(): void
+    {
+        $definition = $this->moneyDefinition();
+        $definition['fields'][0]['schema']['readOnly'] = true;
+        $definition['fields'][0]['uses']['create'] = false;
+        $definition['fields'][0]['uses']['update'] = false;
+        $compiled = (new OpenApiContractCompiler())->compile(
+            $this->core(),
+            [$definition],
+            str_repeat('9', 64),
+        );
+        /** @var array<string, mixed> $document */
+        $document = json_decode($compiled->json, true, 64, JSON_THROW_ON_ERROR);
+        $read = $document['components']['schemas']['Business_acme_receipt_Record']['properties']['total'];
+
+        self::assertTrue($read['readOnly']);
+        self::assertArrayHasKey('oneOf', $read);
+    }
+
+    /**
+     * Build a definition carrying one money field visible to read, create and update.
+     *
+     * @return  array<string, mixed>  Safe catalog metadata for a single-field definition.
+     *
+     * @since   2.0.0
+     */
+    private function moneyDefinition(): array
+    {
+        return [
+            'handle' => 'acme.receipt',
+            'fields' => [[
+                'handle' => 'total',
+                'type' => 'core.money',
+                'required' => false,
+                'schema' => $this->storedMoneySchema(),
+                'uses' => [
+                    'detail' => true,
+                    'create' => true,
+                    'update' => true,
+                    'list' => false,
+                    'filter' => false,
+                    'search' => false,
+                    'sort' => false,
+                    'report' => false,
+                    'export' => false,
+                ],
+            ]],
+            'views' => [],
+            'actions' => [],
+        ];
+    }
+
+    /**
+     * Build the closed amount-and-currency schema the catalog produces for a money field.
+     *
+     * @return  array<string, mixed>  Stored money schema.
+     *
+     * @since   2.0.0
+     */
+    private function storedMoneySchema(): array
+    {
+        return [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['amount', 'currency'],
+            'properties' => [
+                'amount' => ['type' => 'string', 'pattern' => '^-?[0-9]+(?:\\.[0-9]+)?$'],
+                'currency' => ['type' => 'string', 'maxLength' => 32],
+            ],
+        ];
+    }
+
+    /**
      * Build one closed single-property custom contract schema.
      *
      * @param   string                $name    Required property name.

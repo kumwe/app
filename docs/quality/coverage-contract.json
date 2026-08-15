@@ -87,12 +87,6 @@
     ],
     "pending": [
       {
-        "path": "tests/Functional/BusinessSurface/GeneratedBusinessAdapterParityTest.php",
-        "owner": "quality-engineering",
-        "finding": "V2-QA-001",
-        "expires": "2027-06-30"
-      },
-      {
         "path": "tests/Functional/BusinessSurface/GeneratedBusinessDataEntryRetentionTest.php",
         "owner": "quality-engineering",
         "finding": "V2-QA-001",
