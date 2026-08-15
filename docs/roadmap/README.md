@@ -451,7 +451,7 @@ The consolidation resolved 114 findings: 27 from the review, 62 from the execute
 discovered while verifying this roadmap, during the qualification programme, or from the business-group
 decision. Fifty-six of them were already closed. Under the lifecycle rule above those left the ledger and
 their substance is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them, so
-[`findings.json`](findings.json) now carries **48 open entries**: 25 from the review, 12 from the gap
+[`findings.json`](findings.json) now carries **44 open entries**: 25 from the review, 12 from the gap
 matrix and 21 discovered here. Review identifiers are unchanged, so a reference to `V2-SCL-001` resolves
 the same way in both documents, and a reference to a completed identifier such as `GM-AUD-01` or
 `V2-SCL-003` resolves in the changelog.
@@ -732,7 +732,7 @@ answer.
 | Public purpose-built read models | Provided | published views with no generic public mutation |
 | REST with generated OpenAPI | Provided | `composer openapi:check` guards drift |
 | Console | Provided | 47 commands with stable JSON and exit codes |
-| Model-context tooling | Partial | 76 tools, but `V2-SEC-001` and `V2-SEC-002` are open |
+| Model-context tooling | Provided | 76 tools, each carrying a declared risk class and a documented non-MCP alternative, with the classification, the closed schemas and the absence of credential material enforced before a server is built; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Data-entry integrity across a failed submission | Provided | validation failure and stale-version conflict both re-render with the submitted values on both generated surfaces and the CMS content editor; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Role-specific dashboards | Partial | `V2-ERP-006` — workspaces are navigation groups, and the dashboard handler is one fixed capability-filtered page |
 | Offline-tolerant capture for point of sale | Deferred, not foreclosed | `V2-ERP-007` under decision D14 — deferred beyond Version 2 as a product; three of the four constraints that keep it possible are delivered and recorded in `CHANGELOG.md`, and `V2-POS-002` alone remains |
@@ -751,7 +751,7 @@ answer.
 | Jobs, queues, schedules and processes with fenced leases | Provided | `DoctrineJobQueue`, `DoctrineScheduler`, runtime-generation fencing |
 | Reports and read projections with bound authorization | Provided | `BusinessReporting`, `ProjectionRuntime`, policy snapshots |
 | Exports as queued, stored, checksummed artifacts | Provided | `ExportGenerationService`, `StoredExportArtifact` |
-| Out-of-process adapters for untrusted or third-party logic | Partial | the contract is documented; no adapter host ships — `GM-SUP-05`, `V2-SEC-003` |
+| Out-of-process adapters for untrusted or third-party logic | Partial | the contract is documented and the posture is now stated honestly on every surface, with the ambient authority inventoried; no adapter host ships — `GM-SUP-05` |
 
 #### Platform and operations
 
@@ -922,10 +922,15 @@ intention.
    the operator's submitted values on the generated administrator surface, the generated portal surface
    and the CMS content editor, proven by browser tests on all three, including a hundred-line document.
    Met; recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
-4. **Correctness and security contradictions are fixed.** `V2-SEC-001`, `V2-SEC-002` and `V2-DB-003`
-   closed. `V2-SEC-003` resolved to an honest, consistently worded posture. Record-history generation
-   ambiguity and the unpinned ownership collation are already recorded in
-   [`CHANGELOG.md`](../../CHANGELOG.md).
+4. **Correctness and security contradictions are fixed.** Met; recorded in
+   [`CHANGELOG.md`](../../CHANGELOG.md). No credential-bearing field exists anywhere in the serialized
+   machine contract and no machine-surface handler accepts one; every machine tool carries a declared risk
+   class, a documented non-MCP alternative and validated operation, capability and bounded-schema metadata,
+   enforced before a server is built rather than reviewed; every installed foreign key carries a name a
+   second prefixed installation in the same schema cannot collide with, proven by installing two; and the
+   trusted-extension boundary is described the same honest way on every surface, with the ambient authority
+   an admitted extension inherits inventoried beside the deployment control that bounds it. Record-history
+   generation ambiguity and the unpinned ownership collation were already recorded there.
 5. **The gates are truthful.** Coverage attribution is real and ratcheted, semantic dependency checking
    fails new violations, the browser and coverage matrix covers the primary engines, and one manifest
    defines what local, CI, nightly and release runs execute.
@@ -1189,51 +1194,30 @@ or scales. Every legitimate use case keeps a supported safe path.
 
 **Entry conditions.** Phase 0 decisions 3, 5 and 6 recorded. May run in parallel with phase 2.
 
-**P1-B — Remove raw credential transport from the machine surface.** Findings: `V2-SEC-001`. Remove
-`currentPassword` from every input schema, handler signature, example, generated description, fixture and
-documentation path. Add a recursive scan of the serialized catalog that fails on any password, secret,
-private-key, recovery-code, token-value or raw path field, wired as a test. Low-risk lifecycle operations
-that need no re-proof continue under their existing application authorization. Operations that require
-step-up fail closed without a valid protected proof. The browser, the protected console and the protected
-REST path remain the human step-up route. `writeOnly` is not a control: it describes an output property and
-prevents nothing on the way in.
-
-**P1-C — Capability risk taxonomy and catalog validator.** Findings: `V2-SEC-002`. Review all 76 tools and
-every destructive, trust, credential or installation-global capability. For each: confirm catalog and
-handler binding; record its risk class; confirm capability and scope and context refresh; require an
-operation identifier and idempotency for retriable mutations; require version inputs where state can be
-stale; confirm bounded closed schemas; prove secrets cannot appear in schemas, examples, results, errors,
-logs or audit diffs; decide execute versus plan-and-status only; and document the safe alternative. Add a
-validator that rejects duplicate names, missing handlers, wrong annotations, unclosed schemas, mutation
-tools without operation identifiers, and risk-versus-surface violations.
-
-**P1-E — Schema-global constraint names.** Findings: `V2-DB-003`. The ownership constraint now derives a
-per-table name, but fifty-four constraint names across the shipped migrations are still literal, and a
-foreign-key name is schema-global on MySQL and MariaDB. `MigrationIntegrationTest::testBusinessSecurity`
-`SiteForeignKeyUsesTheExistingMariaDbCollation` demonstrates it today: building a second prefixed
-installation's `organizations` table beside an installed one fails with errno 121 on `fk_org_site`. Derive
-every remaining name from the table it sits on, in a forward migration that renames the installed
-constraints — which is also what frees the literal names for the next installation, since the immutable
-Core migration will always try to create them. Prove it by installing two prefixed installations into one
-MariaDB schema, in that order, and succeeding.
-
-**P1-F — Extension trust posture.** Findings: `V2-SEC-003`, cross-referencing `GM-SUP-05`. Change every
-document, prompt and operator message to say "trusted in-process extension code". Require an explicit
-operator trust decision bound to publisher, key and package digest. Prove that disable, quarantine, trust
-revocation, stale generation and recovery each remove executable routes, templates, assets, jobs, listeners
-and tools immediately while preserving data. Prove recovery composition executes no extension PHP and reads
-no extension template or asset. Inventory the ambient filesystem, network, environment, database and
-process authority and document the deployment controls that bound it. Do not weaken
-`RestrictedExtensionContainer`; retain it as the supported application API boundary and never call it a
-sandbox.
+**P1-F — Extension lifecycle withdrawal proofs.** Findings: none open; `V2-SEC-003` is recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md) and the residual belongs to `GM-SUP-05`, which is Gate B and waits on
+an isolated runtime that does not exist. The posture half of this package is done: every document, prompt
+and operator message says "trusted in-process extension code", the ambient filesystem, network,
+environment, database and process authority is inventoried beside the deployment control that bounds each
+part of it, `RestrictedExtensionContainer` is unweakened and is never called a sandbox, and recovery
+composition is proven to run no extension PHP and to expose no extension template namespace. What remains
+here is the withdrawal half, which is a behavioural proof rather than a wording one: that disable,
+quarantine, trust revocation, stale generation and recovery each remove executable routes, templates,
+assets, jobs, listeners and tools immediately while preserving data. Parts of it are already asserted by
+`ExtensionContributionLifecycleIntegrationTest`; what this package owes is the complete matrix across all
+five withdrawal causes and all seven executable kinds, on all three engines.
 
 **Exit gate.** Identity-reuse history behaviour is defined and proven on three engines, and paging cannot
-silently cross a generation. No credential-bearing field exists anywhere in the serialized machine
-contract. Every machine mutation carries validated risk, capability, operation, version and bounded-schema
-metadata. Submitted input survives both failure classes on all three browser surfaces. A fresh MariaDB
-database dispatches schedules, and two installations coexist in one schema. Trust posture is consistent in
-runtime, interface, operator and extension documentation. All affected unit, three-engine integration,
-cross-surface, security, browser and documentation tests are green.
+silently cross a generation. Submitted input survives both failure classes on all three browser surfaces.
+A fresh MariaDB database dispatches schedules. Every withdrawal cause removes every executable kind while
+preserving data. All affected unit, three-engine integration, cross-surface, security, browser and
+documentation tests are green.
+
+The credential, taxonomy and constraint-name halves of this phase are delivered and recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md): no credential-bearing field exists anywhere in the serialized machine
+contract and no handler accepts one, every machine mutation carries validated risk, capability, operation
+and bounded-schema metadata enforced before a server is built, and two prefixed installations coexist in one
+schema.
 
 **Non-goals.** Do not split the machine-surface handlers or catalog for size alone. Do not decompose
 `BusinessRecordService`. Do not build a sandbox. Do not expose dangerous operations everywhere in the name

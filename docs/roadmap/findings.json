@@ -18,74 +18,6 @@
   "owner_placeholder": "UNASSIGNED",
   "findings": [
     {
-      "id": "V2-SEC-001",
-      "title": "MCP transports a raw current password in published tool schemas and handler signatures",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "1",
-      "gate": "A",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Mcp/McpCapabilityCatalog.php",
-          "symbol": "McpCapabilityCatalog::currentPassword()",
-          "note": "Declared at line 2057 and injected into three extension-lifecycle input schemas at lines 518, 535 and 552. writeOnly is set, which describes an output property and prevents nothing on the way in."
-        },
-        {
-          "file": "src/Infrastructure/Mcp/KumweMcpHandlers.php",
-          "symbol": "extension activate, disable and uninstall handlers",
-          "note": "Thirteen occurrences of $currentPassword across lines 1439-1576, carried into ExtensionManager calls."
-        }
-      ],
-      "acceptance_test": "A recursive scan of the serialized MCP catalog that fails on any password, secret, private-key, recovery-code, token-value or raw package path field, wired as a test rather than a review step. Plus a handler-signature assertion that no MCP handler accepts credential material, and a documented safe alternative path for each lifecycle operation that previously used it.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-SEC-002",
-      "title": "MCP destructive, credential, trust and installation-global risk taxonomy is incomplete",
-      "severity": "high",
-      "state": "open",
-      "phase": "1",
-      "gate": "A",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Mcp/McpCapabilityCatalog.php",
-          "symbol": "tool declarations",
-          "note": "76 tool declarations on the verified SHA. No declared risk class, and no validator rejecting a mutation tool without an operation identifier or an unclosed schema."
-        },
-        {
-          "file": "src/Infrastructure/Mcp/McpMutationGuard.php",
-          "symbol": "McpMutationGuard",
-          "note": "The single mutation guard the taxonomy must feed."
-        }
-      ],
-      "acceptance_test": "A central catalog validator rejecting duplicate tool names, missing handlers, incorrect annotations, unclosed schemas, mutation tools without operation identifiers, and any risk-versus-surface violation against the normative surface matrix. Every tool carries a declared risk class and a documented non-MCP alternative.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-SEC-003",
-      "title": "The trusted-extension API boundary is not runtime isolation and must not be described as one",
-      "severity": "high",
-      "state": "conditional",
-      "phase": "1",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/Extension/Runtime/RestrictedExtensionContainer.php",
-          "symbol": "RestrictedExtensionContainer",
-          "note": "Curates service resolution. Admitted PHP still executes with the ambient filesystem, network, environment, database and process authority of the runtime user."
-        }
-      ],
-      "acceptance_test": "Documentation, administrator prompts and operator material all use the phrase 'trusted in-process extension code'. A test asserts recovery composition executes no extension PHP and reads no extension template or asset. An inventory of ambient authority ships with the deployment controls that bound it. Untrusted or marketplace PHP stays unsupported until an isolated runtime exists.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "cross_reference": "GM-SUP-05"
-    },
-    {
       "id": "V2-ARC-002",
       "title": "BusinessRecordService owns too many use cases",
       "severity": "medium",
@@ -361,30 +293,6 @@
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "progress": "Delivered: the three-engine merge matrix that was the finding's substance, the two further browser engines nightly, and first-attempt reporting separated from retries."
-    },
-    {
-      "id": "V2-DB-003",
-      "title": "A foreign-key constraint name is hard-coded where MySQL and MariaDB treat the name as schema-global",
-      "severity": "medium",
-      "state": "reproduced",
-      "phase": "1",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Persistence/Migration/ApplicationAuthorizationMigration.php",
-          "symbol": "the resource_site_ownership foreign key",
-          "note": "Line 106 names the constraint literally 'fk_resource_site'. A second installation under one schema — a different table prefix, a parent-schema install, or a migration test reusing a database — collides with 'Duplicate foreign key constraint name'."
-        },
-        {
-          "file": "src/Infrastructure/Persistence/Migration/ApplicationAuthorizationMigrationRecovery.php",
-          "symbol": "the recovery-path foreign key",
-          "note": "Line 443 already derives a unique name: 'fk_resource_site_' . substr(hash('sha256', $ownershipName), 0, 16). The two paths disagree, and the primary path is the one that collides."
-        }
-      ],
-      "acceptance_test": "A migration integration test that installs two prefixed installations into one MariaDB schema and succeeds. Every hard-coded constraint name in src/Infrastructure/Persistence/Migration is either derived from the table name or proven unique by that test.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
     },
     {
       "id": "V2-REL-001",
@@ -1043,13 +951,12 @@
         {
           "file": "src/Extension/Runtime/RestrictedExtensionContainer.php",
           "symbol": "RestrictedExtensionContainer",
-          "note": "Curation covers service resolution only. Admitted PHP executes with the ambient authority of the process."
+          "note": "Curation covers service resolution only. Admitted PHP executes with the ambient authority of the process. That authority is now inventoried in docs/architecture/extensions.md beside the deployment control bounding each part of it, and every surface says so; what is absent is a runtime that enforces any of it."
         }
       ],
-      "acceptance_test": "Cannot be closed by repository-owned code. Until an isolated runtime exists, installing an extension means trusting its publisher with the application process, and the documentation, UI and operator prompts must all say exactly that.",
+      "acceptance_test": "Narrowed: the wording and inventory half is delivered and recorded in CHANGELOG.md, so what remains cannot be closed by repository-owned code at all. Closing it needs a shipped runtime in which a signed extension's filesystem, network and database authority is granted explicitly rather than inherited, with the host addressable only through an authenticated adapter contract. Until then, installing an extension means trusting its publisher with the application process, and every surface must go on saying exactly that.",
       "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "cross_reference": "V2-SEC-003"
+      "closure_sha": null
     },
     {
       "id": "GM-SUP-08",
