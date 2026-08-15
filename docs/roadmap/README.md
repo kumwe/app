@@ -463,8 +463,10 @@ of the seven `V2-ERP-` entries out of `decision_required` because D13 decided th
 
 The four `V2-CUR-` entries, the six `V2-GRP-` entries, the data-entry retention work, the interface
 translation foundation and the administered override layers have since been delivered and have left the
-ledger for `CHANGELOG.md`, which is where each of them is now recorded; `V2-CUR-005` was added for the
-rendering half the money work did not cover. The ledger therefore carries **61 open entries**.
+ledger for `CHANGELOG.md`, which is where each of them is now recorded. `V2-CUR-005` was added for the
+rendering half the money work did not cover and has since been delivered too, together with
+`V2-POS-001`, `V2-POS-003` and `V2-POS-004`; of the four point-of-sale constraints only `V2-POS-002`
+remains, and it is a decision rather than work. The ledger therefore carries **53 open entries**.
 
 ---
 
