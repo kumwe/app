@@ -74,4 +74,11 @@ for legacy_root_file in index.php .htaccess robots.txt.dist web.config.txt; do
     fi
 done
 
-echo 'Kumwe architecture policy verified.'
+# Everything above is textual, and textual is all this gate used to be: four predicates that never
+# resolved a dependency edge and still printed "verified". The semantic half below reads the layer graph
+# in docs/architecture/layers.json, resolves every symbol each file under src/ actually references, and
+# fails on any edge that points the wrong way and is not in the recorded baseline. The textual predicates
+# stay because the source text is the contract in those four cases; they are no longer the whole check.
+php "$project_root/tools/verify-dependency-graph.php"
+
+echo 'Kumwe architecture policy verified: textual predicates and the semantic dependency graph.'

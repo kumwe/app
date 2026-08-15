@@ -1,0 +1,81 @@
+{
+  "graph": "kumwe-layer-graph",
+  "authority": "docs/architecture/principles.md",
+  "note": "The machine-readable form of the dependency direction in principles.md. tools/verify-dependency-graph.php resolves every file under src/ to a layer through the rules below and fails on any edge this table forbids. A namespace that no rule classifies is itself a failure: an unclassified namespace is one nothing governs.",
+  "layers": {
+    "shared": {
+      "description": "Framework-free types with a stable semantic owner and inward consumers in more than one layer. Depends on nothing.",
+      "may_depend_on": []
+    },
+    "domain": {
+      "description": "State, invariants and value objects. Depends on nothing but the shared kernel.",
+      "may_depend_on": [
+        "shared"
+      ]
+    },
+    "application": {
+      "description": "Use cases, authorization, transactions and audit records. Depends inward on the domain.",
+      "may_depend_on": [
+        "shared",
+        "domain"
+      ]
+    },
+    "infrastructure": {
+      "description": "Persistence, rendering, packages, clocks, logs and protocol adapters. Implements application-owned ports.",
+      "may_depend_on": [
+        "shared",
+        "domain",
+        "application"
+      ]
+    },
+    "presentation": {
+      "description": "View models, presenters and form mappers. Shapes application results for a surface without receiving input itself.",
+      "may_depend_on": [
+        "shared",
+        "domain",
+        "application"
+      ]
+    },
+    "delivery": {
+      "description": "HTTP, console, worker and machine-surface entry points. Validates and translates input, formats a result, and owns no business rule.",
+      "may_depend_on": [
+        "shared",
+        "domain",
+        "application",
+        "presentation"
+      ]
+    },
+    "kernel": {
+      "description": "The single composition root. It is the one place that may see every layer at once, which is what keeps the others from needing to.",
+      "may_depend_on": [
+        "*"
+      ]
+    }
+  },
+  "namespace_segments": {
+    "Shared": "shared",
+    "Domain": "domain",
+    "Application": "application",
+    "Infrastructure": "infrastructure",
+    "Presentation": "presentation",
+    "Delivery": "delivery",
+    "Kernel": "kernel"
+  },
+  "namespace_prefixes": {
+    "Kumwe\\CMS\\Http": "delivery",
+    "Kumwe\\CMS\\Administrator\\Http": "delivery",
+    "Kumwe\\CMS\\Administrator\\Content": "presentation",
+    "Kumwe\\CMS\\Administrator\\Automation": "presentation",
+    "Kumwe\\CMS\\Administrator\\Navigation": "presentation",
+    "Kumwe\\CMS\\BusinessDefinition\\Administrator": "presentation",
+    "Kumwe\\CMS\\BusinessRecord\\Query": "application",
+    "Kumwe\\CMS\\BusinessSecurity\\Policy": "domain",
+    "Kumwe\\CMS\\Extension\\Contribution": "application",
+    "Kumwe\\CMS\\Extension\\Runtime": "application",
+    "Kumwe\\CMS\\Extension\\Development": "application",
+    "Kumwe\\CMS\\InterfaceStandard": "domain",
+    "Kumwe\\CMS\\Localization\\Http": "delivery",
+    "Kumwe\\CMS\\Portal\\Http": "delivery",
+    "Kumwe\\CMS\\Portal\\Contribution": "application"
+  }
+}
