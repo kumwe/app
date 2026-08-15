@@ -1,0 +1,994 @@
+{
+  "format": "kumwe-extension-contract-classification-v1",
+  "authority": "docs/extension-contract/README.md",
+  "generations": "docs/extension-contract/generations.json",
+  "note": "Which types an extension may build against, as data rather than as prose. Everything under `Kumwe\\CMS\\` is internal unless it is listed here, so the absence of a type from this file is itself the answer: core may decompose it freely and a package that reaches for it will break. A type listed here is public — it is part of a promised generation, and it changes only by a generation gaining a successor. `pinned_by` names the compatibility fixture whose committed bytes hold the type's exact member signatures; where it is null the type is public and governed by its generation, but its members are not byte-pinned at this release.",
+  "default_visibility": "internal",
+  "visibilities": {
+    "public": "Part of a promised generation. An extension may depend on it.",
+    "internal": "Not promised to anyone. It may be renamed, split or deleted without a generation bump."
+  },
+  "roles": {
+    "implement": "The package writes a class that satisfies the contract.",
+    "call": "Core hands the package an instance and the package calls it.",
+    "construct": "The package builds instances and hands them to core.",
+    "receive": "Core hands the package an instance to read.",
+    "resolve": "The package resolves it from the restricted container it is handed."
+  },
+  "namespaces": [
+    {
+      "prefix": "Kumwe\\CMS\\Extension\\Infrastructure\\",
+      "visibility": "internal",
+      "reason": "Adapters. Doctrine, Redis and sodium bindings behind the application contracts."
+    },
+    {
+      "prefix": "Kumwe\\CMS\\Extension\\Application\\Install\\",
+      "visibility": "internal",
+      "reason": "The install plan and its states belong to the platform; a package never drives them."
+    },
+    {
+      "prefix": "Kumwe\\CMS\\Extension\\Application\\Package\\",
+      "visibility": "internal",
+      "reason": "Admission, safety and attestation of a package are done to it, not by it."
+    },
+    {
+      "prefix": "Kumwe\\CMS\\Extension\\Application\\Trust\\",
+      "visibility": "internal",
+      "reason": "The trust store and its policy are operator surfaces, reached through the console."
+    },
+    {
+      "prefix": "Kumwe\\CMS\\Kernel\\",
+      "visibility": "internal",
+      "reason": "The composition root. What it exposes to a package is the allowlist in generations.json."
+    },
+    {
+      "prefix": "Kumwe\\CMS\\Infrastructure\\",
+      "visibility": "internal",
+      "reason": "Persistence, migration and driver code. A package uses its own migrations instead."
+    }
+  ],
+  "external_types": [
+    {
+      "type": "Psr\\Http\\Server\\RequestHandlerInterface",
+      "package": "psr/http-server-handler",
+      "reason": "Route handler contracts are PSR-15; core does not wrap them in a Kumwe type."
+    },
+    {
+      "type": "Doctrine\\DBAL\\Connection",
+      "package": "doctrine/dbal",
+      "reason": "An extension migration receives the live connection so it writes its own schema."
+    }
+  ],
+  "types": [
+    {
+      "type": "Kumwe\\CMS\\Administrator\\Http\\AdministratorRequest",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Administrator/Http/AdministratorRequest.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Administrator\\Presentation\\AdministratorRenderer",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Administrator/Presentation/AdministratorRenderer.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Application\\Authorization\\ExecutionContext",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Application/Authorization/ExecutionContext.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Application\\Authorization\\ResourcePolicyTarget",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Application/Authorization/ResourcePolicyTarget.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Application\\Automation\\JobHandler",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/Application/Automation/JobHandler.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessDefinition\\Domain\\CanonicalDefinitionJson",
+      "kind": "class",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessDefinition/Domain/CanonicalDefinitionJson.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessDefinition\\Domain\\EntityTypeDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessDefinition/Domain/EntityTypeDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessDefinition\\Domain\\FieldTypeDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessDefinition/Domain/FieldTypeDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Application\\DomainEventHandler",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Application/DomainEventHandler.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationEventHandler",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Application/IntegrationEventHandler.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationEventTransport",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Application/IntegrationEventTransport.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\ConsumerIdempotency",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/ConsumerIdempotency.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\DomainEvent",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/DomainEvent.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\DomainListenerDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/DomainListenerDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventConsumerDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/EventConsumerDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventEnvelope",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/EventEnvelope.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventSchemaDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/EventSchemaDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventSensitivity",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/EventSensitivity.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\IntegrationContract",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/IntegrationContract.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\IntegrationEvent",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/IntegrationEvent.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\JobContributionDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/JobContributionDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\QueueContributionDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/QueueContributionDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\ScheduleContributionDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/ScheduleContributionDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\WebhookContributionDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessIntegration/Domain/WebhookContributionDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Application\\BusinessRecordService",
+      "kind": "class",
+      "visibility": "public",
+      "role": "resolve",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/BusinessRecord/Application/BusinessRecordService.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Application\\MoneyRateProvider",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessRecord/Application/MoneyRateProvider.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Application\\Query\\BrowseRecordsQuery",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessRecord/Application/Query/BrowseRecordsQuery.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyConversionRequest",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessRecord/Domain/MoneyConversionRequest.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyExchangeRate",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessRecord/Domain/MoneyExchangeRate.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyRateProviderDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessRecord/Domain/MoneyRateProviderDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyRoundingMode",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessRecord/Domain/MoneyRoundingMode.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Query\\RecordProjection",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessRecord/Query/RecordProjection.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Query\\RecordQuerySpecification",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessRecord/Query/RecordQuerySpecification.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionBuilder",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessReporting/Application/ProjectionBuilder.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionEvent",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessReporting/Application/ProjectionEvent.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionWriter",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessReporting/Application/ProjectionWriter.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessReporting\\Domain\\ProjectionDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessReporting/Domain/ProjectionDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessReporting\\Domain\\ReportDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessReporting/Domain/ReportDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSecurity\\Application\\FieldAccessUsage",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessSecurity/Application/FieldAccessUsage.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSecurity\\Application\\FieldDisclosurePlan",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessSecurity/Application/FieldDisclosurePlan.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicyComparison",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessSecurity/Policy/RecordPolicyComparison.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicyComparisonOperator",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessSecurity/Policy/RecordPolicyComparisonOperator.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicyPredicate",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessSecurity/Policy/RecordPolicyPredicate.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicySchema",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessSecurity/Policy/RecordPolicySchema.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicySet",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessSecurity/Policy/RecordPolicySet.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicyValueType",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/BusinessSecurity/Policy/RecordPolicyValueType.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessActionContract",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Application/Custom/CustomBusinessActionContract.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessActionHandler",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Application/Custom/CustomBusinessActionHandler.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewContract",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Application/Custom/CustomBusinessViewContract.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewHandler",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Application/Custom/CustomBusinessViewHandler.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewQuery",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Application/Custom/CustomBusinessViewQuery.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewResult",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Application/Custom/CustomBusinessViewResult.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentation",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Presentation/Field/FieldPresentation.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContext",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Presentation/Field/FieldPresentationContext.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Presentation/Field/FieldPresentationContribution.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationRequest",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Presentation/Field/FieldPresentationRequest.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresenter",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Presentation/Field/FieldPresenter.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldWidget",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-3",
+      "spi": 1,
+      "path": "src/BusinessSurface/Presentation/Field/FieldWidget.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Content\\Application\\ContentService",
+      "kind": "class",
+      "visibility": "public",
+      "role": "resolve",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Content/Application/ContentService.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Application\\ExtensionServiceProvider",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Application/ExtensionServiceProvider.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionMigration",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Application/Migration/ExtensionMigration.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionTableNames",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Application/Migration/ExtensionTableNames.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorNavigationDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/AdministratorNavigationDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/AdministratorRouteDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteHandlerFactory",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/AdministratorRouteHandlerFactory.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorViewDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/AdministratorViewDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorWorkspaceDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/AdministratorWorkspaceDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CapabilityDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/CapabilityDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\ContributionDefinition",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/ContributionDefinition.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\ContributionOwner",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/ContributionOwner.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionProvider",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/ExtensionContributionProvider.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/ExtensionContributionRegistrar.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\InterfaceSurfaceRegistrar",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/Extension/Contribution/InterfaceSurfaceRegistrar.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/interface-surface-registrar-v1.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\ManifestContributionSet",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/ManifestContributionSet.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\MoneyRateProviderRegistrar",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/Extension/Contribution/MoneyRateProviderRegistrar.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\ResourcePolicyDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Extension/Contribution/ResourcePolicyDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Development\\LifecycleConformanceAdapter",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Development/LifecycleConformanceAdapter.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Domain\\ExtensionManifest",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Domain/ExtensionManifest.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Runtime\\ExtensionContainer",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Runtime/ExtensionContainer.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Runtime\\ExtensionEventRegistrar",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "resolve",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Runtime/ExtensionEventRegistrar.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Runtime\\ExtensionRouteRegistrar",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Runtime/ExtensionRouteRegistrar.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Runtime\\RuntimeExtension",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Runtime/RuntimeExtension.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Identity\\Domain\\Capability",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Identity/Domain/Capability.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\InterfaceStandard\\SurfaceDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/InterfaceStandard/SurfaceDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Navigation\\Application\\NavigationService",
+      "kind": "class",
+      "visibility": "public",
+      "role": "resolve",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Navigation/Application/NavigationService.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalNavigationDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Portal/Contribution/PortalNavigationDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Portal/Contribution/PortalRouteDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteHandlerFactory",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Portal/Contribution/PortalRouteHandlerFactory.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalTemplateDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Portal/Contribution/PortalTemplateDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalWorkspaceDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Portal/Contribution/PortalWorkspaceDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Portal\\Http\\PortalRequest",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Portal/Http/PortalRequest.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Portal\\Presentation\\PortalContributionRenderer",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-2",
+      "spi": 1,
+      "path": "src/Portal/Presentation/PortalContributionRenderer.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Site\\Application\\SiteSettings",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "resolve",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Site/Application/SiteSettings.php",
+      "pinned_by": null
+    }
+  ]
+}

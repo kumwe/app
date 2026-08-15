@@ -1,0 +1,353 @@
+{
+  "format": "kumwe-extension-contract-generations-v1",
+  "authority": "docs/extension-contract/README.md",
+  "classification": "docs/extension-contract/classification.json",
+  "note": "The frozen extension contract, one entry per manifest generation and one per contribution SPI generation. A generation listed here is still promised: a package built against it installs, activates, upgrades, disables, reactivates and uninstalls on this release. Anything that was once promised and is not any more is recorded under `withdrawn` rather than being deleted, because an author needs to know a surface is gone, not merely find it missing. `tools/verify-extension-contract.php` recomputes every `surface_digest` from the entry it belongs to, so changing what a generation promises fails the build until the change is made deliberately.",
+  "statuses": {
+    "frozen": "Still promised. The surface is closed: it may gain a new generation beside it, but this entry does not change.",
+    "withdrawn": "No longer promised. Recorded so an author who built against it learns that it went, and when."
+  },
+  "key_statuses": {
+    "interpreted": "The platform reads the key and acts on it.",
+    "advisory": "The platform reads the key only to describe the package, and acts on nothing in it.",
+    "accepted_uninterpreted": "The parser still accepts the key so older packages keep installing, and nothing reads it."
+  },
+  "signing": {
+    "identifier": "kumwe.contract-freeze",
+    "algorithm": "ed25519",
+    "seed_stem": "kumwe-extension-contract-freeze",
+    "seed_derivation": "sha256(seed_stem, raw)",
+    "note": "A fixture key, deliberately derived from a written stem rather than generated, so the compatibility packages can be rebuilt and re-signed by anyone and no key material of any kind — not even the public half — is committed as a literal. It proves the signing and trust path, not provenance: the package digest is signed with `PackageSigner`, the sidecar is a `SignatureDocument`, and admission runs through `PackageTrustPolicy` over `SodiumEd25519Verifier` — the same three the platform uses for a real release key. A release key proves provenance and lives outside the repository."
+  },
+  "contribution_surfaces": [
+    "capabilities",
+    "resource_policies",
+    "administrator.workspaces",
+    "administrator.navigation",
+    "administrator.routes",
+    "administrator.views",
+    "portal.workspaces",
+    "portal.navigation",
+    "portal.templates",
+    "portal.routes",
+    "interface.surfaces",
+    "business.field_types",
+    "business.field_presentations",
+    "business.definitions",
+    "business.view_handlers",
+    "business.action_handlers",
+    "integration.event_schemas",
+    "integration.domain_listeners",
+    "integration.consumers",
+    "integration.jobs",
+    "integration.queues",
+    "integration.schedules",
+    "integration.projections",
+    "integration.reports",
+    "integration.webhooks",
+    "integration.money_rate_providers"
+  ],
+  "host_services": {
+    "note": "The complete set of host services an extension may resolve from the container it is handed. The composition root allowlists these and nothing else, so a package that resolves anything absent from this list fails closed at runtime. Their identifiers are frozen; the method surface behind each is classified public but is not byte-pinned at this generation.",
+    "source": "src/Kernel/ContainerFactory.php",
+    "services": [
+      "Kumwe\\CMS\\BusinessRecord\\Application\\BusinessRecordService",
+      "Kumwe\\CMS\\Content\\Application\\ContentService",
+      "Kumwe\\CMS\\Extension\\Runtime\\ExtensionEventRegistrar",
+      "Kumwe\\CMS\\Navigation\\Application\\NavigationService",
+      "Kumwe\\CMS\\Site\\Application\\SiteSettings"
+    ]
+  },
+  "manifest_generations": [
+    {
+      "id": "manifest-1",
+      "schema": 1,
+      "spi": null,
+      "status": "frozen",
+      "promise": "A package declares its identity, its runtime requirements, its autoload map, its migrations and its assets, and ships a provider that may register its own services, boot, and declare its own routes. It contributes nothing to the shared contribution registries and is never asked to: a schema-1 provider that implements the contribution contract is refused rather than reinterpreted. Unknown manifest keys are tolerated at this generation, which is exactly why schema 2 closed them.",
+      "manifest_keys": [
+        {"key": "schema", "status": "interpreted"},
+        {"key": "name", "status": "interpreted"},
+        {"key": "type", "status": "interpreted"},
+        {"key": "version", "status": "interpreted"},
+        {"key": "provider", "status": "interpreted"},
+        {"key": "autoload", "status": "interpreted"},
+        {"key": "requires", "status": "interpreted"},
+        {"key": "dependencies", "status": "interpreted"},
+        {"key": "migrations", "status": "interpreted"},
+        {"key": "assets", "status": "interpreted"},
+        {"key": "permissions", "status": "advisory"},
+        {"key": "events", "status": "advisory"},
+        {"key": "routes", "status": "advisory"},
+        {"key": "configuration", "status": "accepted_uninterpreted"}
+      ],
+      "types": ["plugin", "module", "template", "component", "package", "language"],
+      "closed_to_unknown_keys": false,
+      "fixture": {
+        "package": "tests/Fixtures/ExtensionApi/generations/manifest-1",
+        "identifier": "kumwe/contract-manifest-one",
+        "manifest_sha256": "04c935c84c1ea883599b48a982499cea4e793a0a6a11b6668817d144221e198c",
+        "lifecycle": ["install", "activate", "upgrade", "disable", "reactivate", "uninstall"],
+        "contributions": {}
+      },
+      "surface_digest": "9f8ef5b2be2570be5dbce3ee4310751cfbf9b99c4ce4ae3fab232614b4a6d4e2"
+    },
+    {
+      "id": "manifest-2",
+      "schema": 2,
+      "spi": 1,
+      "status": "frozen",
+      "promise": "Everything schema 1 promises, plus typed contributions through contribution SPI 1: capabilities, resource policies and the administrator shell — workspaces, navigation, routes and views. The manifest becomes closed to unknown keys at every level whose key set is known, so a misspelled field fails the install instead of being silently ignored, and `permissions` must match the contributed capability identifiers exactly, order included. A schema-2 provider must implement the contribution contract, and the registrar holds it to what the manifest declared: it may register nothing it did not declare and omit nothing it did.",
+      "manifest_keys": [
+        {"key": "schema", "status": "interpreted"},
+        {"key": "name", "status": "interpreted"},
+        {"key": "type", "status": "interpreted"},
+        {"key": "version", "status": "interpreted"},
+        {"key": "provider", "status": "interpreted"},
+        {"key": "autoload", "status": "interpreted"},
+        {"key": "requires", "status": "interpreted"},
+        {"key": "dependencies", "status": "interpreted"},
+        {"key": "migrations", "status": "interpreted"},
+        {"key": "assets", "status": "interpreted"},
+        {"key": "permissions", "status": "interpreted"},
+        {"key": "contributions", "status": "interpreted"},
+        {"key": "template", "status": "interpreted"},
+        {"key": "events", "status": "advisory"},
+        {"key": "routes", "status": "advisory"},
+        {"key": "configuration", "status": "accepted_uninterpreted"}
+      ],
+      "contribution_keys": ["version", "capabilities", "resource_policies", "administrator", "portal", "business"],
+      "closed_to_unknown_keys": true,
+      "fixture": {
+        "package": "tests/Fixtures/ExtensionApi/generations/manifest-2",
+        "identifier": "kumwe/contract-manifest-two",
+        "manifest_sha256": "870d3b50ecaf4abbc51abfd5b063d2e6f9e3ab58e643b555b24cf537cbb8cf63",
+        "lifecycle": ["install", "activate", "upgrade", "disable", "reactivate", "uninstall"],
+        "contributions": {
+          "capabilities": 1,
+          "resource_policies": 1,
+          "administrator.workspaces": 1,
+          "administrator.navigation": 1,
+          "administrator.views": 1
+        }
+      },
+      "surface_digest": "90d1b6787c1abd0f776b406f1c931a6e824242f44613381d2868404140e2b65d"
+    },
+    {
+      "id": "manifest-3",
+      "schema": 3,
+      "spi": 1,
+      "status": "frozen",
+      "promise": "Everything schema 2 promises, plus the three business keys schema 3 opened on the same contribution SPI 1: safe field presentation, custom business view handlers and custom business action handlers. A package may declare its own field types and present them through the markup-free presenter contract, and may answer a declared view or action contract with its own handler. The schema-2 grammar is unchanged underneath, which is why a schema-2 package does not have to move to gain anything here.",
+      "manifest_keys": [
+        {"key": "schema", "status": "interpreted"},
+        {"key": "name", "status": "interpreted"},
+        {"key": "type", "status": "interpreted"},
+        {"key": "version", "status": "interpreted"},
+        {"key": "provider", "status": "interpreted"},
+        {"key": "autoload", "status": "interpreted"},
+        {"key": "requires", "status": "interpreted"},
+        {"key": "dependencies", "status": "interpreted"},
+        {"key": "migrations", "status": "interpreted"},
+        {"key": "assets", "status": "interpreted"},
+        {"key": "permissions", "status": "interpreted"},
+        {"key": "contributions", "status": "interpreted"},
+        {"key": "template", "status": "interpreted"},
+        {"key": "events", "status": "advisory"},
+        {"key": "routes", "status": "advisory"},
+        {"key": "configuration", "status": "accepted_uninterpreted"}
+      ],
+      "contribution_keys": ["version", "capabilities", "resource_policies", "administrator", "portal", "business"],
+      "business_keys": ["field_types", "definitions", "field_presentations", "view_handlers", "action_handlers"],
+      "closed_to_unknown_keys": true,
+      "fixture": {
+        "package": "tests/Fixtures/ExtensionApi/generations/manifest-3",
+        "identifier": "kumwe/contract-manifest-three",
+        "manifest_sha256": "df5045b8c7a40ad2661e1579cab4032f988ef02b6fab32528c1a575d2f523251",
+        "lifecycle": ["install", "activate", "upgrade", "disable", "reactivate", "uninstall"],
+        "contributions": {
+          "capabilities": 1,
+          "resource_policies": 1,
+          "administrator.workspaces": 1,
+          "administrator.navigation": 1,
+          "administrator.views": 1,
+          "portal.workspaces": 1,
+          "portal.navigation": 1,
+          "portal.templates": 1,
+          "business.field_types": 1,
+          "business.field_presentations": 1
+        }
+      },
+      "surface_digest": "3e6cefae3e0b55dcf9f5fad98509801a09c047c6077c1172432a92eeda284bbf"
+    },
+    {
+      "id": "manifest-4",
+      "schema": 4,
+      "spi": 2,
+      "status": "frozen",
+      "promise": "Everything schema 3 promises, on contribution SPI 2 rather than SPI 1, plus the two top-level keys SPI 2 opened: `integration` and `interface`. Durable integration is the substance of the generation — versioned event contracts, synchronous domain listeners, queue-backed consumers, jobs, queues, schedules, rebuildable projections, reports, outbound webhook adapters and money rate providers — and `interface` binds every graphical route the package mounts to a declared semantic surface. SPI 2 is fail-closed about that binding: a schema-4 package that mounts a graphical GET route without declaring its surface is refused.",
+      "manifest_keys": [
+        {"key": "schema", "status": "interpreted"},
+        {"key": "name", "status": "interpreted"},
+        {"key": "type", "status": "interpreted"},
+        {"key": "version", "status": "interpreted"},
+        {"key": "provider", "status": "interpreted"},
+        {"key": "autoload", "status": "interpreted"},
+        {"key": "requires", "status": "interpreted"},
+        {"key": "dependencies", "status": "interpreted"},
+        {"key": "migrations", "status": "interpreted"},
+        {"key": "assets", "status": "interpreted"},
+        {"key": "permissions", "status": "interpreted"},
+        {"key": "contributions", "status": "interpreted"},
+        {"key": "template", "status": "interpreted"},
+        {"key": "events", "status": "advisory"},
+        {"key": "routes", "status": "advisory"},
+        {"key": "configuration", "status": "accepted_uninterpreted"}
+      ],
+      "contribution_keys": [
+        "version",
+        "capabilities",
+        "resource_policies",
+        "administrator",
+        "portal",
+        "business",
+        "integration",
+        "interface"
+      ],
+      "business_keys": ["field_types", "definitions", "field_presentations", "view_handlers", "action_handlers"],
+      "integration_keys": [
+        "event_schemas",
+        "domain_listeners",
+        "consumers",
+        "jobs",
+        "queues",
+        "schedules",
+        "projections",
+        "reports",
+        "webhooks",
+        "rate_providers"
+      ],
+      "closed_to_unknown_keys": true,
+      "fixture": {
+        "package": "tests/Fixtures/ExtensionApi/generations/manifest-4",
+        "identifier": "kumwe/contract-manifest-four",
+        "manifest_sha256": "49547ae83ce6e3c4a6aa73cdc9093218e8cb27a35e93a7a5e8ae2cc0b654f439",
+        "lifecycle": ["install", "activate", "upgrade", "disable", "reactivate", "uninstall"],
+        "contributions": {
+          "capabilities": 1,
+          "resource_policies": 1,
+          "integration.event_schemas": 1,
+          "integration.domain_listeners": 1,
+          "integration.consumers": 1,
+          "integration.jobs": 1,
+          "integration.queues": 1,
+          "integration.schedules": 1,
+          "integration.projections": 1,
+          "integration.reports": 1,
+          "integration.webhooks": 1
+        }
+      },
+      "surface_digest": "5277d5d7249f24312dadb58c6487b1d6b824df7da0828a9f1375a7c61acfb60d"
+    }
+  ],
+  "spi_generations": [
+    {
+      "id": "spi-1",
+      "version": 1,
+      "status": "frozen",
+      "constant": "Kumwe\\CMS\\Extension\\Contribution\\ManifestContributionSet::SPI_VERSION",
+      "manifest_schemas": [2, 3],
+      "promise": "The declaration grammar and the registrar a schema-2 or schema-3 package contributes through. A manifest on either schema must declare `contributions.version` as 1; any other value is refused rather than interpreted. The export bytes of a schema-2 and schema-3 contribution set are part of this generation, which is why the constant stays at 1 even though the current SPI is 2.",
+      "registrar": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar",
+      "surfaces": [
+        "capabilities",
+        "resource_policies",
+        "administrator.workspaces",
+        "administrator.navigation",
+        "administrator.routes",
+        "administrator.views",
+        "portal.workspaces",
+        "portal.navigation",
+        "portal.templates",
+        "portal.routes",
+        "business.field_types",
+        "business.field_presentations",
+        "business.definitions",
+        "business.view_handlers",
+        "business.action_handlers"
+      ],
+      "pinned_by": ["tests/Fixtures/ExtensionApi/public-interfaces-v2.json"],
+      "fixtures": [
+        "tests/Fixtures/ExtensionApi/generations/manifest-2",
+        "tests/Fixtures/ExtensionApi/generations/manifest-3"
+      ],
+      "surface_digest": "2b3444da44303df3114599ba76e3c91c42ae11f5713ce5fc97e3c11cf9be7bc1"
+    },
+    {
+      "id": "spi-2",
+      "version": 2,
+      "status": "frozen",
+      "constant": "Kumwe\\CMS\\Extension\\Contribution\\ManifestContributionSet::CURRENT_SPI_VERSION",
+      "manifest_schemas": [4],
+      "promise": "Everything SPI 1 carries, plus the durable integration surfaces, the KIS semantic surface registrar and the money rate-provider registrar. A schema-4 manifest must declare `contributions.version` as 2. The two additive registrars are feature-detected rather than assumed: a provider that publishes semantic surfaces or exchange rates checks for the registrar it needs, so a provider written against the base registrar keeps working unchanged.",
+      "registrar": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar",
+      "additive_registrars": [
+        "Kumwe\\CMS\\Extension\\Contribution\\InterfaceSurfaceRegistrar",
+        "Kumwe\\CMS\\Extension\\Contribution\\MoneyRateProviderRegistrar"
+      ],
+      "surfaces": [
+        "capabilities",
+        "resource_policies",
+        "administrator.workspaces",
+        "administrator.navigation",
+        "administrator.routes",
+        "administrator.views",
+        "portal.workspaces",
+        "portal.navigation",
+        "portal.templates",
+        "portal.routes",
+        "interface.surfaces",
+        "business.field_types",
+        "business.field_presentations",
+        "business.definitions",
+        "business.view_handlers",
+        "business.action_handlers",
+        "integration.event_schemas",
+        "integration.domain_listeners",
+        "integration.consumers",
+        "integration.jobs",
+        "integration.queues",
+        "integration.schedules",
+        "integration.projections",
+        "integration.reports",
+        "integration.webhooks",
+        "integration.money_rate_providers"
+      ],
+      "pinned_by": [
+        "tests/Fixtures/ExtensionApi/public-interfaces-v2.json",
+        "tests/Fixtures/ExtensionApi/interface-surface-registrar-v1.json",
+        "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
+      ],
+      "fixtures": ["tests/Fixtures/ExtensionApi/generations/manifest-4"],
+      "surface_digest": "b301940914ff4a5f17edb61e6a018159ae26654ccb918c3ab1a7355b61ae86a7"
+    }
+  ],
+  "withdrawn": [
+    {
+      "id": "extension-lifecycle-interface",
+      "type": "Kumwe\\CMS\\Extension\\Application\\Install\\ExtensionLifecycle",
+      "kind": "interface",
+      "withdrawn_in": "115cc3c",
+      "reason": "It had no implementer and no caller. The lifecycle an extension observes is the platform's, driven through `ExtensionManager`, and nothing was ever going to be handed this interface.",
+      "replacement": null
+    },
+    {
+      "id": "extension-registry-interface",
+      "type": "Kumwe\\CMS\\Extension\\Application\\Registry\\ExtensionRegistry",
+      "kind": "interface",
+      "withdrawn_in": "115cc3c",
+      "reason": "It had no implementer and no caller. Registry reads reachable to a package go through the restricted container's allowlisted services, not through a registry port.",
+      "replacement": null
+    }
+  ]
+}
