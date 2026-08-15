@@ -46,6 +46,7 @@
     "integration.reports",
     "integration.webhooks",
     "integration.money_rate_providers",
+    "integration.unit_conversion_providers",
     "content.translation_groups"
   ],
   "host_services": {

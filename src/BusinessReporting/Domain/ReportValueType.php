@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessReporting\Domain;
 
 use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
+use Kumwe\CMS\BusinessRecord\Domain\ConvertedQuantityValue;
 
 /**
  * Closed scalar vocabulary accepted by report parameters, columns and formulas.
@@ -48,6 +49,19 @@ enum ReportValueType: string
     case ConvertedMoney = 'converted_money';
 
     /**
+     * A quantity expressed in a unit it is not stored in, inseparable from its provenance.
+     *
+     * The same rule as `ConvertedMoney`, for the other denomination a business document carries. A
+     * report or export cell carries a scalar, so a converted quantity travels as the self-describing
+     * text `ConvertedQuantityValue::toPortableString()` writes, and a bare figure fails the column's own
+     * type check rather than reaching an artifact stripped of the factor, the as-at instant and the
+     * provider that produced it.
+     *
+     * @since  2.0.0
+     */
+    case ConvertedQuantity = 'converted_quantity';
+
+    /**
      * Prove that an inbound parameter value has this exact type.
      *
      * @param   mixed  $value  Scalar value supplied by an authenticated report caller.
@@ -67,6 +81,9 @@ enum ReportValueType: string
             self::ConvertedMoney => is_string($value)
                 && mb_strlen($value) <= 512
                 && ConvertedMoneyValue::isPortableString($value),
+            self::ConvertedQuantity => is_string($value)
+                && mb_strlen($value) <= 512
+                && ConvertedQuantityValue::isPortableString($value),
             self::Identifier => is_string($value) && (
                 preg_match('/^[a-z][a-z0-9_.-]{0,190}$/D', $value) === 1
                 || preg_match(

@@ -129,7 +129,11 @@ use Kumwe\CMS\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolv
 use Kumwe\CMS\BusinessRecord\Application\MoneyConversionPipeline;
 use Kumwe\CMS\BusinessRecord\Application\MoneyRateProviderCatalog;
 use Kumwe\CMS\BusinessRecord\Domain\MoneyConverter;
+use Kumwe\CMS\BusinessRecord\Application\UnitConversionPipeline;
+use Kumwe\CMS\BusinessRecord\Application\UnitConversionProviderCatalog;
+use Kumwe\CMS\BusinessRecord\Domain\QuantityConverter;
 use Kumwe\CMS\BusinessRecord\Infrastructure\RuntimeMoneyRateProviderCatalog;
+use Kumwe\CMS\BusinessRecord\Infrastructure\RuntimeUnitConversionProviderCatalog;
 use Kumwe\CMS\BusinessRecord\Application\RecordCursorCodec;
 use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\CMS\BusinessRecord\Application\RecordRuleValidator;
@@ -2695,6 +2699,20 @@ final class ContainerFactory
         ): MoneyConversionPipeline => new MoneyConversionPipeline(
             self::service($container, MoneyConverter::class),
             self::service($container, MoneyRateProviderCatalog::class),
+        ), true);
+        // The unit-of-measure contract is wired the same way and for the same reason: core owns the
+        // conversion and ships no table, so the catalog is empty until a package that owns one arrives.
+        $container->share(QuantityConverter::class, new QuantityConverter(), true);
+        $container->share(UnitConversionProviderCatalog::class, static fn (
+            Container $container,
+        ): UnitConversionProviderCatalog => new RuntimeUnitConversionProviderCatalog(
+            self::service($container, ExtensionContributionRegistrySet::class),
+        ), true);
+        $container->share(UnitConversionPipeline::class, static fn (
+            Container $container,
+        ): UnitConversionPipeline => new UnitConversionPipeline(
+            self::service($container, QuantityConverter::class),
+            self::service($container, UnitConversionProviderCatalog::class),
         ), true);
     }
 

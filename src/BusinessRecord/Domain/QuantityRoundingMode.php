@@ -5,22 +5,22 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessRecord\Domain;
 
 /**
- * The declared rule a conversion rounds by when the exact product is wider than the target scale.
+ * The declared rule a unit conversion rounds by when the exact product is wider than the target scale.
  *
- * Multiplying an exact amount by an exact rate almost always produces more fractional digits than the
- * currency keeps, so a conversion has to say what it did with them. Rounding is therefore an explicit,
- * named step of the conversion contract rather than a side effect: the mode travels with every
- * converted amount, beside the unrounded product it was applied to, so a reader can reproduce the
- * figure instead of trusting it. Which mode a business uses is the rate owner's rule; core only
- * insists that the answer is recorded.
+ * Multiplying an exact quantity by an exact factor almost always produces more fractional digits than
+ * the target unit keeps, so a conversion has to say what it did with them. Rounding is therefore an
+ * explicit, named step of the conversion contract rather than a side effect: the mode travels with every
+ * converted quantity, beside the unrounded product it was applied to, so a reader can reproduce the
+ * figure instead of trusting it. Which mode a business uses is the conversion table owner's rule; core
+ * only insists that the answer is recorded.
  *
- * The rules themselves are ordinary base-10 rounding and are shared with unit-of-measure conversion
- * through `ExactRoundingRule`; what stays specific to money is that this is the vocabulary a money
- * conversion is declared and exported in.
+ * The vocabulary matches `MoneyRoundingMode` case for case, because the arithmetic is the same
+ * arithmetic; it is a separate type so a quantity conversion is declared and exported in a quantity's
+ * own terms and a payload can never claim a currency rule rounded a weight.
  *
  * @since  2.0.0
  */
-enum MoneyRoundingMode: string implements ExactRoundingRule
+enum QuantityRoundingMode: string implements ExactRoundingRule
 {
     /**
      * Ties move away from zero, which is the ordinary commercial expectation.
@@ -44,14 +44,14 @@ enum MoneyRoundingMode: string implements ExactRoundingRule
     case HalfEven = 'half_even';
 
     /**
-     * Any remainder moves toward positive infinity, favouring the payee on a positive amount.
+     * Any remainder moves toward positive infinity, favouring the receiver on a positive quantity.
      *
      * @since  2.0.0
      */
     case Ceiling = 'ceiling';
 
     /**
-     * Any remainder moves toward negative infinity, favouring the payer on a positive amount.
+     * Any remainder moves toward negative infinity, favouring the issuer on a positive quantity.
      *
      * @since  2.0.0
      */

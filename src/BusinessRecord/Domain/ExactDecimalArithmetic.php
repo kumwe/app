@@ -7,13 +7,14 @@ namespace Kumwe\CMS\BusinessRecord\Domain;
 use InvalidArgumentException;
 
 /**
- * Exact base-10 multiplication and rounding for the money conversion contract.
+ * Exact base-10 multiplication and rounding for the money and quantity conversion contracts.
  *
  * `ExactDecimal` deliberately offers no arithmetic, because a stored value is never computed on. A
  * conversion does compute, and it must do so without a float ever appearing: the product of an amount
  * and a rate is built digit by digit here and stays a canonical literal from end to end. Rounding is a
  * separate, named step rather than a consequence of the multiplication, so the unrounded product
- * remains available to `ConvertedMoneyValue` and the relationship between the two stays checkable.
+ * remains available to `ConvertedMoneyValue` and `ConvertedQuantityValue` and the relationship between
+ * the two stays checkable.
  *
  * Nothing in this class touches storage. It exists so that conversion arithmetic has one implementation
  * instead of one per caller, and so that `ExactDecimal` itself is not widened to carry operators it has
@@ -70,13 +71,13 @@ final class ExactDecimalArithmetic
      *
      * Widening is allowed and is not rounding: a value already inside the requested scale is simply
      * re-stated at the target precision, so a caller never has to branch on whether rounding was
-     * needed. Narrowing splits the digits, hands the four facts that decide the outcome to
-     * `MoneyRoundingMode`, and increments the retained magnitude when the mode says so.
+     * needed. Narrowing splits the digits, hands the four facts that decide the outcome to the declared
+     * `ExactRoundingRule`, and increments the retained magnitude when the rule says so.
      *
      * @param   ExactDecimal       $value      Value to narrow, usually the unrounded conversion product.
      * @param   int                $precision  Total digit budget of the field the result belongs to.
      * @param   int                $scale      Fractional digits the result keeps.
-     * @param   MoneyRoundingMode  $mode       Declared rule applied to the discarded digits.
+     * @param   ExactRoundingRule  $mode       Declared rule applied to the discarded digits.
      *
      * @return  ExactDecimal  The value at $scale fractional digits under $mode.
      *
@@ -89,7 +90,7 @@ final class ExactDecimalArithmetic
         ExactDecimal $value,
         int $precision,
         int $scale,
-        MoneyRoundingMode $mode,
+        ExactRoundingRule $mode,
     ): ExactDecimal {
         if ($scale >= $value->scale) {
             return ExactDecimal::fromString($value->value(), $precision, $scale);

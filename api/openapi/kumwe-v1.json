@@ -2075,6 +2075,7 @@
                         "enum": [
                             "boolean",
                             "converted_money",
+                            "converted_quantity",
                             "date",
                             "date_time",
                             "decimal",

@@ -21,6 +21,7 @@ use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
 use Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider;
+use Kumwe\CMS\BusinessRecord\Application\UnitConversionProvider;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
 use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
@@ -277,6 +278,14 @@ final readonly class ExtensionContributionRegistrySet
     private OwnedRuntimeContributionRegistry $moneyRateProviders;
 
     /**
+     * Owner-bound runtime registry for unit conversion providers.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Contributed sources of unit conversion factors.
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $unitConversionProviders;
+
+    /**
      * Owner-bound runtime registry for multilingual content sets.
      *
      * @var    OwnedRuntimeContributionRegistry  Contributed content sets and the locales they publish in.
@@ -372,6 +381,10 @@ final readonly class ExtensionContributionRegistrySet
             'money rate provider',
             MoneyRateProvider::class,
         );
+        $this->unitConversionProviders = new OwnedRuntimeContributionRegistry(
+            'unit conversion provider',
+            UnitConversionProvider::class,
+        );
         $this->contentTranslationGroups = new OwnedRuntimeContributionRegistry('content translation group');
         $this->surfaces = [
             'capabilities' => $this->capabilities,
@@ -406,6 +419,7 @@ final readonly class ExtensionContributionRegistrySet
             'integration.reports' => $this->reports,
             'integration.webhooks' => $this->webhooks,
             'integration.money_rate_providers' => $this->moneyRateProviders,
+            'integration.unit_conversion_providers' => $this->unitConversionProviders,
             'content.translation_groups' => $this->contentTranslationGroups,
         ];
         if ($withCore) {
@@ -819,6 +833,21 @@ final readonly class ExtensionContributionRegistrySet
     public function moneyRateProviders(): OwnedRuntimeContributionRegistry
     {
         return $this->moneyRateProviders;
+    }
+
+    /**
+     * Return the unit conversion providers carried by this extension contribution registry set.
+     *
+     * Core contributes none, so this surface is empty until a package that owns a conversion table is
+     * installed and trusted; the conversion pipeline reads it and refuses rather than inventing a factor.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active contributed sources of unit conversion factors.
+     *
+     * @since   2.0.0
+     */
+    public function unitConversionProviders(): OwnedRuntimeContributionRegistry
+    {
+        return $this->unitConversionProviders;
     }
 
     /**

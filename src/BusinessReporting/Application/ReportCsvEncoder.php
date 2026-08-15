@@ -70,7 +70,12 @@ final class ReportCsvEncoder
         if (
             in_array(
                 $type,
-                [ReportValueType::String, ReportValueType::Identifier, ReportValueType::ConvertedMoney],
+                [
+                    ReportValueType::String,
+                    ReportValueType::Identifier,
+                    ReportValueType::ConvertedMoney,
+                    ReportValueType::ConvertedQuantity,
+                ],
                 true,
             )
             && preg_match('/^[\x00-\x20]*[=+\-@\t\r\n]/u', $text) === 1

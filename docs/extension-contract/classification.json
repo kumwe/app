@@ -331,6 +331,16 @@
       "pinned_by": null
     },
     {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Application\\UnitConversionProvider",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessRecord/Application/UnitConversionProvider.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json"
+    },
+    {
       "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyConversionRequest",
       "kind": "class",
       "visibility": "public",
@@ -369,6 +379,36 @@
       "spi": 2,
       "path": "src/BusinessRecord/Domain/MoneyRoundingMode.php",
       "pinned_by": "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\QuantityRoundingMode",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessRecord/Domain/QuantityRoundingMode.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\UnitConversionFactor",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessRecord/Domain/UnitConversionFactor.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\UnitConversionRequest",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/BusinessRecord/Domain/UnitConversionRequest.php",
+      "pinned_by": null
     },
     {
       "type": "Kumwe\\CMS\\BusinessRecord\\Query\\RecordProjection",
@@ -839,6 +879,26 @@
       "spi": 2,
       "path": "src/Extension/Contribution/TranslationGroupDeclaration.php",
       "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\UnitConversionProviderDefinition",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/Extension/Contribution/UnitConversionProviderDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\UnitConversionProviderRegistrar",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/Extension/Contribution/UnitConversionProviderRegistrar.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json"
     },
     {
       "type": "Kumwe\\CMS\\Extension\\Development\\LifecycleConformanceAdapter",
