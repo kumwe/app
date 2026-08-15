@@ -94,12 +94,13 @@ final readonly class HomePageHandler implements RequestHandlerInterface
             : ['site_name' => $settings['site_name'], 'entry' => $entry, 'presentation' => $presentation];
         $variables['site_logo'] = $presentation['logo'];
         $variables['navigation'] = $this->pages->navigation();
-        $variables['current_path'] = '/';
-        $variables['canonical_url'] = '/';
-        $variables['surface_id'] = 'core.public.home';
-        $variables['languages'] = $record === null
+        $languages = $record === null
             ? ['alternates' => [], 'default_href' => null]
             : $this->languages->alternates($record, '/');
+        $variables['current_path'] = '/';
+        $variables['canonical_url'] = $this->canonicalUrl($languages);
+        $variables['surface_id'] = 'core.public.home';
+        $variables['languages'] = $languages;
 
         $headers = [
             'Cache-Control' => 'public, max-age=60, stale-while-revalidate=300',
@@ -109,5 +110,35 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         }
 
         return new HtmlResponse($this->renderer->render($template, $variables), 200, $headers);
+    }
+
+    /**
+     * Name the rendered locale as canonical when a translated item is served at the neutral root.
+     *
+     * The root itself cannot distinguish two language variants. Once the language view supplies distinct
+     * explicit-choice URLs, the current one is also the canonical URL; otherwise every `hreflang` target
+     * would declare `/` canonical and invite crawlers to consolidate all languages back into one page.
+     * An untranslated or unconfigured homepage keeps `/` as its one canonical address.
+     *
+     * @param   array{
+     *              alternates: list<array{
+     *                  locale: string, label: string, href: string, direction: string, current: bool
+     *              }>,
+     *              default_href: ?string
+     *          }  $languages  Language view built for the rendered homepage.
+     *
+     * @return  string  Explicit URL of the current locale, or `/` when there is no language choice.
+     *
+     * @since   2.0.0
+     */
+    private function canonicalUrl(array $languages): string
+    {
+        foreach ($languages['alternates'] as $alternate) {
+            if ($alternate['current']) {
+                return $alternate['href'];
+            }
+        }
+
+        return '/';
     }
 }

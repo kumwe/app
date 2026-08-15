@@ -29,6 +29,7 @@ use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Kernel\ContainerFactory;
 use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use Joomla\DI\Container;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -190,6 +191,77 @@ final class MultilingualContentIntegrationTest extends TestCase
         $body = $this->publicPage('/');
 
         self::assertStringContainsString('<html', $body);
+    }
+
+    /**
+     * Prove every root alternate renders the locale it names, even against a conflicting preference.
+     *
+     * English is the nominated entry and German is first selected through `Accept-Language`, reproducing
+     * the state in which both alternates used to collapse to `/`. The emitted URLs are followed through
+     * the real negotiation middleware with the opposite header each time. The explicit query choice must
+     * win, the selected entry and document language must agree, and each variant must be self-canonical.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEveryRootAlternateRendersTheLocaleItAdvertises(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $content = $this->service($container, ContentService::class);
+        $settings = $this->service($container, SiteSettings::class);
+        $previous = $settings->managed($context);
+        $suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+        $englishTitle = 'Root English ' . $suffix;
+        $germanTitle = 'Root Deutsch ' . $suffix;
+        $englishSlug = 'root-english-' . $suffix;
+        $english = $this->page($content, $context, $englishTitle, $englishSlug, true);
+        $german = $this->page($content, $context, $germanTitle, 'root-deutsch-' . $suffix, true);
+        $groupId = Uuid::uuid7()->toString();
+        foreach ([[$english, 'en-GB'], [$german, 'de']] as [$record, $locale]) {
+            $content->translate(
+                $context,
+                $record->entry->id(),
+                $record->entry->version(),
+                LocaleTag::fromString($locale),
+                $groupId,
+                LocaleTag::fromString('en-GB'),
+            );
+        }
+
+        try {
+            $settings->updateAll($context, [
+                'homepage_content_id' => $english->entry->id(),
+                'homepage_slug' => $englishSlug,
+            ]);
+
+            $neutralBody = $this->publicPage('/', ['Accept-Language' => 'de']);
+            self::assertStringContainsString('hreflang="de" href="/?locale=de"', $neutralBody);
+            self::assertStringContainsString('hreflang="en-GB" href="/?locale=en-GB"', $neutralBody);
+
+            $germanBody = $this->publicPage('/?locale=de', ['Accept-Language' => 'en-GB']);
+            self::assertStringContainsString($germanTitle, $germanBody);
+            self::assertStringContainsString('<html lang="de" dir="ltr">', $germanBody);
+            self::assertStringContainsString('<link rel="canonical" href="/?locale=de">', $germanBody);
+            self::assertStringContainsString(
+                'href="/?locale=de" hreflang="de" lang="de" dir="ltr" aria-current="true"',
+                $germanBody,
+            );
+            self::assertStringContainsString('hreflang="en-GB" href="/?locale=en-GB"', $germanBody);
+
+            $englishBody = $this->publicPage('/?locale=en-GB', ['Accept-Language' => 'de']);
+            self::assertStringContainsString($englishTitle, $englishBody);
+            self::assertStringContainsString('<html lang="en-GB" dir="ltr">', $englishBody);
+            self::assertStringContainsString('<link rel="canonical" href="/?locale=en-GB">', $englishBody);
+            self::assertStringContainsString(
+                'href="/?locale=en-GB" hreflang="en-GB" lang="en-GB" dir="ltr" aria-current="true"',
+                $englishBody,
+            );
+            self::assertStringContainsString('hreflang="de" href="/?locale=de"', $englishBody);
+        } finally {
+            $settings->updateAll($context, $previous);
+        }
     }
 
     /**
@@ -506,21 +578,27 @@ final class MultilingualContentIntegrationTest extends TestCase
      * request arriving on an untrusted name is answered 400 before any content is resolved, and a
      * hardcoded name would make this test report a delivery failure wherever the configured host differs.
      *
-     * @param   string  $path  Permalink path to request.
+     * @param   string                 $path     Root-relative path to request.
+     * @param   array<string, string>  $headers  Request headers to add.
      *
      * @return  string  The rendered HTML of the canonical page.
      *
      * @since   2.0.0
      */
-    private function publicPage(string $path): string
+    private function publicPage(string $path, array $headers = []): string
     {
         $container = (new ContainerFactory())->create(Environment::fromGlobals());
         $application = $this->service($container, Application::class);
         $host = $this->service($container, ApplicationConfiguration::class)->trustedHosts[0];
 
-        $response = $this->publicRequest($application, $host, $path);
+        $response = $this->publicRequest($application, $host, $path, $headers);
         if ($response->getStatusCode() === 308) {
-            $response = $this->publicRequest($application, $host, $response->getHeaderLine('Location'));
+            $response = $this->publicRequest(
+                $application,
+                $host,
+                $response->getHeaderLine('Location'),
+                $headers,
+            );
         }
         self::assertSame(200, $response->getStatusCode(), $path);
 
@@ -530,21 +608,35 @@ final class MultilingualContentIntegrationTest extends TestCase
     /**
      * Issue one public GET through the real application on a trusted host.
      *
-     * @param   Application  $application  Booted application under test.
-     * @param   string       $host         Host name the installation answers to.
-     * @param   string       $path         Root-relative path to request.
+     * @param   Application            $application  Booted application under test.
+     * @param   string                 $host         Host name the installation answers to.
+     * @param   string                 $path         Root-relative path to request.
+     * @param   array<string, string>  $headers      Request headers to add.
      *
      * @return  ResponseInterface  The application's response, whatever its status.
      *
      * @since   2.0.0
      */
-    private function publicRequest(Application $application, string $host, string $path): ResponseInterface
+    private function publicRequest(
+        Application $application,
+        string $host,
+        string $path,
+        array $headers = [],
+    ): ResponseInterface
     {
-        return $application->handle(
-            (new ServerRequestFactory())
-                ->createServerRequest('GET', 'https://' . $host . $path)
-                ->withHeader('Host', $host),
-        );
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('GET', 'https://' . $host . $path)
+            ->withHeader('Host', $host);
+        foreach ($headers as $name => $value) {
+            $request = $request->withHeader($name, $value);
+        }
+        $query = parse_url($path, PHP_URL_QUERY);
+        if (is_string($query)) {
+            parse_str($query, $parameters);
+            $request = $request->withQueryParams($parameters);
+        }
+
+        return $application->handle($request);
     }
 
     /**

@@ -85,7 +85,8 @@ final class HomePageHandlerTest extends TestCase
      * The nomination names one entry, so without negotiation a German reader would be handed the
      * English page at a URL that could not tell them otherwise. The alternates travel with the
      * response, so the layout can emit `hreflang` links and a selector for exactly the locales the
-     * item publishes.
+     * item publishes. Their hrefs are asserted too: each has to carry the explicit choice that stops a
+     * visit to the language-neutral root from negotiating back to the reader's previous locale.
      *
      * @return  void
      *
@@ -97,7 +98,7 @@ final class HomePageHandlerTest extends TestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(
-            'page|Ueber uns|de:true en-GB:false |Kumwe',
+            'page|Ueber uns|de:true:/?locale=de en-GB:false:/?locale=en-GB |/?locale=de|Kumwe',
             (string) $response->getBody(),
         );
         self::assertSame('public, max-age=60, stale-while-revalidate=300', $response->getHeaderLine('Cache-Control'));
@@ -164,8 +165,8 @@ final class HomePageHandlerTest extends TestCase
             $settings,
             new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader([
                 'page.twig' => 'page|{{ entry.title }}|'
-                    . '{% for a in languages.alternates %}{{ a.locale }}:{{ a.current ? "true" : "false" }} '
-                    . '{% endfor %}|{{ site_name }}',
+                    . '{% for a in languages.alternates %}{{ a.locale }}:{{ a.current ? "true" : "false" }}:'
+                    . '{{ a.href }} {% endfor %}|{{ canonical_url }}|{{ site_name }}',
                 'home.twig' => 'home|{{ languages.alternates|length }}|'
                     . '{{ languages.default_href is null ? "none" : "some" }}|{{ site_name }}',
             ]))),

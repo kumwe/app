@@ -75,6 +75,13 @@ on the public site means the root: `/` resolves the nominated homepage's group a
 locale, falling through that locale's own chain — `pt-BR`, then `pt` — before it reaches the declared
 fallback.
 
+Because `/` is language-neutral, alternate links rendered there carry the explicit choice themselves:
+`/?locale=de`, for example. Every root selector and `hreflang` link therefore names the locale it serves,
+even when the reader's `Accept-Language` preference differs and one member of the group is the nominated
+homepage entry. The rendered variant declares that explicit URL as canonical rather than asking a crawler
+to consolidate every language back into `/`. Locale-bearing paths keep their canonical menu or slug URL
+without the query parameter.
+
 Where nothing in a group is published, nothing is served. A fallback that is still drafting is not a page
 anybody may read, so it is not offered as one.
 

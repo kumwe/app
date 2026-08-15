@@ -73,7 +73,10 @@ final readonly class KumweMcpServerFactory
      */
     public function create(KumweMcpHandlers $handlers): Server
     {
-        $this->validator->assertValid($this->catalog, $handlers);
+        $tools = $this->catalog->tools();
+        $resources = $this->catalog->resources();
+        $prompts = $this->catalog->prompts();
+        $this->validator->assertValid($tools, $resources, $prompts, $handlers);
         $builder = Server::builder()
             ->setServerInfo(
                 name: 'Kumwe CMS',
@@ -101,7 +104,7 @@ final readonly class KumweMcpServerFactory
             $builder->setSession($this->sessions);
         }
 
-        foreach ($this->catalog->tools() as $tool) {
+        foreach ($tools as $tool) {
             $handler = [$handlers, $tool['handler']];
             if (!is_callable($handler)) {
                 throw new \LogicException(sprintf('MCP handler %s is not callable.', $tool['handler']));
@@ -123,7 +126,7 @@ final readonly class KumweMcpServerFactory
             );
         }
 
-        foreach ($this->catalog->resources() as $resource) {
+        foreach ($resources as $resource) {
             $handler = [$handlers, $resource['handler']];
             if (!is_callable($handler)) {
                 throw new \LogicException(sprintf('MCP resource handler %s is not callable.', $resource['handler']));
@@ -138,7 +141,7 @@ final readonly class KumweMcpServerFactory
             );
         }
 
-        foreach ($this->catalog->prompts() as $prompt) {
+        foreach ($prompts as $prompt) {
             $handler = [$handlers, $prompt['handler']];
             if (!is_callable($handler)) {
                 throw new \LogicException(sprintf('MCP prompt handler %s is not callable.', $prompt['handler']));
