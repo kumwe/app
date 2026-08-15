@@ -45,8 +45,11 @@ final readonly class MultilingualContentMigration implements RepeatableMigration
      * Stable ordered migration identity, appended after every migration this release already carries.
      *
      * `MigrationPlan` requires an installation's applied ledger to be an exact prefix of the sorted
-     * plan, so a new identity has to sort above the highest one already released — which is why this
-     * sits a day past the ownership-scope and interface-override migrations rather than beside them.
+     * plan, so a new identity has to sort above every identity already released *and* above every one
+     * landing beside it in the same wave: a migration that sorts below one a database has already run
+     * refuses every upgrade after it. That is why this sits clear of the ownership-scope, the
+     * interface-override and the constraint-rename migrations rather than sharing a day with any of
+     * them — merge order is not a property to depend on.
      *
      * @var    string
      * @since  2.0.0
