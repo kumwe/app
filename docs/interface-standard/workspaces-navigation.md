@@ -67,6 +67,41 @@ A master-detail workspace combines a searchable catalog with one selected resour
 The catalog may be sticky only when it does not obscure targets, exceed the usable viewport height, or
 trap keyboard users. The detail column owns task tabs; catalogs do not contain management forms.
 
+## Dashboard workspaces
+
+An authenticated administrator or portal dashboard is a semantic overview of permitted work, not a
+content index or a page builder. It contains a page header, an ordered widget region, an ordered quick-link
+region and, when the actor may customize it, one progressively disclosed server-rendered preference workspace.
+The widget kinds are closed: `summary`, `activity`, `context` and `workflow`. Summary and activity data is
+bounded, context names the server-resolved scope affecting the session, and workflow widgets link to a real
+task route. A permission-reduced actor still receives coherent permitted workflows even when no core summary
+applies.
+
+The workflow and quick-link catalog is the visible navigation catalog after ordinary owner, extension trust
+and lifecycle, area and capability filtering. Composition removes the dashboard's own link, rejects
+cross-area destinations and intersects saved semantic identifiers with the remaining live catalog. An
+extension therefore becomes selectable by contributing its ordinary owned KIS surface and navigation item;
+it does not contribute dashboard HTML, an unfiltered URL or a second navigation record.
+
+The `dashboard-cards` and `navigation-shortcuts` slots select and order identifiers only. Dashboard cards
+use the bounded dotted surface/navigation grammar rather than a core-only component vocabulary, so every
+valid contributed navigation identifier can participate. Administrator and portal defaults may be
+specialized for canonical identity access groups; multiple direct group lists combine deterministically,
+then a personal list replaces the group result. A stale extension identifier produces a safe fallback
+diagnostic and disappears rather than retaining its old destination. Saving and resetting use CSRF,
+optimistic versions, ordinary authorization and audit through the presentation-preference mutation boundary,
+and remain usable without JavaScript.
+
+Access-group editing stays inside the dashboard area being configured. The forms appear only to an actor who
+holds `users.manage`, and the mutation boundary rechecks that capability against the exact canonical role.
+This means a portal group default is selected from the destinations visible in that real portal session; an
+administrator surface never guesses which portal navigation another context could discover.
+
+Every rendered widget has a programmatic heading and its visual size is a responsive hint, never reading
+order. Search has a visible label, quick links remain a labelled navigation landmark, progress exposes its
+numeric value, and empty or fully deselected dashboards explain the next available path. Templates may style
+the shared components but cannot re-evaluate permissions, manufacture choices or suppress the reset path.
+
 ## Context preservation
 
 Site, organization, workspace, definition, schema plan, user, report, and extension context remain

@@ -75,6 +75,13 @@ host stylesheet/module outlets, a focusable first main landmark containing visib
 content, a matching skip target, and labelled visible server-rendered navigation with its current state.
 Portal extension views extend the core portal layout and cannot shadow it.
 
+Dashboard task views also remain core-owned. Their shared `@kis/dashboard-widget.twig` and
+`@kis/dashboard-preferences.twig` components consume the bounded semantic `dashboard` context documented in
+[Template development](../templates.md#dashboard-semantic-context). An administrator theme may style those
+components through public KIS classes and tokens, but cannot replace their forms, inject widget markup or
+destinations, or derive a second dashboard catalogue. Extension navigation that survives the ordinary owner,
+trust, lifecycle, capability and area filters is projected into workflow widgets automatically.
+
 ## AI-ready design brief
 
 When asking an AI to create a template, provide this complete brief:

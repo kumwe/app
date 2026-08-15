@@ -746,7 +746,7 @@ answer.
 | Console | Provided | 47 commands with stable JSON and exit codes |
 | Model-context tooling | Provided | Every published tool carries a declared risk class, capability and non-MCP alternative exposed through discovery; input envelopes are closed, every object schema states its membership decision, schema and handler parameters bind in both directions, and authentication-secret input plus credential issuance are absent; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Data-entry integrity across a failed submission | Provided | validation failure and stale-version conflict both re-render with the submitted values on both generated surfaces and the CMS content editor; see [`CHANGELOG.md`](../../CHANGELOG.md) |
-| Role-specific dashboards | Partial | `V2-ERP-006` — workspaces are navigation groups, and the dashboard handler is one fixed capability-filtered page |
+| Role-specific dashboards | Provided | `DashboardComposer` projects the existing capability-, owner-, trust- and area-filtered navigation into workflow widgets and quick links, then resolves the existing KIS `dashboard-cards` and `navigation-shortcuts` preferences across administrator, canonical `role:<uuid>` access-group and user layers. Typed core summaries use the same semantic view contract; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Offline-tolerant capture for point of sale | Deferred, not foreclosed | `V2-ERP-007` under decision D14 — deferred beyond Version 2 as a product; three of the four constraints that keep it possible are delivered and recorded in `CHANGELOG.md`, and `V2-POS-002` alone remains |
 | A translated interface | Partial | The layer exists — XLIFF authored, compiled to PHP, formatted by ICU, resolved through the four-step chain with both administered layers stored, negotiated per request. `V2-LNG-001`, `V2-LNG-007` and `V2-LNG-008` hold the remaining extraction and the widened gate; `V2-LNG-010` holds the eight translated catalogues. Decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) |
 | An operator changing wording without editing files | Provided | Site and organization overrides are stored and administered at `/administrator/wording` under `localization.overrides.manage`; per identifier, never per file. This is also how a vertical relabels core terminology, and an extension contributes its own catalogue through the ordinary package path. See [`CHANGELOG.md`](../../CHANGELOG.md) |
@@ -1151,10 +1151,10 @@ follow.
 8. **Release qualification authority.** The build-once artifact chain and the signed manifest as the
    release source of truth.
 9. **Enterprise primitive ownership.** Findings: `V2-ERP-002`, `V2-ERP-003`, `V2-ERP-005`, `V2-ERP-007`.
-   Decision D13 has answered six of the seven boundary questions and
-   decision D10 has answered currency; `V2-ERP-006`, role-specific dashboards, is the one still genuinely
-   open and is decided here. What remains for the rest is to write each verdict down where an author finds
-   it: [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) and
+   Decision D13 has answered the enterprise boundary questions and decision D10 has answered currency.
+   Role-specific dashboards are delivered by the access-aware KIS dashboard composition recorded in
+   [`CHANGELOG.md`](../../CHANGELOG.md). What remains for the rest is to write each verdict down where an
+   author finds it: [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) and
    [ADR 0004](decisions/0004-money-conversion-contract.md) are written and accepted, and D13.5's
    unit-conversion verdict is now delivered and documented in `docs/business-integrations.md`; the
    period-close and numbering-scope verdicts are recorded in the frozen contract with the exact shape an

@@ -584,30 +584,6 @@
       ]
     },
     {
-      "id": "V2-ERP-006",
-      "title": "No role-specific dashboard composition primitive",
-      "severity": "low",
-      "state": "decision_required",
-      "phase": "0",
-      "gate": null,
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Extension/Contribution/AdministratorWorkspaceDefinition.php",
-          "symbol": "AdministratorWorkspaceDefinition",
-          "note": "A workspace is a navigation group with a label, description and sort weight. Its own docblock says it 'carries no behaviour of its own'. It is not a dashboard."
-        },
-        {
-          "file": "src/Administrator/Http/Handler/AdministratorDashboardHandler.php",
-          "symbol": "AdministratorDashboardHandler",
-          "note": "One fixed handler that filters its panels by the actor's capability map. There is no contributed-widget composition and no per-role landing selection."
-        }
-      ],
-      "acceptance_test": "Decide whether core gains a contributed dashboard-panel registry and a per-role landing route, or whether extensions ship dashboards as ordinary contributed administrator routes and views. If the latter, prove it in a conformance fixture and remove any documentation implying more.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
       "id": "V2-ERP-007",
       "title": "No offline-tolerant capture primitive for point-of-sale-style surfaces",
       "severity": "low",

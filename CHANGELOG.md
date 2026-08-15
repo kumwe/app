@@ -23,6 +23,21 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **The administrator and portal home pages are now access-aware dashboards instead of fixed content
+  pages.** One `DashboardComposer` projects the navigation that the existing contribution registries have
+  already filtered for owner, extension trust and lifecycle, delivery area and actor capability into
+  selectable workflow widgets and quick links. Extensions therefore appear by contributing their ordinary
+  owned KIS surface and navigation item; no parallel widget registry or new frozen extension SPI was added.
+  Typed core summary, activity and access-context widgets use the same bounded semantic view contract, and
+  an administrator without `content.read` no longer receives irrelevant content queries or an empty
+  content-centric page. The existing `dashboard-cards` and `navigation-shortcuts` KIS preferences now drive
+  both dashboards: canonical identity roles are projected read-only as `role:<uuid>` access groups, multiple
+  assigned group lists form a deterministic union, and a personal list replaces that result. Writes remain
+  CSRF-protected, capability-bound, compare-and-swap audited mutations with a reset path and no JavaScript
+  dependency; stored values contain identifiers and order, never markup or URLs. The shared translated Twig
+  contract, responsive widget grid and visible content-search control repair the broken shortcut selection
+  and unreadable search presentation while keeping templates free of policy decisions. Closes `V2-ERP-006`.
+  (`4f0e96f`)
 - **One quality contract, and every lane held to it.** What this repository checks used to be written in
   four places: `composer qa` carried a hand-assembled list, the merge workflow reassembled its own sequence
   and left out the interface programme, the roadmap ledger and the documentation gate, the release job
