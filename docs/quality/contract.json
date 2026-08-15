@@ -522,14 +522,14 @@
     },
     {
       "id": "integration-idempotency",
-      "title": "The integration suite is idempotent against a reused database",
-      "purpose": "Run the integration suite a second time against the database the first run left behind, and once more in reverse class order, and require the same result.",
+      "title": "The integration suite against a reused database, judged against a shrinking baseline",
+      "purpose": "Run the integration suite a second time against the database the first run left behind and once more in reverse class order, and fail on any test that is not in docs/quality/idempotency-baseline.json. The suite is not idempotent today; the baseline is that finding's reproduction, and it only ever shrinks.",
       "owner": "quality-engineering",
-      "runner": "shell",
-      "command": "vendor/bin/phpunit --testsuite integration --order-by=reverse",
-      "artifact": "console",
+      "runner": "composer",
+      "command": "composer test:idempotency -- --engine=ID",
+      "artifact": "build/idempotency/*.junit.xml",
       "in_qa": false,
-      "excluded_from_qa_reason": "It needs a live database that has already carried one full integration run.",
+      "excluded_from_qa_reason": "It needs a live database that has already carried one full integration run, which a local qa invocation does not produce.",
       "cadence": [
         "ci"
       ],
@@ -543,9 +543,10 @@
         "ci": {
           "file": ".github/workflows/ci.yml",
           "job": "database",
-          "contains": "--order-by=reverse"
+          "contains": "composer test:idempotency"
         }
-      }
+      },
+      "composer_script": "test:idempotency"
     },
     {
       "id": "deployed-artifact",

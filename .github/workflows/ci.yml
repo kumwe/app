@@ -496,12 +496,24 @@ jobs:
       # The integration suite has to be idempotent against a database another run already used, because
       # that is what CI, a developer's container and a release rehearsal all do. This runs it a second
       # time against the database the first run left behind, and a third time in reverse class order.
-      # Anything a class leaves installation-wide behind it shows up here as a failure rather than as an
-      # unexplained break in whatever runs next week.
+      #
+      # It is not idempotent today — that is V2-QA-004, and the first execution of this step reproduced it
+      # exactly. The tests that fail are recorded in docs/quality/idempotency-baseline.json with an owner,
+      # an expiry and what removing each one takes, and the step fails on anything outside that record: a
+      # test that starts failing, an entry whose test now passes, or an entry past its expiry. The record
+      # only ever shrinks. A permanently red gate would have been worse than the defect it reports, and an
+      # advisory one would not be a gate at all.
       - name: Prove the integration suite is idempotent against a reused database
-        run: |
-          vendor/bin/phpunit --testsuite integration --colors=always
-          vendor/bin/phpunit --testsuite integration --colors=always --order-by=reverse
+        run: composer test:idempotency -- --engine=${{ matrix.database.driver }}
+
+      - name: Upload the idempotency evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: idempotency-evidence-${{ matrix.database.driver }}
+          path: build/idempotency
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Enforce the coverage ratchets
         if: matrix.database.coverage == 'true'

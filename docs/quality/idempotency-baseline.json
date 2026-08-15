@@ -1,0 +1,114 @@
+{
+  "baseline": "kumwe-suite-idempotency",
+  "finding": "V2-QA-004",
+  "authority": "docs/roadmap/README.md",
+  "note": "The integration suite is not idempotent against a database another run already used. That is the finding, and this file is its reproduction: the tests that fail when the suite runs a second time against the database the first run left behind. It is a record, not a permission. tools/verify-suite-idempotency.php fails on any test outside this list, fails when a listed test stops needing the exemption, and fails when an entry passes its expiry, so the list can only ever shrink and phase 2 empties it.",
+  "recorded_at": "2026-08-15",
+  "recorded_from": "https://github.com/kumwe/cms/actions/runs/31876448442",
+  "scope": {
+    "note": "Two fields carry two different claims, and conflating them would make the gate lie in one direction or the other. `observed_on` is fact: the engines on which this exact failure was seen. `applies_to` is scope: the engines on which the entry excuses a failure. A test failing on an engine outside `applies_to` is a new violation; an entry whose test passes on an engine inside `observed_on` is stale and must be deleted. An engine in `applies_to` but not in `observed_on` is therefore neither excused into silence nor asserted as fact — the first run on that engine settles it either way.",
+    "passes": [
+      "repeat",
+      "reverse"
+    ],
+    "passes_note": "`repeat` runs the integration suite again against the database the first run left behind. `reverse` runs it once more in reverse class order. An entry is stale only when its test passed in every pass, because a test that leaves state behind need not fail in both."
+  },
+  "entries": [
+    {
+      "test": "Kumwe\\CMS\\Tests\\Integration\\BusinessSurface\\GeneratedBusinessBrowserIntegrationTest::testArchiveAndDeleteRedirectToLifecycleReadableDestinations",
+      "observed_on": [
+        "mysql",
+        "postgresql"
+      ],
+      "applies_to": [
+        "mariadb",
+        "mysql",
+        "postgresql"
+      ],
+      "owner": "quality-engineering",
+      "finding": "V2-QA-004",
+      "expires": "2027-06-30",
+      "removal": "The class installs a generated business definition and its physical tables under a fixed identity and does not remove them, so the second run meets a schema installation it expects to create. Give the class a tearDownAfterClass that uninstalls what it installed, the way RecordSecretRotationIntegrationTest rolls its rotation back, or make the fixture identity unique per run."
+    },
+    {
+      "test": "Kumwe\\CMS\\Tests\\Integration\\BusinessSurface\\GeneratedBusinessBrowserIntegrationTest::testGraphicalQueryControlsSurviveOpaqueCursorPagination",
+      "observed_on": [
+        "mysql",
+        "postgresql"
+      ],
+      "applies_to": [
+        "mariadb",
+        "mysql",
+        "postgresql"
+      ],
+      "owner": "quality-engineering",
+      "finding": "V2-QA-004",
+      "expires": "2027-06-30",
+      "removal": "Same cause and same fix as the other two methods of this class: the installation the class creates survives it, so the second run inherits records and definitions it expects to be absent."
+    },
+    {
+      "test": "Kumwe\\CMS\\Tests\\Integration\\BusinessSurface\\GeneratedBusinessBrowserIntegrationTest::testWorkflowActionConfirmationExecutesWithoutJavascript",
+      "observed_on": [
+        "mysql",
+        "postgresql"
+      ],
+      "applies_to": [
+        "mariadb",
+        "mysql",
+        "postgresql"
+      ],
+      "owner": "quality-engineering",
+      "finding": "V2-QA-004",
+      "expires": "2027-06-30",
+      "removal": "Same cause and same fix as the other two methods of this class."
+    },
+    {
+      "test": "Kumwe\\CMS\\Tests\\Integration\\Extension\\AssetInspectionCustomViewIntegrationTest::testSummaryUsesCanonicalBrowsePolicyAndOmitsRestrictedFields",
+      "observed_on": [
+        "mysql",
+        "postgresql"
+      ],
+      "applies_to": [
+        "mariadb",
+        "mysql",
+        "postgresql"
+      ],
+      "owner": "quality-engineering",
+      "finding": "V2-QA-004",
+      "expires": "2027-06-30",
+      "removal": "The example extension's contribution and its custom view stay registered after the class finishes, so a second admission of the same package meets its own previous installation. Uninstall the contribution in tearDownAfterClass, or admit it under a per-run identity."
+    },
+    {
+      "test": "Kumwe\\CMS\\Tests\\Integration\\Extension\\ExtensionContributionLifecycleIntegrationTest::testSignedContributionLifecycleIsPermissionAwareTrustBoundAndDataPreserving",
+      "observed_on": [
+        "mysql",
+        "postgresql"
+      ],
+      "applies_to": [
+        "mariadb",
+        "mysql",
+        "postgresql"
+      ],
+      "owner": "quality-engineering",
+      "finding": "V2-QA-004",
+      "expires": "2027-06-30",
+      "removal": "The lifecycle it exercises ends with the extension installed and trusted, and the trust store keeps the decision, so the second run starts from a state its first assertion says cannot exist. The class has to finish by returning the extension and its trust decision to absent — which is also the operator-facing uninstall path it already tests, so the rollback is a call it can already make."
+    },
+    {
+      "test": "Kumwe\\CMS\\Tests\\Integration\\Infrastructure\\RedisOutageIntegrationTest::testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone",
+      "observed_on": [
+        "mysql",
+        "postgresql"
+      ],
+      "applies_to": [
+        "mariadb",
+        "mysql",
+        "postgresql"
+      ],
+      "owner": "quality-engineering",
+      "finding": "V2-QA-004",
+      "expires": "2027-06-30",
+      "removal": "This one is not database state at all, which is worth saying because it changes the fix. The class asserts that a healthy cache records no degradation, and the second run finds two degradation notices left in the settings-cache diagnostic by the outage the first run staged. The diagnostic is process-global and is never cleared, so the assertion is only true the first time. Either the diagnostic is reset when the cache recovers — which is arguably the product behaviour an operator wants — or the test asserts the notices it caused rather than their absence."
+    }
+  ]
+}

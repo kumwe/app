@@ -231,6 +231,86 @@ final class TruthfulQualityGateTest extends TestCase
     }
 
     /**
+     * The idempotency baseline must excuse exactly what it records, and nothing else.
+     *
+     * The suite is not idempotent against a reused database, which is `V2-QA-004`. A gate that simply fails
+     * on that would block every pull request and report the same six tests forever, and an advisory one
+     * would not be a gate. The baseline is the reproduction: it fails on a test outside the record, fails
+     * on an entry whose test now passes, and fails on an entry past its expiry.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheIdempotencyBaselineExcusesOnlyWhatItRecords(): void
+    {
+        $repeat = 'tests/Fixtures/Idempotency/recorded-repeat.junit.xml';
+        $reverse = 'tests/Fixtures/Idempotency/recorded-reverse.junit.xml';
+
+        $recorded = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=pgsql',
+            '--junit=repeat:' . $this->root . '/' . $repeat,
+            '--junit=reverse:' . $this->root . '/' . $reverse,
+        ]);
+        self::assertSame(0, $recorded['status'], "The recorded result must pass:\n" . $recorded['output']);
+        self::assertStringContainsString('nothing new', $recorded['output']);
+
+        $unrecorded = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mysql',
+            '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/unrecorded-failure.junit.xml',
+        ]);
+        self::assertSame(1, $unrecorded['status'], 'A test outside the baseline must fail the check.');
+        self::assertStringContainsString('are not in the baseline', $unrecorded['output']);
+
+        $stale = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mysql',
+            '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
+        ]);
+        self::assertSame(1, $stale['status'], 'A baseline entry that no longer fails must be deleted.');
+        self::assertStringContainsString('only ever shrinks', $stale['output']);
+
+        $expired = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=pgsql',
+            '--today=2099-01-01',
+            '--junit=repeat:' . $this->root . '/' . $repeat,
+        ]);
+        self::assertSame(1, $expired['status'], 'An expired exemption must fail the check.');
+        self::assertStringContainsString('does not outlive the work', $expired['output']);
+    }
+
+    /**
+     * Every idempotency exemption must name an owner, a finding, an expiry and its own removal.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEveryIdempotencyExemptionIsOwnedAndExpires(): void
+    {
+        $baseline = $this->decode('docs/quality/idempotency-baseline.json');
+        $entries = $baseline['entries'];
+        self::assertIsArray($entries);
+        self::assertNotSame([], $entries);
+
+        foreach ($entries as $entry) {
+            self::assertIsArray($entry);
+            foreach (['test', 'owner', 'finding', 'expires', 'removal'] as $field) {
+                self::assertIsString($entry[$field] ?? null);
+                self::assertNotSame('', trim((string) $entry[$field]));
+                self::assertNotSame('UNASSIGNED', $entry[$field]);
+            }
+            self::assertSame('V2-QA-004', $entry['finding']);
+            self::assertIsArray($entry['observed_on'] ?? null);
+            self::assertIsArray($entry['applies_to'] ?? null);
+            self::assertNotSame([], $entry['observed_on']);
+        }
+
+        $ci = $this->contents('.github/workflows/ci.yml');
+        self::assertStringContainsString('composer test:idempotency', $ci);
+        self::assertStringNotContainsString('continue-on-error', $ci);
+    }
+
+    /**
      * Criterion 12's three-engine matrix must be declared and executed rather than assumed.
      *
      * @return  void
@@ -250,7 +330,7 @@ final class TruthfulQualityGateTest extends TestCase
         foreach (['mariadb:lts', 'mysql:8.4', 'postgres:17-alpine'] as $image) {
             self::assertStringContainsString($image, $ci);
         }
-        self::assertStringContainsString('--order-by=reverse', $ci);
+        self::assertStringContainsString('composer test:idempotency', $ci);
     }
 
     /**
