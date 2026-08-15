@@ -15,11 +15,17 @@ namespace Kumwe\CMS\Infrastructure\Mcp;
  *
  * The classes are not a severity ladder and must not be read as one. Each names a different question an
  * operator has to answer, and a tool that raises more than one is classified by the first of these that
- * applies, in this order: does it change which third-party code runs (`Trust`); does its effect leave
- * the caller's site (`InstallationGlobal`); does it change how an identity authenticates (`Credential`);
- * does it remove state (`Destructive`); does it write at all (`ScopedWrite`); otherwise `Read`. Trust
- * leads because admitting or withdrawing extension code changes what every later answer is worth, and
+ * applies, in this order: does it change which third-party code runs (`Trust`); does it reach beyond the
+ * caller's site (`InstallationGlobal`); does it change how an identity authenticates (`Credential`); does
+ * it remove state (`Destructive`); does it write at all (`ScopedWrite`); otherwise `Read`. Trust leads
+ * because admitting or withdrawing extension code changes what every later answer is worth, and
  * installation reach comes next because a mistake there cannot be contained by the site boundary.
+ *
+ * "Reach" is read as the authority a call exercises, not only the rows it writes. Approving a physical
+ * schema plan writes one approval in the caller's own scope and is `InstallationGlobal` all the same,
+ * because what it authorizes is data-definition work under an installation-wide fence that every site
+ * waits behind. Publishing a business-definition version, by contrast, is `ScopedWrite`: definitions are
+ * keyed by site, and publishing one confers no authority outside it.
  *
  * @since  2.0.0
  */
