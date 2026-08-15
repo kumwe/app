@@ -51,7 +51,7 @@ final readonly class MultilingualContentMigration implements RepeatableMigration
      * @var    string
      * @since  2.0.0
      */
-    public const string ID = '20260818010000_multilingual_content';
+    public const string ID = '20260819010000_multilingual_content';
 
     /**
      * Widest language tag the locale columns accept, in characters.
