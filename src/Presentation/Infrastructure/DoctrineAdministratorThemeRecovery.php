@@ -6,12 +6,12 @@ namespace Kumwe\CMS\Presentation\Infrastructure;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\CMS\Extension\Application\ExtensionRegistryLease;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

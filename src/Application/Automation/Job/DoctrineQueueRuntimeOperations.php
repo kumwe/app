@@ -15,9 +15,9 @@ use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Automation\QueueRuntimeOperations;
 use Kumwe\CMS\Application\Automation\QueueRuntimePolicy;
 use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
 

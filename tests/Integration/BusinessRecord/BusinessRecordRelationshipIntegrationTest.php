@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
 
 use Doctrine\DBAL\Connection;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
@@ -36,7 +37,6 @@ use Kumwe\CMS\BusinessRecord\Query\SetFilter;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;

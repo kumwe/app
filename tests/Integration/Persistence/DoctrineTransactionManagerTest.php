@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Integration\Persistence;
 
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

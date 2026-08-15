@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Demo\Infrastructure;
 
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\Content\Application\ContentNotFound;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Demo\Application\DemoProfileLedger;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
 use Kumwe\CMS\Navigation\Application\NavigationService;

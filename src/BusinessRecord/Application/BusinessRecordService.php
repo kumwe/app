@@ -12,6 +12,7 @@ use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Automation\IdempotencyKey;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
@@ -74,7 +75,6 @@ use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalService;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
 use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

@@ -7,7 +7,7 @@ namespace Kumwe\CMS\BusinessIntegration\Application;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Application\Automation\RetryPolicy;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use LogicException;
 use Psr\Log\LoggerInterface;
 use Throwable;

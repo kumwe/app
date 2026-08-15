@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 
 /**
  * DBAL implementation of `TransactionManager`, layering completion hooks over the connection's nesting.

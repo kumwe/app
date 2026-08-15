@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\Site\Application;
 
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Content\Application\ContentModelRepository;
 use Kumwe\CMS\Content\Application\ContentRecord;
@@ -17,7 +18,6 @@ use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\CMS\Localization\Application\ActiveLocale;
 use Kumwe\CMS\Localization\Application\SupportedLocales;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Http\Handler\PublishedContentHandler;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\MenuRecord;

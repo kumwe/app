@@ -53,6 +53,7 @@ use Kumwe\CMS\Application\Authorization\SiteGroupWriter;
 use Kumwe\CMS\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
 use Kumwe\CMS\Application\Operations\ExpiredMigrationLockRecovery;
 use Kumwe\CMS\Application\Operations\MigrationLockRecoveryService;
@@ -550,7 +551,6 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigratio
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
 use Kumwe\CMS\Infrastructure\Security\DoctrineHighImpactCredentialGuard;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Redis\RedisConnectionFactory;
 use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;

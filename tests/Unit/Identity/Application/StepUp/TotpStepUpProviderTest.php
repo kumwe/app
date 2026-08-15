@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Identity\Application\StepUp;
 
 use DateTimeImmutable;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Application\StepUp\StepUpAttemptThrottle;
@@ -21,7 +22,6 @@ use Kumwe\CMS\Identity\Domain\StepUp\StepUpMethod;
 use Kumwe\CMS\Identity\Domain\StepUp\TotpCredential;
 use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpRecoveryCodeHasher;
 use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpSecretCipher;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

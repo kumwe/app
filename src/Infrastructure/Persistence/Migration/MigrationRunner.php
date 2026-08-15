@@ -10,8 +10,8 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 
 /**
  * Applies the schema migrations this binary ships and records each one in the ledger.

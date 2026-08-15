@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\Extension\Application\Trust;
 
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Extension\Application\Trust\ExtensionArtifactVerifier;
 use Kumwe\CMS\Extension\Application\Trust\TrustKeySignatureVerifier;
@@ -24,7 +25,6 @@ use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\CMS\Extension\Runtime\RuntimePublicationKeyRing;
 use Kumwe\CMS\Extension\Runtime\VerifiedRuntimePublication;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;

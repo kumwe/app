@@ -6,12 +6,12 @@ namespace Kumwe\CMS\BusinessReporting\Application;
 
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
 use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;

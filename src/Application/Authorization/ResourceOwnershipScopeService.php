@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Application\Authorization;
 
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

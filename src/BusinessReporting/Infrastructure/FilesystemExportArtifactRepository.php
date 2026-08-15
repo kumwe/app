@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessReporting\Infrastructure;
 
 use JsonException;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessReporting\Application\ExportArtifactRepository;
 use Kumwe\CMS\BusinessReporting\Application\ExportVersionConflict;
 use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use RuntimeException;
 
 /**
