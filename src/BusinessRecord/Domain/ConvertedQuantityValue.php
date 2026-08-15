@@ -158,15 +158,31 @@ final readonly class ConvertedQuantityValue
         if (!is_array($factor) || !is_array($rounding)) {
             throw new InvalidArgumentException('A converted quantity export member has the wrong type.');
         }
+        $expectedRounding = ['mode', 'scale', 'unrounded_amount'];
+        if (
+            array_diff($expectedRounding, array_keys($rounding)) !== []
+            || array_diff(array_keys($rounding), $expectedRounding) !== []
+        ) {
+            throw new InvalidArgumentException(
+                'A converted quantity export rounding must carry exactly its declared members.',
+            );
+        }
         $mode = $rounding['mode'] ?? null;
+        $scale = $rounding['scale'] ?? null;
         $unrounded = $rounding['unrounded_amount'] ?? null;
-        if (!is_string($mode) || !is_string($unrounded)) {
+        if (!is_string($mode) || !is_int($scale) || !is_string($unrounded)) {
             throw new InvalidArgumentException('A converted quantity export rounding member has the wrong type.');
+        }
+        $converted = self::quantity($data['value']);
+        if ($scale !== $converted->amount->scale) {
+            throw new InvalidArgumentException(
+                'A converted quantity export rounding scale must match the converted amount.',
+            );
         }
 
         return new self(
             self::quantity($data['source']),
-            self::quantity($data['value']),
+            $converted,
             UnitConversionFactor::fromArray(self::document($factor)),
             QuantityRoundingMode::tryFrom($mode)
                 ?? throw new InvalidArgumentException('A converted quantity export names an unknown rounding mode.'),

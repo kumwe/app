@@ -8,6 +8,13 @@ This guide describes the supplied container topology. See [Install](install.md) 
 
 The migration task must complete before the application starts. Writable application state is limited to tmpfs plus media and extension volumes. Runtime containers are non-root, read-only, capability-dropped, and configured with `no-new-privileges`.
 
+The shipped Compose file uses one `KUMWE_DB_USER` and one `KUMWE_DB_PASSWORD_FILE` for `migrate`, `app`,
+`worker`, and `scheduler`. It therefore does **not** implement the recommended split between a DDL-capable
+migration account and a DML-only runtime account. Treat it as a secure container baseline, not as proof of
+database privilege separation. Production deployments that rely on that mitigation must supply an overlay or
+platform configuration with separate credentials, run `migrate` with the migration account, and inject only the
+least-privilege runtime account into the long-lived services.
+
 ## Select and pin images
 
 Release images are published at:
@@ -40,7 +47,7 @@ MariaDB LTS is the default. Override one coherent set for another supported engi
 
 Choose the engine before the first migration. Switching an existing site requires a separately tested logical data migration; changing only the image and driver variables is not a database conversion.
 
-For a managed database, keep the application variables but omit or profile out the bundled `database` service in a deployment-specific Compose overlay. Use TLS verification, private networking, backups, monitoring, and a least-privilege migration account supplied by the database platform.
+For a managed database, keep the application variables but omit or profile out the bundled `database` service in a deployment-specific Compose overlay. Use TLS verification, private networking, backups, monitoring, and distinct migration and runtime accounts supplied by the database platform. The overlay must override the shared database environment and secret on the long-lived services; merely changing `KUMWE_DB_USER` changes the migration task too and does not create a split.
 
 ## Proxy boundary
 

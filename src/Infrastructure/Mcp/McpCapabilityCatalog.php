@@ -10,23 +10,24 @@ namespace Kumwe\CMS\Infrastructure\Mcp;
  * Every tool, resource and prompt an MCP client can reach is described here once: its name, the
  * `KumweMcpHandlers` method that serves it, the capability that handler requires, the annotation hints
  * a client uses to decide how cautiously to call it, the `McpRiskClass` that says what calling it
- * costs, the non-MCP route an operator takes instead, and closed JSON Schemas for input and output.
+ * costs, the non-MCP route an operator takes instead, and explicit JSON Schemas for input and output.
  * `KumweMcpServerFactory` registers a server straight from this list, and the discovery tool and the
- * `kumwe://capabilities` resource publish a name-only summary of it, so widening or narrowing the
- * surface is one edit here rather than parallel edits in the factory and the handlers. The catalogue is
- * pure data with no dependencies and no state, which is why the container shares one instance of it.
+ * `kumwe://capabilities` resource publish both its names and its operator-facing risk metadata, so
+ * widening or narrowing the surface is one edit here rather than parallel edits in the factory and the
+ * handlers. The catalogue is pure data with no dependencies and no state, which is why the container
+ * shares one instance of it.
  *
  * Three properties hold across the whole list, and `McpCatalogValidator` proves each of them before a
  * server is built rather than leaving them to review. Every entry that is not read-only declares an
  * `operationId` and is annotated idempotent, so `McpMutationGuard` can fence a first attempt and replay
  * a retry instead of applying it twice. Every entry declares one risk class, and its annotations and
- * capability must agree with the class it claims. And **no entry anywhere carries credential material**:
- * not as a schema property, not as a handler parameter, not under a differently spelled name. Work that
- * would need the caller's current password re-proved is therefore kept off the surface rather than
- * offered and refused — no tool composes a destructive schema purge plan, the schema approval tool
- * declines high-impact plans, and the three extension-lifecycle tools fail closed on the one change that
- * demands step-up, taking over or removing the live administrator theme. The step-up route is the
- * browser, the protected console and the protected REST path, and it is not reachable from here.
+ * capability must agree with the class it claims. No tool accepts an authentication secret or returns a
+ * newly issued credential: work that needs the caller's current password re-proved, or that creates a
+ * replacement token secret, stays off the surface rather than being offered and refused. No tool composes
+ * a destructive schema purge plan, the schema approval tool declines high-impact plans, and the three
+ * extension-lifecycle tools fail closed on the one change that demands step-up, taking over or removing
+ * the live administrator theme. That step-up route is the browser or protected REST path; the console can
+ * restore the built-in administrator theme for break-glass recovery but cannot perform the step-up change.
  *
  * @since  2.0.0
  */
@@ -36,8 +37,8 @@ final class McpCapabilityCatalog
      * Risk class and non-MCP alternative for every published tool, keyed by tool name.
      *
      * This is the whole taxonomy on one screen, which is the point of holding it here rather than
-     * scattering two more arguments across seventy-six declarations: an operator or reviewer deciding
-     * what a token may hold reads the classification in one pass. `McpCatalogValidator` refuses a
+     * scattering two more arguments across every declaration: an operator or reviewer deciding what a
+     * token may hold reads the classification in one pass. `McpCatalogValidator` refuses a
      * catalogue whose declarations and this table disagree, and `tools()` refuses to publish a tool
      * this table does not classify, so the map cannot fall behind the surface it describes.
      *
@@ -50,7 +51,7 @@ final class McpCapabilityCatalog
         'kumwe_content_create' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT],
         'kumwe_content_update' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT],
         'kumwe_content_transition' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT],
-        'kumwe_content_trash' => [McpRiskClass::Destructive, self::VIA_CONTENT],
+        'kumwe_content_trash' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT],
         'kumwe_content_restore' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT],
         'kumwe_menu_list' => [McpRiskClass::Read, self::VIA_NAVIGATION],
         'kumwe_menu_create' => [McpRiskClass::ScopedWrite, self::VIA_NAVIGATION],
@@ -67,7 +68,6 @@ final class McpCapabilityCatalog
         'kumwe_role_create' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
         'kumwe_token_list' => [McpRiskClass::Read, self::VIA_TOKENS],
         'kumwe_token_revoke' => [McpRiskClass::Credential, self::VIA_TOKENS],
-        'kumwe_token_rotate' => [McpRiskClass::Credential, self::VIA_TOKENS],
         'kumwe_token_revoke_subject_site' => [McpRiskClass::Credential, self::VIA_TOKENS],
         'kumwe_token_emergency_revoke_subject' => [McpRiskClass::InstallationGlobal, self::VIA_TOKENS],
         'kumwe_trust_key_list' => [McpRiskClass::Read, self::VIA_TRUST],
@@ -186,8 +186,9 @@ final class McpCapabilityCatalog
      * @var    string
      * @since  2.0.0
      */
-    private const string VIA_EXTENSIONS = 'Administrator console: Extensions, or bin/kumwe extension:activate, '
-        . 'extension:disable and extension:uninstall; the administrator theme change needs the browser step-up.';
+    private const string VIA_EXTENSIONS = 'Administrator console: Extensions, or the extension lifecycle CLI for '
+        . 'non-administrator themes; administrator-theme changes need browser or REST step-up, while the console '
+        . 'offers break-glass recovery to the built-in theme.';
 
     /**
      * Non-MCP route for the generated business-record tools.
@@ -370,11 +371,11 @@ final class McpCapabilityCatalog
             $this->tool(
                 'kumwe_content_trash',
                 'Trash content',
-                'Move content to trash.',
+                'Move content to recoverable trash.',
                 'trashContent',
                 'content.delete',
                 false,
-                true,
+                false,
                 true,
                 [
                     'operationId' => $this->operationId(), 'id' => ['type' => 'string'],
@@ -629,22 +630,6 @@ final class McpCapabilityCatalog
                 ['operationId', 'tokenId']
             ),
             $this->tool(
-                'kumwe_token_rotate',
-                'Rotate API token',
-                'Rotate a token and return its replacement secret once.',
-                'rotateToken',
-                'users.manage',
-                false,
-                true,
-                true,
-                [
-                    'operationId' => $this->operationId(), 'tokenId' => ['type' => 'string'],
-                    'name' => ['type' => 'string'], 'expiresAt' => ['type' => 'string'],
-                ],
-                $object,
-                ['operationId', 'tokenId', 'name']
-            ),
-            $this->tool(
                 'kumwe_token_revoke_subject_site',
                 'Revoke user tokens for site',
                 'Revoke every token for one user in the authenticated site only.',
@@ -697,7 +682,7 @@ final class McpCapabilityCatalog
                 false,
                 false,
                 true,
-                $this->trustKeyProperties(),
+                $this->trustKeyProperties('keyId'),
                 $object,
                 ['operationId', 'keyId', 'publicKeyBase64', 'vendorNamespace', 'extensionPattern', 'expiresAt'],
             ),
@@ -710,7 +695,7 @@ final class McpCapabilityCatalog
                 false,
                 false,
                 true,
-                [...$this->trustKeyProperties(), 'oldKeyId' => ['type' => 'string']],
+                [...$this->trustKeyProperties('newKeyId'), 'oldKeyId' => ['type' => 'string']],
                 $object,
                 [
                     'operationId', 'oldKeyId', 'newKeyId', 'publicKeyBase64',
@@ -1481,8 +1466,10 @@ final class McpCapabilityCatalog
      * The one entry serves `kumwe://capabilities` as JSON from `capabilityResource`, which hands a
      * client the same summary the discovery tool returns without spending a tool call to get it.
      *
-     * @return  list<array<string, string>>  One entry per resource, carrying its `uri`, `name`, `title`,
-     *          `description`, `mimeType` and the handler method that serves it.
+     * @return  list<array{
+     *              uri: string, name: string, title: string, description: string,
+     *              mimeType: string, handler: string
+     *          }>  One entry per resource in registration order.
      *
      * @since   2.0.0
      */
@@ -1502,8 +1489,9 @@ final class McpCapabilityCatalog
      * The one entry exposes `kumwe_site_review`, served by `siteReviewPrompt`, which turns a review
      * focus into a single user message asking for explicit proposed changes.
      *
-     * @return  list<array<string, string>>  One entry per prompt, carrying its `name`, `title`,
-     *          `description` and the handler method that builds the messages.
+     * @return  list<array{
+     *              name: string, title: string, description: string, handler: string
+     *          }>  One entry per prompt in registration order.
      *
      * @since   2.0.0
      */
@@ -1516,26 +1504,43 @@ final class McpCapabilityCatalog
     }
 
     /**
-     * Summarise the surface as names only, for the discovery tool and the capability resource.
+     * Summarise the public surface and the policy metadata an MCP client needs to call it safely.
      *
-     * Both of those reach this without a capability check, so the summary deliberately carries no
-     * schemas, handler methods or capability requirements — only the identifiers a client needs in
-     * order to ask for anything more.
+     * Discovery is available to every authenticated caller, so the summary excludes schemas, handler
+     * methods and caller state. Capability requirements are not secret, however: publishing them beside
+     * each risk class and non-MCP alternative lets a client request the least authority and route a
+     * refused or unsuitable operation without reverse-engineering the server implementation.
      *
-     * @return  array<string, string|list<string>>  Keyed `product`, `mode`, `tools`, `resources` and
-     *          `prompts`; the last three list tool names, resource URIs and prompt names in catalogue
-     *          order.
+     * @return  array{
+     *              product: string, mode: string, tools: list<string>, resources: list<string>,
+     *              prompts: list<string>, tool_metadata: list<array{
+     *                  name: string, capability: string|null, risk: string, alternative: string
+     *              }>
+     *          }  Public surface identity and per-tool policy metadata in catalogue order.
      *
      * @since   2.0.0
      */
     public function publicSummary(): array
     {
+        $names = [];
+        $metadata = [];
+        foreach ($this->tools() as $tool) {
+            $names[] = $tool['name'];
+            $metadata[] = [
+                'name' => $tool['name'],
+                'capability' => $tool['capability'],
+                'risk' => $tool['risk']->value,
+                'alternative' => $tool['alternative'],
+            ];
+        }
+
         return [
             'product' => 'Kumwe CMS',
             'mode' => 'capability_protected_read_write',
-            'tools' => array_column($this->tools(), 'name'),
+            'tools' => $names,
             'resources' => array_column($this->resources(), 'uri'),
             'prompts' => array_column($this->prompts(), 'name'),
+            'tool_metadata' => $metadata,
         ];
     }
 
@@ -2279,22 +2284,23 @@ final class McpCapabilityCatalog
     }
 
     /**
-     * Return the input properties the trust-key add and rotate tools share.
+     * Return the input properties one trust-key add or rotate handler accepts.
      *
-     * Both key names are offered: `kumwe_trust_key_add` requires `keyId`, while `kumwe_trust_key_rotate`
-     * spreads this map, adds `oldKeyId` and requires `newKeyId`. Which of the two a call must send is
-     * therefore decided by each tool's required list, not by this fragment.
+     * The two handlers name the new key differently: add accepts `keyId`, while rotate accepts
+     * `newKeyId` beside `oldKeyId`. Selecting that name here keeps each closed input envelope exactly
+     * aligned with its handler rather than advertising the other handler's unused identifier.
+     *
+     * @param   string  $identifier  `keyId` for an add or `newKeyId` for a rotation.
      *
      * @return  array<string, array<string, mixed>>  One schema fragment per shared property name.
      *
      * @since   2.0.0
      */
-    private function trustKeyProperties(): array
+    private function trustKeyProperties(string $identifier): array
     {
         return [
             'operationId' => $this->operationId(),
-            'keyId' => ['type' => 'string'],
-            'newKeyId' => ['type' => 'string'],
+            $identifier => ['type' => 'string'],
             'publicKeyBase64' => ['type' => 'string'],
             'vendorNamespace' => ['type' => 'string'],
             'extensionPattern' => ['type' => 'string'],

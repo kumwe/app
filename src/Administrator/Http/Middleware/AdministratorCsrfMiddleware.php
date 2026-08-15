@@ -66,11 +66,11 @@ final class AdministratorCsrfMiddleware implements MiddlewareInterface
 
         if ($provided === '' || !hash_equals($session->csrfToken, $provided)) {
             return new HtmlResponse(
-                '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Forbidden</title></head>'
+                '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><title>Forbidden</title></head>'
                 . '<body><main><h1>Forbidden</h1><p>The administrator security token is invalid or expired.</p>'
                 . '<p><a href="/administrator">Return to Kumwe</a></p></main></body></html>',
                 403,
-                ['Cache-Control' => 'no-store'],
+                ['Cache-Control' => 'no-store', 'Content-Language' => 'en-GB'],
             );
         }
 

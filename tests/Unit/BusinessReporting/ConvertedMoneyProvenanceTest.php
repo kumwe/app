@@ -41,8 +41,9 @@ final class ConvertedMoneyProvenanceTest extends TestCase
     public function testAConvertedMoneyColumnRefusesAFigureWithoutItsProvenance(): void
     {
         $type = ReportValueType::ConvertedMoney;
+        $portable = self::converted()->toPortableString();
 
-        self::assertTrue($type->accepts(self::converted()->toPortableString()));
+        self::assertTrue($type->accepts($portable));
         self::assertFalse($type->accepts('1234.56'));
         self::assertFalse($type->accepts('EUR 1234.56'));
         self::assertFalse($type->accepts(
@@ -50,6 +51,9 @@ final class ConvertedMoneyProvenanceTest extends TestCase
                 . ' as at 2026-08-14T00:00:00.000000+00:00 by acme.rates.ecb rounded half_up',
         ));
         self::assertFalse($type->accepts(1234));
+        self::assertFalse($type->accepts(str_replace('EUR 1234.56', 'EUR 9999.99', $portable)));
+        self::assertFalse($type->accepts(str_replace('from 1234.5600000000', 'from 1.0000000000', $portable)));
+        self::assertFalse($type->accepts(str_replace('2026-08-14', '2026-02-31', $portable)));
 
         try {
             new ReportExecutionResult(

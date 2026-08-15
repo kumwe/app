@@ -11,6 +11,7 @@ use Doctrine\DBAL\Connection;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Content\Application\TranslationGroupRepository;
+use Kumwe\CMS\Content\Domain\InvalidTranslationGroup;
 use Kumwe\CMS\Content\Domain\PublicationWindow;
 use Kumwe\CMS\Content\Domain\TranslationGroup;
 use Kumwe\CMS\Content\Domain\TranslationGroupMember;
@@ -81,29 +82,95 @@ final readonly class DoctrineTranslationGroupRepository implements TranslationGr
     /**
      * Record the group and its declared fallback, leaving an already-declared group untouched.
      *
-     * @param   SiteContext  $site      Site that owns the group.
-     * @param   string       $groupId   UUID identifying the logical item across locales.
-     * @param   LocaleTag    $fallback  Locale served when the negotiated one is missing or unpublished.
+     * @param   SiteContext  $site          Site that owns the group.
+     * @param   string       $groupId       UUID identifying the logical item across locales.
+     * @param   LocaleTag    $memberLocale  Locale used as fallback when the group is first declared without one.
+     * @param   ?LocaleTag   $fallback      Explicit fallback to verify or record; null leaves an existing one.
      *
      * @return  void
      *
+     * @throws  InvalidTranslationGroup  When the group belongs to another site or an explicit fallback
+     *          contradicts its stored declaration.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the locking read or insert.
+     *
      * @since   2.0.0
      */
-    public function declareGroup(SiteContext $site, string $groupId, LocaleTag $fallback): void
-    {
-        $existing = $this->database->fetchOne(sprintf(
-            'SELECT id FROM %s WHERE id = ?',
+    public function declareGroup(
+        SiteContext $site,
+        string $groupId,
+        LocaleTag $memberLocale,
+        ?LocaleTag $fallback = null,
+    ): void {
+        $existing = $this->database->fetchAssociative(sprintf(
+            'SELECT id, site_identifier, fallback_locale FROM %s WHERE id = ? FOR UPDATE',
             $this->tables->quoted('content_translation_groups'),
         ), [$groupId]);
-        if (is_string($existing) && $existing !== '') {
+        if (is_array($existing)) {
+            $owner = $existing['site_identifier'] ?? null;
+            if (!is_string($owner) || $owner !== $site->identifier()) {
+                throw new InvalidTranslationGroup('A translation group cannot be shared between sites.');
+            }
+            $storedFallback = $existing['fallback_locale'] ?? null;
+            if (
+                $fallback instanceof LocaleTag
+                && (!is_string($storedFallback) || $storedFallback !== $fallback->toString())
+            ) {
+                throw new InvalidTranslationGroup('A translation group cannot change its declared fallback locale.');
+            }
+
             return;
         }
 
         $this->database->insert($this->tables->raw('content_translation_groups'), [
             'id' => $groupId,
             'site_identifier' => $site->identifier(),
-            'fallback_locale' => $fallback->toString(),
+            'fallback_locale' => ($fallback ?? $memberLocale)->toString(),
         ]);
+    }
+
+    /**
+     * Serialize an attachment and enforce the stored group's site and member ceiling.
+     *
+     * @param   SiteContext  $site       Site that must own the group.
+     * @param   string       $groupId    UUID of the logical item being attached to.
+     * @param   string       $contentId  Entry being attached, excluded from the existing-member count.
+     *
+     * @return  void
+     *
+     * @throws  InvalidTranslationGroup  When the group belongs to another site or already has 64 other members.
+     * @throws  RuntimeException  When the declared group cannot be locked or its member count is unreadable.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects a locking read.
+     *
+     * @since   2.0.0
+     */
+    public function guardAttachment(SiteContext $site, string $groupId, string $contentId): void
+    {
+        $group = $this->database->fetchAssociative(sprintf(
+            'SELECT site_identifier FROM %s WHERE id = ? FOR UPDATE',
+            $this->tables->quoted('content_translation_groups'),
+        ), [$groupId]);
+        if (!is_array($group)) {
+            throw new RuntimeException('A translation group must be declared before an entry is attached.');
+        }
+        $owner = $group['site_identifier'] ?? null;
+        if (!is_string($owner) || $owner !== $site->identifier()) {
+            throw new InvalidTranslationGroup('A translation group cannot be shared between sites.');
+        }
+
+        $members = $this->database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE translation_group_id = ? AND site_identifier = ? '
+            . 'AND id <> ? AND deleted_at IS NULL',
+            $this->tables->quoted('content_entries'),
+        ), [$groupId, $site->identifier(), $contentId]);
+        if (!is_int($members) && !(is_string($members) && ctype_digit($members))) {
+            throw new RuntimeException('A translation group member count is unreadable.');
+        }
+        if ((int) $members >= TranslationGroup::MAXIMUM_MEMBERS) {
+            throw new InvalidTranslationGroup(sprintf(
+                'A translation group carries at most %d locales.',
+                TranslationGroup::MAXIMUM_MEMBERS,
+            ));
+        }
     }
 
     /**

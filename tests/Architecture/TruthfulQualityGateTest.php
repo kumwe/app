@@ -58,6 +58,116 @@ final class TruthfulQualityGateTest extends TestCase
     }
 
     /**
+     * A check assigned to a provisioned workflow job must not also run in the generic lane process.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheManifestRunnerDelegatesChecksWithExplicitLaneBindings(): void
+    {
+        $contract = [
+            'cadences' => ['nightly'],
+            'checks' => [
+                [
+                    'id' => 'delegated',
+                    'runner' => 'shell',
+                    'command' => 'exit 99',
+                    'cadence' => ['nightly'],
+                    'workflows' => [
+                        'nightly' => ['file' => 'workflow.yml', 'job' => 'browser'],
+                    ],
+                ],
+                [
+                    'id' => 'manifest-owned',
+                    'runner' => 'shell',
+                    'command' => 'printf manifest-executed',
+                    'cadence' => ['nightly'],
+                    'workflows' => [],
+                    'invoked_by' => '',
+                ],
+            ],
+        ];
+        $path = $this->writeTemporary($contract);
+
+        try {
+            $result = $this->execute('tools/quality-contract.php', [
+                '--run',
+                '--cadence=nightly',
+                '--contract=' . $path,
+            ]);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(0, $result['status'], $result['output']);
+        self::assertStringContainsString('delegated to workflow.yml job "browser"', $result['output']);
+        self::assertStringContainsString('manifest-executed', $result['output']);
+        self::assertStringContainsString('1 checks executed', $result['output']);
+    }
+
+    /**
+     * An empty delegation marker cannot make a check disappear from the generic lane runner.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnEmptyInvokedByDeclarationFailsTheContract(): void
+    {
+        $contract = $this->decode('docs/quality/contract.json');
+        $checks = $contract['checks'] ?? null;
+        self::assertIsArray($checks);
+        self::assertIsArray($checks[0] ?? null);
+        $checks[0]['invoked_by'] = '';
+        $contract['checks'] = $checks;
+        $path = $this->writeTemporary($contract);
+
+        try {
+            $result = $this->execute('tools/quality-contract.php', ['--check', '--contract=' . $path]);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('must declare invoked_by as a non-empty check identifier', $result['output']);
+    }
+
+    /**
+     * Generic nightly and release runners provision the database and Redis required by the full suite.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testManifestOwnedTestSuitesRunWithTheirRequiredServices(): void
+    {
+        $nightly = $this->contents('.github/workflows/nightly.yml');
+        $nightlyStart = strpos($nightly, "\n  quality-contract:\n");
+        $nightlyEnd = strpos($nightly, "\n  browser:\n");
+        self::assertIsInt($nightlyStart);
+        self::assertIsInt($nightlyEnd);
+        $nightlyRunner = substr($nightly, $nightlyStart, $nightlyEnd - $nightlyStart);
+        $services = [
+            'image: mariadb:lts',
+            'image: redis:8-alpine',
+            'DB_DRIVER: mariadb',
+            'REDIS_HOST: 127.0.0.1',
+        ];
+        foreach ($services as $proof) {
+            self::assertStringContainsString($proof, $nightlyRunner);
+        }
+
+        $release = $this->contents('.github/workflows/release.yml');
+        $releaseStart = strpos($release, "\n  release:\n");
+        self::assertIsInt($releaseStart);
+        $releaseRunner = substr($release, $releaseStart);
+        foreach ($services as $proof) {
+            self::assertStringContainsString($proof, $releaseRunner);
+        }
+    }
+
+    /**
      * A gate that runs in `composer qa` and is absent from the manifest must fail the contract.
      *
      * @return  void
@@ -117,6 +227,88 @@ final class TruthfulQualityGateTest extends TestCase
             }
             self::assertNotSame('UNASSIGNED', $violation['owner']);
         }
+    }
+
+    /**
+     * A function or constant member in a grouped import must not hide the class members beside it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMixedGroupedImportsCannotHideAForbiddenDependency(): void
+    {
+        $temporary = sys_get_temp_dir() . '/kumwe-dependency-' . bin2hex(random_bytes(8));
+        $source = $temporary . '/src/Application/Probe';
+        self::assertTrue(mkdir($source, 0o700, true));
+        $baseline = $temporary . '/baseline.json';
+        self::assertNotFalse(file_put_contents($baseline, '{"violations": []}'));
+
+        $before = <<<'PHP'
+<?php
+
+namespace Kumwe\CMS\Application\Probe;
+
+use Kumwe\CMS\{Infrastructure\Persistence\DoctrineTransactionManager as Adapter, function Shared\helper};
+
+final class ClassBeforeFunction
+{
+    public function __construct(private Adapter $adapter)
+    {
+    }
+}
+PHP;
+        $after = <<<'PHP'
+<?php
+
+namespace Kumwe\CMS\Application\Probe;
+
+use Kumwe\CMS\{const Shared\VALUE, Infrastructure\Persistence\DoctrineTransactionManager as Adapter};
+
+final class ClassAfterConstant
+{
+    public function __construct(private Adapter $adapter)
+    {
+    }
+}
+PHP;
+        $functionOnly = <<<'PHP'
+<?php
+
+namespace Kumwe\CMS\Application\Probe;
+
+use function Kumwe\CMS\Infrastructure\Persistence\{transaction_probe};
+
+final class GroupedFunctionOnly
+{
+}
+PHP;
+        self::assertNotFalse(file_put_contents($source . '/ClassBeforeFunction.php', $before));
+        self::assertNotFalse(file_put_contents($source . '/ClassAfterConstant.php', $after));
+        self::assertNotFalse(file_put_contents($source . '/GroupedFunctionOnly.php', $functionOnly));
+
+        try {
+            $result = $this->execute('tools/verify-dependency-graph.php', [
+                '--source=' . $temporary . '/src',
+                '--baseline=' . $baseline,
+            ]);
+        } finally {
+            @unlink($source . '/ClassBeforeFunction.php');
+            @unlink($source . '/ClassAfterConstant.php');
+            @unlink($source . '/GroupedFunctionOnly.php');
+            @unlink($baseline);
+            @rmdir($source);
+            @rmdir(dirname($source));
+            @rmdir(dirname($source, 2));
+            @rmdir($temporary . '/src');
+            @rmdir($temporary);
+        }
+
+        self::assertSame(1, $result['status'], 'Mixed grouped class imports must be evaluated.');
+        self::assertStringContainsString('ClassBeforeFunction', $result['output']);
+        self::assertStringContainsString('ClassAfterConstant', $result['output']);
+        self::assertStringContainsString('DoctrineTransactionManager', $result['output']);
+        self::assertStringNotContainsString('GroupedFunctionOnly', $result['output']);
     }
 
     /**
@@ -248,21 +440,27 @@ final class TruthfulQualityGateTest extends TestCase
 
         $recorded = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=pgsql',
+            '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/' . $repeat,
+            '--status=repeat:2',
         ]);
         self::assertSame(0, $recorded['status'], "The recorded result must pass:\n" . $recorded['output']);
         self::assertStringContainsString('nothing new', $recorded['output']);
 
         $unrecorded = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=mysql',
+            '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/unrecorded-failure.junit.xml',
+            '--status=repeat:2',
         ]);
         self::assertSame(1, $unrecorded['status'], 'A test outside the baseline must fail the check.');
         self::assertStringContainsString('are not in the baseline', $unrecorded['output']);
 
         $stale = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=mysql',
+            '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
+            '--status=repeat:0',
         ]);
         self::assertSame(1, $stale['status'], 'A baseline entry that no longer fails must be deleted.');
         self::assertStringContainsString('only ever shrinks', $stale['output']);
@@ -270,10 +468,105 @@ final class TruthfulQualityGateTest extends TestCase
         $expired = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=pgsql',
             '--today=2099-01-01',
+            '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/' . $repeat,
+            '--status=repeat:2',
         ]);
         self::assertSame(1, $expired['status'], 'An expired exemption must fail the check.');
         self::assertStringContainsString('does not outlive the work', $expired['output']);
+    }
+
+    /**
+     * Missing passes, truncated reports and unexplained runner exits are broken evidence, never green runs.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testIdempotencyEvidenceMustBeCompleteAndExplainTheRunnerExit(): void
+    {
+        $recorded = $this->root . '/tests/Fixtures/Idempotency/recorded-repeat.junit.xml';
+        $missing = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mysql',
+            '--expected-tests=7',
+            '--junit=other:' . $recorded,
+            '--status=other:2',
+        ]);
+        self::assertSame(1, $missing['status']);
+        self::assertStringContainsString('missing report(s) for: repeat', $missing['output']);
+        self::assertStringContainsString('undeclared pass(es): other', $missing['output']);
+
+        $missingStatus = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mysql',
+            '--expected-tests=7',
+            '--junit=repeat:' . $recorded,
+        ]);
+        self::assertSame(1, $missingStatus['status']);
+        self::assertStringContainsString('missing runner status(es) for: repeat', $missingStatus['output']);
+
+        $truncated = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mysql',
+            '--expected-tests=7',
+            '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/truncated-report.junit.xml',
+            '--status=repeat:0',
+        ]);
+        self::assertSame(1, $truncated['status']);
+        self::assertStringContainsString('independent collection found 7', $truncated['output']);
+
+        $accountedSkip = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mariadb',
+            '--expected-tests=7',
+            '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
+            '--status=repeat:0',
+        ]);
+        self::assertSame(0, $accountedSkip['status'], $accountedSkip['output']);
+
+        $runnerFailure = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mysql',
+            '--expected-tests=7',
+            '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
+            '--status=repeat:2',
+        ]);
+        self::assertSame(1, $runnerFailure['status']);
+        self::assertStringContainsString('outcomes and diagnostics require exit 0', $runnerFailure['output']);
+    }
+
+    /**
+     * An exploratory pass neither borrows exemptions from nor declares staleness in another pass.
+     *
+     * The six existing entries record failures from `repeat`. A green `reverse` measurement must therefore
+     * stay green without claiming those repeat failures disappeared, while the same test identifier failing
+     * under `reverse` must be reported as new rather than excused by its repeat-era entry.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testExploratoryIdempotencyEvidenceIsPassAware(): void
+    {
+        $green = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mysql',
+            '--pass=reverse',
+            '--expected-tests=7',
+            '--junit=reverse:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
+            '--status=reverse:0',
+        ]);
+        self::assertSame(0, $green['status'], $green['output']);
+        self::assertStringContainsString('0 recorded non-idempotent test(s)', $green['output']);
+        self::assertStringNotContainsString('only ever shrinks', $green['output']);
+
+        $borrowed = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mysql',
+            '--pass=reverse',
+            '--expected-tests=7',
+            '--junit=reverse:' . $this->root
+                . '/tests/Fixtures/Idempotency/repeat-entry-reverse-failure.junit.xml',
+            '--status=reverse:1',
+        ]);
+        self::assertSame(1, $borrowed['status'], 'A repeat exemption must not excuse a reverse failure.');
+        self::assertStringContainsString('failed in the reverse pass', $borrowed['output']);
+        self::assertStringContainsString('are not in the baseline', $borrowed['output']);
+        self::assertStringNotContainsString('only ever shrinks', $borrowed['output']);
     }
 
     /**
@@ -298,6 +591,7 @@ final class TruthfulQualityGateTest extends TestCase
                 self::assertNotSame('UNASSIGNED', $entry[$field]);
             }
             self::assertSame('V2-QA-004', $entry['finding']);
+            self::assertSame(['repeat'], $entry['passes'] ?? null);
             self::assertIsArray($entry['observed_on'] ?? null);
             self::assertIsArray($entry['applies_to'] ?? null);
             self::assertNotSame([], $entry['observed_on']);
@@ -404,6 +698,43 @@ final class TruthfulQualityGateTest extends TestCase
             self::assertStringContainsString($image, $browser);
         }
         self::assertStringContainsString('summarize-browser-attempts.mjs', $browser);
+    }
+
+    /**
+     * Chromium executes each right-to-left locale project while breadth excludes that locale-only file.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBrowserProjectSelectionIsDeterministicAcrossLocaleAndEngineAxes(): void
+    {
+        $package = $this->decode('package.json');
+        $scripts = $package['scripts'] ?? null;
+        self::assertIsArray($scripts);
+        $merge = $scripts['test:browser'] ?? null;
+        self::assertIsString($merge);
+        foreach (
+            [
+                'desktop-chromium-he',
+                'desktop-chromium-ar',
+                'mobile-chromium-he',
+                'mobile-chromium-ar',
+            ] as $project
+        ) {
+            self::assertStringContainsString('--project=' . $project, $merge);
+        }
+
+        $configuration = $this->contents('playwright.config.ts');
+        foreach (['desktop-firefox', 'desktop-webkit'] as $project) {
+            self::assertMatchesRegularExpression(
+                sprintf(
+                    "/name: '%s',\\n\\s+testIgnore: rightToLeftSpec,\\n\\s+ignoreSnapshots: true/",
+                    preg_quote($project, '/'),
+                ),
+                $configuration,
+            );
+        }
     }
 
     /**

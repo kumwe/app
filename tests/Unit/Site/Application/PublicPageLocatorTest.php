@@ -15,9 +15,11 @@ use Kumwe\CMS\Content\Application\SiteScopedContentRepository;
 use Kumwe\CMS\Content\Application\TranslationGroupRepository;
 use Kumwe\CMS\Content\Domain\ContentEntry;
 use Kumwe\CMS\Content\Domain\ContentStatus;
+use Kumwe\CMS\Content\Domain\ExpectedVersion;
 use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\CMS\Localization\Application\ActiveLocale;
 use Kumwe\CMS\Localization\Application\SupportedLocales;
+use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Http\Handler\PublishedContentHandler;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
@@ -102,13 +104,23 @@ final class PublicPageLocatorTest extends TestCase
 
     public function testLegacyPagesRouteRedirectsPermanentlyToNestedCanonicalPath(): void
     {
+        $team = $this->record(self::TEAM, 'Team', 'team');
+        $team = $team->withEntry(
+            $team->entry->translate(
+                new ExpectedVersion(1),
+                LocaleTag::fromString('de'),
+                '018f22e2-7c8b-7ab0-8f3a-88e8026bb960',
+            ),
+            new DateTimeImmutable('2026-08-07T10:01:00+00:00'),
+        );
         $records = [
             self::HOME => $this->record(self::HOME, 'Home', 'home'),
             self::ABOUT => $this->record(self::ABOUT, 'About', 'about'),
-            self::TEAM => $this->record(self::TEAM, 'Team', 'team'),
+            self::TEAM => $team,
         ];
         $settings = $this->settings();
         $locator = $this->locator($records, settings: $settings);
+        $active = new ActiveLocale(new SupportedLocales());
         $handler = new PublishedContentHandler(
             $locator,
             $settings,
@@ -116,6 +128,7 @@ final class PublicPageLocatorTest extends TestCase
             new ContentPresenter(new RichTextFormatter()),
             $this->layouts(),
             $this->languages($locator),
+            $active,
         );
         $request = (new ServerRequestFactory())->createServerRequest(
             'GET',
@@ -126,6 +139,7 @@ final class PublicPageLocatorTest extends TestCase
 
         self::assertSame(308, $response->getStatusCode());
         self::assertSame('/about/team?preview=0', $response->getHeaderLine('Location'));
+        self::assertSame('de', $active->locale()->toString());
     }
 
     public function testCanonicalNestedPathRendersThePublishedTarget(): void
@@ -146,6 +160,7 @@ final class PublicPageLocatorTest extends TestCase
             new ContentPresenter(new RichTextFormatter()),
             $this->layouts(),
             $this->languages($locator),
+            new ActiveLocale(new SupportedLocales()),
         );
         $request = (new ServerRequestFactory())->createServerRequest(
             'GET',

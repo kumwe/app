@@ -7,7 +7,7 @@
   baseline does not carry, and remove one the baseline does, so both directions of the gate are proven.
 -->
 <testsuites>
-  <testsuite name="integration" tests="6" assertions="6" errors="5" failures="1" time="1.000000">
+  <testsuite name="integration" tests="7" assertions="6" errors="0" failures="0" skipped="1" time="1.000000">
     <testcase name="testArchiveAndDeleteRedirectToLifecycleReadableDestinations"
               class="Kumwe\CMS\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
               classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
@@ -35,6 +35,8 @@
     <testcase name="testAnIdempotentNeighbourStillPasses"
               class="Kumwe\CMS\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
               classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
-              time="1.000000"/>
+              time="1.000000">
+      <skipped/>
+    </testcase>
   </testsuite>
 </testsuites>

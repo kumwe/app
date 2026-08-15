@@ -18,8 +18,6 @@ use Kumwe\CMS\Extension\Application\Trust\TrustKeySignatureVerifier;
 use Kumwe\CMS\Extension\Application\Trust\TrustRuntimeInvalidator;
 use Kumwe\CMS\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
@@ -209,7 +207,6 @@ final class McpThemeIntegrationTest extends TestCase
             $this->createStub(SiteSettings::class),
             $extensions,
             $trust,
-            $this->createStub(AdministratorIdentityGateway::class),
             $this->withoutConstructor(AutomationManagementService::class),
             $this->withoutConstructor(BusinessDefinitionService::class),
             $this->withoutConstructor(BusinessSchemaService::class),
@@ -218,7 +215,6 @@ final class McpThemeIntegrationTest extends TestCase
             new McpMutationGuard($database, $tables, $clock, $transactions),
             $clock,
             AuthorizationContext::gateway(),
-            $this->withoutConstructor(TokenRotationPreauthorizer::class),
         );
     }
 

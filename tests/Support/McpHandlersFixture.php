@@ -11,8 +11,6 @@ use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
@@ -35,7 +33,6 @@ final class McpHandlersFixture
             self::withoutConstructor(DoctrineSiteSettings::class),
             self::withoutConstructor(RedisLockedExtensionManager::class),
             self::withoutConstructor(TrustStore::class),
-            self::withoutConstructor(DoctrineAdministratorIdentityGateway::class),
             self::withoutConstructor(AutomationManagementService::class),
             self::withoutConstructor(BusinessDefinitionService::class),
             self::withoutConstructor(BusinessSchemaService::class),
@@ -44,7 +41,6 @@ final class McpHandlersFixture
             self::withoutConstructor(McpMutationGuard::class),
             new SystemClock(),
             AuthorizationContext::gateway(),
-            self::withoutConstructor(TokenRotationPreauthorizer::class),
         );
     }
 

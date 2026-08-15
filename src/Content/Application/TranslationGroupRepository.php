@@ -45,13 +45,44 @@ interface TranslationGroupRepository
      * declared fallback is recorded once, with the group, rather than repeated on every member — a
      * fallback that differed between two locales of the same item would not be a fallback at all.
      *
-     * @param   SiteContext  $site      Site that owns the group.
-     * @param   string       $groupId   UUID identifying the logical item across locales.
-     * @param   LocaleTag    $fallback  Locale served when the negotiated one is missing or unpublished.
+     * @param   SiteContext  $site          Site that owns the group.
+     * @param   string       $groupId       UUID identifying the logical item across locales.
+     * @param   LocaleTag    $memberLocale  Locale of the member causing a first declaration.
+     * @param   ?LocaleTag   $fallback      Explicit fallback to verify or record; null leaves an existing
+     *          declaration alone and uses the first member locale for a new group.
      *
      * @return  void
      *
+     * @throws  \Kumwe\CMS\Content\Domain\InvalidTranslationGroup  When the group belongs to another site
+     *          or an explicit fallback contradicts its stored declaration.
+     *
      * @since   2.0.0
      */
-    public function declareGroup(SiteContext $site, string $groupId, LocaleTag $fallback): void;
+    public function declareGroup(
+        SiteContext $site,
+        string $groupId,
+        LocaleTag $memberLocale,
+        ?LocaleTag $fallback = null,
+    ): void;
+
+    /**
+     * Lock a group and refuse an attachment that would break its site or member ceiling.
+     *
+     * This runs inside the content translation transaction after declaration and before the entry row is
+     * updated. Locking the group row serializes concurrent locales, so the maximum remains an invariant of
+     * stored state rather than a check performed only when delivery later reconstructs the group.
+     *
+     * @param   SiteContext  $site       Site that must own the group and the entry.
+     * @param   string       $groupId    UUID of the logical item being attached to.
+     * @param   string       $contentId  Entry being attached, excluded when it already belongs to the group.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\Content\Domain\InvalidTranslationGroup  When the group belongs to another site
+     *          or already carries the maximum number of other live members.
+     * @throws  \RuntimeException  When no declared group can be locked or its member count is unreadable.
+     *
+     * @since   2.0.0
+     */
+    public function guardAttachment(SiteContext $site, string $groupId, string $contentId): void;
 }

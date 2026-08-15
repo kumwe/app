@@ -225,11 +225,11 @@ final class UnitConversionRefusalTest extends TestCase
      *
      * @since   2.0.0
      */
-    public function testAConvertedQuantityExportRoundingMustBeSpelledOutInText(): void
+    public function testAConvertedQuantityExportRoundingMustCarryExactTypedProvenance(): void
     {
-        foreach (['mode', 'unrounded_amount'] as $member) {
+        foreach (['mode', 'scale', 'unrounded_amount'] as $member) {
             $mistyped = self::converted()->toArray();
-            $mistyped['rounding'][$member] = 12;
+            $mistyped['rounding'][$member] = $member === 'scale' ? '3' : 12;
             $this->refuses(
                 static fn (): ConvertedQuantityValue => ConvertedQuantityValue::fromArray($mistyped),
                 'rounding member has the wrong type',
@@ -239,9 +239,23 @@ final class UnitConversionRefusalTest extends TestCase
             unset($missing['rounding'][$member]);
             $this->refuses(
                 static fn (): ConvertedQuantityValue => ConvertedQuantityValue::fromArray($missing),
-                'rounding member has the wrong type',
+                'rounding must carry exactly its declared members',
             );
         }
+
+        $extra = self::converted()->toArray();
+        $extra['rounding']['precision'] = 12;
+        $this->refuses(
+            static fn (): ConvertedQuantityValue => ConvertedQuantityValue::fromArray($extra),
+            'rounding must carry exactly its declared members',
+        );
+
+        $contradictory = self::converted()->toArray();
+        $contradictory['rounding']['scale'] = 9;
+        $this->refuses(
+            static fn (): ConvertedQuantityValue => ConvertedQuantityValue::fromArray($contradictory),
+            'rounding scale must match the converted amount',
+        );
     }
 
     /**

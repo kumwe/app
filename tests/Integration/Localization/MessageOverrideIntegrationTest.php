@@ -7,7 +7,11 @@ namespace Kumwe\CMS\Tests\Integration\Localization;
 use DateTimeImmutable;
 use DateTimeZone;
 use Joomla\DI\Container;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
+use Kumwe\CMS\Audit\Application\AuditRecorder;
+use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfaceMessageOverrideMigration;
 use Kumwe\CMS\Localization\Application\ActiveLocale;
 use Kumwe\CMS\Localization\Application\CatalogueTranslator;
@@ -15,6 +19,7 @@ use Kumwe\CMS\Localization\Application\MessageCatalogueRepository;
 use Kumwe\CMS\Localization\Application\MessageOverrideRecord;
 use Kumwe\CMS\Localization\Application\MessageOverrideService;
 use Kumwe\CMS\Localization\Application\MessagePatternFormatter;
+use Kumwe\CMS\Localization\Application\MessagePatternValidator;
 use Kumwe\CMS\Localization\Application\SupportedLocales;
 use Kumwe\CMS\Localization\Application\TranslationScope;
 use Kumwe\CMS\Localization\Application\Translator;
@@ -25,6 +30,8 @@ use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Clock\ClockInterface;
+use RuntimeException;
 
 /**
  * Proves the administered half of the override chain against the engine the suite is pointed at.
@@ -131,6 +138,205 @@ final class MessageOverrideIntegrationTest extends TestCase
         } finally {
             $service->withdraw($context, MessageCatalogueLayer::Site, 'en-GB', self::RELABELLED);
         }
+    }
+
+    /**
+     * Repeating the exact value at the exact instant remains a no-op instead of attempting an insert.
+     *
+     * MySQL and MariaDB report zero affected rows when an update changes neither persisted value. The
+     * repository must distinguish that result from a missing identity while the service still holds its
+     * portable site-row lock; otherwise the second call attempts a duplicate insert. The fixed clock makes
+     * the two writes byte-for-byte identical and the matrix runs this case on every supported engine.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testWritingTheSameValueAtTheSameInstantDoesNotInsertADuplicate(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $store = $container->get(DoctrineMessageOverrideRepository::class);
+        $catalogues = $container->get(MessageCatalogueRepository::class);
+        $supported = $container->get(SupportedLocales::class);
+        $authorization = $container->get(AuthorizationGateway::class);
+        $transactions = $container->get(TransactionManager::class);
+        $patterns = $container->get(MessagePatternValidator::class);
+        $audit = $container->get(AuditRecorder::class);
+        self::assertInstanceOf(DoctrineMessageOverrideRepository::class, $store);
+        self::assertInstanceOf(MessageCatalogueRepository::class, $catalogues);
+        self::assertInstanceOf(SupportedLocales::class, $supported);
+        self::assertInstanceOf(AuthorizationGateway::class, $authorization);
+        self::assertInstanceOf(TransactionManager::class, $transactions);
+        self::assertInstanceOf(MessagePatternValidator::class, $patterns);
+        self::assertInstanceOf(AuditRecorder::class, $audit);
+        $at = new DateTimeImmutable('2026-08-15 12:34:56', new DateTimeZone('UTC'));
+        $clock = $this->createStub(ClockInterface::class);
+        $clock->method('now')->willReturn($at);
+        $service = new MessageOverrideService(
+            $store,
+            $catalogues,
+            $supported,
+            $authorization,
+            $transactions,
+            $patterns,
+            $audit,
+            $clock,
+        );
+        $context = TestKernelFactory::administratorContext($container);
+        $tag = LocaleTag::fromString('en-GB');
+        $store->remove(MessageCatalogueLayer::Site, SiteContext::DEFAULT, null, $tag, self::RELABELLED);
+
+        try {
+            $service->override(
+                $context,
+                MessageCatalogueLayer::Site,
+                'en-GB',
+                self::RELABELLED,
+                'Same wording and instant',
+            );
+            $service->override(
+                $context,
+                MessageCatalogueLayer::Site,
+                'en-GB',
+                self::RELABELLED,
+                'Same wording and instant',
+            );
+
+            $mine = array_values(array_filter(
+                $store->overrides(MessageCatalogueLayer::Site, SiteContext::DEFAULT, null, $tag),
+                static fn (MessageOverrideRecord $record): bool => $record->identifier === self::RELABELLED,
+            ));
+            self::assertCount(1, $mine);
+            self::assertSame('Same wording and instant', $mine[0]->pattern);
+            self::assertSame($at->getTimestamp(), $mine[0]->updatedAt->getTimestamp());
+        } finally {
+            $service->withdraw($context, MessageCatalogueLayer::Site, 'en-GB', self::RELABELLED);
+        }
+    }
+
+    /**
+     * A shared translator discards its request snapshot before the next request begins.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheSharedTranslatorSeesAChangeOnTheNextUnitOfWork(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $service = $container->get(MessageOverrideService::class);
+        $translator = $container->get(Translator::class);
+        $active = $container->get(ActiveLocale::class);
+        self::assertInstanceOf(MessageOverrideService::class, $service);
+        self::assertInstanceOf(Translator::class, $translator);
+        self::assertInstanceOf(ActiveLocale::class, $active);
+        $context = TestKernelFactory::administratorContext($container);
+
+        $service->withdraw($context, MessageCatalogueLayer::Site, 'en-GB', self::RELABELLED);
+        $active->begin(LocaleTag::fromString('en-GB'), TranslationScope::default());
+        $shipped = $translator->translate(self::RELABELLED);
+        $active->end();
+
+        try {
+            $service->override(
+                $context,
+                MessageCatalogueLayer::Site,
+                'en-GB',
+                self::RELABELLED,
+                'Visible next request',
+            );
+            $active->begin(LocaleTag::fromString('en-GB'), TranslationScope::default());
+            self::assertSame('Visible next request', $translator->translate(self::RELABELLED));
+            $active->end();
+        } finally {
+            $active->end();
+            $service->withdraw($context, MessageCatalogueLayer::Site, 'en-GB', self::RELABELLED);
+        }
+
+        $active->begin(LocaleTag::fromString('en-GB'), TranslationScope::default());
+        try {
+            self::assertSame($shipped, $translator->translate(self::RELABELLED));
+        } finally {
+            $active->end();
+        }
+    }
+
+    /**
+     * An audit failure rolls the wording row back with the rest of the mutation transaction.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnAuditFailureRollsBackTheOverrideWrite(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $store = $container->get(DoctrineMessageOverrideRepository::class);
+        self::assertInstanceOf(DoctrineMessageOverrideRepository::class, $store);
+        $tag = LocaleTag::fromString('en-GB');
+        $store->remove(
+            MessageCatalogueLayer::Site,
+            SiteContext::DEFAULT,
+            null,
+            $tag,
+            self::RELABELLED,
+        );
+        $catalogues = $container->get(MessageCatalogueRepository::class);
+        $supported = $container->get(SupportedLocales::class);
+        $authorization = $container->get(AuthorizationGateway::class);
+        $transactions = $container->get(TransactionManager::class);
+        $patterns = $container->get(MessagePatternValidator::class);
+        $clock = $container->get(ClockInterface::class);
+        self::assertInstanceOf(MessageCatalogueRepository::class, $catalogues);
+        self::assertInstanceOf(SupportedLocales::class, $supported);
+        self::assertInstanceOf(AuthorizationGateway::class, $authorization);
+        self::assertInstanceOf(TransactionManager::class, $transactions);
+        self::assertInstanceOf(MessagePatternValidator::class, $patterns);
+        self::assertInstanceOf(ClockInterface::class, $clock);
+        $service = new MessageOverrideService(
+            $store,
+            $catalogues,
+            $supported,
+            $authorization,
+            $transactions,
+            $patterns,
+            new class implements AuditRecorder {
+                /**
+                 * Simulate the durable audit sink refusing the mutation.
+                 *
+                 * @param   AuditEvent  $event  Event the mutation tried to record.
+                 *
+                 * @return  void
+                 *
+                 * @throws  RuntimeException  Always, to force transaction rollback.
+                 *
+                 * @since   2.0.0
+                 */
+                public function record(AuditEvent $event): void
+                {
+                    throw new RuntimeException('Synthetic audit failure.');
+                }
+            },
+            $clock,
+        );
+
+        try {
+            $service->override(
+                TestKernelFactory::administratorContext($container),
+                MessageCatalogueLayer::Site,
+                'en-GB',
+                self::RELABELLED,
+                'Must roll back',
+            );
+            self::fail('An audit failure must abort the wording mutation.');
+        } catch (RuntimeException $failure) {
+            self::assertSame('Synthetic audit failure.', $failure->getMessage());
+        }
+
+        self::assertArrayNotHasKey(
+            self::RELABELLED,
+            $store->siteOverrides(SiteContext::DEFAULT, $tag),
+        );
     }
 
     /**

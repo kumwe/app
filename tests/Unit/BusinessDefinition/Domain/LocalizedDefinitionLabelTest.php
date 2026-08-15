@@ -150,6 +150,29 @@ final class LocalizedDefinitionLabelTest extends TestCase
     }
 
     /**
+     * Two source keys that normalize to one locale are refused instead of overwriting by order.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDuplicateNormalizedLocaleKeysAreRefused(): void
+    {
+        $duplicates = ['pt_br' => 'Fatura', 'PT-BR' => 'Factura'];
+        foreach ([$duplicates, array_reverse($duplicates, true)] as $translations) {
+            try {
+                $this->definition(['singular_label' => $translations]);
+                self::fail('Normalized duplicate locale keys were accepted.');
+            } catch (InvalidBusinessDefinition $exception) {
+                self::assertStringContainsString(
+                    'declares locale pt-BR more than once after normalization',
+                    $exception->getMessage(),
+                );
+            }
+        }
+    }
+
+    /**
      * Prove the dimension refuses what the declared text beside it would already refuse.
      *
      * @return  void

@@ -13,6 +13,8 @@ use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Localization\Http\Middleware\LocaleNegotiationMiddleware;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response;
+use Laminas\Diactoros\Response\HtmlResponse;
+use Laminas\Diactoros\Response\RedirectResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -91,6 +93,108 @@ final class LocaleNegotiationMiddlewareTest extends TestCase
         self::assertSame('en-GB', $active->locale()->toString());
     }
 
+    /**
+     * Public HTML advertises its resolved language and varies without replacing existing fields.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPublicHtmlCarriesLanguageAndAcceptLanguageVariation(): void
+    {
+        $response = $this->middleware($this->holder(), 'en')->process(
+            (new ServerRequestFactory())->createServerRequest('GET', 'https://kumwe.test/')
+                ->withHeader('Accept-Language', 'de'),
+            $this->handler(
+                static function (): void {
+                },
+                new HtmlResponse('', 200, [
+                    'Cache-Control' => 'public, max-age=60',
+                    'Vary' => 'Accept-Encoding',
+                ]),
+            ),
+        );
+
+        self::assertSame('de', $response->getHeaderLine('Content-Language'));
+        self::assertSame('Accept-Encoding, Accept-Language', $response->getHeaderLine('Vary'));
+    }
+
+    /**
+     * A source-language fallback page keeps the language its own document declares.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testExplicitFallbackLanguageIsNotOverwrittenByNegotiation(): void
+    {
+        $body = '<!doctype html><html lang="en-GB"><body>Fallback</body></html>';
+        $response = $this->middleware($this->holder(), 'en')->process(
+            (new ServerRequestFactory())->createServerRequest('GET', 'https://kumwe.test/missing')
+                ->withHeader('Accept-Language', 'de'),
+            $this->handler(
+                static function (): void {
+                },
+                new HtmlResponse($body, 404, [
+                    'Cache-Control' => 'no-store',
+                    'Content-Language' => 'en-GB',
+                ]),
+            ),
+        );
+
+        self::assertSame('en-GB', $response->getHeaderLine('Content-Language'));
+        self::assertStringContainsString('<html lang="en-GB">', (string) $response->getBody());
+        self::assertFalse($response->hasHeader('Vary'));
+    }
+
+    /**
+     * A public redirect selected by locale carries the same cache contract as public HTML.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPublicRedirectCarriesLanguageAndAcceptLanguageVariation(): void
+    {
+        $response = $this->middleware($this->holder(), 'en')->process(
+            (new ServerRequestFactory())->createServerRequest('GET', 'https://kumwe.test/')
+                ->withHeader('Accept-Language', 'he'),
+            $this->handler(
+                static function (): void {
+                },
+                new RedirectResponse('/he', 302, ['Cache-Control' => 'public, max-age=60']),
+            ),
+        );
+
+        self::assertSame(302, $response->getStatusCode());
+        self::assertSame('he', $response->getHeaderLine('Content-Language'));
+        self::assertSame('Accept-Language', $response->getHeaderLine('Vary'));
+    }
+
+    /**
+     * A machine response does not claim that negotiation changed its representation language.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPublicMachineResponseCarriesNoLanguageMetadata(): void
+    {
+        $response = $this->middleware($this->holder(), 'en')->process(
+            (new ServerRequestFactory())->createServerRequest('GET', 'https://kumwe.test/api')
+                ->withHeader('Accept-Language', 'de'),
+            $this->handler(
+                static function (): void {
+                },
+                (new Response())->withHeader('Content-Type', 'application/json')
+                    ->withHeader('Cache-Control', 'public, max-age=60'),
+            ),
+        );
+
+        self::assertFalse($response->hasHeader('Content-Language'));
+        self::assertFalse($response->hasHeader('Vary'));
+    }
+
     private function holder(): ActiveLocale
     {
         return new ActiveLocale(new SupportedLocales());
@@ -130,13 +234,13 @@ final class LocaleNegotiationMiddlewareTest extends TestCase
         );
     }
 
-    private function handler(callable $inspect): RequestHandlerInterface
+    private function handler(callable $inspect, ?ResponseInterface $response = null): RequestHandlerInterface
     {
-        return new class ($inspect) implements RequestHandlerInterface {
+        return new class ($inspect, $response) implements RequestHandlerInterface {
             /** @var callable(ServerRequestInterface): void */
             private $inspect;
 
-            public function __construct(callable $inspect)
+            public function __construct(callable $inspect, private readonly ?ResponseInterface $response)
             {
                 $this->inspect = $inspect;
             }
@@ -145,7 +249,7 @@ final class LocaleNegotiationMiddlewareTest extends TestCase
             {
                 ($this->inspect)($request);
 
-                return new Response();
+                return $this->response ?? new Response();
             }
         };
     }

@@ -18,10 +18,10 @@ use ReflectionMethod;
  * through the same code the runtime uses.
  *
  * Three families of rule are enforced. **Identity**: names are unique, well formed, and bound to a
- * public handler method that actually accepts the arguments the schema requires. **Risk coherence**:
+ * public handler method whose complete parameter list matches the schema. **Risk coherence**:
  * every tool declares an `McpRiskClass`, and its read-only, destructive, idempotent, capability and
- * operation-identity declarations must agree with the class it claims. **Non-disclosure**: no property
- * anywhere in a published schema may be shaped like a credential or a host path, and no handler
+ * operation-identity declarations must agree with the class it claims. **Non-disclosure**: no declared
+ * property anywhere in a published schema may be shaped like a credential or a host path, and no handler
  * parameter may be marked `#[\SensitiveParameter]`, because a value worth marking sensitive is a value
  * that must not cross a tool boundary at all.
  *
@@ -197,18 +197,21 @@ final readonly class McpCatalogValidator
         return [
             ...$this->handlerViolations($tool['name'], $tool['handler'], $tool['inputSchema'], $handlers),
             ...$this->riskViolations($tool),
-            ...$this->schemaViolations($tool['name'], $tool['inputSchema']),
+            ...$this->schemaViolations($tool['name'], 'input', $tool['inputSchema'], true),
+            ...$this->schemaViolations($tool['name'], 'output', $tool['outputSchema'], false),
             ...$this->disclosureViolations($tool['name'], $tool),
             ...$this->handlerSignatureViolations($tool['handler'], $handlers),
         ];
     }
 
     /**
-     * Check that an entry's handler exists, is publicly callable, and accepts what the schema demands.
+     * Check that an entry's handler exists, is publicly callable, and exactly matches its input envelope.
      *
-     * The argument check is the half review keeps missing: a schema may require a property the handler
-     * has no parameter for, in which case the tool is unreachable in practice and the mismatch only
-     * surfaces when a client calls it.
+     * Every declared property must have a parameter and every parameter must be declared. A parameter
+     * without a default must also be required by the schema; otherwise a valid client omission reaches
+     * PHP as a missing argument. This is intentionally bidirectional: accepting an undeclared parameter
+     * makes a later schema widening silently security-relevant, while declaring an argument no handler
+     * accepts makes the published tool unreachable.
      *
      * @param   string                     $entry     Tool name, resource URI or prompt name, for the message.
      * @param   string                     $handler   Method name the entry binds to.
@@ -236,10 +239,21 @@ final readonly class McpCatalogValidator
 
         $parameters = [];
         foreach ($method->getParameters() as $parameter) {
-            $parameters[$parameter->getName()] = true;
+            $parameters[$parameter->getName()] = $parameter;
         }
         $violations = [];
+        $properties = $input['properties'] ?? [];
         $required = $input['required'] ?? [];
+        foreach (is_array($properties) ? array_keys($properties) : [] as $property) {
+            if (is_string($property) && !isset($parameters[$property])) {
+                $violations[] = sprintf(
+                    'Tool "%s" publishes property "%s", which handler %s has no parameter for.',
+                    $entry,
+                    $property,
+                    $handler,
+                );
+            }
+        }
         foreach (is_array($required) ? $required : [] as $property) {
             if (is_string($property) && !isset($parameters[$property])) {
                 $violations[] = sprintf(
@@ -247,6 +261,25 @@ final readonly class McpCatalogValidator
                     $entry,
                     $property,
                     $handler,
+                );
+            }
+        }
+        foreach ($parameters as $parameterName => $parameter) {
+            if (!is_array($properties) || !array_key_exists($parameterName, $properties)) {
+                $violations[] = sprintf(
+                    'Handler %s accepts parameter $%s, which tool "%s" does not publish.',
+                    $handler,
+                    $parameterName,
+                    $entry,
+                );
+                continue;
+            }
+            if (!$parameter->isOptional() && (!is_array($required) || !in_array($parameterName, $required, true))) {
+                $violations[] = sprintf(
+                    'Handler %s requires $%s, but tool "%s" marks that property optional.',
+                    $handler,
+                    $parameterName,
+                    $entry,
                 );
             }
         }
@@ -301,13 +334,18 @@ final readonly class McpCatalogValidator
         if ($risk->requiresDeclaredCapability() && $tool['capability'] === null) {
             $violations[] = sprintf('Tool "%s" declares risk class %s but names no capability.', $name, $risk->value);
         }
+        if ($tool['capability'] !== null
+            && preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/D', $tool['capability']) !== 1
+        ) {
+            $violations[] = sprintf('Tool "%s" names an invalid capability.', $name);
+        }
         if ($risk->reachesBeyondTheCallersSite() && $tool['readOnly']) {
             $violations[] = sprintf(
                 'Tool "%s" claims a reach beyond the site while reporting itself read-only.',
                 $name,
             );
         }
-        if ($tool['alternative'] === '') {
+        if (trim($tool['alternative']) === '') {
             $violations[] = sprintf('Tool "%s" documents no non-MCP alternative.', $name);
         }
         if (!$risk->changesState()) {
@@ -328,33 +366,104 @@ final readonly class McpCatalogValidator
     }
 
     /**
-     * Check that every object schema a tool publishes states an explicit membership decision.
+     * Check one schema side has a valid object envelope and explicit membership decisions throughout.
      *
      * A closed object refuses an argument nothing validates; an object that is deliberately open — a
      * definition-shaped value map — is allowed, but it has to say so, because the difference between
      * "open on purpose" and "nobody decided" is exactly what a reviewer cannot see.
      *
-     * @param   string                $name    Tool name, for the message.
-     * @param   array<string, mixed>  $schema  Input schema to walk in full.
+     * @param   string                $name        Tool name, for the message.
+     * @param   string                $side        `input` or `output`, named in each violation.
+     * @param   array<string, mixed>  $schema      Schema to walk in full.
+     * @param   bool                  $closedRoot  Whether the root must reject additional properties.
      *
      * @return  list<string>  One sentence per violation; empty when every object states its decision.
      *
      * @since   2.0.0
      */
-    private function schemaViolations(string $name, array $schema): array
+    private function schemaViolations(string $name, string $side, array $schema, bool $closedRoot): array
     {
-        if (($schema['additionalProperties'] ?? null) !== false) {
-            return [sprintf('Tool "%s" publishes an input schema that is not a closed object.', $name)];
+        $violations = [];
+        if (($schema['type'] ?? null) !== 'object') {
+            $violations[] = sprintf('Tool "%s" publishes an %s schema whose root is not an object.', $name, $side);
+        }
+        if ($closedRoot && ($schema['additionalProperties'] ?? null) !== false) {
+            $violations[] = sprintf('Tool "%s" publishes an input schema that is not a closed object.', $name);
+        }
+        if ($side === 'input' && !is_array($schema['properties'] ?? null)) {
+            $violations[] = sprintf('Tool "%s" publishes an input schema without a property map.', $name);
+        }
+        if ($side === 'input' && !is_array($schema['required'] ?? null)) {
+            $violations[] = sprintf('Tool "%s" publishes an input schema without a required-property list.', $name);
         }
 
-        $violations = [];
         foreach ($this->objectSchemas($schema, '') as $path => $node) {
+            $location = $path === '' ? '(root)' : $path;
             if (!array_key_exists('additionalProperties', $node)) {
                 $violations[] = sprintf(
-                    'Tool "%s" publishes object schema %s without an additionalProperties decision.',
+                    'Tool "%s" publishes %s object schema %s without an additionalProperties decision.',
                     $name,
-                    $path === '' ? '(root)' : $path,
+                    $side,
+                    $location,
                 );
+            }
+            if (array_key_exists('properties', $node) && !is_array($node['properties'])) {
+                $violations[] = sprintf(
+                    'Tool "%s" publishes %s object schema %s with an invalid property map.',
+                    $name,
+                    $side,
+                    $location,
+                );
+                continue;
+            }
+            if (!array_key_exists('required', $node)) {
+                continue;
+            }
+            $required = $node['required'];
+            if (!is_array($required) || !array_is_list($required)) {
+                $violations[] = sprintf(
+                    'Tool "%s" publishes %s object schema %s with an invalid required-property list.',
+                    $name,
+                    $side,
+                    $location,
+                );
+                continue;
+            }
+            $validRequired = true;
+            foreach ($required as $property) {
+                if (!is_string($property)) {
+                    $validRequired = false;
+                }
+            }
+            if (!$validRequired) {
+                $violations[] = sprintf(
+                    'Tool "%s" publishes %s object schema %s with an invalid required-property list.',
+                    $name,
+                    $side,
+                    $location,
+                );
+                continue;
+            }
+            /** @var list<string> $required */
+            if (count($required) !== count(array_unique($required))) {
+                $violations[] = sprintf(
+                    'Tool "%s" publishes %s object schema %s with duplicate required properties.',
+                    $name,
+                    $side,
+                    $location,
+                );
+            }
+            $properties = $node['properties'] ?? [];
+            foreach ($required as $property) {
+                if (!is_array($properties) || !array_key_exists($property, $properties)) {
+                    $violations[] = sprintf(
+                        'Tool "%s" requires undeclared %s property "%s" in object schema %s.',
+                        $name,
+                        $side,
+                        $property,
+                        $location,
+                    );
+                }
             }
         }
 
@@ -367,7 +476,7 @@ final readonly class McpCatalogValidator
      * The walk covers property names at every depth of both schemas, so a credential smuggled into a
      * nested object or an array item schema is caught in the same pass as a top-level one.
      *
-     * @param string $name Tool name, for the message.
+     * @param   string  $name  Tool name, for the message.
      * @param   array{inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...}  $tool  One
      *          published catalogue entry.
      *

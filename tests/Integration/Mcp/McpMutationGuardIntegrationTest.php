@@ -19,28 +19,6 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(McpMutationGuard::class)]
 final class McpMutationGuardIntegrationTest extends TestCase
 {
-    public function testIdempotentSecretIsReturnedOnlyOnFirstExecution(): void
-    {
-        $container = TestKernelFactory::create(Environment::fromGlobals());
-        $guard = $container->get(McpMutationGuard::class);
-        self::assertInstanceOf(McpMutationGuard::class, $guard);
-        $context = TestKernelFactory::administratorContext($container);
-        $operationId = 'token-rotation-' . Uuid::uuid7()->toString();
-        $calls = 0;
-        $mutation = static function () use (&$calls): array {
-            ++$calls;
-            return ['token' => 'secret-value', 'token_id' => Uuid::uuid7()->toString()];
-        };
-
-        $first = $guard->runSecret($context, 'token.rotate', $operationId, ['token_id' => 'old'], $mutation);
-        $replay = $guard->runSecret($context, 'token.rotate', $operationId, ['token_id' => 'old'], $mutation);
-
-        self::assertSame('secret-value', $first['token']);
-        self::assertArrayNotHasKey('token', $replay);
-        self::assertFalse($replay['secret_returned']);
-        self::assertSame(1, $calls);
-    }
-
     /**
      * Proves nested object key order does not change an MCP idempotency binding.
      *

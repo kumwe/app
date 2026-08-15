@@ -114,10 +114,13 @@ final class HomePageHandlerTest extends TestCase
      */
     public function testAReaderWhoseLanguageIsNotPublishedIsServedTheDeclaredFallback(): void
     {
-        $response = $this->handle('af');
+        $active = null;
+        $response = $this->handle('af', active: $active);
 
         self::assertSame(200, $response->getStatusCode());
         self::assertStringContainsString('|About us|', (string) $response->getBody());
+        self::assertInstanceOf(ActiveLocale::class, $active);
+        self::assertSame('en-GB', $active->locale()->toString());
     }
 
     /**
@@ -147,6 +150,7 @@ final class HomePageHandlerTest extends TestCase
      * @param   string  $locale     Locale the request negotiated.
      * @param   bool    $nominated  Whether the site nominates a homepage entry at all.
      * @param   bool    $indexing   Whether the site allows search engines to index it.
+     * @param   ?ActiveLocale  $active  Shared locale holder, returned for assertions when requested.
      *
      * @return  ResponseInterface  The handler's response.
      *
@@ -156,10 +160,13 @@ final class HomePageHandlerTest extends TestCase
         string $locale,
         bool $nominated = true,
         bool $indexing = true,
+        ?ActiveLocale &$active = null,
     ): ResponseInterface {
         $settings = $this->settings($nominated, $indexing);
         $content = $this->content();
         $locator = new PublicPageLocator($content, $settings, $this->navigation(), SiteContext::default());
+        $active = new ActiveLocale(new SupportedLocales());
+        $active->begin(LocaleTag::fromString($locale));
         $handler = new HomePageHandler(
             $locator,
             $settings,
@@ -172,7 +179,8 @@ final class HomePageHandlerTest extends TestCase
             ]))),
             new ContentPresenter(new RichTextFormatter()),
             new ContentLayoutCatalog($this->createStub(ContentModelRepository::class), SiteContext::DEFAULT),
-            $this->languages($content, $locator, $locale),
+            $this->languages($content, $locator, $active),
+            $active,
         );
 
         return $handler->handle(
@@ -185,7 +193,7 @@ final class HomePageHandlerTest extends TestCase
      *
      * @param   ContentService     $content  Publication-aware reader each sibling is loaded through.
      * @param   PublicPageLocator  $pages    Two-way path map each locale's link is built through.
-     * @param   string             $locale   Locale the request negotiated.
+     * @param   ActiveLocale       $active   Shared holder carrying the request's negotiated locale.
      *
      * @return  TranslationGroupPresenter  Presenter wired the way the composition root wires it.
      *
@@ -194,7 +202,7 @@ final class HomePageHandlerTest extends TestCase
     private function languages(
         ContentService $content,
         PublicPageLocator $pages,
-        string $locale,
+        ActiveLocale $active,
     ): TranslationGroupPresenter {
         $groups = $this->createStub(TranslationGroupRepository::class);
         $groups->method('forContent')->willReturn(new TranslationGroup(
@@ -219,9 +227,6 @@ final class HomePageHandlerTest extends TestCase
                 ),
             ],
         ));
-        $active = new ActiveLocale(new SupportedLocales());
-        $active->begin(LocaleTag::fromString($locale));
-
         return new TranslationGroupPresenter(
             $groups,
             $content,

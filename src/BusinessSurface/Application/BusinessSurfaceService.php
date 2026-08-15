@@ -45,6 +45,7 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
 use Kumwe\CMS\Media\Application\MediaAsset;
 use Kumwe\CMS\Media\Application\MediaService;
 use Ramsey\Uuid\Uuid;
@@ -76,6 +77,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * @param  FieldPresentationRegistry         $presentations   Owner-aware safe field presenter registry.
      * @param  MediaService                      $media           Authorized bounded media-choice service.
      * @param  TransactionManager                $transactions    Atomic boundary for bounded bulk mutations.
+     * @param  ActiveLocale                      $active          Locale for user-facing definition labels.
      *
      * @since  2.0.0
      */
@@ -91,6 +93,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         private FieldPresentationRegistry $presentations,
         private MediaService $media,
         private TransactionManager $transactions,
+        private ActiveLocale $active,
     ) {
     }
 
@@ -564,8 +567,9 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             ))->toArray();
             $fields[] = [
                 ...$presentation,
-                'description' => $field->description,
-                'help_text' => $field->helpText,
+                'label' => $field->labelIn($this->active->locale()),
+                'description' => $field->descriptionIn($this->active->locale()),
+                'help_text' => $field->helpTextIn($this->active->locale()),
                 'type' => $field->type,
                 'schema' => $this->catalog->schema($field),
                 'form_group' => $field->formGroup,
@@ -585,7 +589,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         return [
             'relationship' => $relationship,
             'target_definition' => $result->definition->handle,
-            'target_label' => $result->definition->singularLabel,
+            'target_label' => $result->definition->singularLabelIn($this->active->locale()),
             'identity_field' => $identity,
             'identity_generated' => $result->definition->identityStrategy === IdentityStrategy::Uuid,
             'suggested_record_id' => $result->definition->identityStrategy === IdentityStrategy::Uuid
@@ -2066,7 +2070,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             ));
             $fields[] = [
                 'handle' => $field->handle,
-                'label' => $field->label,
+                'label' => $field->labelIn($this->active->locale()),
                 'display' => self::presentedText($presentation->display, $presentation->provenance),
                 'identity' => in_array($field->type, ['core.uuid', 'core.reference_identity'], true),
                 'provenance' => $presentation->provenance,
@@ -2172,7 +2176,10 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         $columns = [];
         foreach ($this->documentLineColumnHandles($definition) as $handle) {
             if (isset($fields[$handle]) && $fields[$handle]->type !== 'core.uuid') {
-                $columns[] = ['handle' => $handle, 'label' => $fields[$handle]->label];
+                $columns[] = [
+                    'handle' => $handle,
+                    'label' => $fields[$handle]->labelIn($this->active->locale()),
+                ];
             }
         }
         foreach ($records as $index => $record) {

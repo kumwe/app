@@ -599,7 +599,9 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
      *
      * A deployment that changed a migration's body between the interruption and the resume would
      * otherwise recover a schema change nobody can name, so the two checksums are compared before any
-     * undo, replay or retirement is allowed to proceed.
+     * undo, replay or retirement is allowed to proceed. The one compatibility exception is the exact
+     * published constraint-name checksum: its immutable source remains present, while its same-ID wrapper
+     * deliberately resumes the attempt through the corrected, shape-validating implementation.
      *
      * @param   Migration             $migration  Migration whose checksum the journal must agree with.
      * @param   array<string, mixed>  $attempt    Journaled attempt row, as `attempt()` returned it.
@@ -614,12 +616,21 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
     private function assertChecksum(Migration $migration, array $attempt): void
     {
         $checksum = $attempt['checksum'] ?? null;
-        if (!is_string($checksum) || !hash_equals($migration->checksum(), $checksum)) {
-            throw new RuntimeException(sprintf(
-                'Interrupted migration checksum drift detected for "%s".',
-                $migration->id(),
-            ));
+        if (is_string($checksum) && hash_equals($migration->checksum(), $checksum)) {
+            return;
         }
+        if (
+            is_string($checksum)
+            && $migration instanceof ConstraintNameIsolationCompatibilityMigration
+            && hash_equals(ConstraintNameIsolationCompatibilityMigration::PUBLISHED_CHECKSUM, $checksum)
+        ) {
+            return;
+        }
+
+        throw new RuntimeException(sprintf(
+            'Interrupted migration checksum drift detected for "%s".',
+            $migration->id(),
+        ));
     }
 
     /**

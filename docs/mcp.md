@@ -34,6 +34,7 @@ The required `--site` value selects exactly one site for the lifetime of the std
 | `kumwe_content_create` | `content.create` | Create a draft page |
 | `kumwe_content_update` | `content.update` | Update title, slug, and body at an expected version |
 | `kumwe_content_transition` | Transition-specific | Submit, review, publish, unpublish, archive, or restore through workflow policy |
+| `kumwe_content_trash`, `kumwe_content_restore` | `content.delete`, `content.restore` | Move a versioned entry into recoverable trash or restore it |
 | `kumwe_menu_list` | `navigation.manage` | List menus |
 | `kumwe_menu_create` | `navigation.manage` | Create a menu |
 | `kumwe_menu_item_list`, `kumwe_menu_item_get` | `navigation.manage` | Read typed, nested menu items |
@@ -44,7 +45,7 @@ The required `--site` value selects exactly one site for the lifetime of the std
 | `kumwe_user_list` | `users.manage` | List users, groups, and assignments |
 | `kumwe_token_list`, `kumwe_token_revoke` | `users.manage` | Inspect token metadata or revoke access |
 | `kumwe_extension_list` | `extensions.manage` | List installed extensions and state |
-| `kumwe_extension_activate` | `extensions.manage` | Activate an installed extension and runtime map |
+| `kumwe_extension_activate` | `extensions.manage` | Activate an installed extension; administrator-theme takeover is refused |
 | `kumwe_schedule_list` | `automation.manage` | List schedules |
 | `kumwe_schedule_create` | `automation.manage` | Create a validated recurring schedule |
 | `kumwe_business_definition_list`, `kumwe_business_definition_get` | `content.read` | List the definition catalogue or read a published version |
@@ -62,7 +63,12 @@ Each schema stage names only its own capability, so a token granted inspection c
 
 Two schema operations are deliberately absent. Composing a destructive purge plan, and approving a high-impact plan, both require re-proving the caller's current password, which this surface cannot supply; publishing them would only produce tools that always fail closed. Use the administrator screen or the protected CLI for those.
 
-High-risk operations that would transmit a password, install an arbitrary package, delete state, or grant permissions are intentionally not MCP tools. Use the administrator, protected CLI, or REST endpoint with the operation's explicit safeguards.
+MCP never accepts an authentication secret and never returns a newly issued credential. Token creation and
+rotation therefore remain on the administrator, protected CLI, and REST surfaces. Arbitrary package installation
+and permission grants are absent for the same reason: they need controls this bearer-token surface does not carry.
+State-removing tools that are safe to expose do exist — menu-item deletion, extension uninstall, job cancellation,
+schema execution and bounded generated-record deletion among them — and discovery publishes their destructive hint,
+risk class, required capability and non-MCP alternative so clients can require confirmation or route elsewhere.
 
 ## Generated business tools
 
@@ -114,7 +120,10 @@ Publishing, unpublishing, extension activation, settings changes, and schedules 
 
 ## Resource and prompt
 
-`kumwe://capabilities` returns the machine-readable server surface. The `kumwe_site_review` prompt prepares a content, SEO, structure, or extension review using authorized tools. The prompt does not grant capabilities and cannot expand the token's access.
+`kumwe://capabilities` returns the machine-readable server surface. It preserves the stable name lists and also
+publishes `tool_metadata` entries containing each tool's required capability, risk class and non-MCP alternative.
+The `kumwe_site_review` prompt prepares a content, SEO, structure, or extension review using authorized tools. The
+prompt does not grant capabilities and cannot expand the token's access.
 
 ## Client policy
 

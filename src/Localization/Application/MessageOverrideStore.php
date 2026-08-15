@@ -25,6 +25,21 @@ use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
 interface MessageOverrideStore
 {
     /**
+     * Serialize administered wording mutations for one site inside the caller's transaction.
+     *
+     * The quota is scoped more narrowly than a site, but locking the site's durable identity gives even
+     * an empty override scope a row all three supported engines can lock. Wording writes are rare, so the
+     * deliberately coarse lock is preferable to a race-prone count or a second quota-ledger table.
+     *
+     * @param   string  $site  Site whose wording mutation is about to count and write.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function lockSite(string $site): void;
+
+    /**
      * List every override stored for one scope, newest wording included.
      *
      * @param   MessageCatalogueLayer  $layer         Administered layer to list, `Site` or `Organization`.

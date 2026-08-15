@@ -32,6 +32,9 @@ use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
+use Kumwe\CMS\Localization\Application\SupportedLocales;
+use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -52,6 +55,46 @@ final class BusinessSurfaceCatalogTest extends TestCase
      * @since  2.0.0
      */
     private const string DEFINITION_ID = '018f22e2-7c8b-7ab0-8f3a-88e8026bb702';
+
+    /**
+     * Prove generated metadata consumes the definition translations for the locale in flight.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGeneratedMetadataUsesLocalizedEntityAndFieldLabels(): void
+    {
+        $document = $this->definition();
+        $document['label_translations'] = [
+            'singular_label' => ['de' => 'Katalogprüfung'],
+            'plural_label' => ['de' => 'Katalogprüfungen'],
+        ];
+        $document['fields'][1]['text_translations'] = [
+            'label' => ['de' => 'Name auf Deutsch'],
+        ];
+        $active = new ActiveLocale(new SupportedLocales());
+        $active->begin(LocaleTag::fromString('de'));
+        $plan = new BusinessRecordAccessPlan(
+            self::DEFINITION_ID,
+            'business.record.read',
+            new RecordPolicySet(new RecordPolicySchema([]), [new RecordPolicyConstant(true)]),
+            new FieldDisclosurePlan(['detail' => ['name']]),
+            hash('sha256', 'localized-definition-policy'),
+        );
+        $catalog = $this->catalog($plan, $document, $active);
+
+        $metadata = $catalog->definition(
+            $this->context(BusinessSurface::Api, ['business.record.read']),
+            BusinessSurface::Api,
+            'site.default.catalog_authority_test',
+            BusinessSurfaceOperation::Read,
+        );
+
+        self::assertSame('Katalogprüfung', $metadata['singular_label']);
+        self::assertSame('Katalogprüfungen', $metadata['plural_label']);
+        self::assertSame('Name auf Deutsch', $metadata['fields'][0]['label']);
+    }
 
     /**
      * Proves an explicit row denial with populated field rules cannot leak definition metadata.
@@ -250,15 +293,21 @@ final class BusinessSurfaceCatalogTest extends TestCase
     /**
      * Build a shared catalog around one exact access-plan decision.
      *
-     * @param   BusinessRecordAccessPlan  $plan  Row and field authority returned for the requested operation.
+     * @param   BusinessRecordAccessPlan  $plan      Row and field authority returned for the requested operation.
+     * @param   ?array<string, mixed>      $document  Definition document to expose, or null for the default.
+     * @param   ?ActiveLocale              $active    Locale holder to project definition wording through.
      *
      * @return  BusinessSurfaceCatalog  Fully executable catalog fixture.
      *
      * @since   2.0.0
      */
-    private function catalog(BusinessRecordAccessPlan $plan): BusinessSurfaceCatalog
+    private function catalog(
+        BusinessRecordAccessPlan $plan,
+        ?array $document = null,
+        ?ActiveLocale $active = null,
+    ): BusinessSurfaceCatalog
     {
-        $resolved = $this->resolved($this->definition());
+        $resolved = $this->resolved($document ?? $this->definition());
         $definitions = $this->createStub(BusinessRecordDefinitionResolver::class);
         $definitions->method('activeInstalled')->willReturn([$resolved]);
         $access = $this->createStub(BusinessRecordAccessController::class);
@@ -290,6 +339,8 @@ final class BusinessSurfaceCatalogTest extends TestCase
             $authorization,
             $transactions,
             RuntimeMaterializationState::unavailable('catalog-authority-test'),
+            null,
+            $active,
         );
     }
 

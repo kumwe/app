@@ -19,8 +19,6 @@ use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\ScopedAccessTokenVerifier;
@@ -74,7 +72,6 @@ final readonly class KumweMcpHandlers
      * @param  ExtensionManager              $extensions        Extension activation, disabling and removal.
      * @param  TrustStore                    $trust             Extension signing keys, and the installation-wide
      *         lifecycle lock the trust and extension writes are taken under.
-     * @param  AdministratorIdentityGateway  $identity          Mints the replacement secret a rotation returns.
      * @param  AutomationManagementService   $automation        Schedules and jobs behind the automation tools.
      * @param  BusinessDefinitionService     $definitions       Business entity definition drafts and versions.
      * @param  BusinessSchemaService         $schema            Schema plans and their approval and execution.
@@ -85,8 +82,6 @@ final readonly class KumweMcpHandlers
      *         anchored to.
      * @param  AuthorizationGateway          $authorization     Judges each write against the resource it names,
      *         before the fence is entered.
-     * @param  TokenRotationPreauthorizer    $tokenRotation     The rotation-specific check `rotateToken()` clears
-     *         in place of the ordinary pre-authorization.
      * @param  ?ExecutionContext             $executionContext  Actor bound by `forContext()`; null while the
      *         instance is unbound.
      * @param  ?Closure                      $contextRefresh    Callback bound by `forCredential()` that
@@ -102,7 +97,6 @@ final readonly class KumweMcpHandlers
         private SiteSettings $settings,
         private ExtensionManager $extensions,
         private TrustStore $trust,
-        private AdministratorIdentityGateway $identity,
         private AutomationManagementService $automation,
         private BusinessDefinitionService $definitions,
         private BusinessSchemaService $schema,
@@ -111,7 +105,6 @@ final readonly class KumweMcpHandlers
         private McpMutationGuard $mutations,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
-        private TokenRotationPreauthorizer $tokenRotation,
         private ?ExecutionContext $executionContext = null,
         private ?Closure $contextRefresh = null,
     ) {
@@ -140,7 +133,6 @@ final readonly class KumweMcpHandlers
             $this->settings,
             $this->extensions,
             $this->trust,
-            $this->identity,
             $this->automation,
             $this->definitions,
             $this->schema,
@@ -149,7 +141,6 @@ final readonly class KumweMcpHandlers
             $this->mutations,
             $this->clock,
             $this->authorization,
-            $this->tokenRotation,
             $context,
         );
     }
@@ -213,7 +204,6 @@ final readonly class KumweMcpHandlers
             $this->settings,
             $this->extensions,
             $this->trust,
-            $this->identity,
             $this->automation,
             $this->definitions,
             $this->schema,
@@ -222,19 +212,23 @@ final readonly class KumweMcpHandlers
             $this->mutations,
             $this->clock,
             $this->authorization,
-            $this->tokenRotation,
             contextRefresh: $refresh,
         );
     }
 
     /**
-     * Publish the names of everything this release exposes over MCP.
+     * Publish everything this release exposes over MCP and the policy metadata for each tool.
      *
      * The only tool that checks no capability of its own, so a client can learn the shape of the surface it
-     * may then be refused parts of. Names only: no schemas, and nothing about the caller.
+     * may then be refused parts of. The result carries no schemas, handler internals or caller data; the
+     * risk class, required capability and non-MCP alternative are public contract metadata.
      *
-     * @return  array<string, string|list<string>>  The `product` and `mode` strings, plus tool names under
-     *          `tools`, resource URIs under `resources` and prompt names under `prompts`.
+     * @return  array{
+     *              product: string, mode: string, tools: list<string>, resources: list<string>,
+     *              prompts: list<string>, tool_metadata: list<array{
+     *                  name: string, capability: string|null, risk: string, alternative: string
+     *              }>
+     *          }  Public surface identity and per-tool policy metadata.
      *
      * @since   2.0.0
      */
@@ -1043,57 +1037,6 @@ final readonly class KumweMcpHandlers
     }
 
     /**
-     * Replace a token and hand back the replacement secret exactly once.
-     *
-     * Rotation is authorized as a fresh issuance rather than as a copy: `TokenRotationPreauthorizer` puts the
-     * superseded token's subject and capabilities back through the delegation check, so authority the actor or
-     * the subject has since lost cannot be carried into the replacement. The write takes the guard's
-     * secret-once path, which means a replay of this operation identifier returns the stored result with the
-     * `token` key stripped — the new secret reaches only the call that actually performed the rotation.
-     *
-     * @param   string  $operationId  Idempotency key this write is fenced on.
-     * @param   string  $tokenId      UUID of the live token being replaced.
-     * @param   string  $name         Operator-facing label for the replacement.
-     * @param   string  $expiresAt    Expiry as a date string, or empty for the default lifetime.
-     *
-     * @return  array<string, mixed>  On the first run, the replacement's plaintext secret under `token` and
-     *          its identifier under `token_id`; on a replay, the same record without the secret.
-     *
-     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
-     *          token, or the replacement would carry authority the actor may not delegate.
-     * @throws  InvalidArgumentException  When the token is not live, belongs to another site, its subject
-     *          changed during authorization, or the operation identifier is malformed or reused with
-     *          different arguments.
-     * @throws  \DateMalformedStringException  When the expiry is not a readable date string.
-     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
-     *          lease is lost before the write completes.
-     *
-     * @since   2.0.0
-     */
-    public function rotateToken(
-        string $operationId,
-        string $tokenId,
-        string $name,
-        string $expiresAt = '',
-    ): array {
-        $this->require('users.manage');
-        $this->tokenRotation->authorize($this->context($operationId), $tokenId);
-        return $this->mutations->runSecret(
-            $this->context($operationId),
-            'token.rotate',
-            $operationId,
-            compact('tokenId', 'name', 'expiresAt'),
-            fn (): array => $this->identity->rotateAccessToken(
-                $this->context($operationId),
-                $tokenId,
-                $name,
-                $expiresAt === '' ? null : new \DateTimeImmutable($expiresAt),
-            ),
-        );
-    }
-
-    /**
      * Invalidate every token one user holds, in every site, by advancing their security epoch.
      *
      * The break-glass action for a compromised account: it reaches credentials this site never issued and
@@ -1431,8 +1374,8 @@ final readonly class KumweMcpHandlers
      * extension type leaves it unset. Taking over the administrator surface is the case that demands step-up
      * authentication, because a broken administrator theme locks operators out — and this surface cannot
      * supply it. No credential crosses a tool boundary, so the extension manager is always called with no
-     * step-up proof and refuses that one change with `StepUpAuthenticationRequired`; the browser, the
-     * protected console and the protected REST path remain the route for it. Every other activation
+     * step-up proof and refuses that one change with `StepUpAuthenticationRequired`; the browser or
+     * protected REST path remains the route for it. Every other activation
      * proceeds under the caller's existing `extensions.manage` authorization, taken under the
      * installation-wide extension lifecycle lock.
      *
@@ -1492,7 +1435,9 @@ final readonly class KumweMcpHandlers
      * `activateExtension()` can put it back. An extension currently serving the administrator theme demands
      * step-up authentication, since disabling it changes what the administration UI renders with, and this
      * surface carries no credential with which to prove it: that one case is refused here and belongs to the
-     * browser, the protected console or the protected REST path. Every other disable proceeds under the
+     * browser or the protected REST path. The console can restore the built-in administrator theme for
+     * break-glass recovery, but cannot step up to disable a live administrator theme. Every other disable
+     * proceeds under the
      * caller's existing `extensions.manage` authorization, taken under the extension lifecycle lock.
      *
      * @param   string  $operationId  Idempotency key this write is fenced on.
@@ -1539,7 +1484,8 @@ final readonly class KumweMcpHandlers
      * contributed go with it. The runtime directory is retired rather than deleted outright, so processes
      * still running an older compiled generation keep reading what they have until they drain. Removing the
      * extension that serves the live administrator theme demands a step-up this surface cannot supply and is
-     * refused here; do that one in the browser, the protected console or the protected REST path.
+     * refused here; do that one in the browser or protected REST path. The console can first restore the
+     * built-in administrator theme for break-glass recovery, after which the inactive extension can be removed.
      *
      * @param   string  $operationId  Idempotency key this write is fenced on.
      * @param   string  $identifier   `vendor/name` identifier of the extension to remove.

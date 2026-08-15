@@ -27,9 +27,9 @@ use RuntimeException;
  *
  * Two properties are load-bearing and are why this reads the way it does. A scope is fetched **whole**
  * in one statement, because the render path resolves hundreds of messages and a lookup per message
- * would make the override chain a scale defect wearing a feature's name. And each locale-and-scope
- * result is held for the life of the instance, which is request-scoped, so a page that assembles the
- * chain more than once still runs one statement per scope.
+ * would make the override chain a scale defect wearing a feature's name. `CatalogueTranslator` holds
+ * each locale-and-scope result for one locale unit of work, so this repository deliberately rereads on a
+ * later request and an administered change becomes visible without restarting a long-lived worker.
  *
  * A missing table answers "no overrides" rather than raising. That is deliberate rather than lenient:
  * the recovery surfaces render before `database:migrate` has run, and an interface that cannot draw
@@ -44,14 +44,6 @@ use RuntimeException;
  */
 final class DoctrineMessageOverrideRepository implements MessageOverrideRepository, MessageOverrideStore
 {
-    /**
-     * Override maps already read, keyed by scope and locale tag.
-     *
-     * @var    array<string, array<string, string>>
-     * @since  2.0.0
-     */
-    private array $loaded = [];
-
     /**
      * Whether the override table exists, resolved once and then remembered.
      *
@@ -113,7 +105,7 @@ final class DoctrineMessageOverrideRepository implements MessageOverrideReposito
     }
 
     /**
-     * Fetch one scope's whole override map, or return the map already held for it.
+     * Fetch one scope's whole override map.
      *
      * @param   string     $level         Either `site` or `organization`, matching the stored level.
      * @param   string     $site          Site the scope belongs to.
@@ -129,12 +121,8 @@ final class DoctrineMessageOverrideRepository implements MessageOverrideReposito
     private function read(string $level, string $site, ?string $organization, LocaleTag $locale): array
     {
         $tag = $locale->toString();
-        $key = $level . '/' . $site . '/' . ($organization ?? '') . '@' . $tag;
-        if (isset($this->loaded[$key])) {
-            return $this->loaded[$key];
-        }
         if (!$this->tableInstalled()) {
-            return $this->loaded[$key] = [];
+            return [];
         }
 
         $rows = $this->database->fetchAllAssociative(sprintf(
@@ -153,7 +141,35 @@ final class DoctrineMessageOverrideRepository implements MessageOverrideReposito
             }
         }
 
-        return $this->loaded[$key] = $overrides;
+        return $overrides;
+    }
+
+    /**
+     * Lock the site's durable identity so an empty override scope can still be serialized.
+     *
+     * A row lock on existing overrides cannot protect the transition from 499 to 500 when the scope is
+     * initially empty or two writers add different identifiers. Every override already references a
+     * `sites` row, so locking that parent is portable across the three engines and requires no auxiliary
+     * quota table. The application service opens the surrounding transaction before calling this method.
+     *
+     * @param   string  $site  Site whose wording mutation is being serialized.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the site does not exist.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the locking read.
+     *
+     * @since   2.0.0
+     */
+    public function lockSite(string $site): void
+    {
+        $locked = $this->database->fetchOne(sprintf(
+            'SELECT identifier FROM %s WHERE identifier = ? FOR UPDATE',
+            $this->tables->quoted('sites'),
+        ), [$site]);
+        if (!is_string($locked) || $locked === '') {
+            throw new RuntimeException('Message wording cannot be changed for a site that does not exist.');
+        }
     }
 
     /**
@@ -205,9 +221,11 @@ final class DoctrineMessageOverrideRepository implements MessageOverrideReposito
     /**
      * Store or replace the wording one layer carries for one identifier at one locale.
      *
-     * The update-then-insert order matters on all three engines: an update that changes no row is the
-     * only portable way to learn that the row is absent without racing a uniqueness violation into
-     * the caller's transaction, and the unique index still refuses a genuine concurrent duplicate.
+     * The application service holds the site's parent-row lock around this call. Update first keeps the
+     * common replacement path to one write, but zero affected rows is not evidence of absence: MySQL and
+     * MariaDB report zero when both values already equal the requested values. A portable keyed existence
+     * read therefore distinguishes that no-op from a missing row before the insert path is selected. The
+     * parent lock keeps the decision and insert inside the same serialized site transaction.
      *
      * @param   MessageOverrideRecord  $override  The override to write.
      *
@@ -233,20 +251,46 @@ final class DoctrineMessageOverrideRepository implements MessageOverrideReposito
             $override->identifier,
         ]);
 
-        if ($updated === 0) {
-            $this->database->insert($this->tables->raw('message_overrides'), [
-                'id' => Uuid::uuid7()->toString(),
-                'scope_level' => $override->layer->value,
-                'site_identifier' => $override->site,
-                'organization_identifier' => $override->organization ?? '',
-                'locale_tag' => $override->locale,
-                'message_identifier' => $override->identifier,
-                'pattern' => $override->pattern,
-                'updated_at' => $override->updatedAt,
-            ], ['updated_at' => Types::DATETIME_IMMUTABLE]);
+        if ($updated !== 0 || $this->overrideExists($override)) {
+            return;
         }
 
-        $this->loaded = [];
+        $this->database->insert($this->tables->raw('message_overrides'), [
+            'id' => Uuid::uuid7()->toString(),
+            'scope_level' => $override->layer->value,
+            'site_identifier' => $override->site,
+            'organization_identifier' => $override->organization ?? '',
+            'locale_tag' => $override->locale,
+            'message_identifier' => $override->identifier,
+            'pattern' => $override->pattern,
+            'updated_at' => $override->updatedAt,
+        ], ['updated_at' => Types::DATETIME_IMMUTABLE]);
+    }
+
+    /**
+     * Distinguish a no-op update from a missing override using the portable unique identity.
+     *
+     * @param   MessageOverrideRecord  $override  Override whose identity may already be stored.
+     *
+     * @return  bool  True when the unique override row exists, regardless of its current values.
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the existence read.
+     *
+     * @since   2.0.0
+     */
+    private function overrideExists(MessageOverrideRecord $override): bool
+    {
+        return $this->database->fetchOne(sprintf(
+            'SELECT 1 FROM %s WHERE scope_level = ? AND site_identifier = ? '
+            . 'AND organization_identifier = ? AND locale_tag = ? AND message_identifier = ?',
+            $this->tables->quoted('message_overrides'),
+        ), [
+            $override->layer->value,
+            $override->site,
+            $override->organization ?? '',
+            $override->locale,
+            $override->identifier,
+        ]) !== false;
     }
 
     /**
@@ -276,8 +320,6 @@ final class DoctrineMessageOverrideRepository implements MessageOverrideReposito
             . 'AND message_identifier = ? AND organization_identifier = ?',
             $this->tables->quoted('message_overrides'),
         ), [$layer->value, $site, $locale->toString(), $identifier, $organization ?? '']);
-        $this->loaded = [];
-
         return $removed > 0;
     }
 

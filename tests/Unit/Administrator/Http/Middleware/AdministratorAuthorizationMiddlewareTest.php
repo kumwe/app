@@ -9,11 +9,23 @@ use Kumwe\CMS\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware
 use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
+use Kumwe\CMS\Localization\Application\CatalogueTranslator;
+use Kumwe\CMS\Localization\Application\SupportedLocales;
+use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\CMS\Localization\Http\Middleware\TranslationScopeMiddleware;
+use Kumwe\CMS\Localization\Infrastructure\ArrayMessageOverrideRepository;
+use Kumwe\CMS\Localization\Infrastructure\CompiledMessageCatalogueRepository;
+use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
+use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use LogicException;
@@ -26,7 +38,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Twig\Loader\ArrayLoader;
 
 #[CoversClass(AdministratorAuthorizationMiddleware::class)]
@@ -102,6 +113,60 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
             '[core.navigation]',
             $body,
             'Navigation the actor cannot open must stay hidden on the denial page.',
+        );
+    }
+
+    /**
+     * A trusted organization scope reaches the localized denial that returns before dispatch.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAuthenticatedOrganizationWordingReachesAnEarlyHtmlDenial(): void
+    {
+        $context = AuthorizationContext::human(
+            ['administrator.access'],
+            membership: AuthorizationContext::membership('acme'),
+        );
+        $principal = $context->principal();
+        self::assertInstanceOf(AuthenticatedPrincipal::class, $principal);
+        $supported = new SupportedLocales();
+        $active = new ActiveLocale($supported);
+        $active->begin(LocaleTag::fromString('de'));
+        $authorization = new AdministratorAuthorizationMiddleware(
+            $this->localizedRenderer($active, $supported),
+        );
+        $terminal = $this->neverHandler();
+        $request = $this->request(['navigation.manage'], $principal)
+            ->withHeader('Accept', 'text/html')
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context)
+            ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, $this->session($principal));
+
+        try {
+            $response = (new TranslationScopeMiddleware($active))->process(
+                $request,
+                new class ($authorization, $terminal) implements RequestHandlerInterface {
+                    public function __construct(
+                        private readonly AdministratorAuthorizationMiddleware $authorization,
+                        private readonly RequestHandlerInterface $terminal,
+                    ) {
+                    }
+
+                    public function handle(ServerRequestInterface $request): ResponseInterface
+                    {
+                        return $this->authorization->process($request, $this->terminal);
+                    }
+                },
+            );
+        } finally {
+            $active->end();
+        }
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertStringContainsString(
+            'Organisationswort <strong>navigation.manage</strong>',
+            (string) $response->getBody(),
         );
     }
 
@@ -203,6 +268,47 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
 
         return new AdministratorRenderer(
             new AdministratorTwigEnvironment(new ArrayLoader(['access-denied.twig' => $template])),
+            new RecoveryAdministratorRenderer(
+                new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
+            ),
+            AdministratorNavigationRegistry::core(),
+        );
+    }
+
+    /**
+     * Build an administrator renderer whose denial message has an organization override.
+     *
+     * @param   ActiveLocale      $active     Locale and scope holder shared with the scope middleware.
+     * @param   SupportedLocales  $supported  Locale registry used by the translator.
+     *
+     * @return  AdministratorRenderer  Renderer using the real translation Twig extension.
+     *
+     * @since   2.0.0
+     */
+    private function localizedRenderer(ActiveLocale $active, SupportedLocales $supported): AdministratorRenderer
+    {
+        $translator = new CatalogueTranslator(
+            new CompiledMessageCatalogueRepository(InterfaceTranslation::compiledDirectory()),
+            new ArrayMessageOverrideRepository([], [
+                'default/acme' => [
+                    'de' => [
+                        'core.administrator.access_denied.explanation' =>
+                            'Organisationswort <strong>{capability}</strong>',
+                    ],
+                ],
+            ]),
+            new IntlMessagePatternFormatter(),
+            $active,
+            $supported,
+        );
+        $twig = new AdministratorTwigEnvironment(new ArrayLoader([
+            'access-denied.twig' => "{{ t_html('core.administrator.access_denied.explanation', "
+                . '{capability: missing_capability}) }}',
+        ]));
+        $twig->addExtension(new TranslationTwigExtension($translator, $active));
+
+        return new AdministratorRenderer(
+            $twig,
             new RecoveryAdministratorRenderer(
                 new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
             ),

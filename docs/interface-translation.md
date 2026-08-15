@@ -113,8 +113,13 @@ rendered with `t_html` instead of `t`:
 ```
 
 `t_html` escapes every supplied value before substitution, so only the markup the catalogue itself
-carries is treated as markup. Use `t` everywhere else; `t_html` exists for messages that genuinely
-contain an element, not as a way around escaping.
+carries is treated as markup. Administered overrides are checked before storage and may carry only
+balanced, attribute-free `code`, `em`, `span` and `strong` elements; active elements, attributes and
+malformed nesting are refused. Administered markup is also refused inside `plural`, `selectordinal`,
+`select` or `choice` patterns: each branch renders independently, and balancing tags across the raw
+pattern cannot prove that every possible result is balanced. Keep the element outside the branching
+message or use separately balanced non-branching identifiers. Use `t` everywhere else; `t_html` exists
+for messages that genuinely contain an element, not as a way around escaping.
 
 ### What is *not* translated
 
@@ -150,16 +155,25 @@ Lookup resolves **core → extension → site → organization**, most specific 
 never per file**: overriding one message leaves every other message in that catalogue exactly as it
 was, and a later core release still improves the ones you did not touch.
 
-Three rules bound what may be stored, and each exists for a reason worth knowing:
+Five rules bound what may be stored, and each exists for a reason worth knowing:
 
 - **Only a message a shipped catalogue declares may be overridden.** An identifier nobody looks up is
   wording that never appears, and an operator who mistyped one would believe they had changed a word
   that never changes.
 - **Only a language this installation carries may be written**, so no override is stranded in a
   locale nothing resolves to.
+- **Every stored pattern must compile as ICU MessageFormat** for its locale, so a form submission is
+  refused instead of turning the next page render into a runtime failure.
+- **Markup is the same small safe inline subset accepted by `t_html`**, with no attributes or active
+  elements and no ICU branch constructs, so administered terminology cannot become stored script
+  execution or markup balanced only across mutually exclusive results.
 - **A scope carries at most 500 overrides per language.** The whole map is read once per unit of work
   on the render path; relabelling a vertical's vocabulary is tens of messages, and an unbounded map
   would make every page pay for one bulk import.
+
+The quota read, wording mutation and audit record share one transaction. A durable site-row lock
+serializes writers even when the scope is initially empty, so two concurrent additions cannot both
+observe the last available quota slot.
 
 Withdrawing an override is how the shipped wording comes back — saving an empty replacement is
 refused rather than storing a message that renders as nothing.
@@ -192,10 +206,13 @@ If none of the three names a carried locale, the source language is used, so neg
 produces a language. A stored `default_locale` of `en` resolves to `en-GB`, so an existing
 installation renders exactly as it did before.
 
-The resolved locale is published on the request as `kumwe.locale` and on the request-scoped
-`ActiveLocale` holder, which is closed when the request ends. The three layouts emit `lang` and `dir`
-from it, so a site whose `default_locale` is `he` renders right-to-left with no further
-configuration.
+The resolved locale is published on the request as `kumwe.locale` and on the unit-of-work
+`ActiveLocale` holder, which is closed when the request ends. After authentication, trusted membership
+enriches its override scope with the selected organization. The three layouts emit `lang` and `dir`
+from it, so a site whose `default_locale` is `he` renders right-to-left with no further configuration.
+Localized HTML responses and redirects carry `Content-Language`; when they are publicly cacheable they
+also merge `Accept-Language` into `Vary`. Machine JSON, media, metrics and crawler directives do not gain
+language metadata merely because locale negotiation surrounds their routes.
 
 ---
 

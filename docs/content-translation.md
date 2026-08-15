@@ -20,7 +20,9 @@ A translated item is a **translation group**: one logical item, one content entr
   publishes, each named in its own language.
 - **Business definition labels carry locales too** — `EntityTypeDefinition`'s singular and plural labels
   and `FieldDefinition`'s label, description and help text.
-- **Extensions get all of it**, by declaring `contributions.content.translation_groups` in their manifest.
+- **Extensions can declare translation-group inventory metadata** through
+  `contributions.content.translation_groups`. The declaration is admitted and inventoried today; it does
+  not yet associate contributed runtime content entries with the declared group.
 
 Nothing above is optional or configured on. A site that never translates anything is completely
 unaffected: no alternates, no selector, no extra columns in use, and the same bytes in every stored
@@ -58,9 +60,11 @@ Two properties are enforced by the engine rather than by the application:
 |---|---|
 | `uniq_content_translation_locale` on `(translation_group_id, locale)` | One item carrying two entries for the same language |
 | `uniq_content_site_slug` on `(site_identifier, slug)` | Two locales of one item colliding on a route segment |
+| Composite group-owner foreign key plus owner-equality check | An entry attaching directly to a group owned by another site |
 
-Both are proven in `tests/Integration/Content/MultilingualContentIntegrationTest.php` by watching the
-engine refuse the write, on every supported database.
+Group attachment also locks the group row and refuses a sixty-fifth live member before writing the entry,
+so the domain's 64-locale ceiling remains true under concurrent authors as well as when a group is read.
+The constraints are proven by the content and migration integration suites on the supported engines.
 
 ## Which locale a reader is served
 
@@ -148,8 +152,7 @@ translations of one thing and declaration order cannot change a published checks
 
 ## For an extension author
 
-Content contributed by a package is content, and gets the same model. Declare it in the manifest, under
-schema 4:
+Schema 4 lets a package declare the translation-group inventory it expects to contribute:
 
 ```json
 {
@@ -183,14 +186,20 @@ if ($registrar instanceof ContentTranslationRegistrar) {
 }
 ```
 
-The declaration sits with the contract rather than in `Content\Domain` because it is not a content
-concept: nothing in the content model reads it, and what it describes is a promise a *package* makes at
-admission time.
+The declaration sits with the contract rather than in `Content\Domain` because it is admission and
+inventory metadata: nothing in the content model reads it, and what it describes is a promise a
+*package* makes when its contribution set is admitted.
 
-The locale list is a **closed claim**, not a hint: an operator can read which languages a package promises
-before installing it, and a package cannot widen that promise afterwards — registering a locale set the
-manifest never carried is refused at contribution time. The declared fallback must be one of the declared
-locales, because a fallback naming a language the package never publishes is not a fallback.
+That boundary is important. The current registrar validates and inventories the declaration, but no
+runtime item identifier is carried by it and no synchronizer attaches contributed `content_entries` to
+the declared group. An admitted declaration therefore does **not** prove that the package's runtime
+content uses the locales or fallback it names. Runtime association needs an additive contract of its own;
+the existing frozen declaration must not be reinterpreted after release.
+
+The locale list is a **closed declaration**, not a hint: an operator can read which languages a package
+claims before installing it, and provider registration cannot widen the manifest declaration. The
+declared fallback must be one of the declared locales. These are admission guarantees; enforcement
+against individual contributed items belongs to the future association contract described above.
 
 The registrar is a separate one-method interface, so a package that publishes in one language is source
 compatible and untouched. Its signature, the manifest section it is read from and the members a
@@ -206,7 +215,7 @@ package's bytes are the bytes it was admitted against.
 |---|---|
 | `tests/Unit/Content/Domain/TranslationGroupTest.php` | One entry per locale, per-locale publication, fallback resolution, and that an untranslated entry's snapshot keys are unchanged |
 | `tests/Unit/BusinessDefinition/Domain/LocalizedDefinitionLabelTest.php` | An untranslated definition checksums to a hand-written pre-dimension document |
-| `tests/Unit/Content/Application/ExtensionContentTranslationTest.php` | An extension reaches the model with no core edit, and cannot widen its language claim |
+| `tests/Unit/Content/Application/ExtensionContentTranslationTest.php` | Manifest/provider admission agrees and cannot widen the inventoried language declaration |
 | `tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php` | Alternates list exactly the published locales, named in their own language |
 | `tests/Unit/Extension/Development/ContentTranslationRegistrarFixtureTest.php` | The additive contract's bytes are the released ones |
 | `tests/Integration/Content/MultilingualContentIntegrationTest.php` | All of it on a real database, including both uniqueness constraints and the rendered public page |
@@ -214,5 +223,6 @@ package's bytes are the bytes it was admitted against.
 ## What is not here
 
 Translating the *content itself* is editorial work, not platform work: Kumwe stores and serves the
-languages an operator writes, and integrates with no translation service. Per-locale visual qualification
-of the public surface is Gate B, in `V2-LNG-010`.
+languages an operator writes, and integrates with no translation service. Associating extension-owned
+runtime items with admitted translation declarations is also not implemented by the current contract.
+Per-locale visual qualification of the public surface is separate work.

@@ -110,50 +110,7 @@ final readonly class McpMutationGuard
         array $input,
         callable $mutation,
     ): array {
-        return $this->execute($context, $operation, $operationId, $input, $mutation, false);
-    }
-
-    /**
-     * Runs an idempotent secret-issuing operation, but redacts the secret from every replay.
-     *
-     * Identical to `run()` except in what is written down: the `token` key is dropped from the stored
-     * copy and `secret_returned` is recorded as false, so a rotated credential reaches only the caller
-     * whose call actually performed the rotation and no repeat of that call can recover it.
-     *
-     * @template TResult of array<string, mixed>
-     *
-     * @param   ExecutionContext      $context      Authenticated caller whose subject the claim is
-     *          scoped to and whose authorization fingerprint a replay must still match.
-     * @param   string                $operation    Tool operation name, stored prefixed with `mcp.`.
-     * @param   string                $operationId  Client-chosen idempotency key: 16 to 128 characters,
-     *          opening with a letter or digit, then letters, digits, `.`, `_`, `:` or `-`.
-     * @param   array<string, mixed>  $input        Arguments the mutation was asked for, hashed
-     *          canonically so reusing the identifier with different arguments is refused.
-     * @param   callable(): TResult   $mutation     The secret-issuing write, invoked at most once per
-     *          identifier and from inside the fenced transaction.
-     *
-     * @return  TResult  The mutation's own return value, secret included, on the first run; on a repeat
-     *          the stored copy, which carries no `token` key and reports `secret_returned` as false.
-     *
-     * @throws  InvalidArgumentException  When the context carries no human principal, the identifier is
-     *          malformed, or the identifier is already bound to different input or a different credential.
-     * @throws  RuntimeException  When another attempt holds a live lease, when this attempt's lease was
-     *          lost before completion, or when a stored result is missing or fails its integrity check.
-     * @throws  JsonException  When the arguments or the redacted result cannot be encoded, or a stored
-     *          result cannot be decoded.
-     * @throws  \Doctrine\DBAL\Exception  When the driver rejects one of the claim, lease or completion
-     *          statements.
-     *
-     * @since   2.0.0
-     */
-    public function runSecret(
-        ExecutionContext $context,
-        string $operation,
-        string $operationId,
-        array $input,
-        callable $mutation,
-    ): array {
-        return $this->execute($context, $operation, $operationId, $input, $mutation, true);
+        return $this->execute($context, $operation, $operationId, $input, $mutation);
     }
 
     /**
@@ -177,9 +134,6 @@ final readonly class McpMutationGuard
      *          canonically so reusing the identifier with different arguments is refused.
      * @param   callable(): TResult   $mutation     The write to perform, invoked at most once per
      *          identifier and from inside the fenced transaction.
-     * @param   bool                  $secretOnce   True to strip the `token` key from the stored copy and
-     *          record `secret_returned` as false, so no repeat can recover the secret.
-     *
      * @return  TResult  The mutation's own return value on the first run, or the stored copy on a repeat.
      *
      * @throws  InvalidArgumentException  When the context carries no human principal, the identifier is
@@ -199,7 +153,6 @@ final readonly class McpMutationGuard
         string $operationId,
         array $input,
         callable $mutation,
-        bool $secretOnce,
     ): array {
         $principal = $context->principal()
             ?? throw new InvalidArgumentException('MCP mutations require a human execution context.');
@@ -225,15 +178,11 @@ final readonly class McpMutationGuard
                 $operationId,
                 $owner,
                 $mutation,
-                $secretOnce,
             ): array {
                 $this->assertLeaseOwner($context, $principal, $operation, $operationId, $owner);
                 $result = $mutation();
-                $stored = $secretOnce
-                    ? [...array_diff_key($result, ['token' => true]), 'secret_returned' => false]
-                    : $result;
                 $encoded = json_encode(
-                    $stored,
+                    $result,
                     JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
                 );
                 $now = $this->clock->now();

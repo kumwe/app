@@ -277,6 +277,13 @@ tables but **without** `SUPER`, `TRIGGER`, or `DROP` (PostgreSQL: not the table 
 and reserve a separate migration account for schema changes. With that separation the runtime account cannot
 remove the guards even if the application is compromised.
 
+This is an operator control, not a property of the shipped Compose topology. `compose.production.yaml` currently
+passes the same database user and password file to the one-shot migration task and every long-lived PHP service,
+so its runtime account necessarily retains the rights used by migrations. Use a deployment overlay or platform
+secret injection to give `migrate` a separate DDL-capable identity and keep that credential out of `app`, `worker`,
+and `scheduler`; otherwise this mitigation is absent and the trigger plus tamper-evidence controls remain the
+available protection.
+
 #### When the server will not grant them
 
 Installing the triggers needs a privilege managed database services withhold by default, so `database:migrate`

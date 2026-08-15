@@ -10,6 +10,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Content\Domain\InvalidTranslationGroup;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Localization\Domain\LocaleTag;
@@ -272,6 +273,87 @@ final class DoctrineTranslationGroupRepositoryTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('A stored translation group publication bound is invalid.');
         $repository->forContent(SiteContext::default(), self::CONTENT);
+    }
+
+    /**
+     * An existing group refuses a caller that tries to redeclare its fallback.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnExistingGroupRefusesAContradictoryFallback(): void
+    {
+        $database = $this->createMock(Connection::class);
+        $database->method('quoteSingleIdentifier')->willReturnArgument(0);
+        $database->expects(self::once())->method('fetchAssociative')->willReturn([
+            'id' => self::GROUP,
+            'site_identifier' => SiteContext::DEFAULT,
+            'fallback_locale' => 'en-GB',
+        ]);
+        $database->expects(self::never())->method('insert');
+
+        $this->expectException(InvalidTranslationGroup::class);
+        $this->expectExceptionMessage('cannot change its declared fallback locale');
+        $this->repository($database)->declareGroup(
+            SiteContext::default(),
+            self::GROUP,
+            LocaleTag::fromString('de'),
+            LocaleTag::fromString('de'),
+        );
+    }
+
+    /**
+     * An existing group cannot be claimed by a second site even before an entry is attached.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnExistingGroupRefusesASecondSite(): void
+    {
+        $database = $this->createMock(Connection::class);
+        $database->method('quoteSingleIdentifier')->willReturnArgument(0);
+        $database->expects(self::once())->method('fetchAssociative')->willReturn([
+            'id' => self::GROUP,
+            'site_identifier' => SiteContext::DEFAULT,
+            'fallback_locale' => 'en-GB',
+        ]);
+        $database->expects(self::never())->method('insert');
+
+        $this->expectException(InvalidTranslationGroup::class);
+        $this->expectExceptionMessage('cannot be shared between sites');
+        $this->repository($database)->declareGroup(
+            SiteContext::fromString('secondary'),
+            self::GROUP,
+            LocaleTag::fromString('de'),
+        );
+    }
+
+    /**
+     * The sixty-fifth live member is refused while the group row remains locked.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheSixtyFifthMemberIsRefusedAtWriteTime(): void
+    {
+        $database = $this->createMock(Connection::class);
+        $database->method('quoteSingleIdentifier')->willReturnArgument(0);
+        $database->expects(self::once())->method('fetchAssociative')->with(
+            self::callback(static fn (string $query): bool => str_contains($query, 'FOR UPDATE')),
+            [self::GROUP],
+        )->willReturn(['site_identifier' => SiteContext::DEFAULT]);
+        $database->expects(self::once())->method('fetchOne')->willReturn('64');
+
+        $this->expectException(InvalidTranslationGroup::class);
+        $this->expectExceptionMessage('at most 64 locales');
+        $this->repository($database)->guardAttachment(
+            SiteContext::default(),
+            self::GROUP,
+            self::CONTENT,
+        );
     }
 
     /**

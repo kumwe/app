@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Administrator\Http\Handler;
 use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Localization\Application\MessageFormattingFailed;
 use Kumwe\CMS\Localization\Application\MessageOverrideRecord;
 use Kumwe\CMS\Localization\Application\MessageOverrideService;
 use Kumwe\CMS\Localization\Application\SupportedLocales;
@@ -56,9 +57,9 @@ final readonly class AdministratorWordingHandler implements RequestHandlerInterf
     /**
      * Render the wording screen, or apply one posted change and redirect back to it.
      *
-     * Only `InvalidArgumentException` and a malformed identifier are caught. A refused authorization is
-     * deliberately left to propagate, because an actor without `localization.overrides.manage` is not
-     * making a form mistake and must not be shown one.
+     * Form-shape, identifier and ICU-pattern refusals are caught. A refused authorization is deliberately
+     * left to propagate, because an actor without `localization.overrides.manage` is not making a form
+     * mistake and must not be shown one.
      *
      * @param   ServerRequestInterface  $request  Administrator request; the method decides render or write.
      *
@@ -78,9 +79,9 @@ final readonly class AdministratorWordingHandler implements RequestHandlerInterf
         }
 
         $form = AdministratorRequest::form($request);
-        $locale = $this->locale($form['locale'] ?? null);
-        $layer = $this->layer($form['layer'] ?? null);
         try {
+            $locale = $this->locale($form['locale'] ?? null, true);
+            $layer = $this->layer($form['layer'] ?? null, true);
             match (AdministratorRequest::required($form, 'action')) {
                 'override.save' => $this->overrides->override(
                     AdministratorRequest::context($request),
@@ -97,7 +98,7 @@ final readonly class AdministratorWordingHandler implements RequestHandlerInterf
                 ),
                 default => throw new InvalidArgumentException('The wording action is not supported.'),
             };
-        } catch (InvalidMessageIdentifier | InvalidArgumentException $refused) {
+        } catch (InvalidMessageIdentifier | InvalidArgumentException | MessageFormattingFailed $refused) {
             return $this->render($request, 422, $refused->getMessage());
         }
 
@@ -159,15 +160,22 @@ final readonly class AdministratorWordingHandler implements RequestHandlerInterf
     /**
      * Resolve the locale the screen is working in, defaulting to the source language.
      *
-     * @param   mixed  $value  Locale tag as the query or the form spelled it.
+     * @param   mixed  $value   Locale tag as the query or the form spelled it.
+     * @param   bool   $strict  Whether an absent or unsupported value is a refused form submission.
      *
      * @return  string  A canonical tag this installation carries.
      *
+     * @throws  InvalidArgumentException  When strict parsing receives no carried locale.
+     *
      * @since   2.0.0
      */
-    private function locale(mixed $value): string
+    private function locale(mixed $value, bool $strict = false): string
     {
         if (!is_string($value) || $value === '') {
+            if ($strict) {
+                throw new InvalidArgumentException('A carried locale is required.');
+            }
+
             return $this->supported->source()->toString();
         }
         foreach ($this->supported->all() as $carried) {
@@ -176,22 +184,35 @@ final readonly class AdministratorWordingHandler implements RequestHandlerInterf
             }
         }
 
+        if ($strict) {
+            throw new InvalidArgumentException('This installation does not carry that locale.');
+        }
+
         return $this->supported->source()->toString();
     }
 
     /**
      * Resolve which administered layer the screen is working in, defaulting to the site.
      *
-     * @param   mixed  $value  Layer as the query or the form spelled it.
+     * @param   mixed  $value   Layer as the query or the form spelled it.
+     * @param   bool   $strict  Whether an absent or unsupported value is a refused form submission.
      *
-     * @return  MessageCatalogueLayer  `Site` or `Organization`; anything else falls back to `Site`.
+     * @return  MessageCatalogueLayer  `Site` or `Organization`; a non-strict invalid value falls back to `Site`.
+     *
+     * @throws  InvalidArgumentException  When strict parsing receives no administered layer.
      *
      * @since   2.0.0
      */
-    private function layer(mixed $value): MessageCatalogueLayer
+    private function layer(mixed $value, bool $strict = false): MessageCatalogueLayer
     {
-        return $value === MessageCatalogueLayer::Organization->value
-            ? MessageCatalogueLayer::Organization
-            : MessageCatalogueLayer::Site;
+        $layer = is_string($value) ? MessageCatalogueLayer::tryFrom($value) : null;
+        if ($layer === MessageCatalogueLayer::Site || $layer === MessageCatalogueLayer::Organization) {
+            return $layer;
+        }
+        if ($strict) {
+            throw new InvalidArgumentException('An administered wording layer is required.');
+        }
+
+        return MessageCatalogueLayer::Site;
     }
 }

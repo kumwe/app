@@ -13,9 +13,9 @@ use Kumwe\CMS\Identity\Domain\Capability;
 /**
  * The single rotation check every path that replaces an API token must clear before the swap is written.
  *
- * The REST route, the MCP `token.rotate` tool, and
- * `DoctrineAdministratorIdentityGateway::rotateAccessToken()` all authorize through this one object, so
- * the three delivery surfaces cannot drift. Rotation is treated as a fresh issuance rather than a copy:
+ * The REST pre-authorization path and `DoctrineAdministratorIdentityGateway::rotateAccessToken()` both
+ * authorize through this one object, so the administrator, console and REST delivery surfaces cannot
+ * drift. Rotation is treated as a fresh issuance rather than a copy:
  * beyond the actor's own `users.manage` over the token, the superseded token's subject and capabilities
  * are put back through `TokenDelegationPreauthorizer`, so authority the actor or the subject has since
  * lost cannot be carried forward. The gateway repeats the call with the row locked inside its write

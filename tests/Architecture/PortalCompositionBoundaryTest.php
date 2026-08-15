@@ -28,9 +28,30 @@ final class PortalCompositionBoundaryTest extends TestCase
         self::assertStringContainsString("'/portal/logout'", $container);
         self::assertStringContainsString('$application->pipe(PortalSessionMiddleware::class);', $container);
         self::assertStringContainsString('$application->pipe(PortalAuthorizationMiddleware::class);', $container);
+        $administratorSession = strpos($container, '$application->pipe(AdministratorSessionMiddleware::class);');
+        $administratorAuthorization = strpos(
+            $container,
+            '$application->pipe(AdministratorAuthorizationMiddleware::class);',
+        );
+        $portalSession = strpos($container, '$application->pipe(PortalSessionMiddleware::class);');
+        $portalAuthorization = strpos($container, '$application->pipe(PortalAuthorizationMiddleware::class);');
+        $bearer = strpos($container, '$application->pipe(BearerAuthenticationMiddleware::class);');
+        $dispatch = strpos($container, '$application->pipe(DispatchMiddleware::class);');
+        foreach ([
+            [$administratorSession, $administratorAuthorization],
+            [$portalSession, $portalAuthorization],
+            [$bearer, $dispatch],
+        ] as [$authentication, $consumer]) {
+            self::assertIsInt($authentication);
+            self::assertIsInt($consumer);
+            self::assertStringContainsString(
+                '$application->pipe(TranslationScopeMiddleware::class);',
+                substr($container, $authentication, $consumer - $authentication),
+            );
+        }
         self::assertLessThan(
-            strpos($container, '$application->pipe(BearerAuthenticationMiddleware::class);'),
-            strpos($container, '$application->pipe(PortalAuthorizationMiddleware::class);'),
+            $bearer,
+            $portalAuthorization,
         );
         self::assertStringContainsString("COOKIE_NAME = 'kumwe_portal'", (string) file_get_contents(
             $root . '/src/Portal/Http/Middleware/PortalSessionMiddleware.php',

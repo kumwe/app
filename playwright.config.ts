@@ -99,11 +99,13 @@ export default defineConfig({
     // asserted identically here; only the pixel comparison stays with the browser that owns the baselines.
     {
       name: 'desktop-firefox',
+      testIgnore: rightToLeftSpec,
       ignoreSnapshots: true,
       use: { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 960 } },
     },
     {
       name: 'desktop-webkit',
+      testIgnore: rightToLeftSpec,
       ignoreSnapshots: true,
       use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 960 } },
     },
