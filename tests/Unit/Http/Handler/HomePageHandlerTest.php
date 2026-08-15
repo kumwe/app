@@ -19,7 +19,7 @@ use Kumwe\CMS\Content\Domain\TranslationGroup;
 use Kumwe\CMS\Content\Domain\TranslationGroupMember;
 use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\CMS\Http\Handler\HomePageHandler;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Localization\Application\ActiveLocale;
 use Kumwe\CMS\Localization\Application\SupportedLocales;
 use Kumwe\CMS\Localization\Domain\LocaleTag;
