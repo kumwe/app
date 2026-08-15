@@ -67,6 +67,7 @@ composer cs
 composer analyse
 composer test:unit
 composer test:integration
+composer test:idempotency -- --engine=mariadb
 composer test:artifact
 composer security:audit
 composer security:secrets
@@ -80,6 +81,15 @@ run. Edges that already pointed the wrong way are recorded in
 finding that removes them and an expiry. The baseline only ever shrinks: a new violation fails immediately,
 an entry that no longer violates fails as stale so it has to be deleted, and an entry past its expiry fails
 outright.
+
+`composer test:idempotency` runs the integration suite again against the database the previous run left
+behind, and once more in reverse class order, and judges the result against
+[`docs/quality/idempotency-baseline.json`](quality/idempotency-baseline.json). The suite is not idempotent
+today — six tests across four classes fail on the second run — so the baseline records those six with an
+owner, an expiry and what removing each one takes, and the check fails on anything outside it: a test that
+starts failing, an entry whose test now passes, or an entry past its expiry. Run it after any change to a
+test that installs a definition, a contribution or an extension, because that is the shape five of the six
+have.
 
 `composer test:artifact` is the deployed-artifact lane. It builds the released selection, installs it with
 `--no-dev` and an authoritative classmap, seals the tree, and runs the regression cases in

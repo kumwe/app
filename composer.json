@@ -104,6 +104,7 @@
     "coverage:ratchet": "php tools/coverage-contract.php --ratchet",
     "test": "phpunit --colors=always",
     "test:artifact": "bash tools/deployed-artifact-lane.sh",
+    "test:idempotency": "php tools/verify-suite-idempotency.php",
     "test:integration": "phpunit --testsuite integration --colors=always",
     "test:unit": "phpunit --testsuite unit --colors=always",
     "qa": [

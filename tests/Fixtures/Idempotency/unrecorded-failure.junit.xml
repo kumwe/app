@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The recorded set plus one test the baseline does not carry, which must fail the check.
+
+  This fixture is the exact result docs/quality/idempotency-baseline.json records, so the architecture
+  suite can prove the check passes on it without needing a database. Its companions add a test the
+  baseline does not carry, and remove one the baseline does, so both directions of the gate are proven.
+-->
+<testsuites>
+  <testsuite name="integration" tests="6" assertions="6" errors="5" failures="1" time="1.000000">
+    <testcase name="testArchiveAndDeleteRedirectToLifecycleReadableDestinations"
+              class="Kumwe\CMS\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
+              classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
+              time="1.000000">
+      <error type="RuntimeException">A schema installation for this definition already exists.</error>
+    </testcase>
+    <testcase name="testGraphicalQueryControlsSurviveOpaqueCursorPagination"
+              class="Kumwe\CMS\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
+              classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
+              time="1.000000">
+      <error type="RuntimeException">A schema installation for this definition already exists.</error>
+    </testcase>
+    <testcase name="testWorkflowActionConfirmationExecutesWithoutJavascript"
+              class="Kumwe\CMS\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
+              classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
+              time="1.000000">
+      <error type="RuntimeException">A schema installation for this definition already exists.</error>
+    </testcase>
+    <testcase name="testSummaryUsesCanonicalBrowsePolicyAndOmitsRestrictedFields"
+              class="Kumwe\CMS\Tests\Integration\Extension\AssetInspectionCustomViewIntegrationTest"
+              classname="Kumwe.CMS.Tests.Integration.Extension.AssetInspectionCustomViewIntegrationTest"
+              time="1.000000">
+      <error type="RuntimeException">The contribution is already registered.</error>
+    </testcase>
+    <testcase name="testSignedContributionLifecycleIsPermissionAwareTrustBoundAndDataPreserving"
+              class="Kumwe\CMS\Tests\Integration\Extension\ExtensionContributionLifecycleIntegrationTest"
+              classname="Kumwe.CMS.Tests.Integration.Extension.ExtensionContributionLifecycleIntegrationTest"
+              time="1.000000">
+      <error type="RuntimeException">The extension is already installed and trusted.</error>
+    </testcase>
+    <testcase name="testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone"
+              class="Kumwe\CMS\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
+              classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
+              time="1.000000">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">A healthy cache records no degradation.</failure>
+    </testcase>
+    <testcase name="testAnIdempotentNeighbourStillPasses"
+              class="Kumwe\CMS\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
+              classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
+              time="1.000000">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">Left behind by a change nobody recorded.</failure>
+    </testcase>
+  </testsuite>
+</testsuites>
