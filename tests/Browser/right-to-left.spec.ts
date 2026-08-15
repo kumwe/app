@@ -9,14 +9,30 @@ import { expectNoDocumentOverflow } from './support/interface-diagnostics';
  * halves of that — that the attribute is derived from the resolved locale rather than hardcoded, and
  * that the mirrored page still lays out without horizontal overflow, which is where a stray physical
  * declaration shows up first.
+ *
+ * This file runs once per right-to-left project rather than looping over the languages itself, so the
+ * language is an axis of the matrix and not a loop inside one cell. That is what gives `he` and `ar`
+ * their own screenshot directory: a baseline is filed under the project name, and a right-to-left
+ * page has nothing to prove when it is compared against a left-to-right one.
  */
 
-const rightToLeftLocales = ['he', 'ar'] as const;
 const surfaces = [
   { id: 'public-home', path: '/' },
   { id: 'administrator-login', path: '/administrator/login' },
   { id: 'portal-login', path: '/portal/login' },
 ] as const;
+
+/**
+ * The interface language this project exercises, taken from the project name's trailing subtag.
+ *
+ * A project whose name carries no language suffix is a source-language project, and the right-to-left
+ * journeys are not part of its matrix cell at all.
+ */
+function projectLocale(projectName: string): string {
+  const suffix = projectName.split('-').pop() ?? '';
+
+  return /^[a-z]{2}$/.test(suffix) && suffix !== 'chromium' ? suffix : 'he';
+}
 
 async function open(page: Page, path: string, locale: string): Promise<void> {
   const separator = path.includes('?') ? '&' : '?';
@@ -24,18 +40,17 @@ async function open(page: Page, path: string, locale: string): Promise<void> {
 }
 
 test.describe('Right-to-left presentation', () => {
-  for (const locale of rightToLeftLocales) {
-    for (const surface of surfaces) {
-      test(`${surface.id} renders right-to-left in ${locale}`, async ({ page }) => {
-        await open(page, surface.path, locale);
+  for (const surface of surfaces) {
+    test(`${surface.id} renders right-to-left`, async ({ page }, testInfo) => {
+      const locale = projectLocale(testInfo.project.name);
+      await open(page, surface.path, locale);
 
-        const root = page.locator('html');
-        await expect(root).toHaveAttribute('dir', 'rtl');
-        await expect(root).toHaveAttribute('lang', locale);
+      const root = page.locator('html');
+      await expect(root).toHaveAttribute('dir', 'rtl');
+      await expect(root).toHaveAttribute('lang', locale);
 
-        await expectNoDocumentOverflow(page);
-      });
-    }
+      await expectNoDocumentOverflow(page);
+    });
   }
 
   test('the same surfaces stay left-to-right in the source language', async ({ page }) => {

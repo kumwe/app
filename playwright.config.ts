@@ -1,5 +1,19 @@
 import { defineConfig, devices } from '@playwright/test';
 
+/**
+ * The browser matrix has two axes: the device a page is drawn on, and the language it is drawn in.
+ *
+ * The device axis existed from the start. The language axis is here because a right-to-left page
+ * compared against a left-to-right baseline proves nothing: the two are meant to differ, so such a
+ * comparison is either a false failure or a green run that checked nothing. Baselines are stored per
+ * project and the project name carries the locale, which gives `he` and `ar` a place of their own to
+ * be compared against rather than a shared one they would always disagree with.
+ *
+ * The source-language projects keep their original names, because their committed baselines are
+ * filed under those names and renaming a project would silently orphan every one of them.
+ */
+const rightToLeftSpec = /right-to-left\.spec\.ts/;
+
 export default defineConfig({
   testDir: './tests/Browser',
   outputDir: './test-results/browser',
@@ -44,11 +58,33 @@ export default defineConfig({
   projects: [
     {
       name: 'desktop-chromium',
+      testIgnore: rightToLeftSpec,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 960 } },
     },
     {
       name: 'mobile-chromium',
+      testIgnore: rightToLeftSpec,
       use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'desktop-chromium-he',
+      testMatch: rightToLeftSpec,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 960 }, locale: 'he-IL' },
+    },
+    {
+      name: 'desktop-chromium-ar',
+      testMatch: rightToLeftSpec,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 960 }, locale: 'ar-EG' },
+    },
+    {
+      name: 'mobile-chromium-he',
+      testMatch: rightToLeftSpec,
+      use: { ...devices['Pixel 7'], locale: 'he-IL' },
+    },
+    {
+      name: 'mobile-chromium-ar',
+      testMatch: rightToLeftSpec,
+      use: { ...devices['Pixel 7'], locale: 'ar-EG' },
     },
   ],
 });
