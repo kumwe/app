@@ -1302,19 +1302,31 @@ half of is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md): `comp
 released selection, installs it with `--no-dev` and an authoritative classmap, seals the tree, and reproduces
 all four production-only defects inside it, at merge and before a deployment is stood up.
 
-The idempotency half is executed rather than assumed, and it has now answered: the step runs the integration
-suite a second time against the database the first run left behind and a third time in reverse class order,
-on all three engines, and six tests across four classes fail on the second run. They are recorded in
-`docs/quality/idempotency-baseline.json` with an owner, an expiry and what removing each one takes, and the
-step fails on anything outside that record, so the list can only shrink.
+The reuse half is executed rather than assumed, and it has now answered: the step runs the integration suite
+a second time against the database the first run left behind, on all three engines, and six tests across four
+classes fail. They are recorded in `docs/quality/idempotency-baseline.json` with an owner, an expiry and what
+removing each one takes, and the step fails on anything outside that record, so the list can only shrink.
 
-What remains is the six removals. Each baseline entry names its own fix, and five of them are one shape: the
-class installs a definition, a contribution or an extension under a fixed identity and does not remove it, so
-it needs a `tearDownAfterClass` that undoes what it did, the way `RecordSecretRotationIntegrationTest` rolls
-its rotation back. The sixth is not database state at all — a process-global cache diagnostic is never
-cleared, so an assertion that a healthy cache records no degradation is only true the first time, and the
-choice there is between clearing the diagnostic when the cache recovers, which is arguably the behaviour an
-operator wants, and asserting the notices the test itself caused.
+Two things remain, and they are different sizes.
+
+The six removals. Each baseline entry names its own fix, and five of them are one shape: the class installs a
+definition, a contribution or an extension under a fixed identity and does not remove it, so it needs a
+`tearDownAfterClass` that undoes what it did, the way `RecordSecretRotationIntegrationTest` rolls its rotation
+back. The sixth is not database state at all — a process-global cache diagnostic is never cleared, so an
+assertion that a healthy cache records no degradation is only true the first time, and the choice there is
+between clearing the diagnostic when the cache recovers, which is arguably the behaviour an operator wants,
+and asserting the notices the test itself caused.
+
+**And the class-order half, which is measured by nothing.** The first attempt at it used PHPUnit's
+`--order-by=reverse`, which reverses the tests inside each class as well as the classes, so it measured a
+stronger and different property than the one stated here: 38 failures across roughly 21 classes, seven of
+them methods of a single class. That distribution is intra-class ordering rather than database residue.
+Recording 21 classes would have been a blanket permission, and enforcing a property nobody has measured is
+what produced the wrong measurement in the first place, so the pass is declared unenforced in the baseline
+with its reason and its owner. The mechanism is corrected and runnable —
+`php tools/verify-suite-idempotency.php --engine=ID --pass=reverse` generates a configuration listing the
+classes in reverse with method order untouched — and what is owed is one measured run of it, followed by
+either a green pass or entries recorded the way the six were.
 
 **P2-H — Build-once exact-artifact release chain.** Findings: `V2-REL-001`. Prove the candidate belongs to
 the protected branch and that required workflows passed. Build the application image, web image, Composer

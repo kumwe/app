@@ -322,15 +322,20 @@
           "note": "Six tests across four classes fail when the integration suite runs a second time against the database the first run left behind. Identical set on MySQL 8.4 and PostgreSQL 17 in run 31876448442. Three are GeneratedBusinessBrowserIntegrationTest methods meeting a schema installation the previous run left; one is AssetInspectionCustomViewIntegrationTest meeting its own contribution; one is ExtensionContributionLifecycleIntegrationTest meeting an extension it left installed and trusted; and one is RedisOutageIntegrationTest::testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone, which is not database state at all but a process-global cache diagnostic that is never cleared, so its assertion is only true the first time."
         },
         {
+          "file": "docs/quality/idempotency-baseline.json",
+          "symbol": "scope.not_yet_enforced",
+          "note": "The other half of the acceptance — the same result in a different class order — is measured by nothing. The first attempt used PHPUnit's --order-by=reverse, which also reverses the tests inside each class, and reported 38 failures across roughly 21 classes in run 31877919073: seven methods of BusinessRecordPolicyEnforcementIntegrationTest, five of BusinessRecordPolicyCompilerIntegrationTest, three of BusinessRecordHistoryPagingIntegrationTest. That distribution is intra-class ordering, not database residue, so the measurement was of the wrong property. The corrected mechanism generates a configuration listing the classes in reverse with method order untouched, verified to collect the same 283 tests, and is run with --pass=reverse."
+        },
+        {
           "file": ".github/workflows/ci.yml",
           "symbol": "Prove the integration suite is idempotent against a reused database",
-          "note": "The step runs both passes on all three engines and judges them against the baseline: a test outside the record fails, an entry whose test now passes fails as stale, an entry past its expiry fails. The record only ever shrinks."
+          "note": "The step enforces the repeat pass on all three engines against the baseline: a test outside the record fails, an entry whose test now passes fails as stale, an entry past its expiry fails. It does not enforce the reverse pass, and the baseline records why rather than leaving the narrower claim unstated."
         }
       ],
-      "acceptance_test": "docs/quality/idempotency-baseline.json is empty: every recorded test passes when the integration suite runs a second time against the same database and a third time in reverse class order, on MariaDB, MySQL and PostgreSQL. Any class that mutates installation-global state declares and executes its own rollback, as RecordSecretRotationIntegrationTest does.",
+      "acceptance_test": "docs/quality/idempotency-baseline.json is empty and its enforced_passes carries both passes: every recorded test passes when the integration suite runs a second time against the same database, and the suite gives the same result when its classes run in a different order, on MariaDB, MySQL and PostgreSQL. Any class that mutates installation-global state declares and executes its own rollback, as RecordSecretRotationIntegrationTest does.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
-      "progress": "Delivered: the executed CI step on all three engines, the reproduction it produced, and the baseline that fails anything new while the six recorded tests are fixed. Outstanding: the six removals, each of which names its own fix in the baseline entry."
+      "progress": "Delivered: the repeat pass executed and enforced on all three engines, the six-test reproduction it produced, and a baseline that fails anything new. Outstanding: the six removals, each of which names its own fix in its baseline entry; and one measured run of the corrected reverse-order pass, which has never been executed in a form that tests the property the acceptance states."
     },
     {
       "id": "V2-DB-001",
