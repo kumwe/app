@@ -101,7 +101,7 @@ final class ConstraintNameIsolationMigrationTest extends TestCase
     public function testTheIdentitySortsAfterTheMigrationsItFollows(): void
     {
         self::assertSame(
-            '20260817010000_schema_global_constraint_names',
+            '20260818010000_schema_global_constraint_names',
             ConstraintNameIsolationMigration::ID,
         );
         self::assertMatchesRegularExpression(

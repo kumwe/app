@@ -47,7 +47,7 @@ final readonly class ConstraintNameIsolationMigration implements RepeatableMigra
      * @var    string
      * @since  2.0.0
      */
-    public const string ID = '20260817010000_schema_global_constraint_names';
+    public const string ID = '20260818010000_schema_global_constraint_names';
 
     /**
      * Longest identifier the rename may produce, being the smallest limit across the supported engines.
