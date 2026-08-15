@@ -17,6 +17,8 @@ Dependencies point inward:
 
 Domain and application code must not depend on HTTP requests, templates, Doctrine connections, environment variables, or process globals. Infrastructure implementations depend on application-owned interfaces, not the reverse.
 
+This direction is enforced rather than described. [`layers.json`](layers.json) is the machine-readable form of the table above — which namespace belongs to which layer, and which layers each one may depend on — and `composer architecture:policy` resolves every symbol each file under `src/` references and fails on any edge the table forbids. Edges that already pointed the wrong way are recorded in [`dependency-baseline.json`](dependency-baseline.json), each with an owner, the finding that removes it and an expiry; the baseline only ever shrinks, and phase 3 empties it.
+
 ## Composition and framework use
 
 `Kumwe\CMS\Kernel\ContainerFactory` is the single composition root. Joomla DI owns the service container and Joomla Event owns in-process event dispatch. Mezzio supplies the PSR-15 HTTP pipeline, Laminas Diactoros supplies PSR-7 messages, and Twig renders HTML. Framework objects remain at the composition, infrastructure, and delivery boundaries.
