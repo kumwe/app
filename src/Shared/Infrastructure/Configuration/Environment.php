@@ -70,6 +70,8 @@ final readonly class Environment
         'KUMWE_SITE_CONTENT_PROFILE',
         'KUMWE_BUSINESS_DEMO',
         'KUMWE_BUSINESS_PROFILE',
+        'BUSINESS_IDEMPOTENCY_REPLAY_SECONDS',
+        'BUSINESS_IDEMPOTENCY_RETENTION_SECONDS',
         'DB_DRIVER',
         'DB_HOST',
         'DB_PORT',

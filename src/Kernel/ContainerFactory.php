@@ -2432,6 +2432,7 @@ final class ContainerFactory
             self::service($container, RecordFingerprint::class),
             self::service($container, ClockInterface::class),
             self::service($container, BusinessRecordMutationEventPublisher::class),
+            $configuration->idempotencyReplay,
         ), true);
         $container->share(
             BusinessDefinitionValidator::class,

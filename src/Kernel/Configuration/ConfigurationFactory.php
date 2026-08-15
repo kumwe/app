@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Kernel\Configuration;
 
+use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordReplayWindow;
 use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
 use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
@@ -69,6 +70,10 @@ final class ConfigurationFactory
             trustedProxies: $environment->commaSeparatedList('APP_TRUSTED_PROXIES'),
             maxBodyBytes: $environment->positiveInteger('APP_MAX_BODY_BYTES', 2_097_152),
             administratorSessionSeconds: $environment->positiveInteger('APP_ADMIN_SESSION_SECONDS', 28_800),
+            idempotencyReplay: BusinessRecordReplayWindow::fromConfiguration(
+                $environment->optionalString('BUSINESS_IDEMPOTENCY_REPLAY_SECONDS'),
+                $environment->optionalString('BUSINESS_IDEMPOTENCY_RETENTION_SECONDS'),
+            ),
             allowUnsignedLocalExtensions: $environment->boolean('EXTENSIONS_ALLOW_UNSIGNED_LOCAL'),
             release: $environment->string('KUMWE_RELEASE', '2.0.0-dev'),
             secret: $this->fileBackedSecret($environment, 'APP_SECRET') ?? $environment->string('APP_SECRET'),

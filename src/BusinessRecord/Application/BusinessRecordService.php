@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessRecord\Application;
 
-use DateInterval;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
@@ -61,6 +60,8 @@ use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotencyState;
+use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordReplayWindow;
+use Kumwe\CMS\BusinessRecord\Domain\ClientAssertedInstant;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
@@ -149,6 +150,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *         every row a mutation touches.
      * @param  ?BusinessRecordMutationEventPublisher  $events         Transactional domain and integration
      *         event publisher; nullable only for isolated legacy tests.
+     * @param  BusinessRecordReplayWindow             $replayWindow   Declared horizons over which a
+     *         caller-minted operation identifier replays, and over which it is remembered so a late
+     *         repeat is refused by name instead of applied twice.
      *
      * @since  2.0.0
      */
@@ -171,6 +175,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         private RecordFingerprint $fingerprints,
         private ClockInterface $clock,
         private ?BusinessRecordMutationEventPublisher $events = null,
+        private BusinessRecordReplayWindow $replayWindow = new BusinessRecordReplayWindow(),
     ) {
     }
 
@@ -1803,6 +1808,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     ],
                     $command->lines,
                 ),
+                'captured_at' => $command->capturedAt?->toPortableString(),
             ],
             fn (
                 DateTimeImmutable $now,
@@ -2084,6 +2090,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             [...$changed, $relationship->handle],
             $now,
             $this->documentEvidence($relationship->handle, $prepared, $removed),
+            $command->capturedAt,
         );
 
         return $this->result($record, 'document.' . $command->intent->value);
@@ -2982,7 +2989,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         null,
                         $now,
                         null,
-                        $now->add(new DateInterval('P1D')),
+                        $this->replayWindow->expiryFrom($now),
                     );
                     $this->idempotency->begin($entry);
                     $result = $effect($now, $generation);
@@ -3095,7 +3102,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         null,
                         $now,
                         null,
-                        $now->add(new DateInterval('P1D')),
+                        $this->replayWindow->expiryFrom($now),
                     );
                     $this->idempotency->begin($entry);
                     $approvalRequestId = $effect($now, $generation);
@@ -3126,7 +3133,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @param   BusinessRecordIdempotency  $entry                     Stored command claim.
      * @param   string                     $requestFingerprint        Digest of the approval attempt now presented.
      * @param   string                     $authorizationFingerprint  Digest of the caller's current authority.
-     * @param   DateTimeImmutable          $now                       Instant against which expiry is checked.
+     * @param   DateTimeImmutable          $now                       Instant the declared replay window and
+     *          the entry's retention are both checked against.
      *
      * @return  string|null  The original approval request UUID, or null for the original no-rule outcome.
      *
@@ -3140,8 +3148,11 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         string $authorizationFingerprint,
         DateTimeImmutable $now,
     ): ?string {
-        if (!$entry->matches($requestFingerprint, $authorizationFingerprint) || $now >= $entry->expiresAt) {
+        if (!$entry->matches($requestFingerprint, $authorizationFingerprint)) {
             throw new BusinessRecordIdempotencyConflict('key_reused');
+        }
+        if (!$this->replayWindow->admitsReplay($entry->createdAt, $now) || $now >= $entry->expiresAt) {
+            throw new BusinessRecordIdempotencyConflict('replay_window_elapsed');
         }
         $result = $entry->result();
         if (!$entry->isCompleted() || $result === null) {
@@ -3173,10 +3184,17 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * Reconstitute the outcome of the earlier command that already ran under this idempotency key.
      *
      * Four proofs stand between a stored entry and a replay: it must have been claimed for the same
-     * request and the same authority, it must not have expired, it must have completed rather than still
-     * be in progress, and its stored result must still match the checksum written beside it. Any of them
-     * failing is reported as a conflict, because handing back a result that cannot be proved to describe
-     * this command would be worse than refusing it.
+     * request and the same authority, it must still be inside the declared replay window, it must have
+     * completed rather than still be in progress, and its stored result must still match the checksum
+     * written beside it. Any of them failing is reported as a conflict, because handing back a result
+     * that cannot be proved to describe this command would be worse than refusing it.
+     *
+     * The window proof is separated from the fingerprint proof and answers with its own name. A repeat
+     * that arrives after the window closed is not a reused key: it is the same command, unchanged,
+     * arriving after the platform stopped promising to remember its outcome. Refusing it as
+     * `replay_window_elapsed` is what stops a terminal that was disconnected for a long time from
+     * quietly producing a second effect, and tells the operator plainly that this one needs
+     * reconciling.
      *
      * @param   BusinessRecordIdempotency  $entry                     Stored ledger entry found for this
      *          command's scope digest.
@@ -3184,14 +3202,15 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *          being presented.
      * @param   string                     $authorizationFingerprint  Digest of the authority the caller
      *          holds now.
-     * @param   DateTimeImmutable          $now                       Instant the entry's expiry is
-     *          measured against.
+     * @param   DateTimeImmutable          $now                       Instant the replay window and the
+     *          entry's retention are both measured against.
      *
      * @return  RecordMutationResult  The stored outcome, rebuilt and flagged as a replay so the caller can
      *          tell it apart from a mutation applied by this call.
      *
      * @throws  BusinessRecordIdempotencyConflict  When the entry describes a different request or
-     *          authority or has expired, has not finished, or fails its checksum or cannot be rebuilt.
+     *          authority, when the declared replay window has closed, when the first attempt has not
+     *          finished, or when the stored result fails its checksum or cannot be rebuilt.
      *
      * @since   2.0.0
      */
@@ -3201,8 +3220,11 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         string $authorizationFingerprint,
         DateTimeImmutable $now,
     ): RecordMutationResult {
-        if (!$entry->matches($requestFingerprint, $authorizationFingerprint) || $now >= $entry->expiresAt) {
+        if (!$entry->matches($requestFingerprint, $authorizationFingerprint)) {
             throw new BusinessRecordIdempotencyConflict('key_reused');
+        }
+        if (!$this->replayWindow->admitsReplay($entry->createdAt, $now) || $now >= $entry->expiresAt) {
+            throw new BusinessRecordIdempotencyConflict('replay_window_elapsed');
         }
         $result = $entry->result();
         if (!$entry->isCompleted() || $result === null) {
@@ -3762,6 +3784,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @param   DateTimeImmutable           $now            Instant stamped on both entries.
      * @param   array<string, mixed>        $evidence       Relationship details to preserve alongside the
      *          snapshot; empty for a mutation that touched no relationship.
+     * @param   ?ClientAssertedInstant      $capturedAt     When the caller says the work happened, recorded
+     *          in the trail beside $now and never in place of it, so a reader can tell a document captured
+     *          days ago from one captured a second ago; null when the caller asserted nothing.
      *
      * @return  void
      *
@@ -3778,6 +3803,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         array $changedFields,
         DateTimeImmutable $now,
         array $evidence = [],
+        ?ClientAssertedInstant $capturedAt = null,
     ): void {
         sort($changedFields, SORT_STRING);
         $snapshot = $this->revisionSnapshot($resolved->definition, $record);
@@ -3838,6 +3864,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 'organization_identifier' => $record->scope->organizationIdentifier,
                 'changed_fields' => $metadata,
                 'mutation_evidence' => RecordValueGuard::canonical($evidence),
+                'client_captured_at' => $capturedAt?->toArray(),
             ],
         ));
         $this->events?->publish(

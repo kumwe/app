@@ -207,6 +207,76 @@ needs core to change, either a primitive is missing or the boundary was drawn wr
   the row policy hides fails the whole command closed.
 - The single-line `relate()`, `unrelate()` and `reorder()` commands are unchanged and remain supported.
 
+## Submitting work that was captured earlier
+
+Kumwe does not ship point of sale, and Version 2 will not. It does guarantee that a client which captures
+work while disconnected and submits it later is an ordinary caller rather than a special case, because the
+properties that make that possible are properties of core that cannot be added afterwards.
+
+### The caller mints the operation identifier, and the platform says for how long it means something
+
+The `Idempotency-Key` header is the caller's to choose — a terminal can mint one at capture time, hours
+before it has any connectivity. Two declared horizons say what that key buys, and they are configured with
+`BUSINESS_IDEMPOTENCY_REPLAY_SECONDS` and `BUSINESS_IDEMPOTENCY_RETENTION_SECONDS`:
+
+| Horizon | Default | Bounds | What happens inside it |
+| --- | --- | --- | --- |
+| Replay | 7 days | 1 hour to 90 days | A repeat of the command hands back the outcome the first attempt recorded. The command has exactly one effect however many times it is submitted. |
+| Retention | 30 days | at least the replay horizon, at most 1 year | The claim no longer replays but is still remembered, so a repeat is **refused** as `business_record.idempotency_replay_window_elapsed` instead of becoming a second effect. |
+
+The two are deliberately different lengths. A duplicate that is announced can be reconciled; one that is
+not becomes a second document nobody knows about, which is why retention must outlast replay and the
+service refuses a configuration where it does not. Past the retention horizon the claim is collectable and
+the key means nothing again, so an operator whose clients can be disconnected for longer than thirty days
+lengthens retention rather than discovering the difference in a reconciliation.
+
+Only the request's own fingerprint and the caller's authorization context decide whether a repeat is the
+same command. A terminal that re-authenticated while it was disconnected presents a different authorization
+context and is answered `business_record.idempotency_key_reused` rather than being replayed, because the
+claim cannot prove the repeat came from the same authority. A client that may re-authenticate mid-flight
+should therefore submit under the identity it captured under, or treat that refusal as a signal to
+reconcile.
+
+### A client's clock has a home, and decides nothing
+
+`WriteDocumentCommand` accepts an optional `capturedAt`, a `ClientAssertedInstant`. It is recorded in the
+audit entry beside the server's own instant under `client_captured_at`, marked as asserted by the client,
+and it is never substituted for the server's instant. It is never read for:
+
+- **ordering** — events are ordered by allocated sequence, so a document captured on Friday and submitted
+  on Monday is sequenced where it arrived and the capture instant explains the gap;
+- **expiry** — the replay and retention horizons above run from the server's clock, so a caller cannot
+  lengthen its own replay window;
+- **period assignment** — which period a document falls in is decided from server-held declarations; and
+- **numbering** — the human document number is allocated by the receiving command from a server-side
+  counter, so capture order can never reorder a statutory sequence.
+
+`ClientAssertedInstantBoundaryTest` enumerates the paths that consume an instant for one of those four
+decisions and fails the build if any of them can reach the type. **Late and out-of-order arrival is
+accepted**: a command carrying a capture instant days behind the server's is validated, numbered,
+sequenced and audited exactly like one captured a second ago.
+
+### What an extension may defer to reconciliation, and what it may never defer
+
+A client that was offline could not have consulted live stock or a live price, so a design that assumes it
+did is a design that cannot accept the sale. The contract therefore states which validations an extension
+is free to defer and which it is not, and the split is not negotiable:
+
+| Never deferrable | Deferrable to reconciliation |
+| --- | --- |
+| Authorization: the operation capability, the action capability and the workflow transition capability. | Availability of stock, and any other check against a quantity that another actor can change between capture and submission. |
+| Row and field policy, including the access plan the repository is handed before it builds SQL. | Price and discount agreement, where the captured price is recorded as what was agreed and reconciled against the list afterwards. |
+| Definition-shape validity: declared field types, required fields, uniqueness, relationship shape and the aggregate invariants a definition declares. | Credit limits, loyalty balances and any other running total whose authority lives outside the captured document. |
+| The idempotency claim itself. | Enrichment from a third-party system that was unreachable at capture time. |
+
+The left-hand column has no bypass path and cannot acquire one: `RecordRuleValidator` evaluates every
+declared rule at command time, the authorization gateway is consulted before every operation, and
+`DeferredValidationBoundaryTest` asserts that no `src/` path can write a record while skipping any of
+them. An extension that wants accept-and-reconcile expresses it in the right-hand column only — it accepts
+the document, records what it believed at capture time as ordinary field values, and settles the
+difference in its own workflow. It does not get to accept a document from an actor who was not authorized
+to write it.
+
 ## Bounded querying
 
 Browse accepts only the typed `RecordQuerySpecification` AST: boolean/comparison/null/set/text filters, bounded
