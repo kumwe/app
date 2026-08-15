@@ -1,0 +1,85 @@
+{
+  "lane": "kumwe-deployed-artifact",
+  "finding": "V2-QA-005",
+  "authority": "docs/roadmap/README.md",
+  "note": "Four defects in the last programme were found only in production deployment acceptance, after a full deployment had already been stood up. Every cheaper job missed them for one reason: those jobs run under the development autoloader, with development dependencies present, in a writable tree. This lane builds the artifact the way a release builds it — the archived source, `composer install --no-dev --classmap-authoritative`, a read-only tree with a writable storage volume, and the real console binary — and runs each of those four defects as a regression case inside it. A case declared here and not executed by tools/deployed-artifact-lane.sh fails the lane, because a drill leg that never ran inside the image is itself one of the four defects.",
+  "environment": {
+    "dependencies": "--no-dev",
+    "autoloader": "--classmap-authoritative",
+    "tree": "read-only, with storage writable",
+    "console": "bin/kumwe, executed from inside the artifact",
+    "memory_limit": "256M",
+    "database": "none: the lane runs before one is stood up, and no defect it reproduces needs one. The drills that need a database stay in deployment acceptance."
+  },
+  "cases": [
+    {
+      "id": "read-only-artifact",
+      "title": "The artifact refuses a write to its own tree and keeps one writable volume",
+      "script": "tests/Deployment/read-only-artifact.php",
+      "reproduces": "the deployed shape itself",
+      "commit": null,
+      "why": "Every other case in this lane is only meaningful if the tree really is read-only. This one proves the precondition rather than assuming it: the tree carries no write bit, storage stays writable the way a deployment mounts it, and the released selection carries the drill directory and not the test suite."
+    },
+    {
+      "id": "archive-entry-memory-ceiling",
+      "title": "Package admission costs the bytes that arrive, not the ceiling per entry",
+      "script": "tests/Deployment/archive-entry-memory-ceiling.php",
+      "reproduces": "the package-admission memory ceiling",
+      "commit": "cfaf840",
+      "why": "The zip reader asked for the maximum entry size plus one on every entry, so three files weighing a few kilobytes cost 192 MiB against a 256 MiB image limit and deployment acceptance failed identically on all three engines. The unit suite pins the cost, but it pins it under a development memory limit; this case pins it under the image's."
+    },
+    {
+      "id": "production-autoloader",
+      "title": "The production classmap resolves the application, and the drill loader resolves the drills",
+      "script": "tests/Deployment/production-autoloader.php",
+      "reproduces": "the missing production autoloader path",
+      "commit": "26a7b39",
+      "why": "The image installs with --no-dev and an authoritative classmap, so nothing under the test namespace is loadable there. A drill that gained a collaborator without gaining a require line died with class-not-found after the deployment was already up, and every cheaper job passed because they all run under the development autoloader."
+    },
+    {
+      "id": "console-binary-boots",
+      "title": "The real console binary loads its whole boot path inside the artifact",
+      "script": "tests/Deployment/console-binary-boots.php",
+      "reproduces": "the missing production autoloader path, at the binary rather than at a class",
+      "commit": "26a7b39",
+      "why": "bin/kumwe reaches further into the tree than anything else: bootstrap, the composition root, the typed configuration and every service the requested command touches, all resolved by an authoritative classmap. This lane is database-free on purpose, because it has to fail before a deployment is stood up and none of the four defects needs a database, so the case asserts what that can honestly prove: the binary executes its boot path, and if it stops it stops on the infrastructure it was pointed at rather than on something it could not load."
+    },
+    {
+      "id": "drill-legs-execute",
+      "title": "Every declared drill leg loads and runs inside the artifact",
+      "script": "tests/Deployment/drill-legs-execute.php",
+      "reproduces": "a drill leg that had never executed inside the deployed image",
+      "commit": "687707c",
+      "why": "A leg can be declared, wired into a workflow and still never execute where it matters. This case executes each declared drill entry point inside the artifact and resolves the whole test-namespace class graph each one reaches, so a harness cannot acquire a collaborator without acquiring a way to fail here first."
+    },
+    {
+      "id": "record-key-rotation-strand",
+      "title": "A rotation never strands an envelope, and a stranded one fails loudly",
+      "script": "tests/Deployment/record-key-rotation-strand.php",
+      "reproduces": "the stranded record-encryption keys",
+      "commit": "3fdb4e9",
+      "why": "A site-wide rotation moved every stored envelope onto a key whose material existed only inside one process, and nothing noticed because a stranded envelope hashes exactly like a readable one. This case proves the ring opens what the previous key sealed, proves the stranded envelope is byte-identical to the readable one so a digest could never have caught it, proves the missing key is a named refusal rather than a corrupt-ciphertext error, and proves the rotation reverses through the same supported operation."
+    }
+  ],
+  "drill_entry_points": [
+    {
+      "path": "tests/Support/business-runtime-backup-acceptance.php",
+      "legs": [
+        "seed",
+        "verify"
+      ]
+    },
+    {
+      "path": "tests/Support/asset-inspection-deployment-acceptance.php",
+      "legs": [
+        "snapshot",
+        "verify",
+        "replay",
+        "lifecycle",
+        "generate-keypair",
+        "apply-policy",
+        "apply-seed-policy"
+      ]
+    }
+  ]
+}
