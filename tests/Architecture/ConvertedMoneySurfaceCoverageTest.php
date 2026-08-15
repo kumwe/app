@@ -35,13 +35,19 @@ use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldWidget;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 
-#[CoversNothing]
+#[CoversClass(ConvertedMoneySurface::class)]
+#[CoversClass(ConvertedMoneyValue::class)]
+#[CoversClass(CoreFieldPresenter::class)]
+#[CoversClass(FieldPresentation::class)]
+#[CoversClass(FieldPresentationRegistry::class)]
+#[CoversClass(BusinessRecordProjector::class)]
+#[CoversClass(BusinessDocumentPresenter::class)]
 /**
  * Proves decision D10's rule holds on every surface, driven from the one table that enumerates them.
  *

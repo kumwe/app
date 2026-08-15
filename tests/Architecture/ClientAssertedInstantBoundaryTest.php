@@ -9,13 +9,14 @@ use DateTimeZone;
 use InvalidArgumentException;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordReplayWindow;
 use Kumwe\CMS\BusinessRecord\Domain\ClientAssertedInstant;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 
-#[CoversNothing]
+#[CoversClass(ClientAssertedInstant::class)]
+#[CoversClass(BusinessRecordReplayWindow::class)]
 /**
  * Holds the boundary decision D14 draws around a client's clock: it may be recorded, and it decides nothing.
  *
