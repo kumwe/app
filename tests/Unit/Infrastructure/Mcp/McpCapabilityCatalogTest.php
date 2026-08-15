@@ -136,10 +136,24 @@ final class McpCapabilityCatalogTest extends TestCase
             ['site', 'administrator', null],
             $tool['inputSchema']['properties']['surface']['enum'],
         );
-        self::assertTrue($tool['inputSchema']['properties']['currentPassword']['writeOnly']);
+        self::assertSame(
+            ['operationId', 'identifier', 'surface'],
+            array_keys($tool['inputSchema']['properties']),
+        );
     }
 
-    public function testEveryThemeMutationCanCarryStepUpWithoutPublishingTheSecret(): void
+    /**
+     * Proves the theme-bearing lifecycle tools publish no step-up property under any spelling.
+     *
+     * They used to publish `currentPassword`, marked `writeOnly` as though that were a control. Neither
+     * the property nor the annotation is a substitute for the credential never being transported at
+     * all, so both are asserted absent and the whole input vocabulary is pinned.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testNoThemeMutationPublishesAStepUpProperty(): void
     {
         $tools = (new McpCapabilityCatalog())->tools();
         foreach (['kumwe_extension_activate', 'kumwe_extension_disable', 'kumwe_extension_uninstall'] as $name) {
@@ -148,7 +162,10 @@ final class McpCapabilityCatalogTest extends TestCase
                 static fn (array $candidate): bool => $candidate['name'] === $name,
             ))[0] ?? null;
             self::assertIsArray($tool);
-            self::assertTrue($tool['inputSchema']['properties']['currentPassword']['writeOnly']);
+            $encoded = json_encode($tool, JSON_THROW_ON_ERROR);
+            self::assertArrayNotHasKey('currentPassword', $tool['inputSchema']['properties']);
+            self::assertStringNotContainsString('currentPassword', $encoded);
+            self::assertStringNotContainsString('writeOnly', $encoded);
         }
     }
 
