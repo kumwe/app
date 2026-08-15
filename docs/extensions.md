@@ -120,7 +120,9 @@ when present, must exactly match the deterministically ordered contributed capab
 its original business grammar (`field_types` and `definitions`); use schema 3 to declare safe field presentations
 and custom business handlers. Schema 4 retains those shapes and requires contribution SPI 2 for the closed
 `integration` section: event schemas/listeners/consumers, jobs/queues/schedules, projections/reports, and outbound
-adapters. See [Business integrations and extension SDK](business-integrations.md).
+adapters. See [Business integrations and extension SDK](business-integrations.md). Schema 4 also admits the
+optional `content` section, whose `translation_groups` list declares which languages a package publishes its
+content in and which one it falls back to; see [Content translation](content-translation.md).
 
 ### Business-definition contributions
 
