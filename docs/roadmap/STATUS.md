@@ -88,16 +88,16 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 ## Ledger snapshot
 
-**58 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**57 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 20 |
-| `reproduced` | 9 |
+| `accepted_for_implementation` | 19 |
+| `reproduced` | 10 |
 | `open` | 16 |
 | `conditional` | 7 |
 | `decision_required` | 2 |
-| `in_progress` | 4 |
+| `in_progress` | 3 |
 | `verified` | 0 |
 | `external` | 0 |
 | `closed` | **not an allowed state** — see [`CHANGELOG.md`](../../CHANGELOG.md) |
@@ -110,7 +110,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 | 3 | 1 |
 | 4 | 0 |
 | E | 8 |
-| L | 10 |
+| L | 9 |
 | 5 | 7 |
 | 6 | 7 |
 | 7 | 9 |
@@ -119,12 +119,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 | Gate | Findings |
 |---|---|
-| A | 27 |
+| A | 26 |
 | B | 16 |
 | none | 15 |
 
-By severity: 0 critical, 25 high, 24 medium, 9 low.
-By origin: 20 from the independent review, 12 still-open entries from the executed gap matrix, 26 discovered
+By severity: 0 critical, 24 high, 24 medium, 9 low.
+By origin: 20 from the independent review, 12 still-open entries from the executed gap matrix, 25 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
@@ -141,7 +141,7 @@ that closed it.
 | 2 | Atomic aggregate command exists and matches the recorded shape | Yes | Recorded in [`CHANGELOG.md`](../../CHANGELOG.md); [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) |
 | 3 | Data-entry integrity holds on all three browser surfaces | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
 | 4 | Correctness and security contradictions fixed | No | `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-003` |
-| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute, semantic dependency checking fails new violations against a shrinking baseline, the deployed-artifact lane reproduces all four production-only defects, and the browser matrix and canonical coverage moved to the primary engines. Outstanding: behavioural coverage attribution, the executed idempotency result, and the remaining nightly browser dimensions | `V2-QA-001`, `V2-QA-004`, `V2-DB-001` |
+| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute, semantic dependency checking fails new violations against a shrinking baseline, the deployed-artifact lane reproduces all four production-only defects, the browser matrix and canonical coverage moved to the primary engines, and the integration suite's idempotency is executed and reproduced against a shrinking baseline. Outstanding: behavioural coverage attribution, the six recorded non-idempotent tests, and the remaining nightly browser dimensions | `V2-QA-001`, `V2-QA-004`, `V2-DB-001` |
 | 6 | Aggregate seams are clean | No | `V2-ARC-003` |
 | 7 | Business-group ownership model in place | Built; owes the three-engine proof in `P3-F` | — |
 | 8 | Enterprise document primitives exist and are enforced | Partly — the aggregate invariant is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); correction, period close, sequence scoping and unit conversion remain | `V2-ERP-002` – `V2-ERP-005` |
@@ -164,14 +164,16 @@ Green: `composer docs:api` (100% across 1,228 classes and 6,569 methods), `compo
 (textual predicates plus the semantic dependency graph, 157 recorded exemptions and no new violation),
 `composer quality:contract` (25 checks, 15 in the local lane, 3 engines), `composer coverage:attribution`
 (9 reasoned rules, 44 tests still owing attribution), `composer interface:programme` (42 surfaces, 13
-journeys, 60 work items), `composer roadmap:check` (58 open findings), `composer openapi:check`, `composer
+journeys, 60 work items), `composer roadmap:check` (57 open findings), `composer openapi:check`, `composer
 cs`, `composer analyse` (PHPStan level `max`, no errors), unit suite (1,698 tests, 23,048 assertions),
 architecture suite (135 tests, 12,031 assertions), and `composer test:artifact` (6 declared cases, 6
 executed).
 
 Not executed here: the integration, functional and browser suites, which need the live database, cache and
 browser services. The coverage ratchet is therefore also unexecuted here: it reads the clover report the
-canonical MariaDB leg produces, and the merge run is the first thing that will produce one.
+canonical MariaDB leg produces, and the merge run is the first thing that will produce one. The suite
+idempotency check's comparison is executed here against recorded fixtures, in both directions; the passes it
+compares need a database and run at merge.
 
 ---
 

@@ -451,7 +451,7 @@ The consolidation resolved 114 findings: 27 from the review, 62 from the execute
 discovered while verifying this roadmap, during the qualification programme, or from the business-group
 decision. Fifty-six of them were already closed. Under the lifecycle rule above those left the ledger and
 their substance is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them, so
-[`findings.json`](findings.json) now carries **62 open entries**: 25 from the review, 12 from the gap
+[`findings.json`](findings.json) now carries **57 open entries**: 25 from the review, 12 from the gap
 matrix and 21 discovered here. Review identifiers are unchanged, so a reference to `V2-SCL-001` resolves
 the same way in both documents, and a reference to a completed identifier such as `GM-AUD-01` or
 `V2-SCL-003` resolves in the changelog.
@@ -1302,11 +1302,19 @@ half of is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md): `comp
 released selection, installs it with `--no-dev` and an authoritative classmap, seals the tree, and reproduces
 all four production-only defects inside it, at merge and before a deployment is stood up.
 
-The idempotency half is now executed rather than assumed — the database job runs the integration suite a
-second time against the database the first run left behind and a third time in reverse class order, on all
-three engines — and what remains is the result. Any class the step exposes as leaving installation-global
-state behind declares and executes its own rollback, as `RecordSecretRotationIntegrationTest` now does. The
-property is not proven until the step is green at a recorded commit on all three engines.
+The idempotency half is executed rather than assumed, and it has now answered: the step runs the integration
+suite a second time against the database the first run left behind and a third time in reverse class order,
+on all three engines, and six tests across four classes fail on the second run. They are recorded in
+`docs/quality/idempotency-baseline.json` with an owner, an expiry and what removing each one takes, and the
+step fails on anything outside that record, so the list can only shrink.
+
+What remains is the six removals. Each baseline entry names its own fix, and five of them are one shape: the
+class installs a definition, a contribution or an extension under a fixed identity and does not remove it, so
+it needs a `tearDownAfterClass` that undoes what it did, the way `RecordSecretRotationIntegrationTest` rolls
+its rotation back. The sixth is not database state at all — a process-global cache diagnostic is never
+cleared, so an assertion that a healthy cache records no degradation is only true the first time, and the
+choice there is between clearing the diagnostic when the cache recovers, which is arguably the behaviour an
+operator wants, and asserting the notices the test itself caused.
 
 **P2-H — Build-once exact-artifact release chain.** Findings: `V2-REL-001`. Prove the candidate belongs to
 the protected branch and that required workflows passed. Build the application image, web image, Composer
