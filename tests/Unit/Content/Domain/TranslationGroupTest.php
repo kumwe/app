@@ -197,6 +197,38 @@ final class TranslationGroupTest extends TestCase
     }
 
     /**
+     * Prove a group of no locales, and one past the ceiling, are both refused where the group is built.
+     *
+     * The ceiling is what bounds the rendered selector and the storage behind it, so a group that
+     * carries nothing, or more locales than the model admits, is refused at construction rather than
+     * discovered when delivery tries to render it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAGroupOutsideItsSizeBoundsIsRefused(): void
+    {
+        try {
+            new TranslationGroup(self::GROUP, LocaleTag::fromString('en-GB'), []);
+            self::fail('A translation group carrying no locale at all was accepted.');
+        } catch (InvalidTranslationGroup $exception) {
+            self::assertStringContainsString('between one and 64 locales', $exception->getMessage());
+        }
+
+        $members = [];
+        for ($index = 0; $index <= TranslationGroup::MAXIMUM_MEMBERS; $index++) {
+            $locale = chr(97 + intdiv($index, 26)) . chr(97 + $index % 26);
+            $members[] = $this->member($locale, 'about-' . $locale, true);
+        }
+
+        self::assertCount(TranslationGroup::MAXIMUM_MEMBERS + 1, $members);
+        $this->expectExceptionMessage('A translation group carries between one and 64 locales.');
+
+        new TranslationGroup(self::GROUP, LocaleTag::fromString('aa'), $members);
+    }
+
+    /**
      * Prove an untranslated item is still a group, and says so.
      *
      * @return  void
