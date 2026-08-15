@@ -16,7 +16,10 @@
     <span><strong>Reference implementation.</strong> These examples render through the same Twig, tokens and Lit controllers as operational workspaces.</span>
   </div>
 
-  <kumwe-tabs data-kis-tab-parameter="tab">
+  <kumwe-tabs
+    data-kis-tab-parameter="tab"
+    data-kis-surface="core.interface-standard.gallery"
+  >
     {% include '@kis/tabs.twig' with {
       id: 'kis-gallery',
       label: 'Interface-standard examples',
