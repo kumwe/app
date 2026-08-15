@@ -212,11 +212,12 @@ exact decimal `.amount` column beside a fixed three-character `.currency` column
 rebuilds the pair on read and refuses a denomination the field pinned against. Recorded in
 [ADR 0004](decisions/0004-money-conversion-contract.md).
 
-**Delivered for money.** The conversion half of this decision has shipped: the conversion request, the
-converted result, the rate with its as-at instant and provider identity, the declared rounding step, the
-rate-provider port and the pipeline it plugs into, and the provenance carried through report columns and
-export artifacts. Core still ships no rate of any kind. See `CHANGELOG.md`. What the same decision shape
-still owes is the identical treatment of quantities, which is `V2-ERP-004` under D13.5.
+**Delivered, for money and for quantities.** The conversion half of this decision has shipped twice, in
+the same shape: the conversion request, the converted result, the rate or factor with its as-at instant and
+provider identity, the declared rounding step, the provider port and the pipeline it plugs into, and the
+provenance carried through report columns and export artifacts. Core still ships no rate and no conversion
+table of any kind. See `CHANGELOG.md`. What the decision still owes is the rendering half, which is
+`V2-CUR-005` under `PE-B`.
 
 ### D11 — The interface is multilingual, with a decided architecture
 
@@ -461,12 +462,13 @@ Decisions D10 through D14 added 22 further entries — `V2-CUR-001` to `V2-CUR-0
 multilingual content, and `V2-POS-001` to `V2-POS-004` for the point-of-sale constraints — and moved six
 of the seven `V2-ERP-` entries out of `decision_required` because D13 decided them.
 
-The four `V2-CUR-` entries, the six `V2-GRP-` entries, the data-entry retention work, the interface
-translation foundation and the administered override layers have since been delivered and have left the
-ledger for `CHANGELOG.md`, which is where each of them is now recorded. `V2-CUR-005` was added for the
-rendering half the money work did not cover and has since been delivered too, together with
-`V2-POS-001`, `V2-POS-003` and `V2-POS-004`; of the four point-of-sale constraints only `V2-POS-002`
-remains, and it is a decision rather than work. The ledger therefore carries **53 open entries**.
+The four `V2-CUR-` entries, the six `V2-GRP-` entries, `V2-ERP-004`, the data-entry retention work, the
+interface translation foundation, the multilingual content model and the administered override layers have
+since been delivered and have left the ledger for `CHANGELOG.md`, which is where each of them is now
+recorded. `V2-CUR-005` was added for the rendering half the money work did not cover and has since been
+delivered too, together with `V2-POS-001`, `V2-POS-003` and `V2-POS-004`; of the four point-of-sale
+constraints only `V2-POS-002` remains, and it is a decision rather than work. The ledger therefore carries
+**43 open entries**.
 
 ---
 
@@ -552,16 +554,16 @@ refusing a denomination that differs from one pinned in the field configuration,
 `hash_equals()`. A `core.money` field configures `precision`, `scale` and `currency`; a `core.quantity`
 field configures `precision`, `scale` and `unit`.
 
-**Conversion — provided for money, absent for units.** Money now has the conversion contract: a conversion
-request, a converted value that cannot exist without its rate, as-at instant, provider identity and
-declared rounding, the rate-provider port an extension implements, the pipeline it plugs into, and the
-provenance carried through report columns and export artifacts. Core still holds no rate table, no rate
-row and no rate policy, and a `MoneyRateProvider` under `src/` fails an architecture test. Units have none
-of it: `QuantityValue`'s own docblock states the limit — "nothing here converts between units, so two
-quantities are only comparable when their units are identical" — and `Expression::OPERATORS` holds 21
-scalar operators, none of which converts anything. **What must be added** is the same contract for
-quantities, under `V2-ERP-004`. **What is already provided** is every part of exact storage, which this
-work must not touch.
+**Conversion — provided for money and for units.** Both denominations now have the conversion contract: a
+conversion request, a converted value that cannot exist without its rate or factor, as-at instant, provider
+identity and declared rounding, the provider port an extension implements, the pipeline it plugs into, and
+the provenance carried through report columns and export artifacts. Core still holds no rate table, no rate
+row, no rate policy and no unit conversion table, and a `MoneyRateProvider` or a `UnitConversionProvider`
+under `src/` fails an architecture test. `QuantityValue`'s docblock now says what is true of the value type
+and points at the contract that converts above it. `Expression::OPERATORS` still holds 21 scalar operators,
+none of which converts anything, and that stays correct: conversion is a contract, not an operator.
+**What remains** is the rendering half, under `V2-CUR-005`. **What is already provided** is every part of
+exact storage, which this work did not touch.
 
 **Language — the foundation is built, the volume is not.** `src/Localization/` carries the translator port
 and its catalogue implementation, the ICU formatter over `ext-intl`, the frozen message-identifier grammar,
@@ -677,7 +679,8 @@ answer.
 | Exact arbitrary-precision decimals | Provided | `core.decimal` with declared precision and scale; `ExactDecimal` |
 | Money as an exact amount paired with a currency | Provided | `core.money`; `MoneyValue` |
 | Quantity as an exact amount paired with a unit | Provided | `core.quantity`; `QuantityValue` |
-| Unit-of-measure conversion | **Must add** | `V2-ERP-004`, decision D13.5 — the type carries the unit and states that nothing converts; core owns the typed value and the conversion contract, extensions own conversion tables |
+| Unit-of-measure conversion | Provided | decision D13.5, [ADR 0004](decisions/0004-money-conversion-contract.md) shape — `UnitConversionRequest`, `QuantityConverter`, `UnitConversionProvider`, `UnitConversionPipeline`; core ships no conversion table |
+| A converted quantity marked as converted, carrying its factor and as-at instant | Provided | `ConvertedQuantityValue`, unconstructible without its factor, as-at instant, provider and declared rounding; carried into report columns and export artifacts |
 | Currency conversion, with rate sourcing left to extensions | Provided | decision D10, [ADR 0004](decisions/0004-money-conversion-contract.md) — `MoneyConversionRequest`, `MoneyConverter`, `MoneyRateProvider`, `MoneyConversionPipeline`; core ships no rate |
 | A converted amount marked as converted, carrying its rate and as-at instant | Provided | `ConvertedMoneyValue`, unconstructible without its rate, as-at instant, provider and declared rounding; carried into report columns and export artifacts |
 | Relationships: one-to-one, many-to-one, one-to-many, many-to-many | Provided | `RelationshipKind` |
@@ -947,7 +950,8 @@ intention.
    is corrected by a linked reversal; a closed period refuses a mutation dated inside it; a sequence is
    scoped by document type and legal entity and resets on a fiscal period; and a quantity and a money
    amount each convert through the core contract against an extension-held table. Each rule has a named
-   check that fails the build when it is violated. `V2-ERP-002` through `V2-ERP-005` closed. The aggregate
+   check that fails the build when it is violated. `V2-ERP-002`, `V2-ERP-003` and `V2-ERP-005` closed; the
+   conversion half is met and recorded in [`CHANGELOG.md`](../../CHANGELOG.md). The aggregate
    invariant half — a rule that sums a thousand-line document's lines and rejects a violating document
    atomically — is met and recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
 9. **The multi-currency contract holds.** A converted amount is marked as converted and carries its rate
@@ -1136,13 +1140,14 @@ follow.
    engine defaults are not a portable contract.
 8. **Release qualification authority.** The build-once artifact chain and the signed manifest as the
    release source of truth.
-9. **Enterprise primitive ownership.** Findings: `V2-ERP-002` through `V2-ERP-005`, `V2-ERP-007`.
+9. **Enterprise primitive ownership.** Findings: `V2-ERP-002`, `V2-ERP-003`, `V2-ERP-005`, `V2-ERP-007`.
    Decision D13 has answered six of the seven boundary questions and
    decision D10 has answered currency; `V2-ERP-006`, role-specific dashboards, is the one still genuinely
    open and is decided here. What remains for the rest is to write each verdict down where an author finds
    it: [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) and
-   [ADR 0004](decisions/0004-money-conversion-contract.md) are written and accepted; the period-close,
-   numbering-scope and unit-conversion verdicts are recorded in the frozen contract with the exact shape an
+   [ADR 0004](decisions/0004-money-conversion-contract.md) are written and accepted, and D13.5's
+   unit-conversion verdict is now delivered and documented in `docs/business-integrations.md`; the
+   period-close and numbering-scope verdicts are recorded in the frozen contract with the exact shape an
    extension implements against. An extension author must not have to guess, and must not have to read a
    decision log to find out.
 10. **Resource ownership scope.** Already accepted as
@@ -1500,9 +1505,10 @@ language inside an invariant is not what was decided.
 **Objective.** Build the primitives decisions D10 and D13 assigned to core, and record the four constraints
 decision D14 places on the platform so point of sale stays possible. Every package here shapes something an
 extension author builds against, which is why the whole phase is Gate A and none of it waits for Gate B.
-D10's money conversion contract is the first of them to have landed, and its rendering half followed;
-`PE-A`, `PE-B` and `PE-G` have completed and left this directory for `CHANGELOG.md`. What `PE-G` left
-behind is `V2-POS-002` alone, which is a decision rather than an implementation.
+D10's money conversion contract is the first of them to have landed, its rendering half followed, and
+D13.5's unit-of-measure contract followed that; `PE-A`, `PE-B`, `PE-C` and `PE-G` have completed and left
+this directory for `CHANGELOG.md`. What `PE-G` left behind is `V2-POS-002` alone, which is a decision
+rather than an implementation.
 
 **Entry conditions.** Phase 3 exit gate passed — these packages touch the record service, the allocator and
 the value codec, and they need clean seams first. Phase 0 decisions 9 and 12 recorded, including the
@@ -1515,19 +1521,6 @@ names the check that fails the build when its rule is violated. Where a rule gen
 mechanically, the package says so and names the human review that covers it instead. No package leaves the
 question unanswered.
 
-**PE-C — Unit-of-measure conversion.** Findings: `V2-ERP-004`. Decision D13.5. The same shape the money
-conversion contract already takes, for quantities: core owns the typed quantity-with-unit — it already does
-— and the conversion contract; extensions own the conversion tables. The argument for core owning it is interoperability, not convenience:
-a stock extension and a sales extension that invent their own conversions cannot exchange data, and they
-will disagree about what a case of a product is.
-
-`QuantityValue`'s docblock currently records that nothing converts and that two quantities are comparable
-only when their units are identical. That sentence becomes accurate about the *value type* and incomplete
-about the *platform* in the same change, and is updated to point at the contract.
-
-*The enforcing check:* the construction and serialization tests the money contract already carries, applied
-to the converted quantity type, plus a conformance-fixture assertion that an extension-held conversion
-table drives a conversion with no core edit.
 
 **PE-D — Immutable correction by linked reversal.** Findings: `V2-ERP-005`. Decision D13.2,
 [ADR 0003](decisions/0003-immutable-correction-by-reversal.md). A workflow binding may declare that

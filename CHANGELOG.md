@@ -544,6 +544,33 @@ development programme, from the architecture decision that opened it to the curr
   another package, and cannot supply a rate dated after the moment that was asked about. Rates disappear with
   their package on disable, uninstall or trust revocation, in the same sweep as everything else it
   contributed. With no rate package installed, a conversion is refused rather than guessed. (`72cc3e6`)
+- **A quantity counted in one unit can be expressed in another, and the expressed figure says so.** The
+  unit-of-measure half of the conversion contract now takes exactly the shape the money half already took,
+  and for the reason the shape exists: a stock extension and a sales extension that each invent their own
+  conversion cannot exchange data, and they will disagree about what a case of a product is. Kumwe owns the
+  typed quantity-with-unit — it already did — and now owns the contract as well: what a conversion asks for,
+  what it returns, and the rules it obeys. A converted quantity is a different kind of thing from a counted
+  one and cannot be mistaken for it. It carries the quantity and unit it came from, the factor applied, the
+  instant that factor was as at, the identity of the provider that supplied it, the rounding rule applied
+  and the exact unrounded product that rule was applied to, and it cannot be built without all of them. The
+  arithmetic is exact from end to end, no conversion passes through a floating-point number, and rounding is
+  a declared step with a named mode. Conversion is presentation and reporting only: it never writes back,
+  and a converted quantity offered where a stored one belongs is refused by both the record value guard and
+  the quantity codec. Report and export columns carry the whole story in the cell, so a downloaded artifact
+  is still readable, and reproducible, by someone who has never seen the installation that produced it.
+  (`84f38a4`)
+- **Unit conversion tables come from extensions, and Kumwe ships none.** A package declares the units it
+  relates and its place in the resolution order in its signed manifest, implements one port, and registers
+  it through the same contribution registrar every other extension surface uses — with its own additive
+  registrar interface, so the frozen contribution service-provider interface is untouched. A metric
+  standards table, a hand-administered trade-unit table, a supplier feed and a contractual case size are all
+  that same port, and none of them is wired into the product. A package cannot relate a unit it did not
+  declare, cannot attribute a factor to another package, and cannot supply a factor dated after the moment
+  that was asked about — which matters more for packaging than for currency, because a case size is a
+  commercial term that genuinely changes. Conversions disappear with their package on disable, uninstall or
+  trust revocation, in the same sweep as everything else it contributed. With no conversion package
+  installed a conversion is refused rather than guessed, and an architecture test fails the build if a
+  conversion provider ever appears in the product itself. (`84f38a4`)
 - **A translation layer, so the interface can be presented in a language other than English.** Until now
   there was none at all: no catalogue, no translator, and no localizable helper on any of the three
   rendering surfaces. Interface text is now authored as XLIFF 2.0 — the format every professional

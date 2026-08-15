@@ -540,39 +540,6 @@
       ]
     },
     {
-      "id": "V2-ERP-004",
-      "title": "No unit-of-measure conversion, so two extensions cannot agree what a case of a product is",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessDefinition/Domain/BuiltInFieldTypes.php",
-          "symbol": "the quantity type",
-          "note": "core.quantity pairs an exact quantity with a declared unit and configures precision, scale and unit. It carries the denomination and does not convert. There is no unit conversion table, no conversion operator and no conversion service for quantities anywhere under src/. The money half of this finding is delivered: core owns the money conversion contract and the rate-provider port, and ships no rate."
-        },
-        {
-          "file": "src/BusinessRecord/Domain/QuantityValue.php",
-          "symbol": "the class docblock",
-          "note": "States the limit itself: 'The unit is an opaque portable identifier — nothing here converts between units, so two quantities are only comparable when their units are identical.' That sentence stays true of the value type and must stop being true of the platform, as the money equivalent already has."
-        },
-        {
-          "file": "src/BusinessSchema/Infrastructure/Schema/CanonicalDefinitionPhysicalSchemaCompiler.php",
-          "symbol": "the composite column emission",
-          "note": "Line 710 emits core.quantity as an exact decimal .amount column beside a .unit column. Exact storage is already correct and this work must not alter it."
-        }
-      ],
-      "acceptance_test": "Core owns the typed quantity-with-unit — it already does — and additionally owns the conversion contract for quantities, in the shape the money conversion contract already establishes: the shape of a conversion request, the shape of a converted result, and the rules a conversion obeys. Extensions own the unit conversion tables. A conformance fixture proves an extension holds a conversion table and converts a quantity in the mobile assignment fixture with no core edit. Stored exact values are untouched: QuantityValue, ExactDecimal, the split physical columns and the pinned-unit refusal are unchanged, and an architecture test asserts no src/ write path accepts a converted value where a core.quantity field value is expected.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-C",
-      "product_owner_decision": "Decision D13.5 — core owns the typed value and the conversion contract; extensions own the tables. Identical in shape to D10, recorded in docs/roadmap/decisions/0004-money-conversion-contract.md and already delivered for money. If core does not own the contract, extensions invent incompatible ones and cannot exchange data: a stock extension and a sales extension would disagree about what a case of a product is.",
-      "enforcing_check": "Construction and serialization tests proving the converted quantity type cannot exist without its provenance; an architecture test proving conversion cannot leak into storage; a conformance-fixture assertion for the quantity case.",
-      "cross_reference": []
-    },
-    {
       "id": "V2-ERP-005",
       "title": "No immutable-correction primitive: an approved document is corrected by mutating it",
       "severity": "high",

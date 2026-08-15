@@ -53,12 +53,12 @@ table when it completes, in the same change that writes it into the changelog.
 | Phase | Packages | Findings |
 |---|---|---|
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-ERP-006`, `V2-ERP-007`, `V2-POS-002` |
-| 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | `V2-SEC-001`, `V2-SEC-002`, `V2-SEC-003`, `V2-DB-003` |
+| 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
 | 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
 | 3 | `P3-A` … `P3-F` | `V2-ARC-003` |
-| 4 | `P4-A` … `P4-D` | `V2-SCL-003`, `V2-ERP-001` |
-| E | `PE-C` … `PE-F` (`PE-A`, `PE-B` and `PE-G` complete) | `V2-ERP-002` – `V2-ERP-005` |
-| L | `PL-C`, `PL-D`, `PL-E`, `PL-F`, `PL-G` (`PL-A` and `PL-B` complete) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-010`, `V2-MLC-001` – `V2-MLC-004` |
+| 4 | `P4-A` … `P4-D` | — |
+| E | `PE-D`, `PE-E`, `PE-F` (`PE-A`, `PE-B`, `PE-C` and `PE-G` complete) | `V2-ERP-002`, `V2-ERP-003`, `V2-ERP-005` |
+| L | `PL-C`, `PL-D`, `PL-E`, `PL-F`, `PL-G` (`PL-A` and `PL-B` complete) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-010` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
 | 7 | `P7-A` … `P7-I` | `V2-UX-001`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05` |
@@ -88,11 +88,11 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 ## Ledger snapshot
 
-**44 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**43 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 11 |
+| `accepted_for_implementation` | 10 |
 | `reproduced` | 8 |
 | `open` | 14 |
 | `conditional` | 6 |
@@ -109,7 +109,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 | 2 | 5 |
 | 3 | 1 |
 | 4 | 0 |
-| E | 4 |
+| E | 3 |
 | L | 5 |
 | 5 | 7 |
 | 6 | 7 |
@@ -119,7 +119,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 | Gate | Findings |
 |---|---|
-| A | 14 |
+| A | 13 |
 | B | 15 |
 | none | 15 |
 
@@ -166,7 +166,7 @@ Green: `composer docs:api` (100% across 1,228 classes and 6,569 methods), `compo
 `composer quality:contract` (25 checks, 15 in the local lane, 3 engines), `composer extension:contract`
 (4 manifest generations, 2 SPI generations, 93 classified public types), `composer coverage:attribution`
 (9 reasoned rules, 44 tests still owing attribution), `composer interface:programme` (42 surfaces, 13
-journeys, 60 work items), `composer roadmap:check` (44 open findings), `composer openapi:check`, `composer
+journeys, 60 work items), `composer roadmap:check` (43 open findings), `composer openapi:check`, `composer
 cs`, `composer analyse` (PHPStan level `max`, no errors), unit suite (1,698 tests, 23,048 assertions),
 architecture suite (135 tests, 12,031 assertions), and `composer test:artifact` (6 declared cases, 6
 executed).
