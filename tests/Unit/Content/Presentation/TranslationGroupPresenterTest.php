@@ -162,6 +162,65 @@ final class TranslationGroupPresenterTest extends TestCase
     }
 
     /**
+     * Prove a locale unpublished since the group was read drops out rather than being advertised dead.
+     *
+     * The group is assembled from the rows as they stood when it was loaded; the link for each sibling
+     * is built afterwards, through the publication-aware reader. A locale that stopped being reachable
+     * between the two is therefore neither advertised to a crawler nor offered to a reader.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testALocaleThatStoppedBeingReachableIsNotAdvertised(): void
+    {
+        $presenter = $this->presenter(
+            $this->group(['en-GB' => true, 'de' => true, 'af' => true]),
+            vanished: [self::AFRIKAANS],
+        );
+
+        $view = $presenter->alternates($this->record(self::ENGLISH, 'about', 'en-GB'), '/about');
+
+        self::assertSame(['de', 'en-GB'], array_column($view['alternates'], 'locale'));
+        self::assertSame('/about', $view['default_href']);
+    }
+
+    /**
+     * Prove an item with only one reachable locale renders no selector, whatever its group says.
+     *
+     * A selector of one is not a choice, and an alternates list of one advertises nothing a crawler
+     * did not already have, so the whole view model collapses to empty rather than rendering a control
+     * that offers the page the reader is already on.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testATranslatedItemWithOneReachableLocaleRendersNoSelector(): void
+    {
+        $presenter = $this->presenter($this->group(['en-GB' => true, 'de' => false]));
+
+        self::assertSame(
+            ['alternates' => [], 'default_href' => null],
+            $presenter->alternates($this->record(self::ENGLISH, 'about', 'en-GB'), '/about'),
+        );
+    }
+
+    /**
+     * Prove a language-neutral entry point leaves an item that declares no group exactly as it found it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnEntryPointServesAnUngroupedItemUntouched(): void
+    {
+        $record = $this->record(self::ENGLISH, 'about', 'en-GB');
+
+        self::assertSame($record, $this->presenter(null, 'de')->negotiate($record));
+    }
+
+    /**
      * Read one alternate's link out of the rendered view model.
      *
      * @param   list<array{locale: string, label: string, href: string, direction: string, current: bool}>  $alternates
@@ -186,15 +245,20 @@ final class TranslationGroupPresenterTest extends TestCase
     /**
      * Build the presenter over a group store and a negotiated locale.
      *
-     * @param   ?TranslationGroup  $group   Group the store answers with, or null for an untranslated item.
-     * @param   string             $locale  Locale the request negotiated.
+     * @param   ?TranslationGroup  $group     Group the store answers with, or null for an untranslated item.
+     * @param   string             $locale    Locale the request negotiated.
+     * @param   list<string>       $vanished  Entries the publication reader no longer answers with, which is
+     *          how a locale unpublished after the group was read is modelled.
      *
      * @return  TranslationGroupPresenter  Presenter wired the way the composition root wires it.
      *
      * @since   2.0.0
      */
-    private function presenter(?TranslationGroup $group, string $locale = 'en-GB'): TranslationGroupPresenter
-    {
+    private function presenter(
+        ?TranslationGroup $group,
+        string $locale = 'en-GB',
+        array $vanished = [],
+    ): TranslationGroupPresenter {
         $records = [
             self::ENGLISH => $this->record(self::ENGLISH, 'about', 'en-GB'),
             self::GERMAN => $this->record(self::GERMAN, 'ueber-uns', 'de'),
@@ -202,7 +266,10 @@ final class TranslationGroupPresenterTest extends TestCase
         ];
         $repository = $this->createStub(SiteScopedContentRepository::class);
         $repository->method('findPublishedByIdForSite')->willReturnCallback(
-            static function (SiteContext $site, string $id) use ($group, $records): ?ContentRecord {
+            static function (SiteContext $site, string $id) use ($group, $records, $vanished): ?ContentRecord {
+                if (in_array($id, $vanished, true)) {
+                    return null;
+                }
                 $member = $group?->member(
                     LocaleTag::fromString($id === self::GERMAN ? 'de' : ($id === self::AFRIKAANS ? 'af' : 'en-GB')),
                 );

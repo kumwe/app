@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Content\Application;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Content\Domain\TranslationGroup;
 use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
 use Kumwe\CMS\Extension\Contribution\ContentTranslationRegistrar;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
@@ -198,5 +199,78 @@ final class ExtensionContentTranslationTest extends TestCase
 
         $this->expectExceptionMessage('A content translation group identifier must be namespaced.');
         new TranslationGroupDeclaration('articles', ['en-GB'], 'en-GB');
+    }
+
+    /**
+     * Prove a package cannot declare a content set in no language, or in more than the model carries.
+     *
+     * The locale list is a closed claim an operator reads before installing, and the group behind it
+     * holds at most `TranslationGroup::MAXIMUM_MEMBERS` locales, so a claim the content model could
+     * never honour is refused in the manifest rather than at the first attempt to store it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAPackageCannotDeclareNoLanguageOrMoreThanTheModelCarries(): void
+    {
+        try {
+            new TranslationGroupDeclaration('acme.blog.articles', [], 'en-GB');
+            self::fail('A content set promising no language at all was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('between one and 64 locales', $exception->getMessage());
+        }
+
+        $locales = [];
+        for ($index = 0; $index <= TranslationGroup::MAXIMUM_MEMBERS; $index++) {
+            $locales[] = chr(97 + intdiv($index, 26)) . chr(97 + $index % 26);
+        }
+
+        self::assertCount(TranslationGroup::MAXIMUM_MEMBERS + 1, $locales);
+        $this->expectExceptionMessage('A content translation group must declare between one and 64 locales.');
+
+        new TranslationGroupDeclaration('acme.blog.articles', $locales, 'aa');
+    }
+
+    /**
+     * Prove a declaration read back out of a manifest is refused unless it is exactly what it claims.
+     *
+     * `fromArray()` is the boundary the signed manifest and the compiled runtime map both come back
+     * through, so a member that is missing, extra, or of the wrong type fails here — before the
+     * package's own code runs — rather than becoming a declaration nobody can reconcile.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAManifestDeclarationIsRefusedUnlessItsMembersAreExactlyWhatTheyClaim(): void
+    {
+        $declared = ['group_id' => 'acme.blog.articles', 'locales' => ['de', 'en-GB'], 'fallback_locale' => 'en-GB'];
+
+        self::assertSame($declared, TranslationGroupDeclaration::fromArray($declared)->toArray());
+
+        try {
+            TranslationGroupDeclaration::fromArray(['group_id' => 'acme.blog.articles', 'locales' => ['en-GB']]);
+            self::fail('A declaration missing its fallback locale was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('must carry exactly its members', $exception->getMessage());
+        }
+
+        try {
+            TranslationGroupDeclaration::fromArray([...$declared, 'reader_default' => 'en-GB']);
+            self::fail('A declaration carrying a member the contract does not define was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('must carry exactly its members', $exception->getMessage());
+        }
+
+        try {
+            TranslationGroupDeclaration::fromArray([...$declared, 'locales' => ['first' => 'en-GB']]);
+            self::fail('A declaration whose locales are not a list was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('member has the wrong type', $exception->getMessage());
+        }
+
+        $this->expectExceptionMessage('A content translation group locale must be a string.');
+        TranslationGroupDeclaration::fromArray([...$declared, 'locales' => ['en-GB', 42]]);
     }
 }
