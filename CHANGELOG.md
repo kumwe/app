@@ -586,19 +586,29 @@ development programme, from the architecture decision that opened it to the curr
   — because a rule the tooling cannot execute is worth stating and is not worth counting as enforcement.
   (`1315d47`)
 - **The integration suite is now asked to be idempotent rather than assumed to be, and it answered.** The
-  database job runs it a second time against the database the first run left behind, and a third time in
-  reverse class order, on all three engines. The first execution reproduced the defect exactly: six tests
-  across four classes fail on the second run, identically on MySQL and PostgreSQL. Three
-  `GeneratedBusinessBrowserIntegrationTest` methods meet a schema installation the previous run left behind;
-  `AssetInspectionCustomViewIntegrationTest` meets its own contribution; `ExtensionContributionLifecycleIntegrationTest`
-  meets an extension it left installed and trusted; and one Redis-outage assertion turns out not to be
-  database state at all — a process-global cache diagnostic is never cleared, so "a healthy cache records no
-  degradation" is only true the first time. Those six are recorded in
-  [`docs/quality/idempotency-baseline.json`](docs/quality/idempotency-baseline.json) with an owner, an expiry
-  and what removing each one takes, and the step fails on anything outside the record: a test that starts
-  failing, an entry whose test now passes, or an entry past its expiry. A permanently red gate would have
-  been worse than the defect it reports and an advisory one would not be a gate, so the record takes the
-  same shape as the dependency baseline and shrinks the same way. (`1c80a03`)
+  database job runs it a second time against the database the first run left behind, on all three engines.
+  The first execution reproduced the defect exactly: six tests across four classes fail on the second run,
+  identically on MySQL and PostgreSQL. Three `GeneratedBusinessBrowserIntegrationTest` methods meet a schema
+  installation the previous run left behind; `AssetInspectionCustomViewIntegrationTest` meets its own
+  contribution; `ExtensionContributionLifecycleIntegrationTest` meets an extension it left installed and
+  trusted; and one Redis-outage assertion turns out not to be database state at all — a process-global cache
+  diagnostic is never cleared, so "a healthy cache records no degradation" is only true the first time. Those
+  six are recorded in [`docs/quality/idempotency-baseline.json`](docs/quality/idempotency-baseline.json) with
+  an owner, an expiry and what removing each one takes, and the step fails on anything outside the record: a
+  test that starts failing, an entry whose test now passes, or an entry past its expiry. A permanently red
+  gate would have been worse than the defect it reports and an advisory one would not be a gate, so the
+  record takes the same shape as the dependency baseline and shrinks the same way. (`1c80a03`)
+- **The same check says out loud which half of its property it does not yet enforce.** The suite's behaviour
+  under a different class order is the other half of the same acceptance, and the first attempt at measuring
+  it was wrong: PHPUnit's `--order-by=reverse` reverses the tests *inside* each class as well as the classes,
+  so a class whose methods are written to run in declaration order fails for a reason that has nothing to do
+  with a reused database. It reported 38 failures across roughly 21 classes — seven methods of one class,
+  five of another — which is the signature of intra-class ordering rather than database residue. Recording
+  those 21 classes would have been a blanket permission wearing a baseline's clothes. The pass is instead
+  declared unenforced in the baseline, with the reason, the owner and the finding, and the mechanism is
+  corrected: the tool generates a configuration that lists the integration classes in reverse and leaves
+  method order alone, verified to collect the same 283 tests. A gate may narrow what it claims; it may not
+  narrow it quietly, and an architecture test refuses an unenforced pass that carries no reason. (`1c80a03`)
 - **The release job runs the release lane of the contract instead of its own shorter list.** It carried four
   checks where a contributor runs thirteen, so a release could pass with a gate never having been executed
   against the tag. (`1c80a03`)
