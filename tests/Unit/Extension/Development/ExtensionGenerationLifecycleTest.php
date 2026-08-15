@@ -25,14 +25,18 @@ use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
 use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumEd25519Verifier;
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 
-#[CoversNothing]
+#[CoversClass(AtomicInstallPlan::class)]
+#[CoversClass(PackageTrustPolicy::class)]
+#[CoversClass(StaticConformanceRunner::class)]
+#[CoversClass(PackageSigner::class)]
+#[CoversClass(DeterministicPackageBuilder::class)]
 /**
  * Drives the signed compatibility package of every promised generation through the whole lifecycle.
  *

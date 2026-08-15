@@ -8,13 +8,15 @@ use InvalidArgumentException;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 
-#[CoversNothing]
+#[CoversClass(ExtensionManifest::class)]
+#[CoversClass(ManifestContributionSet::class)]
+#[CoversClass(ExtensionContributionRegistrySet::class)]
 /**
  * Holds the frozen extension contract to what the code actually offers a package.
  *
