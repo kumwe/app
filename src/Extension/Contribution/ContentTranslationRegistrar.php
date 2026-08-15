@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Extension\Contribution;
 
-use Kumwe\CMS\Content\Domain\TranslationGroupDeclaration;
-
 /**
  * Additive capability for packages that contribute content in more than one language.
  *

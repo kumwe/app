@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Content\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Content\Domain\TranslationGroupDeclaration;
+use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
 use Kumwe\CMS\Extension\Contribution\ContentTranslationRegistrar;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;

@@ -28,7 +28,6 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\CMS\Content\Domain\TranslationGroupDeclaration;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;

@@ -162,15 +162,23 @@ schema 4:
 ```
 
 and register it in the provider through the additive `ContentTranslationRegistrar`, which the owner-bound
-registrar implements alongside every other contribution surface:
+registrar implements alongside every other contribution surface. Both types live in
+`Kumwe\CMS\Extension\Contribution`, beside the rest of the contribution contract:
 
 ```php
+use Kumwe\CMS\Extension\Contribution\ContentTranslationRegistrar;
+use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
+
 if ($registrar instanceof ContentTranslationRegistrar) {
     $registrar->contentTranslationGroup(
         new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'af', 'de'], 'en-GB'),
     );
 }
 ```
+
+The declaration sits with the contract rather than in `Content\Domain` because it is not a content
+concept: nothing in the content model reads it, and what it describes is a promise a *package* makes at
+admission time.
 
 The locale list is a **closed claim**, not a hint: an operator can read which languages a package promises
 before installing it, and a package cannot widen that promise afterwards — registering a locale set the

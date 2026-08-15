@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Extension\Development;
 
-use Kumwe\CMS\Content\Domain\TranslationGroupDeclaration;
+use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
 use Kumwe\CMS\Extension\Contribution\ContentTranslationRegistrar;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
 
-#[CoversNothing]
+#[CoversClass(TranslationGroupDeclaration::class)]
 /**
  * Pins the additive contracts a package publishing multilingual content compiles against.
  *
@@ -22,6 +22,11 @@ use ReflectionParameter;
  * existing providers were admitted against. What is locked here is the whole of the surface a
  * multilingual content package touches — the one-method registrar it contributes through, the manifest
  * section its declarations are read from, and the members those declarations carry.
+ *
+ * It attributes to `TranslationGroupDeclaration` rather than declaring that it covers nothing, because
+ * it does not only read a fixture: it builds a real declaration and holds its exported members to the
+ * recorded names. The interface and the registrar that implements it are asserted structurally, which
+ * is a shape assertion rather than a covered execution path.
  *
  * @since  2.0.0
  */
@@ -96,7 +101,7 @@ final class ContentTranslationRegistrarFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '3a8ee7590524b7cab964078a23bf860c2b47a3c3493d5a8ea50b8af78cf806f8',
+            '9dd71dce3b30e0a7ac203075dddf4eccda224f27b5cbde689a33fe6c00be3e5f',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);

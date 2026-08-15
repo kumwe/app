@@ -45,7 +45,8 @@
     "integration.projections",
     "integration.reports",
     "integration.webhooks",
-    "integration.money_rate_providers"
+    "integration.money_rate_providers",
+    "content.translation_groups"
   ],
   "host_services": {
     "note": "The complete set of host services an extension may resolve from the container it is handed. The composition root allowlists these and nothing else, so a package that resolves anything absent from this list fails closed at runtime. Their identifiers are frozen; the method surface behind each is classified public but is not byte-pinned at this generation.",
