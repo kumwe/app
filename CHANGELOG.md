@@ -650,6 +650,62 @@ development programme, from the architecture decision that opened it to the curr
   attached to them. The right-to-left journeys take their language from the project they run under rather
   than looping over both inside one cell, which is what makes the language an axis of the matrix rather
   than a detail of one test. (`fc4dd6e`)
+- **Content is multilingual: one logical item, one entry per language, published one language at a time.**
+  A translated item is a **translation group**, and each language in it is a real content entry with **its
+  own slug, its own workflow state and its own publication window**. English can be live while another
+  language is still drafting, because publication was never a property of the item — it is a property of
+  the entry, and each language has its own. The group holds the one fact no member can hold: the **declared
+  fallback**, the language a reader is served when the one they asked for is missing or not published yet.
+  A reader whose language the item does not carry gets the fallback rather than a miss, after falling
+  through their own language's chain first, so somebody asking for `pt-BR` is offered `pt` before another
+  language entirely. Where nothing in a group is published, nothing is served: a fallback that is still
+  drafting is not a page anybody may read. (`28b14f2`)
+- **Two properties of a translation group are the database's, not the application's.** A unique index over
+  the group and the locale means one item can never carry two entries for one language, and the site-wide
+  slug index already in place means two languages of one item can never collide on a route segment. Both
+  are proven by watching the engine refuse the write, on every supported database, rather than by trusting
+  the application to have checked first. Both new columns are nullable and nothing is backfilled, so an
+  entry authored before content carried a language dimension is untouched: its stored revision checksums
+  stay valid, because an entry that declares no language snapshots to exactly the keys it always did.
+  (`28b14f2`)
+- **`hreflang` and a front-end language selector, shipped by default rather than added later.** The public
+  layout emits one `alternate` link per **published** language and never for a drafting one, plus the
+  declared fallback as `hreflang="x-default"` — which is precisely what that value means. The selector
+  offers exactly the same set, each choice **named in its own language**, because the reader reaching for a
+  language selector is the reader who cannot read the current one; that also means it needs no message
+  identifier and no translation of its own. Both come from one calculation, and a page whose item publishes
+  fewer than two languages renders neither, so an untranslated site looks exactly as it did. Which language
+  a reader is served follows the locale the interface already negotiated: a URL that names a language is
+  honoured as written, and the site root — the one public entry point that names no language — resolves the
+  reader's locale within the group. (`28b14f2`)
+- **Business definition labels carry locales, without invalidating a single published definition.**
+  `EntityTypeDefinition`'s singular and plural labels and `FieldDefinition`'s label, description and help
+  text can each be declared in more than one language, read back through `singularLabelIn()`,
+  `pluralLabelIn()`, `labelIn()`, `descriptionIn()` and `helpTextIn()`. A published definition version is
+  immutable and identified by a SHA-256 over its canonical bytes, so the dimension is shaped to be
+  invisible until it is used: translations stand **beside** the declared wording and are written into the
+  canonical document **only when non-empty**, exactly as `soft_delete_enabled`, `record_invariants`,
+  `portal_operations` and `computation_mode` already are. An untranslated definition therefore encodes to
+  the bytes it always encoded to and keeps its checksum — asserted against a hand-written pre-dimension
+  document rather than against anything derived from the new code. Locale keys are normalised and both
+  dimensions are sorted, so `pt_br` and `PT-BR` cannot become two translations of one thing and declaration
+  order cannot move a published checksum. (`28b14f2`)
+- **Extension-contributed content gets locale variants through the contribution contract, with no core
+  edit.** A package declares `contributions.content.translation_groups` in its manifest — the content set,
+  the languages it publishes it in, and the language it falls back to — and registers it through an
+  additive one-method `ContentTranslationRegistrar` that the owner-bound registrar implements alongside
+  every other surface. The language list is a **closed claim** an operator can read before installing, and
+  a package cannot widen it after admission: registering a set the manifest never carried is refused at
+  contribution time, as is a fallback naming a language the package never publishes. A package that
+  publishes in one language is untouched and source compatible, and a manifest declaring no content set
+  exports no `content` section at all, so its bytes are the bytes it was admitted against. The registrar's
+  signature, its manifest section and its declaration members are pinned in a compatibility fixture of
+  their own rather than by rewriting the frozen SPI-two baseline. This is the reason none of the language
+  work could wait for a later gate: an extension published against a contract with no locale dimension
+  would have had to be migrated to gain one. (`28b14f2`)
+- **[Content translation](docs/content-translation.md),** explaining the model to an editor, stating what
+  the database guarantees and why the definition document had to stay byte-stable, and telling an extension
+  author the two things to do to make contributed content multilingual. (`28b14f2`)
 
 ### Changed
 

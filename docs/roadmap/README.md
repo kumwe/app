@@ -451,7 +451,7 @@ The consolidation resolved 114 findings: 27 from the review, 62 from the execute
 discovered while verifying this roadmap, during the qualification programme, or from the business-group
 decision. Fifty-six of them were already closed. Under the lifecycle rule above those left the ledger and
 their substance is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them, so
-[`findings.json`](findings.json) now carries **52 open entries**: 25 from the review, 12 from the gap
+[`findings.json`](findings.json) now carries **48 open entries**: 25 from the review, 12 from the gap
 matrix and 21 discovered here. Review identifiers are unchanged, so a reference to `V2-SCL-001` resolves
 the same way in both documents, and a reference to a completed identifier such as `GM-AUD-01` or
 `V2-SCL-003` resolves in the changelog.
@@ -576,8 +576,9 @@ are still outside the gate's scope.
 
 **`default_locale` is consumed.** `SiteDefaultLocale` reads it once per process and hands it to
 `LocaleNegotiator`, which resolves an explicit `locale` parameter, then `Accept-Language`, then the setting,
-then the source locale. All three layouts emit `lang` and `dir` from the result. No template emits an
-`hreflang` link yet — that belongs to the translation-group model in `V2-MLC-004`.
+then the source locale. All three layouts emit `lang` and `dir` from the result, and the public layout now
+emits `hreflang` and the language selector from the same resolved locale, through the translation-group
+model recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
 
 **`ext-intl` is a hard requirement**, at `composer.json` line 19. It now carries message formatting as well
 as `RecordValueCodec::unicodeNfc()`; `IntlMessagePatternFormatter` refuses to be constructed without it
@@ -684,7 +685,7 @@ answer.
 | Atomic multi-line document commit | Provided | `BusinessRecordService::writeDocument()`; [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md); recorded in [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Cross-field record invariants | Provided | `RecordInvariantDefinition` over a bounded typed expression |
 | Aggregate invariants over owned lines ("total equals the sum of its lines") | Provided | `Expression`'s `line_aggregate` leaf, decision D13.1; recorded in [`CHANGELOG.md`](../../CHANGELOG.md) |
-| Locale variants on business definition labels | **Must add** | `V2-MLC-003`, decision D12 — labels are single strings inside an immutable checksummed document, so the dimension must exist before extensions publish |
+| Locale variants on business definition labels | Provided | decision D12 — `labelTranslations` and `textTranslations` stand beside the declared wording and are written into the canonical document only when used, so an untranslated definition keeps the bytes its checksum was taken over; recorded in [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Server-computed derived values | Provided | `core.computed`; `ComputationMode`; `Expression` |
 | Encrypted secret fields with key rotation | Provided | `core.secret`; `SecretKeyRing`; `business-record-rekey` |
 | Attachments and media on records | Provided | `core.media_reference` and the media module |
@@ -957,7 +958,8 @@ intention.
     baselines; content is a translation group with per-locale slugs, per-locale publication state, a
     declared fallback, automatic `hreflang` and a shipped language selector; definition labels carry
     locales; extension-contributed content declares its translation-group behaviour through the frozen
-    contract. `V2-LNG-001` through `V2-LNG-009` and `V2-MLC-001` through `V2-MLC-004` closed.
+    contract. The content half is met and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); `V2-LNG-001`
+    through `V2-LNG-009` carry what remains.
 11. **Point of sale is not foreclosed.** The idempotency contract states who mints the operation identifier
     and for how long a replay is honoured; a client-asserted occurrence instant has a declared place to
     live and is never authoritative; late and out-of-order arrival is accepted; and the disconnected
@@ -1679,28 +1681,12 @@ error code is a broken contract. The documentation names each category and why.
 *The enforcing check:* `PL-E`'s gate passing with an empty `pending_extraction` register. Extraction is
 finished when the hardcoded-string check passes on a clean tree, not when someone judges it finished.
 
-**PL-D — Multilingual content and definition labels.** Findings: `V2-MLC-001` through `V2-MLC-004`.
-Decision D12. Introduce the translation group: one logical item, one entry per locale, per-locale slug,
-per-locale publication state so English may be live while another language drafts, a declared fallback,
-automatic `hreflang` from the group's members, and a front-end language selector shipped by default rather
-than added later.
-
-Add the locale dimension to business definition labels — `EntityTypeDefinition`'s singular and plural
-labels and `FieldDefinition`'s label, description and help text. Because these are members of the document
-`CanonicalDefinitionJson` checksums and a published version is immutable, the dimension must exist before
-the first extension publishes a definition, and the canonical encoding must remain byte-stable across the
-change or every existing checksum breaks.
-
-**Extension-contributed content carries locale variants through the same model.** The translation-group
-declaration is part of the extension contribution contract, made the same way an extension declares
-everything else.
-
-*The enforcing check:* a three-engine integration test proves a translation group publishes one locale
-while another drafts, that `hreflang` lists exactly the published members, that a missing translation
-resolves to the declared fallback, and that per-locale slugs do not collide across locales of one group. A
-checksum test proves a definition carrying single-locale labels encodes to the same bytes it did before the
-dimension existed, so no published version is invalidated by the change itself. A conformance-fixture
-assertion proves extension-contributed content gets locale variants with no core edit.
+**PL-D — Multilingual content and definition labels.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md) and described in
+[`docs/content-translation.md`](../content-translation.md). The translation group, per-locale slugs and
+publication state, the declared fallback, automatic `hreflang` and the shipped language selector, the
+locale dimension on definition labels, and the extension contribution route are all built, and the
+byte-stability the immutable definition document required is asserted rather than assumed.
 
 **PL-E — The hardcoded-string gate.** Findings: `V2-LNG-007`. `composer translation:strings` exists and
 runs inside `composer qa`. It scans `templates/`, refuses user-facing text nodes, translatable attributes
