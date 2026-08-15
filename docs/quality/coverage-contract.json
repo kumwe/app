@@ -1,0 +1,130 @@
+{
+  "contract": "kumwe-coverage-contract",
+  "authority": "docs/roadmap/README.md",
+  "finding": "V2-QA-001",
+  "note": "Coverage was collected on one leg, attributed by whichever test happened to declare a class, and gated by nothing — the workflow said so itself. This file states the three things that were missing: which engine the canonical measurement comes from, which tests are allowed to attribute nothing, and what has to hold before a change is allowed to lower the number. Every rule here is executed by tools/coverage-contract.php; a rule that cannot be executed says so and is not counted as enforcement.",
+  "canonical_engine": "mariadb",
+  "canonical_engine_reason": "MariaDB is the primary engine. Collecting the canonical result anywhere else attributes the driver branches of one engine and calls them the product's coverage.",
+  "driver": {
+    "name": "pcov",
+    "reports": [
+      "line"
+    ],
+    "does_not_report": [
+      "branch",
+      "path"
+    ]
+  },
+  "ratchets": [
+    {
+      "id": "changed-line-floor",
+      "statement": "At least 90% of the executable lines a change adds or edits under src/ are covered.",
+      "floor_percent": 90,
+      "enforced": true,
+      "scope": "src/"
+    },
+    {
+      "id": "global-decrease",
+      "statement": "Global line coverage does not fall by more than 0.25 of a percentage point.",
+      "tolerance_points": 0.25,
+      "enforced": true,
+      "enforced_when": "a baseline has been recorded",
+      "note": "The first canonical run after this contract merged prints the measurement and the command that records it. Until it is recorded the tool says the ratchet is unarmed rather than reporting a pass."
+    },
+    {
+      "id": "changed-branch-floor",
+      "statement": "At least 80% of the branches a change adds or edits under Domain and Application logic are covered.",
+      "floor_percent": 80,
+      "enforced": false,
+      "unenforceable_reason": "pcov reports executed lines and no branches at all, so this floor cannot be measured on the canonical leg as it is instrumented today. It arms when the canonical run collects branch data, and until then this entry is a declared intention rather than a gate."
+    }
+  ],
+  "baseline": {
+    "line_coverage_percent": null,
+    "recorded_at": null,
+    "commit": null,
+    "note": "Recorded by the canonical CI leg. It is deliberately empty rather than guessed: a baseline nobody measured is a number the ratchet would defend for no reason."
+  },
+  "attribution": {
+    "note": "A behavioural test that executes real code and attributes none of it makes the coverage report describe a smaller product than the one being tested. #[CoversNothing] is therefore allowed in exactly two places: on tests whose subject is not a class under src/ at all, which is the reasoned list, and on the behavioural tests that carried it when this gate was switched on, which is the pending list. The pending list only ever shrinks — an entry that no longer carries the attribute fails as stale and has to be deleted — and a new behavioural test cannot join it.",
+    "reasoned": [
+      {
+        "path": "tests/Architecture/",
+        "reason": "Architecture and source-shape tests assert facts about files, workflows, manifests and boundaries. Their subject is the arrangement of the tree, not a class in it."
+      },
+      {
+        "path": "tests/Unit/InterfaceProgramme/",
+        "reason": "The subject is tools/verify-interface-programme.php, which is not under src/ and is not part of the released package."
+      },
+      {
+        "path": "tests/Unit/Infrastructure/Persistence/Migration/PublishedMigrationIntegrityTest.php",
+        "reason": "The subject is the bytes of published migrations, whose immutability is the contract; executing them is what the integration suite does."
+      },
+      {
+        "path": "tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php",
+        "reason": "The subject is a shipped JSON schema artifact rather than a class."
+      },
+      {
+        "path": "tests/Unit/Demo/Infrastructure/VdmBusinessDefinitionSchemaTest.php",
+        "reason": "The subject is a shipped demonstration manifest's shape rather than a class."
+      },
+      {
+        "path": "tests/Unit/Extension/Development/ExtensionManifestCompatibilityFixtureTest.php",
+        "reason": "The subject is a signed compatibility fixture, which is data the extension contract promises rather than code."
+      },
+      {
+        "path": "tests/Unit/Extension/Development/ExtensionPublicApiCompatibilityFixtureTest.php",
+        "reason": "The subject is the recorded public-API surface, which is data the extension contract promises rather than code."
+      },
+      {
+        "path": "tests/Unit/Presentation/Twig/",
+        "reason": "The subject is rendered template output. A template is not a class under src/, and attributing the renderer would credit Twig for the template's own markup."
+      },
+      {
+        "path": "tests/Unit/BusinessSurface/Presentation/SeverityFieldPresenterTest.php",
+        "reason": "The subject is an example package's presenter under examples/, deliberately outside the released source tree."
+      }
+    ],
+    "pending": [
+      {
+        "path": "tests/Functional/BusinessSurface/GeneratedBusinessAdapterParityTest.php",
+        "owner": "quality-engineering",
+        "finding": "V2-QA-001",
+        "expires": "2027-06-30"
+      },
+      {
+        "path": "tests/Functional/BusinessSurface/GeneratedBusinessDataEntryRetentionTest.php",
+        "owner": "quality-engineering",
+        "finding": "V2-QA-001",
+        "expires": "2027-06-30"
+      },
+      {
+        "path": "tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php",
+        "owner": "quality-engineering",
+        "finding": "V2-QA-001",
+        "expires": "2027-06-30"
+      },
+      {
+        "path": "tests/Unit/BusinessDefinition/Application/AllocatedNumberFieldRuleTest.php",
+        "owner": "quality-engineering",
+        "finding": "V2-QA-001",
+        "expires": "2027-06-30"
+      },
+      {
+        "path": "tests/Unit/BusinessRecord/NeutralBusinessFixtureTest.php",
+        "owner": "quality-engineering",
+        "finding": "V2-QA-001",
+        "expires": "2027-06-30"
+      }
+    ],
+    "pending_directories": [
+      {
+        "path": "tests/Integration/",
+        "owner": "quality-engineering",
+        "finding": "V2-QA-001",
+        "expires": "2027-06-30",
+        "reason": "Thirty-six integration tests exercise real behaviour against real engines and attribute none of it. Each needs the classes it exercises named, which is a judgement per file rather than a rename, so it is recorded here with an owner and an expiry instead of being waved through."
+      }
+    ]
+  }
+}
