@@ -11,6 +11,7 @@ use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\CMS\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\CMS\BusinessRecord\Application\RecordHistoryResult;
 use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
 use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
@@ -22,6 +23,12 @@ use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
  * Internal storage keys and scope plumbing never leave this projector. Application read views have already
  * omitted withheld handles, so every remaining array is ordinary exact business data and is preserved
  * recursively. Exact decimal strings and typed composite arrays pass through unchanged.
+ *
+ * REST, the model-context tools and the console all serialize through here and own no second policy, so
+ * a converted amount is exported once, in the declared shape that carries its rate, as-at instant,
+ * provider and rounding. That export is structurally unlike a stored money value — the figure sits under
+ * `value` and the `converted` marker is unconditional — so no consumer of this projection can mistake
+ * one for the other, and none of them has to know it was converted to render it correctly.
  *
  * @since  2.0.0
  */
@@ -195,6 +202,7 @@ final readonly class BusinessRecordProjector
     private function value(mixed $value): mixed
     {
         return match (true) {
+            $value instanceof ConvertedMoneyValue => $value->toArray(),
             $value instanceof ExactDecimal => $value->value(),
             $value instanceof MoneyValue,
             $value instanceof QuantityValue,

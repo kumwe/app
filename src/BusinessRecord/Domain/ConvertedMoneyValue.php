@@ -248,6 +248,43 @@ final readonly class ConvertedMoneyValue
     }
 
     /**
+     * Recognise a converted amount in an already-decoded value, whichever of its two forms it arrived in.
+     *
+     * Every surface that renders a value asks this one question rather than testing for the object, the
+     * export, or a `converted` key by itself. That is what makes the rendering rule enforceable: a
+     * presenter, a projector or a report column cannot accidentally treat a converted amount as an
+     * ordinary figure, because the recognition and the provenance come from the same place. The declared
+     * member set has to match exactly, so an unrelated structured value that happens to carry a
+     * `converted` flag is not mistaken for one.
+     *
+     * @param   mixed  $value  Disclosed value being prepared for a surface.
+     *
+     * @return  ?self  The converted amount, or null when the value is not one.
+     *
+     * @throws  InvalidArgumentException  When the value carries exactly the declared member set but those
+     *          members are missing, mistyped, or contradict each other — a figure that says it is
+     *          converted and cannot prove it is refused rather than rendered bare.
+     *
+     * @since   2.0.0
+     */
+    public static function detect(mixed $value): ?self
+    {
+        if ($value instanceof self) {
+            return $value;
+        }
+        if (!is_array($value)) {
+            return null;
+        }
+        $expected = ['converted', 'value', 'source', 'rate', 'rounding'];
+        $keys = array_keys($value);
+        if (array_diff($expected, $keys) !== [] || array_diff($keys, $expected) !== []) {
+            return null;
+        }
+
+        return self::fromArray(self::document($value));
+    }
+
+    /**
      * Prove one nested export member really is a keyed document before it is read as one.
      *
      * A decoded payload arrives with whatever keys it was given, so the string-keyed shape the nested

@@ -797,6 +797,115 @@
                 ],
                 "type": "object"
             },
+            "GeneratedBusinessConvertedMoney": {
+                "additionalProperties": false,
+                "properties": {
+                    "converted": {
+                        "const": true,
+                        "type": "boolean"
+                    },
+                    "rate": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "as_at": {
+                                "format": "date-time",
+                                "type": "string"
+                            },
+                            "base_currency": {
+                                "pattern": "^[A-Z]{3}$",
+                                "type": "string"
+                            },
+                            "provider": {
+                                "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+){1,15}$",
+                                "type": "string"
+                            },
+                            "quote_currency": {
+                                "pattern": "^[A-Z]{3}$",
+                                "type": "string"
+                            },
+                            "rate": {
+                                "pattern": "^(?:0|[1-9][0-9]*)\\.[0-9]+$",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "base_currency",
+                            "quote_currency",
+                            "rate",
+                            "as_at",
+                            "provider"
+                        ],
+                        "type": "object"
+                    },
+                    "rounding": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "mode": {
+                                "pattern": "^[a-z_]{1,16}$",
+                                "type": "string"
+                            },
+                            "scale": {
+                                "minimum": 0,
+                                "type": "integer"
+                            },
+                            "unrounded_amount": {
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "mode",
+                            "scale",
+                            "unrounded_amount"
+                        ],
+                        "type": "object"
+                    },
+                    "source": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "amount": {
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$",
+                                "type": "string"
+                            },
+                            "currency": {
+                                "pattern": "^[A-Z]{3}$",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "amount",
+                            "currency"
+                        ],
+                        "type": "object"
+                    },
+                    "value": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "amount": {
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$",
+                                "type": "string"
+                            },
+                            "currency": {
+                                "pattern": "^[A-Z]{3}$",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "amount",
+                            "currency"
+                        ],
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "converted",
+                    "value",
+                    "source",
+                    "rate",
+                    "rounding"
+                ],
+                "type": "object"
+            },
             "GeneratedBusinessCreate": {
                 "additionalProperties": false,
                 "properties": {
@@ -1964,13 +2073,14 @@
                     },
                     "type": {
                         "enum": [
-                            "string",
-                            "integer",
-                            "decimal",
                             "boolean",
+                            "converted_money",
                             "date",
                             "date_time",
-                            "identifier"
+                            "decimal",
+                            "identifier",
+                            "integer",
+                            "string"
                         ],
                         "type": "string"
                     }
@@ -8575,6 +8685,7 @@
         "GeneratedBusinessApprovalRequest",
         "GeneratedBusinessApprovalVote",
         "GeneratedBusinessBrowse",
+        "GeneratedBusinessConvertedMoney",
         "GeneratedBusinessCreate",
         "GeneratedBusinessCustomContract",
         "GeneratedBusinessCustomViewMetadata",

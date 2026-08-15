@@ -7,6 +7,7 @@ namespace Kumwe\CMS\BusinessSurface\Presentation\Field;
 use DateTimeImmutable;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
 use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
@@ -20,6 +21,12 @@ use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
  * always use output widgets even when a caller asks for an edit context. Structured values remain typed
  * for retained form input and are rendered through canonical JSON, never through executable markup.
  *
+ * A converted amount is recognised before the field's own type is consulted, because it is not a value
+ * of that type: it is a presentation of one. It renders as read-only output whose text is the whole of
+ * its provenance, and its structured evidence travels beside it for surfaces that can lay it out. No
+ * editor is ever offered for one, which is the presentation-side half of the rule that no write path
+ * accepts a converted amount as a stored value.
+ *
  * @since  2.0.0
  */
 final readonly class CoreFieldPresenter implements FieldPresenter
@@ -32,13 +39,31 @@ final readonly class CoreFieldPresenter implements FieldPresenter
      * @return  FieldPresentation  Markup-free field view model.
      *
      * @throws  InvalidBusinessDefinition  When a structured disclosed value cannot be canonically encoded.
-     * @throws  \InvalidArgumentException  When the resulting semantic model is malformed or unbounded.
+     * @throws  \InvalidArgumentException  When the resulting semantic model is malformed or unbounded, or
+     *          when a value marked as converted cannot prove the conversion it claims.
      *
      * @since   2.0.0
      */
     public function present(FieldPresentationRequest $request): FieldPresentation
     {
         $field = $request->field;
+        $converted = ConvertedMoneyValue::detect($request->value);
+        if ($converted !== null) {
+            return new FieldPresentation(
+                $field->handle,
+                $field->label,
+                $request->context,
+                FieldWidget::Output,
+                $converted->toPortableString(),
+                null,
+                false,
+                $field->required,
+                $request->errors,
+                [],
+                [],
+                $converted->toArray(),
+            );
+        }
         $editing = $request->permitsEditing();
         $secret = $field->type === 'core.secret';
         $widget = $editing ? $this->widget($field->type) : FieldWidget::Output;

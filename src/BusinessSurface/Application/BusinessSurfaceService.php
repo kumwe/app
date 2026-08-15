@@ -41,6 +41,7 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentation;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
@@ -2044,7 +2045,9 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * @param   EntityTypeDefinition  $definition  Target definition whose safe presenters are registered.
      * @param   array<string, mixed>  $values      Values already narrowed by related access.
      *
-     * @return  list<array{handle: string, label: string, display: string, identity: bool}>  Selector fields.
+     * @return  list<array{handle: string, label: string, display: string, identity: bool,
+     *          provenance: ?array<string, mixed>}>  Selector fields, each carrying conversion evidence when
+     *          the value it shows is a converted amount and null when it is not.
      *
      * @since   2.0.0
      */
@@ -2065,8 +2068,9 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             $fields[] = [
                 'handle' => $field->handle,
                 'label' => $field->label,
-                'display' => self::choiceText($presentation->display, 256),
+                'display' => self::presentedText($presentation),
                 'identity' => in_array($field->type, ['core.uuid', 'core.reference_identity'], true),
+                'provenance' => $presentation->provenance,
             ];
             if (count($fields) === 4) {
                 break;
@@ -2123,6 +2127,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
                     'handle' => $field['handle'],
                     'label' => $field['label'],
                     'display' => $field['display'],
+                    'provenance' => $field['provenance'],
                 ],
                 $fields,
             );
@@ -2146,7 +2151,8 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * @param   list<array<string, mixed>>        $projected  Transport projections matching those rows.
      *
      * @return  array{0: list<array{handle: string, label: string}>, 1: list<array<string, mixed>>}  Stable
-     *          columns and the rows, each row carrying one presented cell per column under `cells`.
+     *          columns and the rows, each row carrying one presented cell per column under `cells`, and each
+     *          cell carrying the conversion evidence behind its figure when that figure was converted.
      *
      * @since   2.0.0
      */
@@ -2177,6 +2183,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             $cells = [];
             foreach ($columns as $column) {
                 $display = '';
+                $provenance = null;
                 if (array_key_exists($column['handle'], $record->values)) {
                     $presentation = $this->presentations->present(new FieldPresentationRequest(
                         $fields[$column['handle']],
@@ -2185,9 +2192,14 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
                         $record->values[$column['handle']],
                         editable: false,
                     ));
-                    $display = $presentation->display === '' ? '' : self::choiceText($presentation->display, 256);
+                    $display = self::presentedText($presentation);
+                    $provenance = $presentation->provenance;
                 }
-                $cells[] = ['handle' => $column['handle'], 'display' => $display];
+                $cells[] = [
+                    'handle' => $column['handle'],
+                    'display' => $display,
+                    'provenance' => $provenance,
+                ];
             }
             $projected[$index]['cells'] = $cells;
         }
@@ -2227,10 +2239,34 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
     }
 
     /**
+     * Read one presented value as the text a compact surface shows, without ever cutting provenance off.
+     *
+     * Ordinary presenter output is normalized and bounded, because a list cell and a selector line have
+     * to stay scannable. A converted amount is exempt: its display is the whole of the evidence for the
+     * figure, and an ellipsis through the middle of a rate or an as-at instant would turn an auditable
+     * figure into an unverifiable one. Its portable form is already single-line canonical text, so
+     * nothing is lost by passing it through unchanged.
+     *
+     * @param   FieldPresentation  $presentation  Semantic model returned by the presenter registry.
+     *
+     * @return  string  The bounded display text, or the untouched portable form of a converted amount.
+     *
+     * @since   2.0.0
+     */
+    private static function presentedText(FieldPresentation $presentation): string
+    {
+        if ($presentation->provenance !== null) {
+            return $presentation->display;
+        }
+
+        return $presentation->display === '' ? '' : self::choiceText($presentation->display, 256);
+    }
+
+    /**
      * Normalize one human label to bounded, single-line valid UTF-8 text.
      *
-     * @param   string  $value  Presenter output or public identity.
-     * @param   int     $limit  Maximum UTF-8 byte length including an ellipsis.
+     * @param   string  $value  Candidate label.
+     * @param   int     $limit  Maximum byte length.
      *
      * @return  string  Single-line text no longer than the requested byte limit.
      *

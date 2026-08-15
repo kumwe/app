@@ -69,7 +69,7 @@
                     <h2>{{ group.label }}</h2>
                     <dl>
                         {% for field in group.fields %}
-                            <div><dt>{{ field.label }}</dt><dd>{{ field.display is not same as('') ? field.display : '—' }}</dd></div>
+                            <div><dt>{{ field.label }}</dt><dd{% if field.provenance %} data-converted="true" title="{{ field.display }}"{% endif %}>{{ field.display is not same as('') ? field.display : '—' }}</dd></div>
                         {% endfor %}
                     </dl>
                 </section>
@@ -91,7 +91,7 @@
                     {% for row in document.lines.rows %}
                         <tr>
                             <td class="kis-business-document-line-number">{{ loop.index }}</td>
-                            {% for cell in row.cells|default([]) %}<td>{{ cell.display }}</td>{% endfor %}
+                            {% for cell in row.cells|default([]) %}<td{% if cell.provenance %} data-converted="true" title="{{ cell.display }}"{% endif %}>{{ cell.display }}</td>{% endfor %}
                         </tr>
                     {% else %}
                         <tr><td colspan="{{ document.lines.columns|length + 1 }}">No lines recorded.</td></tr>
@@ -107,7 +107,7 @@
                 {% for total in document.totals %}
                     <div{% if loop.last %} class="kis-business-document-grand-total"{% endif %}>
                         <dt>{{ total.label }}</dt>
-                        <dd>{{ total.display is not same as('') ? total.display : '—' }}</dd>
+                        <dd{% if total.provenance %} data-converted="true" title="{{ total.display }}"{% endif %}>{{ total.display is not same as('') ? total.display : '—' }}</dd>
                     </div>
                 {% endfor %}
             </dl>

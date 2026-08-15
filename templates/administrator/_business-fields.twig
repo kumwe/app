@@ -95,6 +95,15 @@
           <output class="business-field-output kis-business-field-output" aria-labelledby="{{ input_id }}-label"{% if has_help %} aria-describedby="{{ help_id }}"{% endif %}>
             {{ field.display is not same as('') ? field.display : 'Not set' }}
           </output>
+          {% if field.provenance %}
+            <dl class="business-field-provenance kis-business-field-provenance" data-converted="true">
+              <div><dt>Converted from</dt><dd>{{ field.provenance.source.amount }} {{ field.provenance.source.currency }}</dd></div>
+              <div><dt>Rate</dt><dd>{{ field.provenance.rate.rate }}</dd></div>
+              <div><dt>As at</dt><dd>{{ field.provenance.rate.as_at }}</dd></div>
+              <div><dt>Rate provider</dt><dd>{{ field.provenance.rate.provider }}</dd></div>
+              <div><dt>Rounding</dt><dd>{{ field.provenance.rounding.mode }} to {{ field.provenance.rounding.scale }} from {{ field.provenance.rounding.unrounded_amount }}</dd></div>
+            </dl>
+          {% endif %}
         {% elseif field.widget == 'checkbox' %}
           <input type="hidden" name="{{ value_prefix }}[{{ field.handle }}]" value="0">
           <label class="check business-checkbox" for="{{ input_id }}">
