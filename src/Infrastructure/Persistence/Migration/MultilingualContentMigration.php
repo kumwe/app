@@ -42,12 +42,16 @@ use RuntimeException;
 final readonly class MultilingualContentMigration implements RepeatableMigration
 {
     /**
-     * Stable ordered migration identity, appended after the resource-ownership scope migration.
+     * Stable ordered migration identity, appended after every migration this release already carries.
+     *
+     * `MigrationPlan` requires an installation's applied ledger to be an exact prefix of the sorted
+     * plan, so a new identity has to sort above the highest one already released — which is why this
+     * sits a day past the ownership-scope and interface-override migrations rather than beside them.
      *
      * @var    string
      * @since  2.0.0
      */
-    public const string ID = '20260817010000_multilingual_content';
+    public const string ID = '20260818010000_multilingual_content';
 
     /**
      * Widest language tag the locale columns accept, in characters.
