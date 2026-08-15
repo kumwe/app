@@ -197,7 +197,7 @@
       "source_revision": "99663feb759311091965e7b2e0c354c2eb43c664",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node, MariaDB LTS, MySQL 8.4, PostgreSQL 17, and Redis.",
       "method": "Kumwe CI PHP quality, frontend, and database suites, run 31564853522",
-      "result": "Coding standards, static analysis, unit/integration tests, frontend checks/build, programme verification, and all supported database jobs passed. Durable run: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result": "Coding standards, static analysis, unit/integration tests, frontend checks/build, programme verification, and all supported database jobs passed. Durable run: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "composer.json",
         "package.json",
@@ -256,7 +256,7 @@
       "source_revision": "99663feb759311091965e7b2e0c354c2eb43c664",
       "environment": "GitHub Actions production-equivalent application stack with pinned Chromium desktop and mobile projects.",
       "method": "Kumwe CI 94-case Playwright behavior, accessibility, visual, no-JavaScript, and diagnostic matrix, run 31564853522",
-      "result": "All required Chromium behavior, accessibility, responsive, visual, security-boundary, and element-diagnostic cases passed. Durable run: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result": "All required Chromium behavior, accessibility, responsive, visual, security-boundary, and element-diagnostic cases passed. Durable run: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "tests/Browser/administrator.spec.ts",
         "tests/Browser/portal.spec.ts",
@@ -324,7 +324,7 @@
       "source_revision": "99663feb759311091965e7b2e0c354c2eb43c664",
       "environment": "Committed parity fixtures plus GitHub Actions PHP, browser, database, and deployment matrices.",
       "method": "Verify Phase 2-5 route, capability, field, action, payload, state, authorization, and outcome parity in run 31564853522",
-      "result": "Phase 2 reference parity and Phase 3-5 bounded-context parity fixtures passed without policy or task loss. Durable run: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result": "Phase 2 reference parity and Phase 3-5 bounded-context parity fixtures passed without policy or task loss. Durable run: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "docs/interface-standard/programme/phase-2-business-workspace-parity.json",
         "tests/Fixtures/InterfaceStandard/phase-three-security-identity-parity.json",
@@ -358,7 +358,7 @@
       "source_revision": "99663feb759311091965e7b2e0c354c2eb43c664",
       "environment": "GitHub Actions CodeQL/dependency/container security workflow and application negative-path suites.",
       "method": "Kumwe security run 31564853353 plus authorization, disclosure, CSRF, step-up, approval, concurrency, and recovery checks in run 31564853522",
-      "result": "Security workflow and application negative paths passed, including fail-closed contribution admission and minimum-authority GUI states. Durable runs: https://github.com/kumwe/cms/actions/runs/31564853353 and https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result": "Security workflow and application negative paths passed, including fail-closed contribution admission and minimum-authority GUI states. Durable runs: https://github.com/kumwe/app/actions/runs/31564853353 and https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         ".github/workflows/security.yml",
         "tests/Browser/administrator.spec.ts",
@@ -460,7 +460,7 @@
       "source_revision": "99663feb759311091965e7b2e0c354c2eb43c664",
       "environment": "GitHub Actions PHP 8.5 production topology, three supported database adapters, container security, and Docker Compose acceptance.",
       "method": "Kumwe CI/deployment run 31564853522, security run 31564853353, and Development Compose acceptance run 31564853361",
-      "result": "Frontend, PHP quality, MariaDB, MySQL, PostgreSQL, browser, deployment, security image, recovery, and Compose acceptance passed. Durable runs: https://github.com/kumwe/cms/actions/runs/31564853522, https://github.com/kumwe/cms/actions/runs/31564853353, and https://github.com/kumwe/cms/actions/runs/31564853361",
+      "result": "Frontend, PHP quality, MariaDB, MySQL, PostgreSQL, browser, deployment, security image, recovery, and Compose acceptance passed. Durable runs: https://github.com/kumwe/app/actions/runs/31564853522, https://github.com/kumwe/app/actions/runs/31564853353, and https://github.com/kumwe/app/actions/runs/31564853361",
       "artifact_paths": [
         ".github/workflows/ci.yml",
         ".github/workflows/deployment-acceptance.yml",

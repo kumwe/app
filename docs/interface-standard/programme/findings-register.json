@@ -403,7 +403,7 @@
           "status": "passed",
           "source_revision": "99663feb759311091965e7b2e0c354c2eb43c664",
           "method": "GitHub Actions Kumwe CI browser suite, run 31564853522",
-          "result": "The administrator browser matrix passed the six-concern security and access navigation, focused policy authoring, progressive enhancement, accessibility, and zero-horizontal-overflow assertions. Durable run: https://github.com/kumwe/cms/actions/runs/31564853522",
+          "result": "The administrator browser matrix passed the six-concern security and access navigation, focused policy authoring, progressive enhancement, accessibility, and zero-horizontal-overflow assertions. Durable run: https://github.com/kumwe/app/actions/runs/31564853522",
           "artifact_paths": [
             "templates/administrator/business-security.twig",
             "templates/administrator/access-control.twig",
@@ -598,7 +598,7 @@
           "status": "passed",
           "source_revision": "99663feb759311091965e7b2e0c354c2eb43c664",
           "method": "GitHub Actions Kumwe CI browser suite, run 31564853522",
-          "result": "The administrator and portal Chromium matrix passed provisioning guidance, concern separation, minimum-authority navigation, sign-in, and permitted-work discovery assertions. Durable run: https://github.com/kumwe/cms/actions/runs/31564853522",
+          "result": "The administrator and portal Chromium matrix passed provisioning guidance, concern separation, minimum-authority navigation, sign-in, and permitted-work discovery assertions. Durable run: https://github.com/kumwe/app/actions/runs/31564853522",
           "artifact_paths": [
             "templates/administrator/access-control.twig",
             "templates/administrator/business-security.twig",

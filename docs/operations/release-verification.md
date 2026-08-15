@@ -18,7 +18,7 @@ Use aliases to discover a release. Resolve and deploy the signed digest for prod
 sha256sum --check SHA256SUMS
 cosign verify-blob \
   --bundle SHA256SUMS.cosign.bundle \
-  --certificate-identity-regexp='^https://github.com/Kumwe/cms/.github/workflows/release.yml@refs/tags/v2\.' \
+  --certificate-identity-regexp='^https://github.com/kumwe/app/.github/workflows/release.yml@refs/tags/v2\.' \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
   SHA256SUMS
 ```
@@ -29,14 +29,14 @@ The checksum list covers the release ZIP and supplied SBOMs. Confirm the certifi
 
 ```bash
 cosign verify \
-  --certificate-identity-regexp='^https://github.com/Kumwe/cms/.github/workflows/release.yml@refs/tags/v2\.' \
+  --certificate-identity-regexp='^https://github.com/kumwe/app/.github/workflows/release.yml@refs/tags/v2\.' \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-  ghcr.io/kumwe/cms/app@sha256:APP_DIGEST
+  ghcr.io/kumwe/app/app@sha256:APP_DIGEST
 cosign verify-attestation \
   --type cyclonedx \
-  --certificate-identity-regexp='^https://github.com/Kumwe/cms/.github/workflows/release.yml@refs/tags/v2\.' \
+  --certificate-identity-regexp='^https://github.com/kumwe/app/.github/workflows/release.yml@refs/tags/v2\.' \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-  ghcr.io/kumwe/cms/app@sha256:APP_DIGEST
+  ghcr.io/kumwe/app/app@sha256:APP_DIGEST
 ```
 
 Repeat for the web image. Compare both digests with release provenance subjects and the deployment record. Review the SBOM and scanner evidence under the site's risk policy. A passing scan is evidence for the artifact and vulnerability database at scan time, not proof that software has no vulnerabilities.

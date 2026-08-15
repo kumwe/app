@@ -28,7 +28,7 @@ site and the Vast Development Method (VDM) business dataset by default, and `dat
 installs both.
 
 ```bash
-git clone https://github.com/Kumwe/cms.git
+git clone https://github.com/kumwe/app.git
 cd cms
 cp .env.example .env
 docker compose run --rm app composer install --no-interaction --prefer-dist
@@ -187,8 +187,8 @@ select one per installation with `DB_DRIVER` and `KUMWE_DATABASE_IMAGE` and re-r
 - Demonstration data is packaged as versioned [demo profiles](docs/demo-profiles.md). Build a site,
   then turn it into a shareable, installable profile with `php bin/kumwe demo:export-profile` — forks
   ship their own demonstrations by dropping a profile beside the released ones.
-- Report problems and propose changes on [GitHub issues](https://github.com/Kumwe/cms/issues) and
-  [discussions](https://github.com/Kumwe/cms/discussions).
+- Report problems and propose changes on [GitHub issues](https://github.com/kumwe/app/issues) and
+  [discussions](https://github.com/kumwe/app/discussions).
 
 ## Supported runtime
 

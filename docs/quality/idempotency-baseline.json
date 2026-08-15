@@ -5,8 +5,8 @@
   "note": "The integration suite is not idempotent against a database another run already used. That is the finding, and this file is its reproduction: the tests and passes that fail when the suite runs against the database the first run left behind. It is a record, not a permission. tools/verify-suite-idempotency.php fails on any test outside its pass-aware entry, fails when a listed test stops needing the exemption in a recorded pass, and fails when an entry passes its expiry, so the list can only ever shrink and phase 2 empties it.",
   "recorded_at": "2026-08-15",
   "recorded_from": [
-    "https://github.com/kumwe/cms/actions/runs/31876448442",
-    "https://github.com/kumwe/cms/actions/runs/31877919073"
+    "https://github.com/kumwe/app/actions/runs/31876448442",
+    "https://github.com/kumwe/app/actions/runs/31877919073"
   ],
   "scope": {
     "enforced_passes": [

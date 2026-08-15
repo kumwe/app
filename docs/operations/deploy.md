@@ -20,15 +20,15 @@ least-privilege runtime account into the long-lived services.
 Release images are published at:
 
 ```text
-ghcr.io/kumwe/cms/app:VERSION
-ghcr.io/kumwe/cms/web:VERSION
+ghcr.io/kumwe/app/app:VERSION
+ghcr.io/kumwe/app/web:VERSION
 ```
 
 Set complete image references before rendering Compose:
 
 ```bash
-export KUMWE_APP_IMAGE_REF=ghcr.io/kumwe/cms/app@sha256:APP_DIGEST
-export KUMWE_WEB_IMAGE_REF=ghcr.io/kumwe/cms/web@sha256:WEB_DIGEST
+export KUMWE_APP_IMAGE_REF=ghcr.io/kumwe/app/app@sha256:APP_DIGEST
+export KUMWE_WEB_IMAGE_REF=ghcr.io/kumwe/app/web@sha256:WEB_DIGEST
 export KUMWE_DATABASE_IMAGE=mariadb@sha256:DATABASE_DIGEST
 export KUMWE_REDIS_IMAGE=redis@sha256:REDIS_DIGEST
 ```
