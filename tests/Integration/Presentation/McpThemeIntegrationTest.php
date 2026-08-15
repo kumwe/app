@@ -36,6 +36,7 @@ use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Time\SystemClock;
 use Kumwe\CMS\Navigation\Application\NavigationService;
+use Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired;
 use Kumwe\CMS\Presentation\ThemeSurface;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
@@ -46,29 +47,79 @@ use ReflectionClass;
 #[CoversClass(KumweMcpHandlers::class)]
 final class McpThemeIntegrationTest extends TestCase
 {
-    public function testMcpActivationCarriesAuthorizedAdministratorSurfaceAndStepUp(): void
+    /**
+     * Pins that a site-surface activation succeeds and reaches the manager with no step-up credential.
+     *
+     * The step-up position is asserted null rather than absent because a test double fills a defaulted
+     * parameter in whether or not the caller supplied one. That the handler has no such parameter to
+     * supply is proved separately, by `McpCatalogValidatorTest`, which reads the real signatures.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMcpActivationReachesTheManagerWithoutAStepUpCredential(): void
     {
+        $received = [];
         $extensions = $this->createMock(ExtensionManager::class);
-        $extensions->expects(self::once())->method('activate')->with(
-            'acme/corporate',
-            self::isInstanceOf(ExecutionContext::class),
-            ThemeSurface::Administrator,
-            'correct horse battery staple',
-        )->willReturn(['identifier' => 'acme/corporate', 'status' => 'active']);
-        $context = AuthorizationContext::human(
-            ['extensions.manage', 'themes.administrator.manage'],
+        $extensions->expects(self::once())->method('activate')->willReturnCallback(
+            static function (mixed ...$arguments) use (&$received): array {
+                $received = $arguments;
+
+                return ['identifier' => 'acme/corporate', 'status' => 'active'];
+            },
         );
+        $context = AuthorizationContext::human(['extensions.manage', 'themes.site.manage']);
 
         $result = $this->handlers($extensions)->forContext($context)->activateExtension(
             'theme-activation-0001',
             'acme/corporate',
-            'administrator',
-            'correct horse battery staple',
+            'site',
         );
 
         self::assertSame('active', $result['status']);
+        self::assertSame('acme/corporate', $received[0]);
+        self::assertInstanceOf(ExecutionContext::class, $received[1]);
+        self::assertSame(ThemeSurface::Site, $received[2]);
+        self::assertNull($received[3] ?? null);
     }
 
+    /**
+     * Pins that an administrator-surface activation fails closed instead of being offered a password.
+     *
+     * The guard refuses an activation carrying no step-up proof, and a machine caller can never carry
+     * one. This asserts the refusal travels out of the machine surface unchanged, rather than being
+     * converted into an authorization denial or answered by re-prompting for a credential.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMcpAdministratorThemeActivationFailsClosedWithoutAStepUpRoute(): void
+    {
+        $extensions = $this->createMock(ExtensionManager::class);
+        $extensions->expects(self::once())->method('activate')->willThrowException(
+            new StepUpAuthenticationRequired(
+                'Administrator theme activation requires current-password step-up authentication.',
+            ),
+        );
+        $context = AuthorizationContext::human(['extensions.manage', 'themes.administrator.manage']);
+        $this->expectException(StepUpAuthenticationRequired::class);
+
+        $this->handlers($extensions)->forContext($context)->activateExtension(
+            'theme-activation-0002',
+            'acme/corporate',
+            'administrator',
+        );
+    }
+
+    /**
+     * Pins that a disable still enforces the surface capability the extension's live bindings imply.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testMcpDisableRejectsMissingActiveThemeCapability(): void
     {
         $extensions = $this->createMock(ExtensionManager::class);
@@ -84,27 +135,44 @@ final class McpThemeIntegrationTest extends TestCase
         );
     }
 
-    public function testMcpUninstallForwardsAdministratorStepUp(): void
+    /**
+     * Pins that an uninstall reaches the manager with the identifier and context and no credential.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMcpUninstallReachesTheManagerWithoutAStepUpCredential(): void
     {
+        $received = [];
         $extensions = $this->createMock(ExtensionManager::class);
-        $extensions->expects(self::once())->method('uninstall')->with(
-            'acme/corporate',
-            self::isInstanceOf(ExecutionContext::class),
-            'correct horse battery staple',
+        $extensions->expects(self::once())->method('uninstall')->willReturnCallback(
+            static function (mixed ...$arguments) use (&$received): void {
+                $received = $arguments;
+            },
         );
-        $context = AuthorizationContext::human(
-            ['extensions.manage', 'themes.administrator.manage'],
-        );
+        $context = AuthorizationContext::human(['extensions.manage']);
 
         $result = $this->handlers($extensions)->forContext($context)->uninstallExtension(
             'theme-uninstall-0001',
             'acme/corporate',
-            'correct horse battery staple',
         );
 
         self::assertTrue($result['uninstalled']);
+        self::assertSame('acme/corporate', $received[0]);
+        self::assertInstanceOf(ExecutionContext::class, $received[1]);
+        self::assertNull($received[2] ?? null);
     }
 
+    /**
+     * Build MCP handlers over an in-memory schema with the extension manager under test injected.
+     *
+     * @param   ExtensionManager  $extensions  Manager the lifecycle tools are expected to reach.
+     *
+     * @return  KumweMcpHandlers  Handlers ready to be rebound to an execution context.
+     *
+     * @since   2.0.0
+     */
     private function handlers(ExtensionManager $extensions): KumweMcpHandlers
     {
         $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);

@@ -1429,21 +1429,24 @@ final readonly class KumweMcpHandlers
      *
      * A template is activated onto one presentation surface at a time and so needs `$surface`; every other
      * extension type leaves it unset. Taking over the administrator surface is the case that demands step-up
-     * authentication, because a broken administrator theme locks operators out: that change is refused unless
-     * the operator's current password comes with it. The whole activation is taken under the
+     * authentication, because a broken administrator theme locks operators out — and this surface cannot
+     * supply it. No credential crosses a tool boundary, so the extension manager is always called with no
+     * step-up proof and refuses that one change with `StepUpAuthenticationRequired`; the browser, the
+     * protected console and the protected REST path remain the route for it. Every other activation
+     * proceeds under the caller's existing `extensions.manage` authorization, taken under the
      * installation-wide extension lifecycle lock.
      *
-     * @param   string   $operationId      Idempotency key this write is fenced on.
-     * @param   string   $identifier       `vendor/name` identifier of the installed extension.
-     * @param   ?string  $surface          `site` or `administrator` for a template; null or empty otherwise.
-     * @param   ?string  $currentPassword  The actor's current password, re-supplied when the change demands
-     *          step-up authentication; null when none is being offered.
+     * @param   string   $operationId  Idempotency key this write is fenced on.
+     * @param   string   $identifier   `vendor/name` identifier of the installed extension.
+     * @param   ?string  $surface      `site` or `administrator` for a template; null or empty otherwise.
      *
      * @return  array<string, mixed>  The registry row for the extension after the status change.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
      * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
      *          this extension.
+     * @throws  \Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired  When the change would take over
+     *          the administrator surface, which no machine caller may prove.
      * @throws  InvalidArgumentException  When the surface is neither `site` nor `administrator`, or the
      *          operation identifier is malformed or reused with different arguments.
      * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
@@ -1455,7 +1458,6 @@ final readonly class KumweMcpHandlers
         string $operationId,
         string $identifier,
         ?string $surface = null,
-        #[\SensitiveParameter] ?string $currentPassword = null,
     ): array {
         $this->require('extensions.manage');
         $this->preauthorize(
@@ -1474,13 +1476,11 @@ final readonly class KumweMcpHandlers
             [
                 'identifier' => $identifier,
                 'surface' => $themeSurface?->value,
-                'step_up_supplied' => $currentPassword !== null,
             ],
             fn (): array => $this->extensions->activate(
                 $identifier,
                 $context,
                 $themeSurface,
-                $currentPassword,
             ),
         );
     }
@@ -1489,20 +1489,22 @@ final readonly class KumweMcpHandlers
      * Disable an installed extension so it stops contributing to the compiled runtime map.
      *
      * The reversible half of removal: the files stay on disk and the registry keeps the release, so
-     * `activateExtension()` can put it back. An extension currently serving the administrator theme still
-     * demands step-up authentication, since disabling it changes what the administration UI renders with. The
-     * change is taken under the extension lifecycle lock.
+     * `activateExtension()` can put it back. An extension currently serving the administrator theme demands
+     * step-up authentication, since disabling it changes what the administration UI renders with, and this
+     * surface carries no credential with which to prove it: that one case is refused here and belongs to the
+     * browser, the protected console or the protected REST path. Every other disable proceeds under the
+     * caller's existing `extensions.manage` authorization, taken under the extension lifecycle lock.
      *
-     * @param   string   $operationId      Idempotency key this write is fenced on.
-     * @param   string   $identifier       `vendor/name` identifier of the installed extension.
-     * @param   ?string  $currentPassword  The actor's current password, re-supplied when the change demands
-     *          step-up authentication; null when none is being offered.
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $identifier   `vendor/name` identifier of the installed extension.
      *
      * @return  array<string, mixed>  The registry row for the extension after the status change.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
      * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
      *          this extension.
+     * @throws  \Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired  When the extension is the live
+     *          administrator theme, which no machine caller may prove a step-up for.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
      * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
@@ -1513,7 +1515,6 @@ final readonly class KumweMcpHandlers
     public function disableExtension(
         string $operationId,
         string $identifier,
-        #[\SensitiveParameter] ?string $currentPassword = null,
     ): array {
         $this->require('extensions.manage');
         $this->preauthorize(
@@ -1526,8 +1527,8 @@ final readonly class KumweMcpHandlers
             $context,
             'extension.disable',
             $operationId,
-            ['identifier' => $identifier, 'step_up_supplied' => $currentPassword !== null],
-            fn (): array => $this->extensions->disable($identifier, $context, $currentPassword),
+            ['identifier' => $identifier],
+            fn (): array => $this->extensions->disable($identifier, $context),
         );
     }
 
@@ -1536,18 +1537,20 @@ final readonly class KumweMcpHandlers
      *
      * The one lifecycle change the registry cannot undo: the extension row and the capabilities its package
      * contributed go with it. The runtime directory is retired rather than deleted outright, so processes
-     * still running an older compiled generation keep reading what they have until they drain.
+     * still running an older compiled generation keep reading what they have until they drain. Removing the
+     * extension that serves the live administrator theme demands a step-up this surface cannot supply and is
+     * refused here; do that one in the browser, the protected console or the protected REST path.
      *
-     * @param   string   $operationId      Idempotency key this write is fenced on.
-     * @param   string   $identifier       `vendor/name` identifier of the extension to remove.
-     * @param   ?string  $currentPassword  The actor's current password, re-supplied when the removal demands
-     *          step-up authentication; null when none is being offered.
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $identifier   `vendor/name` identifier of the extension to remove.
      *
      * @return  array{uninstalled: bool}  Always `uninstalled: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
      * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
      *          this extension.
+     * @throws  \Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired  When the extension is the live
+     *          administrator theme, which no machine caller may prove a step-up for.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
      * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
@@ -1558,7 +1561,6 @@ final readonly class KumweMcpHandlers
     public function uninstallExtension(
         string $operationId,
         string $identifier,
-        #[\SensitiveParameter] ?string $currentPassword = null,
     ): array {
         $this->require('extensions.manage');
         $this->preauthorize(
@@ -1571,9 +1573,9 @@ final readonly class KumweMcpHandlers
             $context,
             'extension.uninstall',
             $operationId,
-            ['identifier' => $identifier, 'step_up_supplied' => $currentPassword !== null],
-            function () use ($context, $identifier, $currentPassword): array {
-                $this->extensions->uninstall($identifier, $context, $currentPassword);
+            ['identifier' => $identifier],
+            function () use ($context, $identifier): array {
+                $this->extensions->uninstall($identifier, $context);
                 return ['uninstalled' => true];
             }
         );

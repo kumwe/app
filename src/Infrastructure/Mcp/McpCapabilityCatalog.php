@@ -9,30 +9,273 @@ namespace Kumwe\CMS\Infrastructure\Mcp;
  *
  * Every tool, resource and prompt an MCP client can reach is described here once: its name, the
  * `KumweMcpHandlers` method that serves it, the capability that handler requires, the annotation hints
- * a client uses to decide how cautiously to call it, and closed JSON Schemas for input and output.
+ * a client uses to decide how cautiously to call it, the `McpRiskClass` that says what calling it
+ * costs, the non-MCP route an operator takes instead, and closed JSON Schemas for input and output.
  * `KumweMcpServerFactory` registers a server straight from this list, and the discovery tool and the
  * `kumwe://capabilities` resource publish a name-only summary of it, so widening or narrowing the
  * surface is one edit here rather than parallel edits in the factory and the handlers. The catalogue is
  * pure data with no dependencies and no state, which is why the container shares one instance of it.
  *
- * Two properties hold across the whole list. Every entry that is not read-only declares an
+ * Three properties hold across the whole list, and `McpCatalogValidator` proves each of them before a
+ * server is built rather than leaving them to review. Every entry that is not read-only declares an
  * `operationId` and is annotated idempotent, so `McpMutationGuard` can fence a first attempt and replay
- * a retry instead of applying it twice. And work that would need the caller's current password re-proved
- * is kept off the surface rather than offered and refused: no tool composes a destructive schema purge
- * plan, and the schema approval tool declines high-impact plans, since an agent cannot supply that
- * step-up and a tool that always fails closed is worse than an absent one.
+ * a retry instead of applying it twice. Every entry declares one risk class, and its annotations and
+ * capability must agree with the class it claims. And **no entry anywhere carries credential material**:
+ * not as a schema property, not as a handler parameter, not under a differently spelled name. Work that
+ * would need the caller's current password re-proved is therefore kept off the surface rather than
+ * offered and refused — no tool composes a destructive schema purge plan, the schema approval tool
+ * declines high-impact plans, and the three extension-lifecycle tools fail closed on the one change that
+ * demands step-up, taking over or removing the live administrator theme. The step-up route is the
+ * browser, the protected console and the protected REST path, and it is not reachable from here.
  *
  * @since  2.0.0
  */
 final class McpCapabilityCatalog
 {
     /**
+     * Risk class and non-MCP alternative for every published tool, keyed by tool name.
+     *
+     * This is the whole taxonomy on one screen, which is the point of holding it here rather than
+     * scattering two more arguments across seventy-six declarations: an operator or reviewer deciding
+     * what a token may hold reads the classification in one pass. `McpCatalogValidator` refuses a
+     * catalogue whose declarations and this table disagree, and `tools()` refuses to publish a tool
+     * this table does not classify, so the map cannot fall behind the surface it describes.
+     *
+     * @var    array<string, array{McpRiskClass, string}>
+     * @since  2.0.0
+     */
+    private const array RISK = [
+        'kumwe_discover' => [McpRiskClass::Read, self::VIA_DOCUMENTATION],
+        'kumwe_content_list' => [McpRiskClass::Read, self::VIA_CONTENT],
+        'kumwe_content_create' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT],
+        'kumwe_content_update' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT],
+        'kumwe_content_transition' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT],
+        'kumwe_content_trash' => [McpRiskClass::Destructive, self::VIA_CONTENT],
+        'kumwe_content_restore' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT],
+        'kumwe_menu_list' => [McpRiskClass::Read, self::VIA_NAVIGATION],
+        'kumwe_menu_create' => [McpRiskClass::ScopedWrite, self::VIA_NAVIGATION],
+        'kumwe_menu_item_list' => [McpRiskClass::Read, self::VIA_NAVIGATION],
+        'kumwe_menu_item_get' => [McpRiskClass::Read, self::VIA_NAVIGATION],
+        'kumwe_menu_item_create' => [McpRiskClass::ScopedWrite, self::VIA_NAVIGATION],
+        'kumwe_menu_item_update' => [McpRiskClass::ScopedWrite, self::VIA_NAVIGATION],
+        'kumwe_menu_item_delete' => [McpRiskClass::Destructive, self::VIA_NAVIGATION],
+        'kumwe_settings_get' => [McpRiskClass::Read, self::VIA_SETTINGS],
+        'kumwe_settings_update' => [McpRiskClass::ScopedWrite, self::VIA_SETTINGS],
+        'kumwe_user_list' => [McpRiskClass::Read, self::VIA_IDENTITY],
+        'kumwe_user_update' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
+        'kumwe_role_list' => [McpRiskClass::Read, self::VIA_IDENTITY],
+        'kumwe_role_create' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
+        'kumwe_token_list' => [McpRiskClass::Read, self::VIA_TOKENS],
+        'kumwe_token_revoke' => [McpRiskClass::Credential, self::VIA_TOKENS],
+        'kumwe_token_rotate' => [McpRiskClass::Credential, self::VIA_TOKENS],
+        'kumwe_token_revoke_subject_site' => [McpRiskClass::Credential, self::VIA_TOKENS],
+        'kumwe_token_emergency_revoke_subject' => [McpRiskClass::InstallationGlobal, self::VIA_TOKENS],
+        'kumwe_trust_key_list' => [McpRiskClass::Read, self::VIA_TRUST],
+        'kumwe_trust_key_add' => [McpRiskClass::Trust, self::VIA_TRUST],
+        'kumwe_trust_key_rotate' => [McpRiskClass::Trust, self::VIA_TRUST],
+        'kumwe_trust_key_revoke' => [McpRiskClass::Trust, self::VIA_TRUST],
+        'kumwe_extension_list' => [McpRiskClass::Read, self::VIA_EXTENSIONS],
+        'kumwe_extension_activate' => [McpRiskClass::Trust, self::VIA_EXTENSIONS],
+        'kumwe_extension_disable' => [McpRiskClass::Trust, self::VIA_EXTENSIONS],
+        'kumwe_extension_uninstall' => [McpRiskClass::Trust, self::VIA_EXTENSIONS],
+        'kumwe_business_discover' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_inspect' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_view' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_search' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_read' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_history' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_plan_mutation' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_create' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_business_update' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_business_archive' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_business_restore' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_business_delete' => [McpRiskClass::Destructive, self::VIA_RECORDS],
+        'kumwe_business_relate' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_business_unrelate' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_business_reorder' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_business_request_action' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_business_execute_action' => [McpRiskClass::Destructive, self::VIA_RECORDS],
+        'kumwe_business_operation_status' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_definition_list' => [McpRiskClass::Read, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_get' => [McpRiskClass::Read, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_draft' => [McpRiskClass::Read, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_history' => [McpRiskClass::Read, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_compatibility' => [McpRiskClass::Read, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_publish' => [McpRiskClass::InstallationGlobal, self::VIA_DEFINITIONS],
+        'kumwe_business_schema_definitions' => [McpRiskClass::Read, self::VIA_SCHEMA],
+        'kumwe_business_schema_plan_list' => [McpRiskClass::Read, self::VIA_SCHEMA],
+        'kumwe_business_schema_plan_get' => [McpRiskClass::Read, self::VIA_SCHEMA],
+        'kumwe_business_schema_plan_create' => [McpRiskClass::ScopedWrite, self::VIA_SCHEMA],
+        'kumwe_business_schema_plan_approve' => [McpRiskClass::InstallationGlobal, self::VIA_SCHEMA],
+        'kumwe_business_schema_plan_execute' => [McpRiskClass::InstallationGlobal, self::VIA_SCHEMA],
+        'kumwe_business_schema_plan_recover' => [McpRiskClass::InstallationGlobal, self::VIA_SCHEMA],
+        'kumwe_schedule_list' => [McpRiskClass::Read, self::VIA_AUTOMATION],
+        'kumwe_job_list' => [McpRiskClass::Read, self::VIA_AUTOMATION],
+        'kumwe_schedule_create' => [McpRiskClass::ScopedWrite, self::VIA_AUTOMATION],
+        'kumwe_schedule_update' => [McpRiskClass::ScopedWrite, self::VIA_AUTOMATION],
+        'kumwe_schedule_delete' => [McpRiskClass::Destructive, self::VIA_AUTOMATION],
+        'kumwe_job_retry' => [McpRiskClass::ScopedWrite, self::VIA_AUTOMATION],
+        'kumwe_job_cancel' => [McpRiskClass::Destructive, self::VIA_AUTOMATION],
+        'kumwe_business_report_list' => [McpRiskClass::Read, self::VIA_REPORTING],
+        'kumwe_business_report_execute' => [McpRiskClass::Read, self::VIA_REPORTING],
+        'kumwe_business_report_export_request' => [McpRiskClass::ScopedWrite, self::VIA_REPORTING],
+        'kumwe_business_report_export_status' => [McpRiskClass::Read, self::VIA_REPORTING],
+        'kumwe_business_report_export_download' => [McpRiskClass::Read, self::VIA_REPORTING],
+    ];
+
+    /**
+     * Route to the same surface for a caller who cannot or should not use the machine surface.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_DOCUMENTATION = 'The kumwe://capabilities resource, or docs/mcp.md.';
+
+    /**
+     * Non-MCP route for the content tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_CONTENT = 'Administrator console: Content, or bin/kumwe content.';
+
+    /**
+     * Non-MCP route for the navigation tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_NAVIGATION = 'Administrator console: Navigation, or bin/kumwe navigation.';
+
+    /**
+     * Non-MCP route for the site-settings tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_SETTINGS = 'Administrator console: Settings, or bin/kumwe settings.';
+
+    /**
+     * Non-MCP route for the user and role tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_IDENTITY = 'Administrator console: Users and roles, or bin/kumwe access.';
+
+    /**
+     * Non-MCP route for the access-token tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_TOKENS = 'Administrator console: Access tokens, bin/kumwe token:create, '
+        . 'or bin/kumwe access for revocation.';
+
+    /**
+     * Non-MCP route for the extension trust-store tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_TRUST = 'Administrator console: Extension trust keys, or bin/kumwe extension:trust.';
+
+    /**
+     * Non-MCP route for the extension-lifecycle tools, including the step-up path this surface lacks.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_EXTENSIONS = 'Administrator console: Extensions, or bin/kumwe extension:activate, '
+        . 'extension:disable and extension:uninstall; the administrator theme change needs the browser step-up.';
+
+    /**
+     * Non-MCP route for the generated business-record tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_RECORDS = 'The generated record screens, the protected REST record API, '
+        . 'or bin/kumwe business-record.';
+
+    /**
+     * Non-MCP route for the business-definition tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_DEFINITIONS = 'Administrator console: Business definitions, '
+        . 'or bin/kumwe business-definition.';
+
+    /**
+     * Non-MCP route for the business-schema plan tools, including the stages this surface refuses.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_SCHEMA = 'Administrator console: Business schema plans, or bin/kumwe business-schema; '
+        . 'purge planning and high-impact approval are browser or console only.';
+
+    /**
+     * Non-MCP route for the schedule and job tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_AUTOMATION = 'Administrator console: Automation, or bin/kumwe automation.';
+
+    /**
+     * Non-MCP route for the report and export tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_REPORTING = 'Administrator console: Reports, or the report and export actions '
+        . 'of bin/kumwe business-record.';
+
+    /**
      * List every tool this release publishes, in the order the server registers them.
      *
-     * Each entry names the handler method that serves it and the capability that handler enforces.
+     * Each entry names the handler method that serves it, the capability that handler enforces, the
+     * risk class that says what a successful call costs, and the non-MCP route to the same outcome.
      * A null capability means no single capability decides the call: `kumwe_discover` is open to any
      * authenticated caller, and `kumwe_content_transition` authorizes the specific transition it is
-     * asked to perform. Mutating entries always carry an `operationId` property so a retry deduplicates.
+     * asked to perform, which is why only the two lowest risk classes may leave it unset. Mutating
+     * entries always carry an `operationId` property so a retry deduplicates.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, readOnly: bool, destructive: bool, idempotent: bool,
+     *            risk: McpRiskClass, alternative: string,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>
+     *
+     * @throws  McpCatalogInvalid  When a declared tool carries no entry in the risk table.
+     *
+     * @since   2.0.0
+     */
+    public function tools(): array
+    {
+        $tools = [];
+        foreach ($this->declarations() as $declaration) {
+            $classification = self::RISK[$declaration['name']] ?? null;
+            if ($classification === null) {
+                throw new McpCatalogInvalid(sprintf(
+                    'Tool "%s" is published without a declared risk class.',
+                    $declaration['name'],
+                ));
+            }
+            $tools[] = [...$declaration, 'risk' => $classification[0], 'alternative' => $classification[1]];
+        }
+
+        return $tools;
+    }
+
+    /**
+     * Declare every tool's identity, annotations and schemas, before risk classification is merged in.
+     *
+     * Separated from `tools()` so that the classification table is the only place a risk class is
+     * written down, and so a tool cannot be added here and quietly published unclassified.
      *
      * @return  list<array{
      *            name: string, title: string, description: string, handler: string,
@@ -42,7 +285,7 @@ final class McpCapabilityCatalog
      *
      * @since   2.0.0
      */
-    public function tools(): array
+    private function declarations(): array
     {
         $object = ['type' => 'object', 'additionalProperties' => true];
 
@@ -256,7 +499,7 @@ final class McpCapabilityCatalog
                 'deleteMenuItem',
                 'navigation.manage',
                 false,
-                false,
+                true,
                 true,
                 [
                     'operationId' => $this->operationId(), 'id' => ['type' => 'string'],
@@ -505,7 +748,7 @@ final class McpCapabilityCatalog
             $this->tool(
                 'kumwe_extension_activate',
                 'Activate extension',
-                'Activate an installed extension.',
+                'Activate an installed extension. Taking over the administrator surface is refused here.',
                 'activateExtension',
                 'extensions.manage',
                 false,
@@ -515,7 +758,6 @@ final class McpCapabilityCatalog
                     'operationId' => $this->operationId(),
                     'identifier' => ['type' => 'string'],
                     'surface' => ['type' => ['string', 'null'], 'enum' => ['site', 'administrator', null]],
-                    'currentPassword' => $this->currentPassword(),
                 ],
                 $object,
                 ['operationId', 'identifier']
@@ -523,7 +765,7 @@ final class McpCapabilityCatalog
             $this->tool(
                 'kumwe_extension_disable',
                 'Disable extension',
-                'Disable an installed extension.',
+                'Disable an installed extension. Disabling the live administrator theme is refused here.',
                 'disableExtension',
                 'extensions.manage',
                 false,
@@ -532,7 +774,6 @@ final class McpCapabilityCatalog
                 [
                     'operationId' => $this->operationId(),
                     'identifier' => ['type' => 'string'],
-                    'currentPassword' => $this->currentPassword(),
                 ],
                 $object,
                 ['operationId', 'identifier']
@@ -540,7 +781,7 @@ final class McpCapabilityCatalog
             $this->tool(
                 'kumwe_extension_uninstall',
                 'Uninstall extension',
-                'Uninstall an extension.',
+                'Uninstall an extension. Removing the live administrator theme is refused here.',
                 'uninstallExtension',
                 'extensions.manage',
                 false,
@@ -549,7 +790,6 @@ final class McpCapabilityCatalog
                 [
                     'operationId' => $this->operationId(),
                     'identifier' => ['type' => 'string'],
-                    'currentPassword' => $this->currentPassword(),
                 ],
                 $object,
                 ['operationId', 'identifier']
@@ -1691,6 +1931,26 @@ final class McpCapabilityCatalog
     }
 
     /**
+     * Describe a nested filter node, whose membership JSON Schema alone cannot close.
+     *
+     * A filter is a tree of nodes that all share one property vocabulary, and this dialect publishes no
+     * reference mechanism to say so, which is why the nested node states its membership decision as
+     * open rather than pretending to a closure it cannot express. The opening is bounded twice over:
+     * `maxProperties` caps the node at the thirteen members its parent declares, and
+     * `BusinessRecordQueryFactory` compiles the whole tree against the definition's own field, operator
+     * and relationship vocabulary, refusing anything it does not recognise. Stating the decision here
+     * is what keeps `McpCatalogValidator` able to fail an object nobody decided about.
+     *
+     * @return  array<string, bool|int|string>  Bounded object schema for one nested filter node.
+     *
+     * @since   2.0.0
+     */
+    private function recursiveFilterNode(): array
+    {
+        return ['type' => 'object', 'maxProperties' => 13, 'additionalProperties' => true];
+    }
+
+    /**
      * Describe the closed bounded query document compiled by `BusinessRecordQueryFactory`.
      *
      * @return  array<string, mixed>  Query, filter, search, sort, cursor and projection schema.
@@ -1721,11 +1981,11 @@ final class McpCapabilityCatalog
                 'type' => 'array',
                 'minItems' => 1,
                 'maxItems' => 16,
-                'items' => ['type' => 'object', 'maxProperties' => 13],
+                'items' => $this->recursiveFilterNode(),
             ],
             'relationship' => $this->businessHandle(),
             'quantifier' => ['type' => 'string', 'enum' => ['any', 'all', 'none']],
-            'target' => ['type' => 'object', 'maxProperties' => 13],
+            'target' => $this->recursiveFilterNode(),
         ]);
 
         return $this->closedObject([
@@ -2039,28 +2299,6 @@ final class McpCapabilityCatalog
             'vendorNamespace' => ['type' => 'string'],
             'extensionPattern' => ['type' => 'string'],
             'expiresAt' => ['type' => 'string'],
-        ];
-    }
-
-    /**
-     * Return the schema fragment for the optional step-up password on the extension tools.
-     *
-     * The property is nullable, so a client with no password to offer may omit it and leave the
-     * extension manager to decide whether the operation needs step-up at all. It is marked `writeOnly`
-     * to say the value only ever travels inbound: it is never part of a result and is not to be cached
-     * with one.
-     *
-     * @return  array<string, bool|int|string|list<string>>  A nullable, write-only string schema.
-     *
-     * @since   2.0.0
-     */
-    private function currentPassword(): array
-    {
-        return [
-            'type' => ['string', 'null'],
-            'minLength' => 1,
-            'maxLength' => 4_096,
-            'writeOnly' => true,
         ];
     }
 

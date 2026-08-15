@@ -17,11 +17,12 @@ use Mcp\Server\Session\SessionStoreInterface;
  * server is built per request or per process rather than shared: the handler object carries the
  * caller's identity, so a server built for one credential can never serve another. Registration is
  * deliberately manual and eager — nothing is discovered from attributes and lazy loading is switched
- * off — and each entry's handler is proven callable as it is registered, so a catalogue that names a
- * method the handlers do not have fails the build instead of surfacing as a broken tool mid-session.
- * The advertised capabilities are fixed: tools, resources and prompts are served, while list-changed
- * notifications, resource subscriptions, logging and completions are not, because the catalogue is
- * static for a release.
+ * off — and the whole catalogue is put through `McpCatalogValidator` before the first entry is
+ * registered, so a surface whose risk classification, annotations, schemas, handler bindings or
+ * non-disclosure rules do not hold fails the build with the offending entries named instead of
+ * surfacing as a tool a client discovers and misuses. The advertised capabilities are fixed: tools,
+ * resources and prompts are served, while list-changed notifications, resource subscriptions, logging
+ * and completions are not, because the catalogue is static for a release.
  *
  * @since  2.0.0
  */
@@ -36,6 +37,8 @@ final readonly class KumweMcpServerFactory
      *         server info it advertises to clients.
      * @param  ?SessionStoreInterface  $sessions       Store the SDK keeps MCP session state in, so a client is
      *         recognised across transport calls; null leaves the builder's own default in place.
+     * @param  McpCatalogValidator     $validator      Gate every built server's catalogue is proven against;
+     *         stateless, so the default instance is the one the container also shares.
      *
      * @since  2.0.0
      */
@@ -43,15 +46,17 @@ final readonly class KumweMcpServerFactory
         private McpCapabilityCatalog $catalog,
         private string $serverVersion = '2.0.0',
         private ?SessionStoreInterface $sessions = null,
+        private McpCatalogValidator $validator = new McpCatalogValidator(),
     ) {
     }
 
     /**
      * Build a server that exposes the whole catalogue through the supplied handler object.
      *
-     * Every catalogue entry is registered before the server is returned, so the returned instance is
-     * complete and ready to be handed a transport. Because the handlers carry the caller's context, the
-     * result is single-use in practice: build one per HTTP request or per stdio process rather than
+     * The catalogue is validated in full first, so nothing is registered from a surface that breaks its
+     * own rules. Every entry is then registered before the server is returned, so the returned instance
+     * is complete and ready to be handed a transport. Because the handlers carry the caller's context,
+     * the result is single-use in practice: build one per HTTP request or per stdio process rather than
      * caching it.
      *
      * @param   KumweMcpHandlers  $handlers  Handler object, already bound to the caller's execution context,
@@ -59,6 +64,8 @@ final readonly class KumweMcpServerFactory
      *
      * @return  Server  Server with the catalogue's tools, resources and prompts registered, ready to run.
      *
+     * @throws  McpCatalogInvalid  When the catalogue breaks an identity, risk-coherence or non-disclosure
+     *          rule, which is a defect in the release rather than anything the caller did.
      * @throws  \LogicException  When a catalogue entry names a tool, resource or prompt handler that is not
      *          a callable method on the given handler object.
      *
@@ -66,6 +73,7 @@ final readonly class KumweMcpServerFactory
      */
     public function create(KumweMcpHandlers $handlers): Server
     {
+        $this->validator->assertValid($this->catalog, $handlers);
         $builder = Server::builder()
             ->setServerInfo(
                 name: 'Kumwe CMS',
