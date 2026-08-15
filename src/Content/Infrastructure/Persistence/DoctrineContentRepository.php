@@ -418,6 +418,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             'created_at' => $record->createdAt,
             'updated_at' => $record->updatedAt,
             'deleted_at' => $record->deletedAt,
+            'locale' => $entry->locale()?->toString(),
+            'translation_group_id' => $entry->translationGroupId(),
         ], $this->writeTypes());
     }
 
@@ -426,7 +428,9 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
      *
      * The `WHERE` clause names the expected version and excludes trashed rows, so a concurrent write or
      * a trashing that landed first matches nothing and is reported instead of silently overwritten.
-     * Identity, site and the pinned definition versions are never rewritten here.
+     * Identity, site and the pinned definition versions are never rewritten here. The locale and the
+     * translation group are, because `ContentEntry::translate()` is a versioned change like any other
+     * and its result has to reach the row the same way a revision does.
      *
      * @param   ContentRecord  $record           Record carrying the already-incremented entry version.
      * @param   int            $expectedVersion  Version the caller read before revising.
@@ -442,7 +446,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
         $entry = $record->entry;
         $affected = $this->database->executeStatement(sprintf(
             'UPDATE %s SET workflow_state_key = ?, title = ?, slug = ?, data = ?, publish_at = ?, '
-            . 'unpublish_at = ?, version = ?, updated_at = ? WHERE id = ? AND version = ? AND deleted_at IS NULL',
+            . 'unpublish_at = ?, version = ?, updated_at = ?, locale = ?, translation_group_id = ? '
+            . 'WHERE id = ? AND version = ? AND deleted_at IS NULL',
             $this->tables->quoted('content_entries'),
         ), [
             $entry->statusKey(),
@@ -453,6 +458,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             $entry->publicationWindow()->endsAt(),
             $entry->version(),
             $record->updatedAt,
+            $entry->locale()?->toString(),
+            $entry->translationGroupId(),
             $entry->id(),
             $expectedVersion,
         ], [
@@ -464,6 +471,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             Types::DATETIME_IMMUTABLE,
             Types::INTEGER,
             Types::DATETIME_IMMUTABLE,
+            Types::STRING,
+            Types::STRING,
             Types::GUID,
             Types::INTEGER,
         ]);
@@ -584,6 +593,7 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             'e.workflow_version',
             'e.workflow_state_key', 'e.title', 'e.slug',
             'e.data', 'e.publish_at', 'e.unpublish_at', 'e.version', 'e.created_at', 'e.updated_at', 'e.deleted_at',
+            'e.locale', 'e.translation_group_id',
         ];
     }
 
@@ -649,6 +659,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             $this->requiredString($row, 'workflow_state_key'),
             $window,
             $this->integer($row, 'version'),
+            $this->optionalString($row, 'locale'),
+            $this->optionalString($row, 'translation_group_id'),
         );
 
         return new ContentRecord(
@@ -704,6 +716,36 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
         $value = $row[$key] ?? null;
 
         if (!is_string($value) || $value === '') {
+            throw new RuntimeException(sprintf('Stored content field %s is invalid.', $key));
+        }
+
+        return $value;
+    }
+
+    /**
+     * Read a nullable column, treating an empty string the way the store's NULL is treated.
+     *
+     * The locale and translation-group columns are absent on every row written before content carried a
+     * language dimension, and a driver reading a legacy MySQL row can hand back an empty string where
+     * PostgreSQL hands back null. Both mean "not declared", so both reduce to null here rather than
+     * reaching the entry as a value it would then have to refuse.
+     *
+     * @param   array<string, mixed>  $row  Associative row as fetched from the driver.
+     * @param   string                $key  Unqualified name of the column to read.
+     *
+     * @return  ?string  The stored value, or null when the column is absent, null, or empty.
+     *
+     * @throws  RuntimeException  When the column holds something other than a string or null.
+     *
+     * @since   2.0.0
+     */
+    private function optionalString(array $row, string $key): ?string
+    {
+        $value = $row[$key] ?? null;
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_string($value)) {
             throw new RuntimeException(sprintf('Stored content field %s is invalid.', $key));
         }
 

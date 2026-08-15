@@ -6,17 +6,27 @@ namespace Kumwe\CMS\Content\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
+use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Workflow\Domain\Workflow;
+use Ramsey\Uuid\Uuid;
 
 /**
- * An editable unit of content: its title, slug, body, workflow state and version, and nothing else.
+ * An editable unit of content: its title, slug, body, workflow state, language and version.
  *
  * This is the aggregate every content change goes through. It is immutable, so `revise()`,
- * `reschedule()` and `transition()` each return a successor one version higher, and each demands the
- * version the caller believed it was editing — which is how two editors racing on the same entry are
- * separated before either write reaches the database. The constructor is private and validating, so
- * an entry cannot exist in an invalid shape: identifier, title, slug, state key and body are all
- * checked on every construction, including when a row is rebuilt out of storage.
+ * `reschedule()`, `transition()` and `translate()` each return a successor one version higher, and each
+ * demands the version the caller believed it was editing — which is how two editors racing on the same
+ * entry are separated before either write reaches the database. The constructor is private and
+ * validating, so an entry cannot exist in an invalid shape: identifier, title, slug, state key, locale
+ * and body are all checked on every construction, including when a row is rebuilt out of storage.
+ *
+ * One entry is one locale of one logical item. The locale it is written in and the translation group it
+ * belongs to are carried here because they decide what the entry *is*, not where it is stored: an entry
+ * with no locale is content nobody has declared a language for, an entry with a locale and no group is
+ * a language declared for an item that has not been translated yet, and an entry with both is one
+ * member of a `TranslationGroup`. Publication stays per entry — the state and window on this object are
+ * this locale's alone — which is what lets English be live while another language is still drafting.
  *
  * Deliberately absent: which site owns the entry, which content type and workflow version it was
  * authored against, and when it was stored. Those are persistence facts and live on `ContentRecord`,
@@ -38,20 +48,32 @@ final readonly class ContentEntry
     private array $data;
 
     /**
+     * Language the entry is written in, or null when nobody has declared one.
+     *
+     * @var    ?LocaleTag
+     * @since  2.0.0
+     */
+    private ?LocaleTag $locale;
+
+    /**
      * Build a validated entry, rejecting anything the domain rules do not accept.
      *
      * Private because there are exactly two legitimate origins for an entry — a fresh `create()` and a
      * `reconstitute()` out of storage — and both must pass through the same checks.
      *
-     * @param   string                   $id                 Canonical UUID identifying the entry.
-     * @param   string                   $title              Human-readable title, already trimmed.
-     * @param   string                   $slug               Route segment the public URL carries.
-     * @param   array<array-key, mixed>  $data               Entry body; keys are proven to be strings here.
-     * @param   string                   $status             Workflow state key the entry currently sits in.
-     * @param   PublicationWindow        $publicationWindow  Period in which a published entry is visible.
-     * @param   int                      $version            Optimistic-concurrency counter, starting at one.
+     * @param   string                   $id                  Canonical UUID identifying the entry.
+     * @param   string                   $title               Human-readable title, already trimmed.
+     * @param   string                   $slug                Route segment the public URL carries.
+     * @param   array<array-key, mixed>  $data                Entry body; keys are proven to be strings here.
+     * @param   string                   $status              Workflow state key the entry currently sits in.
+     * @param   PublicationWindow        $publicationWindow   Period in which a published entry is visible.
+     * @param   int                      $version             Optimistic-concurrency counter, starting at one.
+     * @param   LocaleTag|string|null    $locale              Language this entry is written in, or null for none.
+     * @param   ?string                  $translationGroupId  UUID of the logical item across locales, or null.
      *
-     * @throws  InvalidArgumentException  When the identifier, title, slug, body or version breaks a rule.
+     * @throws  InvalidArgumentException  When the identifier, title, slug, body, version or translation
+     *          group breaks a rule.
+     * @throws  InvalidLocaleTag  When the locale is not a well-formed language tag.
      *
      * @since   2.0.0
      */
@@ -63,6 +85,8 @@ final readonly class ContentEntry
         private string $status,
         private PublicationWindow $publicationWindow,
         private int $version,
+        LocaleTag|string|null $locale = null,
+        private ?string $translationGroupId = null,
     ) {
         self::assertUuid($id);
         self::assertTitle($title);
@@ -75,6 +99,14 @@ final readonly class ContentEntry
         if ($version < 1) {
             throw new InvalidArgumentException('A content entry version must be at least one.');
         }
+
+        $this->locale = is_string($locale) ? LocaleTag::fromString($locale) : $locale;
+        if ($translationGroupId !== null && !Uuid::isValid($translationGroupId)) {
+            throw new InvalidArgumentException('A content translation group ID must be a canonical UUID.');
+        }
+        if ($translationGroupId !== null && $this->locale === null) {
+            throw new InvalidArgumentException('An entry in a translation group must declare its locale.');
+        }
     }
 
     /**
@@ -83,16 +115,20 @@ final readonly class ContentEntry
      * The identifier is lowercased and the title trimmed on the way in, so callers may pass either
      * casing of a UUID and need not normalise operator input themselves.
      *
-     * @param   string                   $id                 Canonical UUID minted for the new entry.
-     * @param   string                   $title              Human-readable title as the author typed it.
-     * @param   string                   $slug               Route segment the public URL will carry.
-     * @param   array<array-key, mixed>  $data               Entry body; must already satisfy its type schema.
-     * @param   ContentStatus|string     $status             State to open in, as an enum case or a state key.
-     * @param   ?PublicationWindow       $publicationWindow  Visibility period, or null for an unbounded one.
+     * @param   string                   $id                  Canonical UUID minted for the new entry.
+     * @param   string                   $title               Human-readable title as the author typed it.
+     * @param   string                   $slug                Route segment the public URL will carry.
+     * @param   array<array-key, mixed>  $data                Entry body; must already satisfy its type schema.
+     * @param   ContentStatus|string     $status              State to open in, as an enum case or a state key.
+     * @param   ?PublicationWindow       $publicationWindow   Visibility period, or null for an unbounded one.
+     * @param   LocaleTag|string|null    $locale              Language being authored, or null to declare none.
+     * @param   ?string                  $translationGroupId  Group this locale joins; pass the group of the
+     *          entry being translated to create a sibling, or null for content that stands alone.
      *
      * @return  self  A version-one entry ready to be stored.
      *
      * @throws  InvalidArgumentException  When any value breaks a domain rule.
+     * @throws  InvalidLocaleTag  When the locale is not a well-formed language tag.
      *
      * @since   2.0.0
      */
@@ -103,6 +139,8 @@ final readonly class ContentEntry
         array $data = [],
         ContentStatus|string $status = ContentStatus::Draft,
         ?PublicationWindow $publicationWindow = null,
+        LocaleTag|string|null $locale = null,
+        ?string $translationGroupId = null,
     ): self {
         return new self(
             strtolower($id),
@@ -112,6 +150,8 @@ final readonly class ContentEntry
             self::stateKey($status),
             $publicationWindow ?? PublicationWindow::unbounded(),
             1,
+            $locale,
+            $translationGroupId === null ? null : strtolower($translationGroupId),
         );
     }
 
@@ -124,17 +164,22 @@ final readonly class ContentEntry
      * Revalidating on the way back in is deliberate: a row corrupted outside the application fails
      * here rather than surfacing as invalid content later.
      *
-     * @param   string                   $id                 Canonical UUID the row was stored under.
-     * @param   string                   $title              Stored title.
-     * @param   string                   $slug               Stored route segment.
-     * @param   array<array-key, mixed>  $data               Stored entry body.
-     * @param   ContentStatus|string     $status             Stored workflow state, as an enum case or key.
-     * @param   PublicationWindow        $publicationWindow  Stored visibility period.
-     * @param   int                      $version            Version the row currently carries.
+     * @param   string                   $id                  Canonical UUID the row was stored under.
+     * @param   string                   $title               Stored title.
+     * @param   string                   $slug                Stored route segment.
+     * @param   array<array-key, mixed>  $data                Stored entry body.
+     * @param   ContentStatus|string     $status              Stored workflow state, as an enum case or key.
+     * @param   PublicationWindow        $publicationWindow   Stored visibility period.
+     * @param   int                      $version             Version the row currently carries.
+     * @param   LocaleTag|string|null    $locale              Stored language tag, or null on a row written
+     *          before the entry declared one.
+     * @param   ?string                  $translationGroupId  Stored group identifier, or null when the entry
+     *          belongs to no group.
      *
      * @return  self  The entry exactly as stored, with every domain rule re-checked.
      *
      * @throws  InvalidArgumentException  When a stored value no longer satisfies a domain rule.
+     * @throws  InvalidLocaleTag  When the stored locale is not a well-formed language tag.
      *
      * @since   2.0.0
      */
@@ -146,6 +191,8 @@ final readonly class ContentEntry
         ContentStatus|string $status,
         PublicationWindow $publicationWindow,
         int $version,
+        LocaleTag|string|null $locale = null,
+        ?string $translationGroupId = null,
     ): self {
         return new self(
             strtolower($id),
@@ -155,6 +202,8 @@ final readonly class ContentEntry
             self::stateKey($status),
             $publicationWindow,
             $version,
+            $locale,
+            $translationGroupId === null ? null : strtolower($translationGroupId),
         );
     }
 
@@ -261,6 +310,32 @@ final readonly class ContentEntry
     }
 
     /**
+     * Return the language this entry is written in.
+     *
+     * @return  ?LocaleTag  The normalised tag, or null for content whose language nobody has declared —
+     *          which is every entry authored before the model carried one.
+     *
+     * @since   2.0.0
+     */
+    public function locale(): ?LocaleTag
+    {
+        return $this->locale;
+    }
+
+    /**
+     * Return the logical item this entry is one locale of.
+     *
+     * @return  ?string  Lowercase UUID shared by every locale of the item, or null when the entry belongs
+     *          to no group and is therefore reachable in one language only.
+     *
+     * @since   2.0.0
+     */
+    public function translationGroupId(): ?string
+    {
+        return $this->translationGroupId;
+    }
+
+    /**
      * Decide whether the entry may be shown to the public at a given moment.
      *
      * Both halves must hold: the entry is in the published state, and the instant falls inside its
@@ -314,6 +389,8 @@ final readonly class ContentEntry
             $this->status,
             $publicationWindow ?? $this->publicationWindow,
             $this->version + 1,
+            $this->locale,
+            $this->translationGroupId,
         );
     }
 
@@ -345,6 +422,8 @@ final readonly class ContentEntry
             $this->status,
             $publicationWindow,
             $this->version + 1,
+            $this->locale,
+            $this->translationGroupId,
         );
     }
 
@@ -384,6 +463,51 @@ final readonly class ContentEntry
             self::stateKey($target),
             $this->publicationWindow,
             $this->version + 1,
+            $this->locale,
+            $this->translationGroupId,
+        );
+    }
+
+    /**
+     * Produce the next version of the entry placed in a translation group under a declared locale.
+     *
+     * This is how an existing entry becomes the first member of a group, and how a freshly authored
+     * translation is bound to the item it translates: both sides call this with the same group
+     * identifier and their own locale. Nothing else moves — the body, the workflow state and the
+     * publication window are all carried across — because declaring what language something is in is
+     * not an editorial change to it, and a translation going live is its own `transition()`.
+     *
+     * The group's own invariants, that a locale appears once and that two locales do not share a slug,
+     * belong to `TranslationGroup` and to the database, since one entry cannot see its siblings.
+     *
+     * @param   ExpectedVersion  $expectedVersion     Version the caller believes it is changing.
+     * @param   LocaleTag        $locale              Language this entry is declared to be written in.
+     * @param   string           $translationGroupId  UUID of the logical item this locale belongs to.
+     *
+     * @return  self  A successor one version higher, carrying the locale and the group.
+     *
+     * @throws  VersionConflict  When the entry has already moved past the expected version.
+     * @throws  InvalidArgumentException  When the group identifier is not a canonical UUID.
+     *
+     * @since   2.0.0
+     */
+    public function translate(
+        ExpectedVersion $expectedVersion,
+        LocaleTag $locale,
+        string $translationGroupId,
+    ): self {
+        $expectedVersion->assertMatches($this->version);
+
+        return new self(
+            $this->id,
+            $this->title,
+            $this->slug,
+            $this->data,
+            $this->status,
+            $this->publicationWindow,
+            $this->version + 1,
+            $locale,
+            strtolower($translationGroupId),
         );
     }
 
@@ -395,14 +519,18 @@ final readonly class ContentEntry
      * read it. Keys are snake-case and window bounds are RFC 3339 strings or null, so changing this
      * shape changes stored revision checksums as well as the public payload.
      *
+     * `locale` and `translation_group` are written only by an entry that declares them, for exactly that
+     * reason. An entry authored before content carried a language dimension snapshots to the bytes its
+     * stored revision checksum was taken over, so adding the dimension invalidates no history.
+     *
      * @return  array<string, mixed>  Keyed by `id`, `title`, `slug`, `data`, `status`,
-     *          `publication_window` and `version`.
+     *          `publication_window` and `version`, plus `locale` and `translation_group` when declared.
      *
      * @since   2.0.0
      */
     public function snapshot(): array
     {
-        return [
+        $snapshot = [
             'id' => $this->id,
             'title' => $this->title,
             'slug' => $this->slug,
@@ -414,6 +542,14 @@ final readonly class ContentEntry
             ],
             'version' => $this->version,
         ];
+        if ($this->locale instanceof LocaleTag) {
+            $snapshot['locale'] = $this->locale->toString();
+        }
+        if ($this->translationGroupId !== null) {
+            $snapshot['translation_group'] = $this->translationGroupId;
+        }
+
+        return $snapshot;
     }
 
     /**

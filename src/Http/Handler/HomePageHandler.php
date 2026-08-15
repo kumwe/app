@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Http\Handler;
 
+use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\CMS\Presentation\Application\SitePresentation;
 use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
@@ -32,14 +33,16 @@ final readonly class HomePageHandler implements RequestHandlerInterface
     /**
      * Bind the front page to the locator, settings, and rendering collaborators it composes.
      *
-     * @param  PublicPageLocator     $pages      Resolver for the nominated homepage record and the site's
+     * @param  PublicPageLocator          $pages      Resolver for the nominated homepage record and the site's
      *         public navigation tree.
-     * @param  SiteSettings          $settings   Source of the site name, presentation contract, and the
+     * @param  SiteSettings               $settings   Source of the site name, presentation contract, and the
      *         search-indexing switch.
-     * @param  SiteRenderer          $renderer   Site template renderer that produces the HTML body.
-     * @param  ContentPresenter      $presenter  Presenter that escapes and renders the record's stored
+     * @param  SiteRenderer               $renderer   Site template renderer that produces the HTML body.
+     * @param  ContentPresenter           $presenter  Presenter that escapes and renders the record's stored
      *         bodies before they reach a template.
-     * @param  ContentLayoutCatalog  $layouts    Content-type to site-template layout selection.
+     * @param  ContentLayoutCatalog       $layouts    Content-type to site-template layout selection.
+     * @param  TranslationGroupPresenter  $languages  Chooser of which locale of the nominated homepage the
+     *         reader is served, and builder of the alternate-language links and the language selector.
      *
      * @since  2.0.0
      */
@@ -49,6 +52,7 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         private SiteRenderer $renderer,
         private ContentPresenter $presenter,
         private ContentLayoutCatalog $layouts,
+        private TranslationGroupPresenter $languages,
     ) {
     }
 
@@ -74,6 +78,9 @@ final readonly class HomePageHandler implements RequestHandlerInterface
     {
         $settings = $this->settings->current();
         $record = $this->pages->homepage();
+        // The root is the one public entry point that names no language, so it is the one place a
+        // reader's negotiated locale — not the URL — decides which locale of the item is served.
+        $record = $record === null ? null : $this->languages->negotiate($record);
         $binding = $record === null
             ? ['template' => null, 'color_scheme' => null]
             : $this->pages->presentationBindingFor($record);
@@ -90,6 +97,9 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         $variables['current_path'] = '/';
         $variables['canonical_url'] = '/';
         $variables['surface_id'] = 'core.public.home';
+        $variables['languages'] = $record === null
+            ? ['alternates' => [], 'default_href' => null]
+            : $this->languages->alternates($record, '/');
 
         $headers = [
             'Cache-Control' => 'public, max-age=60, stale-while-revalidate=300',

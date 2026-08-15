@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
+use Kumwe\CMS\Localization\Domain\LocaleTag;
+
 /**
  * One field of a business entity's contract, validated the moment it is constructed.
  *
@@ -60,6 +62,18 @@ final readonly class FieldDefinition
     public array $configuration;
 
     /**
+     * Translations of the field's operator-facing wording, keyed by member then by locale tag.
+     *
+     * Empty for a field declared in one language, which is what keeps such a field's canonical document
+     * — and therefore the checksum of every published version carrying it — exactly as it was before the
+     * locale dimension existed.
+     *
+     * @var    array<string, array<string, string>>
+     * @since  2.0.0
+     */
+    public array $textTranslations;
+
+    /**
      * Capture a field declaration and reject one the runtime could not honour.
      *
      * These rules are settled once, at construction, so every consumer downstream may treat a field it
@@ -102,12 +116,16 @@ final readonly class FieldDefinition
      * @param   ?Expression                                   $editabilityCondition  Condition gating edits.
      * @param   ?Expression                                   $formula               Expression deriving the value.
      * @param   ComputationMode                               $computationMode       Whether the result is stored.
+     * @param   array<string, mixed>                          $textTranslations      Translations of `label`,
+     *          `description` and `help_text`, keyed by member then by locale tag; empty for a field whose
+     *          wording is declared in one language only.
      *
      * @throws  InvalidBusinessDefinition  When an identifier, label, or numeric bound is malformed, a
      *          combination of flags contradicts itself, the default or the configuration is not
      *          canonically serializable, a computed field is missing the formula and the server-only and
      *          read-only rules it needs, the normalizer or validator lists are over length or repeat an
-     *          entry, or the placements are empty or name a surface that does not exist.
+     *          entry, the placements are empty or name a surface that does not exist, or a translation
+     *          names an untranslatable member, a malformed locale or text over its member's bound.
      *
      * @since   2.0.0
      */
@@ -149,6 +167,7 @@ final readonly class FieldDefinition
         public ?Expression $editabilityCondition = null,
         public ?Expression $formula = null,
         public ComputationMode $computationMode = ComputationMode::Virtual,
+        array $textTranslations = [],
     ) {
         if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1) {
             throw new InvalidBusinessDefinition('A business field handle is invalid.');
@@ -263,6 +282,11 @@ final readonly class FieldDefinition
         }
         sort($placements, SORT_STRING);
         $this->placements = $placements;
+        $this->textTranslations = LocalizedDefinitionText::normalize($textTranslations, [
+            'label' => 120,
+            'description' => 1000,
+            'help_text' => 1000,
+        ]);
     }
 
     /**
@@ -291,10 +315,16 @@ final readonly class FieldDefinition
             'computed', 'read_only', 'create_visible', 'update_visible', 'read_visible', 'searchable', 'filterable',
             'sortable', 'reportable', 'exportable', 'sensitivity', 'localized', 'help_text', 'form_group', 'order',
             'placements', 'visibility_condition', 'editability_condition', 'formula', 'computation_mode',
+            'text_translations',
         ];
         if (array_diff(array_keys($document), $allowed) !== []) {
             throw new InvalidBusinessDefinition('A business field contains an unknown property.');
         }
+        $translations = $document['text_translations'] ?? [];
+        if (!is_array($translations) || ($translations !== [] && array_is_list($translations))) {
+            throw new InvalidBusinessDefinition('Business field text translations must be an object.');
+        }
+        /** @var array<string, mixed> $translations */
 
         return new self(
             self::string($document, 'handle'),
@@ -336,7 +366,58 @@ final readonly class FieldDefinition
             self::expression($document, 'formula'),
             ComputationMode::tryFrom(self::optionalString($document, 'computation_mode', 'virtual'))
                 ?? throw new InvalidBusinessDefinition('A business field computation mode is invalid.'),
+            $translations,
         );
+    }
+
+    /**
+     * Read the field's name in the locale an operator is working in.
+     *
+     * @param   LocaleTag|string  $locale  Locale the surface is rendering in.
+     *
+     * @return  string  The closest translation the field carries, otherwise the declared label.
+     *
+     * @throws  \Kumwe\CMS\Localization\Domain\InvalidLocaleTag  When the locale is a malformed tag.
+     *
+     * @since   2.0.0
+     */
+    public function labelIn(LocaleTag|string $locale): string
+    {
+        return LocalizedDefinitionText::resolve($this->textTranslations, 'label', $this->label, $locale);
+    }
+
+    /**
+     * Read the field's editor-facing note in the locale an operator is working in.
+     *
+     * @param   LocaleTag|string  $locale  Locale the surface is rendering in.
+     *
+     * @return  string  The closest translation the field carries, otherwise the declared description,
+     *          which is the empty string when the field declares none.
+     *
+     * @throws  \Kumwe\CMS\Localization\Domain\InvalidLocaleTag  When the locale is a malformed tag.
+     *
+     * @since   2.0.0
+     */
+    public function descriptionIn(LocaleTag|string $locale): string
+    {
+        return LocalizedDefinitionText::resolve($this->textTranslations, 'description', $this->description, $locale);
+    }
+
+    /**
+     * Read the field's form hint in the locale an operator is working in.
+     *
+     * @param   LocaleTag|string  $locale  Locale the surface is rendering in.
+     *
+     * @return  string  The closest translation the field carries, otherwise the declared help text, which
+     *          is the empty string when the field declares none.
+     *
+     * @throws  \Kumwe\CMS\Localization\Domain\InvalidLocaleTag  When the locale is a malformed tag.
+     *
+     * @since   2.0.0
+     */
+    public function helpTextIn(LocaleTag|string $locale): string
+    {
+        return LocalizedDefinitionText::resolve($this->textTranslations, 'help_text', $this->helpText, $locale);
     }
 
     /**
@@ -344,6 +425,8 @@ final readonly class FieldDefinition
      *
      * `computation_mode` is written only for a stored computation, because a definition published
      * before that key existed described a virtual one implicitly and must keep its original bytes.
+     * `text_translations` follows the same rule for the same reason: a field whose wording is declared
+     * in one language writes nothing, so its bytes are the bytes its checksum was taken over.
      *
      * @return  array<string, mixed>  Every declared property under its snake_case key, with enums and
      *          expressions flattened to their own document form.
@@ -394,6 +477,9 @@ final readonly class FieldDefinition
         // those immutable bytes unchanged unless stored computation is explicit.
         if ($this->computationMode === ComputationMode::Stored) {
             $document['computation_mode'] = $this->computationMode->value;
+        }
+        if ($this->textTranslations !== []) {
+            $document['text_translations'] = $this->textTranslations;
         }
 
         return $document;

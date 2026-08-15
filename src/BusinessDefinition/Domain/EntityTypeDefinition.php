@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
+use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -86,6 +87,18 @@ final readonly class EntityTypeDefinition
     private array $compatibilityMetadata;
 
     /**
+     * Translations of the entity's operator-facing labels, keyed by member then by locale tag.
+     *
+     * Empty for an entity declared in one language, which is what keeps such a definition's canonical
+     * document — and the checksum of every published version carrying it — exactly as it was before the
+     * locale dimension existed.
+     *
+     * @var    array<string, array<string, string>>
+     * @since  2.0.0
+     */
+    private array $labelTranslations;
+
+    /**
      * Assemble an entity definition and refuse one that contradicts itself.
      *
      * @param   string                           $id                     Canonical UUID identifying the
@@ -130,13 +143,17 @@ final readonly class EntityTypeDefinition
      * @param   list<RecordInvariantDefinition>  $recordInvariants       Cross-field rules, handles unique.
      * @param   list<PortalOperation>            $portalOperations       Explicit portal operation allowlist;
      *          empty denies every generated business-record operation.
+     * @param   array<string, mixed>             $labelTranslations      Translations of `singular_label` and
+     *          `plural_label`, keyed by member then by locale tag; empty for an entity whose labels are
+     *          declared in one language only.
      *
      * @throws  InvalidBusinessDefinition  When the id is not a UUID, the site, handle, or labels are malformed,
      *          the handle falls outside the owner's namespace, the version disagrees with the status, a
      *          collection is empty or past its ceiling, a handle is duplicated, no exposure surface is
      *          declared, a portal operation is invalid or enabled without portal exposure, a view claims a
-     *          surface the entity does not expose, the metadata is not canonically encodable, or the internal
-     *          graph is unsound.
+     *          surface the entity does not expose, the metadata is not canonically encodable, a label
+     *          translation names an untranslatable member, a malformed locale or text over its bound, or
+     *          the internal graph is unsound.
      *
      * @since   2.0.0
      */
@@ -166,6 +183,7 @@ final readonly class EntityTypeDefinition
         public bool $softDeleteEnabled = false,
         array $recordInvariants = [],
         array $portalOperations = [],
+        array $labelTranslations = [],
     ) {
         if (!Uuid::isValid($id)) {
             throw new InvalidBusinessDefinition('A business entity definition ID must be a canonical UUID.');
@@ -240,6 +258,10 @@ final readonly class EntityTypeDefinition
         }
         CanonicalDefinitionJson::encode($compatibilityMetadata);
         $this->compatibilityMetadata = $compatibilityMetadata;
+        $this->labelTranslations = LocalizedDefinitionText::normalize($labelTranslations, [
+            'singular_label' => 120,
+            'plural_label' => 120,
+        ]);
         $this->assertInternalGraph();
     }
 
@@ -270,10 +292,16 @@ final readonly class EntityTypeDefinition
             'storage_mode', 'identity_strategy', 'scope', 'audit_enabled', 'revisions_enabled', 'fields',
             'relationships', 'views', 'actions', 'workflow', 'compatibility_metadata', 'administrator_exposure',
             'portal_exposure', 'public_exposure', 'soft_delete_enabled', 'record_invariants', 'portal_operations',
+            'label_translations',
         ];
         if (array_diff(array_keys($document), $allowed) !== []) {
             throw new InvalidBusinessDefinition('A business entity definition contains an unknown property.');
         }
+        $labelTranslations = $document['label_translations'] ?? [];
+        if (!is_array($labelTranslations) || ($labelTranslations !== [] && array_is_list($labelTranslations))) {
+            throw new InvalidBusinessDefinition('Business entity label translations must be an object.');
+        }
+        /** @var array<string, mixed> $labelTranslations */
         $owner = $document['owner'] ?? null;
         if (
             !is_array($owner) || array_is_list($owner)
@@ -345,7 +373,63 @@ final readonly class EntityTypeDefinition
             self::boolean($document, 'soft_delete_enabled'),
             $recordInvariants,
             self::portalOperationsFromDocument($document),
+            $labelTranslations,
         );
+    }
+
+    /**
+     * Read the name for one record of this entity in the locale an operator is working in.
+     *
+     * @param   LocaleTag|string  $locale  Locale the surface is rendering in.
+     *
+     * @return  string  The closest translation the entity carries, otherwise the declared singular label.
+     *
+     * @throws  \Kumwe\CMS\Localization\Domain\InvalidLocaleTag  When the locale is a malformed tag.
+     *
+     * @since   2.0.0
+     */
+    public function singularLabelIn(LocaleTag|string $locale): string
+    {
+        return LocalizedDefinitionText::resolve(
+            $this->labelTranslations,
+            'singular_label',
+            $this->singularLabel,
+            $locale,
+        );
+    }
+
+    /**
+     * Read the name for a collection of these records in the locale an operator is working in.
+     *
+     * @param   LocaleTag|string  $locale  Locale the surface is rendering in.
+     *
+     * @return  string  The closest translation the entity carries, otherwise the declared plural label.
+     *
+     * @throws  \Kumwe\CMS\Localization\Domain\InvalidLocaleTag  When the locale is a malformed tag.
+     *
+     * @since   2.0.0
+     */
+    public function pluralLabelIn(LocaleTag|string $locale): string
+    {
+        return LocalizedDefinitionText::resolve(
+            $this->labelTranslations,
+            'plural_label',
+            $this->pluralLabel,
+            $locale,
+        );
+    }
+
+    /**
+     * Every translation the entity declares for its own labels.
+     *
+     * @return  array<string, array<string, string>>  Locale-keyed text under `singular_label` and
+     *          `plural_label`; empty for an entity declared in one language.
+     *
+     * @since   2.0.0
+     */
+    public function labelTranslations(): array
+    {
+        return $this->labelTranslations;
     }
 
     /**
@@ -584,6 +668,7 @@ final readonly class EntityTypeDefinition
             $this->softDeleteEnabled,
             $this->recordInvariants,
             $this->portalOperations,
+            $this->labelTranslations,
         );
     }
 
@@ -635,17 +720,18 @@ final readonly class EntityTypeDefinition
             $this->softDeleteEnabled,
             $this->recordInvariants,
             $this->portalOperations,
+            $this->labelTranslations,
         );
     }
 
     /**
      * Export the definition as the canonical document it is stored, compared, and checksummed as.
      *
-     * The exact shape is part of the persisted contract, which is why three members are written only when they
-     * carry meaning: `soft_delete_enabled`, `record_invariants`, and `portal_operations` are left out when unset,
-     * so definitions published before those properties existed still serialize to the bytes their stored
-     * checksum was taken over. Everything else is always present, with nested definitions already exported in
-     * declaration order.
+     * The exact shape is part of the persisted contract, which is why four members are written only when they
+     * carry meaning: `soft_delete_enabled`, `record_invariants`, `portal_operations` and `label_translations`
+     * are left out when unset, so definitions published before those properties existed still serialize to the
+     * bytes their stored checksum was taken over. Everything else is always present, with nested definitions
+     * already exported in declaration order.
      *
      * @return  array<string, mixed>  Every property under its stored key, with enums written as their backing
      *          strings and `workflow` written as null when the entity binds none.
@@ -697,6 +783,9 @@ final readonly class EntityTypeDefinition
                 static fn (PortalOperation $operation): string => $operation->value,
                 $this->portalOperations,
             );
+        }
+        if ($this->labelTranslations !== []) {
+            $document['label_translations'] = $this->labelTranslations;
         }
 
         return $document;

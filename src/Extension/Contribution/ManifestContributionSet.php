@@ -27,6 +27,7 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
+use Kumwe\CMS\Content\Domain\TranslationGroupDeclaration;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\InterfaceStandard\SurfaceArea;
@@ -283,40 +284,50 @@ final readonly class ManifestContributionSet
     private array $moneyRateProviders;
 
     /**
+     * Manifest-declared content translation groups keyed by stable identifier.
+     *
+     * @var    array<string, TranslationGroupDeclaration>  Declared multilingual content sets.
+     * @since  2.0.0
+     */
+    private array $contentTranslationGroups;
+
+    /**
      * Assemble one package's declarations and reject any set that is already inconsistent.
      *
      * Called directly only for an empty or hand-built set, such as core's; a real manifest arrives
      * through `fromManifest()`. Business identifiers are checked against the business context's own
      * owner, which is why a field type or entity type belonging to another package fails here.
      *
-     * @param   ContributionOwner                            $owner                  Package declaring all of it.
-     * @param   iterable<CapabilityDefinition>               $capabilities           Permission codes it adds.
-     * @param   iterable<AdministratorWorkspaceDefinition>   $workspaces             Administrator groupings.
-     * @param   iterable<AdministratorNavigationDefinition>  $navigation             Menu entries it adds.
-     * @param   iterable<AdministratorRouteDefinition>       $routes                 Guarded routes it serves.
-     * @param   iterable<AdministratorViewDefinition>        $views                  Templates its routes render.
-     * @param   iterable<FieldTypeDefinition>                $fieldTypes             Field types it publishes.
-     * @param   iterable<EntityTypeDefinition>               $businessDefinitions    Entity types it publishes.
-     * @param   iterable<ResourcePolicyDefinition>           $resourcePolicies       Capability/resource bindings.
-     * @param   iterable<PortalWorkspaceDefinition>          $portalWorkspaces       Portal groupings it adds.
-     * @param   iterable<PortalNavigationDefinition>         $portalNavigation       Portal menu entries it adds.
-     * @param   iterable<PortalRouteDefinition>              $portalRoutes           Guarded portal routes it serves.
-     * @param   iterable<PortalTemplateDefinition>           $portalTemplates        Portal templates its routes render.
-     * @param   iterable<CustomBusinessViewContract>         $customBusinessViews    Custom view handler contracts.
-     * @param   iterable<CustomBusinessActionContract>       $customBusinessActions  Custom action handler contracts.
-     * @param   iterable<FieldPresentationContribution>      $fieldPresentations     Safe presenter declarations.
-     * @param   iterable<EventSchemaDefinition>              $eventSchemas           Versioned event contracts.
-     * @param   iterable<DomainListenerDefinition>           $domainListeners        Synchronous listener contracts.
-     * @param   iterable<EventConsumerDefinition>            $eventConsumers         Durable consumer contracts.
-     * @param   iterable<JobContributionDefinition>          $jobs                   Job and payload contracts.
-     * @param   iterable<QueueContributionDefinition>        $queues                 Logical queue declarations.
-     * @param   iterable<ScheduleContributionDefinition>     $schedules              Recurring schedules.
-     * @param   iterable<ProjectionDefinition>               $projections            Rebuildable projections.
-     * @param   iterable<ReportDefinition>                   $reports                Safe report definitions.
-     * @param   iterable<WebhookContributionDefinition>      $webhooks               Outbound adapter declarations.
-     * @param   int                                          $spiVersion             Contribution SPI revision.
-     * @param   iterable<SurfaceDefinition>                  $interfaceSurfaces      KIS semantic surfaces.
-     * @param   iterable<MoneyRateProviderDefinition>        $moneyRateProviders     Exchange-rate sources.
+     * @param   ContributionOwner                            $owner                     Package declaring all of it.
+     * @param   iterable<CapabilityDefinition>               $capabilities              Permission codes it adds.
+     * @param   iterable<AdministratorWorkspaceDefinition>   $workspaces                Administrator groupings.
+     * @param   iterable<AdministratorNavigationDefinition>  $navigation                Menu entries it adds.
+     * @param   iterable<AdministratorRouteDefinition>       $routes                    Guarded routes it serves.
+     * @param   iterable<AdministratorViewDefinition>        $views                     Templates its routes render.
+     * @param   iterable<FieldTypeDefinition>                $fieldTypes                Field types it publishes.
+     * @param   iterable<EntityTypeDefinition>               $businessDefinitions       Entity types it publishes.
+     * @param   iterable<ResourcePolicyDefinition>           $resourcePolicies          Capability/resource bindings.
+     * @param   iterable<PortalWorkspaceDefinition>          $portalWorkspaces          Portal groupings it adds.
+     * @param   iterable<PortalNavigationDefinition>         $portalNavigation          Portal menu entries it adds.
+     * @param   iterable<PortalRouteDefinition>              $portalRoutes              Guarded portal routes it serves.
+     * @param iterable<PortalTemplateDefinition> $portalTemplates Portal templates its routes render.
+     * @param   iterable<CustomBusinessViewContract>         $customBusinessViews       Custom view handler contracts.
+     * @param   iterable<CustomBusinessActionContract>       $customBusinessActions     Custom action handler contracts.
+     * @param   iterable<FieldPresentationContribution>      $fieldPresentations        Safe presenter declarations.
+     * @param   iterable<EventSchemaDefinition>              $eventSchemas              Versioned event contracts.
+     * @param   iterable<DomainListenerDefinition>           $domainListeners           Synchronous listener contracts.
+     * @param   iterable<EventConsumerDefinition>            $eventConsumers            Durable consumer contracts.
+     * @param   iterable<JobContributionDefinition>          $jobs                      Job and payload contracts.
+     * @param   iterable<QueueContributionDefinition>        $queues                    Logical queue declarations.
+     * @param   iterable<ScheduleContributionDefinition>     $schedules                 Recurring schedules.
+     * @param   iterable<ProjectionDefinition>               $projections               Rebuildable projections.
+     * @param   iterable<ReportDefinition>                   $reports                   Safe report definitions.
+     * @param   iterable<WebhookContributionDefinition>      $webhooks                  Outbound adapter declarations.
+     * @param   int                                          $spiVersion                Contribution SPI revision.
+     * @param   iterable<SurfaceDefinition>                  $interfaceSurfaces         KIS semantic surfaces.
+     * @param   iterable<MoneyRateProviderDefinition>        $moneyRateProviders        Exchange-rate sources.
+     * @param   iterable<TranslationGroupDeclaration>        $contentTranslationGroups  Multilingual content
+     *          sets, each naming the locales the package publishes it in and the locale it falls back to.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          navigation or a route references something this set does not declare, a business definition
@@ -353,6 +364,7 @@ final readonly class ManifestContributionSet
         private int $spiVersion = self::SPI_VERSION,
         iterable $interfaceSurfaces = [],
         iterable $moneyRateProviders = [],
+        iterable $contentTranslationGroups = [],
     ) {
         if (!in_array($spiVersion, [self::SPI_VERSION, self::CURRENT_SPI_VERSION], true)) {
             throw new InvalidArgumentException('The extension contribution SPI version is unsupported.');
@@ -383,6 +395,7 @@ final readonly class ManifestContributionSet
         $this->reports = $this->integrationIndex($reports, 'report');
         $this->webhooks = $this->integrationIndex($webhooks, 'webhook');
         $this->moneyRateProviders = $this->index($moneyRateProviders, 'money_rate_provider');
+        $this->contentTranslationGroups = $this->index($contentTranslationGroups, 'content_translation_group');
         if ($this->spiVersion >= self::CURRENT_SPI_VERSION) {
             $this->assertPortableRelationshipOrdering();
         }
@@ -684,6 +697,7 @@ final readonly class ManifestContributionSet
         if ($manifestSchema >= 4) {
             $topLevelKeys[] = 'integration';
             $topLevelKeys[] = 'interface';
+            $topLevelKeys[] = 'content';
         }
         self::knownKeys(
             $data,
@@ -713,6 +727,8 @@ final readonly class ManifestContributionSet
         self::knownKeys($portal, ['workspaces', 'navigation', 'routes', 'templates'], 'portal contributions');
         $interface = self::object($data['interface'] ?? [], 'contributions.interface');
         self::knownKeys($interface, ['surfaces'], 'interface contributions');
+        $content = self::object($data['content'] ?? [], 'contributions.content');
+        self::knownKeys($content, ['translation_groups'], 'content contributions');
         $integration = self::object($data['integration'] ?? [], 'contributions.integration');
         self::knownKeys(
             $integration,
@@ -1009,6 +1025,10 @@ final readonly class ManifestContributionSet
             static fn (array $item): MoneyRateProviderDefinition => MoneyRateProviderDefinition::fromArray($item),
             self::objects($integration['rate_providers'] ?? [], 'contributions.integration.rate_providers'),
         );
+        $contentTranslationGroups = array_map(
+            static fn (array $item): TranslationGroupDeclaration => TranslationGroupDeclaration::fromArray($item),
+            self::objects($content['translation_groups'] ?? [], 'contributions.content.translation_groups'),
+        );
 
         $set = new self(
             $owner,
@@ -1039,6 +1059,7 @@ final readonly class ManifestContributionSet
             $expectedSpi,
             $interfaceSurfaces,
             $moneyRateProviders,
+            $contentTranslationGroups,
         );
         $set->assertFieldPresentationCoverage();
 
@@ -1385,6 +1406,19 @@ final readonly class ManifestContributionSet
     }
 
     /**
+     * Return the multilingual content sets carried by this manifest contribution set.
+     *
+     * @return  list<TranslationGroupDeclaration>  Declared content sets in identifier order; empty for a
+     *          package whose content is published in one language.
+     *
+     * @since   2.0.0
+     */
+    public function contentTranslationGroups(): array
+    {
+        return array_values($this->contentTranslationGroups);
+    }
+
+    /**
      * Return the SPI version carried by this manifest contribution set.
      *
      * @return  int  Contribution service-provider interface revision.
@@ -1415,6 +1449,7 @@ final readonly class ManifestContributionSet
      *                  views: list<array<string, mixed>>
      *              },
      *              interface?: array{surfaces: list<array<string, mixed>>},
+     *              content?: array{translation_groups: list<array<string, mixed>>},
      *              business: array{
      *                  field_types: list<array<string, mixed>>,
      *                  definitions: list<array<string, mixed>>,
@@ -1525,6 +1560,13 @@ final readonly class ManifestContributionSet
             if ($this->moneyRateProviders !== []) {
                 $document['integration']['rate_providers'] = $this->exports($this->moneyRateProviders());
             }
+        }
+        // Written only when the package declares one, so a manifest that publishes its content in a
+        // single language exports the bytes it exported before the locale dimension existed.
+        if ($this->contentTranslationGroups !== []) {
+            $document['content'] = [
+                'translation_groups' => $this->exports($this->contentTranslationGroups()),
+            ];
         }
 
         return $document;

@@ -288,10 +288,13 @@ use Kumwe\CMS\Content\Application\ContentRepository;
 use Kumwe\CMS\Content\Application\ContentModelRepository;
 use Kumwe\CMS\Content\Application\ContentModelService;
 use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Content\Application\TranslationGroupRepository;
 use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
 use Kumwe\CMS\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentModelRepository;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentRepository;
+use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
+use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\CMS\Demo\Application\DemoProfileLedger;
 use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
 use Kumwe\CMS\Demo\Application\VdmBusinessManifestProjector;
@@ -532,6 +535,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfaceMessageOverrideMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
@@ -1413,6 +1417,12 @@ final class ContainerFactory
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
             ), true);
+        $container->share(TranslationGroupRepository::class, static fn (
+            Container $container,
+        ): TranslationGroupRepository => new DoctrineTranslationGroupRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
         $container->share(BusinessDefinitionRepository::class, static fn (
             Container $container,
         ): BusinessDefinitionRepository => new DoctrineBusinessDefinitionRepository(
@@ -1494,6 +1504,7 @@ final class ContainerFactory
                 self::service($container, ResourceSiteOwnershipWriter::class),
                 self::service($container, ContentModelRepository::class),
                 self::service($container, JsonSchemaValidator::class),
+                self::service($container, TranslationGroupRepository::class),
             ), true);
         $container->share(MediaStorage::class, new FilesystemMediaStorage(
             $root . '/storage/media',
@@ -1583,6 +1594,16 @@ final class ContainerFactory
                 self::service($container, PublicNavigation::class),
                 SiteContext::fromString($configuration->publicSite),
             ), true);
+        $container->share(TranslationGroupPresenter::class, static fn (
+            Container $container,
+        ): TranslationGroupPresenter => new TranslationGroupPresenter(
+            self::service($container, TranslationGroupRepository::class),
+            self::service($container, ContentService::class),
+            self::service($container, PublicPageLocator::class),
+            self::service($container, ActiveLocale::class),
+            self::service($container, ClockInterface::class),
+            SiteContext::fromString($configuration->publicSite),
+        ), true);
         $container->share(JobExecutionScope::class, new JobExecutionScope(), true);
         $container->share(JobQueue::class, static fn (Container $container): JobQueue =>
             new DoctrineJobQueue(
@@ -1664,6 +1685,7 @@ final class ContainerFactory
                     new BusinessRecordHistoryWindowMigration(self::service($container, TableNames::class)),
                     new ResourceOwnershipScopeMigration(self::service($container, TableNames::class)),
                     new InterfaceMessageOverrideMigration(self::service($container, TableNames::class)),
+                    new MultilingualContentMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -3104,6 +3126,7 @@ final class ContainerFactory
                 self::service($container, SiteRenderer::class),
                 self::service($container, ContentPresenter::class),
                 self::service($container, ContentLayoutCatalog::class),
+                self::service($container, TranslationGroupPresenter::class),
             ), true);
         $container->share(LivenessHandler::class, new LivenessHandler(), true);
         $container->share(MetricsHandler::class, static fn (Container $container): MetricsHandler =>
@@ -3169,6 +3192,7 @@ final class ContainerFactory
             self::service($container, SiteRenderer::class),
             self::service($container, ContentPresenter::class),
             self::service($container, ContentLayoutCatalog::class),
+            self::service($container, TranslationGroupPresenter::class),
         ), true);
         $container->share(ExtensionAssetHandler::class, static fn (
             Container $container,

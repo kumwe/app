@@ -11,8 +11,12 @@ use Kumwe\CMS\Content\Application\ContentModelRepository;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Application\SiteScopedContentRepository;
+use Kumwe\CMS\Content\Application\TranslationGroupRepository;
 use Kumwe\CMS\Content\Domain\ContentEntry;
 use Kumwe\CMS\Content\Domain\ContentStatus;
+use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
+use Kumwe\CMS\Localization\Application\SupportedLocales;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Http\Handler\PublishedContentHandler;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
@@ -104,12 +108,14 @@ final class PublicPageLocatorTest extends TestCase
             self::TEAM => $this->record(self::TEAM, 'Team', 'team'),
         ];
         $settings = $this->settings();
+        $locator = $this->locator($records, settings: $settings);
         $handler = new PublishedContentHandler(
-            $this->locator($records, settings: $settings),
+            $locator,
             $settings,
             new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader())),
             new ContentPresenter(new RichTextFormatter()),
             $this->layouts(),
+            $this->languages($locator),
         );
         $request = (new ServerRequestFactory())->createServerRequest(
             'GET',
@@ -130,14 +136,16 @@ final class PublicPageLocatorTest extends TestCase
             self::TEAM => $this->record(self::TEAM, 'Team', 'team'),
         ];
         $settings = $this->settings();
+        $locator = $this->locator($records, settings: $settings);
         $handler = new PublishedContentHandler(
-            $this->locator($records, settings: $settings),
+            $locator,
             $settings,
             new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader([
                 'page.twig' => '{{ current_path }}|{{ entry.title }}|{{ entry.body_html|raw }}',
             ]))),
             new ContentPresenter(new RichTextFormatter()),
             $this->layouts(),
+            $this->languages($locator),
         );
         $request = (new ServerRequestFactory())->createServerRequest(
             'GET',
@@ -206,6 +214,35 @@ final class PublicPageLocatorTest extends TestCase
             $this->content($repository),
             $settings ?? $this->settings(),
             $this->navigation(),
+            SiteContext::default(),
+        );
+    }
+
+    /**
+     * Build the language presenter an untranslated site hands the public handlers.
+     *
+     * Every record in this class stands alone, so the group store answers null and the presenter
+     * contributes no alternates — which is exactly the shape a single-language site renders in.
+     *
+     * @param   PublicPageLocator  $locator  Locator the presenter would build sibling links through.
+     *
+     * @return  TranslationGroupPresenter  Presenter over a store that carries no translation group.
+     *
+     * @since   2.0.0
+     */
+    private function languages(PublicPageLocator $locator): TranslationGroupPresenter
+    {
+        $groups = $this->createStub(TranslationGroupRepository::class);
+        $groups->method('forContent')->willReturn(null);
+        $clock = $this->createStub(ClockInterface::class);
+        $clock->method('now')->willReturn(new DateTimeImmutable('2026-08-07T10:00:00+00:00'));
+
+        return new TranslationGroupPresenter(
+            $groups,
+            $this->content($this->createStub(SiteScopedContentRepository::class)),
+            $locator,
+            new ActiveLocale(new SupportedLocales()),
+            $clock,
             SiteContext::default(),
         );
     }

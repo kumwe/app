@@ -21,7 +21,9 @@ use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
 use Kumwe\CMS\Content\Domain\PublicationWindow;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Workflow\Domain\Workflow;
+use LogicException;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -83,6 +85,8 @@ final readonly class ContentService
      * @param  ResourceSiteOwnershipWriter  $ownership      Records which site owns a newly created entry.
      * @param  ?ContentModelRepository      $models         Published types and workflows, or null to skip them.
      * @param  ?JsonSchemaValidator         $schemas        Body validator; one is built per call when null.
+     * @param  ?TranslationGroupRepository  $translations   Store recording which logical item a locale belongs
+     *         to and the fallback it declares; null leaves `translate()` unavailable.
      *
      * @since  2.0.0
      */
@@ -96,6 +100,7 @@ final readonly class ContentService
         private ResourceSiteOwnershipWriter $ownership,
         private ?ContentModelRepository $models = null,
         private ?JsonSchemaValidator $schemas = null,
+        private ?TranslationGroupRepository $translations = null,
     ) {
     }
 
@@ -437,6 +442,73 @@ final readonly class ContentService
             $this->repository->update($updated, $expectedVersion);
             $this->captureRevision($updated->entry, $now);
             $this->recordAudit($context->actorId(), 'content.update', $updated->entry, $now);
+
+            return $updated;
+        });
+    }
+
+    /**
+     * Declare which language an entry is written in, and which logical item it is one locale of.
+     *
+     * This is how a translation comes into being: the entry being translated is placed in a group, and
+     * the newly authored entry in the other language is placed in that same group. Nothing editorial
+     * moves — the body, the workflow state and the publication window are all carried across — because
+     * saying what language something is in is not a change to it, and a translation going live is its
+     * own `transition()`. That separation is exactly what lets English stay published while the
+     * language beside it is still drafting.
+     *
+     * The declared fallback is recorded once, with the group, on the call that creates it. A later call
+     * naming the same group leaves the fallback alone, because a fallback that two locales of one item
+     * disagreed about would not be a fallback.
+     *
+     * @param   ExecutionContext  $context             Actor and site the change is performed for.
+     * @param   string            $id                  UUID of the content entry to place.
+     * @param   int               $expectedVersion     Version the editor loaded and believes it is changing.
+     * @param   LocaleTag         $locale              Language this entry is declared to be written in.
+     * @param   string            $translationGroupId  UUID of the logical item across locales.
+     * @param   ?LocaleTag        $fallback            Locale served when the reader's has nothing published;
+     *          defaults to this entry's own locale, which is what the first locale of an item declares.
+     *
+     * @return  ContentRecord  The stored record, one version higher, carrying its locale and group.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  ContentNotFound  When no entry matches within reach of the context.
+     * @throws  \LogicException  When no translation-group store is wired.
+     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     *
+     * @since   2.0.0
+     */
+    public function translate(
+        ExecutionContext $context,
+        string $id,
+        int $expectedVersion,
+        LocaleTag $locale,
+        string $translationGroupId,
+        ?LocaleTag $fallback = null,
+    ): ContentRecord {
+        $this->authorize($context, 'content.update', $id);
+        $translations = $this->translations
+            ?? throw new LogicException('Content translation requires a translation group store.');
+        $stored = $this->get($context, $id);
+        $entry = $stored->entry->translate(new ExpectedVersion($expectedVersion), $locale, $translationGroupId);
+
+        $now = $this->clock->now();
+        $updated = $stored->withEntry($entry, $now);
+
+        return $this->transactions->transactional(function () use (
+            $updated,
+            $expectedVersion,
+            $context,
+            $translations,
+            $translationGroupId,
+            $locale,
+            $fallback,
+            $now,
+        ): ContentRecord {
+            $translations->declareGroup($context->site(), $translationGroupId, $fallback ?? $locale);
+            $this->repository->update($updated, $expectedVersion);
+            $this->captureRevision($updated->entry, $now);
+            $this->recordAudit($context->actorId(), 'content.translate', $updated->entry, $now);
 
             return $updated;
         });

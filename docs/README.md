@@ -28,6 +28,9 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 - [Templates](templates.md): build, install, activate, and verify a public design.
 - [Interface translation](interface-translation.md): locale negotiation, the message-identifier grammar, the
   catalogue override chain that also adapts a vertical's terminology, and right-to-left presentation.
+- [Content translation](content-translation.md): translation groups, per-locale slugs and publication state,
+  the declared fallback, automatic `hreflang`, the shipped language selector, and locale variants on
+  business definition labels and on extension-contributed content.
 
 ## Integrate and extend Kumwe
 
