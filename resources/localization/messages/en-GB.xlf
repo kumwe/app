@@ -413,6 +413,230 @@
         <source>The requested extension view could not be rendered safely.</source>
       </segment>
     </unit>
+    <unit id="core.administrator.wording.document_title">
+      <notes>
+        <note category="context">Browser title of the wording screen.</note>
+      </notes>
+      <segment>
+        <source>Wording · Kumwe</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.context_title">
+      <notes>
+        <note category="context">Breadcrumb-style context title in the administrator chrome.</note>
+      </notes>
+      <segment>
+        <source>Wording</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.eyebrow">
+      <notes>
+        <note category="context">Small label above the screen heading, naming the area.</note>
+      </notes>
+      <segment>
+        <source>Language</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.heading">
+      <notes>
+        <note category="context">Main heading of the wording screen.</note>
+      </notes>
+      <segment>
+        <source>Interface wording</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.purpose">
+      <notes>
+        <note category="context">One-sentence statement of what an operator does on this screen.</note>
+      </notes>
+      <segment>
+        <source>Change what the interface says for this site or organization, in any language you carry, without editing a file or deploying.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.saved_notice">
+      <notes>
+        <note category="context">Confirmation after a wording change is stored or withdrawn.</note>
+      </notes>
+      <segment>
+        <source>Wording saved.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.dismiss_action">
+      <notes>
+        <note category="context">Accessible name of the button that closes a notice.</note>
+      </notes>
+      <segment>
+        <source>Dismiss</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.scope_heading">
+      <notes>
+        <note category="context">Heading of the panel that chooses language and layer.</note>
+      </notes>
+      <segment>
+        <source>What you are changing</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.scope_explanation">
+      <notes>
+        <note category="context">Explains the two choices that scope every change on the screen.</note>
+      </notes>
+      <segment>
+        <source>Pick the language the change applies to and whether it applies to the whole site or only to your organization. An organization change beats a site change.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.locale_label">
+      <notes>
+        <note category="context">Label of the language picker.</note>
+      </notes>
+      <segment>
+        <source>Language</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.layer_label">
+      <notes>
+        <note category="context">Label of the picker that chooses which layer stores the change.</note>
+      </notes>
+      <segment>
+        <source>Applies to</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.layer_site">
+      <notes>
+        <note category="context">Option naming the site-wide override layer.</note>
+      </notes>
+      <segment>
+        <source>This whole site</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.layer_organization">
+      <notes>
+        <note category="context">Option naming the organization override layer.</note>
+      </notes>
+      <segment>
+        <source>My organization only</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.search_label">
+      <notes>
+        <note category="context">Label of the search field over the shipped catalogue.</note>
+      </notes>
+      <segment>
+        <source>Find a message</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.search_help">
+      <notes>
+        <note category="context">Help text under the search field.</note>
+      </notes>
+      <segment>
+        <source>Search the wording this installation ships, by what it says or by its identifier.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.search_action">
+      <notes>
+        <note category="context">Button that runs the catalogue search.</note>
+      </notes>
+      <segment>
+        <source>Search</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.no_organization">
+      <notes>
+        <note category="context">Shown when an organization change is chosen from outside an organization.</note>
+      </notes>
+      <segment>
+        <source>You are not working inside an organization, so only site-wide changes can be saved.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.matches_heading">
+      <notes>
+        <note category="context">Heading of the panel listing catalogue search results.</note>
+      </notes>
+      <segment>
+        <source>Search results</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.matches_explanation">
+      <notes>
+        <note category="context">Count of search results. {count} is how many messages matched.</note>
+      </notes>
+      <segment>
+        <source>{count, plural, one {# message matches} other {# messages match}}.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.matches_empty">
+      <notes>
+        <note category="context">Shown when a search matched nothing.</note>
+      </notes>
+      <segment>
+        <source>Nothing matches that search.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.replacement_label">
+      <notes>
+        <note category="context">Label of the field carrying the replacement wording.</note>
+      </notes>
+      <segment>
+        <source>What it should say</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.replacement_help">
+      <notes>
+        <note category="context">Help text under the replacement field.</note>
+      </notes>
+      <segment>
+        <source>Placeholders in braces are filled in when the message is shown, so keep every one of them.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.save_action">
+      <notes>
+        <note category="context">Button that stores the replacement wording.</note>
+      </notes>
+      <segment>
+        <source>Save wording</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.withdraw_action">
+      <notes>
+        <note category="context">Button that removes an override so the shipped wording returns.</note>
+      </notes>
+      <segment>
+        <source>Restore the original</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.changed_heading">
+      <notes>
+        <note category="context">Heading of the panel listing wording this scope has already changed.</note>
+      </notes>
+      <segment>
+        <source>Wording you have changed</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.changed_explanation">
+      <notes>
+        <note category="context">Explains that only changed messages are listed, and that the rest still follow releases.</note>
+      </notes>
+      <segment>
+        <source>Only the messages listed here are changed. Everything else still reads as this release ships it, and keeps improving with each upgrade.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.changed_empty">
+      <notes>
+        <note category="context">Shown when this scope has changed nothing yet.</note>
+      </notes>
+      <segment>
+        <source>This scope has not changed any wording yet.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.updated_at">
+      <notes>
+        <note category="context">Line recording when an override was last written. {at} is a timestamp.</note>
+      </notes>
+      <segment>
+        <source>Last changed {at}.</source>
+      </segment>
+    </unit>
   </file>
   <file id="core-portal">
     <unit id="core.portal.layout.document_title">

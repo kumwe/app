@@ -82,6 +82,7 @@ use Kumwe\CMS\Administrator\Http\Handler\AdministratorRestoreContentHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorSettingsHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorTransitionContentHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorTrashContentHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorWordingHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorUpdateContentHandler;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
@@ -529,6 +530,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationM
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfaceMessageOverrideMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
@@ -626,13 +628,15 @@ use Kumwe\CMS\Localization\Application\CatalogueTranslator;
 use Kumwe\CMS\Localization\Application\LocaleNegotiator;
 use Kumwe\CMS\Localization\Application\MessageCatalogueRepository;
 use Kumwe\CMS\Localization\Application\MessageOverrideRepository;
+use Kumwe\CMS\Localization\Application\MessageOverrideService;
+use Kumwe\CMS\Localization\Application\MessageOverrideStore;
 use Kumwe\CMS\Localization\Application\MessagePatternFormatter;
 use Kumwe\CMS\Localization\Application\SiteDefaultLocale;
 use Kumwe\CMS\Localization\Application\SupportedLocales;
 use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Localization\Http\Middleware\LocaleNegotiationMiddleware;
-use Kumwe\CMS\Localization\Infrastructure\ArrayMessageOverrideRepository;
 use Kumwe\CMS\Localization\Infrastructure\CompiledMessageCatalogueRepository;
+use Kumwe\CMS\Localization\Infrastructure\DoctrineMessageOverrideRepository;
 use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
 use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\CMS\Workflow\Domain\Workflow;
@@ -1659,6 +1663,7 @@ final class ContainerFactory
                     new ResourceOwnershipPortabilityMigration(self::service($container, TableNames::class)),
                     new BusinessRecordHistoryWindowMigration(self::service($container, TableNames::class)),
                     new ResourceOwnershipScopeMigration(self::service($container, TableNames::class)),
+                    new InterfaceMessageOverrideMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -1741,10 +1746,30 @@ final class ContainerFactory
         // plain PHP, formatted by ICU, resolved through core, extension, site and organization.
         $container->share(SupportedLocales::class, new SupportedLocales(), true);
         $container->share(MessagePatternFormatter::class, new IntlMessagePatternFormatter(), true);
-        $container->share(MessageCatalogueRepository::class, new CompiledMessageCatalogueRepository(
+        $container->share(MessageCatalogueRepository::class, static fn (
+            Container $container,
+        ): MessageCatalogueRepository => new CompiledMessageCatalogueRepository(
             $root . '/resources/localization/compiled',
+            self::service($container, ActiveExtensionSet::class)->catalogueDirectories(),
         ), true);
-        $container->share(MessageOverrideRepository::class, new ArrayMessageOverrideRepository(), true);
+        $container->share(DoctrineMessageOverrideRepository::class, static fn (
+            Container $container,
+        ): DoctrineMessageOverrideRepository => new DoctrineMessageOverrideRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->alias(MessageOverrideRepository::class, DoctrineMessageOverrideRepository::class);
+        $container->alias(MessageOverrideStore::class, DoctrineMessageOverrideRepository::class);
+        $container->share(MessageOverrideService::class, static fn (
+            Container $container,
+        ): MessageOverrideService => new MessageOverrideService(
+            self::service($container, MessageOverrideStore::class),
+            self::service($container, MessageCatalogueRepository::class),
+            self::service($container, SupportedLocales::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(ActiveLocale::class, static fn (Container $container): ActiveLocale =>
             new ActiveLocale(self::service($container, SupportedLocales::class)), true);
         $container->share(SiteDefaultLocale::class, static fn (Container $container): SiteDefaultLocale =>
@@ -3502,6 +3527,13 @@ final class ContainerFactory
             self::service($container, MediaService::class),
             self::service($container, NavigationService::class),
         ), true);
+        $container->share(AdministratorWordingHandler::class, static fn (
+            Container $container,
+        ): AdministratorWordingHandler => new AdministratorWordingHandler(
+            self::service($container, MessageOverrideService::class),
+            self::service($container, SupportedLocales::class),
+            self::service($container, AdministratorRenderer::class),
+        ), true);
         $container->share(AdministratorNavigationHandler::class, static fn (
             Container $container,
         ): AdministratorNavigationHandler => new AdministratorNavigationHandler(
@@ -4107,6 +4139,16 @@ final class ContainerFactory
             [AdministratorCsrfMiddleware::class, AdministratorNavigationHandler::class],
             'administrator.navigation.update',
         ), 'navigation.manage');
+        self::administratorRoute($application->get(
+            '/administrator/wording',
+            AdministratorWordingHandler::class,
+            'administrator.wording',
+        ), 'localization.overrides.manage');
+        self::administratorRoute($application->post(
+            '/administrator/wording',
+            [AdministratorCsrfMiddleware::class, AdministratorWordingHandler::class],
+            'administrator.wording.update',
+        ), 'localization.overrides.manage');
         self::administratorRoute($application->get(
             '/administrator/access',
             AdministratorAccessControlHandler::class,

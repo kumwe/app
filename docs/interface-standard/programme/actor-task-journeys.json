@@ -173,6 +173,13 @@
       "journey_ids": ["journey.site-structure"]
     },
     {
+      "id": "task.wording.manage",
+      "label": "Change interface wording",
+      "actor_ids": ["structure-manager"],
+      "primary_outcome": "The actor relabels the words their people read, for one site or one organization and in any carried language, without a file edit or a deployment.",
+      "journey_ids": ["journey.site-structure"]
+    },
+    {
       "id": "task.definition.model",
       "label": "Model and publish a business definition",
       "actor_ids": ["business-modeler"],

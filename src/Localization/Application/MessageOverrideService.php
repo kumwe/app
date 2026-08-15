@@ -1,0 +1,477 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Localization\Application;
+
+use DateTimeImmutable;
+use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Audit\Application\AuditRecorder;
+use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
+use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\CMS\Localization\Domain\MessageIdentifier;
+use Psr\Clock\ClockInterface;
+use Ramsey\Uuid\Uuid;
+
+/**
+ * Management face of the administered wording layers: the only supported way to change a message.
+ *
+ * An operator relabelling "Client" as "Patient" is performing an administrative act, not a fork, and
+ * this is where that act is validated, authorized and recorded. Every delivery surface that changes
+ * wording goes through here, so the rules live once: the identifier must satisfy the frozen grammar,
+ * the locale must be one this installation carries, the pattern must be non-empty and bounded, and
+ * the actor must hold `localization.overrides.manage` on the scope they are writing into.
+ *
+ * Two guards are worth naming because they are what stop terminology adaptation from becoming a
+ * denial-of-service against the render path. An override may only be stored for an identifier some
+ * file-shipped layer already declares, so the store cannot fill with wording nothing looks up. And a
+ * scope carries a bounded number of overrides, because the whole map is read on the render path and
+ * an unbounded map would make every page pay for one operator's bulk import.
+ *
+ * @since  2.0.0
+ */
+final readonly class MessageOverrideService
+{
+    /**
+     * How many overrides one layer, scope and locale may carry.
+     *
+     * The whole map is fetched on the render path, so this is a bound on work done per request rather
+     * than a product limit: relabelling a vertical's vocabulary is tens of messages, not thousands.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_PER_SCOPE = 500;
+
+    /**
+     * Longest ICU pattern an override may carry, in bytes.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_PATTERN_BYTES = 4000;
+
+    /**
+     * Capability an actor must hold to read or change administered wording.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string CAPABILITY = 'localization.overrides.manage';
+
+    /**
+     * Wire the service to its store, the catalogues it validates against, and its bookkeeping.
+     *
+     * @param  MessageOverrideStore        $store          Store the overrides are listed from and written to.
+     * @param  MessageCatalogueRepository  $catalogues     File-shipped layers an identifier must be declared
+     *         by before it may be overridden.
+     * @param  SupportedLocales            $supported      Registry deciding which locales may be written.
+     * @param  AuthorizationGateway        $authorization  Policy deciding who may change wording.
+     * @param  AuditRecorder               $audit          Sink every wording change is recorded to.
+     * @param  ClockInterface              $clock          Source of the instant stored and audited.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(
+        private MessageOverrideStore $store,
+        private MessageCatalogueRepository $catalogues,
+        private SupportedLocales $supported,
+        private AuthorizationGateway $authorization,
+        private AuditRecorder $audit,
+        private ClockInterface $clock,
+    ) {
+    }
+
+    /**
+     * List the wording this actor's scope has changed.
+     *
+     * @param   ExecutionContext       $context  Actor and site the listing runs as.
+     * @param   MessageCatalogueLayer  $layer    Administered layer to list, `Site` or `Organization`.
+     * @param   ?string                $locale   Restrict to one locale tag, or null for every locale.
+     *
+     * @return  list<MessageOverrideRecord>  Stored overrides in a stable order.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  InvalidArgumentException  When the layer is not administered, or the locale is not carried.
+     *
+     * @since   2.0.0
+     */
+    public function overrides(
+        ExecutionContext $context,
+        MessageCatalogueLayer $layer,
+        ?string $locale = null,
+    ): array {
+        $this->authorize($context);
+
+        return $this->store->overrides(
+            $this->administered($layer),
+            $context->site()->identifier(),
+            $this->organization($context, $layer),
+            $locale === null ? null : $this->locale($locale),
+        );
+    }
+
+    /**
+     * Change one word without a file edit and without a deployment.
+     *
+     * @param   ExecutionContext       $context     Actor and site the write runs as.
+     * @param   MessageCatalogueLayer  $layer       Administered layer the override is stored in.
+     * @param   string                 $locale      Tag of the locale the new wording applies to.
+     * @param   string                 $identifier  Message identifier whose wording is being replaced.
+     * @param   string                 $pattern     Replacement ICU pattern.
+     *
+     * @return  MessageOverrideRecord  The stored override, carrying the instant it was written.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier  When the identifier breaks the grammar.
+     * @throws  InvalidArgumentException  When the layer is not administered, the locale is not carried, the
+     *          pattern is blank or too long, no file-shipped layer declares the identifier, or the scope
+     *          already holds the maximum number of overrides.
+     *
+     * @since   2.0.0
+     */
+    public function override(
+        ExecutionContext $context,
+        MessageCatalogueLayer $layer,
+        string $locale,
+        string $identifier,
+        string $pattern,
+    ): MessageOverrideRecord {
+        $this->authorize($context);
+        $administered = $this->administered($layer);
+        $tag = $this->locale($locale);
+        $validated = MessageIdentifier::fromString($identifier)->value;
+        $wording = $this->pattern($pattern);
+        $this->assertDeclared($validated, $tag);
+
+        $site = $context->site()->identifier();
+        $organization = $this->organization($context, $administered);
+        $stored = $this->store->overrides($administered, $site, $organization, $tag);
+        $known = [];
+        foreach ($stored as $record) {
+            $known[$record->identifier] = true;
+        }
+        if (!isset($known[$validated]) && count($known) >= self::MAXIMUM_PER_SCOPE) {
+            throw new InvalidArgumentException(sprintf(
+                'This scope already carries the maximum of %d overrides for one locale.',
+                self::MAXIMUM_PER_SCOPE,
+            ));
+        }
+
+        $now = $this->clock->now();
+        $override = new MessageOverrideRecord(
+            $administered,
+            $site,
+            $organization,
+            $tag->toString(),
+            $validated,
+            $wording,
+            $now,
+        );
+        $this->store->put($override);
+        $this->record($context, 'localization.override.write', $override, $now);
+
+        return $override;
+    }
+
+    /**
+     * Withdraw one override so the layer below it is read again.
+     *
+     * @param   ExecutionContext       $context     Actor and site the write runs as.
+     * @param   MessageCatalogueLayer  $layer       Administered layer the override sits in.
+     * @param   string                 $locale      Tag of the locale the override applies to.
+     * @param   string                 $identifier  Message identifier to stop overriding.
+     *
+     * @return  bool  True when an override was withdrawn, false when the scope carried none.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier  When the identifier breaks the grammar.
+     * @throws  InvalidArgumentException  When the layer is not administered or the locale is not carried.
+     *
+     * @since   2.0.0
+     */
+    public function withdraw(
+        ExecutionContext $context,
+        MessageCatalogueLayer $layer,
+        string $locale,
+        string $identifier,
+    ): bool {
+        $this->authorize($context);
+        $administered = $this->administered($layer);
+        $tag = $this->locale($locale);
+        $validated = MessageIdentifier::fromString($identifier)->value;
+        $site = $context->site()->identifier();
+        $organization = $this->organization($context, $administered);
+        $now = $this->clock->now();
+
+        $removed = $this->store->remove($administered, $site, $organization, $tag, $validated);
+        if ($removed) {
+            $this->record($context, 'localization.override.withdraw', new MessageOverrideRecord(
+                $administered,
+                $site,
+                $organization,
+                $tag->toString(),
+                $validated,
+                '',
+                $now,
+            ), $now);
+        }
+
+        return $removed;
+    }
+
+    /**
+     * List the identifiers a scope may override, with the wording the file-shipped layers carry.
+     *
+     * An operator cannot relabel a word they cannot find, and searching a catalogue of hundreds of
+     * identifiers by eye is not finding. This answers the search an administration screen runs: the
+     * core and extension layers merged as the chain would merge them, filtered by a substring of
+     * either the identifier or its wording, and bounded so a blank search cannot render everything.
+     *
+     * @param   ExecutionContext  $context  Actor and site the search runs as.
+     * @param   string            $locale   Tag of the locale to search at.
+     * @param   string            $term     Case-insensitive substring of an identifier or its wording;
+     *          an empty term returns the first page in identifier order.
+     * @param   int               $limit    Greatest number of matches to return, capped at 200.
+     *
+     * @return  list<array{identifier: string, pattern: string, layer: string}>  Matches in identifier
+     *          order, each naming the file-shipped layer the wording came from.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  InvalidArgumentException  When the locale is not one this installation carries.
+     *
+     * @since   2.0.0
+     */
+    public function searchCatalogue(
+        ExecutionContext $context,
+        string $locale,
+        string $term = '',
+        int $limit = 50,
+    ): array {
+        $this->authorize($context);
+        $tag = $this->locale($locale);
+        $needle = mb_strtolower(trim($term));
+        $bounded = max(1, min($limit, 200));
+
+        $messages = [];
+        foreach ([MessageCatalogueLayer::Extension, MessageCatalogueLayer::Core] as $layer) {
+            foreach ($this->catalogues->catalogue($layer, $tag)->messages as $identifier => $pattern) {
+                $messages[$identifier] ??= [
+                    'identifier' => $identifier,
+                    'pattern' => $pattern,
+                    'layer' => $layer->value,
+                ];
+            }
+        }
+        ksort($messages, SORT_STRING);
+
+        $matches = [];
+        foreach ($messages as $message) {
+            if (
+                $needle !== ''
+                && !str_contains(mb_strtolower($message['identifier']), $needle)
+                && !str_contains(mb_strtolower($message['pattern']), $needle)
+            ) {
+                continue;
+            }
+            $matches[] = $message;
+            if (count($matches) === $bounded) {
+                break;
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
+     * Refuse a layer that ships in files rather than being administered.
+     *
+     * @param   MessageCatalogueLayer  $layer  Layer the caller named.
+     *
+     * @return  MessageCatalogueLayer  The same layer, proved administered.
+     *
+     * @throws  InvalidArgumentException  When the layer is `Core` or `Extension`.
+     *
+     * @since   2.0.0
+     */
+    private function administered(MessageCatalogueLayer $layer): MessageCatalogueLayer
+    {
+        return match ($layer) {
+            MessageCatalogueLayer::Site, MessageCatalogueLayer::Organization => $layer,
+            default => throw new InvalidArgumentException(
+                'Core and extension wording ships in files and cannot be administered as an override.',
+            ),
+        };
+    }
+
+    /**
+     * Resolve the organization an organization-scoped write applies to.
+     *
+     * @param   ExecutionContext       $context  Actor and site the write runs as.
+     * @param   MessageCatalogueLayer  $layer    Administered layer being written.
+     *
+     * @return  ?string  The organization identifier, or null for a site-level write.
+     *
+     * @throws  InvalidArgumentException  When an organization-level write runs outside an organization.
+     *
+     * @since   2.0.0
+     */
+    private function organization(ExecutionContext $context, MessageCatalogueLayer $layer): ?string
+    {
+        if ($layer !== MessageCatalogueLayer::Organization) {
+            return null;
+        }
+
+        return $context->organization()?->identifier()
+            ?? throw new InvalidArgumentException(
+                'Organization wording can only be changed from inside the organization it applies to.',
+            );
+    }
+
+    /**
+     * Accept only a locale this installation carries, so no override is stranded unreadable.
+     *
+     * @param   string  $locale  Locale tag as the caller spelled it.
+     *
+     * @return  LocaleTag  The canonical tag.
+     *
+     * @throws  InvalidArgumentException  When the tag is malformed or is not a carried locale.
+     *
+     * @since   2.0.0
+     */
+    private function locale(string $locale): LocaleTag
+    {
+        try {
+            $tag = LocaleTag::fromString($locale);
+        } catch (InvalidLocaleTag $malformed) {
+            throw new InvalidArgumentException('This installation does not carry that locale.', 0, $malformed);
+        }
+        if (!$this->supported->carries($tag)) {
+            throw new InvalidArgumentException('This installation does not carry that locale.');
+        }
+
+        return $tag;
+    }
+
+    /**
+     * Bound the replacement wording, rejecting a blank one and an unreasonably long one.
+     *
+     * @param   string  $pattern  Replacement ICU pattern as submitted.
+     *
+     * @return  string  The trimmed pattern.
+     *
+     * @throws  InvalidArgumentException  When the pattern is blank or exceeds the stored ceiling.
+     *
+     * @since   2.0.0
+     */
+    private function pattern(string $pattern): string
+    {
+        $trimmed = trim($pattern);
+        if ($trimmed === '') {
+            throw new InvalidArgumentException('Replacement wording cannot be empty; withdraw the override instead.');
+        }
+        if (strlen($trimmed) > self::MAXIMUM_PATTERN_BYTES) {
+            throw new InvalidArgumentException(sprintf(
+                'Replacement wording is limited to %d bytes.',
+                self::MAXIMUM_PATTERN_BYTES,
+            ));
+        }
+
+        return $trimmed;
+    }
+
+    /**
+     * Refuse an override for an identifier no file-shipped layer declares.
+     *
+     * The check is deliberately made against the source locale as well as the target one: a translator
+     * has not yet filed wording for every locale, and refusing an override because the target locale
+     * is still untranslated would block the very case the chain exists for.
+     *
+     * @param   string     $identifier  Validated message identifier.
+     * @param   LocaleTag  $locale      Locale the override is being stored at.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When neither the target locale nor the source locale declares it.
+     *
+     * @since   2.0.0
+     */
+    private function assertDeclared(string $identifier, LocaleTag $locale): void
+    {
+        foreach ([$locale, $this->supported->source()] as $candidate) {
+            foreach ([MessageCatalogueLayer::Extension, MessageCatalogueLayer::Core] as $layer) {
+                if ($this->catalogues->catalogue($layer, $candidate)->has($identifier)) {
+                    return;
+                }
+            }
+        }
+
+        throw new InvalidArgumentException(
+            'No shipped catalogue declares that message identifier, so there is nothing to override.',
+        );
+    }
+
+    /**
+     * Prove the actor may administer wording for the site they are working in.
+     *
+     * @param   ExecutionContext  $context  Actor and site the operation runs as.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the capability is absent.
+     *
+     * @since   2.0.0
+     */
+    private function authorize(ExecutionContext $context): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString(self::CAPABILITY),
+            AuthorizationResource::collection('message_override'),
+        );
+    }
+
+    /**
+     * Record one wording change in the audit trail.
+     *
+     * The pattern itself is recorded, because wording is operator-authored text rather than a secret,
+     * and an auditor asking what a screen said last month needs the answer rather than a hash of it.
+     *
+     * @param   ExecutionContext       $context   Actor and site the change ran as.
+     * @param   string                 $action    Stable audit action name.
+     * @param   MessageOverrideRecord  $override  The override written or withdrawn.
+     * @param   DateTimeImmutable      $at        Instant recorded against the event.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function record(
+        ExecutionContext $context,
+        string $action,
+        MessageOverrideRecord $override,
+        DateTimeImmutable $at,
+    ): void {
+        $this->audit->record(new AuditEvent(
+            Uuid::uuid7()->toString(),
+            $at,
+            $context->actorId(),
+            $action,
+            'message_override',
+            $override->layer->value . ':' . $override->locale . ':' . $override->identifier,
+            'success',
+            [
+                'layer' => $override->layer->value,
+                'locale' => $override->locale,
+                'identifier' => $override->identifier,
+                'organization' => $override->organization,
+            ],
+        ));
+    }
+}
