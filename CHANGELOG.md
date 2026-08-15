@@ -861,6 +861,30 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **Two Kumwe installations can share one database schema.** A foreign-key constraint name is schema-global
+  on MySQL and MariaDB rather than scoped to its table, and fifty-four of the shipped constraints were
+  named literally. All fifty-four are distinct, so nothing collided inside one installation and every one
+  of them collided with a second prefixed installation beside it: building the second installation's
+  `organizations` table failed outright, with errno 121 on MariaDB. Every installed foreign key is now
+  renamed to a name derived from the physical table it sits on, which is what makes it differ between two
+  installations, and from the original name, which is what keeps two constraints on one table apart after
+  the longest of them has been trimmed to fit the portable sixty-three-byte identifier limit. Names already
+  unique to one installation are left exactly as they are, so the rename is a no-operation on every upgrade
+  after the first. Proven by installing two prefixed installations into one MariaDB schema, in that order,
+  and succeeding. (`8ff6224`)
+- **The rename is the operation that frees the old names, which decides when a second installation becomes
+  possible.** The literal names cannot be changed where they are written: the core migrations publish their
+  own file digests as an immutability contract, and editing their bytes would break the upgrade path of
+  every installed site. So they go on creating the literal names and the rename runs afterwards and renames
+  what they created — which is exactly what releases each name for the next installation to take. The
+  consequence is worth knowing rather than discovering: **a second installation in the same schema becomes
+  possible only once the first has migrated past this point.** On PostgreSQL, where a constraint name was
+  never schema-global, the rename is a catalogue operation that costs nothing and keeps the existing
+  validation; on the MySQL family, which has no rename for a foreign key, each constraint is created under
+  its new name and the old one is then dropped, with the referential action, match type and deferrability
+  carried across explicitly. That order is deliberate: where DDL commits implicitly, an interruption between
+  the two statements leaves the table holding both names, which enforces the same rule twice and loses
+  nothing, where dropping first would have left it holding neither. (`8ff6224`, `138cb3f`)
 - **A refused save no longer empties the form.** Filling in a long document and losing every value to a
   failure you could have recovered from was the single most expensive defect an operator met. Two gaps
   caused it. On the generated administrator and portal surfaces a validation failure already came back with
@@ -1076,6 +1100,50 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Security
 
+- **No password crosses the machine surface, in any field, under any name.** Three extension-lifecycle
+  tools published a `currentPassword` property in their input schemas and accepted it as a handler
+  parameter, marked `writeOnly` as though that were a control — it describes an output property and
+  prevents nothing on the way in. The property and all three parameters are gone, and the extension
+  manager is now always called with no step-up proof, so the one lifecycle change that demands one —
+  taking over, disabling or removing the live administrator theme — fails closed rather than being offered
+  a credential it should never have been able to accept. The browser, the protected console and the
+  protected REST path remain the human step-up route, and every other activation, disable and uninstall
+  proceeds under the caller's existing `extensions.manage` authorization exactly as before. (`893f2fd`)
+- **The machine surface now says what each of its seventy-six tools costs, and the claim is enforced rather
+  than reviewed.** Every published tool carries one risk class from a closed vocabulary — read, scoped
+  write, destructive, credential, trust, installation-global — together with the non-MCP route an operator
+  takes instead. The classes are not a severity ladder: each names a different question an operator has to
+  answer before allowing a call, and a tool raising more than one is classified by the first that applies,
+  so revoking every token a person holds across the installation is classified by its reach and disabling
+  an extension by the fact that it changes which code runs. Two declarations were wrong and are corrected
+  rather than exempted: deleting a menu item removes state and now says so. (`893f2fd`)
+- **A server cannot be built from a catalogue that breaks its own rules.** The classification, the
+  annotations and the schemas are checked in full before the first tool is registered, so an incoherent
+  surface is a boot failure naming the offending entries instead of a tool a client discovers and misuses.
+  It refuses duplicate or malformed names, a handler that does not exist or cannot receive a property the
+  schema requires, an annotation that contradicts the declared class, an object schema whose membership
+  nobody decided, a mutation without an operation identity, an elevated class with no declared capability,
+  and — the rule the credential removal rests on — any property at any depth of any schema shaped like a
+  credential or a host path, and any handler parameter that is credential-shaped or marked
+  `#[\SensitiveParameter]`. A value worth marking sensitive is a value that must not cross a tool boundary
+  at all. (`893f2fd`)
+- **The extension boundary is described the same honest way everywhere, because the risk was drift rather
+  than dishonesty.** The supported tier has one name on every surface — trusted in-process extension code —
+  and the boundary is stated by what it is and what it is not, side by side: `RestrictedExtensionContainer`
+  is an API compatibility boundary that decides which host services an extension may resolve, and it is not
+  a security sandbox, because curating service resolution constrains what an extension is handed and
+  constrains nothing about what admitted code can do once it is running. Signature verification, the trust
+  store, the revocation feed and install-time admission answer who published a package and whether it is
+  still vouched for; no combination of them answers what its code may do. The administrator install screen
+  now says so where the decision is actually made. The ambient authority admitted code inherits —
+  filesystem, network, environment, database and process — is inventoried beside the deployment control
+  that bounds each part of it, stated as the operator's control rather than the application's, with five of
+  them added to the deployment checklist. Untrusted and marketplace PHP stays unsupported until an isolated
+  runtime exists, and the out-of-process route it belongs on is named rather than implied. No sandbox is
+  built here and none is promised; what is added is a test that reads the wording as source text and fails
+  when a surface drifts, and a proof that recovery composition — which runs while an extension is
+  installed, active and trusted — executes none of its PHP and exposes none of its templates.
+  (`efb8928`, `a60ee88`)
 - **A legal entity's books cannot be jointly owned, by construction rather than by discipline.** There is no
   setting, environment variable, manifest key or contribution that makes an accounting document, a ledger or
   a pay run shareable; the refusal is a property of the type system and, where the engine supports it, of the

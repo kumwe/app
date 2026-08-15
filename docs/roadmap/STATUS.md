@@ -88,14 +88,14 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 ## Ledger snapshot
 
-**48 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**44 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
 | `accepted_for_implementation` | 11 |
-| `reproduced` | 10 |
-| `open` | 15 |
-| `conditional` | 7 |
+| `reproduced` | 8 |
+| `open` | 14 |
+| `conditional` | 6 |
 | `decision_required` | 2 |
 | `in_progress` | 3 |
 | `verified` | 0 |
@@ -105,7 +105,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 | Phase | Findings |
 |---|---|
 | 0 | 4 |
-| 1 | 4 |
+| 1 | 0 |
 | 2 | 5 |
 | 3 | 1 |
 | 4 | 0 |
@@ -119,19 +119,20 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 | Gate | Findings |
 |---|---|
-| A | 17 |
-| B | 16 |
+| A | 14 |
+| B | 15 |
 | none | 15 |
 
-By severity: 0 critical, 20 high, 20 medium, 8 low.
-By origin: 19 from the independent review, 12 still-open entries from the executed gap matrix, 17 discovered
+By severity: 0 critical, 17 high, 19 medium, 8 low.
+By origin: 16 from the independent review, 12 still-open entries from the executed gap matrix, 16 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
 the tamper-evident audit work, the record-secret key ring and rotation, the credential lifecycle, the
 supply-chain controls, the contention proofs, the failure drills, the observability contract, the restore
 drill and the four production-only defects — is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits
-that closed it.
+that closed it. Four more have left since: the machine surface's credential transport and risk taxonomy,
+the schema-global constraint names, and the extension trust posture, which together met Gate A criterion 4.
 
 ## Gate A criteria
 
@@ -165,7 +166,7 @@ Green: `composer docs:api` (100% across 1,228 classes and 6,569 methods), `compo
 `composer quality:contract` (25 checks, 15 in the local lane, 3 engines), `composer extension:contract`
 (4 manifest generations, 2 SPI generations, 93 classified public types), `composer coverage:attribution`
 (9 reasoned rules, 44 tests still owing attribution), `composer interface:programme` (42 surfaces, 13
-journeys, 60 work items), `composer roadmap:check` (48 open findings), `composer openapi:check`, `composer
+journeys, 60 work items), `composer roadmap:check` (44 open findings), `composer openapi:check`, `composer
 cs`, `composer analyse` (PHPStan level `max`, no errors), unit suite (1,698 tests, 23,048 assertions),
 architecture suite (135 tests, 12,031 assertions), and `composer test:artifact` (6 declared cases, 6
 executed).
