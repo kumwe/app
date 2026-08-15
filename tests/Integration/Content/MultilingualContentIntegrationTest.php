@@ -15,6 +15,8 @@ use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\CMS\Kernel\ContainerFactory;
 use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
@@ -23,6 +25,7 @@ use Laminas\Diactoros\ServerRequestFactory;
 use Mezzio\Application;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -52,14 +55,6 @@ final class MultilingualContentIntegrationTest extends TestCase
      * @since  2.0.0
      */
     private const GROUP = '018f22e2-7c8b-7ab0-8f3a-88e8026bc001';
-
-    /**
-     * Origin the public surface is requested on, which has to be one the kernel trusts.
-     *
-     * @var    string
-     * @since  2.0.0
-     */
-    private const HOST = 'http://localhost';
 
     /**
      * Prove the migration lands the language dimension and its constraints on every supported engine.
@@ -314,6 +309,11 @@ final class MultilingualContentIntegrationTest extends TestCase
     /**
      * Fetch one public page through the real application, following its canonical redirect.
      *
+     * The request is issued on a host the installation under test actually answers to, read from its own
+     * `ApplicationConfiguration` rather than assumed, because the host boundary is a real refusal: a
+     * request arriving on an untrusted name is answered 400 before any content is resolved, and a
+     * hardcoded name would make this test report a delivery failure wherever the configured host differs.
+     *
      * @param   string  $path  Permalink path to request.
      *
      * @return  string  The rendered HTML of the canonical page.
@@ -322,25 +322,37 @@ final class MultilingualContentIntegrationTest extends TestCase
      */
     private function publicPage(string $path): string
     {
-        $application = $this->service(
-            (new \Kumwe\CMS\Kernel\ContainerFactory())->create(Environment::fromGlobals()),
-            Application::class,
-        );
-        $response = $application->handle(
-            (new ServerRequestFactory())
-                ->createServerRequest('GET', self::HOST . $path)
-                ->withHeader('Host', 'localhost'),
-        );
+        $container = (new ContainerFactory())->create(Environment::fromGlobals());
+        $application = $this->service($container, Application::class);
+        $host = $this->service($container, ApplicationConfiguration::class)->trustedHosts[0];
+
+        $response = $this->publicRequest($application, $host, $path);
         if ($response->getStatusCode() === 308) {
-            $response = $application->handle(
-                (new ServerRequestFactory())
-                    ->createServerRequest('GET', self::HOST . $response->getHeaderLine('Location'))
-                    ->withHeader('Host', 'localhost'),
-            );
+            $response = $this->publicRequest($application, $host, $response->getHeaderLine('Location'));
         }
         self::assertSame(200, $response->getStatusCode(), $path);
 
         return (string) $response->getBody();
+    }
+
+    /**
+     * Issue one public GET through the real application on a trusted host.
+     *
+     * @param   Application  $application  Booted application under test.
+     * @param   string       $host         Host name the installation answers to.
+     * @param   string       $path         Root-relative path to request.
+     *
+     * @return  ResponseInterface  The application's response, whatever its status.
+     *
+     * @since   2.0.0
+     */
+    private function publicRequest(Application $application, string $host, string $path): ResponseInterface
+    {
+        return $application->handle(
+            (new ServerRequestFactory())
+                ->createServerRequest('GET', 'https://' . $host . $path)
+                ->withHeader('Host', $host),
+        );
     }
 
     /**
