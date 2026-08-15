@@ -9,16 +9,22 @@ use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use RuntimeException;
 
 /**
- * Curated service surface for trusted in-process extensions.
+ * Curated service surface for trusted in-process extension code.
  *
- * This is an API compatibility boundary, not a security sandbox. Untrusted
- * integrations must execute out of process through an authenticated adapter.
- *
+ * This is an API compatibility boundary, not a security sandbox, and the distinction is load-bearing
+ * rather than a caveat. What it bounds is which host *services* an extension may resolve:
  * `ExtensionRuntimeLoader` builds one of these per active extension and hands it to the provider's
  * `register()` call, so an extension reaches only the host services the loader chose to pass in — the
  * application container is never visible to it. Anything the extension shares itself has to sit under
  * its own `extension.<vendor>.<name>.` prefix, which keeps two extensions from colliding on an
  * identifier and keeps either of them from replacing a host service by re-registering its name.
+ *
+ * What it does not bound is what admitted PHP can do once it is running. That code executes inside the
+ * request, worker and scheduler processes with the ambient filesystem, network, environment, database
+ * and process authority of the runtime user, none of which passes through here. Untrusted and
+ * marketplace PHP is therefore unsupported until an isolated runtime exists, and belongs out of process
+ * behind an authenticated adapter contract. `docs/architecture/extensions.md` inventories that ambient
+ * authority beside the deployment control that bounds each part of it.
  *
  * @since  2.0.0
  */

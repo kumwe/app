@@ -1,5 +1,49 @@
 # Extension and event architecture
 
+## Trust posture
+
+**Installing an extension means trusting its publisher with the application process.** Everything below
+describes controls on *what gets admitted* and *what stays admitted*. None of them is a runtime boundary
+around code that has already been admitted, and none of them is described as one anywhere in this
+repository. The supported tier has one name and every surface uses it: **trusted in-process extension
+code**.
+
+Say it precisely, because the difference matters when an operator decides whether to install something:
+
+| | |
+|---|---|
+| **What the boundary is** | An **API compatibility boundary**. `RestrictedExtensionContainer` decides which host *services* an extension may resolve, so an extension cannot reach the application container, cannot replace a host service, and cannot collide with another extension's identifiers. That keeps a well-behaved extension from depending on internals that move under it, and keeps two of them out of each other's way. |
+| **What the boundary is not** | A **sandbox**. Admitted PHP runs inside the request, worker and scheduler processes with the full ambient authority of the runtime user. Curating service resolution constrains what an extension is *handed*; it constrains nothing about what that code can *do* once it is running. |
+
+Signature verification, the trust store, the revocation feed and install-time admission answer **who
+published this package and is it still vouched for**. They cannot answer **what may this code do once it
+runs**, and no combination of them adds up to that answer. That is why the operator's install decision is
+the security decision, and why it is made deliberate — bound to a publisher, a key and a package digest —
+rather than incidental.
+
+**Untrusted and marketplace PHP is not supported**, and stays unsupported until an isolated runtime
+exists. Third-party logic that has not earned process-level trust belongs out of process, behind the
+authenticated outbound-adapter and webhook contracts in
+[Business integrations](../business-integrations.md), where it runs in its publisher's own process and
+reaches Kumwe only through an authenticated contract.
+
+### Ambient authority an admitted extension inherits
+
+This is the inventory, stated so that an operator can bound it deliberately rather than discover it. Each
+row is authority the PHP process already holds, which admitted extension code therefore also holds.
+
+| Authority | What admitted code can reach | Deployment control that bounds it |
+|---|---|---|
+| Filesystem | Everything the runtime user can read or write: `storage/`, the deployed extension trees, mounted secret files, the application source itself. | Run the application as a dedicated unprivileged user; mount the source read-only; keep secrets out of the container filesystem where the platform offers an alternative; give `storage/` the narrowest ownership that still works. |
+| Network | Outbound connections through any PHP stream wrapper or socket, to any host the container can route to. | Default-deny egress at the network layer, with an allowlist of the destinations the installation genuinely needs. |
+| Environment | Every variable in the process environment, including database and Redis credentials. | Scope credentials to the least privilege the application needs; rotate on a schedule; prefer a secret store the process reads once at boot over long-lived variables. |
+| Database | A second DBAL or PDO connection built from those variables, outside every authorization decision the application makes. | Grant the application account only the rights it uses; keep DDL, backup and administrative rights on separate accounts, as [Operations](../operations/README.md) already requires for the audit-trail triggers. |
+| Process | `proc_open`, `exec` and `shell_exec` where the SAPI permits them. | Disable the process functions in `php.ini` for the application SAPI where the deployment does not need them; run without a shell in the image where that is practical. |
+
+None of these is enforced by Kumwe, and this table does not claim otherwise. They are deployment
+controls, they belong to the operator, and they are the only things that actually bound an admitted
+extension.
+
 ## Package boundary
 
 An extension is a versioned, checksummed package with a `kumwe.json` manifest. The manifest declares its identifier, type, compatibility, service provider, dependencies, routes, events, configuration, assets, and migrations. Packages are staged outside the public web root, inspected, signature-checked according to policy, migrated, and activated through a database-authoritative runtime publication.

@@ -167,6 +167,10 @@
 
     <section id="install-extension" class="panel panel-body stack kis-phase-five-card" aria-labelledby="install-extension-title">
       <div><p class="eyebrow">Install</p><h2 id="install-extension-title">Upload a verified package</h2><p class="text-muted text-small">Packages install disabled. Signature, compatibility, archive, and conformance checks run before activation.</p></div>
+      <div class="notice" role="note">
+        <p><strong>Installing an extension trusts its publisher with the application process.</strong> An installed package is trusted in-process extension code: its PHP runs inside the request, worker, and scheduler processes with the same filesystem, network, environment, and database authority they have.</p>
+        <p class="text-small">The checks below prove who published this package and that it is still vouched for. They do not constrain what its code can do once it runs, and Kumwe provides no sandbox that would. Install only packages from a publisher you would give a code deployment to.</p>
+      </div>
       <form action="/administrator/extensions" method="post" enctype="multipart/form-data" class="stack">
         <input type="hidden" name="_csrf" value="{{ csrf }}">
         <label>Kumwe extension ZIP<input type="file" name="package" accept=".zip,application/zip" required></label>

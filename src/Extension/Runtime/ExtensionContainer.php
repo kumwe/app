@@ -12,8 +12,9 @@ namespace Kumwe\CMS\Extension\Runtime;
  * plus the ones it registered itself. An implementation owes two guarantees: an identifier that was
  * never granted fails instead of resolving, and a factory the extension registers cannot take over the
  * name of a service it was handed. `RestrictedExtensionContainer` is the implementation the runtime
- * builds, one per active extension. This is an API compatibility boundary rather than a sandbox — it
- * bounds what trusted in-process code can reach, not what hostile code could do.
+ * builds, one per active extension. This is an API compatibility boundary, not a security sandbox — it
+ * bounds what trusted in-process extension code can reach, not what hostile code could do. See
+ * `docs/architecture/extensions.md` for the ambient authority admitted code inherits regardless.
  *
  * @since  2.0.0
  */
