@@ -35,13 +35,13 @@ development programme, from the architecture decision that opened it to the curr
   job that does not exist, when the job declared to carry a command no longer contains it, and when a check
   claims an engine its lane does not run on. Nightly and release execute the contract instead of restating
   it, so neither can quietly shrink again. Adding a gate now means declaring it, and the build says so if you
-  forget. Closes `V2-QA-003`. (`1c80a03`)
+  forget. Closes `V2-QA-003`. (`b5375b7`)
 - **A nightly lane that exists rather than being mentioned.** [`.github/workflows/nightly.yml`](.github/workflows/nightly.yml)
   runs the contract's nightly lane on a schedule and adds the browser breadth a merge budget cannot hold:
   desktop Firefox and desktop WebKit. Both declare `ignoreSnapshots`, and that is deliberate rather than a
   weakening — a pixel baseline belongs to the browser that recorded it, so comparing a Firefox render against
   a Chromium baseline reports font hinting instead of the product. Behaviour and accessibility are asserted
-  identically; only the pixel comparison stays with the browser that owns the baselines. (`1c80a03`)
+  identically; only the pixel comparison stays with the browser that owns the baselines. (`b5375b7`)
 - **A deployed-artifact lane that reproduces the four defects nothing cheaper caught.** Four defects in the
   last programme were found only in production deployment acceptance, after a full deployment had already
   been stood up, and every cheaper job missed all four for one reason: they run under the development
@@ -58,13 +58,13 @@ development programme, from the architecture decision that opened it to the curr
   named refusal, and that the rotation reverses through the same supported operation. A case declared and not
   executed fails the lane, because a leg that never ran inside the image is itself one of the four defects.
   The lane needs no database and no containers, so it fails in minutes rather than after a deployment is up.
-  Closes `V2-QA-005`. (`0d2bfc2`)
+  Closes `V2-QA-005`. (`9a15c84`)
 - **A machine-readable layer graph and a dependency baseline that only shrinks.**
   [`docs/architecture/layers.json`](docs/architecture/layers.json) states which namespace belongs to which
   layer and which layers each may depend on;
   [`docs/architecture/dependency-baseline.json`](docs/architecture/dependency-baseline.json) records the 157
   edges that already pointed the wrong way, each with the finding that removes it, an owner and an expiry.
-  (`5874e23`)
+  (`c72707b`)
 - **A frozen extension contract, written down as data instead of inferred from the code.** An author could
   not tell which of the types under `Kumwe\CMS\` they were allowed to build against, which meant every
   internal refactor was silently a compatibility decision and no generation could be called supported
@@ -75,14 +75,14 @@ development programme, from the architecture decision that opened it to the curr
   that file is the answer rather than an oversight, and internal code stays free to move. The surface is
   closed over itself: nothing named in a promised signature is left unclassified, which is what stops an
   interface an author implements from handing them an internal class. The five host services the restricted
-  container allowlists are part of the contract too, checked against the composition root itself. (`db80c06`)
+  container allowlists are part of the contract too, checked against the composition root itself. (`88463c6`)
 - **Every manifest and SPI generation still promised, stated and proved.**
   [`docs/extension-contract/generations.json`](docs/extension-contract/generations.json) records what each
   of the four manifest schemas and two contribution SPIs promises, which schema binds to which SPI, which
   keys are interpreted — and, just as usefully, which three are accepted and do nothing, because a manifest
   key that looks load-bearing and is not costs an author a day. Two extension-facing interfaces removed
   earlier are kept as **withdrawal records** rather than deleted, so someone who built against them learns
-  where they went instead of finding a gap. (`db80c06`)
+  where they went instead of finding a gap. (`88463c6`)
 - **A signed compatibility package per generation, driven through the whole lifecycle on every build.**
   Schemas 2 and 3 had no package anywhere in the tree that ran; they were proved by a manifest that parsed.
   Each of the four generations now ships one under
@@ -100,12 +100,12 @@ development programme, from the architecture decision that opened it to the curr
   generation carries a digest over its own canonical bytes, so widening a frozen generation fails the build
   until the change is recorded in the same commit that makes it. Adding a generation beside the frozen ones
   needs nothing of anyone else's entry, which is the intended way forward. It is dependency-free and runs
-  inside `composer qa`. (`db80c06`)
+  inside `composer qa`. (`88463c6`)
 - **Extension-author documentation for all of it,** in
   [`docs/extension-contract/README.md`](docs/extension-contract/README.md): what is public, what is
   internal, what a generation guarantees, how to target one and why targeting the lowest that carries what
   you need is the right instinct, how the two additive SPI-2 registrars are feature-detected, and why an
-  upgrade deliberately leaves an extension disabled. (`db80c06`)
+  upgrade deliberately leaves an extension disabled. (`88463c6`)
 
 - **A business-group installation: several businesses on one Kumwe, sharing what they choose to share.**
   A resource's owner is now held at a *level* — one site, a declared group of sites, or the installation —
@@ -490,7 +490,7 @@ development programme, from the architecture decision that opened it to the curr
   administrator and portal record screens, the document view kind's meta blocks, line cells and totals,
   and the one record projection that REST, the model-context tools and the console all serialize through.
   A converted amount is never offered as an editor on any surface, which is the presentation-side half of
-  the rule that no write path stores one. (`d3215fe`)
+  the rule that no write path stores one. (`04e0d86`)
 - **The rule is held by the build rather than by whoever writes the next renderer.** Three things enforce
   it. A field presentation whose provenance and display have come apart is refused at construction. Any
   presenter handed a converted amount — core's or an extension's — is refused if it hands back a figure
@@ -498,7 +498,7 @@ development programme, from the architecture decision that opened it to the curr
   one table enumerates the surfaces a converted amount can reach, with the files each is made of; its
   coverage test walks every entry, exercises it with a real converted figure, and fails the build when a
   file under `src/` reads a converted amount without appearing in the table. A surface added later without
-  provenance is a red build, not an audit finding. (`d3215fe`)
+  provenance is a red build, not an audit finding. (`04e0d86`)
 - **The published REST contract describes a converted amount, and refuses one as an input.** The generated
   OpenAPI document gains `GeneratedBusinessConvertedMoney`, a closed schema with every member required, and
   a money field's read schema admits either the stored amount-and-currency pair or that. The create and
@@ -506,7 +506,7 @@ development programme, from the architecture decision that opened it to the curr
   converted figure exactly where the write path does. The report column vocabulary is now enumerated from
   the value types the report engine actually emits instead of being repeated by hand — which is what the
   hand-kept list had already got wrong, omitting `converted_money` from the contract while the runtime
-  emitted it. (`d3215fe`)
+  emitted it. (`04e0d86`)
 - **A terminal that was disconnected for a week can submit its work without creating it twice.** An
   idempotency claim used to be constructed with a fixed one-day interval, so a client that captured work
   offline and reconnected after that found nothing, took a fresh claim and produced a second effect nobody
@@ -517,7 +517,7 @@ development programme, from the architecture decision that opened it to the curr
   about. Seven days of replay behind thirty days of memory by default, bounded at ninety days and one year,
   set with `BUSINESS_IDEMPOTENCY_REPLAY_SECONDS` and `BUSINESS_IDEMPOTENCY_RETENTION_SECONDS`. A
   configuration whose memory would run out before its replay window does is refused rather than accepted.
-  (`3264898`)
+  (`51a97cb`)
 - **A client's clock has somewhere to live and decides nothing.** The aggregate document command accepts an
   optional instant saying when the caller believes the work happened. It is recorded in the audit trail
   beside the server's own instant, marked as the client's, and never substituted for it. It is never read
@@ -525,7 +525,7 @@ development programme, from the architecture decision that opened it to the curr
   architecture test enumerates the paths that make each of those four decisions and fails the build if any
   of them can reach the type. Late and out-of-order arrival is therefore ordinary rather than exceptional —
   a document captured on Friday and submitted on Monday is validated, numbered, sequenced and audited where
-  it arrives, and the capture instant explains the gap instead of reopening the sequence. (`3264898`)
+  it arrives, and the capture instant explains the gap instead of reopening the sequence. (`51a97cb`)
 - **Which checks an extension may leave until later is written down, and which it may never leave is
   enforced.** A client that was offline could not have consulted live stock or a live price, so a platform
   that assumes it did cannot accept the sale. `docs/business-runtime.md` now states the split as a table an
@@ -535,7 +535,7 @@ development programme, from the architecture decision that opened it to the curr
   entry point demands its capability before anything else, that policy is planned for every operation, that
   the rule validator offers no way to defer a declared rule, and that stored record state has exactly one
   door. An extension may accept a sale and reconcile it; it may not accept one from an actor who was
-  refused. (`3264898`)
+  refused. (`51a97cb`)
 - **Exchange rates come from extensions, and Kumwe ships none.** A package declares the currencies it prices
   and its place in the resolution order in its signed manifest, implements one port, and registers it through
   the same contribution registrar every other extension surface uses. An external rate service, a manually
@@ -558,7 +558,7 @@ development programme, from the architecture decision that opened it to the curr
   and a converted quantity offered where a stored one belongs is refused by both the record value guard and
   the quantity codec. Report and export columns carry the whole story in the cell, so a downloaded artifact
   is still readable, and reproducible, by someone who has never seen the installation that produced it.
-  (`84f38a4`)
+  (`d207d6a`)
 - **Unit conversion tables come from extensions, and Kumwe ships none.** A package declares the units it
   relates and its place in the resolution order in its signed manifest, implements one port, and registers
   it through the same contribution registrar every other extension surface uses — with its own additive
@@ -570,7 +570,7 @@ development programme, from the architecture decision that opened it to the curr
   commercial term that genuinely changes. Conversions disappear with their package on disable, uninstall or
   trust revocation, in the same sweep as everything else it contributed. With no conversion package
   installed a conversion is refused rather than guessed, and an architecture test fails the build if a
-  conversion provider ever appears in the product itself. (`84f38a4`)
+  conversion provider ever appears in the product itself. (`d207d6a`)
 - **A translation layer, so the interface can be presented in a language other than English.** Until now
   there was none at all: no catalogue, no translator, and no localizable helper on any of the three
   rendering surfaces. Interface text is now authored as XLIFF 2.0 — the format every professional
@@ -646,14 +646,14 @@ development programme, from the architecture decision that opened it to the curr
   with — "Client" as "Patient", "Learner" or "Guest" — so it is deliberately per message rather than per
   catalogue: every word nobody changed keeps improving with each release. `localization.overrides.manage`
   guards it and every change is written to the audit trail with its identifier, layer and locale.
-  (`6002690`)
+  (`055f332`)
 - **Three bounds on stored wording, each protecting something specific.** Only a message some shipped
   catalogue actually declares may be overridden, so the store cannot fill with wording nothing looks up and
   a mistyped identifier is refused rather than silently ignored. Only a language the installation carries
   may be written, so no override is stranded in a locale nothing resolves to. And a scope carries at most
   500 overrides per language, because the whole map is read once per unit of work on the render path and an
   unbounded map would make every page pay for one bulk import. Saving empty wording is refused — withdrawing
-  the override is how the shipped text comes back, and it is one action rather than a trick. (`6002690`)
+  the override is how the shipped text comes back, and it is one action rather than a trick. (`055f332`)
 - **One stored row per layer, scope, language and message, enforced by the schema.** The whole identity
   carries a unique index, so resolution can never depend on which of two rows an engine happened to return
   first. A site-level row spells its absent organization as the empty string rather than as null, because
@@ -661,14 +661,14 @@ development programme, from the architecture decision that opened it to the curr
   would have permitted exactly the duplicate the index exists to refuse; null stays the shape the
   application speaks and the adapter translates at the boundary. An installation whose schema predates the
   table answers "no overrides" rather than failing, so the recovery surfaces still render before
-  `database:migrate` has run. (`6002690`)
+  `database:migrate` has run. (`055f332`)
 - **An extension contributes wording through the ordinary package path.** A package ships
   `localization/messages/en-GB.xlf` for its translator and `localization/compiled/en-GB.php` for the
   runtime, beside the template directories the runtime loader already discovers. There is nothing to
   declare in the manifest and no second registration path; the compiled directory joins the extension layer
   of the chain in runtime-map order, so which package wins a shared identifier is a property of the signed
   map rather than of filesystem enumeration. A symbolic link in place of the catalogue root is refused, on
-  the same reasoning as the template roots beside it. (`6002690`)
+  the same reasoning as the template roots beside it. (`055f332`)
 - **The browser matrix has a language axis, so right-to-left compares against itself.** Screenshot baselines
   were stored per device only, which meant a Hebrew or Arabic page had nothing to be compared against
   except a left-to-right one — a comparison that is either a false failure or a green run that checked
@@ -676,7 +676,7 @@ development programme, from the architecture decision that opened it to the curr
   names, and the source-language projects keep their original names so their committed baselines stay
   attached to them. The right-to-left journeys take their language from the project they run under rather
   than looping over both inside one cell, which is what makes the language an axis of the matrix rather
-  than a detail of one test. (`fc4dd6e`)
+  than a detail of one test. (`f1a2366`)
 - **Content is multilingual: one logical item, one entry per language, published one language at a time.**
   A translated item is a **translation group**, and each language in it is a real content entry with **its
   own slug, its own workflow state and its own publication window**. English can be live while another
@@ -686,7 +686,7 @@ development programme, from the architecture decision that opened it to the curr
   A reader whose language the item does not carry gets the fallback rather than a miss, after falling
   through their own language's chain first, so somebody asking for `pt-BR` is offered `pt` before another
   language entirely. Where nothing in a group is published, nothing is served: a fallback that is still
-  drafting is not a page anybody may read. (`28b14f2`)
+  drafting is not a page anybody may read. (`0675253`)
 - **Two properties of a translation group are the database's, not the application's.** A unique index over
   the group and the locale means one item can never carry two entries for one language, and the site-wide
   slug index already in place means two languages of one item can never collide on a route segment. Both
@@ -694,7 +694,7 @@ development programme, from the architecture decision that opened it to the curr
   the application to have checked first. Both new columns are nullable and nothing is backfilled, so an
   entry authored before content carried a language dimension is untouched: its stored revision checksums
   stay valid, because an entry that declares no language snapshots to exactly the keys it always did.
-  (`28b14f2`)
+  (`0675253`)
 - **`hreflang` and a front-end language selector, shipped by default rather than added later.** The public
   layout emits one `alternate` link per **published** language and never for a drafting one, plus the
   declared fallback as `hreflang="x-default"` — which is precisely what that value means. The selector
@@ -704,7 +704,7 @@ development programme, from the architecture decision that opened it to the curr
   fewer than two languages renders neither, so an untranslated site looks exactly as it did. Which language
   a reader is served follows the locale the interface already negotiated: a URL that names a language is
   honoured as written, and the site root — the one public entry point that names no language — resolves the
-  reader's locale within the group. (`28b14f2`)
+  reader's locale within the group. (`0675253`)
 - **Business definition labels carry locales, without invalidating a single published definition.**
   `EntityTypeDefinition`'s singular and plural labels and `FieldDefinition`'s label, description and help
   text can each be declared in more than one language, read back through `singularLabelIn()`,
@@ -716,7 +716,7 @@ development programme, from the architecture decision that opened it to the curr
   the bytes it always encoded to and keeps its checksum — asserted against a hand-written pre-dimension
   document rather than against anything derived from the new code. Locale keys are normalised and both
   dimensions are sorted, so `pt_br` and `PT-BR` cannot become two translations of one thing and declaration
-  order cannot move a published checksum. (`28b14f2`)
+  order cannot move a published checksum. (`0675253`)
 - **Extension-contributed content gets locale variants through the contribution contract, with no core
   edit.** A package declares `contributions.content.translation_groups` in its manifest — the content set,
   the languages it publishes it in, and the language it falls back to — and registers it through an
@@ -729,10 +729,10 @@ development programme, from the architecture decision that opened it to the curr
   signature, its manifest section and its declaration members are pinned in a compatibility fixture of
   their own rather than by rewriting the frozen SPI-two baseline. This is the reason none of the language
   work could wait for a later gate: an extension published against a contract with no locale dimension
-  would have had to be migrated to gain one. (`28b14f2`)
+  would have had to be migrated to gain one. (`0675253`)
 - **[Content translation](docs/content-translation.md),** explaining the model to an editor, stating what
   the database guarantees and why the definition document had to stay byte-stable, and telling an extension
-  author the two things to do to make contributed content multilingual. (`28b14f2`)
+  author the two things to do to make contributed content multilingual. (`0675253`)
 
 ### Changed
 
@@ -747,13 +747,13 @@ development programme, from the architecture decision that opened it to the curr
   The 157 edges that already pointed the wrong way are recorded rather than permitted: a new violation fails
   immediately, an entry that no longer violates fails as stale so it must be deleted, and an entry past its
   expiry fails outright. The textual predicates stay, because in those four cases the source text is the
-  contract; they are simply no longer the whole check. Closes `V2-ARC-001` and `V2-QA-002`. (`5874e23`)
+  contract; they are simply no longer the whole check. Closes `V2-ARC-001` and `V2-QA-002`. (`c72707b`)
 - **The browser journeys run on the engines the product runs on.** They ran against one PostgreSQL service
   while MariaDB and MySQL are the primary engines, so the surfaces an operator actually uses were only ever
   driven on the engine fewest installations run. They now run on MariaDB, MySQL and PostgreSQL at merge,
   desktop and mobile Chromium, and a run reports its first-attempt results separately from its retried ones —
   a journey that only passes on a retry is not a passing journey, and reporting the two together hides the
-  difference the acceptance figure is about. (`1c80a03`)
+  difference the acceptance figure is about. (`b5375b7`)
 - **Coverage is measured on the primary engine, attributed honestly, and ratcheted on the change.** It was
   collected on the PostgreSQL leg alone and published with the words "No threshold is enforced yet" beside
   it, while 148 `#[CoversNothing]` attributes across 74 files — 39 of them on integration tests driving real
@@ -765,7 +765,7 @@ development programme, from the architecture decision that opened it to the curr
   covered, and refuses a global fall beyond a quarter of a point once a baseline is recorded. The declared
   branch floor is reported as *not enforced*, with the reason — `pcov` reports executed lines and no branches
   — because a rule the tooling cannot execute is worth stating and is not worth counting as enforcement.
-  (`1315d47`)
+  (`21c4fef`)
 - **The integration suite is now asked to be idempotent rather than assumed to be, and it answered.** The
   database job runs it a second time against the database the first run left behind, on all three engines.
   The first execution reproduced the defect exactly: six tests across four classes fail on the second run,
@@ -778,7 +778,7 @@ development programme, from the architecture decision that opened it to the curr
   an owner, an expiry and what removing each one takes, and the step fails on anything outside the record: a
   test that starts failing, an entry whose test now passes, or an entry past its expiry. A permanently red
   gate would have been worse than the defect it reports and an advisory one would not be a gate, so the
-  record takes the same shape as the dependency baseline and shrinks the same way. (`1c80a03`)
+  record takes the same shape as the dependency baseline and shrinks the same way. (`b5375b7`)
 - **The same check says out loud which half of its property it does not yet enforce.** The suite's behaviour
   under a different class order is the other half of the same acceptance, and the first attempt at measuring
   it was wrong: PHPUnit's `--order-by=reverse` reverses the tests *inside* each class as well as the classes,
@@ -789,10 +789,10 @@ development programme, from the architecture decision that opened it to the curr
   declared unenforced in the baseline, with the reason, the owner and the finding, and the mechanism is
   corrected: the tool generates a configuration that lists the integration classes in reverse and leaves
   method order alone, verified to collect the same 283 tests. A gate may narrow what it claims; it may not
-  narrow it quietly, and an architecture test refuses an unenforced pass that carries no reason. (`1c80a03`)
+  narrow it quietly, and an architecture test refuses an unenforced pass that carries no reason. (`b5375b7`)
 - **The release job runs the release lane of the contract instead of its own shorter list.** It carried four
   checks where a contributor runs thirteen, so a release could pass with a gate never having been executed
-  against the tag. (`1c80a03`)
+  against the tag. (`b5375b7`)
 
 - **The layer that decides a transaction now owns the contract for one.** Deciding that a set of writes must
   settle together is a use-case decision, but the contract expressing it — `TransactionManager` — was
@@ -803,7 +803,7 @@ development programme, from the architecture decision that opened it to the curr
   methods, the same rule that a nested call joins the scope already open, the same guarantee that a commit
   hook waits for the outermost commit while a rollback hook fires as soon as its own scope is discarded.
   The aggregate document command commits through the identical adapter, and every existing test passes
-  unmodified. Outside the two files, the only edit is the import each caller declares. (`55605bd`)
+  unmodified. Outside the two files, the only edit is the import each caller declares. (`1f2859b`)
 - **The Doctrine automation adapters are filed where the adapters live.** `DoctrineJobQueue`,
   `DoctrineScheduler` and `DoctrineQueueRuntimeOperations` sat under `src/Application` while opening
   connections, branching on the PostgreSQL platform and writing `FOR UPDATE SKIP LOCKED` claim scans — two
@@ -811,7 +811,7 @@ development programme, from the architecture decision that opened it to the curr
   `Kumwe\CMS\Infrastructure\Automation`, beside the Doctrine adapters for authorization, security and
   persistence, while the ports they answer stay in Application. No SQL, no lease token, no claim scan, no
   engine branch and no concurrency semantic is touched: the queue-slot redesign is later work and would be
-  unreviewable stacked on a move. (`6702639`)
+  unreviewable stacked on a move. (`1567629`)
 - **The architecture gate enforces the layering instead of describing it.** Both corrections above are the
   kind that regress from one misplaced import or one file created in the wrong directory, and nothing in
   the build would have noticed. `composer architecture:policy` gains two predicates: application code —
@@ -824,7 +824,7 @@ development programme, from the architecture decision that opened it to the curr
   constraint by type — reflecting every application signature and walking the token stream past
   documentation blocks — and pins the transaction contract to Application, its adapter and the three
   automation adapters to Infrastructure, and each adapter to the port it answers. Both rules were proven to
-  fail on a deliberately reintroduced violation before being committed. (`71caaac`)
+  fail on a deliberately reintroduced violation before being committed. (`1df2cf1`)
 - **Cross-site isolation is decided by containment instead of string equality, and is provably no wider.**
   The authorization gateway used to compare the owning site identifier with the caller's; it now asks whether
   the caller's site is inside the owning scope. For a resource owned by one site — every resource on an
@@ -929,7 +929,7 @@ development programme, from the architecture decision that opened it to the curr
   the longest of them has been trimmed to fit the portable sixty-three-byte identifier limit. Names already
   unique to one installation are left exactly as they are, so the rename is a no-operation on every upgrade
   after the first. Proven by installing two prefixed installations into one MariaDB schema, in that order,
-  and succeeding. (`8ff6224`)
+  and succeeding. (`8aa3a92`)
 - **The rename is the operation that frees the old names, which decides when a second installation becomes
   possible.** The literal names cannot be changed where they are written: the core migrations publish their
   own file digests as an immutability contract, and editing their bytes would break the upgrade path of
@@ -1166,7 +1166,7 @@ development programme, from the architecture decision that opened it to the curr
   taking over, disabling or removing the live administrator theme — fails closed rather than being offered
   a credential it should never have been able to accept. The browser, the protected console and the
   protected REST path remain the human step-up route, and every other activation, disable and uninstall
-  proceeds under the caller's existing `extensions.manage` authorization exactly as before. (`893f2fd`)
+  proceeds under the caller's existing `extensions.manage` authorization exactly as before. (`64c19b6`)
 - **The machine surface now says what each of its seventy-six tools costs, and the claim is enforced rather
   than reviewed.** Every published tool carries one risk class from a closed vocabulary — read, scoped
   write, destructive, credential, trust, installation-global — together with the non-MCP route an operator
@@ -1174,7 +1174,7 @@ development programme, from the architecture decision that opened it to the curr
   answer before allowing a call, and a tool raising more than one is classified by the first that applies,
   so revoking every token a person holds across the installation is classified by its reach and disabling
   an extension by the fact that it changes which code runs. Two declarations were wrong and are corrected
-  rather than exempted: deleting a menu item removes state and now says so. (`893f2fd`)
+  rather than exempted: deleting a menu item removes state and now says so. (`64c19b6`)
 - **A server cannot be built from a catalogue that breaks its own rules.** The classification, the
   annotations and the schemas are checked in full before the first tool is registered, so an incoherent
   surface is a boot failure naming the offending entries instead of a tool a client discovers and misuses.
@@ -1184,7 +1184,7 @@ development programme, from the architecture decision that opened it to the curr
   and — the rule the credential removal rests on — any property at any depth of any schema shaped like a
   credential or a host path, and any handler parameter that is credential-shaped or marked
   `#[\SensitiveParameter]`. A value worth marking sensitive is a value that must not cross a tool boundary
-  at all. (`893f2fd`)
+  at all. (`64c19b6`)
 - **The extension boundary is described the same honest way everywhere, because the risk was drift rather
   than dishonesty.** The supported tier has one name on every surface — trusted in-process extension code —
   and the boundary is stated by what it is and what it is not, side by side: `RestrictedExtensionContainer`
