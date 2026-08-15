@@ -122,6 +122,13 @@ export const interfaceLandingSurfaces = [
     purpose: 'Manage public identity, presentation and site defaults.',
   },
   {
+    id: 'administrator.wording',
+    shell: 'administrator',
+    path: '/administrator/wording',
+    heading: 'Interface wording',
+    purpose: 'Change what the interface says for one site or organization, without a deployment.',
+  },
+  {
     id: 'portal.overview',
     shell: 'portal',
     path: '/portal',

@@ -1,0 +1,80 @@
+{% extends "layout.twig" %}
+{% block title %}{{ t('core.administrator.wording.document_title') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.wording.context_title') }}{% endblock %}
+{% block content %}
+  <div class="kis-phase-five" data-kis-surface="core.administrator.wording">
+  {% embed '@kis/page-header.twig' with {
+    eyebrow: t('core.administrator.wording.eyebrow'),
+    title: t('core.administrator.wording.heading'),
+    purpose: t('core.administrator.wording.purpose')
+  } only %}{% endembed %}
+
+  {% if saved %}<div class="notice success" role="status"><span>{{ t('core.administrator.wording.saved_notice') }}</span><button class="notice-dismiss" type="button" aria-label="{{ t('core.administrator.wording.dismiss_action') }}" data-dismiss-notice>×</button></div>{% endif %}
+  {% if error %}<div class="notice danger" role="alert"><span>{{ error }}</span></div>{% endif %}
+
+  <section class="panel">
+    <header class="panel-header"><div><h2>{{ t('core.administrator.wording.scope_heading') }}</h2><p>{{ t('core.administrator.wording.scope_explanation') }}</p></div></header>
+    <div class="panel-body">
+      <form class="editor-form stack" action="/administrator/wording" method="get">
+        <div class="two-column">
+          <label>{{ t('core.administrator.wording.locale_label') }}<select name="locale">{% for tag in locales %}<option value="{{ tag }}"{% if tag == locale %} selected{% endif %}>{{ tag }}</option>{% endfor %}</select></label>
+          <label>{{ t('core.administrator.wording.layer_label') }}<select name="layer"><option value="site"{% if layer == 'site' %} selected{% endif %}>{{ t('core.administrator.wording.layer_site') }}</option><option value="organization"{% if layer == 'organization' %} selected{% endif %}>{{ t('core.administrator.wording.layer_organization') }}</option></select></label>
+        </div>
+        <label>{{ t('core.administrator.wording.search_label') }}<small>{{ t('core.administrator.wording.search_help') }}</small><input name="q" value="{{ search_term }}" maxlength="190"></label>
+        <p><button class="button primary" type="submit">{{ t('core.administrator.wording.search_action') }}</button></p>
+      </form>
+      {% if layer == 'organization' and organization is null %}<p class="field-help">{{ t('core.administrator.wording.no_organization') }}</p>{% endif %}
+    </div>
+  </section>
+
+  {% if search_term is not empty %}
+    <section class="panel">
+      <header class="panel-header"><div><h2>{{ t('core.administrator.wording.matches_heading') }}</h2><p>{{ t('core.administrator.wording.matches_explanation', {count: matches|length}) }}</p></div></header>
+      <div class="panel-body stack">
+        {% if matches is empty %}
+          <p class="field-help">{{ t('core.administrator.wording.matches_empty') }}</p>
+        {% else %}
+          {% for match in matches %}
+            <form class="editor-form stack" action="/administrator/wording" method="post">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <input type="hidden" name="action" value="override.save">
+              <input type="hidden" name="locale" value="{{ locale }}">
+              <input type="hidden" name="layer" value="{{ layer }}">
+              <input type="hidden" name="identifier" value="{{ match.identifier }}">
+              <p class="eyebrow">{{ match.identifier }}</p>
+              <p class="field-help">{{ match.pattern }}</p>
+              <label>{{ t('core.administrator.wording.replacement_label') }}<small>{{ t('core.administrator.wording.replacement_help') }}</small><textarea name="pattern" rows="2" maxlength="4000" required>{{ match.pattern }}</textarea></label>
+              <p><button class="button primary" type="submit">{{ t('core.administrator.wording.save_action') }}</button></p>
+            </form>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="panel">
+    <header class="panel-header"><div><h2>{{ t('core.administrator.wording.changed_heading') }}</h2><p>{{ t('core.administrator.wording.changed_explanation') }}</p></div></header>
+    <div class="panel-body stack">
+      {% if overrides is empty %}
+        <p class="field-help">{{ t('core.administrator.wording.changed_empty') }}</p>
+      {% else %}
+        {% for override in overrides %}
+          <form class="editor-form stack" action="/administrator/wording" method="post">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <input type="hidden" name="locale" value="{{ override.locale }}">
+            <input type="hidden" name="layer" value="{{ override.layer }}">
+            <input type="hidden" name="identifier" value="{{ override.identifier }}">
+            <p class="eyebrow">{{ override.identifier }}</p>
+            <label>{{ t('core.administrator.wording.replacement_label') }}<textarea name="pattern" rows="2" maxlength="4000" required>{{ override.pattern }}</textarea></label>
+            <p class="field-help">{{ t('core.administrator.wording.updated_at', {at: override.updated_at}) }}</p>
+            <p>
+              <button class="button primary" type="submit" name="action" value="override.save">{{ t('core.administrator.wording.save_action') }}</button>
+              <button class="button" type="submit" name="action" value="override.withdraw">{{ t('core.administrator.wording.withdraw_action') }}</button>
+            </p>
+          </form>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </section>
+  </div>
+{% endblock %}

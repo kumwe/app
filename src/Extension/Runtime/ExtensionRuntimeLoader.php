@@ -174,6 +174,7 @@ final readonly class ExtensionRuntimeLoader
             $provider->register($container);
             $active->add($identifier, $provider, $container, $declared, $manifestSchema >= 2);
             $this->addPortalTemplates($active, $identifier, $root);
+            $this->addMessageCatalogues($active, $identifier, $root);
 
             if ($type !== 'template') {
                 foreach ([ThemeSurface::Site, ThemeSurface::Administrator] as $surface) {
@@ -275,6 +276,37 @@ final readonly class ExtensionRuntimeLoader
         }
         if (is_dir($templates)) {
             $active->addPortalTemplatePath($identifier, $templates);
+        }
+    }
+
+    /**
+     * Discover an extension's compiled message catalogues without permitting a linked root.
+     *
+     * The directory is the compiled half of the layout `docs/interface-translation.md` publishes:
+     * XLIFF under `localization/messages/` for a translator, and the build's plain-PHP output under
+     * `localization/compiled/` for the runtime. Only the compiled half is read here, because nothing
+     * on the request path parses XML. An extension that ships no wording is the ordinary case and is
+     * passed over silently.
+     *
+     * @param   ActiveExtensionSet  $active      Runtime set collecting the extension layer's directories.
+     * @param   string              $identifier  Extension whose namespace owns the identifiers.
+     * @param   string              $root        Canonical extension root on disk.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the catalogue root is a symbolic link, which would let a package
+     *          published inside extension storage supply wording from anywhere on the filesystem.
+     *
+     * @since   2.0.0
+     */
+    private function addMessageCatalogues(ActiveExtensionSet $active, string $identifier, string $root): void
+    {
+        $catalogues = $root . '/localization/compiled';
+        if (is_link($catalogues)) {
+            throw new RuntimeException('An extension message catalogue root cannot be a symbolic link.');
+        }
+        if (is_dir($catalogues)) {
+            $active->addCatalogueDirectory($identifier, $catalogues);
         }
     }
 

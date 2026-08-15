@@ -142,6 +142,18 @@ final class ActiveExtensionSet
     private array $portalTemplatePaths = [];
 
     /**
+     * Compiled message-catalogue directories keyed by contributing extension identifier.
+     *
+     * Insertion order is runtime-map order, and the extension layer resolves the first directory that
+     * carries an identifier, so which extension wins a shared identifier is decided by the compiled
+     * map rather than by filesystem enumeration.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private array $catalogueDirectories = [];
+
+    /**
      * Record the template directory of the theme activated for one surface.
      *
      * @param   ThemeSurface  $surface  Surface the theme was activated for.
@@ -195,6 +207,27 @@ final class ActiveExtensionSet
     public function addPortalTemplatePath(string $identifier, string $path): void
     {
         $this->portalTemplatePaths[$identifier] = $path;
+    }
+
+    /**
+     * Record the directory an extension compiled its message catalogues into.
+     *
+     * This is how an extension contributes wording through the ordinary package path rather than
+     * shipping a parallel string table: the directory joins the extension layer of the override
+     * chain, so its messages sit above core and below anything a site or an organization
+     * administers. An extension gets one directory, and recording a second replaces the first,
+     * because a single extension has a single catalogue tree.
+     *
+     * @param   string  $identifier  Contributing extension, whose namespace its identifiers sit under.
+     * @param   string  $path        Absolute path of the directory holding the compiled catalogues.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function addCatalogueDirectory(string $identifier, string $path): void
+    {
+        $this->catalogueDirectories[$identifier] = $path;
     }
 
     /**
@@ -407,6 +440,19 @@ final class ActiveExtensionSet
     public function portalTemplatePaths(): array
     {
         return $this->portalTemplatePaths;
+    }
+
+    /**
+     * List the compiled catalogue directories that make up the extension layer of the override chain.
+     *
+     * @return  list<string>  Absolute directory paths in runtime-map order, which is the order the
+     *          extension layer resolves them in; empty when no active extension ships wording.
+     *
+     * @since   2.0.0
+     */
+    public function catalogueDirectories(): array
+    {
+        return array_values($this->catalogueDirectories);
     }
 
     /**

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 89 messages.
+ * Compiled interface message catalogue for en-GB, carrying 117 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -46,6 +46,34 @@ return [
     'core.administrator.login.password_label' => 'Password',
     'core.administrator.login.purpose' => 'Manage content, publishing, navigation and the platform from one secure workspace.',
     'core.administrator.login.submit' => 'Sign in to Kumwe',
+    'core.administrator.wording.changed_empty' => 'This scope has not changed any wording yet.',
+    'core.administrator.wording.changed_explanation' => 'Only the messages listed here are changed. Everything else still reads as this release ships it, and keeps improving with each upgrade.',
+    'core.administrator.wording.changed_heading' => 'Wording you have changed',
+    'core.administrator.wording.context_title' => 'Wording',
+    'core.administrator.wording.dismiss_action' => 'Dismiss',
+    'core.administrator.wording.document_title' => 'Wording · Kumwe',
+    'core.administrator.wording.eyebrow' => 'Language',
+    'core.administrator.wording.heading' => 'Interface wording',
+    'core.administrator.wording.layer_label' => 'Applies to',
+    'core.administrator.wording.layer_organization' => 'My organization only',
+    'core.administrator.wording.layer_site' => 'This whole site',
+    'core.administrator.wording.locale_label' => 'Language',
+    'core.administrator.wording.matches_empty' => 'Nothing matches that search.',
+    'core.administrator.wording.matches_explanation' => '{count, plural, one {# message matches} other {# messages match}}.',
+    'core.administrator.wording.matches_heading' => 'Search results',
+    'core.administrator.wording.no_organization' => 'You are not working inside an organization, so only site-wide changes can be saved.',
+    'core.administrator.wording.purpose' => 'Change what the interface says for this site or organization, in any language you carry, without editing a file or deploying.',
+    'core.administrator.wording.replacement_help' => 'Placeholders in braces are filled in when the message is shown, so keep every one of them.',
+    'core.administrator.wording.replacement_label' => 'What it should say',
+    'core.administrator.wording.save_action' => 'Save wording',
+    'core.administrator.wording.saved_notice' => 'Wording saved.',
+    'core.administrator.wording.scope_explanation' => 'Pick the language the change applies to and whether it applies to the whole site or only to your organization. An organization change beats a site change.',
+    'core.administrator.wording.scope_heading' => 'What you are changing',
+    'core.administrator.wording.search_action' => 'Search',
+    'core.administrator.wording.search_help' => 'Search the wording this installation ships, by what it says or by its identifier.',
+    'core.administrator.wording.search_label' => 'Find a message',
+    'core.administrator.wording.updated_at' => 'Last changed {at}.',
+    'core.administrator.wording.withdraw_action' => 'Restore the original',
     'core.interface_standard.drawer.close' => 'Close',
     'core.interface_standard.master_detail.catalog_toggle' => 'Browse resources',
     'core.interface_standard.report_parameter.choose_boolean' => 'Choose yes or no',
