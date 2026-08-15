@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Kernel\Configuration;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordReplayWindow;
 use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
 use Kumwe\CMS\Http\Security\TrustedProxyMatcher;
 use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
@@ -81,6 +82,9 @@ final readonly class ApplicationConfiguration
      *          separate from `$debug`, which also widens error-response detail.
      * @param ?bool $metricsEnabled Whether this deployment exposes the metrics
      *          endpoint, overriding the contract's shipped state, or null to take the declared one.
+     * @param   BusinessRecordReplayWindow     $idempotencyReplay             Declared horizons over which a
+     *          caller-minted idempotency key replays an outcome, and over which the claim is remembered so a
+     *          late repeat is refused by name rather than applied a second time.
      * @param   ?string                        $metricsToken                  Shared bearer token a non-public metrics
      *          endpoint requires; null leaves the endpoint invisible rather than open.
      *
@@ -118,6 +122,7 @@ final readonly class ApplicationConfiguration
         public ?string $logLevel = null,
         public ?bool $metricsEnabled = null,
         public ?string $metricsToken = null,
+        public BusinessRecordReplayWindow $idempotencyReplay = new BusinessRecordReplayWindow(),
     ) {
         if (filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
             throw new InvalidArgumentException('APP_BASE_URL must contain an absolute URL.');

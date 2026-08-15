@@ -19,6 +19,12 @@ use Ramsey\Uuid\Uuid;
  * it was created, and `Completed` must coincide exactly with a stored result, its checksum and a
  * completion instant — a half-written claim can therefore never become an object that replays.
  *
+ * The entry carries one instant for how long it is *kept* and none for how long it *replays*, because
+ * those are different questions with different owners. Retention is a property of the row, written when
+ * the claim is taken; the replay horizon is a property of the installation, declared by
+ * `BusinessRecordReplayWindow` and measured from `createdAt`, so an operator who lengthens or shortens
+ * it changes how every existing claim behaves without a single row being rewritten.
+ *
  * @since  2.0.0
  */
 final readonly class BusinessRecordIdempotency
@@ -59,8 +65,12 @@ final readonly class BusinessRecordIdempotency
      * @param   DateTimeImmutable               $createdAt                 Instant the claim was taken.
      * @param   DateTimeImmutable|null          $completedAt               Instant the mutation finished;
      *          null exactly while the claim is in progress.
-     * @param   DateTimeImmutable               $expiresAt                 Instant after which the entry
-     *          stops replaying and becomes collectable; must be later than $createdAt.
+     * @param   DateTimeImmutable               $expiresAt                 Retention horizon: the instant
+     *          the entry becomes collectable, which is not the instant it stops replaying. The replay
+     *          horizon is `BusinessRecordReplayWindow`'s declared span measured from $createdAt and is
+     *          deliberately the shorter of the two, so a repeat arriving between them meets a stored
+     *          claim that refuses it by name instead of an empty ledger that lets it run again. Must be
+     *          later than $createdAt.
      *
      * @throws  InvalidArgumentException  When the ID is not a canonical UUID, a fingerprint or result
      *          checksum is not a 64-character hex digest, the operation identity is malformed, the

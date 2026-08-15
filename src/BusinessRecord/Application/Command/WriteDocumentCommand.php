@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Automation\IdempotencyKey;
 use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
+use Kumwe\CMS\BusinessRecord\Domain\ClientAssertedInstant;
 
 /**
  * Request to write one whole document — a header and the owned lines belonging to it — as a single thing.
@@ -25,6 +26,12 @@ use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
  * `$expectedVersion` is the aggregate's version, not a line's. Two callers amending the same document
  * therefore contend for one value: the second one to commit is refused as stale rather than interleaved
  * into a document neither of them wrote.
+ *
+ * **Late and out-of-order arrival is part of this contract, not an exception to it.** A caller that
+ * captured the document while disconnected submits it whenever it reconnects, optionally asserting when
+ * the work happened through `$capturedAt`. That assertion is recorded beside the server's own instant
+ * and is never substituted for it: the document is validated, numbered, sequenced and audited at the
+ * moment it arrives, so arrival order remains the order of record and a client's clock decides nothing.
  *
  * @since  2.0.0
  */
@@ -77,6 +84,9 @@ final readonly class WriteDocumentCommand
      *          identity of the document being amended; required to amend.
      * @param   ?string                  $organizationIdentifier  Organization the document is scoped to,
      *          or null for a type that is not organization-scoped.
+     * @param   ?ClientAssertedInstant   $capturedAt              When the caller says the work happened,
+     *          recorded beside the server's instant and never used for ordering, expiry, period
+     *          assignment or numbering; null when the caller asserts nothing.
      *
      * @throws  InvalidArgumentException  When the definition identifier, relationship handle, record
      *          identity or organization identifier fails its format rule, when the intent and the expected
@@ -97,6 +107,7 @@ final readonly class WriteDocumentCommand
         public ?int $expectedVersion = null,
         public ?string $recordId = null,
         public ?string $organizationIdentifier = null,
+        public ?ClientAssertedInstant $capturedAt = null,
     ) {
         RecordRequestGuard::definition($definitionIdentifier);
         RecordRequestGuard::handle($relationship, 'relationship');
