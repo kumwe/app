@@ -8,14 +8,12 @@ use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Application\Persistence\TransactionManager;
 
 /**
- * DBAL implementation of `TransactionManager`, layering completion hooks over the connection's nesting.
+ * DBAL implementation of `TransactionManager`, making one physical transaction cover each logical nest.
  *
- * `Connection::transactional()` already makes nesting invisible, so what this class adds is the hook
- * bookkeeping the contract promises. Every call pushes a frame that collects the callbacks registered
- * while it is open; on success the frame is folded into its parent, so a commit hook registered deep in
- * a nest waits for the outermost scope and runs only once DBAL has committed, while on failure the
- * frame is discarded and its rollback hooks run immediately. Holding that stack is why this is the one
- * class in `Infrastructure\Persistence` that is not `readonly`.
+ * Only the outermost call enters `Connection::transactional()`. Nested calls execute inside that physical
+ * transaction and push hook frames of their own. A nested failure marks the physical transaction for
+ * rollback even when application code catches it, avoiding DBAL savepoint semantics that would otherwise
+ * let the outer call commit. Holding the frames and rollback cause is why this adapter is not `readonly`.
  *
  * @since  2.0.0
  */
@@ -34,6 +32,14 @@ final class DoctrineTransactionManager implements TransactionManager
     private array $frames = [];
 
     /**
+     * First nested failure that doomed the active nest, retained to prevent an otherwise successful commit.
+     *
+     * @var    \Throwable|null
+     * @since  2.0.0
+     */
+    private ?\Throwable $rollbackCause = null;
+
+    /**
      * Bind the manager to the connection whose transactions it drives.
      *
      * @param  Connection  $connection  DBAL connection this manager begins, commits and rolls back on.
@@ -47,10 +53,11 @@ final class DoctrineTransactionManager implements TransactionManager
     /**
      * Run an operation inside a transaction, committing when it returns and rolling back when it throws.
      *
-     * A nested call joins the transaction the connection already has open and pushes its own frame, so
-     * the hooks registered inside it are handed to the enclosing frame on success instead of firing
-     * there and then. Whatever the operation throws is rethrown unchanged, once the discarded frame's
-     * rollback hooks have run.
+     * A nested call runs directly inside the outer physical transaction and pushes its own frame. A failure
+     * dooms that physical transaction even when an enclosing operation catches it. If the outer operation
+     * otherwise returns, that retained failure is rethrown to make DBAL roll back; if the outer operation
+     * later throws a different exception, its own exception still reaches its caller unchanged. Rollback-hook
+     * failures never replace either operation failure.
      *
      * @template T
      *
@@ -66,21 +73,40 @@ final class DoctrineTransactionManager implements TransactionManager
      */
     public function transactional(callable $operation): mixed
     {
+        $outermost = $this->frames === [];
+        if ($outermost) {
+            $this->rollbackCause = null;
+        }
         $this->frames[] = ['commit' => [], 'rollback' => []];
+
         try {
-            $result = $this->connection->transactional(
-                static fn (Connection $connection): mixed => $operation(),
-            );
+            $result = $outermost
+                ? $this->connection->transactional(function (Connection $connection) use ($operation): mixed {
+                    $result = $operation();
+                    if ($this->rollbackCause !== null) {
+                        throw $this->rollbackCause;
+                    }
+
+                    return $result;
+                })
+                : $operation();
         } catch (\Throwable $exception) {
+            $this->rollbackCause ??= $exception;
             $frame = array_pop($this->frames);
             if (is_array($frame)) {
-                $this->invoke($frame['rollback']);
+                $this->invokeRollback($frame['rollback']);
+            }
+            if ($outermost) {
+                $this->rollbackCause = null;
             }
             throw $exception;
         }
 
         $frame = array_pop($this->frames);
         if (!is_array($frame)) {
+            if ($outermost) {
+                $this->rollbackCause = null;
+            }
             throw new \LogicException('The transaction completion frame was lost.');
         }
         $parent = array_key_last($this->frames);
@@ -88,6 +114,7 @@ final class DoctrineTransactionManager implements TransactionManager
             array_push($this->frames[$parent]['commit'], ...$frame['commit']);
             array_push($this->frames[$parent]['rollback'], ...$frame['rollback']);
         } else {
+            $this->rollbackCause = null;
             $this->invoke($frame['commit']);
         }
 
@@ -155,6 +182,26 @@ final class DoctrineTransactionManager implements TransactionManager
     {
         foreach ($operations as $operation) {
             $operation();
+        }
+    }
+
+    /**
+     * Run every rollback callback without allowing one to replace the operation's original failure.
+     *
+     * @param   list<callable(): void>  $operations  Compensations collected by the discarded frame.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function invokeRollback(array $operations): void
+    {
+        foreach ($operations as $operation) {
+            try {
+                $operation();
+            } catch (\Throwable) {
+                // The transaction failure is the caller-visible outcome; a compensation cannot replace it.
+            }
         }
     }
 }

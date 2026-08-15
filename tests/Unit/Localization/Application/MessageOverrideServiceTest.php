@@ -9,9 +9,11 @@ use DateTimeZone;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Localization\Application\MessageCatalogueRepository;
+use Kumwe\CMS\Localization\Application\MessageFormattingFailed;
 use Kumwe\CMS\Localization\Application\MessageOverrideRecord;
 use Kumwe\CMS\Localization\Application\MessageOverrideService;
 use Kumwe\CMS\Localization\Application\MessageOverrideStore;
@@ -20,7 +22,9 @@ use Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier;
 use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Localization\Domain\MessageCatalogue;
 use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\CMS\Tests\Support\ImmediateTransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -242,6 +246,115 @@ final class MessageOverrideServiceTest extends TestCase
     }
 
     /**
+     * Active markup and attributes are refused before an override reaches storage.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdministeredWordingRefusesActiveMarkupAndAttributes(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('element or attribute');
+        $service->override(
+            $this->actor(),
+            MessageCatalogueLayer::Site,
+            'en-GB',
+            self::CLIENT,
+            '<span onclick="alert(1)">Patient</span>',
+        );
+    }
+
+    /**
+     * Markup balanced only by opening in one ICU branch and closing in another is refused.
+     *
+     * Each select arm renders independently, so a stack walked across the raw pattern is not evidence
+     * that either possible result is balanced HTML.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdministeredWordingRefusesMarkupAcrossIcuBranches(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('branching ICU pattern');
+        $service->override(
+            $this->actor(),
+            MessageCatalogueLayer::Site,
+            'en-GB',
+            self::CLIENT,
+            '{kind, select, patient {<strong>Patient} other {Client</strong>}}',
+        );
+    }
+
+    /**
+     * Malformed ICU is rejected at administration time instead of failing a later render.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdministeredWordingRefusesMalformedIcu(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+
+        $this->expectException(MessageFormattingFailed::class);
+        $service->override(
+            $this->actor(),
+            MessageCatalogueLayer::Site,
+            'en-GB',
+            self::CLIENT,
+            '{count, plural, one {One} other {Many}',
+        );
+    }
+
+    /**
+     * Quota observation occurs only after the site serialization lock is held.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAWriteLocksTheSiteBeforeReadingItsQuota(): void
+    {
+        $locked = false;
+        $store = $this->createMock(MessageOverrideStore::class);
+        $store->expects(self::once())->method('lockSite')->with(SiteContext::DEFAULT)->willReturnCallback(
+            static function () use (&$locked): void {
+                $locked = true;
+            },
+        );
+        $store->expects(self::once())->method('overrides')->willReturnCallback(
+            static function () use (&$locked): array {
+                self::assertTrue($locked, 'The quota read must occur under the durable site row lock.');
+
+                return [];
+            },
+        );
+        $store->expects(self::once())->method('put');
+        $events = [];
+
+        $this->service($store, $events)->override(
+            $this->actor(),
+            MessageCatalogueLayer::Site,
+            'en-GB',
+            self::CLIENT,
+            'Patient',
+        );
+    }
+
+    /**
      * Searching the shipped catalogue finds a message by its wording as well as by its identifier.
      *
      * @return  void
@@ -320,6 +433,8 @@ final class MessageOverrideServiceTest extends TestCase
             $this->catalogues(),
             new SupportedLocales(),
             AuthorizationContext::gateway(),
+            new ImmediateTransactionManager(),
+            new IntlMessagePatternFormatter(),
             $recorder,
             $this->clock(),
         );
@@ -378,6 +493,19 @@ final class MessageOverrideServiceTest extends TestCase
              * @since  2.0.0
              */
             private array $records = [];
+
+            /**
+             * Satisfy the serialization port; one in-memory test thread already runs serially.
+             *
+             * @param   string  $site  Site the mutation belongs to.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function lockSite(string $site): void
+            {
+            }
 
             /**
              * List one scope's overrides in the order a screen renders them.

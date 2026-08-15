@@ -41,8 +41,9 @@ final class ConvertedQuantityProvenanceTest extends TestCase
     public function testAConvertedQuantityColumnRefusesAFigureWithoutItsProvenance(): void
     {
         $type = ReportValueType::ConvertedQuantity;
+        $portable = self::converted()->toPortableString();
 
-        self::assertTrue($type->accepts(self::converted()->toPortableString()));
+        self::assertTrue($type->accepts($portable));
         self::assertFalse($type->accepts('24.000000'));
         self::assertFalse($type->accepts('24.000000 unit'));
         self::assertFalse($type->accepts(
@@ -50,6 +51,9 @@ final class ConvertedQuantityProvenanceTest extends TestCase
                 . ' as at 2026-08-14T00:00:00.000000+00:00 by acme.units.trade rounded half_up',
         ));
         self::assertFalse($type->accepts(24));
+        self::assertFalse($type->accepts(str_replace('24.000000 unit', '25.000000 unit', $portable)));
+        self::assertFalse($type->accepts(str_replace('from 24.000000000000', 'from 25.000000000000', $portable)));
+        self::assertFalse($type->accepts(str_replace('2026-08-14', '2026-02-31', $portable)));
 
         try {
             new ReportExecutionResult(

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessReporting\Domain;
 
+use InvalidArgumentException;
 use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
 use Kumwe\CMS\BusinessRecord\Domain\ConvertedQuantityValue;
 
@@ -78,12 +79,8 @@ enum ReportValueType: string
             self::Decimal => is_int($value)
                 || (is_string($value) && preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) === 1),
             self::String => is_string($value) && mb_strlen($value) <= 4096,
-            self::ConvertedMoney => is_string($value)
-                && mb_strlen($value) <= 512
-                && ConvertedMoneyValue::isPortableString($value),
-            self::ConvertedQuantity => is_string($value)
-                && mb_strlen($value) <= 512
-                && ConvertedQuantityValue::isPortableString($value),
+            self::ConvertedMoney => self::acceptsConvertedMoney($value),
+            self::ConvertedQuantity => self::acceptsConvertedQuantity($value),
             self::Identifier => is_string($value) && (
                 preg_match('/^[a-z][a-z0-9_.-]{0,190}$/D', $value) === 1
                 || preg_match(
@@ -96,5 +93,56 @@ enum ReportValueType: string
             self::DateTime => is_string($value)
                 && preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\x00-\x1f]{1,64}$/D', $value) === 1,
         };
+    }
+
+    /**
+     * Validate a converted-money scalar by reconstructing the provenance it claims.
+     *
+     * Grammar alone cannot prove the converted amount follows from the source amount and rate. Parsing
+     * invokes the value object's arithmetic, instant and rounding invariants before a report accepts it.
+     *
+     * @param   mixed  $value  Candidate report cell or parameter value.
+     *
+     * @return  bool  True only when the bounded text reconstructs as consistent converted money.
+     *
+     * @since   2.0.0
+     */
+    private static function acceptsConvertedMoney(mixed $value): bool
+    {
+        if (!is_string($value) || mb_strlen($value) > 512) {
+            return false;
+        }
+
+        try {
+            ConvertedMoneyValue::fromPortableString($value);
+        } catch (InvalidArgumentException) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate a converted-quantity scalar by reconstructing the provenance it claims.
+     *
+     * @param   mixed  $value  Candidate report cell or parameter value.
+     *
+     * @return  bool  True only when the bounded text reconstructs as a consistent converted quantity.
+     *
+     * @since   2.0.0
+     */
+    private static function acceptsConvertedQuantity(mixed $value): bool
+    {
+        if (!is_string($value) || mb_strlen($value) > 512) {
+            return false;
+        }
+
+        try {
+            ConvertedQuantityValue::fromPortableString($value);
+        } catch (InvalidArgumentException) {
+            return false;
+        }
+
+        return true;
     }
 }

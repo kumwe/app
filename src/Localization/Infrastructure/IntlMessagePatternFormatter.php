@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Localization\Infrastructure;
 
 use Kumwe\CMS\Localization\Application\MessageFormattingFailed;
 use Kumwe\CMS\Localization\Application\MessagePatternFormatter;
+use Kumwe\CMS\Localization\Application\MessagePatternValidator;
 use Kumwe\CMS\Localization\Domain\LocaleTag;
 use MessageFormatter;
 
@@ -26,7 +27,7 @@ use MessageFormatter;
  *
  * @since  2.0.0
  */
-final readonly class IntlMessagePatternFormatter implements MessagePatternFormatter
+final readonly class IntlMessagePatternFormatter implements MessagePatternFormatter, MessagePatternValidator
 {
     /**
      * Refuse to exist without the extension every format call depends on.
@@ -82,5 +83,25 @@ final readonly class IntlMessagePatternFormatter implements MessagePatternFormat
         }
 
         return $formatted;
+    }
+
+    /**
+     * Compile a pattern without formatting it, so missing runtime parameters are not mistaken for bad syntax.
+     *
+     * @param   string     $pattern  Candidate ICU MessageFormat pattern.
+     * @param   LocaleTag  $locale   Locale whose grammar and plural rules the pattern targets.
+     *
+     * @return  void
+     *
+     * @throws  MessageFormattingFailed  When ICU refuses the pattern.
+     *
+     * @since   2.0.0
+     */
+    public function validate(string $pattern, LocaleTag $locale): void
+    {
+        $tag = $locale->toString();
+        if (!MessageFormatter::create($tag, $pattern) instanceof MessageFormatter) {
+            throw MessageFormattingFailed::pattern($tag, intl_get_error_message(), 'pattern');
+        }
     }
 }

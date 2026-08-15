@@ -204,6 +204,58 @@ final class CatalogueTranslatorTest extends TestCase
         self::assertSame('en-GB', $active->locale()->toString(), 'Outside a unit of work the source locale answers.');
     }
 
+    /**
+     * A shared translator rereads administered wording when the next request begins.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTwoUnitsOfWorkDoNotShareAnOverrideSnapshot(): void
+    {
+        $overrides = new class implements MessageOverrideRepository {
+            /** @var string @since 2.0.0 */
+            public string $value = 'First wording';
+
+            /** @var int @since 2.0.0 */
+            public int $reads = 0;
+
+            /** @return array<string, string> @since 2.0.0 */
+            public function siteOverrides(string $site, LocaleTag $locale): array
+            {
+                ++$this->reads;
+
+                return ['core.business.client.label' => $this->value];
+            }
+
+            /** @return array<string, string> @since 2.0.0 */
+            public function organizationOverrides(string $site, string $organization, LocaleTag $locale): array
+            {
+                return [];
+            }
+        };
+        $supported = new SupportedLocales();
+        $active = new ActiveLocale($supported);
+        $translator = new CatalogueTranslator(
+            $this->catalogues(['en-GB' => [self::CLIENT => 'Core wording']]),
+            $overrides,
+            new IntlMessagePatternFormatter(),
+            $active,
+            $supported,
+        );
+
+        $active->begin(LocaleTag::fromString('en-GB'), new TranslationScope('acme'));
+        self::assertSame('First wording', $translator->translate(self::CLIENT));
+        $active->end();
+
+        $overrides->value = 'Second wording';
+        $active->begin(LocaleTag::fromString('en-GB'), new TranslationScope('acme'));
+        self::assertSame('Second wording', $translator->translate(self::CLIENT));
+        $active->end();
+
+        self::assertSame(2, $overrides->reads);
+    }
+
     public function testItRefusesToLookUpSourceTextAsAnIdentifier(): void
     {
         $translator = $this->translator(['en-GB' => []]);

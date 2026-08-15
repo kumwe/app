@@ -19,7 +19,8 @@
  * exemption cannot outlive the work that justified it.
  *
  * Usage:
- *   php tools/verify-dependency-graph.php [--layers=PATH] [--baseline=PATH] [--emit-baseline] [--today=DATE]
+ *   php tools/verify-dependency-graph.php [--source=PATH] [--layers=PATH] [--baseline=PATH]
+ *       [--emit-baseline] [--today=DATE]
  *
  * `--emit-baseline` prints the baseline the current tree would need, which is how the committed one was
  * produced. It never writes the file itself, so a violation cannot be waved through by running a tool.
@@ -30,6 +31,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+$sourceRoot = $root . '/src';
 $layersPath = $root . '/docs/architecture/layers.json';
 $baselinePath = $root . '/docs/architecture/dependency-baseline.json';
 $emit = false;
@@ -39,6 +41,10 @@ $errors = [];
 foreach (array_slice($argv, 1) as $argument) {
     if ($argument === '--emit-baseline') {
         $emit = true;
+        continue;
+    }
+    if (str_starts_with($argument, '--source=')) {
+        $sourceRoot = substr($argument, strlen('--source='));
         continue;
     }
     if (str_starts_with($argument, '--layers=')) {
@@ -64,7 +70,7 @@ if ($errors !== []) {
 $graph = readGraphDocument($layersPath);
 $layers = readLayerRules($graph);
 $classification = readClassification($graph);
-$violations = collectViolations($root . '/src', $layers, $classification, $errors);
+$violations = collectViolations($sourceRoot, $layers, $classification, $errors);
 
 if ($errors !== []) {
     reportGraphFailure($errors);
@@ -147,7 +153,11 @@ function readLayerRules(array $graph): array
             if ($target === '*' || isset($rules[$target])) {
                 continue;
             }
-            reportGraphFailure([sprintf('Layer "%s" may depend on "%s", which is not a declared layer.', $name, $target)]);
+            reportGraphFailure([sprintf(
+                'Layer "%s" may depend on "%s", which is not a declared layer.',
+                $name,
+                $target,
+            )]);
         }
     }
 
@@ -429,6 +439,9 @@ function readUseStatement(array $tokens, int $index): array
     $prefix = '';
     $current = '';
     $grouped = false;
+    $statementImportsClasses = true;
+    $itemImportsClass = true;
+    $skippingAlias = false;
 
     for ($cursor = $index + 1; $cursor < $count; $cursor++) {
         $token = $tokens[$cursor];
@@ -440,14 +453,23 @@ function readUseStatement(array $tokens, int $index): array
                 $grouped = true;
                 $prefix = rtrim($current, '\\');
                 $current = '';
+                $itemImportsClass = $statementImportsClasses;
                 continue;
             }
             if ($token === '}') {
+                if (!$skippingAlias && $itemImportsClass && $current !== '') {
+                    $names[] = $prefix !== '' ? $prefix . '\\' . $current : $current;
+                }
+                $current = '';
                 break;
             }
             if ($token === ',') {
-                $names[] = $grouped && $prefix !== '' ? $prefix . '\\' . $current : $current;
+                if (!$skippingAlias && $itemImportsClass && $current !== '') {
+                    $names[] = $grouped && $prefix !== '' ? $prefix . '\\' . $current : $current;
+                }
                 $current = '';
+                $itemImportsClass = $statementImportsClasses;
+                $skippingAlias = false;
                 continue;
             }
             if ($token === '(') {
@@ -456,23 +478,24 @@ function readUseStatement(array $tokens, int $index): array
             continue;
         }
         if (in_array($token[0], [T_FUNCTION, T_CONST], true)) {
-            return [];
+            if (!$grouped) {
+                $statementImportsClasses = false;
+            }
+            $itemImportsClass = false;
+            continue;
         }
         if (in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
             continue;
         }
         if ($token[0] === T_AS) {
-            $names[] = $grouped && $prefix !== '' ? $prefix . '\\' . $current : $current;
+            if ($itemImportsClass && $current !== '') {
+                $names[] = $grouped && $prefix !== '' ? $prefix . '\\' . $current : $current;
+            }
             $current = '';
-            for ($cursor++; $cursor < $count; $cursor++) {
-                $next = $tokens[$cursor];
-                if (is_string($next) && ($next === ',' || $next === ';')) {
-                    break;
-                }
-            }
-            if (is_string($tokens[$cursor] ?? null) && $tokens[$cursor] === ';') {
-                break;
-            }
+            $skippingAlias = true;
+            continue;
+        }
+        if ($skippingAlias) {
             continue;
         }
         if (in_array($token[0], [T_STRING, T_NAME_QUALIFIED, T_NAME_FULLY_QUALIFIED], true)) {
@@ -484,7 +507,7 @@ function readUseStatement(array $tokens, int $index): array
         }
     }
 
-    if ($current !== '') {
+    if (!$skippingAlias && $itemImportsClass && $current !== '') {
         $names[] = $grouped && $prefix !== '' ? $prefix . '\\' . $current : $current;
     }
 

@@ -2,7 +2,7 @@
   "contract": "kumwe-quality-contract",
   "version": "2.0.0",
   "authority": "docs/roadmap/README.md",
-  "note": "One data-driven definition of every check this repository runs, and of the lane each one runs in. `composer qa` is still the human entry point, but the set it executes is derived from this file rather than restated beside it: tools/quality-contract.php --check fails when a check declared for the local lane is missing from the qa script, when the qa script runs a check this file does not declare, when a check names a workflow or job that does not exist, or when the workflow that declares a check no longer contains the command. Nightly and release execute the manifest directly through tools/quality-contract.php --run. A check that cannot run in a lane says so here, with the reason, rather than being quietly dropped.",
+  "note": "One data-driven definition of every check this repository runs, and of the lane each one runs in. `composer qa` is still the human entry point, but the set it executes is derived from this file rather than restated beside it: tools/quality-contract.php --check fails when a check declared for the local lane is missing from the qa script, when the qa script runs a check this file does not declare, when a check names a workflow or job that does not exist, or when the workflow that declares a check no longer contains the command. Nightly and release execute manifest-owned checks through tools/quality-contract.php --run and delegate a check that has an explicit binding for that lane to the named, provisioned workflow job. A check that cannot run in a lane says so here, with the reason, rather than being quietly dropped or duplicated.",
   "cadences": [
     "local",
     "ci",
@@ -38,14 +38,14 @@
       "file": ".github/workflows/nightly.yml",
       "job": "quality-contract",
       "contains": "--cadence=nightly",
-      "note": "Nightly executes the manifest rather than restating it, so a check gains the nightly lane by declaring it here and nowhere else."
+      "note": "Nightly executes manifest-owned checks here and delegates explicitly bound checks to their named workflow jobs, so browser requirements stay with the job that provisions them."
     },
     "release": {
       "entry": "php tools/quality-contract.php --run --cadence=release",
       "file": ".github/workflows/release.yml",
       "job": "release",
       "contains": "--cadence=release",
-      "note": "The release lane executes the manifest for the same reason. Before this file existed the release job carried its own shorter list, which is exactly the drift this contract removes."
+      "note": "The release lane executes manifest-owned checks here and reports explicitly bound checks as delegated. Before this file existed the release job carried its own shorter list, which is exactly the drift this contract removes."
     }
   },
   "engines": [
@@ -125,7 +125,7 @@
         "release": {
           "file": ".github/workflows/release.yml",
           "job": "release",
-          "contains": "composer validate --strict"
+          "contains": "composer install --no-interaction --prefer-dist --dry-run"
         }
       }
     },
@@ -340,8 +340,8 @@
     },
     {
       "id": "roadmap-lifecycle",
-      "title": "The roadmap ledger holds forward work only",
-      "purpose": "Fail when a finished finding is left behind in the ledger instead of moving to the changelog.",
+      "title": "The roadmap ledger and changelog retain truthful lifecycle evidence",
+      "purpose": "Fail when a finished finding is left behind in the ledger instead of moving to the changelog, or when a changelog citation no longer resolves after history is rewritten.",
       "owner": "quality-engineering",
       "runner": "composer",
       "composer_script": "roadmap:check",
@@ -549,7 +549,7 @@
     {
       "id": "integration-idempotency",
       "title": "The integration suite against a reused database, judged against a shrinking baseline",
-      "purpose": "Run the integration suite a second time against the database the first run left behind and once more in reverse class order, and fail on any test that is not in docs/quality/idempotency-baseline.json. The suite is not idempotent today; the baseline is that finding's reproduction, and it only ever shrinks.",
+      "purpose": "Run the integration suite a second time against the database the first run left behind and fail on any test that is not in the pass-aware record in docs/quality/idempotency-baseline.json. The suite is not idempotent today; the baseline is that finding's reproduction, and it only ever shrinks. Reverse class order remains an explicitly pending measurement available through --pass=reverse, not a property this per-change lane claims to enforce.",
       "owner": "quality-engineering",
       "runner": "composer",
       "command": "composer test:idempotency -- --engine=ID",

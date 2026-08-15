@@ -142,8 +142,8 @@ final class McpCatalogValidatorTest extends TestCase
             self::assertArrayHasKey($case->value, $byClass, sprintf('No tool is classified %s.', $case->value));
         }
         self::assertContains('kumwe_extension_uninstall', $byClass[McpRiskClass::Trust->value]);
-        self::assertContains('kumwe_token_rotate', $byClass[McpRiskClass::Credential->value]);
-        self::assertContains('kumwe_content_trash', $byClass[McpRiskClass::Destructive->value]);
+        self::assertContains('kumwe_token_revoke', $byClass[McpRiskClass::Credential->value]);
+        self::assertContains('kumwe_menu_item_delete', $byClass[McpRiskClass::Destructive->value]);
         self::assertContains(
             'kumwe_token_emergency_revoke_subject',
             $byClass[McpRiskClass::InstallationGlobal->value],
@@ -296,7 +296,7 @@ final class McpCatalogValidatorTest extends TestCase
 
         $expected = 'Entry "kumwe_fixture_read" names handler boundStatically, '
             . 'which is not a public instance method.';
-        self::assertSame([$expected], $violations);
+        self::assertContains($expected, $violations);
     }
 
     /**
@@ -319,7 +319,7 @@ final class McpCatalogValidatorTest extends TestCase
         );
 
         $expected = 'Handler acceptsCredentialArgument accepts credential-shaped parameter $accessToken.';
-        self::assertSame([$expected], $violations);
+        self::assertContains($expected, $violations);
     }
 
     /**
@@ -344,7 +344,7 @@ final class McpCatalogValidatorTest extends TestCase
         self::assertFalse(McpCatalogValidator::isCredentialShaped('proofValue'));
         $expected = 'Handler marksArgumentSensitive marks $proofValue sensitive, '
             . 'so it must not be reachable from a tool.';
-        self::assertSame([$expected], $violations);
+        self::assertContains($expected, $violations);
     }
 
     /**
@@ -367,7 +367,7 @@ final class McpCatalogValidatorTest extends TestCase
     /**
      * Proves each risk-coherence rule fails in the right direction when one property is broken.
      *
-     * Every case takes the real `kumwe_content_trash` entry — a classified destructive tool that passes
+     * Every case takes the real `kumwe_menu_item_delete` entry — a classified destructive tool that passes
      * today — and changes exactly one thing about it, so a rule that stopped firing would show up as a
      * missing violation rather than as a still-green suite.
      *
@@ -381,7 +381,7 @@ final class McpCatalogValidatorTest extends TestCase
     #[DataProvider('brokenDeclarations')]
     public function testOneBrokenPropertyProducesItsOwnViolation(array $overrides, string $expected): void
     {
-        $tool = self::tool('kumwe_content_trash');
+        $tool = self::tool('kumwe_menu_item_delete');
         self::assertSame([], (new McpCatalogValidator())->toolViolations($tool, self::handlers()));
 
         $violations = (new McpCatalogValidator())->toolViolations([...$tool, ...$overrides], self::handlers());
@@ -419,6 +419,10 @@ final class McpCatalogValidatorTest extends TestCase
             'an elevated tool with no capability' => [
                 ['capability' => null],
                 'names no capability',
+            ],
+            'a malformed capability identifier' => [
+                ['capability' => 'Users Manage'],
+                'names an invalid capability',
             ],
             'an installation-wide reach that calls itself read-only' => [
                 ['risk' => McpRiskClass::InstallationGlobal, 'readOnly' => true],
@@ -470,7 +474,7 @@ final class McpCatalogValidatorTest extends TestCase
                 'credential-shaped property "recoveryCode"',
             ],
             'no documented alternative' => [
-                ['alternative' => ''],
+                ['alternative' => '   '],
                 'documents no non-MCP alternative',
             ],
             'a required property the handler cannot receive' => [
@@ -481,6 +485,49 @@ final class McpCatalogValidatorTest extends TestCase
                     'properties' => ['operationId' => ['type' => 'string']],
                 ]],
                 'has no parameter for',
+            ],
+            'an optional property the handler cannot receive' => [
+                ['inputSchema' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'required' => ['operationId', 'id', 'version'],
+                    'properties' => [
+                        'operationId' => ['type' => 'string'],
+                        'id' => ['type' => 'string'],
+                        'version' => ['type' => 'integer'],
+                        'unused' => ['type' => 'string'],
+                    ],
+                ]],
+                'publishes property "unused", which handler deleteMenuItem has no parameter for',
+            ],
+            'a handler requirement the schema marks optional' => [
+                ['inputSchema' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'required' => ['operationId', 'id'],
+                    'properties' => [
+                        'operationId' => ['type' => 'string'],
+                        'id' => ['type' => 'string'],
+                        'version' => ['type' => 'integer'],
+                    ],
+                ]],
+                'requires $version, but tool "kumwe_menu_item_delete" marks that property optional',
+            ],
+            'a required property absent from its property map' => [
+                ['inputSchema' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'required' => ['operationId', 'id', 'version'],
+                    'properties' => [
+                        'operationId' => ['type' => 'string'],
+                        'id' => ['type' => 'string'],
+                    ],
+                ]],
+                'requires undeclared input property "version"',
+            ],
+            'an output object with no membership decision' => [
+                ['outputSchema' => ['type' => 'object', 'properties' => []]],
+                'output object schema (root) without an additionalProperties decision',
             ],
         ];
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Http\Handler;
 
 use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
 use Kumwe\CMS\Presentation\Application\SitePresentation;
 use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
@@ -47,6 +48,8 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
      * @param  ContentLayoutCatalog       $layouts    Content-type to site-template layout selection.
      * @param  TranslationGroupPresenter  $languages  Builder of the page's alternate-language links and
      *         the language selector, from the translation group the rendered entry belongs to.
+     * @param  ActiveLocale                $active     Request locale holder aligned to a locale-bearing record
+     *         before its template and translated chrome are rendered.
      *
      * @since  2.0.0
      */
@@ -57,6 +60,7 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
         private ContentPresenter $presenter,
         private ContentLayoutCatalog $layouts,
         private TranslationGroupPresenter $languages,
+        private ActiveLocale $active,
     ) {
     }
 
@@ -87,6 +91,11 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
 
         if ($record === null) {
             return $this->notFound();
+        }
+
+        $recordLocale = $record->entry->locale();
+        if ($recordLocale !== null) {
+            $this->active->adoptLocale($recordLocale);
         }
 
         $canonicalPath = $this->pages->pathFor($record);
@@ -141,10 +150,10 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
     private function notFound(): ResponseInterface
     {
         return new HtmlResponse(
-            '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Not found</title></head>'
+            '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><title>Not found</title></head>'
             . '<body><main><h1>Page not found</h1></main></body></html>',
             404,
-            ['Cache-Control' => 'no-store'],
+            ['Cache-Control' => 'no-store', 'Content-Language' => 'en-GB'],
         );
     }
 }

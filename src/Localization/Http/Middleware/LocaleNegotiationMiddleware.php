@@ -75,7 +75,8 @@ final readonly class LocaleNegotiationMiddleware implements MiddlewareInterface
      *          are consulted.
      * @param   RequestHandlerInterface  $handler  Next handler, called with the locale attribute set.
      *
-     * @return  ResponseInterface  The handler's response, unchanged.
+     * @return  ResponseInterface  Downstream response, with language and cache variation metadata when it
+     *          is localized HTML or a redirect; an explicit fallback language is preserved.
      *
      * @since   2.0.0
      */
@@ -90,9 +91,90 @@ final readonly class LocaleNegotiationMiddleware implements MiddlewareInterface
         $this->active->begin($locale, new TranslationScope($this->site));
 
         try {
-            return $handler->handle($request->withAttribute(self::ATTRIBUTE, $locale));
+            $response = $handler->handle($request->withAttribute(self::ATTRIBUTE, $locale));
+            if ($this->isLocalizedResponse($response)) {
+                if (!$response->hasHeader('Content-Language')) {
+                    $response = $response->withHeader('Content-Language', $this->active->locale()->toString());
+                }
+                if ($this->isPublic($response->getHeaderLine('Cache-Control'))) {
+                    $response = $response->withHeader(
+                        'Vary',
+                        $this->vary($response->getHeaderLine('Vary'), 'Accept-Language'),
+                    );
+                }
+            }
+
+            return $response;
         } finally {
             $this->active->end();
         }
+    }
+
+    /**
+     * Decide whether this boundary produced localized browser output.
+     *
+     * Machine JSON, media bytes, metrics and crawler directives do not become language variants merely
+     * because locale negotiation runs outside their routes. HTML is localized by the shared renderers,
+     * and a redirect carrying `Location` may have been selected by localized content resolution.
+     *
+     * @param   ResponseInterface  $response  Downstream response to classify.
+     *
+     * @return  bool  True for HTML or a redirect response, false for machine and binary representations.
+     *
+     * @since   2.0.0
+     */
+    private function isLocalizedResponse(ResponseInterface $response): bool
+    {
+        $mediaType = strtolower(trim(explode(';', $response->getHeaderLine('Content-Type'), 2)[0]));
+        if ($mediaType === 'text/html') {
+            return true;
+        }
+
+        $status = $response->getStatusCode();
+
+        return $status >= 300 && $status < 400 && $response->hasHeader('Location');
+    }
+
+    /**
+     * Add one field name to a response's comma-separated `Vary` value without duplicates.
+     *
+     * @param   string  $current  Existing header value, possibly empty.
+     * @param   string  $name     Header field the representation additionally varies on.
+     *
+     * @return  string  Normalized list retaining existing field order and appending the new field once.
+     *
+     * @since   2.0.0
+     */
+    private function vary(string $current, string $name): string
+    {
+        $fields = array_values(array_filter(array_map(trim(...), explode(',', $current))));
+        foreach ($fields as $field) {
+            if (strcasecmp($field, $name) === 0 || $field === '*') {
+                return implode(', ', $fields);
+            }
+        }
+        $fields[] = $name;
+
+        return implode(', ', $fields);
+    }
+
+    /**
+     * Decide whether `Cache-Control` explicitly carries the `public` directive.
+     *
+     * @param   string  $cacheControl  Combined response header value.
+     *
+     * @return  bool  True only for a complete public directive, not text merely containing that word.
+     *
+     * @since   2.0.0
+     */
+    private function isPublic(string $cacheControl): bool
+    {
+        foreach (explode(',', $cacheControl) as $directive) {
+            if (strtolower(trim(explode('=', $directive, 2)[0])) === 'public') {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

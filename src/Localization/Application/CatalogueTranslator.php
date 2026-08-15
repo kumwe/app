@@ -23,9 +23,9 @@ use Kumwe\CMS\Localization\Domain\MessageIdentifier;
  * blank: the first is a defect anybody can see and report, the second is a defect nobody notices
  * until a customer does.
  *
- * Each locale-and-scope pair is assembled once and held for the life of the instance, so a page
- * that resolves several hundred messages performs one catalogue load rather than several hundred.
- * The instance is request-scoped in the container for exactly that reason.
+ * Each locale-and-scope pair is assembled once per active unit of work, so a page that resolves several
+ * hundred messages performs one catalogue load rather than several hundred. `ActiveLocale` generations
+ * bound that memoization even when the shared container and translator serve several sequential requests.
  *
  * @since  2.0.0
  */
@@ -38,6 +38,14 @@ final class CatalogueTranslator implements Translator
      * @since  2.0.0
      */
     private array $chains = [];
+
+    /**
+     * Active-locale generation the memoized chains belong to.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private int $generation = -1;
 
     /**
      * Bind the translator to its catalogue sources, its formatter and the locale in flight.
@@ -189,6 +197,11 @@ final class CatalogueTranslator implements Translator
      */
     private function chain(string $tag): MessageCatalogueChain
     {
+        $generation = $this->active->generation();
+        if ($generation !== $this->generation) {
+            $this->chains = [];
+            $this->generation = $generation;
+        }
         $scope = $this->active->scope();
         $key = $tag . '@' . $scope->key();
         if (isset($this->chains[$key])) {

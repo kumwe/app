@@ -21,7 +21,48 @@ jobs:
   quality-contract:
     name: Nightly quality contract
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 75
+    services:
+      database:
+        image: mariadb:lts
+        env:
+          MARIADB_DATABASE: kumwe_nightly
+          MARIADB_USER: kumwe
+          MARIADB_PASSWORD: kumwe_nightly
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+        ports:
+          - '3306:3306'
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - '6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_BASE_URL: https://kumwe.test
+      APP_TRUSTED_HOSTS: kumwe.test
+      EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'true'
+      DB_DRIVER: mariadb
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_NAME: kumwe_nightly
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_nightly
+      DB_TABLE_PREFIX: kumwe_
+      DB_SSLMODE: disable
+      DB_SERVER_VERSION: mariadb-12.3.2
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '6379'
+      REDIS_DATABASE: 0
+      REDIS_NAMESPACE: kumwe.nightly.quality
+      KUMWE_SITE_CONTENT_PROFILE: blank
+      KUMWE_BUSINESS_DEMO: 'false'
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,11 +80,15 @@ jobs:
       - name: Install locked dependencies
         run: composer install --no-interaction --prefer-dist
 
+      - name: Generate ephemeral application secret
+        shell: bash
+        run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
+
       - name: Verify the contract before executing it
         run: composer quality:contract
 
-      # Every check whose cadence includes "nightly". The suites that need a live database are not in that
-      # lane, because a lane that cannot run what it claims is the defect this contract removes.
+      # Manifest-owned checks execute here. Checks with an explicit nightly workflow binding are delegated
+      # to that provisioned job and reported as such, so browser work is not duplicated in this PHP process.
       - name: Execute the nightly lane
         env:
           KUMWE_ARTIFACT_MEMORY: 256M

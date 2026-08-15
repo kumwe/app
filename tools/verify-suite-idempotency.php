@@ -9,10 +9,11 @@
  *
  * A reproduction that simply fails is useless — it blocks every pull request and reports the same thing
  * every time — and a reproduction that is allowed to fail is not a gate. So the currently non-idempotent
- * tests are recorded in `docs/quality/idempotency-baseline.json` with an owner, an expiry and what removing
- * each one takes, and this tool fails on anything outside that record: a test that starts failing, an entry
- * whose test now passes, or an entry that has outlived its expiry. The list only ever shrinks. It is the
- * same shape the dependency baseline uses, for the same reason.
+ * tests are recorded in `docs/quality/idempotency-baseline.json` with the pass that observed them, an owner,
+ * an expiry and what removing each one takes. This tool fails on anything outside that pass-aware record: a
+ * test that starts failing, an entry whose test now passes in its recorded pass, or an entry that has
+ * outlived its expiry. The list only ever shrinks. It is the same shape the dependency baseline uses, for
+ * the same reason.
  *
  * Which passes are enforced is declared in the baseline rather than here, so turning one on is a recorded
  * decision. Today that is the `repeat` pass. The `reverse` pass — the suite run with its classes in a
@@ -24,7 +25,8 @@
  * Usage:
  *   php tools/verify-suite-idempotency.php --engine=mariadb|mysql|pgsql|postgresql
  *   php tools/verify-suite-idempotency.php --engine=ID --pass=reverse
- *   php tools/verify-suite-idempotency.php --engine=ID --junit=repeat:PATH
+ *   php tools/verify-suite-idempotency.php --engine=ID --expected-tests=COUNT \
+ *       --junit=repeat:PATH --status=repeat:STATUS
  *
  * The second form judges results that were collected elsewhere, which is how the architecture suite proves
  * this check fails in the right direction without needing a database.
@@ -39,6 +41,8 @@ $baselinePath = $root . '/docs/quality/idempotency-baseline.json';
 $engine = null;
 $today = date('Y-m-d');
 $supplied = [];
+$suppliedStatuses = [];
+$expectedTests = null;
 $startup = [];
 $only = null;
 
@@ -59,6 +63,14 @@ foreach (array_slice($argv, 1) as $argument) {
         $only = substr($argument, strlen('--pass='));
         continue;
     }
+    if (str_starts_with($argument, '--expected-tests=')) {
+        $candidate = substr($argument, strlen('--expected-tests='));
+        $expectedTests = ctype_digit($candidate) ? (int) $candidate : null;
+        if ($expectedTests === null || $expectedTests < 1) {
+            $startup[] = '--expected-tests must be a positive integer.';
+        }
+        continue;
+    }
     if ($argument === '--emit-reverse-configuration') {
         fwrite(STDOUT, reversedClassOrderConfiguration($root) . "\n");
         exit(0);
@@ -70,7 +82,37 @@ foreach (array_slice($argv, 1) as $argument) {
             $startup[] = sprintf('--junit expects PASS:PATH, and %s has no pass name.', $value);
             continue;
         }
-        $supplied[substr($value, 0, $separator)] = substr($value, $separator + 1);
+        $pass = substr($value, 0, $separator);
+        $path = substr($value, $separator + 1);
+        if ($pass === '' || $path === '') {
+            $startup[] = sprintf('--junit expects non-empty PASS:PATH evidence, not %s.', $value);
+            continue;
+        }
+        if (array_key_exists($pass, $supplied)) {
+            $startup[] = sprintf('JUnit evidence for pass %s was supplied more than once.', $pass);
+            continue;
+        }
+        $supplied[$pass] = $path;
+        continue;
+    }
+    if (str_starts_with($argument, '--status=')) {
+        $value = substr($argument, strlen('--status='));
+        $separator = strpos($value, ':');
+        if ($separator === false) {
+            $startup[] = sprintf('--status expects PASS:STATUS, and %s has no pass name.', $value);
+            continue;
+        }
+        $pass = substr($value, 0, $separator);
+        $status = substr($value, $separator + 1);
+        if ($pass === '' || !ctype_digit($status)) {
+            $startup[] = sprintf('--status expects PASS:STATUS with a non-negative integer, not %s.', $value);
+            continue;
+        }
+        if (array_key_exists($pass, $suppliedStatuses)) {
+            $startup[] = sprintf('Runner status for pass %s was supplied more than once.', $pass);
+            continue;
+        }
+        $suppliedStatuses[$pass] = (int) $status;
         continue;
     }
 
@@ -80,6 +122,12 @@ foreach (array_slice($argv, 1) as $argument) {
 if ($engine === null || $engine === '') {
     $startup[] = 'This check needs --engine=ID naming the engine the suite just ran against.';
 }
+if (($supplied !== [] || $suppliedStatuses !== []) && ($expectedTests === null || $expectedTests < 1)) {
+    $startup[] = 'Supplied JUnit evidence needs --expected-tests=COUNT from the suite collection.';
+}
+if ($supplied === [] && $suppliedStatuses !== []) {
+    $startup[] = 'Supplied runner statuses need matching --junit=PASS:PATH evidence.';
+}
 if ($startup !== []) {
     reportIdempotencyFailure($startup);
 }
@@ -87,15 +135,23 @@ if ($startup !== []) {
 /** @var string $engine */
 $engine = normalizeEngine($engine);
 $baseline = readIdempotencyBaseline($baselinePath);
-$entries = readIdempotencyEntries($baseline, $engine, $today);
+$declaredPasses = declaredPasses($baseline);
+$knownPasses = knownPasses($baseline, $declaredPasses);
+if ($only !== null && !in_array($only, $knownPasses, true)) {
+    reportIdempotencyFailure([sprintf(
+        'Pass "%s" is neither enforced nor declared as the pending measurement in the baseline.',
+        $only,
+    )]);
+}
+$entries = readIdempotencyEntries($baseline, $engine, $today, $knownPasses);
 // The enforced passes come from the baseline, so turning one on is a decision recorded there rather than a
 // flag somebody remembered to add. --pass runs one that is not yet enforced, which is how the next one gets
 // its first measurement without the gate claiming it already holds.
-$passes = $only === null ? declaredPasses($baseline) : [$only];
+$passes = $only === null ? $declaredPasses : [$only];
 
 $observed = $supplied === []
     ? executePasses($root, $passes)
-    : readSuppliedResults($supplied, $passes);
+    : readSuppliedResults($supplied, $suppliedStatuses, $passes, (int) $expectedTests);
 
 exit(judge($entries, $observed, $engine, $passes));
 
@@ -169,17 +225,56 @@ function declaredPasses(array $baseline): array
 }
 
 /**
+ * Read every pass the baseline recognizes, including the explicitly pending measurement.
+ *
+ * An exploratory pass is not enforced by the ordinary gate, but it still needs a declared identity so a
+ * misspelled `--pass` cannot silently execute the ordinary suite order under a name nobody governs.
+ *
+ * @param   array<string, mixed>  $baseline  Decoded baseline.
+ * @param   list<string>          $enforced  Validated enforced passes.
+ *
+ * @return  list<string>  Enforced passes followed by the pending pass, when one is declared.
+ *
+ * @since   2.0.0
+ */
+function knownPasses(array $baseline, array $enforced): array
+{
+    /** @var mixed $scope */
+    $scope = $baseline['scope'] ?? null;
+    /** @var mixed $pending */
+    $pending = is_array($scope) ? ($scope['not_yet_enforced'] ?? null) : null;
+    if ($pending === null) {
+        return $enforced;
+    }
+    if (!is_array($pending) || !is_string($pending['pass'] ?? null) || $pending['pass'] === '') {
+        reportIdempotencyFailure(['scope.not_yet_enforced must name one non-empty pass.']);
+    }
+
+    /** @var string $pass */
+    $pass = $pending['pass'];
+    if (in_array($pass, $enforced, true)) {
+        reportIdempotencyFailure([sprintf(
+            'Pass "%s" cannot be both enforced and declared as not yet enforced.',
+            $pass,
+        )]);
+    }
+
+    return [...$enforced, $pass];
+}
+
+/**
  * Read and validate the baseline entries, refusing an exemption nobody owns or one that has expired.
  *
  * @param   array<string, mixed>  $baseline  Decoded baseline.
  * @param   string                $engine    Engine the suite just ran against.
  * @param   string                $today     Date the expiries are judged against, as `Y-m-d`.
+ * @param   list<string>          $passes    Pass identities the baseline is allowed to record.
  *
- * @return  array<string, array{observed: bool, applies: bool}>  Entries by test identifier.
+ * @return  array<string, array{observed: bool, applies: bool, passes: list<string>}>  Entries by test identifier.
  *
  * @since   2.0.0
  */
-function readIdempotencyEntries(array $baseline, string $engine, string $today): array
+function readIdempotencyEntries(array $baseline, string $engine, string $today, array $passes): array
 {
     /** @var mixed $declared */
     $declared = $baseline['entries'] ?? null;
@@ -198,6 +293,26 @@ function readIdempotencyEntries(array $baseline, string $engine, string $today):
         if (!is_string($test) || $test === '') {
             $errors[] = sprintf('Baseline entry at position %d names no test.', $index);
             continue;
+        }
+        $entryPasses = $entry['passes'] ?? null;
+        $validatedPasses = [];
+        if (!is_array($entryPasses) || !array_is_list($entryPasses) || $entryPasses === []) {
+            $errors[] = sprintf('Baseline entry %s must name a non-empty "passes" list.', $test);
+        } else {
+            foreach ($entryPasses as $pass) {
+                if (!is_string($pass) || !in_array($pass, $passes, true)) {
+                    $errors[] = sprintf(
+                        'Baseline entry %s names an unknown pass "%s".',
+                        $test,
+                        is_scalar($pass) ? (string) $pass : 'invalid',
+                    );
+                    continue;
+                }
+                $validatedPasses[] = $pass;
+            }
+            if (count($validatedPasses) !== count(array_unique($validatedPasses))) {
+                $errors[] = sprintf('Baseline entry %s names a pass more than once.', $test);
+            }
         }
         foreach (['owner', 'finding', 'removal'] as $field) {
             $value = $entry[$field] ?? null;
@@ -226,6 +341,7 @@ function readIdempotencyEntries(array $baseline, string $engine, string $today):
         $entries[$test] = [
             'observed' => in_array($engine, engineList($entry, 'observed_on'), true),
             'applies' => in_array($engine, engineList($entry, 'applies_to'), true),
+            'passes' => $validatedPasses,
         ];
     }
 
@@ -265,16 +381,15 @@ function engineList(array $entry, string $field): array
 }
 
 /**
- * Run every declared pass and collect the tests that failed in each.
+ * Run every selected pass and collect the tests that failed in each.
  *
- * Both passes always run. Stopping at the first failure would leave the reverse-order pass unexecuted, and
- * that pass is the one nothing has ever run, so a report that omitted it would be the same omission this
- * whole check exists to remove.
+ * The enforced `repeat` pass runs by default; the pending `reverse` measurement runs only when selected.
+ * Once selected, every pass runs even after an earlier one fails so the resulting evidence is complete.
  *
  * @param   string        $root    Repository root.
  * @param   list<string>  $passes  Declared pass names.
  *
- * @return  array<string, list<string>>  Failing test identifiers by pass.
+ * @return  array<string, array{failures: list<string>, tests: int, status: int}>  Complete result by pass.
  *
  * @since   2.0.0
  */
@@ -282,6 +397,7 @@ function executePasses(string $root, array $passes): array
 {
     $observed = [];
     $generated = null;
+    $expectedTests = expectedIntegrationTestCount($root);
     foreach ($passes as $pass) {
         $log = sprintf('%s/build/idempotency/%s.junit.xml', $root, $pass);
         @mkdir(dirname($log), 0o755, true);
@@ -313,10 +429,51 @@ function executePasses(string $root, array $passes): array
                 $status,
             )]);
         }
-        $observed[$pass] = failingTests($log);
+        $observed[$pass] = readJUnitResult($log, $expectedTests, $status);
     }
 
     return $observed;
+}
+
+/**
+ * Ask PHPUnit how many integration tests the current tree collects before judging any execution report.
+ *
+ * A report's own `tests` attribute cannot prove completeness because a truncated producer can truncate
+ * the summary with the cases. Collection is an independent source of truth and must match every pass.
+ *
+ * @param   string  $root  Repository root containing PHPUnit and its configuration.
+ *
+ * @return  int  Number of integration tests PHPUnit collected.
+ *
+ * @since   2.0.0
+ */
+function expectedIntegrationTestCount(string $root): int
+{
+    $command = sprintf(
+        'cd %s && vendor/bin/phpunit --testsuite integration --list-tests --colors=never',
+        escapeshellarg($root),
+    );
+    $lines = [];
+    $status = 0;
+    exec($command . ' 2>&1', $lines, $status);
+    if ($status !== 0) {
+        reportIdempotencyFailure([sprintf(
+            'PHPUnit could not collect the integration suite before the run (exit %d).',
+            $status,
+        )]);
+    }
+
+    $tests = 0;
+    foreach ($lines as $line) {
+        if (preg_match('/^\s*-\s+\S+::\S+/', $line) === 1) {
+            $tests++;
+        }
+    }
+    if ($tests === 0) {
+        reportIdempotencyFailure(['PHPUnit collected no integration tests, so execution cannot be judged.']);
+    }
+
+    return $tests;
 }
 
 /**
@@ -391,40 +548,60 @@ function reversedClassOrderConfiguration(string $root): string
 /**
  * Read results collected elsewhere.
  *
- * @param   array<string, string>  $supplied  Report path by pass name.
- * @param   list<string>           $passes    Declared pass names.
+ * @param   array<string, string>  $supplied       Report path by pass name.
+ * @param   array<string, int>     $statuses       PHPUnit exit status by pass name.
+ * @param   list<string>           $passes         Declared pass names.
+ * @param   int                    $expectedTests  Independent suite-collection count.
  *
- * @return  array<string, list<string>>  Failing test identifiers by pass.
+ * @return  array<string, array{failures: list<string>, tests: int, status: int}>  Complete result by pass.
  *
  * @since   2.0.0
  */
-function readSuppliedResults(array $supplied, array $passes): array
+function readSuppliedResults(array $supplied, array $statuses, array $passes, int $expectedTests): array
 {
+    $missingReports = array_values(array_diff($passes, array_keys($supplied)));
+    $missingStatuses = array_values(array_diff($passes, array_keys($statuses)));
+    $unknownReports = array_values(array_diff(array_keys($supplied), $passes));
+    $unknownStatuses = array_values(array_diff(array_keys($statuses), $passes));
+    $errors = [];
+    if ($missingReports !== []) {
+        $errors[] = 'Supplied evidence is missing report(s) for: ' . implode(', ', $missingReports) . '.';
+    }
+    if ($missingStatuses !== []) {
+        $errors[] = 'Supplied evidence is missing runner status(es) for: ' . implode(', ', $missingStatuses) . '.';
+    }
+    if ($unknownReports !== [] || $unknownStatuses !== []) {
+        $unknown = array_values(array_unique(array_merge($unknownReports, $unknownStatuses)));
+        $errors[] = 'Supplied evidence names undeclared pass(es): ' . implode(', ', $unknown) . '.';
+    }
+    if ($errors !== []) {
+        reportIdempotencyFailure($errors);
+    }
+
     $observed = [];
     foreach ($passes as $pass) {
-        $path = $supplied[$pass] ?? null;
-        if ($path === null) {
-            continue;
-        }
+        $path = $supplied[$pass];
         if (!is_file($path)) {
             reportIdempotencyFailure([sprintf('The "%s" pass report %s does not exist.', $pass, $path)]);
         }
-        $observed[$pass] = failingTests($path);
+        $observed[$pass] = readJUnitResult($path, $expectedTests, $statuses[$pass]);
     }
 
     return $observed;
 }
 
 /**
- * Read the tests that errored or failed out of one JUnit report.
+ * Read and validate one complete JUnit execution report.
  *
- * @param   string  $path  Absolute path to a JUnit report.
+ * @param   string  $path           Absolute path to a JUnit report.
+ * @param   int     $expectedTests  Test count independently collected before execution.
+ * @param   int     $status         PHPUnit process exit status for this report.
  *
- * @return  list<string>  Failing test identifiers as `Class::method`, in document order.
+ * @return  array{failures: list<string>, tests: int, status: int}  Validated execution evidence.
  *
  * @since   2.0.0
  */
-function failingTests(string $path): array
+function readJUnitResult(string $path, int $expectedTests, int $status): array
 {
     $previous = libxml_use_internal_errors(true);
     $document = simplexml_load_file($path);
@@ -433,19 +610,85 @@ function failingTests(string $path): array
         reportIdempotencyFailure([sprintf('%s is not readable XML.', $path)]);
     }
 
+    $cases = $document->xpath('//testcase') ?: [];
+    $tests = count($cases);
+    $errors = [];
+    if ($tests !== $expectedTests) {
+        $errors[] = sprintf(
+            '%s contains %d testcase(s), but independent collection found %d.',
+            $path,
+            $tests,
+            $expectedTests,
+        );
+    }
+
+    $summaries = $document->getName() === 'testsuite' ? [$document] : [];
+    if ($summaries === []) {
+        foreach ($document->children() as $child) {
+            if ($child->getName() === 'testsuite') {
+                $summaries[] = $child;
+            }
+        }
+    }
+    if ($summaries === []) {
+        $errors[] = sprintf('%s carries no top-level testsuite summary.', $path);
+    }
+
+    $declaredTests = 0;
+    $declaredErrors = 0;
+    $declaredFailures = 0;
+    $declaredSkipped = 0;
+    $declaredDiagnostics = 0;
+    foreach ($summaries as $summary) {
+        foreach (['tests', 'errors', 'failures'] as $attribute) {
+            $value = (string) ($summary[$attribute] ?? '');
+            if ($value === '' || !ctype_digit($value)) {
+                $errors[] = sprintf('%s has no non-negative %s total.', $path, $attribute);
+                continue 2;
+            }
+        }
+        $declaredTests += (int) $summary['tests'];
+        $declaredErrors += (int) $summary['errors'];
+        $declaredFailures += (int) $summary['failures'];
+        $skipped = (string) ($summary['skipped'] ?? '0');
+        if (!ctype_digit($skipped)) {
+            $errors[] = sprintf('%s has a malformed skipped total.', $path);
+        } else {
+            $declaredSkipped += (int) $skipped;
+        }
+        foreach (['warnings', 'risky', 'deprecations', 'notices'] as $attribute) {
+            $value = (string) ($summary[$attribute] ?? '0');
+            if (!ctype_digit($value)) {
+                $errors[] = sprintf('%s has a malformed %s total.', $path, $attribute);
+                continue;
+            }
+            $declaredDiagnostics += (int) $value;
+        }
+    }
+
     $failing = [];
-    foreach ($document->xpath('//testcase') ?: [] as $case) {
+    $actualErrors = 0;
+    $actualFailures = 0;
+    $actualSkipped = 0;
+    foreach ($cases as $case) {
         // SimpleXML hands back an empty element rather than null for a child that is not there, so a
         // self-closing <testcase/> would read as failing if this asked for null.
-        if (!isset($case->failure) && !isset($case->error)) {
-            continue;
-        }
         $class = (string) ($case['class'] ?? '');
         if ($class === '') {
             $class = str_replace('.', '\\', (string) ($case['classname'] ?? ''));
         }
         $name = (string) ($case['name'] ?? '');
         if ($class === '' || $name === '') {
+            $errors[] = sprintf('%s contains a testcase without a class and method identifier.', $path);
+            continue;
+        }
+        $hasError = isset($case->error);
+        $hasFailure = isset($case->failure);
+        $hasSkipped = isset($case->skipped);
+        $actualErrors += $hasError ? 1 : 0;
+        $actualFailures += $hasFailure ? 1 : 0;
+        $actualSkipped += $hasSkipped ? 1 : 0;
+        if (!$hasError && !$hasFailure) {
             continue;
         }
         $identifier = $class . '::' . $name;
@@ -454,14 +697,52 @@ function failingTests(string $path): array
         }
     }
 
-    return $failing;
+    if ($declaredTests !== $tests || $declaredErrors !== $actualErrors || $declaredFailures !== $actualFailures) {
+        $errors[] = sprintf(
+            '%s summary says %d test(s), %d error(s), and %d failure(s), but contains %d, %d, and %d.',
+            $path,
+            $declaredTests,
+            $declaredErrors,
+            $declaredFailures,
+            $tests,
+            $actualErrors,
+            $actualFailures,
+        );
+    }
+    if ($declaredSkipped !== $actualSkipped) {
+        $errors[] = sprintf(
+            '%s summary says %d skipped test(s), but contains %d skipped testcase outcome(s).',
+            $path,
+            $declaredSkipped,
+            $actualSkipped,
+        );
+    }
+    if (($document->xpath('//testsuite/error') ?: []) !== []) {
+        $errors[] = sprintf('%s contains a suite-level runner error not attributable to a testcase.', $path);
+    }
+
+    $expectedStatus = $actualErrors > 0 ? 2 : ($actualFailures + $declaredDiagnostics > 0 ? 1 : 0);
+    if ($status !== $expectedStatus) {
+        $errors[] = sprintf(
+            '%s belongs to runner exit %d, but its accounted testcase outcomes and diagnostics require exit %d.',
+            $path,
+            $status,
+            $expectedStatus,
+        );
+    }
+    if ($errors !== []) {
+        reportIdempotencyFailure($errors);
+    }
+
+    return ['failures' => $failing, 'tests' => $tests, 'status' => $status];
 }
 
 /**
  * Compare what the passes observed with what the baseline records.
  *
- * @param   array<string, array{observed: bool, applies: bool}>  $entries   Baseline entries by test.
- * @param   array<string, list<string>>                          $observed  Failing tests by pass.
+ * @param   array<string, array{observed: bool, applies: bool, passes: list<string>}>  $entries  Baseline
+ *          entries by test.
+ * @param   array<string, array{failures: list<string>, tests: int, status: int}>  $observed  Results by pass.
  * @param   string                                               $engine    Engine under test.
  * @param   list<string>                                         $passes    Declared pass names.
  *
@@ -472,25 +753,40 @@ function failingTests(string $path): array
 function judge(array $entries, array $observed, string $engine, array $passes): int
 {
     $errors = [];
+    $missing = array_values(array_diff($passes, array_keys($observed)));
+    $unknown = array_values(array_diff(array_keys($observed), $passes));
+    if ($missing !== [] || $unknown !== []) {
+        reportIdempotencyFailure([
+            sprintf(
+                'The judged pass set is incomplete: missing [%s], undeclared [%s].',
+                implode(', ', $missing),
+                implode(', ', $unknown),
+            ),
+        ]);
+    }
     $failedSomewhere = [];
-    foreach ($observed as $pass => $tests) {
-        foreach ($tests as $test) {
+    $failedByPass = [];
+    foreach ($observed as $pass => $result) {
+        foreach ($result['failures'] as $test) {
             $failedSomewhere[$test][] = $pass;
+            $failedByPass[$pass][$test] = true;
         }
     }
 
     $unrecorded = [];
-    foreach ($failedSomewhere as $test => $inPasses) {
-        $entry = $entries[$test] ?? null;
-        if ($entry !== null && $entry['applies']) {
-            continue;
+    foreach ($failedByPass as $pass => $tests) {
+        foreach (array_keys($tests) as $test) {
+            $entry = $entries[$test] ?? null;
+            if ($entry !== null && $entry['applies'] && in_array($pass, $entry['passes'], true)) {
+                continue;
+            }
+            $unrecorded[] = sprintf(
+                '%s (failed in the %s pass on %s)',
+                $test,
+                $pass,
+                $engine,
+            );
         }
-        $unrecorded[] = sprintf(
-            '%s (failed in the %s pass on %s)',
-            $test,
-            implode(' and ', $inPasses),
-            $engine,
-        );
     }
 
     if ($unrecorded !== []) {
@@ -507,10 +803,15 @@ function judge(array $entries, array $observed, string $engine, array $passes): 
 
     $stale = [];
     foreach ($entries as $test => $entry) {
-        if (!$entry['observed'] || isset($failedSomewhere[$test])) {
+        if (!$entry['observed']) {
             continue;
         }
-        $stale[] = $test;
+        foreach ($entry['passes'] as $pass) {
+            if (!in_array($pass, $passes, true) || isset($failedByPass[$pass][$test])) {
+                continue;
+            }
+            $stale[] = sprintf('%s (recorded for the %s pass)', $test, $pass);
+        }
     }
 
     if ($stale !== []) {
@@ -538,7 +839,13 @@ function judge(array $entries, array $observed, string $engine, array $passes): 
         if (!array_key_exists($pass, $observed)) {
             continue;
         }
-        fwrite(STDOUT, sprintf("  %-8s %d recorded failure(s)\n", $pass, count($observed[$pass])));
+        fwrite(STDOUT, sprintf(
+            "  %-8s %d test(s), %d recorded failure(s), runner exit %d\n",
+            $pass,
+            $observed[$pass]['tests'],
+            count($observed[$pass]['failures']),
+            $observed[$pass]['status'],
+        ));
     }
 
     return 0;

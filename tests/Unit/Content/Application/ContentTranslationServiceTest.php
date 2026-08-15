@@ -89,7 +89,13 @@ final class ContentTranslationServiceTest extends TestCase
         $groups->expects(self::once())->method('declareGroup')->with(
             self::callback(static fn (SiteContext $site): bool => $site->identifier() === SiteContext::DEFAULT),
             self::GROUP,
-            self::callback(static fn (LocaleTag $fallback): bool => $fallback->toString() === 'af'),
+            self::callback(static fn (LocaleTag $member): bool => $member->toString() === 'af'),
+            null,
+        );
+        $groups->expects(self::once())->method('guardAttachment')->with(
+            self::callback(static fn (SiteContext $site): bool => $site->identifier() === SiteContext::DEFAULT),
+            self::GROUP,
+            self::ENTRY,
         );
         $events = [];
 
@@ -128,8 +134,10 @@ final class ContentTranslationServiceTest extends TestCase
         $groups->expects(self::once())->method('declareGroup')->with(
             self::anything(),
             self::GROUP,
+            self::callback(static fn (LocaleTag $member): bool => $member->toString() === 'af'),
             self::callback(static fn (LocaleTag $fallback): bool => $fallback->toString() === 'en-GB'),
         );
+        $groups->expects(self::once())->method('guardAttachment')->with(self::anything(), self::GROUP, self::ENTRY);
         $events = [];
 
         $updated = $this->service($repository, $groups, $events)->translate(
@@ -186,6 +194,7 @@ final class ContentTranslationServiceTest extends TestCase
         $repository->expects(self::never())->method('appendRevision');
         $groups = $this->createMock(TranslationGroupRepository::class);
         $groups->expects(self::never())->method('declareGroup');
+        $groups->expects(self::never())->method('guardAttachment');
         $events = [];
 
         $this->expectException(VersionConflict::class);
@@ -216,6 +225,7 @@ final class ContentTranslationServiceTest extends TestCase
         $repository->expects(self::never())->method('find');
         $groups = $this->createMock(TranslationGroupRepository::class);
         $groups->expects(self::never())->method('declareGroup');
+        $groups->expects(self::never())->method('guardAttachment');
         $events = [];
 
         $this->expectException(AuthorizationDenied::class);

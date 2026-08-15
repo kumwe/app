@@ -9,6 +9,7 @@ use Doctrine\DBAL\Exception as DriverException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\TranslationGroupSiteOwnershipMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
@@ -35,6 +36,7 @@ use RuntimeException;
  * @since  2.0.0
  */
 #[CoversClass(MultilingualContentMigration::class)]
+#[CoversClass(TranslationGroupSiteOwnershipMigration::class)]
 final class MultilingualContentMigrationIntegrationTest extends TestCase
 {
     /**
@@ -67,6 +69,9 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
             $migration = new MultilingualContentMigration($tables);
             $migration->up($database);
             $migration->up($database);
+            $ownership = new TranslationGroupSiteOwnershipMigration($tables);
+            $ownership->up($database);
+            $ownership->up($database);
 
             $manager = $database->createSchemaManager();
             $entries = $manager->introspectTableByUnquotedName($tables->raw('content_entries'));
@@ -82,6 +87,7 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
             // Nothing is backfilled, so both new columns have to admit the null an existing row keeps.
             self::assertFalse($entries->getColumn('locale')->getNotnull());
             self::assertFalse($entries->getColumn('translation_group_id')->getNotnull());
+            self::assertFalse($entries->getColumn('translation_group_site_identifier')->getNotnull());
 
             $identifier = $entries->getColumn('id');
             self::assertSame(self::IDENTIFIER_COLLATION, $identifier->getCollation());
@@ -91,10 +97,11 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
             }
 
             $foreignKeys = $entries->getForeignKeys();
-            self::assertCount(1, $foreignKeys, 'A replay must not leave a second constraint behind.');
-            $name = (string) array_key_first($foreignKeys);
-            self::assertMatchesRegularExpression('/^fk_[0-9a-f]{24}$/D', $name);
-            self::assertSame(ReferentialAction::SET_NULL, $foreignKeys[$name]->getOnDeleteAction());
+            self::assertCount(2, $foreignKeys, 'A replay must not duplicate either group constraint.');
+            foreach ($foreignKeys as $name => $foreignKey) {
+                self::assertMatchesRegularExpression('/^fk_[0-9a-f]{24}$/D', (string) $name);
+                self::assertSame(ReferentialAction::SET_NULL, $foreignKey->getOnDeleteAction());
+            }
         } finally {
             $this->dropTables($database, $tables);
         }
@@ -120,6 +127,7 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
         try {
             $this->createEntriesTable($database, $tables, 'CHAR(36) CHARACTER SET utf8mb4 COLLATE %s NOT NULL');
             (new MultilingualContentMigration($tables))->up($database);
+            (new TranslationGroupSiteOwnershipMigration($tables))->up($database);
 
             $group = '018f22e2-7c8b-7ab0-8f3a-88e8026bd001';
             $database->insert($tables->raw('content_translation_groups'), [
@@ -131,6 +139,19 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
             $this->insertEntry($database, $tables, 'b0002', 'de', $group);
             $this->insertEntry($database, $tables, 'b0003', null, null);
             $this->insertEntry($database, $tables, 'b0004', null, null);
+
+            try {
+                $database->insert($tables->raw('content_entries'), [
+                    'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026b0006',
+                    'site_identifier' => 'secondary',
+                    'locale' => 'af',
+                    'translation_group_id' => $group,
+                    'translation_group_site_identifier' => 'default',
+                ]);
+                self::fail('An entry cannot name a group owned by another site.');
+            } catch (DriverException) {
+                // The owner-equality check refused a cross-site row even though the composite key existed.
+            }
 
             self::assertSame('2', (string) $database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s WHERE translation_group_id IS NULL',
@@ -278,6 +299,7 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
             'site_identifier' => 'default',
             'locale' => $locale,
             'translation_group_id' => $group,
+            'translation_group_site_identifier' => $group === null ? null : 'default',
         ]);
     }
 

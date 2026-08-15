@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Localization\Infrastructure;
 
+use Kumwe\CMS\Localization\Application\MessageFormattingFailed;
 use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
 use Kumwe\CMS\Localization\Infrastructure\CompiledMessageCatalogueRepository;
@@ -123,6 +124,24 @@ final class MessageCatalogueCompilerTest extends TestCase
 
         (new MessageCatalogueCompiler())->compile(
             ['Save settings and design' => 'Save settings and design'],
+            'en-GB',
+            'en-GB.xlf',
+        );
+    }
+
+    /**
+     * Malformed ICU is refused before it can become a compiled runtime catalogue.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testItRefusesMalformedIcuBeforeCompiling(): void
+    {
+        $this->expectException(MessageFormattingFailed::class);
+
+        (new MessageCatalogueCompiler())->compile(
+            ['core.site.home.heading' => '{count, plural, one {One} other {Many}'],
             'en-GB',
             'en-GB.xlf',
         );

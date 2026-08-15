@@ -24,7 +24,8 @@ use RuntimeException;
 /**
  * Pins how the content adapter carries an entry's language dimension into the row and back out of it.
  *
- * The locale and the translation group are columns like any other, and that is the whole claim being
+ * The locale, translation group and database-enforced group-owner mirror are columns like any other,
+ * and that is the whole claim being
  * checked here: they are written by the insert, rewritten by the versioned update that a translation
  * is, projected by every read, and re-checked on the way back so a legacy row without them reads as
  * an untranslated entry rather than a malformed one. The statements are observed at the connection
@@ -94,8 +95,10 @@ final class DoctrineContentRepositoryTest extends TestCase
 
         self::assertSame('pt-BR', $written[0]['locale']);
         self::assertSame(self::GROUP, $written[0]['translation_group_id']);
+        self::assertSame(SiteContext::DEFAULT, $written[0]['translation_group_site_identifier']);
         self::assertNull($written[1]['locale']);
         self::assertNull($written[1]['translation_group_id']);
+        self::assertNull($written[1]['translation_group_site_identifier']);
     }
 
     /**
@@ -127,9 +130,15 @@ final class DoctrineContentRepositoryTest extends TestCase
         $repository->update($this->record($this->translated()), 1);
 
         self::assertIsString($statement);
-        self::assertStringContainsString('locale = ?, translation_group_id = ?', $statement);
+        self::assertStringContainsString(
+            'locale = ?, translation_group_id = ?, translation_group_site_identifier = ?',
+            $statement,
+        );
         self::assertStringContainsString('WHERE id = ? AND version = ? AND deleted_at IS NULL', $statement);
-        self::assertSame(['pt-BR', self::GROUP, self::ENTRY, 1], array_slice($bound, -4));
+        self::assertSame(
+            ['pt-BR', self::GROUP, SiteContext::DEFAULT, self::ENTRY, 1],
+            array_slice($bound, -5),
+        );
     }
 
     /**

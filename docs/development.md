@@ -41,10 +41,11 @@ rather than reading four workflows and inferring the union.
 `composer qa` is still the entry point a contributor uses, and it no longer restates the list: `composer
 quality:contract` fails when a check declared for the local lane is missing from `qa`, when `qa` runs a
 check the contract does not declare, when a check names a workflow or job that does not exist, or when the
-job declared to carry a command no longer contains it. Nightly and release execute the contract directly
-through `php tools/quality-contract.php --run --cadence=nightly|release`, so neither can drift into running
-its own shorter list. Adding a gate therefore means adding it to the contract; the build says so if you
-forget.
+job declared to carry a command no longer contains it. Nightly and release execute manifest-owned checks
+through `php tools/quality-contract.php --run --cadence=nightly|release`; a check with an explicit binding
+for that lane is delegated to the named provisioned job and is not run a second time by the generic process.
+Adding a gate therefore means adding it to the contract and assigning any special runtime requirements to
+the workflow job that provides them; the build says so if the two drift.
 
 ```bash
 composer quality:contract                                # the contract matches what is executed

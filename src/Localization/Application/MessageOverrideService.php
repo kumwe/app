@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -73,6 +74,8 @@ final readonly class MessageOverrideService
      *         by before it may be overridden.
      * @param  SupportedLocales            $supported      Registry deciding which locales may be written.
      * @param  AuthorizationGateway        $authorization  Policy deciding who may change wording.
+     * @param  TransactionManager          $transactions   Atomic boundary shared by state and audit writes.
+     * @param  MessagePatternValidator     $patterns       ICU syntax validator run before wording is stored.
      * @param  AuditRecorder               $audit          Sink every wording change is recorded to.
      * @param  ClockInterface              $clock          Source of the instant stored and audited.
      *
@@ -83,6 +86,8 @@ final readonly class MessageOverrideService
         private MessageCatalogueRepository $catalogues,
         private SupportedLocales $supported,
         private AuthorizationGateway $authorization,
+        private TransactionManager $transactions,
+        private MessagePatternValidator $patterns,
         private AuditRecorder $audit,
         private ClockInterface $clock,
     ) {
@@ -133,6 +138,7 @@ final readonly class MessageOverrideService
      * @throws  InvalidArgumentException  When the layer is not administered, the locale is not carried, the
      *          pattern is blank or too long, no file-shipped layer declares the identifier, or the scope
      *          already holds the maximum number of overrides.
+     * @throws  MessageFormattingFailed  When ICU refuses the replacement pattern for the requested locale.
      *
      * @since   2.0.0
      */
@@ -148,22 +154,11 @@ final readonly class MessageOverrideService
         $tag = $this->locale($locale);
         $validated = MessageIdentifier::fromString($identifier)->value;
         $wording = $this->pattern($pattern);
+        $this->patterns->validate($wording, $tag);
         $this->assertDeclared($validated, $tag);
 
         $site = $context->site()->identifier();
         $organization = $this->organization($context, $administered);
-        $stored = $this->store->overrides($administered, $site, $organization, $tag);
-        $known = [];
-        foreach ($stored as $record) {
-            $known[$record->identifier] = true;
-        }
-        if (!isset($known[$validated]) && count($known) >= self::MAXIMUM_PER_SCOPE) {
-            throw new InvalidArgumentException(sprintf(
-                'This scope already carries the maximum of %d overrides for one locale.',
-                self::MAXIMUM_PER_SCOPE,
-            ));
-        }
-
         $now = $this->clock->now();
         $override = new MessageOverrideRecord(
             $administered,
@@ -174,10 +169,35 @@ final readonly class MessageOverrideService
             $wording,
             $now,
         );
-        $this->store->put($override);
-        $this->record($context, 'localization.override.write', $override, $now);
 
-        return $override;
+        return $this->transactions->transactional(function () use (
+            $administered,
+            $site,
+            $organization,
+            $tag,
+            $validated,
+            $override,
+            $context,
+            $now,
+        ): MessageOverrideRecord {
+            $this->store->lockSite($site);
+            $stored = $this->store->overrides($administered, $site, $organization, $tag);
+            $known = [];
+            foreach ($stored as $record) {
+                $known[$record->identifier] = true;
+            }
+            if (!isset($known[$validated]) && count($known) >= self::MAXIMUM_PER_SCOPE) {
+                throw new InvalidArgumentException(sprintf(
+                    'This scope already carries the maximum of %d overrides for one locale.',
+                    self::MAXIMUM_PER_SCOPE,
+                ));
+            }
+
+            $this->store->put($override);
+            $this->record($context, 'localization.override.write', $override, $now);
+
+            return $override;
+        });
     }
 
     /**
@@ -210,20 +230,31 @@ final readonly class MessageOverrideService
         $organization = $this->organization($context, $administered);
         $now = $this->clock->now();
 
-        $removed = $this->store->remove($administered, $site, $organization, $tag, $validated);
-        if ($removed) {
-            $this->record($context, 'localization.override.withdraw', new MessageOverrideRecord(
-                $administered,
-                $site,
-                $organization,
-                $tag->toString(),
-                $validated,
-                '',
-                $now,
-            ), $now);
-        }
+        return $this->transactions->transactional(function () use (
+            $administered,
+            $site,
+            $organization,
+            $tag,
+            $validated,
+            $context,
+            $now,
+        ): bool {
+            $this->store->lockSite($site);
+            $removed = $this->store->remove($administered, $site, $organization, $tag, $validated);
+            if ($removed) {
+                $this->record($context, 'localization.override.withdraw', new MessageOverrideRecord(
+                    $administered,
+                    $site,
+                    $organization,
+                    $tag->toString(),
+                    $validated,
+                    '',
+                    $now,
+                ), $now);
+            }
 
-        return $removed;
+            return $removed;
+        });
     }
 
     /**
@@ -382,8 +413,69 @@ final readonly class MessageOverrideService
                 self::MAXIMUM_PATTERN_BYTES,
             ));
         }
+        $this->assertSafeMarkup($trimmed);
 
         return $trimmed;
+    }
+
+    /**
+     * Permit only balanced, attribute-free inline elements in administered wording.
+     *
+     * `t_html` treats catalogue markup as trusted because its substitution values are escaped first.
+     * File-shipped catalogues are release artifacts, but an administered override is operator input and
+     * must not turn terminology management into script execution. The small allowlist covers the inline
+     * elements the shipped messages use while excluding attributes, URLs, active content and malformed
+     * nesting. Markup in an ICU branch is conservatively refused: balancing the raw source cannot prove
+     * that every independently rendered branch is balanced. Plain messages may carry the same safe elements;
+     * ordinary `t` rendering escapes them.
+     *
+     * @param   string  $pattern  Bounded nonblank wording to inspect.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When markup is not balanced or is outside the safe allowlist.
+     *
+     * @since   2.0.0
+     */
+    private function assertSafeMarkup(string $pattern): void
+    {
+        $stack = [];
+        $containsMarkup = false;
+        $plain = preg_replace_callback('/<[^<>]*>/', static function (array $match) use (
+            &$stack,
+            &$containsMarkup,
+        ): string {
+            $containsMarkup = true;
+            $tag = $match[0];
+            if (preg_match('/^<(code|em|span|strong)>$/iD', $tag, $opened) === 1) {
+                $stack[] = strtolower($opened[1]);
+
+                return '';
+            }
+            if (preg_match('/^<\/(code|em|span|strong)>$/iD', $tag, $closed) === 1) {
+                $expected = array_pop($stack);
+                if ($expected !== strtolower($closed[1])) {
+                    throw new InvalidArgumentException('Replacement wording contains unbalanced inline markup.');
+                }
+
+                return '';
+            }
+
+            throw new InvalidArgumentException(
+                'Replacement wording contains an element or attribute that administered wording may not use.',
+            );
+        }, $pattern);
+        if (!is_string($plain) || str_contains($plain, '<') || $stack !== []) {
+            throw new InvalidArgumentException('Replacement wording contains unbalanced inline markup.');
+        }
+        if (
+            $containsMarkup
+            && preg_match('/\{[^{}]+,\s*(?:choice|plural|select|selectordinal)\s*,/i', $plain) === 1
+        ) {
+            throw new InvalidArgumentException(
+                'Replacement wording cannot combine inline markup with a branching ICU pattern.',
+            );
+        }
     }
 
     /**

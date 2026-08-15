@@ -322,6 +322,46 @@ final class MoneyConversionContractTest extends TestCase
     }
 
     /**
+     * Prove exported rounding metadata is complete, typed, and agrees with the converted amount.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testExportedRoundingMetadataCannotBeOmittedOrContradictTheAmount(): void
+    {
+        foreach (['mode', 'scale', 'unrounded_amount'] as $member) {
+            $mistyped = self::converted()->toArray();
+            $mistyped['rounding'][$member] = $member === 'scale' ? '2' : 12;
+            $this->refuses(
+                static fn (): ConvertedMoneyValue => ConvertedMoneyValue::fromArray($mistyped),
+                'rounding member has the wrong type',
+            );
+
+            $missing = self::converted()->toArray();
+            unset($missing['rounding'][$member]);
+            $this->refuses(
+                static fn (): ConvertedMoneyValue => ConvertedMoneyValue::fromArray($missing),
+                'rounding must carry exactly its declared members',
+            );
+        }
+
+        $extra = self::converted()->toArray();
+        $extra['rounding']['precision'] = 12;
+        $this->refuses(
+            static fn (): ConvertedMoneyValue => ConvertedMoneyValue::fromArray($extra),
+            'rounding must carry exactly its declared members',
+        );
+
+        $contradictory = self::converted()->toArray();
+        $contradictory['rounding']['scale'] = 9;
+        $this->refuses(
+            static fn (): ConvertedMoneyValue => ConvertedMoneyValue::fromArray($contradictory),
+            'rounding scale must match the converted amount',
+        );
+    }
+
+    /**
      * Build the converted amount every provenance assertion in this class is made against.
      *
      * @return  ConvertedMoneyValue  25000.00 ZAR presented as EUR at a rate from a named provider.

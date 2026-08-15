@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Infrastructure\Mcp;
 
+use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -22,7 +23,7 @@ final class McpCapabilityCatalogTest extends TestCase
         self::assertContains('kumwe_menu_item_get', $summary['tools']);
         self::assertContains('kumwe_menu_item_update', $summary['tools']);
         self::assertContains('kumwe_menu_item_delete', $summary['tools']);
-        self::assertContains('kumwe_token_rotate', $summary['tools']);
+        self::assertNotContains('kumwe_token_rotate', $summary['tools']);
         self::assertContains('kumwe_token_emergency_revoke_subject', $summary['tools']);
         self::assertContains('kumwe_token_revoke_subject_site', $summary['tools']);
         self::assertContains('kumwe_trust_key_add', $summary['tools']);
@@ -38,6 +39,52 @@ final class McpCapabilityCatalogTest extends TestCase
             self::assertTrue($tool['idempotent']);
             self::assertArrayHasKey('operationId', $tool['inputSchema']['properties']);
         }
+    }
+
+    /**
+     * Discovery publishes the policy metadata a client needs without exposing implementation details.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDiscoveryPublishesCapabilityRiskAndAlternativeForEveryTool(): void
+    {
+        $catalog = new McpCapabilityCatalog();
+        $summary = $catalog->publicSummary();
+        $metadata = [];
+        foreach ($summary['tool_metadata'] as $entry) {
+            $metadata[$entry['name']] = $entry;
+        }
+
+        self::assertSame($summary['tools'], array_keys($metadata));
+        foreach ($catalog->tools() as $tool) {
+            self::assertSame($tool['capability'], $metadata[$tool['name']]['capability']);
+            self::assertSame($tool['risk']->value, $metadata[$tool['name']]['risk']);
+            self::assertSame($tool['alternative'], $metadata[$tool['name']]['alternative']);
+            self::assertNotSame('', $metadata[$tool['name']]['alternative']);
+        }
+
+        $encoded = json_encode($summary, JSON_THROW_ON_ERROR);
+        self::assertStringNotContainsString('handler', $encoded);
+        self::assertStringNotContainsString('inputSchema', $encoded);
+        self::assertStringNotContainsString('outputSchema', $encoded);
+    }
+
+    /**
+     * Token rotation stays on secret-aware human and service surfaces, never on MCP.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTokenRotationIsNotPublishedOnTheMcpSurface(): void
+    {
+        $tools = (new McpCapabilityCatalog())->tools();
+
+        self::assertNotContains('kumwe_token_rotate', array_column($tools, 'name'));
+        self::assertNotContains('rotateToken', array_column($tools, 'handler'));
+        self::assertFalse(method_exists(KumweMcpHandlers::class, 'rotateToken'));
     }
 
     public function testBusinessSchemaStagesAreSeparatelyGrantedAndHonestlyAnnotated(): void

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Integration\BusinessSurface;
 
+use DateTimeImmutable;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
@@ -24,11 +26,17 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\CMS\BusinessSurface\Delivery\Administrator\AdministratorBusinessSurfaceHandler;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
+use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
+use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -41,6 +49,61 @@ use Ramsey\Uuid\Uuid;
  */
 final class GeneratedBusinessBrowserIntegrationTest extends TestCase
 {
+    /**
+     * A real generated administrator response renders definition wording in the active locale.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGeneratedAdministratorHtmlRendersLocalizedDefinitionLabels(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $principal = $context->principal();
+        self::assertInstanceOf(AuthenticatedPrincipal::class, $principal);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -10));
+        $document = NeutralBusinessFixture::document('locale' . $suffix, Uuid::uuid7()->toString());
+        $document['label_translations'] = [
+            'singular_label' => ['de' => 'Übersetzter Datensatz'],
+            'plural_label' => ['de' => 'Übersetzte Datensätze'],
+        ];
+        $document['fields'][1]['text_translations'] = [
+            'label' => ['de' => 'Übersetzter Name'],
+        ];
+        $definition = NeutralBusinessFixture::install($container, $context, $document);
+        $handler = $container->get(AdministratorBusinessSurfaceHandler::class);
+        $active = $container->get(ActiveLocale::class);
+        self::assertInstanceOf(AdministratorBusinessSurfaceHandler::class, $handler);
+        self::assertInstanceOf(ActiveLocale::class, $active);
+        $request = (new ServerRequestFactory())
+            ->createServerRequest(
+                'GET',
+                'https://kumwe.test/administrator/business/' . rawurlencode($definition->handle),
+            )
+            ->withAttribute('definition', $definition->handle)
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context)
+            ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, new AdministratorSession(
+                '018f22e2-7c8b-7ab0-8f3a-88e8026bb398',
+                $principal,
+                'generated-localization-csrf',
+                new DateTimeImmutable('+1 hour'),
+            ));
+
+        $active->begin(LocaleTag::fromString('de'));
+        try {
+            $response = $handler->handle($request);
+        } finally {
+            $active->end();
+        }
+
+        $body = (string) $response->getBody();
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<html lang="de" dir="ltr">', $body);
+        self::assertStringContainsString('Übersetzte Datensätze', $body);
+        self::assertStringContainsString('Übersetzter Name', $body);
+    }
+
     /**
      * Proves lifecycle mutations redirect only to records their resulting state can disclose.
      *

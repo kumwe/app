@@ -32,6 +32,8 @@ use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
+use Kumwe\CMS\Localization\Application\SupportedLocales;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -58,6 +60,8 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
      * @param  TransactionManager                $transactions    Holds definition and policy generations stable.
      * @param  RuntimeMaterializationState       $runtime         Trusted extension generation this process serves.
      * @param  ?CustomBusinessSurfaceDispatcher  $customBusiness  Active custom contracts, or null to fail closed.
+     * @param  ?ActiveLocale                     $active          Locale of an HTTP or worker unit of work; null
+     *         retains source labels for callers outside a localized runtime.
      *
      * @since  2.0.0
      */
@@ -69,6 +73,7 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
         private TransactionManager $transactions,
         private RuntimeMaterializationState $runtime,
         private ?CustomBusinessSurfaceDispatcher $customBusiness = null,
+        private ?ActiveLocale $active = null,
     ) {
     }
 
@@ -645,8 +650,8 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
         return [
             'id' => $definition->id,
             'handle' => $definition->handle,
-            'singular_label' => $definition->singularLabel,
-            'plural_label' => $definition->pluralLabel,
+            'singular_label' => $definition->singularLabelIn($this->locale()),
+            'plural_label' => $definition->pluralLabelIn($this->locale()),
             'version' => $definition->definitionVersion,
             'checksum' => $definition->checksum(),
             'owner' => $definition->owner->toArray(),
@@ -796,9 +801,9 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
 
         return [
             'handle' => $field->handle,
-            'label' => $field->label,
-            'description' => $field->description,
-            'help_text' => $field->helpText,
+            'label' => $field->labelIn($this->locale()),
+            'description' => $field->descriptionIn($this->locale()),
+            'help_text' => $field->helpTextIn($this->locale()),
             'type' => $field->type,
             'value_type' => $type->valueType,
             'required' => $field->required,
@@ -833,6 +838,19 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
             ],
             'schema' => $this->schema($field, $type),
         ];
+    }
+
+    /**
+     * Return the locale user-facing definition text is projected in.
+     *
+     * @return  string|\Kumwe\CMS\Localization\Domain\LocaleTag  Active locale, or the source tag when this
+     *          catalog is used outside a locale unit of work.
+     *
+     * @since   2.0.0
+     */
+    private function locale(): string|\Kumwe\CMS\Localization\Domain\LocaleTag
+    {
+        return $this->active?->locale() ?? SupportedLocales::SOURCE;
     }
 
     /**

@@ -398,6 +398,12 @@ function readChecks(
         /** @var array<string, array<string, mixed>> $workflows */
 
         $invokedBy = $check['invoked_by'] ?? null;
+        if (
+            array_key_exists('invoked_by', $check)
+            && (!is_string($invokedBy) || trim($invokedBy) === '')
+        ) {
+            $errors[] = sprintf('Check %s must declare invoked_by as a non-empty check identifier.', $id);
+        }
 
         $checks[] = [
             'id' => $id,
@@ -407,7 +413,7 @@ function readChecks(
             'cadence' => $cadence,
             'engines' => $engines,
             'workflows' => $workflows,
-            'invoked_by' => is_string($invokedBy) && $invokedBy !== '' ? $invokedBy : null,
+            'invoked_by' => is_string($invokedBy) && trim($invokedBy) !== '' ? $invokedBy : null,
         ];
     }
 
@@ -957,7 +963,18 @@ function runContractLane(array $contract, string $cadence, string $root): int
         if (!is_string($id) || !is_array($lanes) || !in_array($cadence, $lanes, true)) {
             continue;
         }
-        if (isset($check['invoked_by'])) {
+        $invokedBy = $check['invoked_by'] ?? null;
+        if (is_string($invokedBy) && trim($invokedBy) !== '') {
+            continue;
+        }
+        /** @var mixed $workflows */
+        $workflows = $check['workflows'] ?? [];
+        /** @var mixed $delegated */
+        $delegated = is_array($workflows) ? ($workflows[$cadence] ?? null) : null;
+        if (is_array($delegated)) {
+            $file = is_string($delegated['file'] ?? null) ? $delegated['file'] : 'a workflow';
+            $job = is_string($delegated['job'] ?? null) ? $delegated['job'] : 'an unnamed job';
+            fwrite(STDOUT, sprintf("- %s is delegated to %s job \"%s\".\n", $id, $file, $job));
             continue;
         }
         $runner = $check['runner'] ?? '';

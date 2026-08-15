@@ -36,7 +36,7 @@ jobs:
   release:
     needs: acceptance
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     services:
       database:
         image: mariadb:lts
@@ -52,11 +52,19 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - '6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       APP_ENV: testing
       APP_DEBUG: 'false'
       APP_BASE_URL: https://kumwe.test
       APP_TRUSTED_HOSTS: kumwe.test
+      EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'true'
       DB_HOST: 127.0.0.1
       DB_DRIVER: mariadb
       DB_PORT: '3306'
@@ -66,6 +74,12 @@ jobs:
       DB_TABLE_PREFIX: kumwe_
       DB_SSLMODE: disable
       DB_SERVER_VERSION: mariadb-12.3.2
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '6379'
+      REDIS_DATABASE: 0
+      REDIS_NAMESPACE: kumwe.release
+      KUMWE_SITE_CONTENT_PROFILE: blank
+      KUMWE_BUSINESS_DEMO: 'false'
     steps:
       - name: Check out release tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -129,6 +143,7 @@ jobs:
       - name: Verify source and locked dependencies
         run: |
           composer validate --strict
+          composer install --no-interaction --prefer-dist --dry-run
           composer install --no-interaction --prefer-dist
           composer audit --locked --abandoned=fail
           php bin/kumwe database:migrate

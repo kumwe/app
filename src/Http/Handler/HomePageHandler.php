@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Http\Handler;
 
 use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
 use Kumwe\CMS\Presentation\Application\SitePresentation;
 use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
@@ -43,6 +44,8 @@ final readonly class HomePageHandler implements RequestHandlerInterface
      * @param  ContentLayoutCatalog       $layouts    Content-type to site-template layout selection.
      * @param  TranslationGroupPresenter  $languages  Chooser of which locale of the nominated homepage the
      *         reader is served, and builder of the alternate-language links and the language selector.
+     * @param  ActiveLocale                $active     Request locale holder aligned to the resolved homepage
+     *         before its template and translated chrome are rendered.
      *
      * @since  2.0.0
      */
@@ -53,6 +56,7 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         private ContentPresenter $presenter,
         private ContentLayoutCatalog $layouts,
         private TranslationGroupPresenter $languages,
+        private ActiveLocale $active,
     ) {
     }
 
@@ -81,6 +85,10 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         // The root is the one public entry point that names no language, so it is the one place a
         // reader's negotiated locale — not the URL — decides which locale of the item is served.
         $record = $record === null ? null : $this->languages->negotiate($record);
+        $recordLocale = $record?->entry->locale();
+        if ($recordLocale !== null) {
+            $this->active->adoptLocale($recordLocale);
+        }
         $binding = $record === null
             ? ['template' => null, 'color_scheme' => null]
             : $this->pages->presentationBindingFor($record);

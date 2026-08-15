@@ -150,15 +150,31 @@ final readonly class ConvertedMoneyValue
         if (!is_array($rate) || !is_array($rounding)) {
             throw new InvalidArgumentException('A converted amount export member has the wrong type.');
         }
+        $expectedRounding = ['mode', 'scale', 'unrounded_amount'];
+        if (
+            array_diff($expectedRounding, array_keys($rounding)) !== []
+            || array_diff(array_keys($rounding), $expectedRounding) !== []
+        ) {
+            throw new InvalidArgumentException(
+                'A converted amount export rounding must carry exactly its declared members.',
+            );
+        }
         $mode = $rounding['mode'] ?? null;
+        $scale = $rounding['scale'] ?? null;
         $unrounded = $rounding['unrounded_amount'] ?? null;
-        if (!is_string($mode) || !is_string($unrounded)) {
+        if (!is_string($mode) || !is_int($scale) || !is_string($unrounded)) {
             throw new InvalidArgumentException('A converted amount export rounding member has the wrong type.');
+        }
+        $converted = self::money($data['value']);
+        if ($scale !== $converted->amount->scale) {
+            throw new InvalidArgumentException(
+                'A converted amount export rounding scale must match the converted amount.',
+            );
         }
 
         return new self(
             self::money($data['source']),
-            self::money($data['value']),
+            $converted,
             MoneyExchangeRate::fromArray(self::document($rate)),
             MoneyRoundingMode::tryFrom($mode)
                 ?? throw new InvalidArgumentException('A converted amount export names an unknown rounding mode.'),

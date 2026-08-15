@@ -74,7 +74,12 @@ final readonly class KumweMcpServerFactory
     public function create(KumweMcpHandlers $handlers): Server
     {
         $tools = $this->catalog->tools();
+        /** @var list<array{
+         *     uri: string, name: string, title: string, description: string,
+         *     mimeType: string, handler: string
+         * }> $resources */
         $resources = $this->catalog->resources();
+        /** @var list<array{name: string, title: string, description: string, handler: string}> $prompts */
         $prompts = $this->catalog->prompts();
         $this->validator->assertValid($tools, $resources, $prompts, $handlers);
         $builder = Server::builder()

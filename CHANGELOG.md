@@ -93,7 +93,7 @@ development programme, from the architecture decision that opened it to the curr
   admitted through `PackageTrustPolicy` over `SodiumEd25519Verifier` — the production trust path, not a
   second scheme — then installed, activated, upgraded, disabled, reactivated and uninstalled, with the
   contributed surface compared against the generation's promise at every step. The signing key is derived
-  from a written stem, so no key material is committed, not even the public half. (`7313d0c`, `db80c06`)
+  from a written stem, so no key material is committed, not even the public half. (`55acd00`)
 - **A build check that fails when the frozen surface moves.** `composer extension:contract` holds both
   documents to the tree — every classified type resolves to a file that declares it, every pinned fixture
   actually pins the type citing it, every compatibility package is present and unchanged — and each
@@ -558,7 +558,7 @@ development programme, from the architecture decision that opened it to the curr
   and a converted quantity offered where a stored one belongs is refused by both the record value guard and
   the quantity codec. Report and export columns carry the whole story in the cell, so a downloaded artifact
   is still readable, and reproducible, by someone who has never seen the installation that produced it.
-  (`d207d6a`)
+  (`46561c2`)
 - **Unit conversion tables come from extensions, and Kumwe ships none.** A package declares the units it
   relates and its place in the resolution order in its signed manifest, implements one port, and registers
   it through the same contribution registrar every other extension surface uses — with its own additive
@@ -570,7 +570,7 @@ development programme, from the architecture decision that opened it to the curr
   commercial term that genuinely changes. Conversions disappear with their package on disable, uninstall or
   trust revocation, in the same sweep as everything else it contributed. With no conversion package
   installed a conversion is refused rather than guessed, and an architecture test fails the build if a
-  conversion provider ever appears in the product itself. (`d207d6a`)
+  conversion provider ever appears in the product itself. (`46561c2`)
 - **A translation layer, so the interface can be presented in a language other than English.** Until now
   there was none at all: no catalogue, no translator, and no localizable helper on any of the three
   rendering surfaces. Interface text is now authored as XLIFF 2.0 — the format every professional
@@ -686,7 +686,7 @@ development programme, from the architecture decision that opened it to the curr
   A reader whose language the item does not carry gets the fallback rather than a miss, after falling
   through their own language's chain first, so somebody asking for `pt-BR` is offered `pt` before another
   language entirely. Where nothing in a group is published, nothing is served: a fallback that is still
-  drafting is not a page anybody may read. (`0675253`)
+  drafting is not a page anybody may read. (`cb5f482`)
 - **Two properties of a translation group are the database's, not the application's.** A unique index over
   the group and the locale means one item can never carry two entries for one language, and the site-wide
   slug index already in place means two languages of one item can never collide on a route segment. Both
@@ -694,7 +694,7 @@ development programme, from the architecture decision that opened it to the curr
   the application to have checked first. Both new columns are nullable and nothing is backfilled, so an
   entry authored before content carried a language dimension is untouched: its stored revision checksums
   stay valid, because an entry that declares no language snapshots to exactly the keys it always did.
-  (`0675253`)
+  (`cb5f482`)
 - **`hreflang` and a front-end language selector, shipped by default rather than added later.** The public
   layout emits one `alternate` link per **published** language and never for a drafting one, plus the
   declared fallback as `hreflang="x-default"` — which is precisely what that value means. The selector
@@ -704,7 +704,7 @@ development programme, from the architecture decision that opened it to the curr
   fewer than two languages renders neither, so an untranslated site looks exactly as it did. Which language
   a reader is served follows the locale the interface already negotiated: a URL that names a language is
   honoured as written, and the site root — the one public entry point that names no language — resolves the
-  reader's locale within the group. (`0675253`)
+  reader's locale within the group. (`cb5f482`)
 - **Business definition labels carry locales, without invalidating a single published definition.**
   `EntityTypeDefinition`'s singular and plural labels and `FieldDefinition`'s label, description and help
   text can each be declared in more than one language, read back through `singularLabelIn()`,
@@ -716,23 +716,22 @@ development programme, from the architecture decision that opened it to the curr
   the bytes it always encoded to and keeps its checksum — asserted against a hand-written pre-dimension
   document rather than against anything derived from the new code. Locale keys are normalised and both
   dimensions are sorted, so `pt_br` and `PT-BR` cannot become two translations of one thing and declaration
-  order cannot move a published checksum. (`0675253`)
-- **Extension-contributed content gets locale variants through the contribution contract, with no core
-  edit.** A package declares `contributions.content.translation_groups` in its manifest — the content set,
-  the languages it publishes it in, and the language it falls back to — and registers it through an
-  additive one-method `ContentTranslationRegistrar` that the owner-bound registrar implements alongside
-  every other surface. The language list is a **closed claim** an operator can read before installing, and
-  a package cannot widen it after admission: registering a set the manifest never carried is refused at
-  contribution time, as is a fallback naming a language the package never publishes. A package that
-  publishes in one language is untouched and source compatible, and a manifest declaring no content set
-  exports no `content` section at all, so its bytes are the bytes it was admitted against. The registrar's
-  signature, its manifest section and its declaration members are pinned in a compatibility fixture of
-  their own rather than by rewriting the frozen SPI-two baseline. This is the reason none of the language
-  work could wait for a later gate: an extension published against a contract with no locale dimension
-  would have had to be migrated to gain one. (`0675253`)
+  order cannot move a published checksum. (`cb5f482`)
+- **An extension can declare its translation-set intent at admission time.** A package declares
+  `contributions.content.translation_groups` in its manifest — the content set, the languages it intends
+  to publish in, and the language it falls back to — and registers that inventory through an additive
+  one-method `ContentTranslationRegistrar` that the owner-bound registrar implements alongside every
+  other surface. The language list is a **closed admission claim** an operator can inspect before
+  installing, and a package cannot widen it after admission: registering a set the manifest never carried
+  is refused at contribution time, as is a fallback naming a language the package never publishes. A
+  package declaring no content set exports no `content` section at all, so its bytes are unchanged. The
+  registrar signature, manifest section and declaration members are pinned in a compatibility fixture
+  without rewriting the frozen SPI-two baseline. This declaration is inventory, not yet the runtime link
+  between an extension-owned item and a set; that additive frozen association remains `V2-LNG-012` in the
+  roadmap rather than being claimed here as completed delivery. (`cb5f482`)
 - **[Content translation](docs/content-translation.md),** explaining the model to an editor, stating what
   the database guarantees and why the definition document had to stay byte-stable, and telling an extension
-  author the two things to do to make contributed content multilingual. (`0675253`)
+  author the two things to do to make contributed content multilingual. (`cb5f482`)
 
 ### Changed
 
@@ -803,7 +802,7 @@ development programme, from the architecture decision that opened it to the curr
   methods, the same rule that a nested call joins the scope already open, the same guarantee that a commit
   hook waits for the outermost commit while a rollback hook fires as soon as its own scope is discarded.
   The aggregate document command commits through the identical adapter, and every existing test passes
-  unmodified. Outside the two files, the only edit is the import each caller declares. (`1f2859b`)
+  unmodified. Outside the two files, the only edit is the import each caller declares. (`5a15f43`)
 - **The Doctrine automation adapters are filed where the adapters live.** `DoctrineJobQueue`,
   `DoctrineScheduler` and `DoctrineQueueRuntimeOperations` sat under `src/Application` while opening
   connections, branching on the PostgreSQL platform and writing `FOR UPDATE SKIP LOCKED` claim scans — two
@@ -811,7 +810,7 @@ development programme, from the architecture decision that opened it to the curr
   `Kumwe\CMS\Infrastructure\Automation`, beside the Doctrine adapters for authorization, security and
   persistence, while the ports they answer stay in Application. No SQL, no lease token, no claim scan, no
   engine branch and no concurrency semantic is touched: the queue-slot redesign is later work and would be
-  unreviewable stacked on a move. (`1567629`)
+  unreviewable stacked on a move. (`4f4770d`)
 - **The architecture gate enforces the layering instead of describing it.** Both corrections above are the
   kind that regress from one misplaced import or one file created in the wrong directory, and nothing in
   the build would have noticed. `composer architecture:policy` gains two predicates: application code —
@@ -824,7 +823,7 @@ development programme, from the architecture decision that opened it to the curr
   constraint by type — reflecting every application signature and walking the token stream past
   documentation blocks — and pins the transaction contract to Application, its adapter and the three
   automation adapters to Infrastructure, and each adapter to the port it answers. Both rules were proven to
-  fail on a deliberately reintroduced violation before being committed. (`1df2cf1`)
+  fail on a deliberately reintroduced violation before being committed. (`991600d`)
 - **Cross-site isolation is decided by containment instead of string equality, and is provably no wider.**
   The authorization gateway used to compare the owning site identifier with the caller's; it now asks whether
   the caller's site is inside the owning scope. For a resource owned by one site — every resource on an
@@ -926,10 +925,11 @@ development programme, from the architecture decision that opened it to the curr
   `organizations` table failed outright, with errno 121 on MariaDB. Every installed foreign key is now
   renamed to a name derived from the physical table it sits on, which is what makes it differ between two
   installations, and from the original name, which is what keeps two constraints on one table apart after
-  the longest of them has been trimmed to fit the portable sixty-three-byte identifier limit. Names already
-  unique to one installation are left exactly as they are, so the rename is a no-operation on every upgrade
-  after the first. Proven by installing two prefixed installations into one MariaDB schema, in that order,
-  and succeeding. (`8aa3a92`)
+  the longest of them has been trimmed to fit the portable sixty-three-byte identifier limit. A name already
+  carrying the derived digest suffix is left exactly as it is, so the rename is a no-operation on every
+  upgrade after the first. The collision is reproduced with the exact `sites` and `organizations` tables,
+  then two prefixes are repaired in order on MariaDB, MySQL and PostgreSQL; this is focused two-table
+  evidence rather than a claim that two complete migration plans were installed. (`c70da04`)
 - **The rename is the operation that frees the old names, which decides when a second installation becomes
   possible.** The literal names cannot be changed where they are written: the core migrations publish their
   own file digests as an immutability contract, and editing their bytes would break the upgrade path of
@@ -942,7 +942,7 @@ development programme, from the architecture decision that opened it to the curr
   its new name and the old one is then dropped, with the referential action, match type and deferrability
   carried across explicitly. That order is deliberate: where DDL commits implicitly, an interruption between
   the two statements leaves the table holding both names, which enforces the same rule twice and loses
-  nothing, where dropping first would have left it holding neither. (`8ff6224`, `138cb3f`)
+  nothing, where dropping first would have left it holding neither. (`c70da04`, `e161425`)
 - **A refused save no longer empties the form.** Filling in a long document and losing every value to a
   failure you could have recovered from was the single most expensive defect an operator met. Two gaps
   caused it. On the generated administrator and portal surfaces a validation failure already came back with
@@ -1158,33 +1158,35 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Security
 
-- **No password crosses the machine surface, in any field, under any name.** Three extension-lifecycle
+- **No step-up password is declared or accepted by an extension-lifecycle machine tool.** Three lifecycle
   tools published a `currentPassword` property in their input schemas and accepted it as a handler
   parameter, marked `writeOnly` as though that were a control — it describes an output property and
   prevents nothing on the way in. The property and all three parameters are gone, and the extension
   manager is now always called with no step-up proof, so the one lifecycle change that demands one —
   taking over, disabling or removing the live administrator theme — fails closed rather than being offered
-  a credential it should never have been able to accept. The browser, the protected console and the
-  protected REST path remain the human step-up route, and every other activation, disable and uninstall
-  proceeds under the caller's existing `extensions.manage` authorization exactly as before. (`64c19b6`)
-- **The machine surface now says what each of its seventy-six tools costs, and the claim is enforced rather
+  a credential it should never have been able to accept. The browser and protected REST path remain the
+  human step-up routes; the console can restore the built-in administrator theme for break-glass recovery
+  but cannot step up to disable the live one. Every other activation, disable and uninstall proceeds under
+  the caller's existing `extensions.manage` authorization exactly as before. (`c6ce286`)
+- **The machine surface now says what each published tool costs, and the claim is enforced rather
   than reviewed.** Every published tool carries one risk class from a closed vocabulary — read, scoped
   write, destructive, credential, trust, installation-global — together with the non-MCP route an operator
   takes instead. The classes are not a severity ladder: each names a different question an operator has to
   answer before allowing a call, and a tool raising more than one is classified by the first that applies,
   so revoking every token a person holds across the installation is classified by its reach and disabling
-  an extension by the fact that it changes which code runs. Two declarations were wrong and are corrected
-  rather than exempted: deleting a menu item removes state and now says so. (`64c19b6`)
+  an extension by the fact that it changes which code runs. Misclassifications are corrected rather than
+  exempted: deleting a menu item removes state and says so, while moving content into recoverable trash is
+  a scoped write because the same surface can restore it. (`c6ce286`)
 - **A server cannot be built from a catalogue that breaks its own rules.** The classification, the
   annotations and the schemas are checked in full before the first tool is registered, so an incoherent
   surface is a boot failure naming the offending entries instead of a tool a client discovers and misuses.
   It refuses duplicate or malformed names, a handler that does not exist or cannot receive a property the
   schema requires, an annotation that contradicts the declared class, an object schema whose membership
   nobody decided, a mutation without an operation identity, an elevated class with no declared capability,
-  and — the rule the credential removal rests on — any property at any depth of any schema shaped like a
-  credential or a host path, and any handler parameter that is credential-shaped or marked
+  and — the rule the credential removal rests on — any declared property at any depth of any schema shaped
+  like a credential or a host path, and any handler parameter that is credential-shaped or marked
   `#[\SensitiveParameter]`. A value worth marking sensitive is a value that must not cross a tool boundary
-  at all. (`64c19b6`)
+  at all. (`c6ce286`)
 - **The extension boundary is described the same honest way everywhere, because the risk was drift rather
   than dishonesty.** The supported tier has one name on every surface — trusted in-process extension code —
   and the boundary is stated by what it is and what it is not, side by side: `RestrictedExtensionContainer`
@@ -1201,7 +1203,7 @@ development programme, from the architecture decision that opened it to the curr
   built here and none is promised; what is added is a test that reads the wording as source text and fails
   when a surface drifts, and a proof that recovery composition — which runs while an extension is
   installed, active and trusted — executes none of its PHP and exposes none of its templates.
-  (`efb8928`, `a60ee88`)
+  (`f8422e9`, `2011e9e`)
 - **A legal entity's books cannot be jointly owned, by construction rather than by discipline.** There is no
   setting, environment variable, manifest key or contribution that makes an accounting document, a ledger or
   a pay run shareable; the refusal is a property of the type system and, where the engine supports it, of the

@@ -57,8 +57,8 @@ final class LocalizedDefinitionText
      *          sorted, and empty members removed; empty when nothing is translated.
      *
      * @throws  InvalidBusinessDefinition  When a member is not translatable, a map is not an object, a
-     *          locale tag is malformed, a translation is blank or over its member's bound, or a member
-     *          declares more than 64 locales.
+     *          locale tag is malformed or duplicates another tag after normalization, a translation is
+     *          blank or over its member's bound, or a member declares more than 64 locales.
      *
      * @since   2.0.0
      */
@@ -79,7 +79,15 @@ final class LocalizedDefinitionText
             }
             $texts = [];
             foreach ($locales as $tag => $text) {
-                $texts[self::locale($tag)] = self::text($text, $members[$member]);
+                $locale = self::locale($tag);
+                if (array_key_exists($locale, $texts)) {
+                    throw new InvalidBusinessDefinition(sprintf(
+                        'Business definition member %s declares locale %s more than once after normalization.',
+                        $member,
+                        $locale,
+                    ));
+                }
+                $texts[$locale] = self::text($text, $members[$member]);
             }
             if ($texts === []) {
                 continue;

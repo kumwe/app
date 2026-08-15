@@ -520,7 +520,8 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordHistoryWindowMi
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationCompatibilityMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
@@ -542,6 +543,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigrat
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfaceMessageOverrideMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\TranslationGroupSiteOwnershipMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
@@ -640,10 +642,12 @@ use Kumwe\CMS\Localization\Application\MessageOverrideRepository;
 use Kumwe\CMS\Localization\Application\MessageOverrideService;
 use Kumwe\CMS\Localization\Application\MessageOverrideStore;
 use Kumwe\CMS\Localization\Application\MessagePatternFormatter;
+use Kumwe\CMS\Localization\Application\MessagePatternValidator;
 use Kumwe\CMS\Localization\Application\SiteDefaultLocale;
 use Kumwe\CMS\Localization\Application\SupportedLocales;
 use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Localization\Http\Middleware\LocaleNegotiationMiddleware;
+use Kumwe\CMS\Localization\Http\Middleware\TranslationScopeMiddleware;
 use Kumwe\CMS\Localization\Infrastructure\CompiledMessageCatalogueRepository;
 use Kumwe\CMS\Localization\Infrastructure\DoctrineMessageOverrideRepository;
 use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
@@ -1690,8 +1694,12 @@ final class ContainerFactory
                     new BusinessRecordHistoryWindowMigration(self::service($container, TableNames::class)),
                     new ResourceOwnershipScopeMigration(self::service($container, TableNames::class)),
                     new InterfaceMessageOverrideMigration(self::service($container, TableNames::class)),
-                    new ConstraintNameIsolationMigration(self::service($container, TableNames::class)),
+                    new ConstraintNameIsolationCompatibilityMigration(
+                        self::service($container, TableNames::class),
+                    ),
                     new MultilingualContentMigration(self::service($container, TableNames::class)),
+                    new TranslationGroupSiteOwnershipMigration(self::service($container, TableNames::class)),
+                    new ConstraintNameIsolationPortabilityMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -1700,6 +1708,11 @@ final class ContainerFactory
                     JobRecoveryMigration::ID => [
                         '5e55e74ae3027ecc5d4843e045cf19a3e07d0b7be1f2ce556807bb67eda61947',
                         '4d7fc30104c21bda0c00947fb82bce1333daa0d542e7292ee4e96bbda1c83b5d',
+                    ],
+                    // Existing databases keep the checksum of the immutable published rename. Fresh
+                    // databases run the corrected compatibility implementation in that same plan slot.
+                    ConstraintNameIsolationCompatibilityMigration::ID => [
+                        ConstraintNameIsolationCompatibilityMigration::PUBLISHED_CHECKSUM,
                     ],
                 ],
             ), true);
@@ -1774,6 +1787,7 @@ final class ContainerFactory
         // plain PHP, formatted by ICU, resolved through core, extension, site and organization.
         $container->share(SupportedLocales::class, new SupportedLocales(), true);
         $container->share(MessagePatternFormatter::class, new IntlMessagePatternFormatter(), true);
+        $container->alias(MessagePatternValidator::class, MessagePatternFormatter::class);
         $container->share(MessageCatalogueRepository::class, static fn (
             Container $container,
         ): MessageCatalogueRepository => new CompiledMessageCatalogueRepository(
@@ -1795,6 +1809,8 @@ final class ContainerFactory
             self::service($container, MessageCatalogueRepository::class),
             self::service($container, SupportedLocales::class),
             self::service($container, AuthorizationGateway::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, MessagePatternValidator::class),
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
         ), true);
@@ -1830,6 +1846,11 @@ final class ContainerFactory
             self::service($container, LocaleNegotiator::class),
             self::service($container, ActiveLocale::class),
             $configuration->publicSite,
+        ), true);
+        $container->share(TranslationScopeMiddleware::class, static fn (
+            Container $container,
+        ): TranslationScopeMiddleware => new TranslationScopeMiddleware(
+            self::service($container, ActiveLocale::class),
         ), true);
         $container->share(IsolatedTwigEnvironmentFactory::class, static fn (
             Container $container,
@@ -2871,6 +2892,7 @@ final class ContainerFactory
             self::service($container, TransactionManager::class),
             self::service($container, RuntimeMaterializationState::class),
             self::service($container, CustomBusinessSurfaceDispatcher::class),
+            self::service($container, ActiveLocale::class),
         ), true);
         $container->share(BusinessApprovalSurfaceService::class, static fn (
             Container $container,
@@ -2913,6 +2935,7 @@ final class ContainerFactory
             self::service($container, FieldPresentationRegistry::class),
             self::service($container, MediaService::class),
             self::service($container, TransactionManager::class),
+            self::service($container, ActiveLocale::class),
         ), true);
         $container->share(BusinessMutationPlanService::class, static fn (
             Container $container,
@@ -3147,6 +3170,7 @@ final class ContainerFactory
                 self::service($container, ContentPresenter::class),
                 self::service($container, ContentLayoutCatalog::class),
                 self::service($container, TranslationGroupPresenter::class),
+                self::service($container, ActiveLocale::class),
             ), true);
         $container->share(LivenessHandler::class, new LivenessHandler(), true);
         $container->share(MetricsHandler::class, static fn (Container $container): MetricsHandler =>
@@ -3213,6 +3237,7 @@ final class ContainerFactory
             self::service($container, ContentPresenter::class),
             self::service($container, ContentLayoutCatalog::class),
             self::service($container, TranslationGroupPresenter::class),
+            self::service($container, ActiveLocale::class),
         ), true);
         $container->share(ExtensionAssetHandler::class, static fn (
             Container $container,
@@ -3751,12 +3776,20 @@ final class ContainerFactory
         $application->pipe(ImplicitOptionsMiddleware::class);
         $application->pipe(MethodNotAllowedMiddleware::class);
         $application->pipe(AdministratorSessionMiddleware::class);
+        // A trusted administrator session may be denied by the route gate below, which renders a
+        // localized HTML response itself. Enrich the scope before that early-return boundary.
+        $application->pipe(TranslationScopeMiddleware::class);
         $application->pipe(AdministratorAuthorizationMiddleware::class);
         if ($portalEnabled) {
             $application->pipe(PortalSessionMiddleware::class);
+            // The portal route gate can also return before dispatch once a session is trusted.
+            $application->pipe(TranslationScopeMiddleware::class);
             $application->pipe(PortalAuthorizationMiddleware::class);
         }
         $application->pipe(BearerAuthenticationMiddleware::class);
+        // Bearer identity is the last authentication source; this pass covers API dispatch while the
+        // earlier passes cover localized responses produced by administrator and portal authorization.
+        $application->pipe(TranslationScopeMiddleware::class);
         $application->pipe(DispatchMiddleware::class);
         $application->pipe(NotFoundHandler::class);
 
@@ -5489,7 +5522,6 @@ final class ContainerFactory
                 self::service($container, SiteSettings::class),
                 self::service($container, ExtensionManager::class),
                 self::service($container, TrustStore::class),
-                self::service($container, AdministratorIdentityGateway::class),
                 self::service($container, AutomationManagementService::class),
                 self::service($container, BusinessDefinitionService::class),
                 self::service($container, BusinessSchemaService::class),
@@ -5498,7 +5530,6 @@ final class ContainerFactory
                 self::service($container, McpMutationGuard::class),
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
-                self::service($container, TokenRotationPreauthorizer::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(

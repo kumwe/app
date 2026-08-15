@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A producer-level truncation whose summary and testcase count both fall short of collection. -->
+<testsuites>
+  <testsuite name="integration" tests="1" assertions="1" errors="0" failures="0" time="1.000000">
+    <testcase name="testAnIdempotentNeighbourStillPasses"
+              class="Kumwe\CMS\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
+              classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
+              time="1.000000"/>
+  </testsuite>
+</testsuites>

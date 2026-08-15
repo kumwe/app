@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Architecture;
 
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationCompatibilityMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -13,14 +15,14 @@ use ReflectionClass;
  * Audits every foreign key the shipped migrations declare, so the rename cannot fall behind them.
  *
  * A foreign-key constraint name is schema-global on MySQL and MariaDB, which is why
- * `ConstraintNameIsolationMigration` renames the literal ones. That rename is only complete while the
- * inventory it is proved against matches the source, so this reads the migration tree directly: it
- * counts the declarations, separates the literal names from the derived ones, and fails when the two
- * lists and the inventory the unit suite asserts against disagree.
+ * The same-ID compatibility migration renames the literal ones safely for pending databases, while the
+ * append-only portability follow-up repairs databases that already recorded the published checksum. The
+ * repair remains complete only while its proved inventory matches the source, so this reads the migration
+ * tree directly.
  *
  * The source text really is the contract here — a name written into a released, self-checksumming
  * migration cannot be changed later — which is why this is a source-shape test rather than a behavioural
- * one. What the rename does at runtime is proved on real engines by `MigrationIntegrationTest`.
+ * one. Runtime behavior is proved on real engines by the two constraint-isolation integration suites.
  *
  * @since  2.0.0
  */
@@ -30,9 +32,9 @@ final class ForeignKeyConstraintNamingTest extends TestCase
     /**
      * Derivations already unique to one installation, which the rename deliberately leaves alone.
      *
-     * This is a list rather than a set, and `$foreignKey` appearing twice is not a duplicate to tidy
-     * away: two migrations hash their own prefixed table into a variable spelled that way, and dropping
-     * one entry would let a third such declaration ship without ever being read.
+     * This is a list rather than a set, and `$foreignKey` appearing three times is not a duplicate to
+     * tidy away: three migrations hash their own prefixed table into a variable spelled that way, and
+     * dropping one entry would let another such declaration ship without ever being read.
      *
      * @var    list<string>
      * @since  2.0.0
@@ -44,6 +46,7 @@ final class ForeignKeyConstraintNamingTest extends TestCase
         "'fk_site_theme_activation_' . substr(hash('sha256', "
             . "\$this->tables->raw('site_theme_activations')), 0, 16)",
         '$target',
+        '$foreignKey',
         '$foreignKey',
         "\$this->tables->raw('fk_site_group_member_group')",
         "\$this->tables->raw('fk_site_group_member_site')",
@@ -94,25 +97,33 @@ final class ForeignKeyConstraintNamingTest extends TestCase
     }
 
     /**
-     * The rename is registered in the plan, after every migration whose names it has to repair.
+     * The safe compatibility slot and its append-only follow-up are registered in protocol order.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testTheRenameIsRegisteredAfterTheMigrationsItRepairs(): void
+    public function testTheRenameAndFollowUpAreRegisteredInProtocolOrder(): void
     {
         $container = file_get_contents(dirname(__DIR__, 2) . '/src/Kernel/ContainerFactory.php');
         self::assertIsString($container);
 
-        $isolation = strpos($container, 'new ConstraintNameIsolationMigration(');
+        $isolation = strpos($container, 'new ConstraintNameIsolationCompatibilityMigration(');
         self::assertNotFalse($isolation);
+        self::assertStringNotContainsString('new ConstraintNameIsolationMigration(', $container);
         $repaired = ['CoreSchemaMigration', 'BusinessSecurityPortalMigration', 'ResourceOwnershipScopeMigration'];
         foreach ($repaired as $earlier) {
             $position = strpos($container, 'new ' . $earlier . '(');
             self::assertNotFalse($position, $earlier);
             self::assertGreaterThan($position, $isolation, $earlier);
         }
+
+        $portability = strpos($container, 'new ConstraintNameIsolationPortabilityMigration(');
+        self::assertNotFalse($portability);
+        self::assertGreaterThan($isolation, $portability);
+        $translationOwnership = strpos($container, 'new TranslationGroupSiteOwnershipMigration(');
+        self::assertNotFalse($translationOwnership);
+        self::assertGreaterThan($translationOwnership, $portability);
     }
 
     /**
@@ -206,7 +217,12 @@ final class ForeignKeyConstraintNamingTest extends TestCase
         $declarations = self::declarations();
 
         self::assertCount(54, $declarations['literal']);
-        self::assertCount(10, $declarations['derived']);
+        self::assertCount(11, $declarations['derived']);
         self::assertSame(63, ConstraintNameIsolationMigration::MAXIMUM_IDENTIFIER_BYTES);
+        self::assertSame(ConstraintNameIsolationMigration::ID, ConstraintNameIsolationCompatibilityMigration::ID);
+        self::assertSame(
+            ConstraintNameIsolationMigration::MAXIMUM_IDENTIFIER_BYTES,
+            ConstraintNameIsolationPortabilityMigration::MAXIMUM_IDENTIFIER_BYTES,
+        );
     }
 }

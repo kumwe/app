@@ -420,6 +420,9 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             'deleted_at' => $record->deletedAt,
             'locale' => $entry->locale()?->toString(),
             'translation_group_id' => $entry->translationGroupId(),
+            'translation_group_site_identifier' => $entry->translationGroupId() === null
+                ? null
+                : $record->siteIdentifier,
         ], $this->writeTypes());
     }
 
@@ -446,7 +449,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
         $entry = $record->entry;
         $affected = $this->database->executeStatement(sprintf(
             'UPDATE %s SET workflow_state_key = ?, title = ?, slug = ?, data = ?, publish_at = ?, '
-            . 'unpublish_at = ?, version = ?, updated_at = ?, locale = ?, translation_group_id = ? '
+            . 'unpublish_at = ?, version = ?, updated_at = ?, locale = ?, translation_group_id = ?, '
+            . 'translation_group_site_identifier = ? '
             . 'WHERE id = ? AND version = ? AND deleted_at IS NULL',
             $this->tables->quoted('content_entries'),
         ), [
@@ -460,6 +464,7 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             $record->updatedAt,
             $entry->locale()?->toString(),
             $entry->translationGroupId(),
+            $entry->translationGroupId() === null ? null : $record->siteIdentifier,
             $entry->id(),
             $expectedVersion,
         ], [
@@ -471,6 +476,7 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             Types::DATETIME_IMMUTABLE,
             Types::INTEGER,
             Types::DATETIME_IMMUTABLE,
+            Types::STRING,
             Types::STRING,
             Types::STRING,
             Types::GUID,

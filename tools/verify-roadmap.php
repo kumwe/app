@@ -7,13 +7,14 @@
  * work lives. The rule that keeps them apart is that a completed work package leaves the ledger in the pull
  * request that completes it. This check is what stops that rule rotting the way the qualification gap matrix
  * did: it fails when `docs/roadmap/findings.json` still carries an entry in state `closed`, and names the
- * entries so the author knows exactly what to move.
+ * entries so the author knows exactly what to move. The same check also resolves every abbreviated commit
+ * cited by the changelog, so a rebase cannot leave the historical record pointing at vanished objects.
  *
- * It is deliberately dependency-free so it runs before `composer install` and inside minimal images, and it
- * reads two small documents, so it costs milliseconds.
+ * It has no PHP dependencies, so it runs before `composer install`; Git is the only executable it needs,
+ * because repository ancestry rather than the local object cache decides whether a citation survives.
  *
  * Usage:
- *   php tools/verify-roadmap.php [--findings=PATH]
+ *   php tools/verify-roadmap.php [--findings=PATH] [--changelog=PATH] [--repository=PATH]
  *
  * `--findings` exists so the architecture suite can prove the check fails in the right direction against a
  * ledger with a closed entry reintroduced, without writing that entry into the committed one.
@@ -26,21 +27,37 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $errors = [];
 $ledgerPath = $root . '/docs/roadmap/findings.json';
+$changelogPath = $root . '/CHANGELOG.md';
+$repositoryRoot = $root;
 
 foreach (array_slice($argv, 1) as $argument) {
     if (str_starts_with($argument, '--findings=')) {
         $ledgerPath = substr($argument, strlen('--findings='));
         continue;
     }
+    if (str_starts_with($argument, '--changelog=')) {
+        $changelogPath = substr($argument, strlen('--changelog='));
+        continue;
+    }
+    if (str_starts_with($argument, '--repository=')) {
+        $repositoryRoot = substr($argument, strlen('--repository='));
+        continue;
+    }
 
-    $errors[] = sprintf('Unknown argument %s. Usage: php tools/verify-roadmap.php [--findings=PATH]', $argument);
+    $errors[] = sprintf(
+        'Unknown argument %s. Usage: php tools/verify-roadmap.php [--findings=PATH] [--changelog=PATH] '
+        . '[--repository=PATH]',
+        $argument,
+    );
 }
 
 $findings = readLedger($ledgerPath, $errors);
 readLedger($root . '/docs/roadmap/capacity-contract.json', $errors);
 
-if (!is_file($root . '/CHANGELOG.md')) {
+if (!is_file($changelogPath)) {
     $errors[] = 'CHANGELOG.md is missing. It is where completed work goes when it leaves the roadmap.';
+} else {
+    verifyChangelogCitations($changelogPath, $repositoryRoot, $errors);
 }
 
 if ($errors !== []) {
@@ -124,6 +141,77 @@ fwrite(
     ),
 );
 exit(0);
+
+/**
+ * Require every abbreviated commit cited by the changelog to resolve in repository history.
+ *
+ * @param   string        $path    Changelog document whose backtick-delimited hashes are citations.
+ * @param   string        $root    Repository root whose current history must contain those commits.
+ * @param   list<string>  $errors  Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function verifyChangelogCitations(string $path, string $root, array &$errors): void
+{
+    $contents = file_get_contents($path);
+    if ($contents === false) {
+        $errors[] = 'CHANGELOG.md could not be read.';
+
+        return;
+    }
+
+    /** @var array<int, array<int, string>> $matched */
+    $matched = [];
+    preg_match_all('/`([0-9a-f]{7,40})`/', $contents, $matched);
+    $citations = array_values(array_unique($matched[1] ?? []));
+    if ($citations === []) {
+        $errors[] = 'CHANGELOG.md cites no commits, so completed work has no reachable evidence.';
+
+        return;
+    }
+
+    $status = 0;
+    $reachable = [];
+    exec(sprintf('git -C %s rev-list HEAD 2>&1', escapeshellarg($root)), $reachable, $status);
+    if ($status !== 0 || $reachable === []) {
+        $errors[] = 'CHANGELOG.md commit citations cannot be verified because repository history is unavailable.';
+
+        return;
+    }
+
+    $unreachable = [];
+    $ambiguous = [];
+    foreach ($citations as $citation) {
+        $matches = array_values(array_filter(
+            $reachable,
+            static fn (string $commit): bool => str_starts_with($commit, $citation),
+        ));
+        if ($matches === []) {
+            $unreachable[] = $citation;
+        } elseif (count($matches) > 1) {
+            $ambiguous[] = $citation;
+        }
+    }
+
+    if ($unreachable !== []) {
+        sort($unreachable, SORT_STRING);
+        $errors[] = sprintf(
+            'CHANGELOG.md cites commit(s) that are not reachable from HEAD: %s. Repoint each citation '
+            . 'after a rebase so the historical claim keeps its evidence.',
+            implode(', ', $unreachable),
+        );
+    }
+    if ($ambiguous !== []) {
+        sort($ambiguous, SORT_STRING);
+        $errors[] = sprintf(
+            'CHANGELOG.md abbreviates commit(s) ambiguously in reachable history: %s. Lengthen each citation '
+            . 'until it names exactly one commit.',
+            implode(', ', $ambiguous),
+        );
+    }
+}
 
 /**
  * Read one JSON document and record a failure when it is absent or malformed.

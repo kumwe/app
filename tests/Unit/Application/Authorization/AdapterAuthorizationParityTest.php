@@ -37,8 +37,6 @@ use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -259,7 +257,6 @@ final class AdapterAuthorizationParityTest extends TestCase
             $this->createStub(SiteSettings::class),
             $this->createStub(ExtensionManager::class),
             $this->withoutConstructor(TrustStore::class),
-            $this->createStub(AdministratorIdentityGateway::class),
             $this->withoutConstructor(AutomationManagementService::class),
             $this->withoutConstructor(BusinessDefinitionService::class),
             $this->withoutConstructor(BusinessSchemaService::class),
@@ -268,7 +265,6 @@ final class AdapterAuthorizationParityTest extends TestCase
             $this->withoutConstructor(McpMutationGuard::class),
             $this->clock(),
             AuthorizationContext::gateway(),
-            $this->withoutConstructor(TokenRotationPreauthorizer::class),
         );
     }
 

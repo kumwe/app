@@ -505,7 +505,8 @@ final readonly class ContentService
             $fallback,
             $now,
         ): ContentRecord {
-            $translations->declareGroup($context->site(), $translationGroupId, $fallback ?? $locale);
+            $translations->declareGroup($context->site(), $translationGroupId, $locale, $fallback);
+            $translations->guardAttachment($context->site(), $translationGroupId, $updated->entry->id());
             $this->repository->update($updated, $expectedVersion);
             $this->captureRevision($updated->entry, $now);
             $this->recordAudit($context->actorId(), 'content.translate', $updated->entry, $now);
@@ -719,6 +720,9 @@ final readonly class ContentService
      * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.restore` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\CMS\Content\Domain\InvalidTranslationGroup  When restoring a translated entry would
+     *          take its group past the live-member ceiling.
+     * @throws  LogicException  When translated content is restored without a translation-group store.
      *
      * @since   2.0.0
      */
@@ -733,13 +737,22 @@ final readonly class ContentService
 
         (new ExpectedVersion($expectedVersion))->assertMatches($stored->entry->version());
         $now = $this->clock->now();
+        $translationGroupId = $stored->entry->translationGroupId();
+        $translations = $this->translations;
 
         return $this->transactions->transactional(function () use (
             $id,
             $expectedVersion,
             $context,
             $now,
+            $translationGroupId,
+            $translations,
         ): ContentRecord {
+            if ($translationGroupId !== null) {
+                ($translations ?? throw new LogicException(
+                    'Restoring translated content requires a translation group store.',
+                ))->guardAttachment($context->site(), $translationGroupId, $id);
+            }
             $this->repository->setDeletedAt($id, $expectedVersion, null, $now);
             $record = $this->get($context, $id);
             $this->recordAudit($context->actorId(), 'content.restore', $record->entry, $now);

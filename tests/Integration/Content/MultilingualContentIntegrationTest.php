@@ -7,6 +7,8 @@ namespace Kumwe\CMS\Tests\Integration\Content;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DriverException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
+use Doctrine\DBAL\Schema\Name;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
@@ -16,6 +18,7 @@ use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Application\TranslationGroupRepository;
 use Kumwe\CMS\Content\Domain\ContentEntry;
 use Kumwe\CMS\Content\Domain\ContentStatus;
+use Kumwe\CMS\Content\Domain\InvalidTranslationGroup;
 use Kumwe\CMS\Content\Domain\TranslationGroup;
 use Kumwe\CMS\Content\Domain\TranslationGroupMember;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentRepository;
@@ -24,6 +27,7 @@ use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\CMS\Http\Handler\HomePageHandler;
 use Kumwe\CMS\Http\Handler\PublishedContentHandler;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\TranslationGroupSiteOwnershipMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Kernel\ContainerFactory;
@@ -41,6 +45,7 @@ use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 #[CoversClass(MultilingualContentMigration::class)]
+#[CoversClass(TranslationGroupSiteOwnershipMigration::class)]
 #[CoversClass(DoctrineTranslationGroupRepository::class)]
 #[CoversClass(DoctrineContentRepository::class)]
 #[CoversClass(ContentService::class)]
@@ -91,11 +96,24 @@ final class MultilingualContentIntegrationTest extends TestCase
         $entries = $manager->introspectTableByUnquotedName($tables->raw('content_entries'));
         self::assertTrue($entries->hasColumn('locale'));
         self::assertTrue($entries->hasColumn('translation_group_id'));
+        self::assertTrue($entries->hasColumn('translation_group_site_identifier'));
         self::assertTrue($entries->hasIndex('uniq_content_translation_locale'));
         self::assertTrue($entries->getIndex('uniq_content_translation_locale')->isUnique());
         self::assertTrue($entries->hasIndex('uniq_content_site_slug'));
         self::assertTrue($entries->getIndex('uniq_content_site_slug')->isUnique());
-        self::assertTrue($manager->tablesExist([$tables->raw('content_translation_groups')]));
+        $groupsName = $tables->raw('content_translation_groups');
+        self::assertTrue($manager->tablesExist([$groupsName]));
+        $ownership = array_values(array_filter(
+            $entries->getForeignKeys(),
+            static fn (ForeignKeyConstraint $foreignKey): bool => $foreignKey->getUnquotedLocalColumns()
+                === ['translation_group_id', 'translation_group_site_identifier'],
+        ));
+        self::assertCount(1, $ownership);
+        self::assertSame($groupsName, $ownership[0]->getReferencedTableName()->toString());
+        self::assertSame(
+            ['id', 'site_identifier'],
+            array_map(static fn (Name $name): string => $name->toString(), $ownership[0]->getReferencedColumnNames()),
+        );
     }
 
     /**
@@ -211,6 +229,7 @@ final class MultilingualContentIntegrationTest extends TestCase
         $context = TestKernelFactory::administratorContext($container);
         $content = $this->service($container, ContentService::class);
         $settings = $this->service($container, SiteSettings::class);
+        $baseUrl = rtrim($this->service($container, ApplicationConfiguration::class)->baseUrl, '/');
         $previous = $settings->managed($context);
         $suffix = substr(bin2hex(random_bytes(4)), 0, 8);
         $englishTitle = 'Root English ' . $suffix;
@@ -243,7 +262,10 @@ final class MultilingualContentIntegrationTest extends TestCase
             $germanBody = $this->publicPage('/?locale=de', ['Accept-Language' => 'en-GB']);
             self::assertStringContainsString($germanTitle, $germanBody);
             self::assertStringContainsString('<html lang="de" dir="ltr">', $germanBody);
-            self::assertStringContainsString('<link rel="canonical" href="/?locale=de">', $germanBody);
+            self::assertStringContainsString(
+                '<link rel="canonical" href="' . $baseUrl . '/?locale=de">',
+                $germanBody,
+            );
             self::assertStringContainsString(
                 'href="/?locale=de" hreflang="de" lang="de" dir="ltr" aria-current="true"',
                 $germanBody,
@@ -253,12 +275,21 @@ final class MultilingualContentIntegrationTest extends TestCase
             $englishBody = $this->publicPage('/?locale=en-GB', ['Accept-Language' => 'de']);
             self::assertStringContainsString($englishTitle, $englishBody);
             self::assertStringContainsString('<html lang="en-GB" dir="ltr">', $englishBody);
-            self::assertStringContainsString('<link rel="canonical" href="/?locale=en-GB">', $englishBody);
+            self::assertStringContainsString(
+                '<link rel="canonical" href="' . $baseUrl . '/?locale=en-GB">',
+                $englishBody,
+            );
             self::assertStringContainsString(
                 'href="/?locale=en-GB" hreflang="en-GB" lang="en-GB" dir="ltr" aria-current="true"',
                 $englishBody,
             );
             self::assertStringContainsString('hreflang="de" href="/?locale=de"', $englishBody);
+
+            $fallback = $this->publicPageResponse('/?locale=af', ['Accept-Language' => 'de']);
+            $fallbackBody = (string) $fallback->getBody();
+            self::assertStringContainsString($englishTitle, $fallbackBody);
+            self::assertStringContainsString('<html lang="en-GB" dir="ltr">', $fallbackBody);
+            self::assertSame('en-GB', $fallback->getHeaderLine('Content-Language'));
         } finally {
             $settings->updateAll($context, $previous);
         }
@@ -319,6 +350,76 @@ final class MultilingualContentIntegrationTest extends TestCase
     }
 
     /**
+     * Restoring a translated entry cannot reintroduce a sixty-fifth live member.
+     *
+     * Trashing one locale frees a slot, so attaching a replacement is valid. The trashed row still names
+     * the group, however, and restoring it must take the same group lock and repeat the live-member check
+     * before clearing its deletion marker. This executes through the real repository and transaction
+     * adapter on every supported engine.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRestoringATranslationCannotExceedTheLiveMemberCeiling(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $content = $this->service($container, ContentService::class);
+        $suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+        $groupId = Uuid::uuid7()->toString();
+        $members = [];
+
+        for ($index = 0; $index < TranslationGroup::MAXIMUM_MEMBERS; $index++) {
+            $locale = chr(97 + intdiv($index, 26)) . chr(97 + ($index % 26));
+            $record = $this->page(
+                $content,
+                $context,
+                'Member ' . $locale . ' ' . $suffix,
+                'member-' . $locale . '-' . $suffix,
+                false,
+            );
+            $members[] = $content->translate(
+                $context,
+                $record->entry->id(),
+                $record->entry->version(),
+                LocaleTag::fromString($locale),
+                $groupId,
+            );
+        }
+
+        $removed = $members[1];
+        $trashed = $content->trash(
+            $context,
+            $removed->entry->id(),
+            $removed->entry->version(),
+        );
+        $replacement = $this->page(
+            $content,
+            $context,
+            'Replacement ' . $suffix,
+            'replacement-' . $suffix,
+            false,
+        );
+        $content->translate(
+            $context,
+            $replacement->entry->id(),
+            $replacement->entry->version(),
+            LocaleTag::fromString('zz'),
+            $groupId,
+        );
+
+        try {
+            $content->restore($context, $trashed->entry->id(), $trashed->entry->version());
+            self::fail('Restoring a sixty-fifth live translation must be refused.');
+        } catch (InvalidTranslationGroup $exception) {
+            self::assertStringContainsString('at most 64 locales', $exception->getMessage());
+        }
+
+        self::assertNotNull($content->get($context, $trashed->entry->id(), true)->deletedAt);
+    }
+
+    /**
      * Prove the database itself refuses a second entry for one locale of one item.
      *
      * @return  void
@@ -347,7 +448,8 @@ final class MultilingualContentIntegrationTest extends TestCase
 
         $this->expectException(DriverException::class);
         $database->executeStatement(sprintf(
-            'UPDATE %s SET locale = ?, translation_group_id = ? WHERE id = ?',
+            'UPDATE %s SET locale = ?, translation_group_id = ?, '
+            . 'translation_group_site_identifier = site_identifier WHERE id = ?',
             $tables->quoted('content_entries'),
         ), ['en-GB', $groupId, $second->entry->id()], [Types::STRING, Types::STRING, Types::GUID]);
     }
@@ -448,6 +550,14 @@ final class MultilingualContentIntegrationTest extends TestCase
             $body,
         );
         self::assertStringContainsString('aria-current="true"', $body);
+
+        $germanBody = $this->publicPage('/anleitung-' . $suffix, ['Accept-Language' => 'en-GB']);
+        self::assertStringContainsString('Anleitung ' . $suffix, $germanBody);
+        self::assertStringContainsString('<html lang="de" dir="ltr">', $germanBody);
+        self::assertStringContainsString(
+            sprintf('href="/anleitung-%s" hreflang="de" lang="de" dir="ltr" aria-current="true"', $suffix),
+            $germanBody,
+        );
     }
 
     /**
@@ -587,6 +697,21 @@ final class MultilingualContentIntegrationTest extends TestCase
      */
     private function publicPage(string $path, array $headers = []): string
     {
+        return (string) $this->publicPageResponse($path, $headers)->getBody();
+    }
+
+    /**
+     * Fetch one public page through the real application and retain its response metadata.
+     *
+     * @param   string                 $path     Root-relative path to request.
+     * @param   array<string, string>  $headers  Request headers to add.
+     *
+     * @return  ResponseInterface  Canonical 200 response after following a public-content redirect.
+     *
+     * @since   2.0.0
+     */
+    private function publicPageResponse(string $path, array $headers = []): ResponseInterface
+    {
         $container = (new ContainerFactory())->create(Environment::fromGlobals());
         $application = $this->service($container, Application::class);
         $host = $this->service($container, ApplicationConfiguration::class)->trustedHosts[0];
@@ -602,7 +727,7 @@ final class MultilingualContentIntegrationTest extends TestCase
         }
         self::assertSame(200, $response->getStatusCode(), $path);
 
-        return (string) $response->getBody();
+        return $response;
     }
 
     /**
