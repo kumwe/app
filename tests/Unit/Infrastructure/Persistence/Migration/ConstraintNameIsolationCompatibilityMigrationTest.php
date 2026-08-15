@@ -37,11 +37,13 @@ final class ConstraintNameIsolationCompatibilityMigrationTest extends TestCase
         self::assertIsString($wrapper);
         $root = dirname($wrapper);
         $digests = [];
-        foreach ([
+        foreach (
+            [
             $root . '/ConstraintNameIsolationCompatibilityMigration.php',
             $root . '/ConstraintNameIsolationMigration.php',
             $root . '/ConstraintNameIsolationPortabilityMigration.php',
-        ] as $source) {
+            ] as $source
+        ) {
             $digest = hash_file('sha256', $source);
             self::assertIsString($digest);
             $digests[] = $digest;

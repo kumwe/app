@@ -284,7 +284,8 @@ final readonly class ConstraintNameIsolationPortabilityMigration implements Repe
             return false;
         }
         foreach ($installationPrefixes as $candidate) {
-            if ($candidate !== $prefix
+            if (
+                $candidate !== $prefix
                 && str_starts_with($candidate, $prefix)
                 && str_starts_with($tableName, $candidate)
             ) {

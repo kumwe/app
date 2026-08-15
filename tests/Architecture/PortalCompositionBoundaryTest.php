@@ -37,11 +37,13 @@ final class PortalCompositionBoundaryTest extends TestCase
         $portalAuthorization = strpos($container, '$application->pipe(PortalAuthorizationMiddleware::class);');
         $bearer = strpos($container, '$application->pipe(BearerAuthenticationMiddleware::class);');
         $dispatch = strpos($container, '$application->pipe(DispatchMiddleware::class);');
-        foreach ([
+        foreach (
+            [
             [$administratorSession, $administratorAuthorization],
             [$portalSession, $portalAuthorization],
             [$bearer, $dispatch],
-        ] as [$authentication, $consumer]) {
+            ] as [$authentication, $consumer]
+        ) {
             self::assertIsInt($authentication);
             self::assertIsInt($consumer);
             self::assertStringContainsString(

@@ -305,8 +305,7 @@ final class BusinessSurfaceCatalogTest extends TestCase
         BusinessRecordAccessPlan $plan,
         ?array $document = null,
         ?ActiveLocale $active = null,
-    ): BusinessSurfaceCatalog
-    {
+    ): BusinessSurfaceCatalog {
         $resolved = $this->resolved($document ?? $this->definition());
         $definitions = $this->createStub(BusinessRecordDefinitionResolver::class);
         $definitions->method('activeInstalled')->willReturn([$resolved]);

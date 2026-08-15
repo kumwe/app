@@ -109,7 +109,10 @@ final class MultilingualContentIntegrationTest extends TestCase
                 === ['translation_group_id', 'translation_group_site_identifier'],
         ));
         self::assertCount(1, $ownership);
-        self::assertSame($groupsName, $ownership[0]->getReferencedTableName()->toString());
+        self::assertSame(
+            $groupsName,
+            $ownership[0]->getReferencedTableName()->getUnqualifiedName()->getValue(),
+        );
         self::assertSame(
             ['id', 'site_identifier'],
             array_map(static fn (Name $name): string => $name->toString(), $ownership[0]->getReferencedColumnNames()),
