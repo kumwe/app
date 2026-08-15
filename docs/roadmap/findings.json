@@ -881,12 +881,12 @@
         {
           "file": "tools/translation-extraction.json",
           "symbol": "the pending_extraction register",
-          "note": "48 of the 75 templates still carry their text inline and are listed there, each with the reason it is not extracted yet. Five of them are held because another branch is changing them. The other 27 templates are extracted and enforced."
+          "note": "48 of the 76 templates still carry their text inline and are listed there, each with the reason it is not extracted yet. Five of them are held because another branch is changing them. The other 28 are extracted and enforced; the administered wording screen was authored extracted and never entered the register."
         },
         {
           "file": "src/Delivery/Console/Command/",
           "symbol": "47 commands",
-          "note": "Console output text is still inline in the command classes. Nothing binds the translator to the console, and the hardcoded-string gate does not scan it."
+          "note": "Console output text is still inline in the command classes, and so is the summary line bin/kumwe list prints beside each command name. Nothing binds the translator to the console, and the hardcoded-string gate does not scan it. src/BusinessReporting/Delivery/Console/ReportCommand.php is a 48th command outside this directory and is in the same state."
         },
         {
           "file": "src/",
@@ -894,39 +894,12 @@
           "note": "The user-facing error paths still carry their text inline. Separating them from the developer exceptions, the log lines and the stable machine error codes is part of the work; docs/interface-translation.md states the categories the gate must treat as not translatable."
         }
       ],
-      "acceptance_test": "Every user-facing string on a translatable surface is looked up rather than written inline: the 48 remaining templates, the 47 console commands, and the user-facing error paths of src/. The translator is bound into the console the way it is already bound into the three Twig environments. Text that exists for a developer or a machine — a stable machine error code, an audit action name, a log line, a developer exception — is NOT translated, and the allowlist that says so names its reason per category: a translated error code is a broken contract.",
+      "acceptance_test": "Every user-facing string on a translatable surface is looked up rather than written inline: the 48 remaining templates, the 48 console commands, and the user-facing error paths of src/. The translator is bound into the console the way it is already bound into the three Twig environments — once, into the surface every command already receives, rather than through 48 constructors. Text that exists for a developer or a machine — a stable machine error code, an audit action name, a log line, a developer exception — is NOT translated, and the allowlist that says so names its reason per category: a translated error code is a broken contract.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "work_package": "PL-C",
       "product_owner_decision": "Decision D11 — the interface is multilingual. Recorded in docs/roadmap/decisions/0002-interface-translation-architecture.md.",
       "enforcing_check": "V2-LNG-007's gate passing with an empty pending_extraction register and with console output and the error paths inside its scope. Extraction is finished when the check passes, not when someone judges it finished."
-    },
-    {
-      "id": "V2-LNG-006",
-      "title": "Site and organization message overrides have no store and no administered surface, and extension catalogues are not discovered",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Localization/Application/CatalogueTranslator.php",
-          "symbol": "the resolved chain",
-          "note": "The four-layer chain resolves core, then extension, then site, then organization, per identifier, and is proven at each level. What is missing is where the two upper layers come from: MessageOverrideRepository is served by ArrayMessageOverrideRepository, which holds nothing an operator can write to."
-        },
-        {
-          "file": "src/Kernel/ContainerFactory.php",
-          "symbol": "the CompiledMessageCatalogueRepository registration",
-          "note": "The repository accepts an ordered list of extension catalogue directories and is wired with none. ActiveExtensionSet exposes theme, view and portal-template paths but no catalogue path, so an extension cannot yet contribute a catalogue."
-        }
-      ],
-      "acceptance_test": "Site- and organization-level overrides are stored in the database, so an operator changes wording through an administered surface with no file edit and no deployment, and an extension contributes its compiled catalogue through the owned contribution registrar the same way it contributes everything else. The strategic consequence is already recorded in docs/interface-translation.md and stays recorded: the same mechanism is TERMINOLOGY ADAPTATION — relabelling 'Client' as 'Patient', 'Learner' or 'Guest' for a vertical, in one language or in all nine, without forking core and without an extension shipping a parallel string table.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-B",
-      "product_owner_decision": "Decision D11 — a four-step override chain, deliberately, because the fourth step is what makes vertical terminology adaptation possible without a fork.",
-      "enforcing_check": "A three-engine integration test proving a stored site override changes one word and leaves every other message in that catalogue alone, and that an organization override beats it. The ordering and the no-query-per-message property are already pinned by tests/Unit/Localization/Application/CatalogueTranslatorTest.php and must stay pinned."
     },
     {
       "id": "V2-LNG-007",
@@ -945,7 +918,7 @@
         {
           "file": "src/Delivery/Console/Command/",
           "symbol": "47 commands",
-          "note": "Console output is a translatable surface; exit codes and stable JSON field names are not. Distinguishing them mechanically is the work that remains."
+          "note": "Console output is a translatable surface; exit codes and stable JSON field names are not. Distinguishing them mechanically is the work that remains, and it has to reach the 48th command under src/BusinessReporting/Delivery/Console/ as well as the 47 in this directory."
         }
       ],
       "acceptance_test": "The gate additionally scans console output and the user-facing error paths of src/, with an explicit allowlist for the categories deliberately not translatable — machine error codes, audit action names, log messages, developer exceptions — and every allowlist entry naming its reason. The template half already does this and is proven in both directions; the same proof is required of the new scope.",
@@ -967,7 +940,7 @@
         {
           "file": "resources/localization/messages/en-GB.xlf",
           "symbol": "the source catalogue",
-          "note": "89 messages across 27 templates: the whole public site surface, the eleven shared interface-standard partials, and the chrome, login and access-denied surfaces of the administrator and the portal. Extraction is proven to work; what remains is volume."
+          "note": "117 messages across 28 templates: the whole public site surface, the eleven shared interface-standard partials, the chrome, login and access-denied surfaces of the administrator and the portal, and the administered wording screen, which was authored extracted rather than extracted afterwards. Extraction is proven to work; what remains is volume."
         },
         {
           "file": "tools/translation-extraction.json",
@@ -980,7 +953,7 @@
           "note": "Console output is a translatable surface; exit codes and stable JSON field names are not."
         }
       ],
-      "acceptance_test": "en-GB is extracted in full: the 48 remaining templates, the 47 console commands and the user-facing error paths of src/ each have an identifier and a catalogue entry, and the pending_extraction register is empty. Only user-facing text moves; a developer exception, a log line, a stable machine error code and an audit action name are not user-facing text.",
+      "acceptance_test": "en-GB is extracted in full: the 48 remaining templates, the 48 console commands and the user-facing error paths of src/ each have an identifier and a catalogue entry, and the pending_extraction register is empty. Only user-facing text moves; a developer exception, a log line, a stable machine error code and an audit action name are not user-facing text.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "work_package": "PL-C",
@@ -992,7 +965,7 @@
     },
     {
       "id": "V2-LNG-009",
-      "title": "Right-to-left has no visual-regression baselines of its own",
+      "title": "Right-to-left has a locale axis on the browser matrix but no visual-regression baselines behind it",
       "severity": "medium",
       "state": "accepted_for_implementation",
       "phase": "L",
@@ -1000,22 +973,22 @@
       "origin": "new",
       "source_anchors": [
         {
-          "file": "assets/",
-          "symbol": "the eight stylesheets",
-          "note": "Every inline-axis declaration is now logical: 96 logical declarations and zero physical ones, guarded by composer assets:direction. The three layouts emit dir from the resolved locale and tests/Browser/right-to-left.spec.ts asserts direction and zero horizontal overflow in he and ar."
+          "file": "playwright.config.ts",
+          "symbol": "the right-to-left projects",
+          "note": "The matrix now carries a language axis beside its device axis: desktop-chromium-he, desktop-chromium-ar, mobile-chromium-he and mobile-chromium-ar run tests/Browser/right-to-left.spec.ts, and snapshotPathTemplate files a baseline under the project name, so he and ar have a directory of their own. The source-language projects keep their names so their committed baselines stay attached to them."
         },
         {
-          "file": "playwright.config.ts",
-          "symbol": "snapshotPathTemplate",
-          "note": "Screenshot baselines are stored per project, not per locale. A right-to-left screenshot compared against a left-to-right baseline proves nothing, so he and ar need baselines of their own before the visual matrix can include them."
+          "file": "tests/Browser/screenshots/",
+          "symbol": "the committed baselines",
+          "note": "There are baselines for desktop-chromium and mobile-chromium and none for the four right-to-left projects. Producing them needs a running stack and a browser, which is the P2-E matrix, so the axis is in place and empty."
         }
       ],
-      "acceptance_test": "Right-to-left gets ITS OWN visual-regression baselines. The P2-E matrix runs he and ar against those baselines with the same zero-horizontal-overflow and zero-inaccessible-critical-control acceptance as every other locale.",
+      "acceptance_test": "The four right-to-left projects carry their own committed screenshot baselines and the P2-E matrix runs he and ar against them, with the same zero-horizontal-overflow and zero-inaccessible-critical-control acceptance as every other locale. The axis itself and the per-project baseline path are built; what is owed is the screenshots and the matrix leg that compares them.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "work_package": "PL-F",
       "product_owner_decision": "Decision D11 — Hebrew and Arabic are both in scope and are done together.",
-      "enforcing_check": "A stylesheet check failing the build on a new physical inline-axis declaration in assets/, with an allowlist for the cases where physical is genuinely correct and each entry naming why. Plus the per-locale visual baselines on the P2-E matrix.",
+      "enforcing_check": "The per-locale visual baselines on the P2-E matrix. The stylesheet half of this finding has shipped: composer assets:direction fails the build on a new physical inline-axis declaration in assets/, with an allowlist that ships empty, and tests/Architecture/InterfaceTranslationGateTest.php proves it in both directions.",
       "cross_reference": [
         "V2-DB-001"
       ]

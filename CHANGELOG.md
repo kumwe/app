@@ -468,6 +468,47 @@ development programme, from the architecture decision that opened it to the curr
   administrator and the portal. Extraction of the remaining record surfaces, the console and the
   user-facing error paths stays in the roadmap with the register naming every template still to do.
   (`0fa700d`)
+- **An operator changes the wording their people read, from a screen, without a deployment.** The override
+  chain resolved core, then extension, then site, then organization, and was proven to resolve in that
+  order — but its two upper steps were served from a map held in memory, so nothing an operator did could
+  reach them. Site and organization wording is now stored, and **Administrator → Wording** is where it is
+  changed: pick the language, pick whether the change applies to the whole site or only to your
+  organization, search the shipped catalogue by what a message currently says, and write what it should say
+  instead. It takes effect on the next page. This is the mechanism a vertical relabels core terminology
+  with — "Client" as "Patient", "Learner" or "Guest" — so it is deliberately per message rather than per
+  catalogue: every word nobody changed keeps improving with each release. `localization.overrides.manage`
+  guards it and every change is written to the audit trail with its identifier, layer and locale.
+  (`6002690`)
+- **Three bounds on stored wording, each protecting something specific.** Only a message some shipped
+  catalogue actually declares may be overridden, so the store cannot fill with wording nothing looks up and
+  a mistyped identifier is refused rather than silently ignored. Only a language the installation carries
+  may be written, so no override is stranded in a locale nothing resolves to. And a scope carries at most
+  500 overrides per language, because the whole map is read once per unit of work on the render path and an
+  unbounded map would make every page pay for one bulk import. Saving empty wording is refused — withdrawing
+  the override is how the shipped text comes back, and it is one action rather than a trick. (`6002690`)
+- **One stored row per layer, scope, language and message, enforced by the schema.** The whole identity
+  carries a unique index, so resolution can never depend on which of two rows an engine happened to return
+  first. A site-level row spells its absent organization as the empty string rather than as null, because
+  all three engines treat two nulls in a unique index as distinct and a nullable column in that identity
+  would have permitted exactly the duplicate the index exists to refuse; null stays the shape the
+  application speaks and the adapter translates at the boundary. An installation whose schema predates the
+  table answers "no overrides" rather than failing, so the recovery surfaces still render before
+  `database:migrate` has run. (`6002690`)
+- **An extension contributes wording through the ordinary package path.** A package ships
+  `localization/messages/en-GB.xlf` for its translator and `localization/compiled/en-GB.php` for the
+  runtime, beside the template directories the runtime loader already discovers. There is nothing to
+  declare in the manifest and no second registration path; the compiled directory joins the extension layer
+  of the chain in runtime-map order, so which package wins a shared identifier is a property of the signed
+  map rather than of filesystem enumeration. A symbolic link in place of the catalogue root is refused, on
+  the same reasoning as the template roots beside it. (`6002690`)
+- **The browser matrix has a language axis, so right-to-left compares against itself.** Screenshot baselines
+  were stored per device only, which meant a Hebrew or Arabic page had nothing to be compared against
+  except a left-to-right one — a comparison that is either a false failure or a green run that checked
+  nothing. The right-to-left journeys now run under their own projects and file their baselines under those
+  names, and the source-language projects keep their original names so their committed baselines stay
+  attached to them. The right-to-left journeys take their language from the project they run under rather
+  than looping over both inside one cell, which is what makes the language an axis of the matrix rather
+  than a detail of one test. (`fc4dd6e`)
 
 ### Changed
 

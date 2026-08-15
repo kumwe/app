@@ -10,8 +10,11 @@ REST API, CLI, MCP tools, workers, and scheduler allow, and what one refuses, th
 - Content, media, and navigation are managed records with revisions, workflow states, and audit trails.
 - Business definitions declare typed entities, relationships, views, actions, and safe formulas; the
   runtime generates the administrator and portal surfaces, the REST contract, and the CLI/MCP tools.
+- The interface is presented in the language a request resolves to, and an operator changes the
+  wording their people read — relabelling "Client" as "Patient" or "Learner" — from a screen, per
+  message and without a deployment.
 - Extensions install through a signed pipeline into a compiled, verified runtime — plugins,
-  components, templates, and languages, without rebuilding the application image.
+  components, templates, languages, and message catalogues, without rebuilding the application image.
 - Automation is durable: database-backed queues, leases, bounded retries, and recurring schedules.
 
 Entry points: [`AGENTS.md`](AGENTS.md) for contributors, the

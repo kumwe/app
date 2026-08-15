@@ -253,18 +253,22 @@ The implementation is chosen, not open. Recorded in
 **What is built, and what the ledger still holds.** The foundation is in: the XLIFF source catalogue and
 its deterministic compiled form, the ICU formatter, the frozen message-identifier grammar, the four-layer
 resolver, per-request locale negotiation consuming `default_locale`, and the hardcoded-string gate over
-`templates/`. It is described in [`docs/interface-translation.md`](../interface-translation.md). What
-remains is recorded in `V2-LNG-001` and `V2-LNG-006` through `V2-LNG-010`: the bulk of `en-GB` extraction
-across the record surfaces, the console and the error paths; a store and an administered surface for the
-site and organization override layers; extension catalogue discovery; widening the gate to console output
-and error paths; and the eight translated catalogues.
+`templates/`. The chain's two upper layers are now real rather than resolved-but-unreachable: site and
+organization wording is stored, administered at `/administrator/wording` under
+`localization.overrides.manage`, and an extension contributes its compiled catalogues through the ordinary
+package path. It is described in [`docs/interface-translation.md`](../interface-translation.md). What
+remains is recorded in `V2-LNG-001`, `V2-LNG-007`, `V2-LNG-008`, `V2-LNG-009` and `V2-LNG-010`: the bulk of
+`en-GB` extraction across the record surfaces, the console and the error paths; widening the gate to console
+output and error paths; the right-to-left screenshot baselines behind the matrix's new language axis; and
+the eight translated catalogues.
 
 **Right-to-left.** Hebrew and Arabic are both in scope and their layout work is the same work, so they were
 done together. The conversion is complete: every inline-axis declaration across `assets/` is now logical —
 96 of them, and none physical — the three layouts emit `dir` from the resolved locale, and
-`composer assets:direction` fails the build on a new physical declaration. What remains under `V2-LNG-009`
-is the visual half: right-to-left needs its own visual-regression baselines rather than being asserted
-against left-to-right ones, and that waits on `P2-E` giving the browser matrix its locale axis.
+`composer assets:direction` fails the build on a new physical declaration. The browser matrix now carries a
+language axis as well as a device axis, so `he` and `ar` file their baselines under their own projects
+instead of sharing a left-to-right one. What remains under `V2-LNG-009` is the screenshots themselves and
+the `P2-E` matrix leg that compares them.
 
 **The Version 2 language set is nine**: `en-GB` (source), `en-US`, `af`, `de`, `he`, `ar`, `es`, `pt-BR`,
 `zh-Hans`. The proof set is sequenced first — `en-GB`, `af`, `de`, `he` — because together they stress
@@ -457,10 +461,10 @@ Decisions D10 through D14 added 22 further entries — `V2-CUR-001` to `V2-CUR-0
 multilingual content, and `V2-POS-001` to `V2-POS-004` for the point-of-sale constraints — and moved six
 of the seven `V2-ERP-` entries out of `decision_required` because D13 decided them.
 
-The four `V2-CUR-` entries, the six `V2-GRP-` entries, the data-entry retention work and the interface
-translation foundation have since been delivered and have left the ledger for `CHANGELOG.md`, which is
-where each of them is now recorded; `V2-CUR-005` was added for the rendering half the money work did not
-cover. The ledger therefore carries **66 open entries**.
+The four `V2-CUR-` entries, the six `V2-GRP-` entries, the data-entry retention work, the interface
+translation foundation and the administered override layers have since been delivered and have left the
+ledger for `CHANGELOG.md`, which is where each of them is now recorded; `V2-CUR-005` was added for the
+rendering half the money work did not cover. The ledger therefore carries **61 open entries**.
 
 ---
 
@@ -562,11 +566,12 @@ work must not touch.
 and its catalogue implementation, the ICU formatter over `ext-intl`, the frozen message-identifier grammar,
 the XLIFF reader and the deterministic catalogue compiler, per-request locale negotiation, and the Twig
 extension that publishes `t`, `t_html`, `locale_tag` and `text_direction` on all three rendering
-environments. `resources/localization/messages/en-GB.xlf` carries 89 messages and compiles to
-`resources/localization/compiled/en-GB.php`. `composer translation:strings` enforces 27 of the 75 templates
+environments. `resources/localization/messages/en-GB.xlf` carries 117 messages and compiles to
+`resources/localization/compiled/en-GB.php`. `composer translation:strings` enforces 28 of the 76 templates
 and registers the other 48 in `tools/translation-extraction.json`, each with the reason it is not extracted
-yet. Console output in the 47 commands under `src/Delivery/Console/Command/` and the user-facing error
-paths of `src/` are still inline and are still outside the gate's scope.
+yet. Console output in the 47 commands under `src/Delivery/Console/Command/`, the 48th under
+`src/BusinessReporting/Delivery/Console/`, and the user-facing error paths of `src/` are still inline and
+are still outside the gate's scope.
 
 **`default_locale` is consumed.** `SiteDefaultLocale` reads it once per process and hands it to
 `LocaleNegotiator`, which resolves an explicit `locale` parameter, then `Accept-Language`, then the setting,
@@ -579,8 +584,9 @@ rather than degrading to a substituting formatter.
 
 **Right-to-left is converted.** Across `assets/`: 96 logical inline-axis declarations and zero physical
 ones, no floats, and `composer assets:direction` failing the build on a new physical declaration with an
-allowlist that ships empty. What is unbuilt is the visual half — `he` and `ar` have no screenshot baselines
-of their own, and `playwright.config.ts` stores baselines per project rather than per locale.
+allowlist that ships empty. `playwright.config.ts` now runs the right-to-left journeys under four
+locale-scoped projects and files their baselines under those project names. What is unbuilt is the
+screenshots themselves: the four right-to-left baseline directories are empty.
 
 **Content carries no locale.** `ContentEntry` holds an identifier, title, slug, body, workflow state,
 publication window and version; its docblock enumerates what is deliberately absent and no locale appears
@@ -728,9 +734,9 @@ answer.
 | Data-entry integrity across a failed submission | Provided | validation failure and stale-version conflict both re-render with the submitted values on both generated surfaces and the CMS content editor; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Role-specific dashboards | Partial | `V2-ERP-006` — workspaces are navigation groups, and the dashboard handler is one fixed capability-filtered page |
 | Offline-tolerant capture for point of sale | Deferred, not foreclosed | `V2-ERP-007` under decision D14 — deferred beyond Version 2 as a product; the constraints that keep it possible are `V2-POS-001`–`V2-POS-004` and they are Gate A |
-| A translated interface | Partial | The layer exists — XLIFF authored, compiled to PHP, formatted by ICU, resolved through the four-step chain, negotiated per request. `V2-LNG-001`, `V2-LNG-007` and `V2-LNG-008` hold the remaining extraction and the widened gate; `V2-LNG-010` holds the eight translated catalogues. Decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) |
-| An operator changing wording without editing files | Partial | `V2-LNG-006` — the chain resolves the site and organization steps and is proven at each level; nothing stores or administers an override yet. This is also how a vertical relabels core terminology |
-| Right-to-left presentation | Partial | The stylesheets are direction independent, the layouts emit `dir`, and a gate refuses a new physical declaration. `V2-LNG-009` holds the per-locale visual baselines, which wait on `P2-E` |
+| A translated interface | Partial | The layer exists — XLIFF authored, compiled to PHP, formatted by ICU, resolved through the four-step chain with both administered layers stored, negotiated per request. `V2-LNG-001`, `V2-LNG-007` and `V2-LNG-008` hold the remaining extraction and the widened gate; `V2-LNG-010` holds the eight translated catalogues. Decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) |
+| An operator changing wording without editing files | Provided | Site and organization overrides are stored and administered at `/administrator/wording` under `localization.overrides.manage`; per identifier, never per file. This is also how a vertical relabels core terminology, and an extension contributes its own catalogue through the ordinary package path. See [`CHANGELOG.md`](../../CHANGELOG.md) |
+| Right-to-left presentation | Partial | The stylesheets are direction independent, the layouts emit `dir`, a gate refuses a new physical declaration, and the browser matrix carries a language axis so `he` and `ar` file baselines of their own. `V2-LNG-009` holds the screenshots and the `P2-E` leg that compares them |
 | Multilingual content with per-locale publication state | **Must add** | `V2-MLC-001`, `V2-MLC-004`, decision D12 — `ContentEntry` carries no locale, no per-locale slug and no fallback |
 | Locale variants on extension-contributed content | **Must add** | `V2-MLC-002` — the translation group belongs in the extension contribution contract, which is why it cannot wait for Gate B |
 
@@ -1666,28 +1672,21 @@ extension each ship, the deterministic compiler and its drift check are built, a
 [`docs/interface-translation.md`](../interface-translation.md) states the grammar so an extension author
 can follow it.
 
-**PL-B — The runtime, ICU formatting and the override chain.** Finding: `V2-LNG-006`. The translator, the
-ICU formatter over `ext-intl`, per-request locale negotiation consuming `default_locale`, the Twig bindings
-on all three environments and the four-layer resolver are built, and the terminology-adaptation consequence
-is recorded in the operator and extension documentation as its own section rather than as a footnote.
-
-What remains in this package is where the two upper layers come from: **site and organization overrides
-stored in the database**, so an operator changes wording without editing a file or deploying, and
-**extension catalogue discovery** through the owned contribution registrar, so an extension can ship the
-catalogue directory the file layout already describes. The console binding belongs to `PL-C`, because it
-lands with the console extraction.
-
-*The enforcing check:* a three-engine integration test proving a stored site override changes one word and
-leaves the rest of that catalogue alone, and that an organization override beats it. The declared ordering,
-the fallback to the identifier rather than to an empty string, and the one-load-per-page property are
-already pinned by `tests/Unit/Localization/Application/CatalogueTranslatorTest.php` and stay pinned.
+**PL-B — The runtime, ICU formatting and the override chain.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). The translator, the ICU formatter over `ext-intl`, per-request locale
+negotiation consuming `default_locale`, the Twig bindings on all three environments and the four-layer
+resolver were already built; site and organization wording is now stored, administered at
+`/administrator/wording`, and an extension contributes its compiled catalogues through the ordinary package
+path. The console binding belongs to `PL-C`, because it lands with the console extraction.
 
 **PL-C — Extraction of `en-GB` at scale.** Findings: `V2-LNG-001`, `V2-LNG-008`. Extraction is proven at
-real scale: 89 messages across 27 templates cover the whole public site surface, the eleven shared
-interface-standard partials, and the chrome, login and access-denied surfaces of the administrator and the
-portal. What remains is volume — the 48 templates listed in `tools/translation-extraction.json`, the 47
-console commands and the user-facing error paths of `src/` — plus binding the translator into the console
-the way it is already bound into the three Twig environments.
+real scale: 117 messages across 28 templates cover the whole public site surface, the eleven shared
+interface-standard partials, the chrome, login and access-denied surfaces of the administrator and the
+portal, and the administered wording screen, which was authored extracted rather than extracted afterwards.
+What remains is volume — the 48 templates listed in `tools/translation-extraction.json`, the 48 console
+commands and the user-facing error paths of `src/` — plus binding the translator into the console the way
+it is already bound into the three Twig environments: once, into the surface every command already
+receives, rather than through 48 constructors.
 
 Five of the 48 are held open because another change was in flight on them:
 `templates/administrator/business-detail.twig`, `business-form.twig` and `content-form.twig`, and
@@ -1747,9 +1746,12 @@ build on a new physical declaration with an allowlist that ships empty, the thre
 the resolved locale, and `tests/Browser/right-to-left.spec.ts` asserts direction and zero horizontal
 overflow on the public, administrator and portal entry surfaces in both `he` and `ar`.
 
-What remains is the visual half. Right-to-left needs **its own visual-regression baselines**; a
-right-to-left screenshot compared against a left-to-right baseline proves nothing, and
-`playwright.config.ts` stores baselines per project rather than per locale.
+The matrix's **language axis** is built. `desktop-chromium-he`, `desktop-chromium-ar`, `mobile-chromium-he`
+and `mobile-chromium-ar` run those journeys and file a baseline under the project name, and the
+source-language projects keep their original names so their committed baselines stay attached to them.
+
+What remains is the screenshots. The four right-to-left baseline directories are empty, because producing
+a baseline needs a running stack and a browser, which is the `P2-E` matrix.
 
 *The enforcing check:* the `P2-E` matrix runs `he` and `ar` against their own baselines, with the same
 zero-horizontal-overflow and zero-inaccessible-control acceptance as every other locale.
