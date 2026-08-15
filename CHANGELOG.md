@@ -728,11 +728,11 @@ development programme, from the architecture decision that opened it to the curr
   registrar signature, manifest section and declaration members are pinned in a compatibility fixture
   without rewriting the frozen SPI-two baseline. This declaration is inventory, not yet the runtime link
   between an extension-owned item and a set; that additive frozen association remains `V2-LNG-012` in the
-  roadmap rather than being claimed here as completed delivery. (`cb5f482`, `7e84b91`)
+  roadmap rather than being claimed here as completed delivery. (`cb5f482`, `b539161`)
 - **[Content translation](docs/content-translation.md),** explaining the model to an editor, stating what
   the database guarantees and why the definition document had to stay byte-stable, and stating precisely
   where an extension's admitted translation-set inventory stops and the still-open runtime association begins.
-  (`cb5f482`, `7e84b91`, `2af5c1f`)
+  (`cb5f482`, `b539161`, `e4aa755`)
 
 ### Changed
 
@@ -744,17 +744,17 @@ development programme, from the architecture decision that opened it to the curr
   independent collection and runner totals before accepting its shrinking baseline. The browser scripts and
   nightly/release bindings now select locale projects only in the cadence that declares that locale contract.
   Reverse class-order idempotency remains an explicitly pending measurement rather than being presented as an
-  enforced property. (`7e84b91`)
+  enforced property. (`b539161`)
 - **The global coverage ratchet now starts from a measured baseline.** The canonical MariaDB run measured 47,935
   of 86,459 executable lines, or 55.44%, across 2,513 tests and 54,760 assertions. That result arms the rule that
   refuses a global fall greater than a quarter of a percentage point instead of inventing a starting value or
   reporting an unarmed rule as a pass. A focused declaration-list case also proves that the MCP catalogue validator
-  refuses an input schema whose root type is not an object. (`fbd7753`)
+  refuses an input schema whose root type is not an object. (`7a83c29`)
 - **Production database-account guidance now describes the supplied topology rather than the recommended one.**
   The shipped Compose topology gives the migration task and the long-lived app, worker and scheduler the same
   database credential, so it does not provide DDL-versus-DML privilege separation. Deployment and monitoring
   guidance now say that plainly and require a production overlay or platform secret injection to give `migrate`
-  a distinct DDL-capable account while withholding it from the runtime services. (`7e84b91`)
+  a distinct DDL-capable account while withholding it from the runtime services. (`b539161`)
 - **The architecture gate judges dependency edges instead of describing the direction.** It was four grep
   predicates — a product-name spelling, two forbidden import prefixes and two static-locator symbols — and it
   printed "Kumwe architecture policy verified." without resolving a single dependency edge. A file could
@@ -943,16 +943,16 @@ development programme, from the architecture decision that opened it to the curr
   the reason the whole unit must roll back even when application code catches that exception. Rollback hooks still
   run for every discarded frame, a failing hook cannot replace the operation's failure or prevent later hooks, and
   an independent exception raised by the outer operation remains the caller-visible one. The behavior is exercised
-  against the configured relational engine with real writes, not a connection double. (`7e84b91`)
+  against the configured relational engine with real writes, not a connection double. (`b539161`)
 - **Converted values are accepted only when their exact provenance reconstructs.** Money and quantity imports now
   require exactly `mode`, integer `scale` and `unrounded_amount` in the rounding document, refuse extra or missing
   members, and require the declared scale to agree with the converted amount. Report values no longer pass on JSON
   grammar alone: they rebuild `ConvertedMoneyValue` or `ConvertedQuantityValue`, which rechecks the arithmetic,
-  denomination, factor or rate, instant and rounding invariants before the cell is accepted. (`7e84b91`)
+  denomination, factor or rate, instant and rounding invariants before the cell is accepted. (`b539161`)
 - **A language selected from the site root now remains the selected language.** The language-neutral `/` route
   gives every published alternate an explicit `?locale=` address, including the nominated homepage's own locale,
   and names the rendered locale's explicit address as canonical. Following a selector or `hreflang` link therefore
-  cannot re-enter `/` and negotiate back to the reader's previous preference. Closes `V2-LNG-011`. (`7e84b91`)
+  cannot re-enter `/` and negotiate back to the reader's previous preference. Closes `V2-LNG-011`. (`b539161`)
 - **Translation groups enforce their site boundary and member ceiling under concurrency.** An append-only migration
   (`20260819020000_translation_group_site_ownership`) adds a composite group-owner foreign key and a direct
   owner-pair `CHECK` without changing the published multilingual migration. Group declaration locks and verifies
@@ -962,14 +962,14 @@ development programme, from the architecture decision that opened it to the curr
   exact nullable-pair and same-site predicate as enforced and validated. The composite relationship uses
   `ON DELETE RESTRICT`; once that replacement is proved, the migration removes the exact overlapping one-column
   `SET NULL` predecessor. A group cannot be deleted until every member explicitly clears both group columns. No
-  generated column or trigger is installed, and no trigger privilege is required. (`7e84b91`, `e077944`,
-  `2af5c1f`)
+  generated column or trigger is installed, and no trigger privilege is required. (`b539161`, `ffa4b14`,
+  `e4aa755`)
 - **Localized wording now stays coherent from storage to the rendered response.** Authenticated organization scope
   reaches early administrator and portal responses; locale-bearing content aligns interface language before
   rendering; generated business catalogues and forms resolve localized definition labels; and localized HTML and
   redirects carry `Content-Language`, adding `Accept-Language` to `Vary` only when a response is publicly cacheable.
   Catalogue memoization is bounded to one active locale unit of work, so a long-lived process cannot keep an
-  administered override from an earlier request. (`7e84b91`)
+  administered override from an earlier request. (`b539161`)
 - **The published foreign-key constraint-name migration has an upgrade-safe compatibility handoff.** Its
   original source bytes and ledger identity `20260818010000_schema_global_constraint_names` remain unchanged.
   A compatibility
@@ -980,7 +980,7 @@ development programme, from the architecture decision that opened it to the curr
   grants the same narrow exception only to that ID/checksum pair. A different checksum, a wrong-shape replay target
   or an overlapping initialized neighbour fails closed, and an interruption after create-before-drop resumes
   without losing the referential action. No down migration rewrites the released ledger. This handoff repairs
-  foreign-key names only; PostgreSQL schema-wide non-primary index names remain open as `V2-DB-004`. (`7e84b91`)
+  foreign-key names only; PostgreSQL schema-wide non-primary index names remain open as `V2-DB-004`. (`b539161`)
 - **MySQL and MariaDB foreign-key names are isolated between prefixed installations.** A foreign-key constraint
   name is schema-global on MySQL and MariaDB rather than scoped to its table. Fifty-four of the shipped
   constraints were named literally. All fifty-four are distinct, so nothing collided inside one installation
@@ -994,8 +994,8 @@ development programme, from the architecture decision that opened it to the curr
   shape. Two prefixes are repaired in order on MariaDB and MySQL; PostgreSQL exercises the same focused
   foreign-key shape and replay contract with test-only isolated index names so its unrelated index namespace
   does not mask that evidence. This is not proof that two complete prefixed migration plans coexist in one
-  PostgreSQL schema; `V2-DB-004` records the append-only index-name work still required. (`c70da04`, `7e84b91`,
-  `e077944`)
+  PostgreSQL schema; `V2-DB-004` records the append-only index-name work still required. (`c70da04`, `b539161`,
+  `ffa4b14`)
 - **On the MySQL family, the rename is the operation that frees the old foreign-key names for a later prefixed
   installation.** The literal names cannot be changed where they are written: the core migrations publish their
   own file digests as an immutability contract, and editing their bytes would break the upgrade path of
@@ -1009,7 +1009,7 @@ development programme, from the architecture decision that opened it to the curr
   the referential action, match type and deferrability
   carried across explicitly. That order is deliberate: where DDL commits implicitly, an interruption between
   the two statements leaves the table holding both names, which enforces the same rule twice and loses
-  nothing, where dropping first would have left it holding neither. (`c70da04`, `e161425`, `7e84b91`)
+  nothing, where dropping first would have left it holding neither. (`c70da04`, `e161425`, `b539161`)
 - **A refused save no longer empties the form.** Filling in a long document and losing every value to a
   failure you could have recovered from was the single most expensive defect an operator met. Two gaps
   caused it. On the generated administrator and portal surfaces a validation failure already came back with
@@ -1231,12 +1231,12 @@ development programme, from the architecture decision that opened it to the curr
   branch constructs are refused. The 500-entry site/organization quota, mutation and audit record now share one
   transaction under a durable site-row lock, and a no-op update is distinguished from an absent row before insert,
   so concurrent writers cannot both consume the last slot or turn an unchanged value into a uniqueness failure.
-  (`7e84b91`)
+  (`b539161`)
 - **MCP discovery publishes the policy needed to use the machine surface safely.** The capabilities resource and
   discovery tool now include, for every published tool, its required capability, risk class and non-MCP alternative
   while withholding handler names and schemas. Input and output object schemas make an explicit membership decision,
   required-property lists are validated, and schema properties and handler parameters must bind in both directions.
-  (`7e84b91`)
+  (`b539161`)
 - **No step-up password is declared or accepted by an extension-lifecycle machine tool.** Three lifecycle
   tools published a `currentPassword` property in their input schemas and accepted it as a handler
   parameter, marked `writeOnly` as though that were a control — it describes an output property and
@@ -1246,7 +1246,7 @@ development programme, from the architecture decision that opened it to the curr
   a credential it should never have been able to accept. The browser and protected REST path remain the
   human step-up routes; the console can restore the built-in administrator theme for break-glass recovery
   but cannot step up to disable the live one. Every other activation, disable and uninstall proceeds under
-  the caller's existing `extensions.manage` authorization exactly as before. (`c6ce286`, `7e84b91`)
+  the caller's existing `extensions.manage` authorization exactly as before. (`c6ce286`, `b539161`)
 - **The machine surface now says what each published tool costs, and the claim is enforced rather
   than reviewed.** Every published tool carries one risk class from a closed vocabulary — read, scoped
   write, destructive, credential, trust, installation-global — together with the non-MCP route an operator
@@ -1255,7 +1255,7 @@ development programme, from the architecture decision that opened it to the curr
   so revoking every token a person holds across the installation is classified by its reach and disabling
   an extension by the fact that it changes which code runs. Misclassifications are corrected rather than
   exempted: deleting a menu item removes state and says so, while moving content into recoverable trash is
-  a scoped write because the same surface can restore it. (`c6ce286`, `7e84b91`)
+  a scoped write because the same surface can restore it. (`c6ce286`, `b539161`)
 - **A server cannot be built from a catalogue that breaks its own rules.** The classification, the
   annotations and the schemas are checked in full before the first tool is registered, so an incoherent
   surface is a boot failure naming the offending entries instead of a tool a client discovers and misuses.
@@ -1267,7 +1267,7 @@ development programme, from the architecture decision that opened it to the curr
   depth of any schema shaped like a credential or a host path, and any handler parameter that is credential-shaped
   or marked `#[\SensitiveParameter]`. The aggregate validation seam accepts declaration lists directly, so the
   empty, duplicate-name and malformed-name refusals are exercised without weakening the immutable production
-  catalogue. Closes `V2-QA-006`. (`c6ce286`, `7e84b91`)
+  catalogue. Closes `V2-QA-006`. (`c6ce286`, `b539161`)
 - **The extension boundary is described the same honest way everywhere, because the risk was drift rather
   than dishonesty.** The supported tier has one name on every surface — trusted in-process extension code —
   and the boundary is stated by what it is and what it is not, side by side: `RestrictedExtensionContainer`
@@ -1396,7 +1396,7 @@ development programme, from the architecture decision that opened it to the curr
   issued credential contradicts the surface's rule that authentication secrets cross neither direction, even if
   its idempotency record redacts the replay. Token rotation remains available through the administrator, protected
   CLI and REST paths with their explicit safeguards; removing the MCP route does not revoke that lifecycle.
-  (`7e84b91`)
+  (`b539161`)
 - **The inherited 1.x-era front controllers, MVC libraries and installation tree** — 155 files — replaced by a
   clean 2.0 baseline whose first commits are security headers, trusted-host matching, typed configuration and an
   architecture policy check. (`b40d2af`, `b20c5b5`)

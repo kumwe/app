@@ -2,7 +2,7 @@
 
 Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
-**Updated at** `fbd7753e0dec8044b30140cc5e741def8f051a50`
+**Updated at** `7a83c295bce6c23f250384ba787dd5e4595fff0e`
 
 > **Open work is here. Finished work is in [`CHANGELOG.md`](../../CHANGELOG.md).** Two paths, and both end in
 > the changelog. **Planned work** lives here while it is open and its entry is deleted from this directory
@@ -164,7 +164,7 @@ Gate B's ten criteria are unchanged and are listed in [`README.md`](README.md) s
 
 ## Baseline health at this revision
 
-**Verified at `fbd7753e0dec8044b30140cc5e741def8f051a50`.** CI run `31902616995`, security run
+**Verified at `7a83c295bce6c23f250384ba787dd5e4595fff0e`.** CI run `31902616995`, security run
 `31902616730` and Development Compose run `31902616751` all completed successfully.
 
 - The dependency gate reported 115 recorded exemptions and no new violation. The quality contract verified 26

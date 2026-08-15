@@ -1,7 +1,7 @@
 {
   "ledger": "kumwe-consolidated-findings",
   "version": "2.0.0",
-  "verified_at_sha": "fbd7753e0dec8044b30140cc5e741def8f051a50",
+  "verified_at_sha": "7a83c295bce6c23f250384ba787dd5e4595fff0e",
   "authority": "docs/roadmap/README.md",
   "completed_work": "CHANGELOG.md",
   "note": "This ledger holds open work only. A finding that reaches 'closed' leaves this file in the same change that closes it, and its substance becomes an entry in CHANGELOG.md under the category it belongs to; the roadmap therefore shrinks as the programme advances instead of accumulating a tail of finished items. 'closed' is deliberately absent from states for that reason, and tools/verify-roadmap.php fails the build when an entry carries it. Every source anchor in this file was resolved against the repository at verified_at_sha. The 56 entries closed before this rule was introduced were moved to CHANGELOG.md with the commits that closed them.",

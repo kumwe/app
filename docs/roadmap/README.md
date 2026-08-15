@@ -1,6 +1,6 @@
 # Kumwe CMS consolidated roadmap
 
-**Verified against** `fbd7753e0dec8044b30140cc5e741def8f051a50`
+**Verified against** `7a83c295bce6c23f250384ba787dd5e4595fff0e`
 **Machine-readable companions** [`findings.json`](findings.json), [`capacity-contract.json`](capacity-contract.json)
 **Current position** [`STATUS.md`](STATUS.md)
 **Work already finished** [`CHANGELOG.md`](../../CHANGELOG.md)
@@ -544,7 +544,7 @@ residuals.
 ### 4.5 Currency, language and enterprise-primitive current state, verified
 
 Decisions D10 through D14 rest on the state below. It was refreshed against
-`fbd7753e0dec8044b30140cc5e741def8f051a50`. Where something exists, this says so precisely. Where it does
+`7a83c295bce6c23f250384ba787dd5e4595fff0e`. Where something exists, this says so precisely. Where it does
 not, this says so plainly.
 
 **Money and exact values — the exact half is already provided.** `MoneyValue` binds an `ExactDecimal`
@@ -674,7 +674,7 @@ this programme is designed as a step toward it, and no figure in the capacity co
 
 ### 5.1 Capability primitives an enterprise resource planning system requires
 
-Verified against the code at `fbd7753e0dec8044b30140cc5e741def8f051a50`. **Provided** means it exists
+Verified against the code at `7a83c295bce6c23f250384ba787dd5e4595fff0e`. **Provided** means it exists
 and is proven. **Partial** means it
 exists with a stated limitation. **Must add** means core has to build it. **Decision required** means the
 core-versus-extension boundary has not been settled and must be, before extension authors depend on either
