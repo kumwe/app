@@ -334,7 +334,8 @@ final readonly class McpCatalogValidator
         if ($risk->requiresDeclaredCapability() && $tool['capability'] === null) {
             $violations[] = sprintf('Tool "%s" declares risk class %s but names no capability.', $name, $risk->value);
         }
-        if ($tool['capability'] !== null
+        if (
+            $tool['capability'] !== null
             && preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/D', $tool['capability']) !== 1
         ) {
             $violations[] = sprintf('Tool "%s" names an invalid capability.', $name);

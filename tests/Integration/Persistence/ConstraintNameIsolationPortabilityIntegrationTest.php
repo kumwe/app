@@ -621,6 +621,26 @@ final class ConstraintNameIsolationPortabilityIntegrationTest extends TestCase
             if ($definition->getObjectName()->getUnqualifiedName()->getValue() !== $tables->raw('organizations')) {
                 continue;
             }
+
+            // This fixture isolates the shipped foreign-key definition. PostgreSQL's separate schema-global
+            // index-name limitation is tracked independently, so the two otherwise unrelated indexes must not
+            // prevent this focused table pair from reaching the foreign-key migration under test.
+            $definition->dropIndex('uniq_org_site_identifier');
+            $definition->addUniqueIndex(
+                ['site_identifier', 'identifier'],
+                ConstraintNameIsolationPortabilityMigration::isolatedName(
+                    $tables->raw('organizations'),
+                    'uniq_org_site_identifier',
+                ),
+            );
+            $definition->dropIndex('idx_org_site_status');
+            $definition->addIndex(
+                ['site_identifier', 'status'],
+                ConstraintNameIsolationPortabilityMigration::isolatedName(
+                    $tables->raw('organizations'),
+                    'idx_org_site_status',
+                ),
+            );
             $manager->createTable($definition);
             $created[] = $tables->raw('organizations');
 

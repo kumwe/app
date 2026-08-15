@@ -102,6 +102,42 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
                 self::assertMatchesRegularExpression('/^fk_[0-9a-f]{24}$/D', (string) $name);
                 self::assertSame(ReferentialAction::SET_NULL, $foreignKey->getOnDeleteAction());
             }
+            self::assertTrue($entries->hasColumn('translation_group_owner_valid'));
+            $ownerColumn = $database->fetchAssociative(
+                'SELECT DATA_TYPE AS data_type, EXTRA AS extra, '
+                . 'GENERATION_EXPRESSION AS generation_expression FROM information_schema.COLUMNS '
+                . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+                [$entriesName, 'translation_group_owner_valid'],
+            );
+            self::assertIsArray($ownerColumn);
+            self::assertSame('tinyint', strtolower((string) ($ownerColumn['data_type'] ?? '')));
+            self::assertStringContainsString('virtual', strtolower((string) ($ownerColumn['extra'] ?? '')));
+            self::assertStringContainsString('generated', strtolower((string) ($ownerColumn['extra'] ?? '')));
+            $generation = strtolower((string) ($ownerColumn['generation_expression'] ?? ''));
+            self::assertStringContainsString('translation_group_id', $generation);
+            self::assertStringContainsString('translation_group_site_identifier', $generation);
+            self::assertStringContainsString('site_identifier', $generation);
+
+            $checks = $database->fetchAllAssociative(
+                'SELECT c.CONSTRAINT_NAME AS constraint_name, c.CHECK_CLAUSE AS check_clause '
+                . 'FROM information_schema.CHECK_CONSTRAINTS c '
+                . 'INNER JOIN information_schema.TABLE_CONSTRAINTS t '
+                . 'ON t.CONSTRAINT_SCHEMA = c.CONSTRAINT_SCHEMA AND t.CONSTRAINT_NAME = c.CONSTRAINT_NAME '
+                . "WHERE c.CONSTRAINT_SCHEMA = DATABASE() AND t.TABLE_NAME = ? AND t.CONSTRAINT_TYPE = 'CHECK'",
+                [$entriesName],
+            );
+            self::assertCount(1, $checks, 'A replay must retain exactly one generated ownership check.');
+            $checkName = (string) ($checks[0]['constraint_name'] ?? '');
+            self::assertMatchesRegularExpression('/^ck_[0-9a-f]{24}$/D', $checkName);
+            self::assertLessThanOrEqual(63, strlen($checkName));
+            $checkClause = strtolower((string) ($checks[0]['check_clause'] ?? ''));
+            $normalizedCheck = preg_replace('/[\s`()]+/', '', $checkClause);
+            self::assertSame('translation_group_owner_valid=1', $normalizedCheck);
+            self::assertSame('0', (string) $database->fetchOne(
+                'SELECT COUNT(*) FROM information_schema.TRIGGERS '
+                . 'WHERE TRIGGER_SCHEMA = DATABASE() AND EVENT_OBJECT_TABLE = ?',
+                [$entriesName],
+            ), 'Ownership enforcement must not require managed-database trigger privileges.');
         } finally {
             $this->dropTables($database, $tables);
         }
@@ -110,10 +146,10 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
     /**
      * Prove the installed constraints are the database's own rules rather than an application convention.
      *
-     * Three properties are asserted by watching the engine act: one locale of one item is claimed once,
-     * repeated nulls sit under that unique index without contending for it — which is what makes the
-     * unbackfilled columns safe on an existing installation — and deleting a group releases its members
-     * instead of destroying them.
+     * The engine must accept both valid ownership states, refuse either half-null pair and a cross-site
+     * owner on insert, refuse an update that makes a valid owner cross-site, and let the composite foreign
+     * key null both columns when its group is deleted. Locale uniqueness and repeated ungrouped nulls are
+     * exercised beside those ownership rules so the complete translated-entry shape stays proved.
      *
      * @return  void
      *
@@ -140,30 +176,68 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
             $this->insertEntry($database, $tables, 'b0003', null, null);
             $this->insertEntry($database, $tables, 'b0004', null, null);
 
-            try {
-                $database->insert($tables->raw('content_entries'), [
-                    'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026b0006',
-                    'site_identifier' => 'secondary',
-                    'locale' => 'af',
-                    'translation_group_id' => $group,
-                    'translation_group_site_identifier' => 'default',
-                ]);
-                self::fail('An entry cannot name a group owned by another site.');
-            } catch (DriverException) {
-                // The owner-equality check refused a cross-site row even though the composite key existed.
-            }
+            $this->assertDriverRefuses(
+                function () use ($database, $tables, $group): void {
+                    $database->insert($tables->raw('content_entries'), [
+                        'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026b0007',
+                        'site_identifier' => 'default',
+                        'locale' => 'fr',
+                        'translation_group_id' => $group,
+                        'translation_group_site_identifier' => null,
+                    ]);
+                },
+                'A group identifier cannot be stored without its owner.',
+            );
+            $this->assertDriverRefuses(
+                function () use ($database, $tables): void {
+                    $database->insert($tables->raw('content_entries'), [
+                        'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026b0008',
+                        'site_identifier' => 'default',
+                        'locale' => 'nl',
+                        'translation_group_id' => null,
+                        'translation_group_site_identifier' => 'default',
+                    ]);
+                },
+                'A group owner cannot be stored without its identifier.',
+            );
+            $this->assertDriverRefuses(
+                function () use ($database, $tables, $group): void {
+                    $database->insert($tables->raw('content_entries'), [
+                        'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026b0006',
+                        'site_identifier' => 'secondary',
+                        'locale' => 'af',
+                        'translation_group_id' => $group,
+                        'translation_group_site_identifier' => 'default',
+                    ]);
+                },
+                'An entry cannot name a group owned by another site.',
+            );
+            $this->assertDriverRefuses(
+                function () use ($database, $tables): void {
+                    $database->update(
+                        $tables->raw('content_entries'),
+                        ['site_identifier' => 'secondary'],
+                        ['id' => '018f22e2-7c8b-7ab0-8f3a-88e8026b0001'],
+                    );
+                },
+                'An update cannot move an entry away from its translation-group owner.',
+            );
+            self::assertSame('default', $database->fetchOne(sprintf(
+                'SELECT site_identifier FROM %s WHERE id = ?',
+                $tables->quoted('content_entries'),
+            ), ['018f22e2-7c8b-7ab0-8f3a-88e8026b0001']));
 
             self::assertSame('2', (string) $database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s WHERE translation_group_id IS NULL',
                 $tables->quoted('content_entries'),
             )), 'Repeated nulls must sit under the unique index rather than contend for it.');
 
-            try {
-                $this->insertEntry($database, $tables, 'b0005', 'en-GB', $group);
-                self::fail('One item must carry at most one entry per locale.');
-            } catch (DriverException) {
-                // The engine refused it, which is the property under test.
-            }
+            $this->assertDriverRefuses(
+                function () use ($database, $tables, $group): void {
+                    $this->insertEntry($database, $tables, 'b0005', 'en-GB', $group);
+                },
+                'One item must carry at most one entry per locale.',
+            );
 
             $database->executeStatement(sprintf(
                 'DELETE FROM %s WHERE id = ?',
@@ -175,9 +249,10 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
                 $tables->quoted('content_entries'),
             )), 'Deleting a group must release its members, not delete them.');
             self::assertSame('0', (string) $database->fetchOne(sprintf(
-                'SELECT COUNT(*) FROM %s WHERE translation_group_id IS NOT NULL',
+                'SELECT COUNT(*) FROM %s WHERE translation_group_id IS NOT NULL '
+                . 'OR translation_group_site_identifier IS NOT NULL',
                 $tables->quoted('content_entries'),
-            )));
+            )), 'The referential action must clear both halves of the nullable ownership pair.');
         } finally {
             $this->dropTables($database, $tables);
         }
@@ -301,6 +376,26 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
             'translation_group_id' => $group,
             'translation_group_site_identifier' => $group === null ? null : 'default',
         ]);
+    }
+
+    /**
+     * Assert that one deliberately invalid write is refused by the database itself.
+     *
+     * @param   callable(): void  $write    Invalid write whose driver exception proves enforcement.
+     * @param   string            $message  Failure message used when the write unexpectedly succeeds.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function assertDriverRefuses(callable $write, string $message): void
+    {
+        try {
+            $write();
+            self::fail($message);
+        } catch (DriverException) {
+            // Reaching the driver refusal is the property under test.
+        }
     }
 
     /**

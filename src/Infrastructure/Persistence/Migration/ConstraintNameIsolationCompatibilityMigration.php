@@ -86,10 +86,12 @@ final readonly class ConstraintNameIsolationCompatibilityMigration implements Re
             throw new RuntimeException('The constraint name isolation compatibility checksum failed.');
         }
         $digests = [$ownDigest];
-        foreach ([
+        foreach (
+            [
             __DIR__ . '/ConstraintNameIsolationMigration.php',
             __DIR__ . '/ConstraintNameIsolationPortabilityMigration.php',
-        ] as $source) {
+            ] as $source
+        ) {
             $digest = hash_file('sha256', $source);
             if (!is_string($digest)) {
                 throw new RuntimeException('The constraint name isolation compatibility checksum failed.');
