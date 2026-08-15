@@ -41,7 +41,6 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentation;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
@@ -2068,7 +2067,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             $fields[] = [
                 'handle' => $field->handle,
                 'label' => $field->label,
-                'display' => self::presentedText($presentation),
+                'display' => self::presentedText($presentation->display, $presentation->provenance),
                 'identity' => in_array($field->type, ['core.uuid', 'core.reference_identity'], true),
                 'provenance' => $presentation->provenance,
             ];
@@ -2192,7 +2191,10 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
                         $record->values[$column['handle']],
                         editable: false,
                     ));
-                    $display = self::presentedText($presentation);
+                    $display = self::presentedText(
+                        $presentation->display,
+                        $presentation->provenance,
+                    );
                     $provenance = $presentation->provenance;
                 }
                 $cells[] = [
@@ -2247,19 +2249,26 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * figure into an unverifiable one. Its portable form is already single-line canonical text, so
      * nothing is lost by passing it through unchanged.
      *
-     * @param   FieldPresentation  $presentation  Semantic model returned by the presenter registry.
+     * It takes the two values it actually reads rather than the presentation object they came from.
+     * That keeps the application layer from naming a presentation type for the sake of a type hint,
+     * which is a dependency pointing the wrong way for no benefit: this helper needs a string and the
+     * presence or absence of provenance, and nothing else about how the value was presented.
+     *
+     * @param   string                 $display     Escaped text the presenter produced for the value.
+     * @param   ?array<string, mixed>  $provenance  Conversion evidence when the figure was converted,
+     *          or null when it was not; its mere presence is what exempts the text from truncation.
      *
      * @return  string  The bounded display text, or the untouched portable form of a converted amount.
      *
      * @since   2.0.0
      */
-    private static function presentedText(FieldPresentation $presentation): string
+    private static function presentedText(string $display, ?array $provenance): string
     {
-        if ($presentation->provenance !== null) {
-            return $presentation->display;
+        if ($provenance !== null) {
+            return $display;
         }
 
-        return $presentation->display === '' ? '' : self::choiceText($presentation->display, 256);
+        return $display === '' ? '' : self::choiceText($display, 256);
     }
 
     /**
