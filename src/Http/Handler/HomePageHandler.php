@@ -44,7 +44,7 @@ final readonly class HomePageHandler implements RequestHandlerInterface
      * @param  ContentLayoutCatalog       $layouts    Content-type to site-template layout selection.
      * @param  TranslationGroupPresenter  $languages  Chooser of which locale of the nominated homepage the
      *         reader is served, and builder of the alternate-language links and the language selector.
-     * @param  ActiveLocale                $active     Request locale holder aligned to the resolved homepage
+     * @param  ActiveLocale               $active     Request locale holder aligned to the resolved homepage
      *         before its template and translated chrome are rendered.
      *
      * @since  2.0.0

@@ -88,9 +88,9 @@ final readonly class McpCatalogValidator
      *              destructive: bool, idempotent: bool, risk: McpRiskClass, alternative: string,
      *              inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...
      *          }>  $tools      Tool declarations to check in full.
-     * @param   list<array{uri: string, handler: string, ...}>  $resources  Resource declarations to check.
-     * @param   list<array{name: string, handler: string, ...}> $prompts    Prompt declarations to check.
-     * @param   object                                            $handlers   Handler object the entries name.
+     * @param   list<array{uri: string, handler: string, ...}>   $resources  Resource declarations to check.
+     * @param   list<array{name: string, handler: string, ...}>  $prompts    Prompt declarations to check.
+     * @param   object                                           $handlers   Handler object the entries name.
      *
      * @return  void
      *
@@ -128,9 +128,9 @@ final readonly class McpCatalogValidator
      *              destructive: bool, idempotent: bool, risk: McpRiskClass, alternative: string,
      *              inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...
      *          }>  $tools      Tool declarations to check in full.
-     * @param   list<array{uri: string, handler: string, ...}>  $resources  Resource declarations to check.
-     * @param   list<array{name: string, handler: string, ...}> $prompts    Prompt declarations to check.
-     * @param   object                                            $handlers   Handler object the entries name.
+     * @param   list<array{uri: string, handler: string, ...}>   $resources  Resource declarations to check.
+     * @param   list<array{name: string, handler: string, ...}>  $prompts    Prompt declarations to check.
+     * @param   object                                           $handlers   Handler object the entries name.
      *
      * @return  list<string>  One sentence per violation; empty when the surface is coherent.
      *
@@ -477,7 +477,7 @@ final readonly class McpCatalogValidator
      * The walk covers property names at every depth of both schemas, so a credential smuggled into a
      * nested object or an array item schema is caught in the same pass as a top-level one.
      *
-     * @param   string  $name  Tool name, for the message.
+     * @param string $name Tool name, for the message.
      * @param   array{inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...}  $tool  One
      *          published catalogue entry.
      *
