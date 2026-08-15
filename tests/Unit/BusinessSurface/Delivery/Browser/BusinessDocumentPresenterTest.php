@@ -130,6 +130,54 @@ final class BusinessDocumentPresenterTest extends TestCase
     }
 
     /**
+     * A converted total reaches the printed page carrying the evidence for its own figure.
+     *
+     * A printed document is the artifact most likely to be filed or produced in a dispute, so a figure
+     * on it that cannot say where it came from is the defect this arrangement exists to prevent.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAConvertedTotalKeepsItsProvenanceThroughTheDocumentBlocks(): void
+    {
+        $provenance = [
+            'converted' => true,
+            'value' => ['amount' => '1234.56', 'currency' => 'EUR'],
+            'source' => ['amount' => '25000.00', 'currency' => 'ZAR'],
+            'rate' => [
+                'base_currency' => 'ZAR',
+                'quote_currency' => 'EUR',
+                'rate' => '0.04938240',
+                'as_at' => '2026-08-14T00:00:00.000000+00:00',
+                'provider' => 'acme.rates.ecb',
+            ],
+            'rounding' => ['mode' => 'half_up', 'scale' => 2, 'unrounded_amount' => '1234.560000'],
+        ];
+        $model = self::model();
+        $model['fields'][] = [
+            'handle' => 'presented_total',
+            'label' => 'Presented total',
+            'display' => 'EUR 1234.56 converted from ZAR 25000.00 at 0.04938240'
+                . ' as at 2026-08-14T00:00:00.000000+00:00 by acme.rates.ecb rounded half_up from 1234.560000',
+            'provenance' => $provenance,
+        ];
+        $model['document_view']['document']['totals'][] = 'presented_total';
+
+        $document = (new BusinessDocumentPresenter())->present($model);
+        $totals = $document['totals'];
+        self::assertIsArray($totals);
+        $converted = $totals[array_key_last($totals)];
+        self::assertIsArray($converted);
+
+        self::assertSame($provenance, $converted['provenance']);
+        self::assertIsString($converted['display']);
+        self::assertStringContainsString('0.04938240', $converted['display']);
+        self::assertStringContainsString('2026-08-14T00:00:00.000000+00:00', $converted['display']);
+        self::assertStringContainsString('acme.rates.ecb', $converted['display']);
+    }
+
+    /**
      * Build one safe document read model shaped like `BusinessSurfaceService::document()` output.
      *
      * @return  array<string, mixed>  Model carrying identity, group, party, line and totals roles.

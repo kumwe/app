@@ -44,12 +44,18 @@ use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessSurfaceService::class)]
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(BusinessRecordProjector::class)]
+#[CoversClass(BusinessRecordApiHandler::class)]
+#[CoversClass(BusinessRecordConsolePresenter::class)]
+#[CoversClass(BusinessMcpHandlers::class)]
+#[CoversClass(GeneratedBusinessBrowserController::class)]
 /**
  * Proves one generated business lifecycle remains identical across every delivery adapter.
  *

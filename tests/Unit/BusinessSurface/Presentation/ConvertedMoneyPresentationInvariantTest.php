@@ -163,6 +163,81 @@ final class ConvertedMoneyPresentationInvariantTest extends TestCase
     }
 
     /**
+     * A converted amount is recognised as the object, as its export, and as neither.
+     *
+     * Every surface asks this one question, so the answer has to be the same whichever form the value
+     * arrived in. The member set has to match exactly: a structured value that merely carries a
+     * `converted` flag is somebody else's data and is left alone rather than claimed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAConvertedAmountIsRecognisedInEitherFormAndNotMistakenForOtherData(): void
+    {
+        $converted = self::converted();
+
+        self::assertSame($converted, ConvertedMoneyValue::detect($converted));
+        self::assertSame(
+            $converted->toArray(),
+            ConvertedMoneyValue::detect($converted->toArray())?->toArray(),
+        );
+
+        foreach (
+            [
+                'a bare figure' => '1234.56',
+                'nothing at all' => null,
+                'a stored money pair' => ['amount' => '25000.00', 'currency' => 'ZAR'],
+                'an unrelated flag' => ['converted' => true],
+                'a near miss with one member short' => [
+                    'converted' => true,
+                    'value' => ['amount' => '1.00', 'currency' => 'EUR'],
+                    'source' => ['amount' => '1.00', 'currency' => 'EUR'],
+                    'rate' => [],
+                ],
+            ] as $case => $value
+        ) {
+            self::assertNull(ConvertedMoneyValue::detect($value), $case . ' was read as a converted amount.');
+        }
+    }
+
+    /**
+     * An export carrying the declared members but contradicting itself is refused, not ignored.
+     *
+     * Returning null there would let a figure that says it is converted reach a surface as an ordinary
+     * value, which is the one outcome the marker exists to prevent.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnExportThatClaimsToBeConvertedAndCannotProveItIsRefused(): void
+    {
+        $broken = self::converted()->toArray();
+        $broken['rate']['rate'] = '0.99999999';
+
+        $this->expectException(InvalidArgumentException::class);
+        ConvertedMoneyValue::detect($broken);
+    }
+
+    /**
+     * A capture instant whose text is well formed but names no real date is refused.
+     *
+     * The grammar admits `2026-13-45`, because a month is two digits by shape. Only the calendar can
+     * reject it, so the parse result is checked rather than assumed from the pattern.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testACaptureInstantThatParsesToNoRealDateIsRefused(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('RFC 3339');
+        ClientAssertedInstant::fromPortableString('2026-13-45T00:00:00+00:00');
+    }
+
+    /**
      * Build one field presentation with the members these assertions vary.
      *
      * @param   FieldWidget            $widget      Widget the presenter chose.
