@@ -515,6 +515,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordHistoryWindowMi
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
@@ -1685,6 +1686,7 @@ final class ContainerFactory
                     new BusinessRecordHistoryWindowMigration(self::service($container, TableNames::class)),
                     new ResourceOwnershipScopeMigration(self::service($container, TableNames::class)),
                     new InterfaceMessageOverrideMigration(self::service($container, TableNames::class)),
+                    new ConstraintNameIsolationMigration(self::service($container, TableNames::class)),
                     new MultilingualContentMigration(self::service($container, TableNames::class)),
                 ],
                 [
