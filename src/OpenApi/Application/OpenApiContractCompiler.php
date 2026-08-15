@@ -6,6 +6,7 @@ namespace Kumwe\CMS\OpenApi\Application;
 
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\CMS\OpenApi\Infrastructure\CanonicalOpenApiJson;
 
@@ -18,6 +19,15 @@ use Kumwe\CMS\OpenApi\Infrastructure\CanonicalOpenApiJson;
  * server-only, computed, read-only, write-only and denied fields cannot drift between runtime and contract.
  * No extension code executes here; contributed definitions have already crossed trusted runtime and
  * publication validation before they become catalog documents.
+ *
+ * Two things about money are stated by the contract rather than left to a client to discover. A read
+ * schema for a money field admits either the stored amount-and-currency pair or a converted amount,
+ * which is a different shape carrying the rate, the as-at instant, the provider and the rounding that
+ * produced it; the create and update schemas admit only the stored pair, so the published contract
+ * refuses a converted figure as an input exactly as the write path does. And the report column type
+ * vocabulary is enumerated from `ReportValueType` rather than repeated here, because a value type the
+ * runtime emits and the contract omits is how a converted column would come to be described as an
+ * ordinary one.
  *
  * @since  2.0.0
  */
@@ -333,7 +343,9 @@ final readonly class OpenApiContractCompiler
             if ($use === 'detail' && ($schema['writeOnly'] ?? false) === true) {
                 continue;
             }
-            $properties[$handle] = $schema;
+            $properties[$handle] = $use === 'detail' && ($field['type'] ?? null) === 'core.money'
+                ? self::convertibleMoney($schema)
+                : $schema;
             if (($field['required'] ?? false) === true && $use === 'create') {
                 $required[] = $handle;
             }
@@ -528,6 +540,7 @@ final readonly class OpenApiContractCompiler
             ],
         ];
         $schemas = array_merge([
+            'GeneratedBusinessConvertedMoney' => self::convertedMoneySchema(),
             'GeneratedBusinessRelationRecord' => $relationRecord,
             'GeneratedBusinessRecord' => $record,
             'GeneratedBusinessRevision' => $revision,
@@ -769,7 +782,7 @@ final readonly class OpenApiContractCompiler
                     'label' => ['type' => 'string', 'maxLength' => 191],
                     'type' => [
                         'type' => 'string',
-                        'enum' => ['string', 'integer', 'decimal', 'boolean', 'date', 'date_time', 'identifier'],
+                        'enum' => self::reportColumnTypes(),
                     ],
                 ],
             ],
@@ -1231,6 +1244,119 @@ final readonly class OpenApiContractCompiler
                 ],
             ],
         ], ['type' => 'null']]];
+    }
+
+    /**
+     * Admit either a stored money value or a converted one wherever a read schema describes money.
+     *
+     * A read response is the only place the two can appear in the same slot, because conversion is a
+     * presentation of a stored amount and never a mutation of it. The union is deliberately asymmetric:
+     * this wrapper is applied for the `detail` use only, so the published create and update schemas keep
+     * refusing a converted amount exactly as the write path does. The declared `converted` marker and the
+     * nested `value` member make the two shapes disjoint, so a client can tell them apart without
+     * guessing, and `readOnly` is carried up to the union because a generator reading the property would
+     * no longer see it on a wrapped branch.
+     *
+     * @param   array<mixed, mixed>  $stored  Closed schema for the stored amount-and-currency pair, exactly
+     *          as the shared catalog produced it.
+     *
+     * @return  array<string, mixed>  A `oneOf` of the stored pair and the converted amount.
+     *
+     * @since   2.0.0
+     */
+    private static function convertibleMoney(array $stored): array
+    {
+        $union = [
+            'oneOf' => [
+                $stored,
+                ['$ref' => '#/components/schemas/GeneratedBusinessConvertedMoney'],
+            ],
+        ];
+        if (($stored['readOnly'] ?? false) === true) {
+            $union['readOnly'] = true;
+        }
+
+        return $union;
+    }
+
+    /**
+     * Describe a converted amount exactly as `ConvertedMoneyValue::toArray()` writes it.
+     *
+     * Every member is required and no other member is admitted, which is what makes the schema a
+     * statement of the rule rather than a description of a payload: a client validating against this
+     * contract cannot accept a converted figure whose rate, as-at instant, provider or rounding is
+     * missing, so the rule survives the trip out of this system into somebody else's.
+     *
+     * @return  array<string, mixed>  Closed JSON Schema for the converted-amount export.
+     *
+     * @since   2.0.0
+     */
+    private static function convertedMoneySchema(): array
+    {
+        $exact = ['type' => 'string', 'pattern' => '^-?[0-9]+(?:\.[0-9]+)?$'];
+        $pair = [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['amount', 'currency'],
+            'properties' => [
+                'amount' => $exact,
+                'currency' => ['type' => 'string', 'pattern' => '^[A-Z]{3}$'],
+            ],
+        ];
+
+        return [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['converted', 'value', 'source', 'rate', 'rounding'],
+            'properties' => [
+                'converted' => ['type' => 'boolean', 'const' => true],
+                'value' => $pair,
+                'source' => $pair,
+                'rate' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'required' => ['base_currency', 'quote_currency', 'rate', 'as_at', 'provider'],
+                    'properties' => [
+                        'base_currency' => ['type' => 'string', 'pattern' => '^[A-Z]{3}$'],
+                        'quote_currency' => ['type' => 'string', 'pattern' => '^[A-Z]{3}$'],
+                        'rate' => ['type' => 'string', 'pattern' => '^(?:0|[1-9][0-9]*)\.[0-9]+$'],
+                        'as_at' => ['type' => 'string', 'format' => 'date-time'],
+                        'provider' => [
+                            'type' => 'string',
+                            'pattern' => '^[a-z][a-z0-9]*(?:[._-][a-z0-9]+){1,15}$',
+                        ],
+                    ],
+                ],
+                'rounding' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'required' => ['mode', 'scale', 'unrounded_amount'],
+                    'properties' => [
+                        'mode' => ['type' => 'string', 'pattern' => '^[a-z_]{1,16}$'],
+                        'scale' => ['type' => 'integer', 'minimum' => 0],
+                        'unrounded_amount' => $exact,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Enumerate the report column value types from the vocabulary the report engine actually emits.
+     *
+     * @return  non-empty-list<string>  Sorted backing values of every declared report value type.
+     *
+     * @since   2.0.0
+     */
+    private static function reportColumnTypes(): array
+    {
+        $types = array_map(
+            static fn (ReportValueType $type): string => $type->value,
+            ReportValueType::cases(),
+        );
+        sort($types, SORT_STRING);
+
+        return $types;
     }
 
     /**

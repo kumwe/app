@@ -7,6 +7,7 @@ namespace Kumwe\CMS\BusinessSurface\Presentation\Field;
 use InvalidArgumentException;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
 
 /**
  * Escaped-view-model request returned by core or extension field strategies.
@@ -14,6 +15,12 @@ use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
  * A strategy cannot return markup or a Twig path. It chooses one core-owned semantic widget and supplies
  * bounded data which Twig auto-escapes, keeping extension renderers useful without making them an HTML or
  * template-inclusion escape hatch.
+ *
+ * A converted amount is the one value whose display text is not the presenter's to compose. When
+ * `$provenance` is present this model refuses any display but the self-describing portable form of the
+ * amount it carries, so the figure and the rate, as-at instant and provider that justify it cannot come
+ * apart on the way to a template — including a template that renders nothing but `display`. Conversion
+ * is presentation only, so a presentation carrying provenance is also read-only and retains no input.
  *
  * @since  2.0.0
  */
@@ -41,9 +48,12 @@ final readonly class FieldPresentation
      * @param   list<string>                               $errors      Field-level caller-visible errors.
      * @param   list<array{value: string, label: string}>  $options     Closed choice options.
      * @param   array<string, int|string|bool>             $attributes  Allow-listed bounds for the core widget.
+     * @param   ?array<string, mixed>                      $provenance  Conversion evidence exactly as
+     *          `ConvertedMoneyValue::toArray()` writes it, or null when the value is not a converted amount.
      *
      * @throws  InvalidArgumentException  When identity, labels, widget state, input size, errors, options, or
-     *          attributes are malformed or unbounded.
+     *          attributes are malformed or unbounded; when provenance is not a complete converted amount;
+     *          or when a converted amount is offered as an editable, retained or non-portable display.
      * @throws  InvalidBusinessDefinition  When retained input or attributes cannot be encoded in the closed
      *          value space.
      *
@@ -61,6 +71,7 @@ final readonly class FieldPresentation
         public array $errors = [],
         public array $options = [],
         public array $attributes = [],
+        public ?array $provenance = null,
     ) {
         if (
             preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1
@@ -108,6 +119,52 @@ final readonly class FieldPresentation
         self::measureInputBytes($inputValue, $inputBytes);
         if (strlen(CanonicalDefinitionJson::encode($inputValue)) > self::MAX_INPUT_BYTES) {
             throw new InvalidArgumentException('A field presentation input exceeds one mebibyte.');
+        }
+        if ($provenance !== null) {
+            self::assertConvertedAmountIsWhole($widget, $display, $inputValue, $editable, $provenance);
+        }
+    }
+
+    /**
+     * Refuse a converted amount that has been separated from the evidence that justifies it.
+     *
+     * The provenance is read back through the value type rather than inspected member by member, so this
+     * check enforces exactly what the contract enforces everywhere else: the rate must price the pair,
+     * the unrounded product must be the exact product, and the figure must be that product under its own
+     * declared rounding. The display is then required to be that value's portable form, which is what
+     * makes a surface rendering nothing but `display` still correct — and reproducible by a reader
+     * outside the system.
+     *
+     * @param   FieldWidget           $widget      Widget the presenter chose for the value.
+     * @param   string                $display     Escaped text the surface will render.
+     * @param   mixed                 $inputValue  Retained editor input, which a converted amount has none of.
+     * @param   bool                  $editable    Whether the presenter offered an editor.
+     * @param   array<string, mixed>  $provenance  Candidate conversion evidence.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the evidence is not a whole converted amount, when the display
+     *          is not its portable form, or when the presentation offers it as editable or retained input.
+     *
+     * @since   2.0.0
+     */
+    private static function assertConvertedAmountIsWhole(
+        FieldWidget $widget,
+        string $display,
+        mixed $inputValue,
+        bool $editable,
+        array $provenance,
+    ): void {
+        if ($widget !== FieldWidget::Output || $editable || $inputValue !== null) {
+            throw new InvalidArgumentException('A converted amount is presented read-only and is never editable.');
+        }
+        try {
+            $converted = ConvertedMoneyValue::fromArray($provenance);
+        } catch (InvalidArgumentException) {
+            throw new InvalidArgumentException('A field presentation carries incomplete conversion provenance.');
+        }
+        if ($display !== $converted->toPortableString()) {
+            throw new InvalidArgumentException('A converted amount must be displayed with the provenance it carries.');
         }
     }
 
@@ -188,6 +245,7 @@ final readonly class FieldPresentation
             'errors' => $this->errors,
             'options' => $this->options,
             'attributes' => $this->attributes,
+            'provenance' => $this->provenance,
         ];
     }
 }

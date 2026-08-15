@@ -9,6 +9,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
 
 /**
  * Owner-aware registry of safe presenters keyed by field type and exact presentation context.
@@ -17,6 +18,11 @@ use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
  * namespace and rejects collisions, while removal is owner-scoped so disabling one extension cannot
  * remove another extension's presenter. Core falls back only among its own built-in registrations; an
  * extension field type without a registered context fails closed instead of rendering as generic HTML.
+ *
+ * This is also the one gate every presented value crosses, core-owned or contributed, which is why the
+ * conversion-provenance rule is enforced here rather than in any single presenter: a strategy handed a
+ * converted amount that returns a presentation without its provenance is refused outright, so no
+ * extension can reduce a converted figure to a bare number by writing its own renderer.
  *
  * @since  2.0.0
  */
@@ -87,7 +93,10 @@ final class FieldPresentationRegistry
      *
      * @return  FieldPresentation  Bounded semantic view model.
      *
-     * @throws  InvalidBusinessDefinition  When no strategy covers the exact pair or it returns another field.
+     * @throws  InvalidBusinessDefinition  When no strategy covers the exact pair, it returns another field,
+     *          it widens editability, or it drops the provenance of a converted amount.
+     * @throws  InvalidArgumentException  When a value marked as converted cannot prove the conversion it
+     *          claims.
      *
      * @since   2.0.0
      */
@@ -97,7 +106,11 @@ final class FieldPresentationRegistry
         if ($registration === null) {
             throw new InvalidBusinessDefinition('No safe presenter is registered for this field context.');
         }
+        $converted = ConvertedMoneyValue::detect($request->value);
         $presentation = $registration['presenter']->present($request);
+        if ($converted !== null && $presentation->provenance !== $converted->toArray()) {
+            throw new InvalidBusinessDefinition('A converted amount must be presented with its conversion provenance.');
+        }
         if (
             $presentation->handle !== $request->field->handle
             || $presentation->context !== $request->context

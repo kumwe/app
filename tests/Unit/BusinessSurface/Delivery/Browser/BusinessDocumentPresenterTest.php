@@ -104,7 +104,12 @@ final class BusinessDocumentPresenterTest extends TestCase
         self::assertSame(
             [[
                 'label' => 'Invoice dates',
-                'fields' => [['handle' => 'issued_on', 'label' => 'Issued on', 'display' => '2026-08-01']],
+                'fields' => [[
+                    'handle' => 'issued_on',
+                    'label' => 'Issued on',
+                    'display' => '2026-08-01',
+                    'provenance' => null,
+                ]],
             ]],
             $document['groups'],
         );
@@ -112,8 +117,13 @@ final class BusinessDocumentPresenterTest extends TestCase
         self::assertSame('Billed to', $document['parties'][0]['label'] ?? null);
         self::assertSame(
             [
-                ['handle' => 'subtotal', 'label' => 'Subtotal', 'display' => 'N$ 1,200.00'],
-                ['handle' => 'total', 'label' => 'Total', 'display' => 'N$ 1,380.00'],
+                [
+                    'handle' => 'subtotal',
+                    'label' => 'Subtotal',
+                    'display' => 'N$ 1,200.00',
+                    'provenance' => null,
+                ],
+                ['handle' => 'total', 'label' => 'Total', 'display' => 'N$ 1,380.00', 'provenance' => null],
             ],
             $document['totals'],
         );

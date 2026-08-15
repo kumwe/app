@@ -15,6 +15,12 @@ use InvalidArgumentException;
  * group, party, line and totals roles onto the presented values the model carries. It reads nothing and
  * widens nothing; a role whose field or relationship was withheld simply renders as absent.
  *
+ * A presented value's conversion evidence travels with it into every block the document arranges, so a
+ * converted total, a converted meta field and a converted line cell each reach the printed page carrying
+ * the rate, the as-at instant and the provider behind them. A printed document is the artifact most
+ * likely to be filed, posted or produced in a dispute, which is why it is the last place a figure may
+ * appear without saying where it came from.
+ *
  * @since  2.0.0
  */
 final readonly class BusinessDocumentPresenter
@@ -68,13 +74,13 @@ final readonly class BusinessDocumentPresenter
     /**
      * Resolve the declared meta groups against the presented field displays.
      *
-     * @param   array<string, mixed>                                                  $roles   Policy-filtered
+     * @param   array<string, mixed>  $roles  Policy-filtered
      *          document roles.
-     * @param   array<string, array{handle: string, label: string, display: string}>  $fields  Presented
-     *          fields keyed by handle.
+     * @param   array<string, array{handle: string, label: string, display: string,
+     *          provenance: ?array<string, mixed>}>  $fields  Presented fields keyed by handle.
      *
-     * @return  list<array{label: string, fields: list<array{handle: string, label: string, display: string}>}>
-     *          Groups that still project at least one presented field.
+     * @return  list<array{label: string, fields: list<array{handle: string, label: string, display: string,
+     *          provenance: ?array<string, mixed>}>}>  Groups that still project at least one presented field.
      *
      * @since   2.0.0
      */
@@ -208,11 +214,12 @@ final readonly class BusinessDocumentPresenter
     /**
      * Map one list of role handles onto the presented fields that survived policy.
      *
-     * @param   mixed                                                                 $handles  Declared handles.
-     * @param   array<string, array{handle: string, label: string, display: string}>  $fields   Presented
-     *          fields keyed by handle.
+     * @param   mixed  $handles  Declared handles.
+     * @param   array<string, array{handle: string, label: string, display: string,
+     *          provenance: ?array<string, mixed>}>  $fields   Presented fields keyed by handle.
      *
-     * @return  list<array{handle: string, label: string, display: string}>  Presented items in role order.
+     * @return  list<array{handle: string, label: string, display: string,
+     *          provenance: ?array<string, mixed>}>  Presented items in role order.
      *
      * @since   2.0.0
      */
@@ -233,8 +240,9 @@ final readonly class BusinessDocumentPresenter
      *
      * @param   mixed  $fields  Presented field list from the safe detail model.
      *
-     * @return  array<string, array{handle: string, label: string, display: string}>  Label and display
-     *          text keyed by field handle.
+     * @return  array<string, array{handle: string, label: string, display: string,
+     *          provenance: ?array<string, mixed>}>  Label, display text and any conversion evidence,
+     *          keyed by field handle.
      *
      * @since   2.0.0
      */
@@ -253,10 +261,14 @@ final readonly class BusinessDocumentPresenter
             ) {
                 continue;
             }
+            $provenance = $field['provenance'] ?? null;
             $indexed[$field['handle']] = [
                 'handle' => $field['handle'],
                 'label' => $field['label'],
                 'display' => $field['display'],
+                'provenance' => is_array($provenance)
+                    ? $this->map($provenance, 'A document model conversion provenance is invalid.')
+                    : null,
             ];
         }
 
