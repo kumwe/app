@@ -174,30 +174,6 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
                 $recoveryRegistries->inventory(ContributionOwner::extension($identifier))['capabilities'],
             );
 
-            // The extension is installed, active and trusted at this point, so an empty active set and an
-            // empty contribution inventory are evidence that recovery composition ran none of its PHP: a
-            // provider that had executed would have registered the capability asserted absent above. The
-            // remaining half of the claim is that recovery reads none of its templates or assets either,
-            // which is a property of the loader chain rather than of the registry.
-            $recoveryTemplates = $recovery->get(RecoveryAdministratorTwigEnvironment::class);
-            self::assertInstanceOf(RecoveryAdministratorTwigEnvironment::class, $recoveryTemplates);
-            $loader = $recoveryTemplates->getLoader();
-            self::assertInstanceOf(FilesystemLoader::class, $loader);
-            self::assertSame(
-                [FilesystemLoader::MAIN_NAMESPACE, 'core-admin', 'kis'],
-                $loader->getNamespaces(),
-                'Recovery composition must expose no extension template namespace.',
-            );
-            foreach ($loader->getNamespaces() as $namespace) {
-                foreach ($loader->getPaths($namespace) as $path) {
-                    self::assertStringStartsWith(
-                        dirname(__DIR__, 3) . '/templates',
-                        $path,
-                        'Recovery composition must read templates from the core tree alone.',
-                    );
-                }
-            }
-
             $manager->disable($identifier, $context);
             self::assertSame(0, $this->activeDefinitionCount($database, $tables, $identifier));
             self::assertSame([], $registries->navigation()->visible([$capability => true]));
@@ -292,6 +268,44 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
         }
 
         return $id;
+    }
+
+    /**
+     * Proves recovery composition offers no route to an extension template or asset.
+     *
+     * The lifecycle case above already shows recovery runs no extension PHP: it builds a recovery
+     * container while a package is installed, active and trusted, and finds the active set and the
+     * contribution inventory both empty, which a provider that had executed would have filled. This is the
+     * other half — that recovery cannot *read* an extension's templates either — and it is a property of
+     * the loader chain rather than of installed state, because `recoveryAdministrator()` composes from the
+     * core template root alone and never consults the registry.
+     *
+     * It is deliberately its own case with its own container. Resolving the recovery environment inside
+     * the lifecycle test perturbed the contribution registries that test then asserts the ordering of, so
+     * keeping the two apart is what stops a proof about templates from silently changing what a proof
+     * about navigation is measuring.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRecoveryCompositionExposesNoExtensionTemplateNamespace(): void
+    {
+        $recovery = (new ContainerFactory())->createRecovery(Environment::fromGlobals());
+        $templates = $recovery->get(RecoveryAdministratorTwigEnvironment::class);
+        self::assertInstanceOf(RecoveryAdministratorTwigEnvironment::class, $templates);
+
+        $loader = $templates->getLoader();
+        self::assertInstanceOf(FilesystemLoader::class, $loader);
+        self::assertSame(
+            [FilesystemLoader::MAIN_NAMESPACE, 'core-admin', 'kis'],
+            $loader->getNamespaces(),
+        );
+        foreach ($loader->getNamespaces() as $namespace) {
+            foreach ($loader->getPaths($namespace) as $path) {
+                self::assertStringStartsWith(dirname(__DIR__, 3) . '/templates', $path);
+            }
+        }
     }
 
     /** @return array<string, mixed> */
