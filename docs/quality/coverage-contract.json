@@ -40,10 +40,10 @@
     }
   ],
   "baseline": {
-    "line_coverage_percent": null,
-    "recorded_at": null,
-    "commit": null,
-    "note": "Recorded by the canonical CI leg. It is deliberately empty rather than guessed: a baseline nobody measured is a number the ratchet would defend for no reason."
+    "line_coverage_percent": 55.44,
+    "recorded_at": "2026-08-15",
+    "commit": "4d43ca720b8e4e1ba095282ecafa26b757998474",
+    "note": "Recorded by the canonical MariaDB CI leg after 2,513 tests and 54,760 assertions measured 47,935 of 86,459 executable lines."
   },
   "attribution": {
     "note": "A behavioural test that executes real code and attributes none of it makes the coverage report describe a smaller product than the one being tested. #[CoversNothing] is therefore allowed in exactly two places: on tests whose subject is not a class under src/ at all, which is the reasoned list, and on the behavioural tests that carried it when this gate was switched on, which is the pending list. The pending list only ever shrinks — an entry that no longer carries the attribute fails as stale and has to be deleted — and a new behavioural test cannot join it.",

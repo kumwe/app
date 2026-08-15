@@ -442,6 +442,12 @@ final class McpCatalogValidatorTest extends TestCase
                 ]],
                 'does not require an operationId',
             ],
+            'an input schema whose root is not an object' => [
+                ['inputSchema' => [
+                    'type' => 'array', 'additionalProperties' => false, 'properties' => [], 'required' => [],
+                ]],
+                'root is not an object',
+            ],
             'an open input schema' => [
                 ['inputSchema' => [
                     'type' => 'object', 'additionalProperties' => true, 'properties' => [], 'required' => [],
