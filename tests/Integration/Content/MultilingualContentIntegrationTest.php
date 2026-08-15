@@ -622,8 +622,7 @@ final class MultilingualContentIntegrationTest extends TestCase
         string $host,
         string $path,
         array $headers = [],
-    ): ResponseInterface
-    {
+    ): ResponseInterface {
         $request = (new ServerRequestFactory())
             ->createServerRequest('GET', 'https://' . $host . $path)
             ->withHeader('Host', $host);
