@@ -4,6 +4,15 @@ Kumwe extensions are versioned ZIP packages with `kumwe.json` at the archive roo
 
 Supported types are `plugin`, `module`, `template`, `component`, `package`, and `language`.
 
+## What you may build against
+
+Read [the extension contract](extension-contract/README.md) before you design a package. It settles, as
+data rather than prose, which types are public and which are internal, what each supported manifest and
+contribution-SPI generation promises, and how to target one. Every generation still promised ships a
+signed compatibility package that is driven through install, activate, upgrade, disable, reactivate and
+uninstall on every build, and `composer extension:contract` fails when the frozen surface moves without a
+deliberate generation change.
+
 ## Shipped examples
 
 The repository contains small, inspectable packages under [`examples/extensions`](../examples/extensions):
