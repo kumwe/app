@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Content\Domain;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 use Kumwe\CMS\Content\Domain\ContentEntry;
 use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Content\Domain\ExpectedVersion;
@@ -20,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(TranslationGroup::class)]
 #[CoversClass(TranslationGroupMember::class)]
 #[CoversClass(InvalidTranslationGroup::class)]
-#[UsesClass(ContentEntry::class)]
+#[CoversClass(ContentEntry::class)]
 #[UsesClass(ExpectedVersion::class)]
 #[UsesClass(LocaleTag::class)]
 #[UsesClass(PublicationWindow::class)]
@@ -192,6 +193,13 @@ final class TranslationGroupTest extends TestCase
             self::assertStringContainsString('fallback must name a locale', $exception->getMessage());
         }
 
+        try {
+            new TranslationGroup(self::GROUP, LocaleTag::fromString('en-GB'), []);
+            self::fail('A group carrying no member at all was accepted.');
+        } catch (InvalidTranslationGroup $exception) {
+            self::assertStringContainsString('between one and 64 locales', $exception->getMessage());
+        }
+
         $this->expectException(InvalidTranslationGroup::class);
         new TranslationGroup('not-a-uuid', LocaleTag::fromString('en-GB'), [$this->member('en-GB', 'about', true)]);
     }
@@ -287,6 +295,22 @@ final class TranslationGroupTest extends TestCase
      */
     public function testAnEntryCannotJoinAGroupWithoutDeclaringItsLocale(): void
     {
+        try {
+            ContentEntry::create(
+                '018f22e2-7c8b-7ab0-8f3a-88e8026bb903',
+                'About',
+                'about',
+                [],
+                ContentStatus::Draft,
+                null,
+                'en-GB',
+                'not-a-uuid',
+            );
+            self::fail('A group identifier that is not a canonical UUID was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('must be a canonical UUID', $exception->getMessage());
+        }
+
         $this->expectExceptionMessage('An entry in a translation group must declare its locale.');
 
         ContentEntry::create(
