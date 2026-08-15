@@ -245,12 +245,10 @@ final class TruthfulQualityGateTest extends TestCase
     public function testTheIdempotencyBaselineExcusesOnlyWhatItRecords(): void
     {
         $repeat = 'tests/Fixtures/Idempotency/recorded-repeat.junit.xml';
-        $reverse = 'tests/Fixtures/Idempotency/recorded-reverse.junit.xml';
 
         $recorded = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=pgsql',
             '--junit=repeat:' . $this->root . '/' . $repeat,
-            '--junit=reverse:' . $this->root . '/' . $reverse,
         ]);
         self::assertSame(0, $recorded['status'], "The recorded result must pass:\n" . $recorded['output']);
         self::assertStringContainsString('nothing new', $recorded['output']);
@@ -308,6 +306,62 @@ final class TruthfulQualityGateTest extends TestCase
         $ci = $this->contents('.github/workflows/ci.yml');
         self::assertStringContainsString('composer test:idempotency', $ci);
         self::assertStringNotContainsString('continue-on-error', $ci);
+    }
+
+    /**
+     * A pass the baseline does not enforce must say why, and must not be silently absent.
+     *
+     * The reverse-order pass is owed and is not enforced, because its first attempt measured the wrong
+     * property — `--order-by=reverse` reorders the tests inside each class as well as the classes. A gate
+     * may narrow what it claims; it may not narrow it quietly. The baseline therefore has to carry the
+     * unenforced pass, its finding, its owner and the reason, and the generator that measures it correctly
+     * has to produce a runnable configuration that leaves method order alone.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnenforcedPassCarriesItsReasonAndItsCorrectedMechanism(): void
+    {
+        $baseline = $this->decode('docs/quality/idempotency-baseline.json');
+        $scope = $baseline['scope'];
+        self::assertIsArray($scope);
+        self::assertSame(['repeat'], $scope['enforced_passes'] ?? null);
+
+        $pending = $scope['not_yet_enforced'];
+        self::assertIsArray($pending);
+        self::assertSame('reverse', $pending['pass'] ?? null);
+        self::assertSame('V2-QA-004', $pending['finding'] ?? null);
+        foreach (['statement', 'owner', 'why_not_enforced', 'how_to_run'] as $field) {
+            self::assertIsString($pending[$field] ?? null);
+            self::assertNotSame('', trim((string) $pending[$field]));
+        }
+
+        $emitted = $this->execute('tools/verify-suite-idempotency.php', ['--emit-reverse-configuration']);
+        self::assertSame(0, $emitted['status'], $emitted['output']);
+        $path = trim($emitted['output']);
+
+        try {
+            $configuration = file_get_contents($path);
+            self::assertIsString($configuration);
+            self::assertStringNotContainsString('--order-by=reverse', $configuration);
+
+            $listed = [];
+            if (preg_match_all('#<file>(.+?)</file>#', $configuration, $matched) > 0) {
+                $listed = $matched[1];
+            }
+            self::assertGreaterThan(20, count($listed), 'The reversed configuration must list the suite.');
+
+            $ascending = $listed;
+            sort($ascending, SORT_STRING);
+            self::assertSame(
+                array_reverse($ascending),
+                $listed,
+                'The classes must be listed in reverse order, which is what varies class order.',
+            );
+        } finally {
+            @unlink($path);
+        }
     }
 
     /**
