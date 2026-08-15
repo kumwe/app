@@ -37,6 +37,7 @@ use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use Kumwe\CMS\Extension\Contribution\OwnedExtensionContributionRegistrar;
 use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinitionRegistry;
+use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -74,6 +75,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 #[UsesClass(ResourcePolicyRegistry::class)]
 #[UsesClass(ResourcePolicyTarget::class)]
 #[UsesClass(RuntimeCanonicalJson::class)]
+#[UsesClass(TranslationGroupDeclaration::class)]
 final class ExtensionContributionRegistrySetTest extends TestCase
 {
     /**
@@ -644,6 +646,103 @@ final class ExtensionContributionRegistrySetTest extends TestCase
             ['GET', 'POST'],
             'acme.editor.manage',
             'acme.editor.index',
+        );
+    }
+
+    /**
+     * Proves a package's multilingual content set is one closed promise from manifest to registry.
+     *
+     * The languages a package publishes its content in are declared before any of its code runs, so the
+     * whole path has to hold together: the manifest exports the declaration, the registrar accepts only
+     * what that manifest carried, the registry set publishes it for the delivery path to read, and
+     * removing the owner withdraws it. The set that declares nothing is asserted too, because a package
+     * publishing in one language must export the bytes it exported before the dimension existed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAContributedContentSetIsDeclaredRegisteredInventoriedAndWithdrawn(): void
+    {
+        $owner = ContributionOwner::extension('acme/editor');
+        $declaration = new TranslationGroupDeclaration('acme.editor.guides', ['en-GB', 'de', 'pt_br'], 'en-GB');
+        $declared = new ManifestContributionSet(
+            owner: $owner,
+            spiVersion: ManifestContributionSet::CURRENT_SPI_VERSION,
+            contentTranslationGroups: [$declaration],
+        );
+
+        $document = $declared->toArray();
+        self::assertSame(
+            [[
+                'group_id' => 'acme.editor.guides',
+                'locales' => ['de', 'en-GB', 'pt-BR'],
+                'fallback_locale' => 'en-GB',
+            ]],
+            $document['content']['translation_groups'],
+        );
+        self::assertArrayNotHasKey('content', (new ManifestContributionSet($owner))->toArray());
+        self::assertSame($document, ManifestContributionSet::fromManifest(
+            ExtensionIdentifier::fromString('acme/editor'),
+            $document,
+            4,
+        )->toArray());
+
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registrar = $registries->registrar($owner, $declared);
+        $registrar->contentTranslationGroup($declaration);
+        $registrar->complete();
+
+        self::assertSame(
+            $declaration,
+            $registries->contentTranslationGroups()->definition($owner, 'acme.editor.guides'),
+        );
+        self::assertSame(
+            [['group_id' => 'acme.editor.guides', 'locales' => ['de', 'en-GB', 'pt-BR'], 'fallback_locale' => 'en-GB']],
+            $registries->inventory($owner)['content']['translation_groups'],
+        );
+
+        $registries->remove($owner);
+
+        self::assertSame([], $registries->inventory($owner)['content']['translation_groups']);
+        self::assertNull($registries->contentTranslationGroups()->definition($owner, 'acme.editor.guides'));
+    }
+
+    /**
+     * Proves a package cannot widen the language promise its signed manifest carried.
+     *
+     * A locale list is a closed claim, so registering a set the manifest never declared — or one whose
+     * declared locales have been altered since it was signed — has to fail at registration rather than
+     * quietly become the promise an operator reads.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAContributedContentSetCannotWidenThePromiseItsManifestCarried(): void
+    {
+        $owner = ContributionOwner::extension('acme/editor');
+        $declaration = new TranslationGroupDeclaration('acme.editor.guides', ['en-GB', 'de'], 'en-GB');
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registrar = $registries->registrar($owner, new ManifestContributionSet(
+            owner: $owner,
+            spiVersion: ManifestContributionSet::CURRENT_SPI_VERSION,
+            contentTranslationGroups: [$declaration],
+        ));
+
+        try {
+            $registrar->contentTranslationGroup(
+                new TranslationGroupDeclaration('acme.editor.guides', ['en-GB', 'de', 'fr'], 'en-GB'),
+            );
+            self::fail('A package widened the locale list its signed manifest declared.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('does not match', $exception->getMessage());
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('cannot claim');
+        $registrar->contentTranslationGroup(
+            new TranslationGroupDeclaration('other.editor.guides', ['en-GB'], 'en-GB'),
         );
     }
 

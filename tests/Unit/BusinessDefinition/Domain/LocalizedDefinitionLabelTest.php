@@ -184,6 +184,85 @@ final class LocalizedDefinitionLabelTest extends TestCase
     }
 
     /**
+     * Prove a member declared with no translations at all is dropped rather than written as empty.
+     *
+     * An authoring tool that always sends the member, empty or not, must not be able to change a
+     * published definition's bytes by sending nothing in it — so the empty map has to reduce to the
+     * document and the checksum an untranslated definition already had.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMemberDeclaringNoTranslationsIsDroppedInsteadOfWrittenAsAnEmptyObject(): void
+    {
+        $definition = $this->definition(
+            ['singular_label' => [], 'plural_label' => []],
+            ['label' => [], 'description' => []],
+        );
+
+        $document = $definition->toArray();
+        self::assertArrayNotHasKey('label_translations', $document);
+        self::assertArrayNotHasKey('text_translations', $document['fields'][0]);
+        self::assertSame($this->definition()->toArray(), $document);
+        self::assertSame($this->definition()->checksum(), $definition->checksum());
+    }
+
+    /**
+     * Prove the dimension refuses a translation map that is a list, and one past the locale ceiling.
+     *
+     * Both refusals protect the same thing: the map travels into a checksummed document and a stored
+     * row, so it may neither arrive shaped as something other than a locale-keyed object nor grow
+     * without a bound.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheDimensionRefusesAListShapedMapAndAMemberPastTheLocaleCeiling(): void
+    {
+        try {
+            $this->definition(['singular_label' => ['Rechnung']]);
+            self::fail('A translation map declared as a list was accepted.');
+        } catch (InvalidBusinessDefinition $exception) {
+            self::assertStringContainsString('translations must be an object', $exception->getMessage());
+        }
+
+        $locales = [];
+        for ($region = 1; $region <= LocalizedDefinitionText::MAXIMUM_LOCALES + 1; $region++) {
+            $locales[sprintf('de-%03d', $region)] = sprintf('Rechnung %03d', $region);
+        }
+
+        $this->expectException(InvalidBusinessDefinition::class);
+        $this->expectExceptionMessage('exceeds 64 translations');
+        $this->definition(['singular_label' => $locales]);
+    }
+
+    /**
+     * Prove a locale key and a translation that are not strings are refused rather than coerced.
+     *
+     * A decoded JSON object can carry a numeric key, which PHP hands over as an integer, so neither
+     * side of the pair can be trusted to be a string just because the document parsed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testANonStringLocaleKeyAndANonStringTranslationAreBothRefused(): void
+    {
+        try {
+            $this->definition(['singular_label' => [7 => 'Rechnung']]);
+            self::fail('A numeric locale key was accepted as a language tag.');
+        } catch (InvalidBusinessDefinition $exception) {
+            self::assertStringContainsString('locale must be a string', $exception->getMessage());
+        }
+
+        $this->expectException(InvalidBusinessDefinition::class);
+        $this->expectExceptionMessage('translation must be a string');
+        $this->definition(['singular_label' => ['de' => 42]]);
+    }
+
+    /**
      * Build the one definition every case here works from, optionally translated.
      *
      * @param   array<string, mixed>  $labelTranslations  Entity label translations to declare.
