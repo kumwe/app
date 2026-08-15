@@ -365,6 +365,32 @@
       }
     },
     {
+      "id": "extension-contract-freeze",
+      "title": "The public extension contract is frozen and every promised generation still installs",
+      "purpose": "Fail when the classified public surface changes without a deliberate generation bump, or when a promised manifest or SPI generation stops satisfying its signed compatibility fixture.",
+      "owner": "platform-architecture",
+      "runner": "composer",
+      "composer_script": "extension:contract",
+      "command": "composer extension:contract",
+      "artifact": "console",
+      "in_qa": true,
+      "cadence": [
+        "local",
+        "ci",
+        "nightly",
+        "release"
+      ],
+      "maximum_interval": "per-change",
+      "engines": [],
+      "workflows": {
+        "ci": {
+          "file": ".github/workflows/ci.yml",
+          "job": "quality",
+          "contains": "composer extension:contract"
+        }
+      }
+    },
+    {
       "id": "openapi-drift",
       "title": "The generated OpenAPI document matches the routes that exist",
       "purpose": "Regenerate the contract and fail when it differs from the committed artifact.",
