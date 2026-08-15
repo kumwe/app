@@ -451,7 +451,7 @@ The consolidation resolved 114 findings: 27 from the review, 62 from the execute
 discovered while verifying this roadmap, during the qualification programme, or from the business-group
 decision. Fifty-six of them were already closed. Under the lifecycle rule above those left the ledger and
 their substance is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them, so
-[`findings.json`](findings.json) now carries **53 open entries**: 25 from the review, 12 from the gap
+[`findings.json`](findings.json) now carries **52 open entries**: 25 from the review, 12 from the gap
 matrix and 21 discovered here. Review identifiers are unchanged, so a reference to `V2-SCL-001` resolves
 the same way in both documents, and a reference to a completed identifier such as `GM-AUD-01` or
 `V2-SCL-003` resolves in the changelog.
@@ -759,7 +759,7 @@ answer.
 | Extension lifecycle with data preservation | Provided | install, activate, upgrade, disable, reactivate, uninstall; purge is separate and explicit |
 | Extension signing, admission and revocation | Provided | signature gate, admission scanning, bill of materials, provenance, upstream revocation feed |
 | Extension SDK, scaffolder and conformance runner | Provided | `ScaffoldExtensionCommand`, `RunExtensionConformanceCommand` |
-| A frozen public contract an author can build against | **Must add** | `V2-EXT-001` — the Gate A blocker |
+| A frozen public contract an author can build against | Provided | machine-readable public and internal classification, four manifest and two SPI generations frozen, one signed compatibility package each, `composer extension:contract` |
 | Tamper-evident audit | Provided | digest chain, positions, anchors, verification, export, retention |
 | Backup and verified restore | Provided | eight closed gap-matrix entries and two named residuals |
 | Point-in-time recovery | **Must add** | `V2-DR-001` under decision D3 |
@@ -909,7 +909,8 @@ intention.
 1. **The extension contract is frozen.** Public versus internal classification exists as machine-readable
    data, and every supported manifest and SPI generation still promised has a signed compatibility fixture
    that installs, activates, upgrades, disables, reactivates and uninstalls according to its declared
-   contract. `V2-EXT-001` closed.
+   contract. Met; recorded in [`CHANGELOG.md`](../../CHANGELOG.md) against
+   [`docs/extension-contract/`](../extension-contract/README.md).
 2. **The atomic aggregate command exists and is stable.** One vertical-neutral command commits a
    hundred-line and a thousand-line aggregate with one authorization decision, one idempotent outcome, one
    transaction, one version increment, one revision, one audit action and one bounded event. The
@@ -1085,16 +1086,17 @@ command or test that verifies it, the workflow and cadence that runs it, the art
 evidence expiry, and its residual limitation. A claim with no executable evidence is reworded as
 conditional or planned in the same change. Documentation never describes a target as a current capability.
 
-**P0-C — Public contract classification and compatibility fixtures.** Findings: `V2-EXT-001`. Classify
-every extension-visible surface as public or internal: manifest schemas and SPI versions; the PHP
-interfaces, DTOs, exceptions, lifecycle events and application ports intentionally exposed; contribution
-schemas and namespacing rules; route, asset, template, field-renderer and interface-standard contracts;
-migrations and applied-byte immutability; generated REST schemas and stable problem codes; console command
-names, options, JSON fields, exit codes and safe secret input; model-context tool names, closed schemas,
-stable errors and intentional exclusions; and the full lifecycle with its data-preservation behaviour. Ship
-a representative signed compatibility package for every generation still promised. Internal code may be
-decomposed freely thereafter; public contracts require semantic versioning, a compatibility window,
-migration guidance and a passing fixture.
+**P0-C — Public contract classification and compatibility fixtures.** The extension half is delivered and
+recorded in [`CHANGELOG.md`](../../CHANGELOG.md): manifest schemas and SPI versions, the PHP interfaces,
+DTOs and application ports intentionally exposed, contribution schemas and namespacing rules, the
+restricted container's host-service allowlist, migrations and applied-byte immutability, and the full
+lifecycle with its data-preservation behaviour are classified in
+[`docs/extension-contract/`](../extension-contract/README.md), frozen per generation, and proved by a
+signed compatibility package each. The machine-surface half is outstanding: generated REST schemas and
+stable problem codes; console command names, options, JSON fields, exit codes and safe secret input; and
+model-context tool names, closed schemas, stable errors and intentional exclusions. Classify each the same
+way, as data with a build check behind it. Internal code may be decomposed freely thereafter; public
+contracts require semantic versioning, a compatibility window, migration guidance and a passing fixture.
 
 **P0-D — Capacity contract.** Already delivered as [`capacity-contract.json`](capacity-contract.json). This
 work package extends it with the deterministic dataset generator seeds and age distribution, and the exact
