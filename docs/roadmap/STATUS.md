@@ -23,7 +23,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | **Current phase** | Phase 0 — Truth, contracts and decisions |
 | **In flight** | Phase 3's business-group ownership model has landed ahead of its phase; `P3-F` is reduced to its three-engine proof. Phase 2's gate work is part delivered: `P2-A` complete, `P2-C`'s semantic checker complete, `P2-G`'s deployed-artifact lane complete. Phase 0 work packages remain unassigned. |
 | **Next** | `P0-A` reproducible baseline, `P0-B` claim ledger, `P0-C` public contract classification and compatibility fixtures. These three are independent and may run in parallel. `P0-E` architecture and security decisions follows them, because several decisions depend on what the inventories find. |
-| **The one open decision** | `V2-POS-002` — whether a disconnected terminal receives its document number at synchronisation time or from a per-terminal reserved block. It trades against the shipped gapless guarantee, so it is the product owner's to make, in `P0-E` decision 12. |
+| **The one open decision** | `V2-POS-002` — whether a disconnected terminal receives its document number at synchronisation time or from a per-terminal reserved block. It trades against the shipped gapless guarantee, so it is the product owner's to make, in `P0-E` decision 12. It is now the whole of what `PE-G` and Gate A criterion 11 are waiting on. |
 | **Gate A** | Not started. 12 exit criteria, 2 met; criterion 7's ownership model is built and owes only its three-engine proof, and criterion 12 is now assessable rather than unassessed. |
 | **Gate B** | Not started. Blocked on Gate A. |
 
@@ -57,7 +57,7 @@ table when it completes, in the same change that writes it into the changelog.
 | 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
 | 3 | `P3-A` … `P3-F` | `V2-ARC-003` |
 | 4 | `P4-A` … `P4-D` | `V2-SCL-003`, `V2-ERP-001` |
-| E | `PE-B` … `PE-G` (`PE-A` complete) | `V2-ERP-002` – `V2-ERP-005`, `V2-CUR-005`, `V2-POS-001`, `V2-POS-003`, `V2-POS-004` |
+| E | `PE-C` … `PE-F` (`PE-A`, `PE-B` and `PE-G` complete) | `V2-ERP-002` – `V2-ERP-005` |
 | L | `PL-C`, `PL-D`, `PL-E`, `PL-F`, `PL-G` (`PL-A` and `PL-B` complete) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-010`, `V2-MLC-001` – `V2-MLC-004` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
@@ -147,7 +147,7 @@ that closed it.
 | 8 | Enterprise document primitives exist and are enforced | Partly — the aggregate invariant is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); correction, period close, sequence scoping and unit conversion remain | `V2-ERP-002` – `V2-ERP-005` |
 | 9 | Multi-currency contract holds, with conversion provenance everywhere | Yes — contract, port, pipeline, reports, exports and the rendering half all delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | — |
 | 10 | Language contract and machinery in place, `en-GB` extracted | Partly — locale negotiation, the identifier grammar, the compiled catalogue, ICU formatting, the stored and administered override layers and the extension catalogue path are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-009`, `V2-MLC-001` – `V2-MLC-004` |
-| 11 | Point of sale not foreclosed | No | `V2-POS-001`, `V2-POS-003`, `V2-POS-004`; `V2-POS-002` decided |
+| 11 | Point of sale not foreclosed | Partly — the replay window, the client-asserted instant, late arrival and the deferrable-validation split are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-POS-002`, which is the product owner's decision |
 | 12 | Nothing regressed on three engines | Assessable, and assessed on every merge run. `regression_matrix` in [`docs/quality/contract.json`](../quality/contract.json) names the three engines, the four suites and the commands, and `composer quality:contract` fails when the merge workflow stops running the complete suite on any of them. Assessing the criterion is now reading a run rather than inspecting a workflow; it is asserted at a commit when that run is green and the commit is recorded here | — |
 
 ## Gate B criteria that moved
