@@ -11,8 +11,15 @@ use InvalidArgumentException;
  *
  * The pair is the whole value of a `core.quantity` field: `RecordValueCodec` splits it across the
  * `.amount` and `.unit` physical columns, rebuilds it on read, and refuses a unit that differs from
- * one pinned in the field configuration. The unit is an opaque portable identifier — nothing here
- * converts between units, so two quantities are only comparable when their units are identical.
+ * one pinned in the field configuration. The unit is an opaque portable identifier — nothing in *this
+ * type* converts between units, so two stored quantities are only comparable when their units are
+ * identical.
+ *
+ * The platform does convert, one level above storage: `QuantityConverter` applies a
+ * `UnitConversionFactor` an extension supplied and returns a `ConvertedQuantityValue`, which is a
+ * different kind of thing from this one and carries the factor, the as-at instant and the provider that
+ * justify it. A converted quantity never comes back here — conversion reads stored values and writes
+ * none.
  *
  * @since  2.0.0
  */

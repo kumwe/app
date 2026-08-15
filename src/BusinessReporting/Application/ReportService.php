@@ -16,6 +16,7 @@ use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
+use Kumwe\CMS\BusinessRecord\Domain\ConvertedQuantityValue;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Query\BooleanFilter;
 use Kumwe\CMS\BusinessRecord\Query\BooleanOperator;
@@ -494,10 +495,11 @@ final readonly class ReportService
     /**
      * Normalize one projected value for its declared report column.
      *
-     * A converted amount is spelled out in full rather than reduced to its figure. The report row is the
-     * last place the structure exists — from here the value travels as a cell in a downloaded artifact
-     * somebody keeps — so the rate, the as-at instant, the provider and the rounding are written into the
-     * value itself, and a reader outside the system can still tell a converted figure from an agreed one.
+     * A converted amount or quantity is spelled out in full rather than reduced to its figure. The report
+     * row is the last place the structure exists — from here the value travels as a cell in a downloaded
+     * artifact somebody keeps — so the rate or factor, the as-at instant, the provider and the rounding
+     * are written into the value itself, and a reader outside the system can still tell a converted
+     * figure from an agreed one.
      *
      * @param   mixed                   $value   Candidate value being validated or normalized.
      * @param   ReportColumnDefinition  $column  Column definition controlling value normalization.
@@ -508,7 +510,7 @@ final readonly class ReportService
      */
     private function cell(mixed $value, ReportColumnDefinition $column): bool|int|string|null
     {
-        if ($value instanceof ConvertedMoneyValue) {
+        if ($value instanceof ConvertedMoneyValue || $value instanceof ConvertedQuantityValue) {
             $value = $value->toPortableString();
         } elseif ($value instanceof ExactDecimal) {
             $value = $value->value();

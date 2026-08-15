@@ -283,6 +283,14 @@ final readonly class ManifestContributionSet
     private array $moneyRateProviders;
 
     /**
+     * Manifest-declared unit conversion providers keyed by stable identifier.
+     *
+     * @var    array<string, UnitConversionProviderDefinition>  Declared sources of unit conversion factors.
+     * @since  2.0.0
+     */
+    private array $unitConversionProviders;
+
+    /**
      * Manifest-declared content translation groups keyed by stable identifier.
      *
      * @var    array<string, TranslationGroupDeclaration>  Declared multilingual content sets.
@@ -325,6 +333,7 @@ final readonly class ManifestContributionSet
      * @param   int                                          $spiVersion                Contribution SPI revision.
      * @param   iterable<SurfaceDefinition>                  $interfaceSurfaces         KIS semantic surfaces.
      * @param   iterable<MoneyRateProviderDefinition>        $moneyRateProviders        Exchange-rate sources.
+     * @param   iterable<UnitConversionProviderDefinition>   $unitConverters            Unit conversion sources.
      * @param   iterable<TranslationGroupDeclaration>        $contentTranslationGroups  Multilingual content
      *          sets, each naming the locales the package publishes it in and the locale it falls back to.
      *
@@ -363,6 +372,7 @@ final readonly class ManifestContributionSet
         private int $spiVersion = self::SPI_VERSION,
         iterable $interfaceSurfaces = [],
         iterable $moneyRateProviders = [],
+        iterable $unitConverters = [],
         iterable $contentTranslationGroups = [],
     ) {
         if (!in_array($spiVersion, [self::SPI_VERSION, self::CURRENT_SPI_VERSION], true)) {
@@ -394,6 +404,7 @@ final readonly class ManifestContributionSet
         $this->reports = $this->integrationIndex($reports, 'report');
         $this->webhooks = $this->integrationIndex($webhooks, 'webhook');
         $this->moneyRateProviders = $this->index($moneyRateProviders, 'money_rate_provider');
+        $this->unitConversionProviders = $this->index($unitConverters, 'unit_conversion_provider');
         $this->contentTranslationGroups = $this->index($contentTranslationGroups, 'content_translation_group');
         if ($this->spiVersion >= self::CURRENT_SPI_VERSION) {
             $this->assertPortableRelationshipOrdering();
@@ -742,6 +753,7 @@ final readonly class ManifestContributionSet
                 'reports',
                 'webhooks',
                 'rate_providers',
+                'unit_converters',
             ],
             'integration contributions',
         );
@@ -1024,6 +1036,11 @@ final readonly class ManifestContributionSet
             static fn (array $item): MoneyRateProviderDefinition => MoneyRateProviderDefinition::fromArray($item),
             self::objects($integration['rate_providers'] ?? [], 'contributions.integration.rate_providers'),
         );
+        $unitConverters = array_map(
+            static fn (array $item): UnitConversionProviderDefinition
+                => UnitConversionProviderDefinition::fromArray($item),
+            self::objects($integration['unit_converters'] ?? [], 'contributions.integration.unit_converters'),
+        );
         $contentTranslationGroups = array_map(
             static fn (array $item): TranslationGroupDeclaration => TranslationGroupDeclaration::fromArray($item),
             self::objects($content['translation_groups'] ?? [], 'contributions.content.translation_groups'),
@@ -1058,6 +1075,7 @@ final readonly class ManifestContributionSet
             $expectedSpi,
             $interfaceSurfaces,
             $moneyRateProviders,
+            $unitConverters,
             $contentTranslationGroups,
         );
         $set->assertFieldPresentationCoverage();
@@ -1405,6 +1423,18 @@ final readonly class ManifestContributionSet
     }
 
     /**
+     * Return the unit conversion providers carried by this manifest contribution set.
+     *
+     * @return  list<UnitConversionProviderDefinition>  Declared unit conversion sources.
+     *
+     * @since   2.0.0
+     */
+    public function unitConversionProviders(): array
+    {
+        return array_values($this->unitConversionProviders);
+    }
+
+    /**
      * Return the multilingual content sets carried by this manifest contribution set.
      *
      * @return  list<TranslationGroupDeclaration>  Declared content sets in identifier order; empty for a
@@ -1558,6 +1588,9 @@ final readonly class ManifestContributionSet
             ];
             if ($this->moneyRateProviders !== []) {
                 $document['integration']['rate_providers'] = $this->exports($this->moneyRateProviders());
+            }
+            if ($this->unitConversionProviders !== []) {
+                $document['integration']['unit_converters'] = $this->exports($this->unitConversionProviders());
             }
         }
         // Written only when the package declares one, so a manifest that publishes its content in a

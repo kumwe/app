@@ -20,6 +20,7 @@ use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
 use Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider;
+use Kumwe\CMS\BusinessRecord\Application\UnitConversionProvider;
 use Kumwe\CMS\BusinessRecord\Domain\MoneyRateProviderDefinition;
 use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
 use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
@@ -58,7 +59,8 @@ final class OwnedExtensionContributionRegistrar implements
     ExtensionContributionRegistrar,
     InterfaceSurfaceRegistrar,
     MoneyRateProviderRegistrar,
-    ContentTranslationRegistrar
+    ContentTranslationRegistrar,
+    UnitConversionProviderRegistrar
 {
     /**
      * Array exports of the manifest declarations, keyed by contribution kind and then by identifier.
@@ -140,6 +142,7 @@ final class OwnedExtensionContributionRegistrar implements
             'webhook' => $this->index($declared->webhooks()),
             'money_rate_provider' => $this->index($declared->moneyRateProviders()),
             'content_translation_group' => $this->index($declared->contentTranslationGroups()),
+            'unit_conversion_provider' => $this->index($declared->unitConversionProviders()),
         ];
     }
 
@@ -700,6 +703,38 @@ final class OwnedExtensionContributionRegistrar implements
     {
         $this->accept('content_translation_group', $declaration->identifier(), $declaration->toArray());
         $this->registries->contentTranslationGroups()->register($this->owner, $declaration);
+    }
+
+    /**
+     * Register a unit conversion provider only when its identity matches the signed declaration.
+     *
+     * Attribution is the point of the check. Every factor this implementation later supplies names a
+     * provider, and a converted quantity is only auditable if that name is the one the manifest
+     * published, so an implementation answering under another identity is refused here rather than
+     * discovered in a stock count months later.
+     *
+     * @param   UnitConversionProviderDefinition  $definition  Signed declaration naming the units it relates.
+     * @param   UnitConversionProvider            $provider    Runtime implementation bound to that declaration.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the implementation answers under another identity, or the
+     *          identifier is outside the owner's namespace, repeated, or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function unitConversionProvider(
+        UnitConversionProviderDefinition $definition,
+        UnitConversionProvider $provider,
+    ): void {
+        if ($provider->identifier() !== $definition->identifier()) {
+            throw new InvalidArgumentException(
+                'A unit conversion provider implementation contradicts its declaration.',
+            );
+        }
+        $this->accept('unit_conversion_provider', $definition->identifier(), $definition->toArray());
+        $this->registries->unitConversionProviders()->register($this->owner, $definition, $provider);
     }
 
     /**

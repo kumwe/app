@@ -1,0 +1,23 @@
+{
+  "format": "kumwe-unit-conversion-provider-v1",
+  "interfaces": {
+    "Kumwe\\CMS\\BusinessRecord\\Application\\UnitConversionProvider": [
+      "factorFor(Kumwe\\CMS\\BusinessRecord\\Domain\\UnitConversionRequest $request): Kumwe\\CMS\\BusinessRecord\\Domain\\UnitConversionFactor",
+      "identifier(): string",
+      "supports(Kumwe\\CMS\\BusinessRecord\\Domain\\UnitConversionRequest $request): bool"
+    ],
+    "Kumwe\\CMS\\Extension\\Contribution\\UnitConversionProviderRegistrar": [
+      "unitConversionProvider(Kumwe\\CMS\\Extension\\Contribution\\UnitConversionProviderDefinition $definition, Kumwe\\CMS\\BusinessRecord\\Application\\UnitConversionProvider $provider): void"
+    ]
+  },
+  "enums": {
+    "Kumwe\\CMS\\BusinessRecord\\Domain\\QuantityRoundingMode": {
+      "Ceiling": "ceiling",
+      "Floor": "floor",
+      "HalfDown": "half_down",
+      "HalfEven": "half_even",
+      "HalfUp": "half_up",
+      "Truncate": "truncate"
+    }
+  }
+}

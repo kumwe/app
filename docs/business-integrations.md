@@ -83,6 +83,7 @@ namespace. The section contains exactly these lists:
 | `reports` | Policy-aware source, parameters, filters, output and row cap | None; safe compiled definition |
 | `webhooks` | Event versions, idempotency, queue, retries and sensitivity | `IntegrationEventTransport` |
 | `rate_providers` | Provider identity, the ISO 4217 currencies it prices, and its resolution priority | `MoneyRateProvider` |
+| `unit_converters` | Provider identity, the units of measure it relates, and its resolution priority | `UnitConversionProvider` |
 
 SPI 2 also refuses declaration-only relationship ordering. A reciprocal one-to-many/many-to-one pair is stored
 in the many-to-one record column and therefore cannot carry collection positions. An ordered one-to-many must
@@ -391,6 +392,55 @@ converted amount cannot reach a queued, checksummed, downloaded artifact strippe
 recipient of that artifact can tell a converted figure from an agreed one, and reproduce it, without access to the
 installation that produced it. `ConvertedMoneyValue::fromPortableString()` reads the same line back, and
 `fromArray()` does the same for a payload.
+
+## Unit-of-measure conversion and conversion providers
+
+The same shape, for the other denomination a business document carries, and for the same reason. Core owns
+quantity-with-unit as a type and it owns the conversion contract. Core owns no conversion table. There is no unit
+standard, no packaging policy and no case size anywhere in the CMS, and there never will be — a metric standards
+table, a hand-administered trade-unit table, a supplier feed and a contractual case size are all packages
+implementing one port.
+
+The argument for core owning the contract is interoperability rather than convenience. A stock extension and a
+sales extension that each invent their own conversion cannot exchange data, and they will disagree about what a
+case of a product is. Owning the contract is what stops that; owning the table would be core inventing business
+rules it has no business inventing.
+
+A conversion is stated as a `UnitConversionRequest`: the stored `QuantityValue`, the unit it is to be expressed
+in, the UTC instant the factor must be as at, and the precision, scale and `QuantityRoundingMode` the answer is
+rounded to. `UnitConversionPipeline` asks each contributed provider in declared order, takes the first factor
+offered, and applies it through `QuantityConverter`. With no conversion package installed it raises
+`UnitConversionUnavailable`; presenting the stored quantity in its own unit is the correct response to that.
+
+Implement `Kumwe\CMS\BusinessRecord\Application\UnitConversionProvider` and contribute it through
+`UnitConversionProviderRegistrar::unitConversionProvider()`, the additive registrar the owner-bound registrar
+also implements. The declaration is reconciled against the manifest like every other contribution, and the same
+three runtime rules apply as for rates:
+
+- the units in the declaration are a closed claim. A conversion whose stored or target unit is outside the
+  declared list is never offered to that provider, so a package cannot widen its reach after admission;
+- a provider attributes every factor it returns to its own declared identifier. A factor attributed elsewhere is
+  refused rather than converted with; and
+- a factor must relate the units asked about and be as at the requested instant or earlier. A case size is a
+  commercial term that genuinely changes, so a factor from after that instant is not the historical one and is
+  refused.
+
+`UnitConversionFactor` carries the two units, an `ExactDecimal` factor, the UTC as-at instant and the provider
+identity. Nothing about that is optional, and neither is any of it repairable.
+
+`ConvertedQuantityValue` is the only shape a converted quantity exists in, and the constructor recomputes the
+product and the rounding, so a value whose numbers do not follow from its own provenance cannot be built. Its
+export carries a `converted` marker and places the figure under `value`, so the `amount` and `unit` pair a stored
+`QuantityValue` exports appears nowhere at its top level. `RecordValueGuard` refuses the object as a record value
+and `RecordValueCodec` refuses its export for a `core.quantity` field, so conversion cannot leak into storage.
+
+For reports and exports declare the column `ReportValueType::ConvertedQuantity` and let the report return a
+`ConvertedQuantityValue`; the row builder writes it out as the self-describing line
+`ConvertedQuantityValue::toPortableString()` produces:
+
+```text
+11.340 kg converted from 25.0000 lb at 0.45359237 as at 2026-08-14T00:00:00.000000+00:00 by acme.units.trade rounded half_up from 11.339809250000
+```
 
 ## Upgrade and lifecycle design
 
