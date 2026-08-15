@@ -101,7 +101,7 @@ final class McpCapabilityCatalog
         'kumwe_business_definition_draft' => [McpRiskClass::Read, self::VIA_DEFINITIONS],
         'kumwe_business_definition_history' => [McpRiskClass::Read, self::VIA_DEFINITIONS],
         'kumwe_business_definition_compatibility' => [McpRiskClass::Read, self::VIA_DEFINITIONS],
-        'kumwe_business_definition_publish' => [McpRiskClass::InstallationGlobal, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_publish' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
         'kumwe_business_schema_definitions' => [McpRiskClass::Read, self::VIA_SCHEMA],
         'kumwe_business_schema_plan_list' => [McpRiskClass::Read, self::VIA_SCHEMA],
         'kumwe_business_schema_plan_get' => [McpRiskClass::Read, self::VIA_SCHEMA],
