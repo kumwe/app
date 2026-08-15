@@ -703,7 +703,7 @@ answer.
 | Point-in-time record history and revisions | Provided | `BusinessRecordRevision` and `history()`; a reused public identity is settled over the whole scope before a page is read, and pages walk a total ordering key; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Immutable correction by linked reversal | **Must add** | `V2-ERP-005`, decision D13.2, [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) — an approved document is corrected by mutating it, and that is an audit defect |
 | Period close and posting lock | **Must add** | `V2-ERP-003`, decision D13.3 — core provides the temporal lock; the extension decides what a period is and when it closes |
-| Client-minted operation identity durable across a long disconnection | Partial | `V2-POS-001` — the caller already mints the identifier, but the claim expires after `P1D` and its digest binds the actor |
+| Client-minted operation identity durable across a long disconnection | Provided | decision D14 — `BusinessRecordReplayWindow` declares a bounded, configurable replay horizon and a longer retention horizon, so a late repeat is refused as `idempotency_replay_window_elapsed` rather than applied twice; see `CHANGELOG.md` |
 | A document number allocatable while disconnected | Decision required | `V2-POS-002` — the gapless allocator commits inside the caller's transaction, so a disconnected terminal cannot call it; two shapes are viable and neither is chosen |
 
 #### Access, identity and organisation
@@ -732,7 +732,7 @@ answer.
 | Model-context tooling | Partial | 76 tools, but `V2-SEC-001` and `V2-SEC-002` are open |
 | Data-entry integrity across a failed submission | Provided | validation failure and stale-version conflict both re-render with the submitted values on both generated surfaces and the CMS content editor; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Role-specific dashboards | Partial | `V2-ERP-006` — workspaces are navigation groups, and the dashboard handler is one fixed capability-filtered page |
-| Offline-tolerant capture for point of sale | Deferred, not foreclosed | `V2-ERP-007` under decision D14 — deferred beyond Version 2 as a product; the constraints that keep it possible are `V2-POS-001`–`V2-POS-004` and they are Gate A |
+| Offline-tolerant capture for point of sale | Deferred, not foreclosed | `V2-ERP-007` under decision D14 — deferred beyond Version 2 as a product; three of the four constraints that keep it possible are delivered and recorded in `CHANGELOG.md`, and `V2-POS-002` alone remains |
 | A translated interface | Partial | The layer exists — XLIFF authored, compiled to PHP, formatted by ICU, resolved through the four-step chain with both administered layers stored, negotiated per request. `V2-LNG-001`, `V2-LNG-007` and `V2-LNG-008` hold the remaining extraction and the widened gate; `V2-LNG-010` holds the eight translated catalogues. Decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) |
 | An operator changing wording without editing files | Provided | Site and organization overrides are stored and administered at `/administrator/wording` under `localization.overrides.manage`; per identifier, never per file. This is also how a vertical relabels core terminology, and an extension contributes its own catalogue through the ordinary package path. See [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Right-to-left presentation | Partial | The stylesheets are direction independent, the layouts emit `dir`, a gate refuses a new physical declaration, and the browser matrix carries a language axis so `he` and `ar` file baselines of their own. `V2-LNG-009` holds the screenshots and the `P2-E` leg that compares them |
@@ -943,8 +943,10 @@ intention.
    atomically — is met and recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
 9. **The multi-currency contract holds.** A converted amount is marked as converted and carries its rate
    and as-at instant on every surface that renders it, no write path accepts a converted amount as a stored
-   value, and a rate provider is an extension. The contract, the port, the pipeline and the report and
-   export carriage are delivered; what remains is the rendering half. `V2-CUR-005` closed.
+   value, and a rate provider is an extension. **Met.** The contract, the port, the pipeline, the report and
+   export carriage and the rendering half are all delivered and recorded in
+   [`CHANGELOG.md`](../../CHANGELOG.md); `ConvertedMoneySurface` enumerates the surfaces and its coverage
+   test fails the build when a renderer is added without provenance.
 10. **The language contract and machinery are in place, and `en-GB` is extracted.** Messages resolve by
     stable semantic identifier through the core → extension → site → organization chain; ICU MessageFormat
     handles plurals, gender, ordinals, numbers and dates; a new hardcoded user-facing string fails the
@@ -956,8 +958,9 @@ intention.
 11. **Point of sale is not foreclosed.** The idempotency contract states who mints the operation identifier
     and for how long a replay is honoured; a client-asserted occurrence instant has a declared place to
     live and is never authoritative; late and out-of-order arrival is accepted; and the disconnected
-    numbering shape is decided and recorded. `V2-POS-001`, `V2-POS-003` and `V2-POS-004` closed;
-    `V2-POS-002` decided.
+    numbering shape is decided and recorded. Three of the four are delivered and recorded in
+    [`CHANGELOG.md`](../../CHANGELOG.md). The criterion is **not yet met**: it waits on `V2-POS-002`,
+    which is the product owner's decision and not an implementation task.
 12. **Nothing regressed.** The full suite is green on MariaDB, MySQL and PostgreSQL. No supported
     compatibility fixture is broken except the approved model-context security correction, which ships with
     migration guidance and a stable error.
@@ -1122,8 +1125,8 @@ follow.
    engine defaults are not a portable contract.
 8. **Release qualification authority.** The build-once artifact chain and the signed manifest as the
    release source of truth.
-9. **Enterprise primitive ownership.** Findings: `V2-ERP-002` through `V2-ERP-005`, `V2-ERP-007`,
-   `V2-CUR-005`. Decision D13 has answered six of the seven boundary questions and
+9. **Enterprise primitive ownership.** Findings: `V2-ERP-002` through `V2-ERP-005`, `V2-ERP-007`.
+   Decision D13 has answered six of the seven boundary questions and
    decision D10 has answered currency; `V2-ERP-006`, role-specific dashboards, is the one still genuinely
    open and is decided here. What remains for the rest is to write each verdict down where an author finds
    it: [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) and
@@ -1145,13 +1148,14 @@ follow.
     machine-readable declaration, the locale dimension on definition labels, and the translation-group
     declaration an extension makes for contributed content. All five enter the frozen contract in `P0-C`,
     because all five are irreversible in practice once an extension is published against them.
-12. **Offline-capture non-foreclosure constraints.** Findings: `V2-POS-001` through `V2-POS-004`. Decision
-    D14. Point of sale is deferred as a product; what is decided here is what Version 2 must not foreclose.
-    Record: who mints an operation identifier and for how long a replay is honoured, including what replaces
-    the current fixed `P1D` window and whether the actor component of the scope digest survives a terminal
-    re-authenticating; where a client-asserted occurrence instant lives and why it is never authoritative;
-    that arrival order is not event order; and that stock and price validation at capture time is
-    best-effort. **`V2-POS-002` is the one decision left open**: whether a disconnected terminal receives
+12. **Offline-capture non-foreclosure constraints.** Findings: `V2-POS-002`. Decision D14. Point of sale is
+    deferred as a product; what is decided here is what Version 2 must not foreclose. Three of the four
+    constraints are settled and recorded in [`CHANGELOG.md`](../../CHANGELOG.md): who mints an operation
+    identifier and for how long a replay is honoured, including what replaced the fixed `P1D` window and
+    what the actor component of the scope digest means for a terminal that re-authenticated; where a
+    client-asserted occurrence instant lives and why it is never authoritative; that arrival order is not
+    event order; and that stock and price validation at capture time is best-effort.
+    **`V2-POS-002` is the one decision left open**: whether a disconnected terminal receives
     its human document number at synchronisation time while carrying its own client reference until then,
     or from a per-terminal reserved block that forfeits gaplessness. It must be taken here, because
     `BusinessNumberSequenceAllocator`'s documented gapless guarantee is a shipped promise and either shape
@@ -1506,8 +1510,9 @@ language inside an invariant is not what was decided.
 **Objective.** Build the primitives decisions D10 and D13 assigned to core, and record the four constraints
 decision D14 places on the platform so point of sale stays possible. Every package here shapes something an
 extension author builds against, which is why the whole phase is Gate A and none of it waits for Gate B.
-D10's money conversion contract is the first of them to have landed; `PE-A` has completed and left this
-directory for `CHANGELOG.md`.
+D10's money conversion contract is the first of them to have landed, and its rendering half followed;
+`PE-A`, `PE-B` and `PE-G` have completed and left this directory for `CHANGELOG.md`. What `PE-G` left
+behind is `V2-POS-002` alone, which is a decision rather than an implementation.
 
 **Entry conditions.** Phase 3 exit gate passed — these packages touch the record service, the allocator and
 the value codec, and they need clean seams first. Phase 0 decisions 9 and 12 recorded, including the
@@ -1519,24 +1524,6 @@ that lives only in documentation is a rule an extension author breaks by acciden
 names the check that fails the build when its rule is violated. Where a rule genuinely cannot be checked
 mechanically, the package says so and names the human review that covers it instead. No package leaves the
 question unanswered.
-
-**PE-B — Conversion provenance on the surfaces that render money.** Findings: `V2-CUR-005`. The rule from
-D10 — *a converted amount is always marked as converted and carries its rate and as-at instant* — is only
-worth stating if it holds everywhere. The value contract already guarantees it wherever the value itself
-travels, and report columns and export artifacts already carry it. What remains is the rendering half:
-the generated administrator and portal surfaces, the `document` view kind, the generated REST schemas and
-the machine surface.
-
-The money conversion contract itself is delivered and is not reopened here. Core owns the conversion
-request, the converted result, the declared rounding step and the rate-provider port; a package registers a
-provider through the contribution registrar the same way it registers everything else; core ships no rate
-of any kind, and an architecture test fails if one appears. See `CHANGELOG.md`.
-
-*The enforcing check:* a cross-surface test asserts that every surface rendering a converted amount renders
-its provenance, driven from one table of surfaces so a new surface added later without provenance fails
-rather than being missed. `composer openapi:check` covers the REST half, because the schema change is
-generated. The qualification half is the capacity contract's `undeclared_currency_conversions` integrity
-objective at zero.
 
 **PE-C — Unit-of-measure conversion.** Findings: `V2-ERP-004`. Decision D13.5. The same shape the money
 conversion contract already takes, for quantities: core owns the typed quantity-with-unit — it already does
@@ -1612,42 +1599,21 @@ counter maps forward to exactly one widened counter with its current value intac
 chosen, a test asserts that a sequence declaring them reports itself as non-gapless through the same
 declaration an operator reads.
 
-**PE-G — Offline-capture non-foreclosure.** Findings: `V2-POS-001`, `V2-POS-003`, `V2-POS-004`. Decision
-D14. Version 2 does not build point of sale. Version 2 must not make it impossible, and these four
-constraints are what that costs.
-
-- **Client-minted operation identity, durable across a long disconnection.** The caller already mints the
-  identifier. What changes is the window: the fixed `new DateInterval('P1D')` becomes a declared, bounded,
-  configurable retention with a stated maximum, and the contract states plainly what happens to a replay
-  that arrives after it — because today a terminal reconnecting after 24 hours replays into a fresh claim
-  and produces a second effect. State also what the actor component of the scope digest means for a
-  terminal that re-authenticated while disconnected.
-- **A declared place for a client-asserted occurrence instant.** The server's clock stays authoritative and
-  `ClockInterface` keeps stamping the command. A captured-at instant asserted by a terminal is recorded
-  beside it, is never substituted for it, and is never used for ordering, expiry, period assignment or
-  numbering.
-- **Late and out-of-order arrival.** A document captured on Friday and submitted on Monday is acceptable
-  and is not ordered by when it arrived. This is a statement about the aggregate command's contract and
-  about event sequencing, and it is tested rather than assumed.
-- **Accept and reconcile, rather than validate live.** Stock and pricing cannot be authoritative at capture
-  time. The contract states which validations an extension may defer to reconciliation and which can never
-  be deferred — authorization, policy, and definition-shape validity are never deferrable.
-
-*The enforcing check:* a three-engine integration test proves a replay inside the declared window yields
-exactly one effect and a replay outside it is refused with a stable, named error rather than silently
-creating a second — the refusal is the property, and an implementation that quietly duplicates fails.
-An architecture test asserts no ordering, expiry or numbering path reads a client-asserted instant. The
-accept-and-reconcile boundary is the one rule here that cannot be checked mechanically, because it is a
-statement about what an extension may choose; it is covered by the extension-contract review in `P0-C` and
-by a worked example in the extension documentation, and this package says so rather than leaving it silent.
+**PE-G is complete apart from its one decision.** Findings: `V2-POS-002`. Decision D14. The replay window,
+the declared home for a client-asserted occurrence instant, the late and out-of-order arrival guarantee and
+the deferrable-validation split are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md), each
+with the check that holds it. What is left is not work: it is `V2-POS-002`, the choice between allocating a
+disconnected terminal's document number at synchronisation time and issuing per-terminal reserved blocks.
+`PE-F` implements whichever is chosen, because both change the same allocator.
 
 **Exit gate.** A definition can declare a document immutable from a transition and correct it by linked
 reversal, and no write path can bypass it. A closed period refuses a mutation dated inside it on all three
 engines. A sequence is scoped by document type and legal entity and resets on a fiscal period, with every
 existing gapless test passing unmodified. A quantity and a money amount each convert through the core
-contract against an extension-held table, and a converted amount carries its marker, rate and as-at instant
-on every surface that renders it. The four offline constraints are declared in the frozen contract and each
-has a passing test or a named human review. All three engines pass.
+contract against an extension-held table. A converted amount already carries its marker, rate and as-at
+instant on every surface that renders it, proved from one enumerated table of surfaces. Three of the four
+offline constraints are declared and each has a passing test or a named human review; the fourth is
+`V2-POS-002` and is a decision. All three engines pass.
 
 **Non-goals.** Do not build a general ledger, a fiscal calendar, a rate feed, a rate policy, a rounding
 policy or a unit dictionary in core. Do not store a converted amount as a `core.money` value. Do not build

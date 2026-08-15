@@ -36,7 +36,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | 2 — Truthful gates | A | In progress — one quality contract, semantic dependency checking and the deployed-artifact lane are delivered | Phase 0 decisions 1, 7, 8 |
 | 3 — Seams and the ownership model | A | In progress — the business-group ownership model has landed; `P3-F` now only owes its three-engine proof | Phases 1 and 2 |
 | 4 — Atomic aggregate documents | A | Not started | Phase 3; phase 0 decision 2 |
-| E — Enterprise document primitives | A | Not started | Phase 3; phase 0 decisions 9 and 12, including the `V2-POS-002` choice. `PE-F` cannot run beside `P4-C` — both own numbering. |
+| E — Enterprise document primitives | A | In progress — `PE-A`, `PE-B` and `PE-G` delivered | Phase 3; phase 0 decisions 9 and 12, including the `V2-POS-002` choice. `PE-F` cannot run beside `P4-C` — both own numbering. |
 | L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A` and `PL-B` delivered, `PL-C`, `PL-E` and `PL-F` part delivered | `PL-F`'s screenshots and `PL-G` need phase 2's `P2-E` matrix; the language axis they run on is built. Otherwise parallel to 3, 4 and E. |
 | **Gate A** | | **Not assessed** | **Phases 4, E and L** |
 | 5 — Enterprise scale | B | Not started | Gate A |
@@ -145,7 +145,7 @@ that closed it.
 | 6 | Aggregate seams are clean | No | `V2-ARC-003` |
 | 7 | Business-group ownership model in place | Built; owes the three-engine proof in `P3-F` | — |
 | 8 | Enterprise document primitives exist and are enforced | Partly — the aggregate invariant is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); correction, period close, sequence scoping and unit conversion remain | `V2-ERP-002` – `V2-ERP-005` |
-| 9 | Multi-currency contract holds, with conversion provenance everywhere | Partly — contract, port, pipeline, reports and exports delivered; rendering half open | `V2-CUR-005` |
+| 9 | Multi-currency contract holds, with conversion provenance everywhere | Yes — contract, port, pipeline, reports, exports and the rendering half all delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | — |
 | 10 | Language contract and machinery in place, `en-GB` extracted | Partly — locale negotiation, the identifier grammar, the compiled catalogue, ICU formatting, the stored and administered override layers and the extension catalogue path are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-009`, `V2-MLC-001` – `V2-MLC-004` |
 | 11 | Point of sale not foreclosed | No | `V2-POS-001`, `V2-POS-003`, `V2-POS-004`; `V2-POS-002` decided |
 | 12 | Nothing regressed on three engines | Assessable, and assessed on every merge run. `regression_matrix` in [`docs/quality/contract.json`](../quality/contract.json) names the three engines, the four suites and the commands, and `composer quality:contract` fails when the merge workflow stops running the complete suite on any of them. Assessing the criterion is now reading a run rather than inspecting a workflow; it is asserted at a commit when that run is green and the commit is recorded here | — |
