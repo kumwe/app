@@ -519,7 +519,6 @@ residuals.
 | Finding | Verified anchor | What is true at `26a7b39` |
 |---|---|---|
 | `V2-SEC-001` | `McpCapabilityCatalog` 518, 535, 552, 2057; `KumweMcpHandlers` 1439–1576 | `currentPassword` is in three published extension-lifecycle input schemas and thirteen handler positions. `writeOnly` is set, which describes an output property and prevents nothing inbound. |
-| `V2-ARC-001`, `V2-QA-002` | `tools/verify-policy.sh` | The architecture gate is four grep predicates: product-name spelling, forbidden direct dependencies, forbidden framework imports, two static-locator symbols. It evaluates no dependency edge and prints "Kumwe architecture policy verified." |
 | `V2-ARC-003` | `BusinessRecordService` 73 and three peers; `src/Application/Automation/Job/Doctrine*` | Application imports `Kumwe\CMS\Infrastructure\Persistence\TransactionManager`. Three Doctrine adapters live under `src/Application`. |
 | `V2-SCL-001` | `DoctrineBusinessRecordMutationFence::lock()` 76; eight call sites in the service | Every write path takes the installation row `FOR UPDATE` for the whole transaction. A shared fence exists at line 110 and is used by reads only. |
 | `V2-SCL-002` | `DoctrineOutboxStore` 140–181 | A locking read of `business_projection_event_head` `singleton_id = 1` and a guarded update of `last_sequence`, both inside the caller's authoritative transaction. |
@@ -527,8 +526,8 @@ residuals.
 | `V2-SCL-005` | `RuntimeMetricCollector` 208, 227, 270, 289 | Exact `COUNT(*)`, `MIN()` and `MAX()` on the primary at scrape time. The statement count is bounded; the work of an exact count is not bounded by it. |
 | `V2-SCL-006` | `RuntimeIntegrationEventTransport::publish()` 91, 106, 132 | Consumers and webhooks iterate serially in the publishing path. |
 | `V2-SCL-007` | `DoctrineJobQueue` 968, 985, 990 | A contributed queue with a declared ceiling locks its policy row `FOR UPDATE` and counts live leases before claiming. The ordinary claim at line 270 already uses `FOR UPDATE SKIP LOCKED`. |
-| `V2-QA-001` | 148 `#[CoversNothing]` across 74 files; `ci.yml` 271, 433 | 36 of those files are integration tests exercising real behaviour. Coverage is collected on the PostgreSQL leg only and the workflow itself says "No threshold is enforced yet". |
-| `V2-DB-001` | `ci.yml` 63–167 | Browser journeys run against one PostgreSQL service, Chromium only, while MariaDB is the canonical engine. |
+| `V2-QA-001` | `docs/quality/coverage-contract.json` | The canonical measurement is now MariaDB and the changed-line ratchet is live. Forty-four test classes still exercise real behaviour and attribute none of it, each recorded with an owner and an expiry; the global ratchet arms on the first recorded baseline, and the branch floor cannot be measured while the canonical leg runs under `pcov`. |
+| `V2-DB-001` | `ci.yml` browser matrix; `nightly.yml` | The journeys run on all three engines at merge, desktop and mobile Chromium, with first-attempt results separated from retries, and nightly adds desktop Firefox and WebKit. Nightly does not yet carry mobile on those engines, nor keyboard, touch, high contrast, zoom and reflow. |
 | `V2-DB-003` | `ApplicationAuthorizationMigration` 106; `ApplicationAuthorizationMigrationRecovery` 443 | The primary migration names the constraint literally `fk_resource_site`; the recovery path already derives a hashed unique name. Foreign-key names are schema-global on MySQL and MariaDB. |
 | `V2-DR-003` | `tools/backup.sh` 149, 161, 198–202 | Four gzip tarballs; `pg_dump --format=custom` compresses by default; `--set-gtid-purged=OFF` on MySQL; no coordinate at all on MariaDB. |
 | Fence partitioning (positive) | `DoctrineBusinessRecordMutationFence::acquire()`; `BusinessTransactionalRuntimeMigration::installations()` 122–147 | The fence selects with `WHERE h.site_identifier = ?` on the site-scoped `business_definitions` table joined to `business_schema_installations`, and re-checks the installation's own site on the joined row. Four businesses running the same logical definition hold four definition rows and four installation rows, so a group **partitions** the `V2-SCL-001` hot spot rather than concentrating it. |
@@ -1240,31 +1239,24 @@ release execute, and make the gates strong enough to protect every later phase.
 **Entry conditions.** Phase 0 decisions 1, 7 and 8 recorded. May run in parallel with phase 1 where file
 ownership is disjoint.
 
-**P2-A — One canonical quality contract.** Findings: `V2-QA-003`. One data-driven manifest defines the PHP
-contract — locked dependency and platform validation, architecture policy and semantic dependency checks,
-documentation-block completeness, interface-programme coherence, OpenAPI generation and drift, coding
-standards, static analysis, the four suites, and generated-artifact clean-tree checks — and the frontend
-contract. `composer qa` may stay the human entry point, but it reads the manifest rather than restating it,
-and CI, nightly and release consume the same manifest. Every command has one owner, purpose, expected
-artifact and cadence.
+**P2-B — Truthful coverage attribution and ratchets.** Findings: `V2-QA-001`. The contract, the canonical
+engine, the attribution gate and the changed-line ratchet are delivered and recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md); `docs/quality/coverage-contract.json` is where the rules now live. What
+remains is the attribution itself and two ratchets. Name the classes each of the 44 behavioural tests still on
+the pending list exercises — 39 under `tests/Integration` plus five named individually — so only the reasoned
+allowlist is left. Commit the measured MariaDB baseline so the global-decrease ratchet is armed. Decide the
+branch floor: either instrument the canonical leg with a driver that reports branches, or replace the rule
+with one that can be measured, because a floor the tooling cannot read is a statement rather than a gate. Then
+the rest of the ratchet the roadmap states: positive plus denial and conflict and replay and rollback paths on
+public behaviour, and enumerated transitions on high-risk state machines regardless of percentage.
 
-**P2-B — Truthful coverage attribution and ratchets.** Findings: `V2-QA-001`. Audit all 148
-`#[CoversNothing]` occurrences. Architecture and source-shape tests keep it on a reasoned allowlist;
-application-service, repository, integration, functional and cross-surface behaviour tests attribute the
-classes they exercise. Collect the canonical full result on MariaDB, the primary engine, and merge focused
-driver attribution from MySQL and PostgreSQL without double-counting. Publish a commit-bound attribution
-report distinguishing attributed, executed-but-unattributed, generated, adapter and deliberately excluded
-code. Then ratchet: no global decrease beyond 0.25 percentage point, at least 90% line coverage on changed
-executable PHP, at least 80% branch coverage on changed Domain and Application logic, positive plus denial
-and conflict and replay and rollback paths on public behaviour, and enumerated transitions on high-risk
-state machines regardless of percentage.
-
-**P2-C — Semantic architecture fitness.** Findings: `V2-ARC-001`, `V2-QA-002`. Add an AST- or type-aware
-dependency checker implementing phase 0's layer graph, alongside the existing textual predicates rather
-than replacing them. Record existing violations with owner, justification and expiry; fail every new one
-immediately. Keep source-string tests only where the source text itself is the contract — a prohibited
-symbol, a generated-file checksum. Replace routing, wiring and class-shape string assertions with live
-container, router, metadata and behaviour checks **before** the structures they describe move.
+**P2-C — Live checks in place of source-string assertions.** The semantic dependency checker this package
+opened with is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md): `composer architecture:policy`
+evaluates every edge in `src/` against `docs/architecture/layers.json`, fails every new violation, and holds
+the 157 existing ones in a baseline with an owner and an expiry that phase 3 empties. What remains is the
+other half. Keep source-string tests only where the source text itself is the contract — a prohibited symbol,
+a generated-file checksum. Replace routing, wiring and class-shape string assertions with live container,
+router, metadata and behaviour checks **before** the structures they describe move.
 
 **P2-D — Three-engine catalogue and primary-engine policy.** Findings: `V2-DB-001`. Express database tests
 by invariant and run the same portable contract on all three engines. Every merge candidate proves: clean
@@ -1277,10 +1269,13 @@ and lock timeout, undo and purge lag, binary-log behaviour on the MySQL family; 
 `SKIP LOCKED`, serialization and deadlock cases, autovacuum and freeze, dead tuples and index bloat,
 write-ahead-log and checkpoint behaviour on PostgreSQL. Pin exact image digests for release.
 
-**P2-E — Browser, accessibility and visual matrix.** Findings: `V2-DB-001`. At merge: critical
-administrator, portal, generated-business, owned-line, maker-checker, step-up, policy-denial,
-no-JavaScript and website journeys, desktop and mobile Chromium, on MariaDB and MySQL and PostgreSQL,
-sharded and fixture-isolated, with first-attempt results reported separately from retry results. Nightly
+**P2-E — Browser, accessibility and visual matrix.** Findings: `V2-DB-001`. The merge half is delivered and
+recorded in [`CHANGELOG.md`](../../CHANGELOG.md): the journeys run on MariaDB, MySQL and PostgreSQL,
+desktop and mobile Chromium, and a run reports its first-attempt results separately from its retried ones.
+Sharding and fixture isolation are not built, and the nightly half is only started — two browser engines,
+without the remaining dimensions. What is still owed, at merge: critical administrator, portal,
+generated-business, owned-line, maker-checker, step-up, policy-denial, no-JavaScript and website journeys,
+sharded and fixture-isolated. Nightly
 adds Firefox and WebKit, accessibility, keyboard and focus, touch, high contrast, zoom and reflow, print
 where relevant, and visual regression. Convert screenshots claimed as regression baselines into real
 comparison assertions or label them evidence-only. Acceptance: zero serious or critical accessibility
@@ -1302,21 +1297,16 @@ metadata against authorized use cases; and worker, scheduler and event registrie
 contributions. An explicit allowlist records intentionally uncontracted health, asset and recovery routes.
 A hard-coded partial route list is not sufficient proof.
 
-**P2-G — Suite idempotency and the deployed-artifact lane.** Findings: `V2-QA-004`, `V2-QA-005`,
-`GM-SUP-09`. Two related problems with one cause: cheap jobs do not resemble the environment where defects
-appear.
+**P2-G — Suite idempotency.** Findings: `V2-QA-004`, `GM-SUP-09`. The deployed-artifact lane this package was
+half of is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md): `composer test:artifact` builds the
+released selection, installs it with `--no-dev` and an authoritative classmap, seals the tree, and reproduces
+all four production-only defects inside it, at merge and before a deployment is stood up.
 
-- **Idempotency.** The integration suite runs twice against one database with identical results, and in a
-  different class order with identical results, as an executed CI step. Any class mutating
-  installation-global state declares and executes its own rollback, as `RecordSecretRotationIntegrationTest`
-  now does.
-- **The deployed-artifact lane.** A lane that exercises the deployed artifact — production autoloader,
-  `--no-dev` dependency set, read-only container, the real console binary — early enough to fail before a
-  full deployment is stood up. Four defects in the last programme were found **only** in production
-  deployment acceptance: the package-admission memory ceiling, the missing production autoloader path, the
-  stranded record-encryption keys, and a drill leg that had never executed inside the deployed image. Each
-  becomes a regression case in this lane. That four defects reached that far is the argument for the lane;
-  it is not a criticism of the drills that caught them.
+The idempotency half is now executed rather than assumed — the database job runs the integration suite a
+second time against the database the first run left behind and a third time in reverse class order, on all
+three engines — and what remains is the result. Any class the step exposes as leaving installation-global
+state behind declares and executes its own rollback, as `RecordSecretRotationIntegrationTest` now does. The
+property is not proven until the step is green at a recorded commit on all three engines.
 
 **P2-H — Build-once exact-artifact release chain.** Findings: `V2-REL-001`. Prove the candidate belongs to
 the protected branch and that required workflows passed. Build the application image, web image, Composer
