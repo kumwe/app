@@ -1591,7 +1591,7 @@
           {
             "anchor": "source-issues-discussions",
             "heading": "Source, issues, and discussions.",
-            "body": "Kumwe lives on GitHub, and that is where every conversation starts.\n\n- [Read the source](https://github.com/kumwe/cms) — the platform, the examples, the demo profiles, and every quality gate are in one repository.\n- [Open an issue](https://github.com/kumwe/cms/issues) — precise reproductions, documentation gaps, and use-case descriptions are all welcome issues.\n- [Join the discussions](https://github.com/kumwe/cms/discussions) — questions, ideas, demo profiles you are building, and feedback on the direction of the platform.\n\nMeet [the team behind Kumwe](/community/team) to see who reads them."
+            "body": "Kumwe lives on GitHub, and that is where every conversation starts.\n\n- [Read the source](https://github.com/kumwe/app) — the platform, the examples, the demo profiles, and every quality gate are in one repository.\n- [Open an issue](https://github.com/kumwe/app/issues) — precise reproductions, documentation gaps, and use-case descriptions are all welcome issues.\n- [Join the discussions](https://github.com/kumwe/app/discussions) — questions, ideas, demo profiles you are building, and feedback on the direction of the platform.\n\nMeet [the team behind Kumwe](/community/team) to see who reads them."
           }
         ]
       },
@@ -2176,7 +2176,7 @@
           "target_type": "url",
           "content_fixture_key": null,
           "content_id": null,
-          "target_url": "https://github.com/kumwe/cms"
+          "target_url": "https://github.com/kumwe/app"
         }
       ]
     }

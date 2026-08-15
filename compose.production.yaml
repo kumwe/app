@@ -62,7 +62,7 @@ x-kumwe-environment: &kumwe-environment
   REDIS_PASSWORD_FILE: /run/secrets/redis_password
 
 x-kumwe-runtime: &kumwe-runtime
-  image: ${KUMWE_APP_IMAGE_REF:-ghcr.io/kumwe/cms/app:latest}
+  image: ${KUMWE_APP_IMAGE_REF:-ghcr.io/kumwe/app/app:latest}
   pull_policy: ${KUMWE_APPLICATION_PULL_POLICY:-always}
   # Compose file-backed secrets preserve host ownership. Bootstrap as root only
   # long enough to read them, then every PHP process—including the FPM master—
@@ -104,7 +104,7 @@ x-kumwe-runtime: &kumwe-runtime
 
 services:
   web:
-    image: ${KUMWE_WEB_IMAGE_REF:-ghcr.io/kumwe/cms/web:latest}
+    image: ${KUMWE_WEB_IMAGE_REF:-ghcr.io/kumwe/app/web:latest}
     pull_policy: ${KUMWE_APPLICATION_PULL_POLICY:-always}
     depends_on:
       app:

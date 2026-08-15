@@ -179,7 +179,7 @@
       "status": "passed",
       "command": "git diff --check 3b9a785c0b83d720dd386914daf6b822feef90db..99663feb759311091965e7b2e0c354c2eb43c664",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [],
       "blocker_finding_ids": [],
       "evidence_ids": [],
@@ -216,7 +216,7 @@
       "status": "passed",
       "command": "composer interface:programme",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "tools/verify-interface-programme.php",
         "docs/interface-standard/programme/surface-inventory.json",
@@ -242,7 +242,7 @@
       "status": "passed",
       "command": "bash tools/verify-policy.sh",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "tools/verify-policy.sh"
       ],
@@ -266,7 +266,7 @@
       "status": "passed",
       "command": "composer cs",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [],
       "blocker_finding_ids": [],
       "evidence_ids": [],
@@ -303,7 +303,7 @@
       "status": "passed",
       "command": "composer analyse",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [],
       "blocker_finding_ids": [],
       "evidence_ids": [],
@@ -340,7 +340,7 @@
       "status": "passed",
       "command": "composer test:unit",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "tests/Unit/InterfaceProgramme/InterfaceProgrammeVerifierTest.php",
         "tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php"
@@ -380,7 +380,7 @@
       "status": "passed",
       "command": "vendor/bin/phpunit --testsuite integration",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "tests/Integration/Extension/ExtensionContributionLifecycleIntegrationTest.php"
       ],
@@ -419,7 +419,7 @@
       "status": "passed",
       "command": "composer openapi:check",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "api/openapi/kumwe-v1.json"
       ],
@@ -441,7 +441,7 @@
       "status": "passed",
       "command": "composer qa",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [],
       "blocker_finding_ids": [],
       "evidence_ids": [],
@@ -478,7 +478,7 @@
       "status": "passed",
       "command": "npm run check",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "package.json"
       ],
@@ -531,7 +531,7 @@
       "status": "passed",
       "command": "npm run build",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "public/assets/build/.vite/manifest.json"
       ],
@@ -584,7 +584,7 @@
       "status": "passed",
       "command": "npm run test:browser",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "tests/Browser/administrator.spec.ts",
         "tests/Browser/portal.spec.ts"
@@ -634,7 +634,7 @@
       "status": "passed",
       "command": "npm run test:browser -- tests/Browser/administrator.spec.ts tests/Browser/portal.spec.ts tests/Browser/interface-integrity.spec.ts",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "tests/Browser/administrator.spec.ts",
         "tests/Browser/portal.spec.ts",
@@ -685,7 +685,7 @@
       "status": "passed",
       "command": "npm run test:browser -- tests/Browser/interface-integrity.spec.ts tests/Browser/administrator.spec.ts tests/Browser/portal.spec.ts",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "tests/Browser/interface-integrity.spec.ts"
       ],
@@ -737,7 +737,7 @@
       "status": "passed",
       "command": "Run Phase 2-5 parity fixtures in PHP and browser matrices",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "tests/Fixtures/InterfaceStandard/phase-three-security-identity-parity.json",
         "tests/Fixtures/InterfaceStandard/phase-4-generated-surface-parity.json",
@@ -772,7 +772,7 @@
       "status": "passed",
       "command": "GitHub security run 31564853353 plus focused application negative-path matrices",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853353",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853353",
       "artifact_paths": [
         ".github/workflows/security.yml",
         "tests/Browser/administrator.spec.ts",
@@ -819,7 +819,7 @@
       "status": "passed",
       "command": "Run typed contribution reconciliation, template fallback/reset, extension lifecycle, and browser conformance matrices",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         "examples/extensions/announcements/kumwe.json",
         "tests/Integration/Extension/ExtensionContributionLifecycleIntegrationTest.php"
@@ -850,7 +850,7 @@
       "status": "passed",
       "command": "Kumwe CI run 31564853522 and Development Compose acceptance run 31564853361",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853361",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853361",
       "artifact_paths": [
         ".github/workflows/ci.yml",
         ".github/workflows/development-compose.yml",
@@ -883,7 +883,7 @@
       "status": "passed",
       "command": "Kumwe CI deployment/recovery acceptance run 31564853522 and Compose acceptance run 31564853361",
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
-      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/app/actions/runs/31564853522",
       "artifact_paths": [
         ".github/workflows/deployment-acceptance.yml",
         "docs/interface-standard/programme/continuation-protocol.md"

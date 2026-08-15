@@ -60,7 +60,7 @@ applied VDM manifest create, relation, action, archive, or policy fixture.
 ## Start MariaDB, Redis, and Kumwe
 
 ```bash
-git clone https://github.com/Kumwe/cms.git
+git clone https://github.com/kumwe/app.git
 cd cms
 cp .env.example .env
 docker compose run --rm app composer install --no-interaction --prefer-dist

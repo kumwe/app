@@ -147,7 +147,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
             $seen[$fixtureKey] = $item;
         }
         self::assertSame(
-            ['https://github.com/kumwe/cms'],
+            ['https://github.com/kumwe/app'],
             $externalTargets,
             'The navigation links back to the project repository.',
         );

@@ -25,8 +25,8 @@ Set deployment inputs in a protected service environment or operator shell:
 
 ```bash
 export KUMWE_RELEASE=2.0.0
-export KUMWE_APP_IMAGE_REF=ghcr.io/kumwe/cms/app:2.0.0
-export KUMWE_WEB_IMAGE_REF=ghcr.io/kumwe/cms/web:2.0.0
+export KUMWE_APP_IMAGE_REF=ghcr.io/kumwe/app/app:2.0.0
+export KUMWE_WEB_IMAGE_REF=ghcr.io/kumwe/app/web:2.0.0
 export KUMWE_BASE_URL=https://cms.example.org
 export KUMWE_TRUSTED_HOSTS=cms.example.org
 export KUMWE_TRUSTED_PROXIES=10.20.0.10
@@ -108,7 +108,7 @@ Until Packagist registration is complete, resolve the signed GitHub release thro
 
 ```bash
 composer create-project \
-  --repository='{"type":"vcs","url":"https://github.com/Kumwe/cms.git"}' \
+  --repository='{"type":"vcs","url":"https://github.com/kumwe/app.git"}' \
   kumwe/cms:^2.0 /srv/kumwe \
   --no-dev \
   --prefer-dist

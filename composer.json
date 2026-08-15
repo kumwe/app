@@ -9,7 +9,7 @@
     "laminas",
     "mezzio"
   ],
-  "homepage": "https://github.com/Kumwe/cms",
+  "homepage": "https://github.com/kumwe/app",
   "license": "GPL-2.0-only",
   "require": {
     "php": "^8.5",

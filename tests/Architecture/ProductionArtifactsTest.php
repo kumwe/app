@@ -64,8 +64,8 @@ final class ProductionArtifactsTest extends TestCase
         }
 
         self::assertStringContainsString('internal: true', $compose);
-        self::assertStringContainsString('ghcr.io/kumwe/cms/app:latest', $compose);
-        self::assertStringContainsString('ghcr.io/kumwe/cms/web:latest', $compose);
+        self::assertStringContainsString('ghcr.io/kumwe/app/app:latest', $compose);
+        self::assertStringContainsString('ghcr.io/kumwe/app/web:latest', $compose);
         self::assertStringContainsString('KUMWE_DATABASE_IMAGE:-mariadb:lts', $compose);
         self::assertStringContainsString('KUMWE_REDIS_IMAGE:-redis:8-alpine', $compose);
         self::assertStringContainsString('APP_SECRET_FILE: /run/secrets/app_secret', $compose);
