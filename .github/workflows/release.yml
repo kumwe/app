@@ -122,16 +122,17 @@ jobs:
         shell: bash
         run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
 
+      # This step used to carry its own shorter list of checks — four of the thirteen the local gate runs —
+      # so a release could pass while a gate a contributor runs on every change had never been executed
+      # against the tag. It now executes the release lane of docs/quality/contract.json, which is the same
+      # definition composer qa and this repository's other workflows are held to.
       - name: Verify source and locked dependencies
         run: |
           composer validate --strict
           composer install --no-interaction --prefer-dist
           composer audit --locked --abandoned=fail
-          composer architecture:policy
-          composer cs
-          composer analyse
           php bin/kumwe database:migrate
-          composer test
+          php tools/quality-contract.php --run --cadence=release
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0

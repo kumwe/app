@@ -31,10 +31,33 @@ page and menu item to prove customization preservation. For VDM, prove an untouc
 customized definition is refused, new manifest operations may be appended, and changed or removed applied operations
 and policies fail closed.
 
+## The quality contract
+
+[`docs/quality/contract.json`](quality/contract.json) is the single definition of every check this
+repository runs and of the lane — local, merge, nightly, release — each one runs in. Each entry names its
+owner, its purpose, the artifact it produces, its cadence and the workflow and job that carries it. Read it
+rather than reading four workflows and inferring the union.
+
+`composer qa` is still the entry point a contributor uses, and it no longer restates the list: `composer
+quality:contract` fails when a check declared for the local lane is missing from `qa`, when `qa` runs a
+check the contract does not declare, when a check names a workflow or job that does not exist, or when the
+job declared to carry a command no longer contains it. Nightly and release execute the contract directly
+through `php tools/quality-contract.php --run --cadence=nightly|release`, so neither can drift into running
+its own shorter list. Adding a gate therefore means adding it to the contract; the build says so if you
+forget.
+
+```bash
+composer quality:contract                                # the contract matches what is executed
+php tools/quality-contract.php --run --cadence=nightly   # execute one lane end to end
+```
+
 Individual checks:
 
 ```bash
-composer architecture:policy
+composer architecture:policy      # textual predicates and the semantic dependency graph
+composer architecture:dependencies
+composer quality:contract
+composer coverage:attribution
 composer docs:api
 composer openapi:check
 composer translation:check
@@ -44,10 +67,26 @@ composer cs
 composer analyse
 composer test:unit
 composer test:integration
+composer test:artifact
 composer security:audit
 composer security:secrets
 npm run test:browser
 ```
+
+`composer architecture:policy` now evaluates every dependency edge in `src/` against the layer graph in
+[`docs/architecture/layers.json`](architecture/layers.json), not only the four textual predicates it used to
+run. Edges that already pointed the wrong way are recorded in
+[`docs/architecture/dependency-baseline.json`](architecture/dependency-baseline.json) with an owner, the
+finding that removes them and an expiry. The baseline only ever shrinks: a new violation fails immediately,
+an entry that no longer violates fails as stale so it has to be deleted, and an entry past its expiry fails
+outright.
+
+`composer test:artifact` is the deployed-artifact lane. It builds the released selection, installs it with
+`--no-dev` and an authoritative classmap, seals the tree, and runs the regression cases in
+[`docs/quality/deployed-artifact-cases.json`](quality/deployed-artifact-cases.json) inside it — the four
+defects the last programme found only in production deployment acceptance. It needs no database and no
+containers, so run it locally before you push anything that touches packaging, autoloading, archive reading
+or key material.
 
 `composer security:secrets` is the same pinned gitleaks scan the security workflow runs, and it reads
 the branch's history rather than its working tree: a secret-shaped literal introduced by an earlier
@@ -136,7 +175,23 @@ they run before `composer install` and inside minimal images.
 - Test extension archives with traversal, links, duplicate paths, expansion limits, invalid manifests, compatibility failures, unknown keys, bad signatures, migration failures, and interrupted activation.
 - Test worker retries, permanent failure classification, lease expiry, duplicate schedule occurrences, and restart behavior.
 
-Coverage is a missing-test signal, not the release decision. New code must keep the configured line/branch floor, while security policies and state transitions require explicit behavior and mutation-resistant assertions.
+Coverage is a missing-test signal, not the release decision. New code must keep the configured floor, while
+security policies and state transitions require explicit behavior and mutation-resistant assertions.
+
+What "the configured floor" means is in [`docs/quality/coverage-contract.json`](quality/coverage-contract.json),
+and `composer coverage:attribution` and `composer coverage:ratchet` execute it. Three things are worth knowing
+before you write a test:
+
+- **The canonical measurement is MariaDB.** It is the primary engine, and measuring anywhere else attributes
+  one engine's driver branches and calls the result the product's coverage.
+- **A behavioural test attributes what it exercises.** `#[CoversNothing]` is allowed on tests whose subject is
+  not a class under `src/` — architecture and source-shape tests, template renders, shipped schemas — and on
+  the behavioural tests that already carried it when the gate was switched on. That second list carries an
+  owner and an expiry, only ever shrinks, and a new behavioural test cannot join it.
+- **The ratchet judges your change, not the average.** At least 90% of the executable lines a change adds or
+  edits under `src/` must be covered, and the global figure may not fall by more than a quarter of a point.
+  The branch floor is declared and is not yet enforced, because `pcov` reports no branches; the contract says
+  so in the entry itself rather than leaving the gate looking stronger than it is.
 
 ## Full deployment contract
 

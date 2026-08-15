@@ -61,23 +61,61 @@ jobs:
           git diff --exit-code -- public/assets/build
 
   browser:
-    name: Browser, accessibility and visual regression
+    name: Browser / ${{ matrix.database.name }}
     needs: frontend
     runs-on: ubuntu-24.04
     # The complete desktop/mobile evidence matrix includes native no-JavaScript mutation lifecycles.
     timeout-minutes: 45
+    # The journeys used to run against one PostgreSQL service while MariaDB and MySQL are the primary
+    # engines, so the surfaces an operator actually uses were only ever driven on the engine fewest
+    # installations run. The matrix below is the same journeys on all three, which is what
+    # docs/quality/contract.json declares and what composer quality:contract holds it to.
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - name: MariaDB LTS
+            driver: mariadb
+            image: mariadb:lts
+            port: 3306
+            server-version: mariadb-12.3.2
+            health: >-
+              --health-cmd "healthcheck.sh --connect --innodb_initialized"
+              --health-interval 5s --health-timeout 5s --health-retries 20
+          - name: MySQL 8.4 LTS
+            driver: mysql
+            image: mysql:8.4
+            port: 3306
+            server-version: '8.4'
+            health: >-
+              --health-cmd "mysqladmin ping -h 127.0.0.1 -ukumwe -pkumwe_browser"
+              --health-interval 5s --health-timeout 5s --health-retries 20
+          - name: PostgreSQL 17
+            driver: pgsql
+            image: postgres:17-alpine
+            port: 5432
+            server-version: '17'
+            health: >-
+              --health-cmd "pg_isready -U kumwe -d kumwe_browser"
+              --health-interval 5s --health-timeout 5s --health-retries 20
     services:
       database:
-        image: postgres:17-alpine
+        image: ${{ matrix.database.image }}
         env:
+          MARIADB_DATABASE: kumwe_browser
+          MARIADB_USER: kumwe
+          MARIADB_PASSWORD: kumwe_browser
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+          MYSQL_DATABASE: kumwe_browser
+          MYSQL_USER: kumwe
+          MYSQL_PASSWORD: kumwe_browser
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
           POSTGRES_DB: kumwe_browser
           POSTGRES_USER: kumwe
           POSTGRES_PASSWORD: kumwe_browser
         ports:
-          - '5432:5432'
-        options: >-
-          --health-cmd "pg_isready -U kumwe -d kumwe_browser"
-          --health-interval 5s --health-timeout 5s --health-retries 20
+          - '${{ matrix.database.port }}:${{ matrix.database.port }}'
+        options: ${{ matrix.database.health }}
       redis:
         image: redis:8-alpine
         ports:
@@ -92,19 +130,19 @@ jobs:
       APP_PUBLIC_SITE: default
       APP_TRUSTED_HOSTS: 127.0.0.1,localhost
       EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'true'
-      DB_DRIVER: pgsql
+      DB_DRIVER: ${{ matrix.database.driver }}
       DB_HOST: 127.0.0.1
-      DB_PORT: 5432
+      DB_PORT: ${{ matrix.database.port }}
       DB_NAME: kumwe_browser
       DB_USER: kumwe
       DB_PASSWORD: kumwe_browser
       DB_TABLE_PREFIX: kumwe_
       DB_SSLMODE: disable
-      DB_SERVER_VERSION: '17'
+      DB_SERVER_VERSION: ${{ matrix.database.server-version }}
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
       REDIS_DATABASE: 0
-      REDIS_NAMESPACE: kumwe.browser
+      REDIS_NAMESPACE: kumwe.browser.${{ matrix.database.driver }}
       # Browser snapshots exercise the suite's purpose-built content and business fixtures. The shipped
       # documentation and VDM profiles have their own database-portable smoke coverage below.
       KUMWE_SITE_CONTENT_PROFILE: placeholder
@@ -122,7 +160,7 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: '8.5'
-          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_pgsql, redis, sodium, zip
+          extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
           coverage: none
           tools: composer:v2
 
@@ -160,11 +198,20 @@ jobs:
       - name: Exercise browser, accessibility and visual contracts
         run: npm run test:browser
 
+      # A journey that only passes on its retry is not a passing journey, and reporting the two together
+      # hides the difference. The summary separates them and names the commit, engine, browser, viewport
+      # and locale each result came from, so the evidence identifies its own run.
+      - name: Summarize first-attempt and retried results
+        if: always()
+        env:
+          KUMWE_BROWSER_ENGINE: ${{ matrix.database.driver }}
+        run: node tools/summarize-browser-attempts.mjs
+
       - name: Upload browser and screenshot evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: browser-evidence
+          name: browser-evidence-${{ matrix.database.driver }}
           path: |
             test-results
             tests/Browser/screenshots
@@ -195,8 +242,24 @@ jobs:
           composer install --no-interaction --prefer-dist
           composer audit --locked --abandoned=fail
 
-      - name: Verify source policy
+      # architecture:policy now runs the semantic dependency graph as well as the textual predicates, so
+      # this step fails on an edge that points the wrong way and is not in the recorded baseline.
+      - name: Verify source policy and dependency direction
         run: composer architecture:policy
+
+      # The manifest is the definition of every gate and of the lane each one runs in. This step is what
+      # binds the definition to this workflow: it fails when a declared check is missing from the job that
+      # declares it, and when this workflow runs a gate the manifest does not declare.
+      - name: Verify the quality contract
+        run: composer quality:contract
+
+      - name: Verify the interface programme and the roadmap ledger
+        run: |
+          composer interface:programme
+          composer roadmap:check
+
+      - name: Verify coverage attribution
+        run: composer coverage:attribution
 
       - name: Verify deterministic OpenAPI artifact
         run: composer openapi:check
@@ -253,11 +316,14 @@ jobs:
       fail-fast: false
       matrix:
         database:
+          # Coverage is collected on MariaDB because MariaDB is the primary engine. Measuring it anywhere
+          # else attributes one engine's driver branches and calls the result the product's coverage.
           - name: MariaDB LTS
             driver: mariadb
             image: mariadb:lts
             port: 3306
             server-version: mariadb-12.3.2
+            coverage: 'true'
             health: >-
               --health-cmd "healthcheck.sh --connect --innodb_initialized"
               --health-interval 5s --health-timeout 5s --health-retries 20
@@ -274,7 +340,6 @@ jobs:
             image: postgres:17-alpine
             port: 5432
             server-version: '17'
-            coverage: 'true'
             health: >-
               --health-cmd "pg_isready -U kumwe -d kumwe_test"
               --health-interval 5s --health-timeout 5s --health-retries 20
@@ -428,16 +493,30 @@ jobs:
             --coverage-text=build/coverage/summary.txt
           tail -n +1 build/coverage/summary.txt
 
-      - name: Publish the coverage baseline
+      # The integration suite has to be idempotent against a database another run already used, because
+      # that is what CI, a developer's container and a release rehearsal all do. This runs it a second
+      # time against the database the first run left behind, and a third time in reverse class order.
+      # Anything a class leaves installation-wide behind it shows up here as a failure rather than as an
+      # unexplained break in whatever runs next week.
+      - name: Prove the integration suite is idempotent against a reused database
+        run: |
+          vendor/bin/phpunit --testsuite integration --colors=always
+          vendor/bin/phpunit --testsuite integration --colors=always --order-by=reverse
+
+      - name: Enforce the coverage ratchets
+        if: matrix.database.coverage == 'true'
+        run: composer coverage:ratchet -- --base=origin/${{ github.base_ref || 'master' }} --record
+
+      - name: Publish the coverage measurement
         if: matrix.database.coverage == 'true'
         shell: bash
         run: |
           set -euo pipefail
           {
-            echo '### Coverage baseline'
+            echo '### Coverage on the canonical engine'
             echo
-            echo 'Measured on the PostgreSQL leg over the complete suite. No threshold is enforced yet;'
-            echo 'this establishes the trend line that session 7 will gate on.'
+            echo 'Measured on MariaDB, the primary engine, over the complete suite. The ratchets that are'
+            echo 'armed are in docs/quality/coverage-contract.json, and the step above enforces them.'
             echo
             echo '```'
             sed -n '1,20p' build/coverage/summary.txt
@@ -587,9 +666,48 @@ jobs:
           KUMWE_TAMPER_DRILL_OCCUPIED_DB=kumwe_restore_test \
             bash tests/Support/backup-tamper-drill.sh "$backup_path"
 
+  artifact:
+    name: Deployed-artifact regression lane
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Four defects in the last programme were found only in production deployment acceptance, after a full
+    # deployment had already been stood up: a per-entry archive memory ceiling, a production autoloader
+    # that could not load the drill namespace, stranded record-encryption keys, and a drill leg that had
+    # never executed inside the image. Every cheaper job missed all four because every cheaper job runs
+    # under the development autoloader, with development dependencies present, in a writable tree. This
+    # lane builds the released selection, installs it with --no-dev and an authoritative classmap, seals
+    # the tree, and runs each of those four as a regression case inside it. It needs no database and no
+    # containers, so it fails in minutes rather than after a deployment is up.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.5'
+          extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Run the deployed-artifact lane
+        run: composer test:artifact
+
+      - name: Upload the lane's report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: deployed-artifact-report
+          path: build/deployed-artifact/report.json
+          if-no-files-found: error
+          retention-days: 14
+
   deployment:
     name: Complete deployment acceptance
     needs:
       - quality
       - database
+      - artifact
     uses: ./.github/workflows/deployment-acceptance.yml
