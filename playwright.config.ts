@@ -92,6 +92,7 @@ export default defineConfig({
       name: 'mobile-chromium-ar',
       testMatch: rightToLeftSpec,
       use: { ...devices['Pixel 7'], locale: 'ar-EG' },
+    },
     // The nightly breadth projects. `ignoreSnapshots` is deliberate and is not a weakening: a pixel
     // baseline belongs to the browser that recorded it, so comparing a Firefox or WebKit render against a
     // Chromium baseline reports font hinting rather than the product. Behaviour and accessibility are

@@ -585,10 +585,20 @@ development programme, from the architecture decision that opened it to the curr
   branch floor is reported as *not enforced*, with the reason — `pcov` reports executed lines and no branches
   — because a rule the tooling cannot execute is worth stating and is not worth counting as enforcement.
   (`1315d47`)
-- **The integration suite is now asked to be idempotent rather than assumed to be.** The database job runs it
-  a second time against the database the first run left behind, and a third time in reverse class order, on
-  all three engines. Anything a class leaves behind installation-wide surfaces there rather than in whatever
-  runs next week. (`1c80a03`)
+- **The integration suite is now asked to be idempotent rather than assumed to be, and it answered.** The
+  database job runs it a second time against the database the first run left behind, and a third time in
+  reverse class order, on all three engines. The first execution reproduced the defect exactly: six tests
+  across four classes fail on the second run, identically on MySQL and PostgreSQL. Three
+  `GeneratedBusinessBrowserIntegrationTest` methods meet a schema installation the previous run left behind;
+  `AssetInspectionCustomViewIntegrationTest` meets its own contribution; `ExtensionContributionLifecycleIntegrationTest`
+  meets an extension it left installed and trusted; and one Redis-outage assertion turns out not to be
+  database state at all — a process-global cache diagnostic is never cleared, so "a healthy cache records no
+  degradation" is only true the first time. Those six are recorded in
+  [`docs/quality/idempotency-baseline.json`](docs/quality/idempotency-baseline.json) with an owner, an expiry
+  and what removing each one takes, and the step fails on anything outside the record: a test that starts
+  failing, an entry whose test now passes, or an entry past its expiry. A permanently red gate would have
+  been worse than the defect it reports and an advisory one would not be a gate, so the record takes the
+  same shape as the dependency baseline and shrinks the same way. (`1c80a03`)
 - **The release job runs the release lane of the contract instead of its own shorter list.** It carried four
   checks where a contributor runs thirteen, so a release could pass with a gate never having been executed
   against the tag. (`1c80a03`)

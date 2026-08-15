@@ -309,23 +309,28 @@
     },
     {
       "id": "V2-QA-004",
-      "title": "The integration suite now has an idempotency gate and has not yet passed one",
+      "title": "The integration suite is not idempotent against a reused database, and six tests prove it",
       "severity": "medium",
-      "state": "in_progress",
+      "state": "reproduced",
       "phase": "2",
       "gate": "A",
       "origin": "new",
       "source_anchors": [
         {
+          "file": "docs/quality/idempotency-baseline.json",
+          "symbol": "entries",
+          "note": "Six tests across four classes fail when the integration suite runs a second time against the database the first run left behind. Identical set on MySQL 8.4 and PostgreSQL 17 in run 31876448442. Three are GeneratedBusinessBrowserIntegrationTest methods meeting a schema installation the previous run left; one is AssetInspectionCustomViewIntegrationTest meeting its own contribution; one is ExtensionContributionLifecycleIntegrationTest meeting an extension it left installed and trusted; and one is RedisOutageIntegrationTest::testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone, which is not database state at all but a process-global cache diagnostic that is never cleared, so its assertion is only true the first time."
+        },
+        {
           "file": ".github/workflows/ci.yml",
           "symbol": "Prove the integration suite is idempotent against a reused database",
-          "note": "The database job now runs the integration suite a second time against the database the first run left behind, and a third time with --order-by=reverse, on all three engines. The property is executed rather than assumed; whether the suite holds it is what the first run of this step reports."
+          "note": "The step runs both passes on all three engines and judges them against the baseline: a test outside the record fails, an entry whose test now passes fails as stale, an entry past its expiry fails. The record only ever shrinks."
         }
       ],
-      "acceptance_test": "The step passes on MariaDB, MySQL and PostgreSQL at a recorded commit. Every class the step exposes as leaving installation-global state behind declares and executes its own rollback, as RecordSecretRotationIntegrationTest does.",
+      "acceptance_test": "docs/quality/idempotency-baseline.json is empty: every recorded test passes when the integration suite runs a second time against the same database and a third time in reverse class order, on MariaDB, MySQL and PostgreSQL. Any class that mutates installation-global state declares and executes its own rollback, as RecordSecretRotationIntegrationTest does.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
-      "progress": "Delivered: the executed CI step the acceptance asked for, on all three engines. Outstanding: the run itself, and whatever it surfaces."
+      "progress": "Delivered: the executed CI step on all three engines, the reproduction it produced, and the baseline that fails anything new while the six recorded tests are fixed. Outstanding: the six removals, each of which names its own fix in the baseline entry."
     },
     {
       "id": "V2-DB-001",
