@@ -6,13 +6,23 @@ namespace Kumwe\CMS\Tests\Integration\Content;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DriverException;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
+use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Application\TranslationGroupRepository;
+use Kumwe\CMS\Content\Domain\ContentEntry;
 use Kumwe\CMS\Content\Domain\ContentStatus;
+use Kumwe\CMS\Content\Domain\TranslationGroup;
+use Kumwe\CMS\Content\Domain\TranslationGroupMember;
+use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
+use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
+use Kumwe\CMS\Http\Handler\HomePageHandler;
+use Kumwe\CMS\Http\Handler\PublishedContentHandler;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
@@ -31,6 +41,14 @@ use RuntimeException;
 
 #[CoversClass(MultilingualContentMigration::class)]
 #[CoversClass(DoctrineTranslationGroupRepository::class)]
+#[CoversClass(DoctrineContentRepository::class)]
+#[CoversClass(ContentService::class)]
+#[CoversClass(ContentEntry::class)]
+#[CoversClass(TranslationGroup::class)]
+#[CoversClass(TranslationGroupMember::class)]
+#[CoversClass(TranslationGroupPresenter::class)]
+#[CoversClass(PublishedContentHandler::class)]
+#[CoversClass(HomePageHandler::class)]
 /**
  * Proves the content half of decision D12 against a real database and the real public site.
  *
@@ -77,6 +95,101 @@ final class MultilingualContentIntegrationTest extends TestCase
         self::assertTrue($entries->hasIndex('uniq_content_site_slug'));
         self::assertTrue($entries->getIndex('uniq_content_site_slug')->isUnique());
         self::assertTrue($manager->tablesExist([$tables->raw('content_translation_groups')]));
+    }
+
+    /**
+     * Prove a fresh installation builds the whole dimension, and that running it again changes nothing.
+     *
+     * Both properties are invisible once an installation is migrated, because by then every `has` check
+     * in the migration short-circuits and the statements that build the dimension never run again. So
+     * this drives the migration against its own scratch tables — from nothing, then a second time over
+     * what it just built — which is the only way to watch it create the group table, add both columns,
+     * name the foreign key by digest, and copy the entry identifier's character definition onto the
+     * referencing column. That copy is the MySQL-family hazard the migration exists to handle: without
+     * it the engine refuses a foreign key between textual GUIDs of differing collations outright.
+     *
+     * MySQL and MariaDB scope index names to their table, which is what lets a second `content_entries`
+     * stand beside the installation's own. PostgreSQL keeps index names schema-global, so the same
+     * rehearsal would collide with the real index instead of testing anything; there the dimension is
+     * proven by the migration having run at all, which the assertion above reads back.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheMigrationBuildsTheDimensionFromNothingAndReRunsAsANoOp(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $this->service($container, Connection::class);
+        if (!$database->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
+            self::markTestSkipped('Index names are schema-global outside the MySQL family.');
+        }
+
+        $tables = new TableNames($database, 'mlc' . substr(bin2hex(random_bytes(4)), 0, 8) . '_');
+        $migration = new MultilingualContentMigration($tables);
+        $manager = $database->createSchemaManager();
+        $entriesName = $tables->raw('content_entries');
+        $groupsName = $tables->raw('content_translation_groups');
+
+        $entries = new Table($entriesName);
+        $entries->addColumn('id', Types::GUID);
+        $entries->addColumn('site_identifier', Types::STRING, ['length' => 191]);
+        $entries->addPrimaryKeyConstraint(
+            PrimaryKeyConstraint::editor()->setUnquotedColumnNames('id')->create(),
+        );
+        $manager->createTable($entries);
+
+        try {
+            $migration->up($database);
+            $built = $manager->introspectTableByUnquotedName($entriesName);
+
+            self::assertTrue($manager->tablesExist([$groupsName]));
+            self::assertTrue($built->hasColumn('locale'));
+            self::assertTrue($built->hasColumn('translation_group_id'));
+            self::assertTrue($built->getIndex('uniq_content_translation_locale')->isUnique());
+            self::assertTrue($built->hasIndex('idx_content_site_locale'));
+            self::assertCount(1, $built->getForeignKeys());
+            self::assertSame(
+                $built->getColumn('id')->getCollation(),
+                $built->getColumn('translation_group_id')->getCollation(),
+                'A foreign key between textual GUIDs of differing collations is refused outright.',
+            );
+
+            // The second run is the interrupted-attempt rehearsal: every addition is already there, so
+            // the comparator must find no difference at all rather than re-issuing a single statement.
+            $migration->up($database);
+            $again = $manager->introspectTableByUnquotedName($entriesName);
+
+            self::assertCount(count($built->getColumns()), $again->getColumns());
+            self::assertCount(count($built->getIndexes()), $again->getIndexes());
+            self::assertCount(1, $again->getForeignKeys());
+        } finally {
+            // The referencing table goes first, and each drop is guarded, so a failure above surfaces as
+            // itself rather than as a missing-table error raised while clearing up after it.
+            foreach ([$entriesName, $groupsName] as $scratch) {
+                if ($manager->tablesExist([$scratch])) {
+                    $manager->dropTable($scratch);
+                }
+            }
+        }
+    }
+
+    /**
+     * Prove the site root, the one entry point naming no language, renders through the language block.
+     *
+     * The root is where negotiation is allowed to choose, so it carries a different code path from a
+     * permalink that names its locale in the URL. Requesting it proves that path is wired and that the
+     * template renders the alternates the handler hands it, whether or not a homepage is configured.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheSiteRootRendersThroughTheLanguageAwareEntryPoint(): void
+    {
+        $body = $this->publicPage('/');
+
+        self::assertStringContainsString('<html', $body);
     }
 
     /**
@@ -263,6 +376,85 @@ final class MultilingualContentIntegrationTest extends TestCase
             $body,
         );
         self::assertStringContainsString('aria-current="true"', $body);
+    }
+
+    /**
+     * Prove a group degrades around stored rows the database should never have been left holding.
+     *
+     * The read path is deliberately forgiving, because a group is assembled from rows that outlive the
+     * code that wrote them: a locale column edited by hand, a fallback pointing at a translation since
+     * withdrawn, an entry that was never translated at all. None of those may take down a page that is
+     * otherwise perfectly serveable, so each degrades to the next best answer instead of raising. The
+     * damage is written straight through the connection here, because that is the only way to produce
+     * rows the application layer refuses to create.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheGroupDegradesAroundRowsTheApplicationWouldNeverWrite(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $content = $this->service($container, ContentService::class);
+        $groups = $this->service($container, TranslationGroupRepository::class);
+        $database = $this->service($container, Connection::class);
+        $tables = $this->service($container, TableNames::class);
+        $suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+
+        $lone = $this->page($content, $context, 'Lone ' . $suffix, 'lone-' . $suffix, true);
+        self::assertNull(
+            $groups->forContent($context->site(), $lone->entry->id()),
+            'An entry nobody has translated belongs to no group.',
+        );
+
+        $english = $this->page($content, $context, 'Manual ' . $suffix, 'manual-' . $suffix, true);
+        $german = $this->page($content, $context, 'Handbuch ' . $suffix, 'handbuch-' . $suffix, true);
+        $groupId = Uuid::uuid7()->toString();
+        foreach ([[$english, 'en-GB'], [$german, 'de']] as [$record, $locale]) {
+            $content->translate(
+                $context,
+                $record->entry->id(),
+                $record->entry->version(),
+                LocaleTag::fromString($locale),
+                $groupId,
+                LocaleTag::fromString('en-GB'),
+            );
+        }
+
+        $entries = $tables->raw('content_entries');
+
+        try {
+            // A fallback naming a locale no member carries any more falls back to a member that exists.
+            $database->update(
+                $tables->raw('content_translation_groups'),
+                ['fallback_locale' => 'zu'],
+                ['id' => $groupId],
+            );
+            $stale = $groups->forContent($context->site(), $english->entry->id());
+            self::assertNotNull($stale);
+            self::assertSame('de', $stale->fallbackLocale->toString());
+
+            // A member whose stored locale is not a language tag is dropped, not raised over.
+            $database->update($entries, ['locale' => 'not a tag'], ['id' => $german->entry->id()]);
+            $partial = $groups->forContent($context->site(), $english->entry->id());
+            self::assertNotNull($partial);
+            self::assertCount(1, $partial->members());
+
+            // Once no member survives, the group reads as absent rather than as an empty group.
+            $database->update($entries, ['locale' => ''], ['id' => $english->entry->id()]);
+            self::assertNull($groups->forContent($context->site(), $english->entry->id()));
+        } finally {
+            // The damage above is written past every guard the application has, so it has to be undone
+            // here: these rows outlive the test, and the suite is run twice against one database.
+            $database->update($entries, ['locale' => 'en-GB'], ['id' => $english->entry->id()]);
+            $database->update($entries, ['locale' => 'de'], ['id' => $german->entry->id()]);
+            $database->update(
+                $tables->raw('content_translation_groups'),
+                ['fallback_locale' => 'en-GB'],
+                ['id' => $groupId],
+            );
+        }
     }
 
     /**
