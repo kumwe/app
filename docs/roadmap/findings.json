@@ -1,7 +1,7 @@
 {
   "ledger": "kumwe-consolidated-findings",
   "version": "2.0.0",
-  "verified_at_sha": "26a7b3963c255064754f541dc8286e75dd566b1f",
+  "verified_at_sha": "ca240178cdc167f1d32269cd880b13c5751daa5f",
   "authority": "docs/roadmap/README.md",
   "completed_work": "CHANGELOG.md",
   "note": "This ledger holds open work only. A finding that reaches 'closed' leaves this file in the same change that closes it, and its substance becomes an entry in CHANGELOG.md under the category it belongs to; the roadmap therefore shrinks as the programme advances instead of accumulating a tail of finished items. 'closed' is deliberately absent from states for that reason, and tools/verify-roadmap.php fails the build when an entry carries it. Every source anchor in this file was resolved against the repository at verified_at_sha. The 56 entries closed before this rule was introduced were moved to CHANGELOG.md with the commits that closed them.",
@@ -991,6 +991,66 @@
       "owner": "UNASSIGNED",
       "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
       "forward_reference": "V2-DR-003 changes the artifact this section documents; the reference schedule and the off-host step must be restated for the reshaped payload and the reference transport."
+    },
+    {
+      "id": "V2-LNG-011",
+      "title": "On the site root the alternate for the nominated homepage's own locale is the canonical path, so that language cannot be chosen",
+      "severity": "medium",
+      "state": "open",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Content/Presentation/TranslationGroupPresenter.php",
+          "symbol": "hrefFor",
+          "note": "The member being rendered is given the canonical path unconditionally; every other member is located through PublicPageLocator::pathFor(). On the site root the canonical path is '/', so the rendered locale's alternate is '/'."
+        },
+        {
+          "file": "src/Site/Application/PublicPageLocator.php",
+          "symbol": "pathFor",
+          "note": "Returns '/' when the record's identifier equals the one homepage_content_id names, and otherwise falls through to the navigation path or the slug. Because the nomination is a single record identifier rather than a translation group, exactly one member of the group answers '/' from here. When the reader's negotiated locale is not that member's locale, two different alternates therefore carry '/': the rendered one and the nominated one. Following the nominated locale's link re-enters the root and re-negotiates back to the locale the reader was already in, so that language is unreachable from the root. Derived by reading both methods against master at ca24017; it has not been executed, which is why this is open rather than reproduced. Paths other than the root are unaffected because they carry their own locale, and other members of the group resolve to their own navigation path or slug normally."
+        },
+        {
+          "file": "src/Http/Handler/HomePageHandler.php",
+          "symbol": "__invoke",
+          "note": "The root's entry point, which negotiates the reader's locale against the nominated page's translation group and passes the canonical path the presenter builds alternates from. tests/Unit/Http/Handler/HomePageHandlerTest.php asserts the advertised locales and their current flags but deliberately does not assert the two hrefs, so no test pins the present behaviour in place."
+        }
+      ],
+      "acceptance_test": "On the site root, each advertised alternate resolves to a path that renders that locale. A reader whose negotiated locale differs from the nominated homepage's locale can reach the nominated locale from the root, and following any alternate does not re-negotiate back to the locale the reader came from. Asserted for the hrefs themselves, not only for the advertised locale list.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "cross_reference": "The language axis this rides on is delivered; see CHANGELOG.md for the translation group, the negotiated root and the selector. This is a defect in how the root addresses the group, not a missing capability."
+    },
+    {
+      "id": "V2-QA-006",
+      "title": "Three machine-surface catalogue refusals cannot be exercised by any test, because the collaborator they refuse is final with hard-coded data",
+      "severity": "medium",
+      "state": "reproduced",
+      "phase": "2",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Infrastructure/Mcp/McpCatalogValidator.php",
+          "symbol": "violations",
+          "note": "Takes the concrete final class McpCapabilityCatalog rather than the tool list. Its three catalogue-shape refusals - the empty catalogue at line 128, the duplicate tool name at 135 and the name that is not lowercase kumwe_-prefixed at 139 - can only fire for a catalogue no caller is able to construct."
+        },
+        {
+          "file": "src/Infrastructure/Mcp/McpCapabilityCatalog.php",
+          "symbol": "McpCapabilityCatalog",
+          "note": "final class, no constructor, no properties, no static state; tools() is composed from private constants. It cannot be subclassed and PHPUnit refuses to double it with ClassIsFinalException, which the build attempting this hit directly. The same shape makes the McpCatalogInvalid raised for a declaration published without a risk class unreachable as well."
+        },
+        {
+          "file": "docs/quality/coverage-contract.json",
+          "symbol": "changed-line-floor",
+          "note": "These lines were the residue of the coverage work on the machine surface: every other refusal in the validator is now driven by a handler double that breaks exactly one rule. They were left genuinely uncovered rather than exempted, so the gate keeps reporting them."
+        }
+      ],
+      "acceptance_test": "Each of the three catalogue-shape refusals is driven by a test that hands the validator a catalogue breaking exactly that rule and asserts the single message it produces, so a rule that stops firing fails the build. The seam is the validator accepting the tool list it validates, or the catalogue no longer being final; whichever is chosen is stated where the class is declared.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "cross_reference": "V2-QA-001 owns behavioural coverage attribution generally. This is narrower and structural: the code is shaped so the refusals cannot be reached, so no attribution change can cover them."
     }
   ]
 }
