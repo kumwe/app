@@ -1,7 +1,7 @@
 {
   "ledger": "kumwe-consolidated-findings",
   "version": "2.0.0",
-  "verified_at_sha": "ca240178cdc167f1d32269cd880b13c5751daa5f",
+  "verified_at_sha": "fbd7753e0dec8044b30140cc5e741def8f051a50",
   "authority": "docs/roadmap/README.md",
   "completed_work": "CHANGELOG.md",
   "note": "This ledger holds open work only. A finding that reaches 'closed' leaves this file in the same change that closes it, and its substance becomes an entry in CHANGELOG.md under the category it belongs to; the roadmap therefore shrinks as the programme advances instead of accumulating a tail of finished items. 'closed' is deliberately absent from states for that reason, and tools/verify-roadmap.php fails the build when an entry carries it. Every source anchor in this file was resolved against the repository at verified_at_sha. The 56 entries closed before this rule was introduced were moved to CHANGELOG.md with the commits that closed them.",
@@ -192,7 +192,7 @@
     },
     {
       "id": "V2-QA-001",
-      "title": "Behavioural tests still attribute nothing, and two ratchets are not yet armed",
+      "title": "Behavioural tests still attribute nothing, and the branch ratchet is not measurable",
       "severity": "high",
       "state": "in_progress",
       "phase": "2",
@@ -202,18 +202,18 @@
         {
           "file": "docs/quality/coverage-contract.json",
           "symbol": "attribution.pending, attribution.pending_directories",
-          "note": "Forty-four test classes still carry #[CoversNothing] while exercising real behaviour: thirty-nine under tests/Integration plus five named individually. Each is recorded with an owner, this finding and an expiry of 2027-06-30, and composer coverage:attribution fails when a new one appears or when a recorded one no longer needs the exemption."
+          "note": "Forty-three test classes still carry #[CoversNothing] while exercising real behaviour: thirty-nine under tests/Integration plus four named individually. Each is recorded with an owner, this finding and an expiry of 2027-06-30, and composer coverage:attribution fails when a new one appears or when a recorded one no longer needs the exemption."
         },
         {
           "file": "docs/quality/coverage-contract.json",
           "symbol": "ratchets",
-          "note": "The changed-line floor is enforced. The global-decrease ratchet is unarmed until the first canonical MariaDB run records a baseline, which the merge run prints. The branch floor cannot be measured at all while the canonical leg is instrumented with pcov, which reports executed lines and no branches."
+          "note": "The changed-line floor is enforced and the global-decrease ratchet is armed at the measured 55.44% MariaDB baseline. The branch floor cannot be measured while the canonical leg is instrumented with pcov, which reports executed lines and no branches."
         }
       ],
       "acceptance_test": "Every behavioural test names the classes it exercises, so the pending list and the pending directory are both empty and only the reasoned allowlist remains. The measured MariaDB baseline is committed so the global-decrease ratchet is armed. The branch floor is either measurable on the canonical leg or replaced by a rule that is.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
-      "progress": "Delivered: the canonical measurement moved to MariaDB, docs/quality/coverage-contract.json states the rules, composer coverage:attribution holds #[CoversNothing] to a reasoned allowlist and a shrinking pending list, and composer coverage:ratchet enforces the 90% floor on the executable lines a change adds or edits. What remains is the attribution work itself and the two ratchets above."
+      "progress": "Delivered: the canonical measurement moved to MariaDB, docs/quality/coverage-contract.json records the measured 55.44% baseline, composer coverage:attribution holds #[CoversNothing] to a reasoned allowlist and a shrinking pending list, and composer coverage:ratchet enforces both the 90% changed-line floor and the global-decrease rule. What remains is the attribution work itself and a measurable branch rule."
     },
     {
       "id": "V2-QA-004",
@@ -269,6 +269,37 @@
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "progress": "Delivered: the three-engine merge matrix that was the finding's substance, the two further browser engines nightly, and first-attempt reporting separated from retries."
+    },
+    {
+      "id": "V2-DB-004",
+      "title": "PostgreSQL schema-global non-primary index names still collide between prefixed core installations",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "2",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Infrastructure/Persistence/Migration/BusinessSecurityPortalMigration.php",
+          "symbol": "the organizations indexes",
+          "note": "The immutable migration publishes the literal names uniq_org_site_identifier and idx_org_site_status. PostgreSQL keeps non-primary index names in a schema-wide namespace, so a second prefixed plan collides on uniq_org_site_identifier even though its physical table name differs."
+        },
+        {
+          "file": "src/Kernel/ContainerFactory.php",
+          "symbol": "the MigrationPlan service's ordered core migration list",
+          "note": "The complete core plan includes many published self-checksumming migrations that create literal non-primary index names. Their bytes and recorded checksums cannot be rewritten, and a table prefix does not qualify those index names in PostgreSQL's schema namespace."
+        },
+        {
+          "file": "tests/Integration/Persistence/ConstraintNameIsolationPortabilityIntegrationTest.php",
+          "symbol": "the two-prefix PostgreSQL fixture",
+          "note": "The complete prefixed setup at the verified implementation revision reached PostgreSQL's uniq_org_site_identifier collision before the foreign-key repair. The focused fixture assigns test-only isolated index names so it can reach the foreign-key contract; that evidence therefore does not prove that two complete prefixed core migration plans coexist in one PostgreSQL schema."
+        }
+      ],
+      "acceptance_test": "An append-only migration inventories every non-primary index on every prefixed core table whose published name can collide in PostgreSQL's schema namespace. Each replacement name is derived from the physical table name and the published index-name stem with a stable table-plus-stem digest, remains within PostgreSQL's 63-byte identifier limit, and preserves the original index exactly. On PostgreSQL, two complete empty-database core migration plans with distinct prefixes run sequentially in one schema and both finish; a schema-wide catalogue assertion proves that every non-primary index name is unique across both plans and that each index retains its exact table, ordered key columns, uniqueness, predicate, expression, included columns and operator classes. Replaying the append-only migration on either installation is a no-operation, including after an interruption. Existing ledgers and supported upgrades remain accepted, MariaDB and MySQL remain accepted, the bytes and checksums of every published self-checksumming migration remain unchanged, and an existing replacement with the wrong shape fails closed.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "P2-D",
+      "cross_reference": "V2-DB-003 delivered foreign-key-name isolation for the MySQL family and focused cross-engine foreign-key-shape evidence. This finding is the remaining PostgreSQL non-primary-index namespace contract."
     },
     {
       "id": "V2-REL-001",
@@ -993,64 +1024,34 @@
       "forward_reference": "V2-DR-003 changes the artifact this section documents; the reference schedule and the off-host step must be restated for the reshaped payload and the reference transport."
     },
     {
-      "id": "V2-LNG-011",
-      "title": "On the site root the alternate for the nominated homepage's own locale is the canonical path, so that language cannot be chosen",
-      "severity": "medium",
-      "state": "open",
+      "id": "V2-LNG-012",
+      "title": "An extension translation-group declaration has no contract that associates contributed content items with it",
+      "severity": "high",
+      "state": "accepted_for_implementation",
       "phase": "L",
       "gate": "A",
       "origin": "new",
       "source_anchors": [
         {
-          "file": "src/Content/Presentation/TranslationGroupPresenter.php",
-          "symbol": "hrefFor",
-          "note": "The member being rendered is given the canonical path unconditionally; every other member is located through PublicPageLocator::pathFor(). On the site root the canonical path is '/', so the rendered locale's alternate is '/'."
+          "file": "src/Extension/Contribution/OwnedExtensionContributionRegistrar.php",
+          "symbol": "contentTranslationGroup",
+          "note": "The registrar records the package-owned declaration in the contribution registry. No runtime content service consumes that declaration or binds one of the extension's items to it."
         },
         {
-          "file": "src/Site/Application/PublicPageLocator.php",
-          "symbol": "pathFor",
-          "note": "Returns '/' when the record's identifier equals the one homepage_content_id names, and otherwise falls through to the navigation path or the slug. Because the nomination is a single record identifier rather than a translation group, exactly one member of the group answers '/' from here. When the reader's negotiated locale is not that member's locale, two different alternates therefore carry '/': the rendered one and the nominated one. Following the nominated locale's link re-enters the root and re-negotiates back to the locale the reader was already in, so that language is unreachable from the root. Derived by reading both methods against master at ca24017; it has not been executed, which is why this is open rather than reproduced. Paths other than the root are unaffected because they carry their own locale, and other members of the group resolve to their own navigation path or slug normally."
+          "file": "src/Content/Application/ContentService.php",
+          "symbol": "translate",
+          "note": "Runtime content variants join a UUID translation group supplied for one stored entry. The command carries neither an extension owner nor the declared contribution identifier, so the registry declaration cannot govern the association, its locale set or its fallback."
         },
         {
-          "file": "src/Http/Handler/HomePageHandler.php",
-          "symbol": "__invoke",
-          "note": "The root's entry point, which negotiates the reader's locale against the nominated page's translation group and passes the canonical path the presenter builds alternates from. tests/Unit/Http/Handler/HomePageHandlerTest.php asserts the advertised locales and their current flags but deliberately does not assert the two hrefs, so no test pins the present behaviour in place."
+          "file": "docs/content-translation.md",
+          "symbol": "Extension-contributed content",
+          "note": "The current documentation now limits the declaration to admission and inventory metadata. A runtime item-association contract is deliberately not invented inside a defect repair because existing extension generations are frozen compatibility promises."
         }
       ],
-      "acceptance_test": "On the site root, each advertised alternate resolves to a path that renders that locale. A reader whose negotiated locale differs from the nominated homepage's locale can reach the nominated locale from the root, and following any alternate does not re-negotiate back to the locale the reader came from. Asserted for the hrefs themselves, not only for the advertised locale list.",
+      "acceptance_test": "An additive, versioned extension contract links a package owner and declared translation-set identifier to each contributed content item without changing a frozen generation. Core resolves that association before storage and delivery, enforces the declaration's locale and fallback bounds, and refuses an undeclared locale or another owner's set. A signed compatibility fixture installs a provider, stores two variants through the public application path, renders both through real locale negotiation, and proves the refusals.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
-      "cross_reference": "The language axis this rides on is delivered; see CHANGELOG.md for the translation group, the negotiated root and the selector. This is a defect in how the root addresses the group, not a missing capability."
-    },
-    {
-      "id": "V2-QA-006",
-      "title": "Three machine-surface catalogue refusals cannot be exercised by any test, because the collaborator they refuse is final with hard-coded data",
-      "severity": "medium",
-      "state": "reproduced",
-      "phase": "2",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Mcp/McpCatalogValidator.php",
-          "symbol": "violations",
-          "note": "Takes the concrete final class McpCapabilityCatalog rather than the tool list. Its three catalogue-shape refusals - the empty catalogue at line 128, the duplicate tool name at 135 and the name that is not lowercase kumwe_-prefixed at 139 - can only fire for a catalogue no caller is able to construct."
-        },
-        {
-          "file": "src/Infrastructure/Mcp/McpCapabilityCatalog.php",
-          "symbol": "McpCapabilityCatalog",
-          "note": "final class, no constructor, no properties, no static state; tools() is composed from private constants. It cannot be subclassed and PHPUnit refuses to double it with ClassIsFinalException, which the build attempting this hit directly. The same shape makes the McpCatalogInvalid raised for a declaration published without a risk class unreachable as well."
-        },
-        {
-          "file": "docs/quality/coverage-contract.json",
-          "symbol": "changed-line-floor",
-          "note": "These lines were the residue of the coverage work on the machine surface: every other refusal in the validator is now driven by a handler double that breaks exactly one rule. They were left genuinely uncovered rather than exempted, so the gate keeps reporting them."
-        }
-      ],
-      "acceptance_test": "Each of the three catalogue-shape refusals is driven by a test that hands the validator a catalogue breaking exactly that rule and asserts the single message it produces, so a rule that stops firing fails the build. The seam is the validator accepting the tool list it validates, or the catalogue no longer being final; whichever is chosen is stated where the class is declared.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "cross_reference": "V2-QA-001 owns behavioural coverage attribution generally. This is narrower and structural: the code is shaped so the refusals cannot be reached, so no attribution change can cover them."
+      "cross_reference": "Decision D12 requires locale variants on extension-contributed content. The core content translation group is delivered; this finding is the missing extension-item bridge, not a request for a second translation model."
     }
   ]
 }

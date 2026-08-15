@@ -1,6 +1,6 @@
 # Kumwe CMS consolidated roadmap
 
-**Verified against** `26a7b3963c255064754f541dc8286e75dd566b1f`
+**Verified against** `fbd7753e0dec8044b30140cc5e741def8f051a50`
 **Machine-readable companions** [`findings.json`](findings.json), [`capacity-contract.json`](capacity-contract.json)
 **Current position** [`STATUS.md`](STATUS.md)
 **Work already finished** [`CHANGELOG.md`](../../CHANGELOG.md)
@@ -212,12 +212,13 @@ exact decimal `.amount` column beside a fixed three-character `.currency` column
 rebuilds the pair on read and refuses a denomination the field pinned against. Recorded in
 [ADR 0004](decisions/0004-money-conversion-contract.md).
 
-**Delivered, for money and for quantities.** The conversion half of this decision has shipped twice, in
+**Delivered, for money and for quantities.** The conversion contract and its rendering half have shipped
+twice, in
 the same shape: the conversion request, the converted result, the rate or factor with its as-at instant and
 provider identity, the declared rounding step, the provider port and the pipeline it plugs into, and the
 provenance carried through report columns and export artifacts. Core still ships no rate and no conversion
-table of any kind. See `CHANGELOG.md`. What the decision still owes is the rendering half, which is
-`V2-CUR-005` under `PE-B`.
+table of any kind. See `CHANGELOG.md`. `V2-CUR-005` and `PE-B` have left the roadmap because the rendering
+work is complete.
 
 ### D11 — The interface is multilingual, with a decided architecture
 
@@ -289,13 +290,14 @@ declared fallback when a translation is missing, automatic `hreflang`, and a fro
 shipped by default rather than added later.
 
 **Business definition labels carry locales too.** `EntityTypeDefinition`'s singular and plural labels and
-`FieldDefinition`'s label, description and help text are single strings inside the document
-`CanonicalDefinitionJson` checksums, and a published definition version is immutable. Adding a locale
-dimension after extensions are published would mean migrating live definition documents, so the dimension
-is in the Gate A contract.
+`FieldDefinition`'s label, description and help text retain their source strings and may carry normalized
+locale variants inside the document `CanonicalDefinitionJson` checksums. Canonical ordering keeps declaration
+order irrelevant, and omitting translations preserves the former bytes. A published definition version remains
+immutable.
 
-Because extension-contributed content needs locale variants, the translation-group model belongs in the
-**extension contribution contract**. That is the strongest reason none of this can wait for Gate B.
+Because extension-contributed content needs locale variants, translation-set inventory belongs in the
+**extension contribution contract**. That declaration is delivered, but the frozen item-to-set association is
+not; `V2-LNG-012` requires an additive contract generation rather than reinterpretation of an existing one.
 
 **The gate split.** The **contract, the machinery, the override chain, the right-to-left conversion, the
 content model and the enforcement** are Gate A, plus **`en-GB` extracted** to prove extraction works at
@@ -371,7 +373,7 @@ that follow are therefore live Gate A concerns even though the product is not.
 
 ## 3. Reconciliation with the independent review
 
-The independent review was pinned to `309db888`. This roadmap is verified at `26a7b39`. Seven commits
+The independent review was pinned to `309db888`. This reconciliation was verified at `26a7b39`. Seven commits
 separate them:
 
 | Commit | Subject |
@@ -384,9 +386,10 @@ separate them:
 | `1726ee1` | Move the poison drill's delivery helper off a name PHPUnit 13 made final |
 | `26a7b39` | Let the deployment drills load their own classes in the production image |
 
-**Not one of them touches `src/`.** `git diff --stat 309db888..HEAD -- src/` is empty. Every runtime
-finding in the review therefore holds verbatim at the current revision, and each has been re-resolved to a
-live symbol in [`findings.json`](findings.json) rather than copied forward on trust.
+**Not one of them touches `src/`.** `git diff --stat 309db888..26a7b39 -- src/` is empty. Every runtime
+finding in the review therefore held verbatim at that reconciliation baseline, and each was re-resolved to a
+live symbol in [`findings.json`](findings.json) rather than copied forward on trust. Later implementation is
+recorded in the changelog and the current ledger rather than retroactively changing this historical comparison.
 
 Four things the review says nevertheless need correcting, because the world moved or because the review
 was imprecise.
@@ -427,7 +430,7 @@ Retention lives in the shared field macro `_business-fields.twig`, which binds `
 `BusinessSurfaceService::form()` populates it from a `$retained` argument that
 `GeneratedBusinessBrowserController::write()` supplies when it catches `BusinessRecordValidationFailed`.
 
-What is actually broken, verified at the current revision:
+What was actually broken, verified at that reconciliation baseline:
 
 - **A stale-version conflict discards everything, on every browser surface.**
   `GeneratedBusinessBrowserController::write()` catches `BusinessRecordValidationFailed` and nothing else.
@@ -448,14 +451,13 @@ conflict path, and give the CMS content editor the mechanism it never had.
 
 ### 3.4 The review's finding IDs are preserved, and the ledger holds open work only
 
-The consolidation resolved 114 findings: 27 from the review, 62 from the executed gap matrix, and 25
+The consolidation reconciled 114 findings: 27 from the review, 62 from the executed gap matrix, and 25
 discovered while verifying this roadmap, during the qualification programme, or from the business-group
-decision. Fifty-six of them were already closed. Under the lifecycle rule above those left the ledger and
-their substance is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them, so
-[`findings.json`](findings.json) now carries **44 open entries**: 25 from the review, 12 from the gap
-matrix and 21 discovered here. Review identifiers are unchanged, so a reference to `V2-SCL-001` resolves
-the same way in both documents, and a reference to a completed identifier such as `GM-AUD-01` or
-`V2-SCL-003` resolves in the changelog.
+decision. Fifty-six were already closed and left for [`CHANGELOG.md`](../../CHANGELOG.md) under the lifecycle
+rule above. The initial forward ledger therefore carried **58 open entries**: 25 from the review, 12 from
+the gap matrix and 21 discovered while verifying the programme. Review identifiers are unchanged, so a
+reference to `V2-SCL-001` resolves the same way in both documents, and a reference to a completed identifier
+such as `GM-AUD-01` or `V2-SCL-003` resolves in the changelog.
 
 Decisions D10 through D14 added 22 further entries — `V2-CUR-001` to `V2-CUR-004` for multi-currency,
 `V2-LNG-001` to `V2-LNG-010` for the interface language programme, `V2-MLC-001` to `V2-MLC-004` for
@@ -468,24 +470,28 @@ model and the administered override layers have since been delivered and have le
 `CHANGELOG.md`, which is where each of them is now recorded. `V2-CUR-005` was added for the rendering half
 the money work did not cover and has since been delivered too, together with `V2-POS-001`, `V2-POS-003`
 and `V2-POS-004`; of the four point-of-sale constraints only `V2-POS-002` remains, and it is a decision
-rather than work. The ledger therefore carries **42 open entries**.
+rather than work. Later verification added narrowly anchored findings as delivered claims were exercised;
+the ledger therefore carries **44 open entries** at the revision named above. The newest entry,
+`V2-DB-004`, separates the delivered foreign-key isolation contract from PostgreSQL's still-open
+schema-wide non-primary-index namespace contract.
 
 ---
 
-## 4. Verified current state
+## 4. Verified baselines
 
-Everything in this section was resolved against the repository at `26a7b39`. Nothing is inherited on
-trust.
+Sections 4.1 through 4.4 preserve the original consolidated baseline resolved against `26a7b39`; their counts
+and closed blockers are historical evidence, not claims about current head. Section 4.5 is explicitly refreshed
+against the current implementation revision. Nothing is inherited on trust.
 
-### 4.1 What runs green today
+### 4.1 What ran green at the consolidated baseline
 
 `composer docs:api`, `composer architecture:policy`, `composer interface:programme`, `composer roadmap:check`,
 `composer openapi:check`, `composer translation:check`, `composer translation:strings`,
-`composer assets:direction`, `composer cs` and `composer analyse` all pass. The unit suite is **1,596 tests
-and 22,565 assertions**; the architecture suite was 106 tests and 6,918 assertions at `26a7b39` and is
-**124 tests and 7,146 assertions** now that `RoadmapLifecycleTest` and `InterfaceTranslationGateTest` have
-joined it. Documentation-block completeness is 100% across 1,186 classes, 6,408 methods, 430 enum cases,
-342 properties and 305 class constants. PHPStan reports no errors at level `max`.
+`composer assets:direction`, `composer cs` and `composer analyse` all passed. The unit suite was **1,596 tests
+and 22,565 assertions**; the architecture suite was 106 tests and 6,918 assertions at `26a7b39` and became
+**124 tests and 7,146 assertions** after `RoadmapLifecycleTest` and `InterfaceTranslationGateTest` had
+joined it. Documentation-block completeness was 100% across 1,186 classes, 6,408 methods, 430 enum cases,
+342 properties and 305 class constants. PHPStan reported no errors at level `max`.
 
 ### 4.2 Shape
 
@@ -529,18 +535,17 @@ residuals.
 | `V2-SCL-005` | `RuntimeMetricCollector` 208, 227, 270, 289 | Exact `COUNT(*)`, `MIN()` and `MAX()` on the primary at scrape time. The statement count is bounded; the work of an exact count is not bounded by it. |
 | `V2-SCL-006` | `RuntimeIntegrationEventTransport::publish()` 91, 106, 132 | Consumers and webhooks iterate serially in the publishing path. |
 | `V2-SCL-007` | `DoctrineJobQueue` 968, 985, 990 | A contributed queue with a declared ceiling locks its policy row `FOR UPDATE` and counts live leases before claiming. The ordinary claim at line 270 already uses `FOR UPDATE SKIP LOCKED`. |
-| `V2-QA-001` | `docs/quality/coverage-contract.json` | The canonical measurement is now MariaDB and the changed-line ratchet is live. Forty-four test classes still exercise real behaviour and attribute none of it, each recorded with an owner and an expiry; the global ratchet arms on the first recorded baseline, and the branch floor cannot be measured while the canonical leg runs under `pcov`. |
-| `V2-DB-001` | `ci.yml` browser matrix; `nightly.yml` | The journeys run on all three engines at merge, desktop and mobile Chromium, with first-attempt results separated from retries, and nightly adds desktop Firefox and WebKit. Nightly does not yet carry mobile on those engines, nor keyboard, touch, high contrast, zoom and reflow. |
+| `V2-QA-001` | `ci.yml` database matrix 267–272, coverage setup 330–334, baseline publication 425–438 | Coverage is collected only on PostgreSQL; CI says explicitly that no threshold is enforced and publishes only a trend line. No attribution contract or ratchet exists. |
+| `V2-DB-001` | `ci.yml` browser job 63–171 and relational matrix 262–449 | The relational suite runs on three engines, but browser proof is one PostgreSQL/Chromium job and no nightly workflow exists. Firefox, WebKit and the wider mobile, keyboard, touch, contrast, zoom and reflow dimensions are absent. |
 | `V2-DB-003` | `ApplicationAuthorizationMigration` 106; `ApplicationAuthorizationMigrationRecovery` 443 | The primary migration names the constraint literally `fk_resource_site`; the recovery path already derives a hashed unique name. Foreign-key names are schema-global on MySQL and MariaDB. |
 | `V2-DR-003` | `tools/backup.sh` 149, 161, 198–202 | Four gzip tarballs; `pg_dump --format=custom` compresses by default; `--set-gtid-purged=OFF` on MySQL; no coordinate at all on MariaDB. |
 | Fence partitioning (positive) | `DoctrineBusinessRecordMutationFence::acquire()`; `BusinessTransactionalRuntimeMigration::installations()` 122–147 | The fence selects with `WHERE h.site_identifier = ?` on the site-scoped `business_definitions` table joined to `business_schema_installations`, and re-checks the installation's own site on the joined row. Four businesses running the same logical definition hold four definition rows and four installation rows, so a group **partitions** the `V2-SCL-001` hot spot rather than concentrating it. |
 
 ### 4.5 Currency, language and enterprise-primitive current state, verified
 
-Decisions D10 through D14 rest on the state below. It was resolved against the repository at `26a7b39`;
-the branch that carries this roadmap changes no file under `src/`, `assets/` or `templates/`, so every
-anchor holds at the tip as well. Where something exists, this says so precisely. Where it does not, this
-says so plainly.
+Decisions D10 through D14 rest on the state below. It was refreshed against
+`fbd7753e0dec8044b30140cc5e741def8f051a50`. Where something exists, this says so precisely. Where it does
+not, this says so plainly.
 
 **Money and exact values — the exact half is already provided.** `MoneyValue` binds an `ExactDecimal`
 amount to an uppercase ISO 4217 alphabetic code and refuses anything that is not exactly three uppercase
@@ -561,8 +566,8 @@ row, no rate policy and no unit conversion table, and a `MoneyRateProvider` or a
 under `src/` fails an architecture test. `QuantityValue`'s docblock now says what is true of the value type
 and points at the contract that converts above it. `Expression::OPERATORS` still holds 21 scalar operators,
 none of which converts anything, and that stays correct: conversion is a contract, not an operator.
-**What remains** is the rendering half, under `V2-CUR-005`. **What is already provided** is every part of
-exact storage, which this work did not touch.
+The rendering half is delivered too: every converted money and quantity surface carries the source, result,
+rate or factor, as-at instant, provider and exact rounding provenance. `V2-CUR-005` has left the roadmap.
 
 **Language — the foundation is built, the volume is not.** `src/Localization/` carries the translator port
 and its catalogue implementation, the ICU formatter over `ext-intl`, the frozen message-identifier grammar,
@@ -591,15 +596,19 @@ allowlist that ships empty. `playwright.config.ts` now runs the right-to-left jo
 locale-scoped projects and files their baselines under those project names. What is unbuilt is the
 screenshots themselves: the four right-to-left baseline directories are empty.
 
-**Content carries no locale.** `ContentEntry` holds an identifier, title, slug, body, workflow state,
-publication window and version; its docblock enumerates what is deliberately absent and no locale appears
-there or in `DynamicSiteContentMigration`'s columns. There is no translation group, no per-locale slug, no
-per-locale publication state and no fallback declaration.
+**Content is locale-bearing and grouped by logical item.** `ContentEntry` carries a canonical locale and
+translation-group identifier beside its locale-specific slug, workflow state and publication window;
+`TranslationGroup` declares one fallback and bounds the locale members. Public delivery negotiates only
+published members and explicit locale URLs keep the document language, interface language and direction
+together. Core content uses that runtime directly. An extension may declare a translation set in its
+package inventory, but no frozen contract yet associates one of its contributed items with that declaration;
+that remaining bridge is `V2-LNG-012`.
 
-**Definition labels are single strings inside an immutable checksummed document.** `EntityTypeDefinition`
-carries `singularLabel` and `pluralLabel`, bounded to 120 bytes each; `FieldDefinition` carries `label`,
-`description` and `helpText`. All are members of the document `CanonicalDefinitionJson` encodes, and a
-published version is identified by a SHA-256 over those bytes.
+**Definition wording has source text plus normalized locale variants inside the immutable checksummed
+document.** `EntityTypeDefinition` localizes its singular and plural labels, and `FieldDefinition` localizes
+its label, description and help text. Canonical encoding sorts the normalized locale maps, refuses two input
+tags that normalize to the same key, and includes translations only when declared, so adding localization is
+an explicit document change while an untranslated definition keeps its former bytes.
 
 **Numbering.** `NumberSequenceScope` has two cases, `Site` and `Organization`; `NumberSequenceReset` has
 three, `Never`, `Yearly` and `Monthly`. There is no document-type or legal-entity dimension in the counter
@@ -665,7 +674,8 @@ this programme is designed as a step toward it, and no figure in the capacity co
 
 ### 5.1 Capability primitives an enterprise resource planning system requires
 
-Verified against the code at `26a7b39`. **Provided** means it exists and is proven. **Partial** means it
+Verified against the code at `fbd7753e0dec8044b30140cc5e741def8f051a50`. **Provided** means it exists
+and is proven. **Partial** means it
 exists with a stated limitation. **Must add** means core has to build it. **Decision required** means the
 core-versus-extension boundary has not been settled and must be, before extension authors depend on either
 answer.
@@ -691,7 +701,7 @@ answer.
 | Server-computed derived values | Provided | `core.computed`; `ComputationMode`; `Expression` |
 | Encrypted secret fields with key rotation | Provided | `core.secret`; `SecretKeyRing`; `business-record-rekey` |
 | Attachments and media on records | Provided | `core.media_reference` and the media module |
-| Portable relational schema with planned, recoverable migration | Provided | `BusinessSchema`, schema plan and apply and recovery, three engines |
+| Portable relational schema with planned, recoverable migration | Provided | `BusinessSchema`, schema plan and apply and recovery, three engines. This business-schema primitive does not assert that two complete prefixed core plans coexist in one PostgreSQL schema; core non-primary-index namespace isolation remains `V2-DB-004` |
 | Bounded escape hatch for irregular data | Provided | `core.bounded_json` with a declared byte ceiling |
 
 #### Document lifecycle
@@ -734,15 +744,15 @@ answer.
 | Public purpose-built read models | Provided | published views with no generic public mutation |
 | REST with generated OpenAPI | Provided | `composer openapi:check` guards drift |
 | Console | Provided | 47 commands with stable JSON and exit codes |
-| Model-context tooling | Provided | 76 tools, each carrying a declared risk class and a documented non-MCP alternative, with the classification, the closed schemas and the absence of credential material enforced before a server is built; see [`CHANGELOG.md`](../../CHANGELOG.md) |
+| Model-context tooling | Provided | Every published tool carries a declared risk class, capability and non-MCP alternative exposed through discovery; input envelopes are closed, every object schema states its membership decision, schema and handler parameters bind in both directions, and authentication-secret input plus credential issuance are absent; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Data-entry integrity across a failed submission | Provided | validation failure and stale-version conflict both re-render with the submitted values on both generated surfaces and the CMS content editor; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Role-specific dashboards | Partial | `V2-ERP-006` — workspaces are navigation groups, and the dashboard handler is one fixed capability-filtered page |
 | Offline-tolerant capture for point of sale | Deferred, not foreclosed | `V2-ERP-007` under decision D14 — deferred beyond Version 2 as a product; three of the four constraints that keep it possible are delivered and recorded in `CHANGELOG.md`, and `V2-POS-002` alone remains |
 | A translated interface | Partial | The layer exists — XLIFF authored, compiled to PHP, formatted by ICU, resolved through the four-step chain with both administered layers stored, negotiated per request. `V2-LNG-001`, `V2-LNG-007` and `V2-LNG-008` hold the remaining extraction and the widened gate; `V2-LNG-010` holds the eight translated catalogues. Decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) |
 | An operator changing wording without editing files | Provided | Site and organization overrides are stored and administered at `/administrator/wording` under `localization.overrides.manage`; per identifier, never per file. This is also how a vertical relabels core terminology, and an extension contributes its own catalogue through the ordinary package path. See [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Right-to-left presentation | Partial | The stylesheets are direction independent, the layouts emit `dir`, a gate refuses a new physical declaration, and the browser matrix carries a language axis so `he` and `ar` file baselines of their own. `V2-LNG-009` holds the screenshots and the `P2-E` leg that compares them |
-| Multilingual content with per-locale publication state | **Must add** | `V2-MLC-001`, `V2-MLC-004`, decision D12 — `ContentEntry` carries no locale, no per-locale slug and no fallback |
-| Locale variants on extension-contributed content | **Must add** | `V2-MLC-002` — the translation group belongs in the extension contribution contract, which is why it cannot wait for Gate B |
+| Multilingual content with per-locale publication state | Provided | `ContentEntry`, `TranslationGroup`, locale-specific slugs and publication windows, negotiated public delivery and explicit root-locale addresses; decision D12 and [`CHANGELOG.md`](../../CHANGELOG.md) |
+| Locale variants on extension-contributed content | Partial | A package can declare a translation set for admission and inventory, but no frozen item-association contract binds contributed content to it at runtime — `V2-LNG-012` |
 
 #### Processing and integration
 
@@ -770,37 +780,28 @@ answer.
 | Operational diagnostics: where the system is struggling | **Must add** | `V2-OPS-001` under decision D6 |
 | Proven capacity at the enterprise envelope | **Must add** | phase 5 and phase 7 |
 
-**Summary.** Of the 69 primitives above: **40 provided, 9 partial, 18 must add, 1 decision required, 1
+**Summary.** Of the 70 primitives above: **56 provided, 6 partial, 6 must add, 1 decision required, 1
 deferred but not foreclosed.**
 
-The count of open boundary questions fell from seven to one because decisions D10 through D14 answered
-them. Answering a boundary question does not make the work smaller; it moves it from "somebody must decide"
-to "somebody must build", which is why the must-add column grew by thirteen at the same time. That is the
-intended trade: an extension author can now read one answer per primitive instead of finding a question.
+The six primitives core must still add are exact: numbering scope and fiscal-period reset, immutable linked
+reversal, period close, point-in-time recovery, operational diagnostics, and proven capacity. Atomic document
+commit and aggregate invariants, both conversion contracts, multilingual core content, localized definition
+wording, the frozen extension contract and business-group ownership are provided and must not be described as
+missing work.
 
-The eighteen that core must add fall into five groups. The **document primitives** — the atomic
-multi-line document, aggregate invariants over its lines, immutable correction by linked reversal, the
-period-close lock, and the widened numbering scope. The **typed-value contracts** — unit-of-measure
-conversion, currency conversion, and the converted-amount provenance rule. The **language programme** — multilingual
-content, locale variants on extension-contributed content, and locale variants on definition labels; the
-interface layer, its override chain and right-to-left presentation are built and now carry named
-residuals rather than being absent. The **platform
-contract and ownership work** — a frozen public contract, the business-group ownership model with its
-per-category isolation and its consolidated read. And the **operational capabilities** — point-in-time
-recovery, operational diagnostics, and proven capacity at the enterprise envelope.
+The six partial primitives are role-specific dashboard composition, interface extraction and translation,
+right-to-left visual qualification, the extension item-to-translation-set association, parallel consumer
+fan-out, and an out-of-process host for untrusted adapters. Each row names its residual. Client-minted operation
+identity, data-entry integrity and record history are provided and no longer belong in that list.
 
-One of the six partials — client-minted operation identity across a long disconnection — is a correction to
-something that already works rather than missing capability. Two others, data-entry integrity and record
-history, were corrected the same way and have left this table.
+The table's one undecided primitive is `V2-POS-002`: whether a disconnected terminal receives its document
+number at synchronisation time or from a reserved block. It is deliberately a product-owner decision because
+it trades against the shipped gapless guarantee. Separately, `V2-ERP-006` remains `decision_required` in the
+ledger for the architecture of role-specific dashboard composition, whose current capability is partial.
 
-The one remaining decision is `V2-POS-002`: whether a disconnected terminal receives its document number at
-synchronisation time or from a reserved block. It is left open deliberately, because it trades against the
-gapless guarantee already documented and shipped, and that trade is the product owner's to make.
-
-The platform is materially complete for the modelling, lifecycle, access and surface work a demanding
-business system needs, in one language. What it lacks is the atomic document and its invariants, the typed
-conversion contracts, the whole language dimension, the frozen contract, the recovery capability, the
-operational insight, and the proof at scale. That is what this programme builds.
+The platform is materially complete for the modelling, lifecycle, access and generated-surface foundations a
+demanding business system needs. The programme now concentrates on the six missing primitives, the six named
+partial capabilities, the two open decisions and their qualification evidence.
 
 ### 5.2 Beyond Version 2: bridges in both directions
 
@@ -928,11 +929,14 @@ intention.
    [`CHANGELOG.md`](../../CHANGELOG.md). No credential-bearing field exists anywhere in the serialized
    machine contract and no machine-surface handler accepts one; every machine tool carries a declared risk
    class, a documented non-MCP alternative and validated operation, capability and bounded-schema metadata,
-   enforced before a server is built rather than reviewed; every installed foreign key carries a name a
-   second prefixed installation in the same schema cannot collide with, proven by installing two; and the
-   trusted-extension boundary is described the same honest way on every surface, with the ambient authority
-   an admitted extension inherits inventoried beside the deployment control that bounds it. Record-history
-   generation ambiguity and the unpinned ownership collation were already recorded there.
+   enforced before a server is built rather than reviewed; every installed foreign key carries a
+   physical-table-derived name, with two-prefix foreign-key-shape evidence on all three engines and the
+   MySQL/MariaDB schema-global collision reproduced and repaired; and the trusted-extension boundary is
+   described the same honest way on every surface, with the ambient authority an admitted extension inherits
+   inventoried beside the deployment control that bounds it. That focused foreign-key evidence is not a claim
+   that two complete prefixed core plans coexist in one PostgreSQL schema; `V2-DB-004` holds the remaining
+   non-primary-index namespace work. Record-history generation ambiguity and the unpinned ownership collation
+   were already recorded there.
 5. **The gates are truthful.** Coverage attribution is real and ratcheted, semantic dependency checking
    fails new violations, the browser and coverage matrix covers the primary engines, and one manifest
    defines what local, CI, nightly and release runs execute.
@@ -954,8 +958,9 @@ intention.
    is corrected by a linked reversal; a closed period refuses a mutation dated inside it; a sequence is
    scoped by document type and legal entity and resets on a fiscal period; and a quantity and a money
    amount each convert through the core contract against an extension-held table. Each rule has a named
-   check that fails the build when it is violated. `V2-ERP-002`, `V2-ERP-003` and `V2-ERP-005` closed; the
-   conversion half is met and recorded in [`CHANGELOG.md`](../../CHANGELOG.md). The aggregate
+   check that fails the build when it is violated. The conversion half is met and recorded in
+   [`CHANGELOG.md`](../../CHANGELOG.md). `V2-ERP-002`, `V2-ERP-003` and `V2-ERP-005` remain open for
+   numbering scope, period close and linked reversal respectively. The aggregate
    invariant half — a rule that sums a thousand-line document's lines and rejects a violating document
    atomically — is met and recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
 9. **The multi-currency contract holds.** A converted amount is marked as converted and carries its rate
@@ -970,9 +975,10 @@ intention.
     build; the layouts emit `lang` and `dir` from the resolved locale and right-to-left has its own visual
     baselines; content is a translation group with per-locale slugs, per-locale publication state, a
     declared fallback, automatic `hreflang` and a shipped language selector; definition labels carry
-    locales; extension-contributed content declares its translation-group behaviour through the frozen
-    contract. The content half is met and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); `V2-LNG-001`
-    through `V2-LNG-009` carry what remains.
+    locales; extension-contributed content declares translation-set inventory, while its frozen item-to-set
+    association remains open. The delivered content half is recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
+    Gate A remains on exactly `V2-LNG-001`, `V2-LNG-007`, `V2-LNG-008`, `V2-LNG-009` and `V2-LNG-012`;
+    `V2-LNG-010` is the Gate B translation and visual-qualification tail.
 11. **Point of sale is not foreclosed.** The idempotency contract states who mints the operation identifier
     and for how long a replay is honoured; a client-asserted occurrence instant has a declared place to
     live and is never authoritative; late and out-of-order arrival is accepted; and the disconnected
@@ -1160,14 +1166,15 @@ follow.
     just the seven the ADR names, declare which of site, group and installation it may be owned at. That
     table is part of the frozen contract in `P0-C`, because an extension contributing a resource category
     declares its permitted scopes the same way it declares everything else.
-11. **Interface and content translation architecture.** Findings: `V2-LNG-001` through `V2-LNG-010`,
-    `V2-MLC-001` through `V2-MLC-004`. Already accepted as
+11. **Interface and content translation architecture.** Findings: `V2-LNG-001`, `V2-LNG-007` through
+    `V2-LNG-010`, and `V2-LNG-012`. Already accepted as
     [ADR 0002](decisions/0002-interface-translation-architecture.md) under decisions D11 and D12. What
     remains for this work package is the contract half: the message-identifier grammar and its namespacing
     rules, the catalogue file layout an extension ships, the override-chain resolution order as a
-    machine-readable declaration, the locale dimension on definition labels, and the translation-group
-    declaration an extension makes for contributed content. All five enter the frozen contract in `P0-C`,
-    because all five are irreversible in practice once an extension is published against them.
+    machine-readable declaration, the locale dimension on definition labels, and the extension item-to-set
+    association that makes a contributed translation declaration effective at runtime. The first four are
+    delivered. The last is `V2-LNG-012` and must enter an additive contract generation in `P0-C`, because
+    changing a frozen extension generation after publication is not a compatible repair.
 12. **Offline-capture non-foreclosure constraints.** Findings: `V2-POS-002`. Decision D14. Point of sale is
     deferred as a product; what is decided here is what Version 2 must not foreclose. Three of the four
     constraints are settled and recorded in [`CHANGELOG.md`](../../CHANGELOG.md): who mints an operation
@@ -1222,11 +1229,13 @@ A fresh MariaDB database dispatches schedules. Every withdrawal cause removes ev
 preserving data. All affected unit, three-engine integration, cross-surface, security, browser and
 documentation tests are green.
 
-The credential, taxonomy and constraint-name halves of this phase are delivered and recorded in
+The credential, taxonomy and foreign-key-name halves of this phase are delivered and recorded in
 [`CHANGELOG.md`](../../CHANGELOG.md): no credential-bearing field exists anywhere in the serialized machine
 contract and no handler accepts one, every machine mutation carries validated risk, capability, operation
-and bounded-schema metadata enforced before a server is built, and two prefixed installations coexist in one
-schema.
+and bounded-schema metadata enforced before a server is built, and MySQL/MariaDB foreign-key names are isolated
+between prefixed installations. Focused foreign-key-shape and replay evidence runs on all three engines; it is
+not evidence that two complete prefixed core plans coexist in one PostgreSQL schema. That remaining schema-wide
+non-primary-index namespace contract is `V2-DB-004` in phase 2.
 
 **Non-goals.** Do not split the machine-surface handlers or catalog for size alone. Do not decompose
 `BusinessRecordService`. Do not build a sandbox. Do not expose dangerous operations everywhere in the name
@@ -1243,14 +1252,14 @@ release execute, and make the gates strong enough to protect every later phase.
 ownership is disjoint.
 
 **P2-B — Truthful coverage attribution and ratchets.** Findings: `V2-QA-001`. The contract, the canonical
-engine, the attribution gate and the changed-line ratchet are delivered and recorded in
-[`CHANGELOG.md`](../../CHANGELOG.md); `docs/quality/coverage-contract.json` is where the rules now live. What
-remains is the attribution itself and two ratchets. Name the classes each of the 44 behavioural tests still on
-the pending list exercises — 39 under `tests/Integration` plus five named individually — so only the reasoned
-allowlist is left. Commit the measured MariaDB baseline so the global-decrease ratchet is armed. Decide the
-branch floor: either instrument the canonical leg with a driver that reports branches, or replace the rule
-with one that can be measured, because a floor the tooling cannot read is a statement rather than a gate. Then
-the rest of the ratchet the roadmap states: positive plus denial and conflict and replay and rollback paths on
+engine, the attribution gate, the changed-line ratchet and the measured global baseline are delivered and
+recorded in [`CHANGELOG.md`](../../CHANGELOG.md); `docs/quality/coverage-contract.json` is where the rules now
+live. What remains is the attribution itself and the branch ratchet. Name the classes each of the 43 behavioural
+tests still on the pending list exercises — 39 under `tests/Integration` plus four named individually — so only
+the reasoned allowlist is left. Decide the branch floor: either instrument the canonical leg with a driver that
+reports branches, or replace the rule with one that can be measured, because a floor the tooling cannot read is
+a statement rather than a gate. Then apply the rest of the ratchet the roadmap states: positive plus denial and
+conflict and replay and rollback paths on
 public behaviour, and enumerated transitions on high-risk state machines regardless of percentage.
 
 **P2-C — Live checks in place of source-string assertions.** The semantic dependency checker this package
@@ -1261,8 +1270,8 @@ other half. Keep source-string tests only where the source text itself is the co
 a generated-file checksum. Replace routing, wiring and class-shape string assertions with live container,
 router, metadata and behaviour checks **before** the structures they describe move.
 
-**P2-D — Three-engine catalogue and primary-engine policy.** Findings: `V2-DB-001`. Express database tests
-by invariant and run the same portable contract on all three engines. Every merge candidate proves: clean
+**P2-D — Three-engine catalogue and primary-engine policy.** Findings: `V2-DB-001`, `V2-DB-004`. Express
+database tests by invariant and run the same portable contract on all three engines. Every merge candidate proves: clean
 install and migration from an empty database; install beneath a parent schema where supported; repeated
 migration and no-op upgrade; the current supported upgrade fixture; record, version, idempotency, audit,
 outbox and concurrency invariants; history generation behaviour; schema plan, apply and recovery; backup
@@ -1271,6 +1280,16 @@ next-key and gap locks, implicit DDL commits, metadata locks, collation and inde
 and lock timeout, undo and purge lag, binary-log behaviour on the MySQL family; transactional DDL limits,
 `SKIP LOCKED`, serialization and deadlock cases, autovacuum and freeze, dead tuples and index bloat,
 write-ahead-log and checkpoint behaviour on PostgreSQL. Pin exact image digests for release.
+
+Close `V2-DB-004` without rewriting a published self-checksumming migration: an append-only migration must
+inventory every non-primary index on prefixed core tables whose name can collide in PostgreSQL's schema
+namespace, and derive its replacement from the physical table name plus the published stem with a stable
+table-plus-stem digest inside the 63-byte identifier limit. Its replay and interruption paths must be
+idempotent and wrong-shape targets must fail closed. The acceptance run installs two complete empty-database
+core plans with distinct prefixes sequentially in one PostgreSQL schema, then proves schema-wide name
+uniqueness and each index's exact table, ordered keys, uniqueness, predicate, expression, included columns
+and operator classes. MariaDB, MySQL, existing upgrade ledgers and every published migration checksum must
+remain accepted.
 
 **P2-E — Browser, accessibility and visual matrix.** Findings: `V2-DB-001`. The merge half is delivered and
 recorded in [`CHANGELOG.md`](../../CHANGELOG.md): the journeys run on MariaDB, MySQL and PostgreSQL,
@@ -1712,15 +1731,16 @@ the source catalogue declares, so "we shipped eight and a half languages" is not
 
 **Exit gate, Gate A half.** Messages resolve by stable semantic identifier through the four-step chain,
 formatted by ICU — **met**. `default_locale` selects a language and the layouts emit `lang` and `dir` from
-the resolved locale — **met**. `en-GB` is fully extracted and the hardcoded-string gate passes on a clean
-tree and fails on a reintroduction — **the gate is proven in both directions; extraction covers 27 of the
-75 templates and neither the console nor the error paths**. An operator changes wording through a
-site-level override with no deployment — **the chain resolves one, and nothing stores or administers it
-yet**. Content
-is a translation group with per-locale slugs, per-locale publication state, a declared fallback, automatic
-`hreflang` and a shipped selector. Definition labels carry locales with every existing checksum intact.
-Extension-contributed content declares its translation-group behaviour through the frozen contract.
-Right-to-left renders correctly in `he` and `ar` against their own baselines. All three engines pass.
+the resolved locale — **met**. The hardcoded-string gate passes on a clean tree and fails on a reintroduction,
+but `en-GB` is not fully extracted: 28 of 76 templates are enforced, the other 48 remain in the extraction
+register, and console output and user-facing source error paths remain outside its present scope. Site and
+organization overrides are stored, administered and resolved without a deployment — **met**. Content is a
+translation group with per-locale slugs, per-locale publication state, a declared fallback, automatic `hreflang`
+and a shipped selector. Definition labels carry locales without moving an untranslated document's checksum.
+An extension declares translation-set inventory through the frozen contract; the additive item-to-set association
+remains `V2-LNG-012`. Right-to-left styles and locale-scoped browser projects are built, but the four baseline
+directories remain empty and their visual qualification remains `V2-LNG-009`. This Gate A half does not pass until
+the remaining findings close and current three-engine evidence is green at the qualified commit.
 
 **Exit gate, Gate B half.** All nine catalogues complete with no missing identifier, and per-locale browser,
 accessibility and visual qualification passing for each.
