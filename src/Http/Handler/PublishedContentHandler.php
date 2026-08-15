@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Http\Handler;
 
+use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\CMS\Presentation\Application\SitePresentation;
 use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
@@ -36,14 +37,16 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
     /**
      * Bind the public content route to the locator, settings, and rendering collaborators it composes.
      *
-     * @param  PublicPageLocator     $pages      Resolver that maps a request path to a published record and
+     * @param  PublicPageLocator          $pages      Resolver that maps a request path to a published record and
      *         reports that record's canonical path.
-     * @param  SiteSettings          $settings   Source of the site name, presentation contract, and the
+     * @param  SiteSettings               $settings   Source of the site name, presentation contract, and the
      *         search-indexing switch.
-     * @param  SiteRenderer          $renderer   Site template renderer that produces the HTML body.
-     * @param  ContentPresenter      $presenter  Presenter that escapes and renders the record's stored
+     * @param  SiteRenderer               $renderer   Site template renderer that produces the HTML body.
+     * @param  ContentPresenter           $presenter  Presenter that escapes and renders the record's stored
      *         bodies before they reach a template.
-     * @param  ContentLayoutCatalog  $layouts    Content-type to site-template layout selection.
+     * @param  ContentLayoutCatalog       $layouts    Content-type to site-template layout selection.
+     * @param  TranslationGroupPresenter  $languages  Builder of the page's alternate-language links and
+     *         the language selector, from the translation group the rendered entry belongs to.
      *
      * @since  2.0.0
      */
@@ -53,6 +56,7 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
         private SiteRenderer $renderer,
         private ContentPresenter $presenter,
         private ContentLayoutCatalog $layouts,
+        private TranslationGroupPresenter $languages,
     ) {
     }
 
@@ -116,6 +120,7 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
                 'site_logo' => $presentation['logo'],
                 'presentation' => $presentation,
                 'surface_id' => 'core.public.page',
+                'languages' => $this->languages->alternates($record, $canonicalPath),
             ]),
             200,
             $headers,

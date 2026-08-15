@@ -1,0 +1,10 @@
+{
+  "format": "kumwe-content-translation-registrar-v1",
+  "interfaces": {
+    "Kumwe\\CMS\\Extension\\Contribution\\ContentTranslationRegistrar": [
+      "contentTranslationGroup(Kumwe\\CMS\\Content\\Domain\\TranslationGroupDeclaration $declaration): void"
+    ]
+  },
+  "manifest_section": "contributions.content.translation_groups",
+  "declaration_members": ["group_id", "locales", "fallback_locale"]
+}

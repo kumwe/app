@@ -277,6 +277,14 @@ final readonly class ExtensionContributionRegistrySet
     private OwnedRuntimeContributionRegistry $moneyRateProviders;
 
     /**
+     * Owner-bound runtime registry for multilingual content sets.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Contributed content sets and the locales they publish in.
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $contentTranslationGroups;
+
+    /**
      * Every contribution kind, keyed by its dotted inventory path.
      *
      * Inventory and lifecycle removal both derive from this map, so a new kind becomes
@@ -364,6 +372,7 @@ final readonly class ExtensionContributionRegistrySet
             'money rate provider',
             MoneyRateProvider::class,
         );
+        $this->contentTranslationGroups = new OwnedRuntimeContributionRegistry('content translation group');
         $this->surfaces = [
             'capabilities' => $this->capabilities,
             'resource_policies' => $this->resourcePolicies,
@@ -397,6 +406,7 @@ final readonly class ExtensionContributionRegistrySet
             'integration.reports' => $this->reports,
             'integration.webhooks' => $this->webhooks,
             'integration.money_rate_providers' => $this->moneyRateProviders,
+            'content.translation_groups' => $this->contentTranslationGroups,
         ];
         if ($withCore) {
             $registrar = $this->registrar(
@@ -809,6 +819,22 @@ final readonly class ExtensionContributionRegistrySet
     public function moneyRateProviders(): OwnedRuntimeContributionRegistry
     {
         return $this->moneyRateProviders;
+    }
+
+    /**
+     * Return the multilingual content sets carried by this extension contribution registry set.
+     *
+     * A package declares which locales it publishes its content in before any of its code runs, so this
+     * is what an operator and the delivery path read to know a contributed item has locale variants at
+     * all. Core contributes none: core content declares its group per entry rather than per package.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active contributed multilingual content sets.
+     *
+     * @since   2.0.0
+     */
+    public function contentTranslationGroups(): OwnedRuntimeContributionRegistry
+    {
+        return $this->contentTranslationGroups;
     }
 
     /**

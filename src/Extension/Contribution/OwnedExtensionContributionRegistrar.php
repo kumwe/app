@@ -28,6 +28,7 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\CMS\Content\Domain\TranslationGroupDeclaration;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
@@ -57,7 +58,8 @@ use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
 final class OwnedExtensionContributionRegistrar implements
     ExtensionContributionRegistrar,
     InterfaceSurfaceRegistrar,
-    MoneyRateProviderRegistrar
+    MoneyRateProviderRegistrar,
+    ContentTranslationRegistrar
 {
     /**
      * Array exports of the manifest declarations, keyed by contribution kind and then by identifier.
@@ -138,6 +140,7 @@ final class OwnedExtensionContributionRegistrar implements
             'report' => $this->index($declared->reports()),
             'webhook' => $this->index($declared->webhooks()),
             'money_rate_provider' => $this->index($declared->moneyRateProviders()),
+            'content_translation_group' => $this->index($declared->contentTranslationGroups()),
         ];
     }
 
@@ -671,6 +674,33 @@ final class OwnedExtensionContributionRegistrar implements
         }
         $this->accept('money_rate_provider', $definition->identifier(), $definition->toArray());
         $this->registries->moneyRateProviders()->register($this->owner, $definition, $provider);
+    }
+
+    /**
+     * Register a multilingual content set only as the signed manifest declared it.
+     *
+     * The declaration is the closed claim, exactly as a rate provider's currency list is: an operator can
+     * read which languages a package promises before installing it, and a package cannot widen that
+     * promise afterwards by registering a locale set its manifest never carried. Contributed content is
+     * content, so this is what makes a translation group reachable for an extension's items without a
+     * core edit — the group, the per-locale publication state and the declared fallback are the same
+     * model core content uses.
+     *
+     * @param   TranslationGroupDeclaration  $declaration  Signed declaration naming the content set, the
+     *          locales it publishes and the locale it falls back to.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identifier is outside the owner's namespace, repeated,
+     *          or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function contentTranslationGroup(TranslationGroupDeclaration $declaration): void
+    {
+        $this->accept('content_translation_group', $declaration->identifier(), $declaration->toArray());
+        $this->registries->contentTranslationGroups()->register($this->owner, $declaration);
     }
 
     /**
