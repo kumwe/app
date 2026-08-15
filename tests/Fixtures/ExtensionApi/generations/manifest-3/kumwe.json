@@ -1,0 +1,96 @@
+{
+  "schema": 3,
+  "name": "kumwe/contract-manifest-three",
+  "type": "component",
+  "version": "1.0.0",
+  "provider": "KumweContract\\ManifestThree\\Provider",
+  "autoload": {"psr-4": {"KumweContract\\ManifestThree\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "contributions": {
+    "version": 1,
+    "capabilities": [{
+      "id": "kumwe.contract-manifest-three.manage",
+      "label": "Manage the manifest-three compatibility surface",
+      "description": "Open the workspaces the manifest-three compatibility package contributes."
+    }],
+    "resource_policies": [{
+      "id": "kumwe.contract-manifest-three.administrator",
+      "capability": "kumwe.contract-manifest-three.manage",
+      "resources": [
+        {"type": "administrator_session", "identifiers": []},
+        {"type": "portal_session", "identifiers": []}
+      ],
+      "installation_global": false,
+      "system_identities": [],
+      "lifecycle": "active",
+      "version": 1
+    }],
+    "administrator": {
+      "workspaces": [{
+        "id": "kumwe.contract-manifest-three.workspace",
+        "label": "Manifest three",
+        "description": "Compatibility workspace for the manifest-three generation.",
+        "priority": 150
+      }],
+      "navigation": [{
+        "id": "kumwe.contract-manifest-three.navigation",
+        "workspace": "kumwe.contract-manifest-three.workspace",
+        "label": "Manifest three",
+        "description": "Open the manifest-three compatibility surface",
+        "path": "/",
+        "icon": "extensions",
+        "capability": "kumwe.contract-manifest-three.manage",
+        "priority": 10,
+        "keywords": "compatibility manifest generation three",
+        "surface": "kumwe.contract-manifest-three.index"
+      }],
+      "routes": [],
+      "views": [{
+        "name": "kumwe.contract-manifest-three.index",
+        "template": "index.twig"
+      }]
+    },
+    "portal": {
+      "workspaces": [{
+        "id": "kumwe.contract-manifest-three.portal-workspace",
+        "label": "Manifest three",
+        "description": "Compatibility portal workspace for the manifest-three generation.",
+        "priority": 150
+      }],
+      "navigation": [{
+        "id": "kumwe.contract-manifest-three.portal-navigation",
+        "workspace": "kumwe.contract-manifest-three.portal-workspace",
+        "label": "Manifest three",
+        "description": "Open the manifest-three portal compatibility surface",
+        "path": "/",
+        "icon": "extensions",
+        "capability": "kumwe.contract-manifest-three.manage",
+        "priority": 10,
+        "keywords": "compatibility portal generation three",
+        "surface": "kumwe.contract-manifest-three.portal-status"
+      }],
+      "routes": [],
+      "templates": [{
+        "name": "kumwe.contract-manifest-three.portal-status",
+        "template": "status.twig"
+      }]
+    },
+    "business": {
+      "field_types": [{
+        "id": "kumwe.contract-manifest-three.grade",
+        "label": "Compatibility grade",
+        "description": "A package-owned bounded grade value used only by the compatibility fixture.",
+        "value_type": "string",
+        "storage_type": "string",
+        "configuration_keys": ["options"]
+      }],
+      "field_presentations": [{
+        "field_type": "kumwe.contract-manifest-three.grade",
+        "contexts": ["create", "detail", "filter", "history", "list", "relation", "update"]
+      }],
+      "definitions": [],
+      "view_handlers": [],
+      "action_handlers": []
+    }
+  }
+}

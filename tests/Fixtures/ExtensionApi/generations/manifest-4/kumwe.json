@@ -1,0 +1,280 @@
+{
+  "schema": 4,
+  "name": "kumwe/contract-manifest-four",
+  "type": "component",
+  "version": "1.0.0",
+  "provider": "KumweContract\\ManifestFour\\Provider",
+  "autoload": {
+    "psr-4": {
+      "KumweContract\\ManifestFour\\": "src/"
+    }
+  },
+  "requires": {
+    "kumwe": "^2.0.0",
+    "php": "^8.5.0"
+  },
+  "contributions": {
+    "version": 2,
+    "capabilities": [
+      {
+        "id": "kumwe.contract-manifest-four.view",
+        "label": "View the manifest-four compatibility surface",
+        "description": "Read the reports the manifest-four compatibility package contributes.",
+        "allowed_scopes": [
+          "global",
+          "site"
+        ],
+        "delegatable": true,
+        "high_impact": false,
+        "lifecycle": "active",
+        "version": 1
+      }
+    ],
+    "resource_policies": [
+      {
+        "id": "kumwe.contract-manifest-four.reader",
+        "capability": "kumwe.contract-manifest-four.view",
+        "resources": [
+          {
+            "type": "administrator_session",
+            "identifiers": []
+          },
+          {
+            "type": "business_report",
+            "identifiers": [
+              "kumwe.contract-manifest-four.summary"
+            ]
+          }
+        ],
+        "installation_global": false,
+        "system_identities": [],
+        "lifecycle": "active",
+        "version": 1
+      }
+    ],
+    "administrator": {
+      "workspaces": [],
+      "navigation": [],
+      "routes": [],
+      "views": []
+    },
+    "portal": {
+      "workspaces": [],
+      "navigation": [],
+      "routes": [],
+      "templates": []
+    },
+    "business": {
+      "field_types": [],
+      "definitions": []
+    },
+    "integration": {
+      "event_schemas": [
+        {
+          "event_type": "kumwe.contract-manifest-four.observed",
+          "schema_version": 1,
+          "sensitivity": "public",
+          "payload_schema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "maximum_bytes": 4096
+        }
+      ],
+      "domain_listeners": [
+        {
+          "listener_id": "kumwe.contract-manifest-four.observe-now",
+          "event_type": "kumwe.contract-manifest-four.observed",
+          "schema_versions": [
+            1
+          ],
+          "handler_version": "1.0.0",
+          "priority": 20,
+          "sensitivity_ceiling": "public"
+        }
+      ],
+      "consumers": [
+        {
+          "consumer_id": "kumwe.contract-manifest-four.observe-later",
+          "event_type": "kumwe.contract-manifest-four.observed",
+          "schema_versions": [
+            1
+          ],
+          "handler_version": "1.0.0",
+          "queue": "kumwe.contract-manifest-four.integration",
+          "aggregate_ordered": true,
+          "idempotency": "aggregate_version",
+          "maximum_attempts": 7,
+          "sensitivity_ceiling": "public"
+        }
+      ],
+      "jobs": [
+        {
+          "job_type": "kumwe.contract-manifest-four.summarize",
+          "schema_version": 1,
+          "handler_version": "1.0.0",
+          "payload_schema": {
+            "type": "object",
+            "properties": {
+              "site_identifier": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 191
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "site_identifier",
+              "limit"
+            ],
+            "additionalProperties": false
+          },
+          "queue": "kumwe.contract-manifest-four.integration",
+          "maximum_attempts": 5,
+          "installation_wide": false
+        }
+      ],
+      "queues": [
+        {
+          "queue_id": "kumwe.contract-manifest-four.integration",
+          "lease_seconds": 90,
+          "maximum_attempts": 7,
+          "maximum_in_flight": 4,
+          "retention_days": 14
+        }
+      ],
+      "schedules": [
+        {
+          "schedule_id": "kumwe.contract-manifest-four.summarize-daily",
+          "job_type": "kumwe.contract-manifest-four.summarize",
+          "cron_expression": "30 3 * * *",
+          "timezone": "Africa/Windhoek",
+          "payload": {
+            "site_identifier": "default",
+            "limit": 25
+          },
+          "queue": "kumwe.contract-manifest-four.integration",
+          "site_identifier": "default",
+          "enabled": true
+        }
+      ],
+      "projections": [
+        {
+          "identifier": "kumwe.contract-manifest-four.activity",
+          "version": 1,
+          "handler_version": "1.0.0",
+          "rebuildable": true,
+          "sensitivity_ceiling": "public",
+          "sources": [
+            {
+              "event_type": "kumwe.contract-manifest-four.observed",
+              "schema_versions": [
+                1
+              ]
+            }
+          ],
+          "fields": [
+            {
+              "name": "aggregate_id",
+              "type": "identifier",
+              "nullable": false
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "nullable": false
+            }
+          ],
+          "key_fields": [
+            "aggregate_id"
+          ],
+          "rebuild_batch_size": 250
+        }
+      ],
+      "reports": [
+        {
+          "identifier": "kumwe.contract-manifest-four.summary",
+          "version": 1,
+          "title": "Manifest-four compatibility summary",
+          "source_definition": "kumwe.contract-manifest-four.entity",
+          "required_capability": "kumwe.contract-manifest-four.view",
+          "administrator_visible": true,
+          "portal_visible": false,
+          "parameters": [
+            {
+              "name": "minimum_count",
+              "type": "integer",
+              "required": false,
+              "multiple": false,
+              "default": 0
+            }
+          ],
+          "filters": [
+            {
+              "field": "count",
+              "operator": "gte",
+              "parameter": "minimum_count",
+              "quantifier": "any"
+            }
+          ],
+          "columns": [
+            {
+              "alias": "entity_id",
+              "label": "Entity ID",
+              "source": "id",
+              "type": "identifier"
+            },
+            {
+              "alias": "count",
+              "label": "Count",
+              "source": "count",
+              "type": "integer"
+            }
+          ],
+          "groups": [],
+          "aggregates": [],
+          "formulas": [],
+          "sorts": [
+            {
+              "output": "count",
+              "direction": "desc",
+              "nulls_last": true
+            }
+          ],
+          "drill_downs": [],
+          "synchronous_row_cap": 100
+        }
+      ],
+      "webhooks": [
+        {
+          "adapter_id": "kumwe.contract-manifest-four.observed-webhook",
+          "event_types": [
+            "kumwe.contract-manifest-four.observed"
+          ],
+          "schema_versions": [
+            1
+          ],
+          "handler_version": "1.0.0",
+          "queue": "kumwe.contract-manifest-four.integration",
+          "idempotency": "event_id",
+          "maximum_attempts": 6,
+          "sensitivity_ceiling": "public"
+        }
+      ]
+    }
+  }
+}
