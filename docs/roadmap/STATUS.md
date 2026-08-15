@@ -37,7 +37,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | 3 — Seams and the ownership model | A | In progress — the business-group ownership model has landed; `P3-F` now only owes its three-engine proof | Phases 1 and 2 |
 | 4 — Atomic aggregate documents | A | Not started | Phase 3; phase 0 decision 2 |
 | E — Enterprise document primitives | A | Not started | Phase 3; phase 0 decisions 9 and 12, including the `V2-POS-002` choice. `PE-F` cannot run beside `P4-C` — both own numbering. |
-| L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A` delivered, `PL-B`, `PL-C`, `PL-E` and `PL-F` part delivered | `PL-F`'s remaining half and `PL-G` need phase 2's `P2-E` locale axis. Otherwise parallel to 3, 4 and E. |
+| L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A` and `PL-B` delivered, `PL-C`, `PL-E` and `PL-F` part delivered | `PL-F`'s screenshots and `PL-G` need phase 2's `P2-E` matrix; the language axis they run on is built. Otherwise parallel to 3, 4 and E. |
 | **Gate A** | | **Not assessed** | **Phases 4, E and L** |
 | 5 — Enterprise scale | B | Not started | Gate A |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
@@ -58,7 +58,7 @@ table when it completes, in the same change that writes it into the changelog.
 | 3 | `P3-A` … `P3-F` | `V2-ARC-003` |
 | 4 | `P4-A` … `P4-D` | `V2-SCL-003`, `V2-ERP-001` |
 | E | `PE-B` … `PE-G` (`PE-A` complete) | `V2-ERP-002` – `V2-ERP-005`, `V2-CUR-005`, `V2-POS-001`, `V2-POS-003`, `V2-POS-004` |
-| L | `PL-A` … `PL-G` | `V2-LNG-001` – `V2-LNG-010`, `V2-MLC-001` – `V2-MLC-004` |
+| L | `PL-C`, `PL-D`, `PL-E`, `PL-F`, `PL-G` (`PL-A` and `PL-B` complete) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-010`, `V2-MLC-001` – `V2-MLC-004` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
 | 7 | `P7-A` … `P7-I` | `V2-UX-001`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05` |
@@ -146,7 +146,7 @@ that closed it.
 | 7 | Business-group ownership model in place | Built; owes the three-engine proof in `P3-F` | — |
 | 8 | Enterprise document primitives exist and are enforced | Partly — the aggregate invariant is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); correction, period close, sequence scoping and unit conversion remain | `V2-ERP-002` – `V2-ERP-005` |
 | 9 | Multi-currency contract holds, with conversion provenance everywhere | Partly — contract, port, pipeline, reports and exports delivered; rendering half open | `V2-CUR-005` |
-| 10 | Language contract and machinery in place, `en-GB` extracted | Partly — locale negotiation, the identifier grammar, the compiled catalogue and ICU formatting are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-LNG-001`, `V2-LNG-006` – `V2-LNG-009`, `V2-MLC-001` – `V2-MLC-004` |
+| 10 | Language contract and machinery in place, `en-GB` extracted | Partly — locale negotiation, the identifier grammar, the compiled catalogue, ICU formatting, the stored and administered override layers and the extension catalogue path are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-009`, `V2-MLC-001` – `V2-MLC-004` |
 | 11 | Point of sale not foreclosed | No | `V2-POS-001`, `V2-POS-003`, `V2-POS-004`; `V2-POS-002` decided |
 | 12 | Nothing regressed on three engines | Not assessed | — |
 
