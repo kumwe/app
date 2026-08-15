@@ -577,30 +577,6 @@
       "closure_sha": null
     },
     {
-      "id": "V2-EXT-001",
-      "title": "The public extension contract is not classified or frozen, so it cannot be built against",
-      "severity": "high",
-      "state": "open",
-      "phase": "0",
-      "gate": "A",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/Extension/Contribution/ExtensionContributionRegistrySet.php",
-          "symbol": "the eighteen contribution registries",
-          "note": "AdministratorNavigation, AdministratorRoute, AdministratorView, AdministratorWorkspace, AuthorizationPolicy, BusinessDefinitionContribution, CapabilityDefinition, CustomBusinessActionHandler, CustomBusinessViewHandler, EventContract, FieldPresentation, FieldType, OwnedRuntimeContribution, PortalNavigation, PortalRoute, PortalTemplate, PortalWorkspace and ResourcePolicyDefinition. Nothing declares which of these, and which of the types they carry, are supported public contract."
-        },
-        {
-          "file": "src/Delivery/Console/Command/ScaffoldExtensionCommand.php",
-          "symbol": "ScaffoldExtensionCommand",
-          "note": "The scaffolder an extension author starts from; the shape it emits is what a compatibility fixture must pin."
-        }
-      ],
-      "acceptance_test": "A machine-readable classification of public versus internal contract, plus executable compatibility fixtures: a representative signed package for every supported manifest and SPI generation that is still promised, which installs, activates, upgrades, disables, reactivates and uninstalls according to its declared compatibility contract. A later refactor is acceptable only if these packages still pass.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
       "id": "V2-ERP-002",
       "title": "Number sequences cannot be scoped by document type or legal entity, and reset only never, yearly or monthly",
       "severity": "medium",
@@ -975,7 +951,6 @@
       "product_owner_decision": "Decision D12 — content translation must work for content contributed by extensions, not only core content.",
       "enforcing_check": "A conformance-fixture assertion in the extension-contributed multilingual content portfolio entry, run by the existing extension-conformance runner; plus P0-C's frozen-contract classification covering the translation-group declaration.",
       "cross_reference": [
-        "V2-EXT-001",
         "V2-MLC-003"
       ]
     },

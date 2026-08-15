@@ -65,6 +65,47 @@ development programme, from the architecture decision that opened it to the curr
   [`docs/architecture/dependency-baseline.json`](docs/architecture/dependency-baseline.json) records the 157
   edges that already pointed the wrong way, each with the finding that removes it, an owner and an expiry.
   (`5874e23`)
+- **A frozen extension contract, written down as data instead of inferred from the code.** An author could
+  not tell which of the types under `Kumwe\CMS\` they were allowed to build against, which meant every
+  internal refactor was silently a compatibility decision and no generation could be called supported
+  except by assertion. [`docs/extension-contract/classification.json`](docs/extension-contract/classification.json)
+  now classifies **93 public types** — kind, the role a package plays with each, the manifest generation it
+  is reachable from, the contribution SPI it belongs to, and the compatibility fixture whose committed bytes
+  pin its member signatures. Everything else under `Kumwe\CMS\` is internal by default, so absence from
+  that file is the answer rather than an oversight, and internal code stays free to move. The surface is
+  closed over itself: nothing named in a promised signature is left unclassified, which is what stops an
+  interface an author implements from handing them an internal class. The five host services the restricted
+  container allowlists are part of the contract too, checked against the composition root itself. (`db80c06`)
+- **Every manifest and SPI generation still promised, stated and proved.**
+  [`docs/extension-contract/generations.json`](docs/extension-contract/generations.json) records what each
+  of the four manifest schemas and two contribution SPIs promises, which schema binds to which SPI, which
+  keys are interpreted — and, just as usefully, which three are accepted and do nothing, because a manifest
+  key that looks load-bearing and is not costs an author a day. Two extension-facing interfaces removed
+  earlier are kept as **withdrawal records** rather than deleted, so someone who built against them learns
+  where they went instead of finding a gap. (`db80c06`)
+- **A signed compatibility package per generation, driven through the whole lifecycle on every build.**
+  Schemas 2 and 3 had no package anywhere in the tree that ran; they were proved by a manifest that parsed.
+  Each of the four generations now ships one under
+  [`tests/Fixtures/ExtensionApi/generations`](tests/Fixtures/ExtensionApi/generations), declaring the
+  smallest thing its generation exists for — schema 1 contributes nothing at all, schema 4 declares one of
+  every durable integration surface with a real implementation behind it. Each is built twice and required
+  to produce the same bytes, passes the code-free conformance gate, is signed with `PackageSigner` and
+  admitted through `PackageTrustPolicy` over `SodiumEd25519Verifier` — the production trust path, not a
+  second scheme — then installed, activated, upgraded, disabled, reactivated and uninstalled, with the
+  contributed surface compared against the generation's promise at every step. The signing key is derived
+  from a written stem, so no key material is committed, not even the public half. (`7313d0c`, `db80c06`)
+- **A build check that fails when the frozen surface moves.** `composer extension:contract` holds both
+  documents to the tree — every classified type resolves to a file that declares it, every pinned fixture
+  actually pins the type citing it, every compatibility package is present and unchanged — and each
+  generation carries a digest over its own canonical bytes, so widening a frozen generation fails the build
+  until the change is recorded in the same commit that makes it. Adding a generation beside the frozen ones
+  needs nothing of anyone else's entry, which is the intended way forward. It is dependency-free and runs
+  inside `composer qa`. (`db80c06`)
+- **Extension-author documentation for all of it,** in
+  [`docs/extension-contract/README.md`](docs/extension-contract/README.md): what is public, what is
+  internal, what a generation guarantees, how to target one and why targeting the lowest that carries what
+  you need is the right instinct, how the two additive SPI-2 registrars are feature-detected, and why an
+  upgrade deliberately leaves an extension disabled. (`db80c06`)
 
 - **A business-group installation: several businesses on one Kumwe, sharing what they choose to share.**
   A resource's owner is now held at a *level* — one site, a declared group of sites, or the installation —
