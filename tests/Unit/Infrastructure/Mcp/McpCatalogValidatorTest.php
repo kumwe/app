@@ -35,10 +35,67 @@ final class McpCatalogValidatorTest extends TestCase
      */
     public function testTheShippedSurfaceSatisfiesEveryPublishedRule(): void
     {
+        $catalog = new McpCapabilityCatalog();
+
         self::assertSame([], (new McpCatalogValidator())->violations(
-            new McpCapabilityCatalog(),
+            $catalog->tools(),
+            $catalog->resources(),
+            $catalog->prompts(),
             self::handlers(),
         ));
+    }
+
+    /**
+     * Proves a catalogue cannot make the machine surface empty.
+     *
+     * The production catalogue stays final and immutable; the declaration seam lets this test hand the
+     * same runtime validator an empty surface so the refusal cannot become uncovered or unreachable again.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnEmptyCatalogueIsRefused(): void
+    {
+        self::assertSame(
+            ['The catalogue publishes no tools at all.'],
+            (new McpCatalogValidator())->violations([], [], [], self::handlers()),
+        );
+    }
+
+    /**
+     * Proves two declarations cannot publish the same tool name.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testADuplicateToolNameIsRefused(): void
+    {
+        $tool = self::tool('kumwe_discover');
+
+        self::assertSame(
+            ['Tool "kumwe_discover" is declared more than once.'],
+            (new McpCatalogValidator())->violations([$tool, $tool], [], [], self::handlers()),
+        );
+    }
+
+    /**
+     * Proves every tool name uses the lowercase prefixed grammar clients rely on.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMalformedToolNameIsRefused(): void
+    {
+        $tool = self::tool('kumwe_discover');
+        $tool['name'] = 'Kumwe_Discover';
+
+        self::assertSame(
+            ['Tool "Kumwe_Discover" is not a lowercase kumwe_-prefixed name.'],
+            (new McpCatalogValidator())->violations([$tool], [], [], self::handlers()),
+        );
     }
 
     /**
@@ -159,7 +216,13 @@ final class McpCatalogValidatorTest extends TestCase
      */
     public function testAMissingHandlerIsReportedForEveryEntryThatNamesOne(): void
     {
-        $violations = (new McpCatalogValidator())->violations(new McpCapabilityCatalog(), new stdClass());
+        $catalog = new McpCapabilityCatalog();
+        $violations = (new McpCatalogValidator())->violations(
+            $catalog->tools(),
+            $catalog->resources(),
+            $catalog->prompts(),
+            new stdClass(),
+        );
 
         self::assertNotEmpty($violations);
         foreach ($violations as $violation) {
@@ -179,7 +242,13 @@ final class McpCatalogValidatorTest extends TestCase
         $this->expectException(McpCatalogInvalid::class);
         $this->expectExceptionMessageMatches('/breaks \d+ of its own rules/');
 
-        (new McpCatalogValidator())->assertValid(new McpCapabilityCatalog(), new stdClass());
+        $catalog = new McpCapabilityCatalog();
+        (new McpCatalogValidator())->assertValid(
+            $catalog->tools(),
+            $catalog->resources(),
+            $catalog->prompts(),
+            new stdClass(),
+        );
     }
 
     /**
@@ -198,7 +267,12 @@ final class McpCatalogValidatorTest extends TestCase
     {
         $catalog = new McpCapabilityCatalog();
 
-        (new McpCatalogValidator())->assertValid($catalog, self::handlers());
+        (new McpCatalogValidator())->assertValid(
+            $catalog->tools(),
+            $catalog->resources(),
+            $catalog->prompts(),
+            self::handlers(),
+        );
 
         self::assertNotSame([], $catalog->tools());
     }
@@ -488,7 +562,11 @@ final class McpCatalogValidatorTest extends TestCase
      *
      * @param   string  $name  Tool name to select.
      *
-     * @return  array<string, mixed>  The published entry.
+     * @return  array{
+     *              name: string, handler: string, capability: string|null, readOnly: bool,
+     *              destructive: bool, idempotent: bool, risk: McpRiskClass, alternative: string,
+     *              inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...
+     *          }  The published entry.
      *
      * @since   2.0.0
      */

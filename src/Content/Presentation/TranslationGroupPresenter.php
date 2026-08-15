@@ -37,9 +37,12 @@ use Psr\Clock\ClockInterface;
  * fallback rather than a miss.
  *
  * Cost is bounded by the number of published locales, since each sibling is resolved through
- * `ContentService` and located through `PublicPageLocator` so the link points at the page's canonical
- * path rather than at a permalink that redirects. A page whose entry declares no group costs one query
- * and renders nothing extra, which is what an untranslated site pays.
+ * `ContentService`. A locale-bearing page is located through `PublicPageLocator` so its link points at the
+ * canonical path rather than at a permalink that redirects. The language-neutral root instead carries
+ * each locale as the explicit `?locale=` choice the negotiation middleware already honours; otherwise the
+ * nominated homepage member and the negotiated member can both collapse to `/`, making one language
+ * impossible to choose. A page whose entry declares no group costs one query and renders nothing extra,
+ * which is what an untranslated site pays.
  *
  * @since  2.0.0
  */
@@ -106,7 +109,8 @@ final readonly class TranslationGroupPresenter
      *
      * @param   ContentRecord  $record         Record being rendered, whose group supplies the alternates.
      * @param   string         $canonicalPath  Path this record is already being served on, reused rather
-     *          than rebuilt so the current entry never disagrees with the page's canonical URL.
+     *          than rebuilt so the current entry never disagrees with the page's canonical URL. The
+     *          language-neutral root gains an explicit locale query on each alternate.
      *
      * @return  array{
      *              alternates: list<array{
@@ -161,9 +165,9 @@ final readonly class TranslationGroupPresenter
      * @param   ContentRecord           $record         Record already being rendered.
      * @param   string                  $canonicalPath  Path that record is served on.
      *
-     * @return  ?string  The canonical path for that locale, or null when it is no longer reachable —
-     *          which is how a locale that has just been unpublished drops out of the list rather than
-     *          being advertised as a dead link.
+     * @return  ?string  The canonical path for that locale, or an explicit locale choice at the
+     *          language-neutral root; null when it is no longer reachable, which is how a locale that has
+     *          just been unpublished drops out rather than being advertised as a dead link.
      *
      * @since   2.0.0
      */
@@ -173,11 +177,34 @@ final readonly class TranslationGroupPresenter
         string $canonicalPath,
     ): ?string {
         if ($member->contentId === $record->entry->id()) {
-            return $canonicalPath;
+            return $canonicalPath === '/' ? $this->rootHrefFor($member) : $canonicalPath;
         }
         $sibling = $this->content->publishedById($member->contentId, $this->site);
+        if ($sibling === null) {
+            return null;
+        }
 
-        return $sibling === null ? null : $this->pages->pathFor($sibling);
+        return $canonicalPath === '/'
+            ? $this->rootHrefFor($member)
+            : $this->pages->pathFor($sibling);
+    }
+
+    /**
+     * Make one root alternate state the locale negotiation must honour.
+     *
+     * `/` deliberately names no language and is the only public path where negotiation may choose a
+     * different member. Carrying the locale in the documented explicit-choice parameter makes every
+     * alternate bookmarkable and prevents the reader's previous header preference from choosing again.
+     *
+     * @param   TranslationGroupMember  $member  Locale the root link must select explicitly.
+     *
+     * @return  string  Root path with the member's canonical locale tag as its explicit choice.
+     *
+     * @since   2.0.0
+     */
+    private function rootHrefFor(TranslationGroupMember $member): string
+    {
+        return '/?locale=' . rawurlencode($member->locale->toString());
     }
 
     /**

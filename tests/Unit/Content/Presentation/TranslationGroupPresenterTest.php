@@ -162,6 +162,36 @@ final class TranslationGroupPresenterTest extends TestCase
     }
 
     /**
+     * Prove every root alternate explicitly selects the locale it advertises.
+     *
+     * The nominated entry is English while the negotiated entry is German, which is the collision that
+     * used to give both members `/`. Each link now re-enters the neutral root with a distinct explicit
+     * choice, so following English cannot negotiate the reader straight back to German.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEveryRootAlternateExplicitlySelectsTheLocaleItAdvertises(): void
+    {
+        $presenter = $this->presenter(
+            $this->group(['en-GB' => true, 'de' => true]),
+            'de',
+            homepageContentId: self::ENGLISH,
+        );
+        $record = $presenter->negotiate($this->record(self::ENGLISH, 'about', 'en-GB'));
+
+        $view = $presenter->alternates($record, '/');
+
+        self::assertSame([
+            'de' => '/?locale=de',
+            'en-GB' => '/?locale=en-GB',
+        ], array_column($view['alternates'], 'href', 'locale'));
+        self::assertSame([true, false], array_column($view['alternates'], 'current'));
+        self::assertSame('/?locale=en-GB', $view['default_href']);
+    }
+
+    /**
      * Prove a locale unpublished since the group was read drops out rather than being advertised dead.
      *
      * The group is assembled from the rows as they stood when it was loaded; the link for each sibling
@@ -249,6 +279,8 @@ final class TranslationGroupPresenterTest extends TestCase
      * @param   string             $locale    Locale the request negotiated.
      * @param   list<string>       $vanished  Entries the publication reader no longer answers with, which is
      *          how a locale unpublished after the group was read is modelled.
+     * @param   ?string            $homepageContentId  Entry the site nominates at `/`, or null when the
+     *          test is not exercising the language-neutral root.
      *
      * @return  TranslationGroupPresenter  Presenter wired the way the composition root wires it.
      *
@@ -258,6 +290,7 @@ final class TranslationGroupPresenterTest extends TestCase
         ?TranslationGroup $group,
         string $locale = 'en-GB',
         array $vanished = [],
+        ?string $homepageContentId = null,
     ): TranslationGroupPresenter {
         $records = [
             self::ENGLISH => $this->record(self::ENGLISH, 'about', 'en-GB'),
@@ -285,7 +318,12 @@ final class TranslationGroupPresenterTest extends TestCase
         return new TranslationGroupPresenter(
             $groups,
             $content,
-            new PublicPageLocator($content, $this->settings(), $this->navigation(), SiteContext::default()),
+            new PublicPageLocator(
+                $content,
+                $this->settings($homepageContentId),
+                $this->navigation(),
+                SiteContext::default(),
+            ),
             $this->activeLocale($locale),
             $this->clock(),
             SiteContext::default(),
@@ -398,18 +436,20 @@ final class TranslationGroupPresenterTest extends TestCase
     }
 
     /**
-     * The settings a site with no nominated homepage and no menu answers with.
+     * The settings a site with an optional nominated homepage and no menu answers with.
+     *
+     * @param   ?string  $homepageContentId  Entry nominated at `/`, or null for none.
      *
      * @return  SiteSettings  Stubbed settings document.
      *
      * @since   2.0.0
      */
-    private function settings(): SiteSettings
+    private function settings(?string $homepageContentId = null): SiteSettings
     {
         $settings = $this->createStub(SiteSettings::class);
         $settings->method('current')->willReturn([
             'site_name' => 'Kumwe',
-            'homepage_content_id' => null,
+            'homepage_content_id' => $homepageContentId,
             'homepage_slug' => null,
             'search_indexing_enabled' => true,
         ]);

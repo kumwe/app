@@ -83,8 +83,14 @@ final readonly class McpCatalogValidator
      * Every violation found is reported in one message, because a change that breaks several tools is
      * one mistake and fixing it one tool at a time wastes the author's time.
      *
-     * @param   McpCapabilityCatalog  $catalog   Surface declaration to check in full.
-     * @param   object                $handlers  Handler object the catalogue's entries name methods on.
+     * @param   list<array{
+     *              name: string, handler: string, capability: string|null, readOnly: bool,
+     *              destructive: bool, idempotent: bool, risk: McpRiskClass, alternative: string,
+     *              inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...
+     *          }>  $tools      Tool declarations to check in full.
+     * @param   list<array{uri: string, handler: string, ...}>  $resources  Resource declarations to check.
+     * @param   list<array{name: string, handler: string, ...}> $prompts    Prompt declarations to check.
+     * @param   object                                            $handlers   Handler object the entries name.
      *
      * @return  void
      *
@@ -93,9 +99,9 @@ final readonly class McpCatalogValidator
      *
      * @since   2.0.0
      */
-    public function assertValid(McpCapabilityCatalog $catalog, object $handlers): void
+    public function assertValid(array $tools, array $resources, array $prompts, object $handlers): void
     {
-        $violations = $this->violations($catalog, $handlers);
+        $violations = $this->violations($tools, $resources, $prompts, $handlers);
         if ($violations === []) {
             return;
         }
@@ -113,18 +119,27 @@ final readonly class McpCatalogValidator
      * Exposed separately from `assertValid()` so a test can read the exact violations a deliberately
      * broken catalogue produces instead of matching on exception text.
      *
-     * @param   McpCapabilityCatalog  $catalog   Surface declaration to check in full.
-     * @param   object                $handlers  Handler object the catalogue's entries name methods on.
+     * The lists are accepted directly rather than through `McpCapabilityCatalog`: the production class
+     * remains final and immutable, while each aggregate refusal can be exercised with a deliberately
+     * malformed snapshot through the exact same boundary the server factory calls.
+     *
+     * @param   list<array{
+     *              name: string, handler: string, capability: string|null, readOnly: bool,
+     *              destructive: bool, idempotent: bool, risk: McpRiskClass, alternative: string,
+     *              inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...
+     *          }>  $tools      Tool declarations to check in full.
+     * @param   list<array{uri: string, handler: string, ...}>  $resources  Resource declarations to check.
+     * @param   list<array{name: string, handler: string, ...}> $prompts    Prompt declarations to check.
+     * @param   object                                            $handlers   Handler object the entries name.
      *
      * @return  list<string>  One sentence per violation; empty when the surface is coherent.
      *
      * @since   2.0.0
      */
-    public function violations(McpCapabilityCatalog $catalog, object $handlers): array
+    public function violations(array $tools, array $resources, array $prompts, object $handlers): array
     {
         $violations = [];
         $seen = [];
-        $tools = $catalog->tools();
         if ($tools === []) {
             $violations[] = 'The catalogue publishes no tools at all.';
         }
@@ -141,14 +156,14 @@ final readonly class McpCatalogValidator
             $violations = [...$violations, ...$this->toolViolations($tool, $handlers)];
         }
 
-        foreach ($catalog->resources() as $resource) {
+        foreach ($resources as $resource) {
             $violations = [
                 ...$violations,
                 ...$this->handlerViolations($resource['uri'], $resource['handler'], null, $handlers),
             ];
         }
 
-        foreach ($catalog->prompts() as $prompt) {
+        foreach ($prompts as $prompt) {
             $violations = [
                 ...$violations,
                 ...$this->handlerViolations($prompt['name'], $prompt['handler'], null, $handlers),
