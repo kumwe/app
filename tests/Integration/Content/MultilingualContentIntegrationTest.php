@@ -8,7 +8,8 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DriverException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
-use Doctrine\DBAL\Schema\Name;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
+use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
@@ -105,8 +106,10 @@ final class MultilingualContentIntegrationTest extends TestCase
         self::assertTrue($manager->tablesExist([$groupsName]));
         $ownership = array_values(array_filter(
             $entries->getForeignKeys(),
-            static fn (ForeignKeyConstraint $foreignKey): bool => $foreignKey->getUnquotedLocalColumns()
-                === ['translation_group_id', 'translation_group_site_identifier'],
+            static fn (ForeignKeyConstraint $foreignKey): bool => array_map(
+                static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(),
+                $foreignKey->getReferencingColumnNames(),
+            ) === ['translation_group_id', 'translation_group_site_identifier'],
         ));
         self::assertCount(1, $ownership);
         self::assertSame(
@@ -115,8 +118,26 @@ final class MultilingualContentIntegrationTest extends TestCase
         );
         self::assertSame(
             ['id', 'site_identifier'],
-            array_map(static fn (Name $name): string => $name->toString(), $ownership[0]->getReferencedColumnNames()),
+            array_map(
+                static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(),
+                $ownership[0]->getReferencedColumnNames(),
+            ),
         );
+        self::assertContains($ownership[0]->getOnDeleteAction(), [
+            ReferentialAction::RESTRICT,
+            ReferentialAction::NO_ACTION,
+        ]);
+        self::assertContains($ownership[0]->getOnUpdateAction(), [
+            ReferentialAction::RESTRICT,
+            ReferentialAction::NO_ACTION,
+        ]);
+        self::assertCount(0, array_filter(
+            $entries->getForeignKeys(),
+            static fn (ForeignKeyConstraint $foreignKey): bool => array_map(
+                static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(),
+                $foreignKey->getReferencingColumnNames(),
+            ) === ['translation_group_id'],
+        ), 'The overlapping predecessor key must not survive beside the composite relationship.');
     }
 
     /**
@@ -455,6 +476,47 @@ final class MultilingualContentIntegrationTest extends TestCase
             . 'translation_group_site_identifier = site_identifier WHERE id = ?',
             $tables->quoted('content_entries'),
         ), ['en-GB', $groupId, $second->entry->id()], [Types::STRING, Types::STRING, Types::GUID]);
+    }
+
+    /**
+     * Prove every supported engine enforces the translated entry's owner-equality check on update.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheDatabaseRefusesMovingATranslatedEntryAwayFromItsGroupOwner(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $content = $this->service($container, ContentService::class);
+        $database = $this->service($container, Connection::class);
+        $tables = $this->service($container, TableNames::class);
+        $suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+        $entry = $this->page($content, $context, 'Owned ' . $suffix, 'owned-' . $suffix, true);
+        $content->translate(
+            $context,
+            $entry->entry->id(),
+            $entry->entry->version(),
+            LocaleTag::fromString('en-GB'),
+            Uuid::uuid7()->toString(),
+        );
+
+        try {
+            $database->update(
+                $tables->raw('content_entries'),
+                ['site_identifier' => 'cross-site-' . $suffix],
+                ['id' => $entry->entry->id()],
+            );
+            self::fail('A translated entry must remain owned by the same site as its group.');
+        } catch (DriverException) {
+            // The real database check, rather than an application precondition, refused the update.
+        }
+
+        self::assertSame($context->site()->identifier(), $database->fetchOne(sprintf(
+            'SELECT site_identifier FROM %s WHERE id = ?',
+            $tables->quoted('content_entries'),
+        ), [$entry->entry->id()]));
     }
 
     /**

@@ -6,7 +6,13 @@ namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Schema\Column;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint\MatchType;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
+use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
@@ -19,9 +25,9 @@ use RuntimeException;
  * append-only repair adds the redundant group-owner column relational engines require, binds
  * `(translation_group_id, translation_group_site_identifier)` to the group's `(id, site_identifier)`,
  * and checks that the redundant owner equals the entry owner. Keeping the entry owner itself out of the
- * foreign key preserves `ON DELETE SET NULL`: deleting a group releases the translation fields without
- * trying to null the non-null site owner. The original migration is not edited, so an applied checksum
- * remains a trustworthy record of the bytes an installation ran.
+ * foreign key permits an explicit two-column detach while `RESTRICT` makes a raw group deletion fail
+ * closed until its members have been detached. The original migration is not edited, so an applied
+ * checksum remains a trustworthy record of the bytes an installation ran.
  *
  * @since  2.0.0
  */
@@ -34,14 +40,6 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
      * @since  2.0.0
      */
     public const string ID = '20260819020000_translation_group_site_ownership';
-
-    /**
-     * MySQL-family virtual column carrying the ownership predicate checked by the engine.
-     *
-     * @var    string
-     * @since  2.0.0
-     */
-    private const string OWNER_VALIDITY_COLUMN = 'translation_group_owner_valid';
 
     /**
      * Bind the repair to the installation's physical table names.
@@ -158,7 +156,7 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
                 $groupsName,
                 ['translation_group_id', 'translation_group_site_identifier'],
                 ['id', 'site_identifier'],
-                ['onDelete' => 'SET NULL'],
+                ['onDelete' => 'RESTRICT'],
                 $foreignKey,
             );
         }
@@ -167,12 +165,7 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
         foreach ($database->getDatabasePlatform()->getAlterSchemaSQL($difference) as $statement) {
             $database->executeStatement($statement);
         }
-        if ($database->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
-            $this->addMySqlOwnerConstraint($database, $entriesName);
-
-            return;
-        }
-
+        $this->removePredecessorForeignKey($database, $entriesName, $groupsName);
         $this->addOwnerCheckConstraint($database, $entriesName);
     }
 
@@ -236,6 +229,159 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
     }
 
     /**
+     * Remove the immutable predecessor's overlapping one-column foreign key after proving its replacement.
+     *
+     * The predecessor's `SET NULL` conflicts with the replacement's fail-closed deletion rule, so both
+     * constraints cannot safely coexist. The composite replacement is proved before the predecessor is
+     * dropped, and the resulting shape is read back so a replay either observes the completed repair or
+     * fails closed on an ambiguous relationship.
+     *
+     * @param   Connection  $database   Installation database whose entry constraints are repaired.
+     * @param   string      $entries    Physical content-entry table name.
+     * @param   string      $groups     Physical translation-group table name.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When either ownership foreign key is missing, divergent or ambiguous.
+     * @throws  \Doctrine\DBAL\Exception  When constraint introspection or removal fails.
+     *
+     * @since   2.0.0
+     */
+    private function removePredecessorForeignKey(
+        Connection $database,
+        string $entries,
+        string $groups,
+    ): void {
+        $manager = $database->createSchemaManager();
+        $table = $manager->introspectTableByUnquotedName($entries);
+        $predecessor = $this->predecessorForeignKey($table->getForeignKeys(), $groups);
+        if ($predecessor === null) {
+            return;
+        }
+
+        $name = $predecessor->getObjectName()?->getIdentifier()->getValue();
+        if ($name === null || $name === '') {
+            throw new RuntimeException('The predecessor translation-group foreign key has no removable name.');
+        }
+        $manager->dropForeignKey($name, $entries);
+
+        $remaining = $manager->introspectTableByUnquotedName($entries)->getForeignKeys();
+        if ($this->predecessorForeignKey($remaining, $groups) !== null) {
+            throw new RuntimeException('The predecessor translation-group foreign key was not removed.');
+        }
+    }
+
+    /**
+     * Prove the composite replacement and return the exact predecessor constraint when it remains.
+     *
+     * @param   array<array-key, ForeignKeyConstraint>  $foreignKeys  Entry-table constraints by catalog name.
+     * @param   string                                  $groups       Physical translation-group table name.
+     *
+     * @return  ?ForeignKeyConstraint  Exact predecessor to remove, or null after a completed replay.
+     *
+     * @throws  RuntimeException  When the composite replacement or predecessor has a divergent shape,
+     *          or either relationship is ambiguous.
+     *
+     * @since   2.0.0
+     */
+    private function predecessorForeignKey(array $foreignKeys, string $groups): ?ForeignKeyConstraint
+    {
+        $predecessors = [];
+        $replacements = [];
+        foreach ($foreignKeys as $foreignKey) {
+            $columns = $this->foreignKeyColumns($foreignKey->getReferencingColumnNames());
+            if ($columns === ['translation_group_id']) {
+                $predecessors[] = $foreignKey;
+            }
+            if ($columns === ['translation_group_id', 'translation_group_site_identifier']) {
+                $replacements[] = $foreignKey;
+            }
+        }
+
+        if (count($replacements) !== 1) {
+            throw new RuntimeException('The composite translation-group foreign key is missing or ambiguous.');
+        }
+        $this->assertForeignKeyShape(
+            $replacements[0],
+            $groups,
+            ['id', 'site_identifier'],
+            [ReferentialAction::RESTRICT, ReferentialAction::NO_ACTION],
+            'composite',
+        );
+        if (count($predecessors) > 1) {
+            throw new RuntimeException('The predecessor translation-group foreign key is ambiguous.');
+        }
+        if ($predecessors === []) {
+            return null;
+        }
+        $this->assertForeignKeyShape(
+            $predecessors[0],
+            $groups,
+            ['id'],
+            [ReferentialAction::SET_NULL],
+            'predecessor',
+        );
+
+        return $predecessors[0];
+    }
+
+    /**
+     * Require one ownership foreign key to carry the complete expected relational shape.
+     *
+     * @param   ForeignKeyConstraint               $foreignKey  Constraint whose referenced half is verified.
+     * @param   string                             $groups      Physical translation-group table name.
+     * @param   list<string>                       $columns     Referenced group columns in declared order.
+     * @param   non-empty-list<ReferentialAction>  $onDelete    Accepted equivalent delete actions.
+     * @param   string                             $role        Relationship role named in an operator refusal.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the table, columns, match type or referential actions diverge.
+     *
+     * @since   2.0.0
+     */
+    private function assertForeignKeyShape(
+        ForeignKeyConstraint $foreignKey,
+        string $groups,
+        array $columns,
+        array $onDelete,
+        string $role,
+    ): void {
+        if (
+            $foreignKey->getReferencedTableName()->getUnqualifiedName()->getValue() !== $groups
+            || $this->foreignKeyColumns($foreignKey->getReferencedColumnNames()) !== $columns
+            || $foreignKey->getMatchType() !== MatchType::SIMPLE
+            || !in_array($foreignKey->getOnUpdateAction(), [
+                ReferentialAction::NO_ACTION,
+                ReferentialAction::RESTRICT,
+            ], true)
+            || !in_array($foreignKey->getOnDeleteAction(), $onDelete, true)
+        ) {
+            throw new RuntimeException(sprintf(
+                'The %s translation-group foreign key has an incompatible shape.',
+                $role,
+            ));
+        }
+    }
+
+    /**
+     * Flatten DBAL column-name objects to the unquoted logical identifiers schema rules compare.
+     *
+     * @param   list<UnqualifiedName>  $columns  Referencing or referenced names in declared order.
+     *
+     * @return  list<string>  Unquoted identifier values in the same order.
+     *
+     * @since   2.0.0
+     */
+    private function foreignKeyColumns(array $columns): array
+    {
+        return array_map(
+            static fn (UnqualifiedName $column): string => $column->getIdentifier()->getValue(),
+            $columns,
+        );
+    }
+
+    /**
      * Return the complete nullable-pair and same-site ownership predicate.
      *
      * @return  string  Driver-neutral expression over the content-entry owner columns.
@@ -271,241 +417,170 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
      *
      * @return  void
      *
-     * @throws  \Doctrine\DBAL\Exception  When a non-duplicate driver failure occurs.
+     * @throws  RuntimeException  When replay finds a missing, duplicate or divergent ownership check.
+     * @throws  \Doctrine\DBAL\Exception  When catalog inspection or schema alteration fails.
      *
      * @since   2.0.0
      */
     private function addOwnerCheckConstraint(Connection $database, string $table): void
     {
         $constraint = $this->ownerCheckName($table);
-        try {
-            $database->executeStatement(sprintf(
-                'ALTER TABLE %s ADD CONSTRAINT %s CHECK (%s)',
-                $database->quoteSingleIdentifier($table),
-                $database->quoteSingleIdentifier($constraint),
-                $this->ownerPredicate(),
-            ));
-        } catch (\Doctrine\DBAL\Exception $failure) {
-            $message = strtolower($failure->getMessage());
-            if (
-                !str_contains($message, 'already exists')
-                && !str_contains($message, 'duplicate check constraint')
-                && !str_contains($message, 'duplicate key name')
-            ) {
-                throw $failure;
-            }
-        }
-    }
+        $clause = $this->ownerCheckClause($database, $table, $constraint);
+        if ($clause !== null) {
+            $this->assertOwnerCheckShape($clause, $table, $constraint);
 
-    /**
-     * Install the MySQL-family invariant through a virtual value and a check over that value alone.
-     *
-     * MySQL and MariaDB reject a check that directly names a column participating in an
-     * `ON DELETE SET NULL` foreign key. A virtual generated boolean may derive from those columns, while the check names
-     * only that virtual value. This retains fail-closed database enforcement without the `TRIGGER` and
-     * `SUPER` privileges managed services routinely withhold. A fresh install adds both objects in one
-     * atomic alter; a catalog-proven partial attempt adds only the missing check.
-     *
-     * @param   Connection  $database  MySQL-family installation database being repaired.
-     * @param   string      $table     Physical content-entry table name.
-     *
-     * @return  void
-     *
-     * @throws  RuntimeException  When a replay finds a generated column or check with the wrong shape.
-     * @throws  \Doctrine\DBAL\Exception  When catalog inspection or schema alteration fails.
-     *
-     * @since   2.0.0
-     */
-    private function addMySqlOwnerConstraint(Connection $database, string $table): void
-    {
-        $column = $this->mySqlOwnerColumn($database, $table);
-        $check = $this->mySqlOwnerCheck($database, $table);
-        if ($column !== null) {
-            $this->assertMySqlOwnerColumnShape($column, $table);
-        }
-        if ($check !== null) {
-            $this->assertMySqlOwnerCheckShape($check, $table);
-        }
-        if ($column === null && $check !== null) {
-            throw new RuntimeException(sprintf(
-                'Content-entry ownership check "%s" exists without its generated validity column.',
-                $this->ownerCheckName($table),
-            ));
-        }
-
-        $clauses = [];
-        if ($column === null) {
-            $clauses[] = sprintf(
-                'ADD COLUMN %s TINYINT(1) GENERATED ALWAYS AS (%s) VIRTUAL',
-                $database->quoteSingleIdentifier(self::OWNER_VALIDITY_COLUMN),
-                $this->ownerPredicate(),
-            );
-        }
-        if ($check === null) {
-            $clauses[] = sprintf(
-                'ADD CONSTRAINT %s CHECK (%s = 1)',
-                $database->quoteSingleIdentifier($this->ownerCheckName($table)),
-                $database->quoteSingleIdentifier(self::OWNER_VALIDITY_COLUMN),
-            );
-        }
-        if ($clauses === []) {
             return;
         }
 
         $database->executeStatement(sprintf(
-            'ALTER TABLE %s %s',
+            'ALTER TABLE %s ADD CONSTRAINT %s CHECK (%s)',
             $database->quoteSingleIdentifier($table),
-            implode(', ', $clauses),
+            $database->quoteSingleIdentifier($constraint),
+            $this->ownerPredicate(),
         ));
 
-        $column = $this->mySqlOwnerColumn($database, $table);
-        $check = $this->mySqlOwnerCheck($database, $table);
-        if ($column === null || $check === null) {
-            throw new RuntimeException('The content-entry ownership invariant was not installed completely.');
+        $clause = $this->ownerCheckClause($database, $table, $constraint);
+        if ($clause === null) {
+            throw new RuntimeException(sprintf(
+                'Content-entry ownership check "%s" was not installed.',
+                $constraint,
+            ));
         }
-        $this->assertMySqlOwnerColumnShape($column, $table);
-        $this->assertMySqlOwnerCheckShape($check, $table);
+        $this->assertOwnerCheckShape($clause, $table, $constraint);
     }
 
     /**
-     * Read the generated owner-validity column from the MySQL-family catalog.
+     * Read the deterministic ownership check from the supported engine's catalog.
      *
-     * @param   Connection  $database  MySQL-family connection whose column catalog is inspected.
-     * @param   string      $table     Physical content-entry table the generated column must belong to.
+     * @param   Connection  $database    Connection whose constraint catalog is inspected.
+     * @param   string      $table       Physical content-entry table the check must belong to.
+     * @param   string      $constraint  Deterministic ownership-check name.
      *
-     * @return  ?array{data_type: string, extra: string, generation_expression: ?string}  Catalog shape, or
-     *          null when the column has not been added yet.
+     * @return  ?string  Catalog check clause, or null when the constraint is absent.
      *
-     * @throws  RuntimeException  When the catalog returns an unreadable row shape.
-     * @throws  \Doctrine\DBAL\Exception  When the column catalog cannot be read.
-     *
-     * @since   2.0.0
-     */
-    private function mySqlOwnerColumn(Connection $database, string $table): ?array
-    {
-        $row = $database->fetchAssociative(
-            'SELECT DATA_TYPE AS data_type, EXTRA AS extra, '
-            . 'GENERATION_EXPRESSION AS generation_expression FROM information_schema.COLUMNS '
-            . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
-            [$table, self::OWNER_VALIDITY_COLUMN],
-        );
-        if ($row === false) {
-            return null;
-        }
-
-        $dataType = $row['data_type'] ?? null;
-        $extra = $row['extra'] ?? null;
-        $expression = $row['generation_expression'] ?? null;
-        if (
-            !is_string($dataType)
-            || !is_string($extra)
-            || ($expression !== null && !is_string($expression))
-        ) {
-            throw new RuntimeException('The content-entry ownership generated-column catalog row is unreadable.');
-        }
-
-        return ['data_type' => $dataType, 'extra' => $extra, 'generation_expression' => $expression];
-    }
-
-    /**
-     * Read the named owner-validity check from the MySQL-family catalog.
-     *
-     * @param   Connection  $database  MySQL-family connection whose check catalog is inspected.
-     * @param   string      $table     Physical content-entry table the check must belong to.
-     *
-     * @return  ?string  Catalog check clause, or null when the constraint has not been added yet.
-     *
-     * @throws  RuntimeException  When the catalog returns a non-string check clause.
-     * @throws  \Doctrine\DBAL\Exception  When the check catalog cannot be read.
+     * @throws  RuntimeException  When the platform is unsupported or the catalog shape is unreadable.
+     * @throws  \Doctrine\DBAL\Exception  When the constraint catalog cannot be read.
      *
      * @since   2.0.0
      */
-    private function mySqlOwnerCheck(Connection $database, string $table): ?string
+    private function ownerCheckClause(Connection $database, string $table, string $constraint): ?string
     {
-        $clause = $database->fetchOne(
-            'SELECT c.CHECK_CLAUSE FROM information_schema.CHECK_CONSTRAINTS c '
-            . 'INNER JOIN information_schema.TABLE_CONSTRAINTS t '
-            . 'ON t.CONSTRAINT_SCHEMA = c.CONSTRAINT_SCHEMA AND t.CONSTRAINT_NAME = c.CONSTRAINT_NAME '
-            . "WHERE c.CONSTRAINT_SCHEMA = DATABASE() AND c.CONSTRAINT_NAME = ? AND t.TABLE_NAME = ? "
-            . "AND t.CONSTRAINT_TYPE = 'CHECK'",
-            [$this->ownerCheckName($table), $table],
-        );
-        if ($clause === false) {
+        $platform = $database->getDatabasePlatform();
+        if ($platform instanceof MariaDBPlatform) {
+            $rows = $database->fetchAllAssociative(
+                "SELECT c.CHECK_CLAUSE AS check_clause, 'YES' AS enforced "
+                . 'FROM information_schema.CHECK_CONSTRAINTS c '
+                . 'INNER JOIN information_schema.TABLE_CONSTRAINTS t '
+                . 'ON t.CONSTRAINT_SCHEMA = c.CONSTRAINT_SCHEMA AND t.CONSTRAINT_NAME = c.CONSTRAINT_NAME '
+                . 'AND t.TABLE_NAME = ? '
+                . 'WHERE c.CONSTRAINT_SCHEMA = DATABASE() AND c.CONSTRAINT_NAME = ? '
+                . "AND t.CONSTRAINT_TYPE = 'CHECK'",
+                [$table, $constraint],
+            );
+        } elseif ($platform instanceof AbstractMySQLPlatform) {
+            $rows = $database->fetchAllAssociative(
+                'SELECT c.CHECK_CLAUSE AS check_clause, t.ENFORCED AS enforced '
+                . 'FROM information_schema.CHECK_CONSTRAINTS c '
+                . 'INNER JOIN information_schema.TABLE_CONSTRAINTS t '
+                . 'ON t.CONSTRAINT_SCHEMA = c.CONSTRAINT_SCHEMA AND t.CONSTRAINT_NAME = c.CONSTRAINT_NAME '
+                . 'AND t.TABLE_NAME = ? '
+                . 'WHERE c.CONSTRAINT_SCHEMA = DATABASE() AND c.CONSTRAINT_NAME = ? '
+                . "AND t.CONSTRAINT_TYPE = 'CHECK'",
+                [$table, $constraint],
+            );
+        } elseif ($platform instanceof PostgreSQLPlatform) {
+            $rows = $database->fetchAllAssociative(
+                'SELECT pg_catalog.pg_get_expr(c.conbin, c.conrelid) AS check_clause, '
+                . 'c.convalidated AS enforced '
+                . 'FROM pg_catalog.pg_constraint c '
+                . 'INNER JOIN pg_catalog.pg_class t ON t.oid = c.conrelid '
+                . 'INNER JOIN pg_catalog.pg_namespace n ON n.oid = t.relnamespace '
+                . "WHERE n.nspname = current_schema() AND t.relname = ? AND c.conname = ? AND c.contype = 'c'",
+                [$table, $constraint],
+            );
+        } else {
+            throw new RuntimeException('Translation-group ownership checks require MySQL, MariaDB or PostgreSQL.');
+        }
+
+        if (count($rows) > 1) {
+            throw new RuntimeException(sprintf(
+                'Content-entry ownership check "%s" on table "%s" is ambiguous.',
+                $constraint,
+                $table,
+            ));
+        }
+        if ($rows === []) {
             return null;
         }
-        if (!is_string($clause)) {
+        $clause = $rows[0]['check_clause'] ?? null;
+        if (!is_string($clause) || $clause === '') {
             throw new RuntimeException('The content-entry ownership check catalog row is unreadable.');
         }
+        $this->assertOwnerCheckEnforced($rows[0]['enforced'] ?? null, $platform, $table, $constraint);
 
         return $clause;
     }
 
     /**
-     * Refuse a replay column that is stored, mistyped or derives a different predicate.
+     * Refuse a named check the catalog reports as non-enforced or not yet validated.
      *
-     * @param   array{data_type: string, extra: string, generation_expression: ?string}  $column  Catalog
-     *          shape of the existing owner-validity column.
-     * @param   string  $table  Physical content-entry table named in a refusal.
+     * @param   mixed                                     $enforced    Raw engine catalog value.
+     * @param   AbstractMySQLPlatform|PostgreSQLPlatform  $platform    Supported database platform.
+     * @param   string                                    $table       Physical content-entry table name.
+     * @param   string                                    $constraint  Deterministic ownership-check name.
      *
      * @return  void
      *
-     * @throws  RuntimeException  When the existing generated column does not match this migration.
+     * @throws  RuntimeException  When the named check does not currently protect every row.
      *
      * @since   2.0.0
      */
-    private function assertMySqlOwnerColumnShape(array $column, string $table): void
-    {
-        $extra = strtolower($column['extra']);
-        $expression = $column['generation_expression'];
-        $shape = null;
-        if (
-            strtolower($column['data_type']) === 'tinyint'
-            && str_contains($extra, 'virtual')
-            && str_contains($extra, 'generated')
-            && $expression !== null
-        ) {
-            $shape = $this->ownerPredicateShape($expression);
-        }
-        if (
-            strtolower($column['data_type']) !== 'tinyint'
-            || !str_contains($extra, 'virtual')
-            || !str_contains($extra, 'generated')
-            || !in_array($shape, [
-                'or(and(A,B),and(C,D,E))',
-                'or(and(A,B),and(and(C,D),E))',
-                'or(and(A,B),and(C,and(D,E)))',
-            ], true)
-        ) {
+    private function assertOwnerCheckEnforced(
+        mixed $enforced,
+        AbstractMySQLPlatform|PostgreSQLPlatform $platform,
+        string $table,
+        string $constraint,
+    ): void {
+        $valid = $platform instanceof PostgreSQLPlatform
+            ? in_array($enforced, [true, 1, '1', 't', 'true'], true)
+            : is_string($enforced) && strtoupper($enforced) === 'YES';
+        if (!$valid) {
             throw new RuntimeException(sprintf(
-                'Content-entry ownership column "%s" on table "%s" has an incompatible shape.',
-                self::OWNER_VALIDITY_COLUMN,
+                'Content-entry ownership check "%s" on table "%s" is not enforced and validated.',
+                $constraint,
                 $table,
             ));
         }
     }
 
     /**
-     * Refuse a replay check that guards anything other than truth of the virtual validity value.
+     * Refuse a deterministic ownership check that protects a different predicate.
      *
-     * @param   string  $clause  Check clause read from the MySQL-family catalog.
-     * @param   string  $table   Physical content-entry table named in a refusal.
+     * @param   string  $clause      Check clause reported by the database catalog.
+     * @param   string  $table       Physical content-entry table named in a refusal.
+     * @param   string  $constraint  Deterministic ownership-check name.
      *
      * @return  void
      *
-     * @throws  RuntimeException  When the existing check does not match this migration.
+     * @throws  RuntimeException  When the clause has a materially different boolean shape.
      *
      * @since   2.0.0
      */
-    private function assertMySqlOwnerCheckShape(string $clause, string $table): void
+    private function assertOwnerCheckShape(string $clause, string $table, string $constraint): void
     {
-        $expected = self::OWNER_VALIDITY_COLUMN . ' = 1';
-        if (
-            $this->stripOuterParentheses($this->normalizeSqlExpression($clause))
-                !== $this->normalizeSqlExpression($expected)
-        ) {
+        try {
+            $shape = $this->ownerPredicateShape($clause);
+        } catch (RuntimeException) {
+            $shape = null;
+        }
+        if (!in_array($shape, [
+            'or(and(A,B),and(C,D,E))',
+            'or(and(A,B),and(and(C,D),E))',
+            'or(and(A,B),and(C,and(D,E)))',
+        ], true)) {
             throw new RuntimeException(sprintf(
                 'Content-entry ownership check "%s" on table "%s" has an incompatible shape.',
-                $this->ownerCheckName($table),
+                $constraint,
                 $table,
             ));
         }
@@ -514,7 +589,7 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
     /**
      * Normalize catalog-rendered expressions for exact cross-driver shape comparison.
      *
-     * @param   string  $expression  Generated expression or check clause reported by the database.
+     * @param   string  $expression  Check expression reported by the database.
      *
      * @return  string  Lowercase expression without identifier quoting or whitespace.
      *
@@ -539,12 +614,11 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
     /**
      * Reduce a catalog-rendered owner predicate to its precedence-preserving boolean shape.
      *
-     * MySQL and MariaDB differ in redundant parentheses around generated expressions. Parsing the five
-     * exact atoms admits the bounded associative renderings checked by the caller while keeping a
-     * materially different `AND`/`OR` grouping different; merely deleting parentheses would let a
-     * drifted predicate pass replay.
+     * The engines differ in redundant parentheses, and PostgreSQL renders text equality with explicit
+     * casts. Parsing the five exact atoms admits those bounded renderings while keeping a materially
+     * different `AND`/`OR` grouping different; deleting every parenthesis would let drift pass replay.
      *
-     * @param   string  $expression  Generated ownership expression reported by the database.
+     * @param   string  $expression  Ownership-check expression reported by the database.
      *
      * @return  string  Canonical boolean tree over the five expected predicate atoms.
      *
@@ -554,6 +628,32 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
      */
     private function ownerPredicateShape(string $expression): string
     {
+        $normalized = str_replace(
+            ['::text', '::charactervarying'],
+            '',
+            $this->normalizeSqlExpression($expression),
+        );
+        $normalized = str_replace(
+            [
+                '(translation_group_id)isnull',
+                '(translation_group_id)isnotnull',
+                '(translation_group_site_identifier)isnull',
+                '(translation_group_site_identifier)isnotnull',
+                '(translation_group_site_identifier)=(site_identifier)',
+                '(translation_group_site_identifier)=site_identifier',
+                'translation_group_site_identifier=(site_identifier)',
+            ],
+            [
+                'translation_group_idisnull',
+                'translation_group_idisnotnull',
+                'translation_group_site_identifierisnull',
+                'translation_group_site_identifierisnotnull',
+                'translation_group_site_identifier=site_identifier',
+                'translation_group_site_identifier=site_identifier',
+                'translation_group_site_identifier=site_identifier',
+            ],
+            $normalized,
+        );
         $symbolic = str_replace(
             [
                 'translation_group_site_identifierisnotnull',
@@ -563,20 +663,20 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
                 'translation_group_site_identifier=site_identifier',
             ],
             ['D', 'C', 'B', 'A', 'E'],
-            $this->normalizeSqlExpression($expression),
+            $normalized,
         );
         $tokens = $this->ownerPredicateTokens($symbolic);
         $offset = 0;
         $shape = $this->parseOwnerOr($tokens, $offset);
         if ($offset !== count($tokens)) {
-            throw new RuntimeException('The content-entry ownership generated expression has trailing tokens.');
+            throw new RuntimeException('The content-entry ownership check expression has trailing tokens.');
         }
 
         return $shape;
     }
 
     /**
-     * Tokenize the bounded boolean grammar accepted from generated-column catalogs.
+     * Tokenize the bounded boolean grammar accepted from ownership-check catalogs.
      *
      * @param   string  $expression  Quote-free, whitespace-free symbolic owner expression.
      *
@@ -608,7 +708,7 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
                 continue;
             }
 
-            throw new RuntimeException('The content-entry ownership generated expression has an unknown token.');
+            throw new RuntimeException('The content-entry ownership check expression has an unknown token.');
         }
 
         return $tokens;
@@ -681,50 +781,16 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
             return $token;
         }
         if ($token !== '(') {
-            throw new RuntimeException('The content-entry ownership generated expression has no valid operand.');
+            throw new RuntimeException('The content-entry ownership check expression has no valid operand.');
         }
 
         ++$offset;
         $shape = $this->parseOwnerOr($tokens, $offset);
         if (($tokens[$offset] ?? null) !== ')') {
-            throw new RuntimeException('The content-entry ownership generated expression is not balanced.');
+            throw new RuntimeException('The content-entry ownership check expression is not balanced.');
         }
         ++$offset;
 
         return $shape;
-    }
-
-    /**
-     * Remove only parentheses that wrap an entire expression without changing its precedence.
-     *
-     * @param   string  $expression  Quote-free, whitespace-free check clause.
-     *
-     * @return  string  Clause with balanced redundant outer wrappers removed.
-     *
-     * @since   2.0.0
-     */
-    private function stripOuterParentheses(string $expression): string
-    {
-        while (str_starts_with($expression, '(') && str_ends_with($expression, ')')) {
-            $depth = 0;
-            $wrapsAll = true;
-            for ($offset = 0; $offset < strlen($expression); ++$offset) {
-                $depth += $expression[$offset] === '(' ? 1 : ($expression[$offset] === ')' ? -1 : 0);
-                if ($depth === 0 && $offset < strlen($expression) - 1) {
-                    $wrapsAll = false;
-                    break;
-                }
-                if ($depth < 0) {
-                    $wrapsAll = false;
-                    break;
-                }
-            }
-            if (!$wrapsAll || $depth !== 0) {
-                break;
-            }
-            $expression = substr($expression, 1, -1);
-        }
-
-        return $expression;
     }
 }

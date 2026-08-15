@@ -66,6 +66,12 @@ Group attachment also locks the group row and refuses a sixty-fifth live member 
 so the domain's 64-locale ceiling remains true under concurrent authors as well as when a group is read.
 The constraints are proven by the content and migration integration suites on the supported engines.
 
+Translation-group rows are internal lifecycle records. Their composite member relationship deliberately
+uses `RESTRICT`, so a group with attached members cannot be deleted directly. Any future cleanup path or
+operator maintenance must transactionally clear both `translation_group_id` and
+`translation_group_site_identifier` on every member before deleting the group. That explicit detach keeps
+the owner-pair check valid and avoids database-specific cascade ordering.
+
 ## Which locale a reader is served
 
 Content follows the interface. `LocaleNegotiator` resolves the request's locale once — an explicit
