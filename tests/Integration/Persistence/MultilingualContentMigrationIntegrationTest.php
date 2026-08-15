@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DriverException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
+use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TranslationGroupSiteOwnershipMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -63,6 +64,7 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
     {
         $database = $this->connection();
         $tables = $this->tables($database);
+        $entriesName = $tables->raw('content_entries');
 
         try {
             $this->createEntriesTable($database, $tables, 'CHAR(36) CHARACTER SET utf8mb4 COLLATE %s NOT NULL');
@@ -97,27 +99,26 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
             }
 
             $foreignKeys = $entries->getForeignKeys();
-            self::assertCount(2, $foreignKeys, 'A replay must not duplicate either group constraint.');
+            self::assertCount(1, $foreignKeys, 'The composite key must replace its overlapping predecessor.');
             foreach ($foreignKeys as $name => $foreignKey) {
                 self::assertMatchesRegularExpression('/^fk_[0-9a-f]{24}$/D', (string) $name);
-                self::assertSame(ReferentialAction::SET_NULL, $foreignKey->getOnDeleteAction());
+                self::assertSame(
+                    ['translation_group_id', 'translation_group_site_identifier'],
+                    array_map(
+                        static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(),
+                        $foreignKey->getReferencingColumnNames(),
+                    ),
+                );
+                self::assertContains($foreignKey->getOnDeleteAction(), [
+                    ReferentialAction::RESTRICT,
+                    ReferentialAction::NO_ACTION,
+                ]);
+                self::assertContains($foreignKey->getOnUpdateAction(), [
+                    ReferentialAction::RESTRICT,
+                    ReferentialAction::NO_ACTION,
+                ]);
             }
-            self::assertTrue($entries->hasColumn('translation_group_owner_valid'));
-            $ownerColumn = $database->fetchAssociative(
-                'SELECT DATA_TYPE AS data_type, EXTRA AS extra, '
-                . 'GENERATION_EXPRESSION AS generation_expression FROM information_schema.COLUMNS '
-                . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
-                [$entriesName, 'translation_group_owner_valid'],
-            );
-            self::assertIsArray($ownerColumn);
-            self::assertSame('tinyint', strtolower((string) ($ownerColumn['data_type'] ?? '')));
-            self::assertStringContainsString('virtual', strtolower((string) ($ownerColumn['extra'] ?? '')));
-            self::assertStringContainsString('generated', strtolower((string) ($ownerColumn['extra'] ?? '')));
-            $generation = strtolower((string) ($ownerColumn['generation_expression'] ?? ''));
-            self::assertStringContainsString('translation_group_id', $generation);
-            self::assertStringContainsString('translation_group_site_identifier', $generation);
-            self::assertStringContainsString('site_identifier', $generation);
-
+            self::assertFalse($entries->hasColumn('translation_group_owner_valid'));
             $checks = $database->fetchAllAssociative(
                 'SELECT c.CONSTRAINT_NAME AS constraint_name, c.CHECK_CLAUSE AS check_clause '
                 . 'FROM information_schema.CHECK_CONSTRAINTS c '
@@ -126,13 +127,14 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
                 . "WHERE c.CONSTRAINT_SCHEMA = DATABASE() AND t.TABLE_NAME = ? AND t.CONSTRAINT_TYPE = 'CHECK'",
                 [$entriesName],
             );
-            self::assertCount(1, $checks, 'A replay must retain exactly one generated ownership check.');
+            self::assertCount(1, $checks, 'A replay must retain exactly one direct ownership check.');
             $checkName = (string) ($checks[0]['constraint_name'] ?? '');
             self::assertMatchesRegularExpression('/^ck_[0-9a-f]{24}$/D', $checkName);
             self::assertLessThanOrEqual(63, strlen($checkName));
             $checkClause = strtolower((string) ($checks[0]['check_clause'] ?? ''));
-            $normalizedCheck = preg_replace('/[\s`()]+/', '', $checkClause);
-            self::assertSame('translation_group_owner_valid=1', $normalizedCheck);
+            self::assertStringContainsString('translation_group_id', $checkClause);
+            self::assertStringContainsString('translation_group_site_identifier', $checkClause);
+            self::assertStringContainsString('site_identifier', $checkClause);
             self::assertSame('0', (string) $database->fetchOne(
                 'SELECT COUNT(*) FROM information_schema.TRIGGERS '
                 . 'WHERE TRIGGER_SCHEMA = DATABASE() AND EVENT_OBJECT_TABLE = ?',
@@ -147,9 +149,9 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
      * Prove the installed constraints are the database's own rules rather than an application convention.
      *
      * The engine must accept both valid ownership states, refuse either half-null pair and a cross-site
-     * owner on insert, refuse an update that makes a valid owner cross-site, and let the composite foreign
-     * key null both columns when its group is deleted. Locale uniqueness and repeated ungrouped nulls are
-     * exercised beside those ownership rules so the complete translated-entry shape stays proved.
+     * owner on insert, refuse an update that makes a valid owner cross-site, and reject a group deletion
+     * until both ownership columns are explicitly detached. Locale uniqueness and repeated ungrouped nulls
+     * are exercised beside those ownership rules so the complete translated-entry shape stays proved.
      *
      * @return  void
      *
@@ -239,6 +241,25 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
                 'One item must carry at most one entry per locale.',
             );
 
+            $this->assertDriverRefuses(
+                function () use ($database, $tables, $group): void {
+                    $database->executeStatement(sprintf(
+                        'DELETE FROM %s WHERE id = ?',
+                        $tables->quoted('content_translation_groups'),
+                    ), [$group]);
+                },
+                'A group with attached members cannot be deleted directly.',
+            );
+            self::assertSame('1', (string) $database->fetchOne(sprintf(
+                'SELECT COUNT(*) FROM %s WHERE id = ?',
+                $tables->quoted('content_translation_groups'),
+            ), [$group]), 'A refused deletion must leave the group in place.');
+
+            $database->executeStatement(sprintf(
+                'UPDATE %s SET translation_group_id = NULL, '
+                . 'translation_group_site_identifier = NULL WHERE translation_group_id = ?',
+                $tables->quoted('content_entries'),
+            ), [$group]);
             $database->executeStatement(sprintf(
                 'DELETE FROM %s WHERE id = ?',
                 $tables->quoted('content_translation_groups'),
@@ -247,12 +268,20 @@ final class MultilingualContentMigrationIntegrationTest extends TestCase
             self::assertSame('4', (string) $database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s',
                 $tables->quoted('content_entries'),
-            )), 'Deleting a group must release its members, not delete them.');
+            )), 'Deleting a detached group must not delete its former members.');
             self::assertSame('0', (string) $database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s WHERE translation_group_id IS NOT NULL '
                 . 'OR translation_group_site_identifier IS NOT NULL',
                 $tables->quoted('content_entries'),
-            )), 'The referential action must clear both halves of the nullable ownership pair.');
+            )), 'The explicit detach must clear both halves of the nullable ownership pair.');
+            self::assertSame('2', (string) $database->fetchOne(sprintf(
+                'SELECT COUNT(*) FROM %s WHERE id IN (?, ?) AND translation_group_id IS NULL '
+                . 'AND translation_group_site_identifier IS NULL',
+                $tables->quoted('content_entries'),
+            ), [
+                '018f22e2-7c8b-7ab0-8f3a-88e8026b0001',
+                '018f22e2-7c8b-7ab0-8f3a-88e8026b0002',
+            ]), 'Every released member must retain no residual translation-group owner.');
         } finally {
             $this->dropTables($database, $tables);
         }

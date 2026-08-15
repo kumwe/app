@@ -5,6 +5,13 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
+use Doctrine\DBAL\Platforms\MySQL84Platform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint\MatchType;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TranslationGroupSiteOwnershipMigration;
@@ -12,7 +19,6 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
-use ReflectionClassConstant;
 use ReflectionMethod;
 use RuntimeException;
 
@@ -49,10 +55,13 @@ final class TranslationGroupSiteOwnershipMigrationTest extends TestCase
         $contents = file_get_contents($source);
         self::assertIsString($contents);
         self::assertStringNotContainsString('CREATE TRIGGER', $contents);
+        self::assertStringNotContainsString('information_schema.TRIGGERS', $contents);
+        self::assertStringNotContainsString('GENERATED ALWAYS', $contents);
+        self::assertStringNotContainsString('translation_group_owner_valid', $contents);
     }
 
     /**
-     * The generated column and schema-global check names stay deterministic and portable.
+     * The schema-global ownership-check name stays deterministic and portable.
      *
      * @return  void
      *
@@ -61,17 +70,10 @@ final class TranslationGroupSiteOwnershipMigrationTest extends TestCase
     public function testOwnerInvariantIdentifiersStayInsideThePortableBudget(): void
     {
         $migration = $this->migration();
-        $reflection = new ReflectionClass($migration);
-        $columnConstant = $reflection->getReflectionConstant('OWNER_VALIDITY_COLUMN');
-        self::assertInstanceOf(ReflectionClassConstant::class, $columnConstant);
-        $column = $columnConstant->getValue();
-        self::assertIsString($column);
         $checkName = new ReflectionMethod($migration, 'ownerCheckName');
         $check = $checkName->invoke($migration, 'kumwe_content_entries');
         $neighbour = $checkName->invoke($migration, 'other_content_entries');
 
-        self::assertSame('translation_group_owner_valid', $column);
-        self::assertLessThanOrEqual(63, strlen($column));
         self::assertIsString($check);
         self::assertMatchesRegularExpression('/^ck_[0-9a-f]{24}$/D', $check);
         self::assertLessThanOrEqual(63, strlen($check));
@@ -80,23 +82,25 @@ final class TranslationGroupSiteOwnershipMigrationTest extends TestCase
     }
 
     /**
-     * A fresh MySQL-family install adds the virtual value and its check in one schema statement.
+     * A fresh MariaDB install adds and reads back the direct ownership check without trigger DDL.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testMySqlOwnerInvariantIsInstalledAtomicallyWithoutTriggers(): void
+    public function testMariaDbOwnerCheckIsInstalledAndCatalogProven(): void
     {
         $statement = null;
-        $database = $this->database();
-        $database->expects(self::exactly(2))->method('fetchAssociative')->willReturnOnConsecutiveCalls(
-            false,
-            $this->ownerColumn(),
-        );
-        $database->expects(self::exactly(2))->method('fetchOne')->willReturnOnConsecutiveCalls(
-            false,
-            '(`translation_group_owner_valid` = 1)',
+        $catalogSql = [];
+        $database = $this->database(new MariaDBPlatform());
+        $calls = 0;
+        $database->expects(self::exactly(2))->method('fetchAllAssociative')->willReturnCallback(
+            function (string $sql) use (&$calls, &$catalogSql): array {
+                $catalogSql[] = $sql;
+                ++$calls;
+
+                return $calls === 1 ? [] : [$this->ownerCheckRow()];
+            },
         );
         $database->expects(self::once())->method('executeStatement')->willReturnCallback(
             static function (string $sql) use (&$statement): int {
@@ -107,121 +111,279 @@ final class TranslationGroupSiteOwnershipMigrationTest extends TestCase
         );
         $migration = new TranslationGroupSiteOwnershipMigration(new TableNames($database, 'kumwe_'));
 
-        $this->addMySqlOwnerConstraint($migration, $database);
+        $this->addOwnerCheckConstraint($migration, $database);
 
         self::assertIsString($statement);
-        self::assertStringStartsWith('ALTER TABLE kumwe_content_entries ', $statement);
-        self::assertStringContainsString(
-            'ADD COLUMN translation_group_owner_valid TINYINT(1) GENERATED ALWAYS AS (',
+        self::assertMatchesRegularExpression(
+            '/^ALTER TABLE kumwe_content_entries ADD CONSTRAINT ck_[0-9a-f]{24} CHECK /D',
             $statement,
         );
-        self::assertStringContainsString(') VIRTUAL, ADD CONSTRAINT ck_', $statement);
-        self::assertStringContainsString('CHECK (translation_group_owner_valid = 1)', $statement);
-        self::assertStringNotContainsString('CHECK (translation_group_id', $statement);
+        self::assertStringContainsString('translation_group_id IS NULL', $statement);
+        self::assertStringContainsString('translation_group_site_identifier = site_identifier', $statement);
+        self::assertStringNotContainsString('ENFORCED', implode(' ', $catalogSql));
+        self::assertStringNotContainsString('GENERATED', $statement);
         self::assertStringNotContainsString('TRIGGER', $statement);
     }
 
     /**
-     * A fully installed MySQL-family invariant is catalog-proven and emits no replay statement.
+     * A fully installed MySQL check is enforced, catalog-proven and emits no replay statement.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testMySqlOwnerInvariantReplayIsANoOp(): void
+    public function testMySqlOwnerCheckReplayIsANoOp(): void
     {
-        $database = $this->database();
-        $database->expects(self::once())->method('fetchAssociative')->willReturn($this->ownerColumn());
-        $database->expects(self::once())->method('fetchOne')->willReturn(
-            '(`translation_group_owner_valid` = 1)',
+        $catalogSql = null;
+        $database = $this->database(new MySQL84Platform());
+        $database->expects(self::once())->method('fetchAllAssociative')->willReturnCallback(
+            function (string $sql) use (&$catalogSql): array {
+                $catalogSql = $sql;
+
+                return [$this->ownerCheckRow()];
+            },
         );
         $database->expects(self::never())->method('executeStatement');
         $migration = new TranslationGroupSiteOwnershipMigration(new TableNames($database, 'kumwe_'));
 
-        $this->addMySqlOwnerConstraint($migration, $database);
+        $this->addOwnerCheckConstraint($migration, $database);
+
+        self::assertIsString($catalogSql);
+        self::assertStringContainsString('t.ENFORCED AS enforced', $catalogSql);
     }
 
     /**
-     * A partial MySQL-family attempt reuses its proven virtual column and adds only the missing check.
+     * A same-named MySQL check that is not enforced cannot close replay.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testMySqlOwnerInvariantResumesAColumnOnlyAttempt(): void
+    public function testMySqlOwnerCheckReplayRefusesANonEnforcedConstraint(): void
     {
-        $statement = null;
-        $database = $this->database();
-        $database->expects(self::exactly(2))->method('fetchAssociative')->willReturn($this->ownerColumn());
-        $database->expects(self::exactly(2))->method('fetchOne')->willReturnOnConsecutiveCalls(
-            false,
-            '(translation_group_owner_valid = 1)',
-        );
-        $database->expects(self::once())->method('executeStatement')->willReturnCallback(
-            static function (string $sql) use (&$statement): int {
-                $statement = $sql;
-
-                return 0;
-            },
-        );
-        $migration = new TranslationGroupSiteOwnershipMigration(new TableNames($database, 'kumwe_'));
-
-        $this->addMySqlOwnerConstraint($migration, $database);
-
-        self::assertIsString($statement);
-        self::assertStringContainsString('ADD CONSTRAINT ck_', $statement);
-        self::assertStringNotContainsString('ADD COLUMN', $statement);
-    }
-
-    /**
-     * MariaDB-style associative parentheses are accepted without discarding boolean precedence.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testMySqlOwnerInvariantAcceptsMariaDbCatalogParentheses(): void
-    {
-        $migration = $this->migration();
-        $shape = new ReflectionMethod($migration, 'assertMySqlOwnerColumnShape');
-        $column = [
-            'data_type' => 'tinyint',
-            'extra' => 'VIRTUAL GENERATED',
-            'generation_expression' => '((`translation_group_id` IS NULL) '
-                . 'AND (`translation_group_site_identifier` IS NULL)) OR '
-                . '(((`translation_group_id` IS NOT NULL) '
-                . 'AND (`translation_group_site_identifier` IS NOT NULL)) '
-                . 'AND (`translation_group_site_identifier` = `site_identifier`))',
-        ];
-
-        self::assertNull($shape->invoke($migration, $column, 'kumwe_content_entries'));
-    }
-
-    /**
-     * Replay refuses a same-named generated column whose storage or predicate shape drifted.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testMySqlOwnerInvariantRejectsAnIncompatibleCatalogShape(): void
-    {
-        $database = $this->database();
-        $database->method('fetchAssociative')->willReturn([
-            'data_type' => 'tinyint',
-            'extra' => 'VIRTUAL GENERATED',
-            'generation_expression' => 'translation_group_id IS NULL AND '
-                . '(translation_group_site_identifier IS NULL OR translation_group_id IS NOT NULL) AND '
-                . 'translation_group_site_identifier IS NOT NULL AND '
-                . 'translation_group_site_identifier = site_identifier',
-        ]);
-        $database->method('fetchOne')->willReturn(false);
+        $database = $this->database(new MySQL84Platform());
+        $database->method('fetchAllAssociative')->willReturn([$this->ownerCheckRow('NO')]);
         $database->expects(self::never())->method('executeStatement');
         $migration = new TranslationGroupSiteOwnershipMigration(new TableNames($database, 'kumwe_'));
 
         $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('is not enforced and validated');
+        $this->addOwnerCheckConstraint($migration, $database);
+    }
+
+    /**
+     * PostgreSQL text casts and identifier parentheses are accepted without discarding precedence.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPostgreSqlOwnerCheckReplayAcceptsTextCasts(): void
+    {
+        $database = $this->database(new PostgreSQLPlatform());
+        $database->method('fetchAllAssociative')->willReturn([$this->ownerCheckRow(
+            true,
+            '(((translation_group_id IS NULL) AND (translation_group_site_identifier IS NULL)) OR '
+                . '((translation_group_id IS NOT NULL) '
+                . 'AND (translation_group_site_identifier IS NOT NULL) '
+                . 'AND ((translation_group_site_identifier)::text = (site_identifier)::text)))',
+        )]);
+        $database->expects(self::never())->method('executeStatement');
+        $migration = new TranslationGroupSiteOwnershipMigration(new TableNames($database, 'kumwe_'));
+
+        $this->addOwnerCheckConstraint($migration, $database);
+    }
+
+    /**
+     * PostgreSQL replay refuses a correctly named check that has not validated every stored row.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPostgreSqlOwnerCheckReplayRefusesAnUnvalidatedConstraint(): void
+    {
+        $database = $this->database(new PostgreSQLPlatform());
+        $database->method('fetchAllAssociative')->willReturn([$this->ownerCheckRow(false)]);
+        $database->expects(self::never())->method('executeStatement');
+        $migration = new TranslationGroupSiteOwnershipMigration(new TableNames($database, 'kumwe_'));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('is not enforced and validated');
+        $this->addOwnerCheckConstraint($migration, $database);
+    }
+
+    /**
+     * Replay refuses a materially regrouped predicate even when the deterministic name matches.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOwnerCheckReplayRefusesAnIncompatiblePredicate(): void
+    {
+        $migration = $this->migration();
+
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('has an incompatible shape');
-        $this->addMySqlOwnerConstraint($migration, $database);
+        (new ReflectionMethod($migration, 'assertOwnerCheckShape'))->invoke(
+            $migration,
+            'translation_group_id IS NULL AND (translation_group_site_identifier IS NULL '
+                . 'OR translation_group_id IS NOT NULL) AND translation_group_site_identifier IS NOT NULL '
+                . 'AND translation_group_site_identifier = site_identifier',
+            'kumwe_content_entries',
+            'ck_drifted',
+        );
+    }
+
+    /**
+     * Duplicate catalog rows are ambiguous rather than silently trusted.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOwnerCheckReplayRefusesDuplicateCatalogRows(): void
+    {
+        $database = $this->database(new MariaDBPlatform());
+        $database->method('fetchAllAssociative')->willReturn([
+            $this->ownerCheckRow(),
+            $this->ownerCheckRow(),
+        ]);
+        $database->expects(self::never())->method('executeStatement');
+        $migration = new TranslationGroupSiteOwnershipMigration(new TableNames($database, 'kumwe_'));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('is ambiguous');
+        $this->addOwnerCheckConstraint($migration, $database);
+    }
+
+    /**
+     * The exact predecessor is selected once and a completed replay recognises only its replacement.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPredecessorForeignKeySelectionIsExactAndReplaySafe(): void
+    {
+        $migration = $this->migration();
+        $selection = new ReflectionMethod($migration, 'predecessorForeignKey');
+        $predecessor = $this->foreignKey(
+            'fk_predecessor',
+            ['translation_group_id'],
+            ['id'],
+        );
+        $replacement = $this->foreignKey(
+            'fk_replacement',
+            ['translation_group_id', 'translation_group_site_identifier'],
+            ['id', 'site_identifier'],
+            ReferentialAction::RESTRICT,
+        );
+
+        self::assertSame(
+            $predecessor,
+            $selection->invoke($migration, [$predecessor, $replacement], 'kumwe_content_translation_groups'),
+        );
+        self::assertNull(
+            $selection->invoke($migration, [$replacement], 'kumwe_content_translation_groups'),
+        );
+        $mysqlReplacement = $this->foreignKey(
+            'fk_mysql_replacement',
+            ['translation_group_id', 'translation_group_site_identifier'],
+            ['id', 'site_identifier'],
+            ReferentialAction::NO_ACTION,
+            ReferentialAction::RESTRICT,
+        );
+        self::assertNull(
+            $selection->invoke($migration, [$mysqlReplacement], 'kumwe_content_translation_groups'),
+        );
+    }
+
+    /**
+     * A local-column match is not enough to delete a divergent predecessor relationship.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPredecessorForeignKeySelectionRefusesAWrongShape(): void
+    {
+        $migration = $this->migration();
+        $selection = new ReflectionMethod($migration, 'predecessorForeignKey');
+        $wrong = $this->foreignKey(
+            'fk_wrong',
+            ['translation_group_id'],
+            ['site_identifier'],
+        );
+        $replacement = $this->foreignKey(
+            'fk_replacement',
+            ['translation_group_id', 'translation_group_site_identifier'],
+            ['id', 'site_identifier'],
+            ReferentialAction::RESTRICT,
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('predecessor translation-group foreign key has an incompatible shape');
+        $selection->invoke($migration, [$wrong, $replacement], 'kumwe_content_translation_groups');
+    }
+
+    /**
+     * A composite relationship with a mutating update action is not the fail-closed replacement.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPredecessorForeignKeySelectionRefusesAWrongReplacementAction(): void
+    {
+        $migration = $this->migration();
+        $selection = new ReflectionMethod($migration, 'predecessorForeignKey');
+        $predecessor = $this->foreignKey('fk_predecessor', ['translation_group_id'], ['id']);
+        $replacement = $this->foreignKey(
+            'fk_replacement',
+            ['translation_group_id', 'translation_group_site_identifier'],
+            ['id', 'site_identifier'],
+            ReferentialAction::RESTRICT,
+            ReferentialAction::CASCADE,
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('composite translation-group foreign key has an incompatible shape');
+        $selection->invoke(
+            $migration,
+            [$predecessor, $replacement],
+            'kumwe_content_translation_groups',
+        );
+    }
+
+    /**
+     * More than one predecessor candidate is ambiguous and therefore cannot be removed safely.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPredecessorForeignKeySelectionRefusesAmbiguity(): void
+    {
+        $migration = $this->migration();
+        $selection = new ReflectionMethod($migration, 'predecessorForeignKey');
+        $first = $this->foreignKey('fk_first', ['translation_group_id'], ['id']);
+        $second = $this->foreignKey('fk_second', ['translation_group_id'], ['id']);
+        $replacement = $this->foreignKey(
+            'fk_replacement',
+            ['translation_group_id', 'translation_group_site_identifier'],
+            ['id', 'site_identifier'],
+            ReferentialAction::RESTRICT,
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('predecessor translation-group foreign key is ambiguous');
+        $selection->invoke(
+            $migration,
+            [$first, $second, $replacement],
+            'kumwe_content_translation_groups',
+        );
     }
 
     /**
@@ -234,7 +396,17 @@ final class TranslationGroupSiteOwnershipMigrationTest extends TestCase
     public function testPostgreSqlCheckRetainsTheCompleteOwnershipPredicate(): void
     {
         $statement = null;
-        $database = $this->database();
+        $catalogSql = [];
+        $calls = 0;
+        $database = $this->database(new PostgreSQLPlatform());
+        $database->expects(self::exactly(2))->method('fetchAllAssociative')->willReturnCallback(
+            function (string $sql) use (&$calls, &$catalogSql): array {
+                $catalogSql[] = $sql;
+                ++$calls;
+
+                return $calls === 1 ? [] : [$this->ownerCheckRow(true)];
+            },
+        );
         $database->expects(self::once())->method('executeStatement')->willReturnCallback(
             static function (string $sql) use (&$statement): int {
                 $statement = $sql;
@@ -259,10 +431,11 @@ final class TranslationGroupSiteOwnershipMigrationTest extends TestCase
         self::assertStringContainsString('translation_group_site_identifier IS NULL', $statement);
         self::assertStringContainsString('translation_group_site_identifier = site_identifier', $statement);
         self::assertStringNotContainsString('translation_group_owner_valid', $statement);
+        self::assertStringContainsString('c.convalidated AS enforced', implode(' ', $catalogSql));
     }
 
     /**
-     * Invoke the private MySQL-family installation branch through its focused seam.
+     * Invoke the private ownership-check installation branch through its focused seam.
      *
      * @param   TranslationGroupSiteOwnershipMigration  $migration  Migration under test.
      * @param   Connection                              $database   Catalog and DDL test double.
@@ -271,11 +444,11 @@ final class TranslationGroupSiteOwnershipMigrationTest extends TestCase
      *
      * @since   2.0.0
      */
-    private function addMySqlOwnerConstraint(
+    private function addOwnerCheckConstraint(
         TranslationGroupSiteOwnershipMigration $migration,
         Connection $database,
     ): void {
-        (new ReflectionMethod($migration, 'addMySqlOwnerConstraint'))->invoke(
+        (new ReflectionMethod($migration, 'addOwnerCheckConstraint'))->invoke(
             $migration,
             $database,
             'kumwe_content_entries',
@@ -285,13 +458,16 @@ final class TranslationGroupSiteOwnershipMigrationTest extends TestCase
     /**
      * Build a connection double that quotes controlled identifiers without driver syntax.
      *
+     * @param   AbstractPlatform  $platform  Database family whose catalog branch is exercised.
+     *
      * @return  Connection  Connection double used by one migration branch test.
      *
      * @since   2.0.0
      */
-    private function database(): Connection
+    private function database(AbstractPlatform $platform): Connection
     {
         $database = $this->createMock(Connection::class);
+        $database->method('getDatabasePlatform')->willReturn($platform);
         $database->method('quoteSingleIdentifier')->willReturnCallback(
             static fn (string $identifier): string => $identifier,
         );
@@ -300,23 +476,56 @@ final class TranslationGroupSiteOwnershipMigrationTest extends TestCase
     }
 
     /**
-     * Return the catalog shape produced by the virtual generated owner-validity column.
+     * Return one catalog-proven ownership-check row.
      *
-     * @return  array{data_type: string, extra: string, generation_expression: string}  Valid catalog row.
+     * @param   mixed    $enforced  Engine-specific enforcement or validation marker.
+     * @param   ?string  $clause    Alternate catalog clause, or the canonical predicate by default.
+     *
+     * @return  array{check_clause: string, enforced: mixed}  Valid catalog row.
      *
      * @since   2.0.0
      */
-    private function ownerColumn(): array
+    private function ownerCheckRow(mixed $enforced = 'YES', ?string $clause = null): array
     {
         return [
-            'data_type' => 'tinyint',
-            'extra' => 'VIRTUAL GENERATED',
-            'generation_expression' => '(translation_group_id IS NULL '
+            'check_clause' => $clause ?? '((translation_group_id IS NULL '
                 . 'AND translation_group_site_identifier IS NULL) OR '
                 . '(translation_group_id IS NOT NULL '
                 . 'AND translation_group_site_identifier IS NOT NULL '
-                . 'AND translation_group_site_identifier = site_identifier)',
+                . 'AND translation_group_site_identifier = site_identifier))',
+            'enforced' => $enforced,
         ];
+    }
+
+    /**
+     * Build one ownership foreign key with a stable catalog name and explicit deletion rule.
+     *
+     * @param   string             $name         Constraint name.
+     * @param   list<string>       $referencing  Content-entry columns.
+     * @param   list<string>       $referenced   Translation-group columns.
+     * @param   ReferentialAction  $onDelete     Delete action under test.
+     * @param   ReferentialAction  $onUpdate     Update action under test.
+     *
+     * @return  ForeignKeyConstraint  Constraint shape under test.
+     *
+     * @since   2.0.0
+     */
+    private function foreignKey(
+        string $name,
+        array $referencing,
+        array $referenced,
+        ReferentialAction $onDelete = ReferentialAction::SET_NULL,
+        ReferentialAction $onUpdate = ReferentialAction::NO_ACTION,
+    ): ForeignKeyConstraint {
+        return ForeignKeyConstraint::editor()
+            ->setUnquotedName($name)
+            ->setUnquotedReferencingColumnNames(...$referencing)
+            ->setUnquotedReferencedTableName('kumwe_content_translation_groups')
+            ->setUnquotedReferencedColumnNames(...$referenced)
+            ->setMatchType(MatchType::SIMPLE)
+            ->setOnUpdateAction($onUpdate)
+            ->setOnDeleteAction($onDelete)
+            ->create();
     }
 
     /**
