@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Integration\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
@@ -16,6 +17,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use ReflectionMethod;
+use RuntimeException;
 
 /**
  * Proves two prefixed Kumwe installations can live in one schema, which a shared name made impossible.
@@ -132,6 +134,112 @@ final class ConstraintNameIsolationIntegrationTest extends TestCase
         } finally {
             $this->drop($database, $created);
         }
+    }
+
+    /**
+     * An attempt interrupted between the create and the drop finishes the job when it is replayed.
+     *
+     * This is the scenario the create-then-drop order exists for, driven against the engine where DDL
+     * commits implicitly and an interruption therefore leaves the first statement applied. The first
+     * statement is run on its own and the migration is then replayed over the half-renamed table: it has
+     * to recognise the isolated name as work already done, skip the create that would now fail on a
+     * duplicate, and drop the shared name it still owes — which is the statement that frees that name
+     * for the next installation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnAttemptInterruptedAfterTheCreateIsFinishedByAReplay(): void
+    {
+        $database = $this->database();
+        $prefix = $this->prefix();
+        $created = [];
+
+        try {
+            $this->buildOrganizations($database, $prefix, $created);
+            $tableName = $prefix . 'organizations';
+            $migration = new ConstraintNameIsolationMigration(new TableNames($database, $prefix));
+            $target = ConstraintNameIsolationMigration::isolatedName($tableName, 'fk_org_site');
+            /** @var list<string> $statements */
+            $statements = (new ReflectionMethod($migration, 'renameStatements'))->invoke(
+                $migration,
+                $database,
+                $tableName,
+                'fk_org_site',
+                $target,
+                $this->constraint($database, $tableName, 'fk_org_site'),
+                false,
+            );
+            self::assertCount(2, $statements, 'The MySQL family rebuilds the constraint under its new name.');
+
+            $database->executeStatement($statements[0]);
+            $interrupted = ['fk_org_site', $target];
+            sort($interrupted, SORT_STRING);
+            self::assertSame($interrupted, $this->constraintNames($database, $tableName));
+
+            $migration->up($database);
+
+            self::assertSame([$target], $this->constraintNames($database, $tableName));
+        } finally {
+            $this->drop($database, $created);
+        }
+    }
+
+    /**
+     * A rename that did not take is reported against the table it left shared, not recorded as done.
+     *
+     * The migration reads its own work back rather than trusting the driver, because a rename that was
+     * quietly ignored would otherwise be discovered by the next installation at `CREATE TABLE`. The
+     * check is pointed at a table whose constraint is still spelled literally, which is exactly the
+     * state a silently ignored rename would leave behind.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testATableLeftWithASharedNameIsReportedRatherThanAccepted(): void
+    {
+        $database = $this->database();
+        $prefix = $this->prefix();
+        $created = [];
+
+        try {
+            $this->buildOrganizations($database, $prefix, $created);
+            $tableName = $prefix . 'organizations';
+            $migration = new ConstraintNameIsolationMigration(new TableNames($database, $prefix));
+            self::assertSame(['fk_org_site'], $this->constraintNames($database, $tableName));
+
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessage('is still named schema-globally after the rename');
+
+            (new ReflectionMethod($migration, 'assertIsolated'))->invoke($migration, $database, $tableName, $prefix);
+        } finally {
+            $this->drop($database, $created);
+        }
+    }
+
+    /**
+     * Read one named foreign key back from the live schema.
+     *
+     * @param   Connection        $database   Connection the table is introspected on.
+     * @param   non-empty-string  $tableName  Prefixed physical table name.
+     * @param   string            $name       Constraint name to select.
+     *
+     * @return  ForeignKeyConstraint  The constraint as introspection reports it.
+     *
+     * @since   2.0.0
+     */
+    private function constraint(Connection $database, string $tableName, string $name): ForeignKeyConstraint
+    {
+        $table = $database->createSchemaManager()->introspectTableByUnquotedName($tableName);
+        foreach ($table->getForeignKeys() as $constraint) {
+            if ($constraint->getObjectName()?->getIdentifier()->getValue() === $name) {
+                return $constraint;
+            }
+        }
+
+        self::fail(sprintf('Table %s carries no foreign key named %s.', $tableName, $name));
     }
 
     /**

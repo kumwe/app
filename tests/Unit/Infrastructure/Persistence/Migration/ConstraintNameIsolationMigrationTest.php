@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 use RuntimeException;
 
 /**
@@ -262,6 +266,163 @@ final class ConstraintNameIsolationMigrationTest extends TestCase
         $this->expectException(RuntimeException::class);
 
         ConstraintNameIsolationMigration::isolatedName('kumwe_organizations', '');
+    }
+
+    /**
+     * A foreign key the live schema reports without a readable name stops the migration.
+     *
+     * The rename is composed from what introspection reports, and a constraint with no name is the one
+     * shape there is nothing to rename from. The failure names the table an operator has to look at,
+     * rather than skipping the constraint and recording a migration that left a collision behind.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAConstraintTheSchemaReportsWithoutANameStopsTheMigration(): void
+    {
+        $migration = $this->migration();
+        $unnamed = ForeignKeyConstraint::editor()
+            ->setUnquotedReferencingColumnNames('site')
+            ->setUnquotedReferencedTableName('kumwe_sites')
+            ->setUnquotedReferencedColumnNames('identifier')
+            ->create();
+        self::assertNull($unnamed->getObjectName());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('A foreign key on table "kumwe_organizations" carries no name');
+
+        (new ReflectionMethod($migration, 'constraintName'))->invoke($migration, $unnamed, 'kumwe_organizations');
+    }
+
+    /**
+     * PostgreSQL renames the constraint in its catalogue instead of rebuilding it.
+     *
+     * The engine scopes a constraint name to its table and has a rename for one, so the repair there is
+     * a single statement that keeps the existing validation rather than a drop and a recreate that would
+     * revalidate every row. This is the branch a MariaDB test run never reaches, so the statement it
+     * composes is asserted directly from the platform.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPostgreSqlRenamesTheConstraintInPlaceRatherThanRebuildingIt(): void
+    {
+        $database = $this->offlineConnection('pdo_pgsql', '17.0');
+        $target = ConstraintNameIsolationMigration::isolatedName('kumwe_organizations', 'fk_org_site');
+
+        $statements = $this->renameStatements($database, $target, false);
+
+        self::assertSame(
+            [sprintf(
+                'ALTER TABLE "kumwe_organizations" RENAME CONSTRAINT "fk_org_site" TO "%s"',
+                $target,
+            )],
+            $statements,
+        );
+    }
+
+    /**
+     * The MySQL family creates the isolated name first and only then drops the shared one.
+     *
+     * The order is the migration's whole replay story. Where DDL commits implicitly, an attempt
+     * interrupted between the two statements has already committed the first, and dropping first would
+     * leave the table with no such foreign key at all for a replay to find. The referential action is
+     * asserted alongside it, because the recreate is where a cascade would silently become a default.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheMySqlFamilyCreatesTheIsolatedNameBeforeDroppingTheSharedOne(): void
+    {
+        $database = $this->offlineConnection('pdo_mysql', '10.11.14-MariaDB');
+        $target = ConstraintNameIsolationMigration::isolatedName('kumwe_organizations', 'fk_org_site');
+
+        $statements = $this->renameStatements($database, $target, false);
+
+        self::assertCount(2, $statements);
+        self::assertStringContainsString('ADD CONSTRAINT ' . $target, $statements[0]);
+        self::assertStringContainsString('ON DELETE CASCADE', $statements[0]);
+        self::assertSame('ALTER TABLE `kumwe_organizations` DROP FOREIGN KEY `fk_org_site`', $statements[1]);
+    }
+
+    /**
+     * An attempt interrupted after the create resumes by dropping the shared name alone.
+     *
+     * Replaying the create would fail on a duplicate constraint name and leave the installation stuck
+     * halfway, so a target already present on the table is read as work the interrupted attempt finished
+     * and the replay composes only what is left to do.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnInterruptedAttemptComposesOnlyTheDropItStillOwes(): void
+    {
+        $database = $this->offlineConnection('pdo_mysql', '10.11.14-MariaDB');
+        $target = ConstraintNameIsolationMigration::isolatedName('kumwe_organizations', 'fk_org_site');
+
+        $statements = $this->renameStatements($database, $target, true);
+
+        self::assertSame(['ALTER TABLE `kumwe_organizations` DROP FOREIGN KEY `fk_org_site`'], $statements);
+    }
+
+    /**
+     * Compose the statements one rename produces, for a platform decided without a live server.
+     *
+     * The statements are pure functions of the platform, the names and the introspected shape, so they
+     * are read straight from the migration rather than from a database this suite would have to have.
+     *
+     * @param   Connection  $database  Connection whose platform composes the statements.
+     * @param   string      $target    Isolated name the constraint is to carry.
+     * @param   bool        $created   Whether the target name is already on the table.
+     *
+     * @return  list<string>  Statements in the order the migration would run them.
+     *
+     * @since   2.0.0
+     */
+    private function renameStatements(Connection $database, string $target, bool $created): array
+    {
+        $constraint = ForeignKeyConstraint::editor()
+            ->setUnquotedName('fk_org_site')
+            ->setUnquotedReferencingColumnNames('site')
+            ->setUnquotedReferencedTableName('kumwe_sites')
+            ->setUnquotedReferencedColumnNames('identifier')
+            ->setOnDeleteAction(ReferentialAction::CASCADE)
+            ->create();
+        $migration = new ConstraintNameIsolationMigration(new TableNames($database, 'kumwe_'));
+        /** @var list<string> $statements */
+        $statements = (new ReflectionMethod($migration, 'renameStatements'))->invoke(
+            $migration,
+            $database,
+            'kumwe_organizations',
+            'fk_org_site',
+            $target,
+            $constraint,
+            $created,
+        );
+
+        return $statements;
+    }
+
+    /**
+     * Open a connection to no server at all, for the one engine a run is measured on and one it is not.
+     *
+     * Declaring the server version is what lets the platform be decided without connecting, which is how
+     * the PostgreSQL branch is exercised on a MariaDB test run. No statement is ever executed.
+     *
+     * @param   string  $driver         Doctrine driver name selecting the platform family.
+     * @param   string  $serverVersion  Version string the platform is chosen from.
+     *
+     * @return  Connection  Connection that knows its platform and has never opened a socket.
+     *
+     * @since   2.0.0
+     */
+    private function offlineConnection(string $driver, string $serverVersion): Connection
+    {
+        return DriverManager::getConnection(['driver' => $driver, 'serverVersion' => $serverVersion]);
     }
 
     /**

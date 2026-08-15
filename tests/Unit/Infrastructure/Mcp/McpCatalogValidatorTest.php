@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use SensitiveParameter;
 use stdClass;
 
 #[CoversClass(McpCatalogValidator::class)]
@@ -182,6 +183,114 @@ final class McpCatalogValidatorTest extends TestCase
     }
 
     /**
+     * Proves a coherent surface is admitted silently, which is the permission the factory acts on.
+     *
+     * `KumweMcpServerFactory` reads a normal return as leave to register every entry, so the passing
+     * direction has to be proved as deliberately as the failing one: a gate that raised on the shipped
+     * catalogue would take the whole machine surface down at boot, and one that could never return
+     * cleanly would never be switched on at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAssertValidAdmitsTheSurfaceThisReleasePublishesWithoutRaising(): void
+    {
+        $catalog = new McpCapabilityCatalog();
+
+        (new McpCatalogValidator())->assertValid($catalog, self::handlers());
+
+        self::assertNotSame([], $catalog->tools());
+    }
+
+    /**
+     * Proves a handler bound as anything but a public instance method is refused, not registered.
+     *
+     * A static or non-public binding is a tool the server would advertise and then fail to serve, so it
+     * is named at boot rather than discovered by the first client that calls it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAHandlerThatIsNotAPublicInstanceMethodIsRefused(): void
+    {
+        $violations = (new McpCatalogValidator())->toolViolations(
+            self::readToolBoundTo('boundStatically'),
+            self::misdeclaredHandlers(),
+        );
+
+        $expected = 'Entry "kumwe_fixture_read" names handler boundStatically, '
+            . 'which is not a public instance method.';
+        self::assertSame([$expected], $violations);
+    }
+
+    /**
+     * Proves a handler parameter named after secret material is refused however the schema is spelled.
+     *
+     * This is the half of the non-disclosure rule the schema scan cannot see. The regression this PR
+     * repairs left three lifecycle handlers accepting a step-up credential after the property had gone
+     * from the published schema, which is one transport change away from carrying it again — so the
+     * signature is judged on its own rather than trusted because the schema looks clean.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAHandlerAcceptingACredentialShapedParameterIsRefused(): void
+    {
+        $violations = (new McpCatalogValidator())->toolViolations(
+            self::readToolBoundTo('acceptsCredentialArgument'),
+            self::misdeclaredHandlers(),
+        );
+
+        $expected = 'Handler acceptsCredentialArgument accepts credential-shaped parameter $accessToken.';
+        self::assertSame([$expected], $violations);
+    }
+
+    /**
+     * Proves a parameter marked `#[\SensitiveParameter]` keeps its handler off the machine surface.
+     *
+     * The attribute exists to keep a value out of stack traces, so writing it is the author stating that
+     * this argument is secret material. The rule reads that statement at face value: a value worth
+     * hiding from a trace has no business crossing a tool boundary, whatever the parameter is called,
+     * which is what makes this refusal independent of the name-shape list.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAHandlerMarkingAnArgumentSensitiveIsRefusedWhateverItIsNamed(): void
+    {
+        $violations = (new McpCatalogValidator())->toolViolations(
+            self::readToolBoundTo('marksArgumentSensitive'),
+            self::misdeclaredHandlers(),
+        );
+
+        self::assertFalse(McpCatalogValidator::isCredentialShaped('proofValue'));
+        $expected = 'Handler marksArgumentSensitive marks $proofValue sensitive, '
+            . 'so it must not be reachable from a tool.';
+        self::assertSame([$expected], $violations);
+    }
+
+    /**
+     * Proves a name carrying no word segments at all is judged rather than mistaken for a secret.
+     *
+     * A schema property or parameter spelled entirely in punctuation splits into nothing, and the
+     * matcher has to answer that with a decision instead of reading past the end of an empty list.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testANameWithNoWordSegmentsIsNotTreatedAsCredentialMaterial(): void
+    {
+        self::assertFalse(McpCatalogValidator::isCredentialShaped(''));
+        self::assertFalse(McpCatalogValidator::isCredentialShaped('__'));
+        self::assertFalse(McpCatalogValidator::isCredentialShaped('-.-'));
+    }
+
+    /**
      * Proves each risk-coherence rule fails in the right direction when one property is broken.
      *
      * Every case takes the real `kumwe_content_trash` entry — a classified destructive tool that passes
@@ -236,6 +345,14 @@ final class McpCatalogValidatorTest extends TestCase
             'an elevated tool with no capability' => [
                 ['capability' => null],
                 'names no capability',
+            ],
+            'an installation-wide reach that calls itself read-only' => [
+                ['risk' => McpRiskClass::InstallationGlobal, 'readOnly' => true],
+                'claims a reach beyond the site while reporting itself read-only',
+            ],
+            'a trust change that calls itself read-only' => [
+                ['risk' => McpRiskClass::Trust, 'readOnly' => true],
+                'claims a reach beyond the site while reporting itself read-only',
             ],
             'a mutation that is not idempotent' => [
                 ['idempotent' => false],
@@ -398,6 +515,97 @@ final class McpCatalogValidatorTest extends TestCase
     private static function handlers(): KumweMcpHandlers
     {
         return (new ReflectionClass(KumweMcpHandlers::class))->newInstanceWithoutConstructor();
+    }
+
+    /**
+     * Build a handler object whose methods each break exactly one handler-side rule.
+     *
+     * The shipped handlers cannot demonstrate a refusal, because the point of the release is that none
+     * of them break these rules. Each method here breaks one and only one, so a rule that stopped firing
+     * shows up as a missing violation rather than as a still-green suite. Nothing is ever called: only
+     * the signatures are read.
+     *
+     * @return  object  Handler collection carrying one deliberately misdeclared method per rule.
+     *
+     * @since   2.0.0
+     */
+    private static function misdeclaredHandlers(): object
+    {
+        return new class {
+            /**
+             * A binding a client could never reach, because the server calls handlers on an instance.
+             *
+             * @param   string  $operationId  Deduplication identity, present so nothing else is broken.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public static function boundStatically(string $operationId): void
+            {
+            }
+
+            /**
+             * A binding that would carry secret material inbound under a credential-shaped name.
+             *
+             * @param   string  $operationId  Deduplication identity, present so nothing else is broken.
+             * @param   string  $accessToken  Credential-shaped name the rule exists to refuse.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function acceptsCredentialArgument(string $operationId, string $accessToken): void
+            {
+            }
+
+            /**
+             * A binding whose author marked an argument secret, under a name no list would catch.
+             *
+             * @param   string  $proofValue  Argument the attribute declares to be secret material.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function marksArgumentSensitive(#[SensitiveParameter] string $proofValue): void
+            {
+            }
+        };
+    }
+
+    /**
+     * Compose a published entry that breaks no rule of its own, bound to the named handler method.
+     *
+     * Read-only, non-destructive, idempotent and closed, so every violation a case reports comes from
+     * the handler the case names rather than from the entry that carries it.
+     *
+     * @param   string  $handler  Handler method the entry binds to.
+     *
+     * @return  array<string, mixed>  Entry shaped exactly as the catalogue publishes one.
+     *
+     * @since   2.0.0
+     */
+    private static function readToolBoundTo(string $handler): array
+    {
+        return [
+            'name' => 'kumwe_fixture_read',
+            'title' => 'Fixture read',
+            'description' => 'A sound read-only entry that exists only to carry one handler binding.',
+            'handler' => $handler,
+            'capability' => null,
+            'readOnly' => true,
+            'destructive' => false,
+            'idempotent' => true,
+            'risk' => McpRiskClass::Read,
+            'alternative' => 'Administrator console: Content, or bin/kumwe content.',
+            'inputSchema' => [
+                'type' => 'object', 'properties' => [], 'required' => [], 'additionalProperties' => false,
+            ],
+            'outputSchema' => [
+                'type' => 'object', 'properties' => [], 'additionalProperties' => false,
+            ],
+        ];
     }
 
     /**
