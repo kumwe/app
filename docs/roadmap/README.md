@@ -462,13 +462,13 @@ Decisions D10 through D14 added 22 further entries — `V2-CUR-001` to `V2-CUR-0
 multilingual content, and `V2-POS-001` to `V2-POS-004` for the point-of-sale constraints — and moved six
 of the seven `V2-ERP-` entries out of `decision_required` because D13 decided them.
 
-The four `V2-CUR-` entries, the six `V2-GRP-` entries, `V2-ERP-004`, the data-entry retention work, the
-interface translation foundation, the multilingual content model and the administered override layers have
-since been delivered and have left the ledger for `CHANGELOG.md`, which is where each of them is now
-recorded. `V2-CUR-005` was added for the rendering half the money work did not cover and has since been
-delivered too, together with `V2-POS-001`, `V2-POS-003` and `V2-POS-004`; of the four point-of-sale
-constraints only `V2-POS-002` remains, and it is a decision rather than work. The ledger therefore carries
-**43 open entries**.
+The four `V2-CUR-` entries, the six `V2-GRP-` entries, `V2-ERP-004`, `V2-ARC-003`'s inward transaction
+boundary, the data-entry retention work, the interface translation foundation, the multilingual content
+model and the administered override layers have since been delivered and have left the ledger for
+`CHANGELOG.md`, which is where each of them is now recorded. `V2-CUR-005` was added for the rendering half
+the money work did not cover and has since been delivered too, together with `V2-POS-001`, `V2-POS-003`
+and `V2-POS-004`; of the four point-of-sale constraints only `V2-POS-002` remains, and it is a decision
+rather than work. The ledger therefore carries **42 open entries**.
 
 ---
 
@@ -523,7 +523,6 @@ residuals.
 | Finding | Verified anchor | What is true at `26a7b39` |
 |---|---|---|
 | `V2-SEC-001` | `McpCapabilityCatalog` 518, 535, 552, 2057; `KumweMcpHandlers` 1439–1576 | `currentPassword` is in three published extension-lifecycle input schemas and thirteen handler positions. `writeOnly` is set, which describes an output property and prevents nothing inbound. |
-| `V2-ARC-003` | `BusinessRecordService` 73 and three peers; `src/Application/Automation/Job/Doctrine*` | Application imports `Kumwe\CMS\Infrastructure\Persistence\TransactionManager`. Three Doctrine adapters live under `src/Application`. |
 | `V2-SCL-001` | `DoctrineBusinessRecordMutationFence::lock()` 76; eight call sites in the service | Every write path takes the installation row `FOR UPDATE` for the whole transaction. A shared fence exists at line 110 and is used by reads only. |
 | `V2-SCL-002` | `DoctrineOutboxStore` 140–181 | A locking read of `business_projection_event_head` `singleton_id = 1` and a guarded update of `last_sequence`, both inside the caller's authoritative transaction. |
 | `V2-SCL-004` | `BusinessRecordIdempotencyRetentionMigration` 60, 65 | Seeded `43 * * * *` with `{"batch_size": 500, "maximum_batches": 10}`: 5,000 rows per hour, 120,000 per day, against an enterprise ingress of at least five million. |
@@ -937,9 +936,14 @@ intention.
 5. **The gates are truthful.** Coverage attribution is real and ratcheted, semantic dependency checking
    fails new violations, the browser and coverage matrix covers the primary engines, and one manifest
    defines what local, CI, nightly and release runs execute.
-6. **The seams the aggregate command needs are clean.** The transaction abstraction is inward, automation
-   Doctrine adapters sit in Infrastructure behind ports, and delivery and presentation leakage is removed.
-   `V2-ARC-003` closed.
+6. **The seams the aggregate command needs are clean.** Two of the three hold and are recorded in
+   [`CHANGELOG.md`](../../CHANGELOG.md): the transaction abstraction is inward, owned by Application and
+   adapted by Doctrine in Infrastructure, and the automation Doctrine adapters sit in Infrastructure behind
+   application ports. Both are now rules the architecture gate enforces rather than conventions, so the
+   layering cannot regress unnoticed. `V2-ARC-003` closed. What remains for the gate is `P3-C`'s delivery
+   and presentation leakage — the idempotency middleware writing Doctrine state from the HTTP layer, the
+   business-surface application code that renders, and theme validation importing Twig inward — and
+   `P3-A`'s three-engine proof of the transaction boundary's semantics.
 7. **The business-group ownership model is in place.** Built: ownership resolves at site, group and
    installation scope with the fail-closed contract unchanged, the existing isolation tests pass
    unmodified, site-owned-only categories refuse a group scope, and consolidated reporting is a
@@ -1368,21 +1372,15 @@ this phase.
 **Entry conditions.** Phase 2 can detect behavioural, database, surface, compatibility and dependency
 regressions. Phase 1 is merged.
 
-**P3-A — Move the transaction boundary inward.** Findings: `V2-ARC-003`. Define the minimal transaction
-abstraction in Application or a framework-free shared kernel, with explicit begin, commit, rollback and
-retry-policy semantics. Adapt Doctrine DBAL in Infrastructure. Preserve nested and ambient transaction
-behaviour and exception mapping. Update consumers mechanically in small groups. Prohibit Application from
-receiving a raw Doctrine connection or query builder through the abstraction. Prove one database still owns
-the complete authoritative mutation. Tests on all three engines: commit, rollback, exception translation,
-retryable deadlock and serialization failure, non-retryable domain failure, nested call semantics, and
-audit and outbox atomicity.
-
-**P3-B — Automation application and SQL separation.** Move `DoctrineJobQueue`, `DoctrineScheduler` and
-`DoctrineQueueRuntimeOperations` out of `src/Application` into Infrastructure behind application ports.
-Separate application command and query policy from queue and schedule contracts, from Doctrine SQL and
-lease claiming and engine branches, and from delivery commands and workers. **Characterize and preserve
-existing behaviour; change no concurrency semantics here.** The queue-slot redesign is phase 5, after this
-boundary is clean.
+**P3-A — Prove the transaction boundary on every engine.** The boundary itself has moved: Application owns
+`TransactionManager`, Infrastructure adapts Doctrine DBAL behind it, no application signature admits a
+connection or a query builder, and the architecture gate refuses both regressions. That half is recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). What is still owed is the evidence, because the move deliberately
+changed no semantics and therefore proved none: commit, rollback, exception translation, retryable deadlock
+and serialization failure, non-retryable domain failure, nested call semantics, and audit and outbox
+atomicity, each exercised on MariaDB, MySQL and PostgreSQL. Today the adapter's integration test covers
+nested commit and nested rollback only; the rest is asserted by the code paths that use it rather than by a
+test of the boundary. This package belongs with phase 2's engine matrix and blocks nothing else in phase 3.
 
 **P3-C — Delivery and presentation leakage.** Idempotency middleware asks an Application idempotency port
 rather than writing Doctrine state directly. Business surface Application uses rendering contracts or

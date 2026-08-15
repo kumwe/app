@@ -38,30 +38,6 @@
       "product_owner_decision": "Removed from the critical path. Only the seams the aggregate command and the scale work require are extracted, in phase 3. The remainder runs in lane M, parallel to or after scale work, and never blocks a gate."
     },
     {
-      "id": "V2-ARC-003",
-      "title": "Application imports an Infrastructure-owned transaction port, and Doctrine adapters live under src/Application",
-      "severity": "medium",
-      "state": "reproduced",
-      "phase": "3",
-      "gate": "A",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "use Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-          "note": "Line 73. The same import appears in src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php:8, src/BusinessDefinition/Application/BusinessDefinitionService.php:23 and src/Application/Automation/AutomationManagementService.php:15."
-        },
-        {
-          "file": "src/Application/Automation/Job/DoctrineJobQueue.php",
-          "symbol": "DoctrineJobQueue",
-          "note": "A Doctrine adapter under src/Application, alongside DoctrineScheduler and DoctrineQueueRuntimeOperations."
-        }
-      ],
-      "acceptance_test": "The transaction abstraction is defined in Application or the shared kernel, adapted by Doctrine in Infrastructure, and Application receives no raw Doctrine connection or query-builder type through it. Commit, rollback, exception translation, retryable deadlock and serialization failure, non-retryable domain failure, nested call semantics, and audit and outbox atomicity are proven on all three engines.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
       "id": "V2-SCL-001",
       "title": "The definition-wide exclusive mutation fence serializes writes to unrelated records",
       "severity": "high",
@@ -186,7 +162,7 @@
       "origin": "review",
       "source_anchors": [
         {
-          "file": "src/Application/Automation/Job/DoctrineJobQueue.php",
+          "file": "src/Infrastructure/Automation/DoctrineJobQueue.php",
           "symbol": "the queue-policy lock and live-lease count",
           "note": "Line 968 takes the queue_policy row with FOR UPDATE; lines 985 and 990 then run COUNT(*) over reserved rows with unexpired leases. The ordinary claim at line 270 already uses FOR UPDATE SKIP LOCKED, so the mutex is specific to contributed queues with a declared ceiling."
         }

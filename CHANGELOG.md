@@ -794,6 +794,37 @@ development programme, from the architecture decision that opened it to the curr
   checks where a contributor runs thirteen, so a release could pass with a gate never having been executed
   against the tag. (`1c80a03`)
 
+- **The layer that decides a transaction now owns the contract for one.** Deciding that a set of writes must
+  settle together is a use-case decision, but the contract expressing it — `TransactionManager` — was
+  declared in Infrastructure and imported inward by thirty-three application services, so no use case could
+  say "these settle together" without naming the persistence package that happens to implement it. The
+  contract moves to `Kumwe\CMS\Application\Persistence\TransactionManager`; `DoctrineTransactionManager`
+  stays exactly where it was and implements it. Nothing about the abstraction changed: the same three
+  methods, the same rule that a nested call joins the scope already open, the same guarantee that a commit
+  hook waits for the outermost commit while a rollback hook fires as soon as its own scope is discarded.
+  The aggregate document command commits through the identical adapter, and every existing test passes
+  unmodified. Outside the two files, the only edit is the import each caller declares. (`55605bd`)
+- **The Doctrine automation adapters are filed where the adapters live.** `DoctrineJobQueue`,
+  `DoctrineScheduler` and `DoctrineQueueRuntimeOperations` sat under `src/Application` while opening
+  connections, branching on the PostgreSQL platform and writing `FOR UPDATE SKIP LOCKED` claim scans — two
+  and a half thousand lines of driver knowledge in the layer that is meant to hold none. They move to
+  `Kumwe\CMS\Infrastructure\Automation`, beside the Doctrine adapters for authorization, security and
+  persistence, while the ports they answer stay in Application. No SQL, no lease token, no claim scan, no
+  engine branch and no concurrency semantic is touched: the queue-slot redesign is later work and would be
+  unreviewable stacked on a move. (`6702639`)
+- **The architecture gate enforces the layering instead of describing it.** Both corrections above are the
+  kind that regress from one misplaced import or one file created in the wrong directory, and nothing in
+  the build would have noticed. `composer architecture:policy` gains two predicates: application code —
+  the shared `src/Application` root and every module's own `Application` directory alike — cannot import
+  Doctrine or `Kumwe\CMS\Infrastructure`, and a class named for the technology it binds to cannot sit
+  inside an application layer. The extension migration SPI is the single admitted exception, because a
+  contributed migration is handed the connection it runs its own DDL on; it is named file by file, so a
+  fourth offender fails rather than inheriting a directory-wide waiver. Because a grep cannot see a fully
+  qualified `\Doctrine\DBAL\Connection` written inline, a companion architecture test checks the same
+  constraint by type — reflecting every application signature and walking the token stream past
+  documentation blocks — and pins the transaction contract to Application, its adapter and the three
+  automation adapters to Infrastructure, and each adapter to the port it answers. Both rules were proven to
+  fail on a deliberately reintroduced violation before being committed. (`71caaac`)
 - **Cross-site isolation is decided by containment instead of string equality, and is provably no wider.**
   The authorization gateway used to compare the owning site identifier with the caller's; it now asks whether
   the caller's site is inside the owning scope. For a resource owned by one site — every resource on an
