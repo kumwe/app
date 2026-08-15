@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Domain;
+namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
+use Kumwe\CMS\Content\Domain\TranslationGroup;
 use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
 use Kumwe\CMS\Localization\Domain\LocaleTag;
 
@@ -19,6 +19,13 @@ use Kumwe\CMS\Localization\Domain\LocaleTag;
  * every other contribution uses — an owner-namespaced identifier naming the content set, the locales
  * the package is prepared to publish it in, and the locale a reader falls back to when the one they
  * asked for is missing or still drafting.
+ *
+ * It sits beside the registrar that consumes it rather than in `Content\Domain`, because it is not a
+ * content concept at all: nothing in the content model reads it, `TranslationGroup` never sees one, and
+ * what it describes is a promise a *package* makes at admission time. Putting it here is also what
+ * keeps the dependency direction honest — a declaration that has to implement an application-owned
+ * contribution contract belongs in the application layer, alongside `CapabilityDefinition` and
+ * `PortalRouteDefinition`, rather than reaching outward from the domain to find its interface.
  *
  * The locale list is a closed claim rather than a hint, exactly as a rate provider's currency list is.
  * An operator can read which languages a package promises before installing it, and the declared

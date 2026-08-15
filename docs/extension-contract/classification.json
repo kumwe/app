@@ -741,6 +741,16 @@
       "pinned_by": null
     },
     {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\ContentTranslationRegistrar",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/Extension/Contribution/ContentTranslationRegistrar.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/content-translation-registrar-v1.json"
+    },
+    {
       "type": "Kumwe\\CMS\\Extension\\Contribution\\ContributionDefinition",
       "kind": "interface",
       "visibility": "public",
@@ -818,6 +828,16 @@
       "reachable_from": "manifest-2",
       "spi": 1,
       "path": "src/Extension/Contribution/ResourcePolicyDefinition.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\TranslationGroupDeclaration",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-4",
+      "spi": 2,
+      "path": "src/Extension/Contribution/TranslationGroupDeclaration.php",
       "pinned_by": null
     },
     {

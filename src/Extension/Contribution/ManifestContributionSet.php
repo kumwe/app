@@ -27,7 +27,6 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
-use Kumwe\CMS\Content\Domain\TranslationGroupDeclaration;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\InterfaceStandard\SurfaceArea;
