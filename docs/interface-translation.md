@@ -139,10 +139,30 @@ so a newly added template cannot quietly reintroduce hardcoded text.
 
 ## For an operator: changing the wording without a deployment
 
+**Administrator → Wording**, at `/administrator/wording`. Choose the language, choose whether the
+change applies to the whole site or only to your organization, search for the message by what it
+currently says, and write what it should say instead. It takes effect on the next page; nothing is
+deployed and no file is edited. `localization.overrides.manage` is the capability, and every change
+is written to the audit trail with the identifier, the layer and the locale it applied to.
+
 The four-step chain exists so that changing one word is an administrative act rather than a fork.
 Lookup resolves **core → extension → site → organization**, most specific wins, **per identifier and
 never per file**: overriding one message leaves every other message in that catalogue exactly as it
 was, and a later core release still improves the ones you did not touch.
+
+Three rules bound what may be stored, and each exists for a reason worth knowing:
+
+- **Only a message a shipped catalogue declares may be overridden.** An identifier nobody looks up is
+  wording that never appears, and an operator who mistyped one would believe they had changed a word
+  that never changes.
+- **Only a language this installation carries may be written**, so no override is stranded in a
+  locale nothing resolves to.
+- **A scope carries at most 500 overrides per language.** The whole map is read once per unit of work
+  on the render path; relabelling a vertical's vocabulary is tens of messages, and an unbounded map
+  would make every page pay for one bulk import.
+
+Withdrawing an override is how the shipped wording comes back — saving an empty replacement is
+refused rather than storing a message that renders as nothing.
 
 **This is also how a vertical speaks its own language.** A health vertical relabels "Client" as
 "Patient", an education vertical as "Learner", a hospitality vertical as "Guest" — in one language or
@@ -196,9 +216,14 @@ Every identifier sits under your package namespace: `acme.tools.dashboard.title`
 `MessageIdentifier::ownedBy($identifier, 'acme.tools')` is the check, and it refuses an identifier
 that claims another owner's namespace.
 
+The compiled directory is discovered from your package root when the runtime map loads it, beside the
+template directories the loader already finds — there is nothing to declare in the manifest and no
+second registration path. Only the compiled half is read, because nothing on the request path parses
+XML; the XLIFF beside it is what a translator and a translation platform receive.
+
 An extension may **add** messages and may **override** core's, and a site or an organization may
-override either. Within the extension layer, catalogue directories resolve in the order they are
-declared, so the outcome is a property of declaration order and not of filesystem enumeration.
+override either. Within the extension layer, catalogue directories resolve in runtime-map order, so
+the outcome is a property of the compiled map and not of filesystem enumeration.
 
 Read the translator through the `Kumwe\CMS\Localization\Application\Translator` port, injected
 through your constructor. Pass the locale explicitly wherever you are not on the request path — a
@@ -222,6 +247,14 @@ property**, and the whole mirroring follows from the `dir` attribute the layouts
 `composer assets:direction` fails the build on a physical inline-axis declaration anywhere under
 `assets/`. A declaration that is genuinely correct in physical terms earns an entry in
 `tools/stylesheet-direction.json` naming why; the register ships empty, because so far none is.
+
+The browser matrix has a **language axis** as well as a device axis: `desktop-chromium-he`,
+`desktop-chromium-ar`, `mobile-chromium-he` and `mobile-chromium-ar` run the right-to-left journeys,
+and `playwright.config.ts` files a baseline under the project name. That separation is the point — a
+right-to-left page compared against a left-to-right baseline is either a false failure or a green run
+that checked nothing, so each language compares against its own. The source-language projects keep
+their original names, because their committed baselines are filed under those names. What the axis
+still owes is the screenshots themselves, tracked as `V2-LNG-009`.
 
 ---
 
