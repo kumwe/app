@@ -90,7 +90,7 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
      *
      * @return  void
      *
-     * @throws  RuntimeException  When existing data already crosses a site boundary.
+     * @throws  RuntimeException  When the contradiction count is unreadable or existing data crosses a site boundary.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects inspection or a schema statement.
      *
      * @since   2.0.0
