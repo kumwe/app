@@ -26,7 +26,7 @@ final class DashboardPreferenceQueryDecoderTest extends TestCase
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function testDecodesNormalizedPageAndSearch(): void
     {
@@ -75,7 +75,7 @@ final class DashboardPreferenceQueryDecoderTest extends TestCase
      *
      * @return  iterable<string, array{mixed, mixed}>  Malformed page and search pairs.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public static function malformedQueries(): iterable
     {
@@ -90,7 +90,7 @@ final class DashboardPreferenceQueryDecoderTest extends TestCase
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function testBuildsOnlyFixedSameAreaEncodedContinuationUrls(): void
     {
@@ -123,13 +123,56 @@ final class DashboardPreferenceQueryDecoderTest extends TestCase
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function testTypedQueryRejectsPageBeyondThePracticalBound(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
         new DashboardPreferenceQuery(DashboardPreferenceQuery::MAXIMUM_PAGE + 1);
+    }
+
+    /**
+     * Proves neither independent browser can construct a continuation beyond its numeric browse window.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTypedQueryRejectsContinuationBeyondEachPracticalBound(): void
+    {
+        try {
+            (new DashboardPreferenceQuery(DashboardPreferenceQuery::MAXIMUM_PAGE))->next();
+            self::fail('The final access-group page must not produce another numeric page.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('outside the supported range', $exception->getMessage());
+        }
+
+        try {
+            (new DashboardPreferenceQuery(
+                workflowPage: DashboardPreferenceQuery::MAXIMUM_PAGE,
+            ))->workflowNext();
+            self::fail('The final workflow page must not produce another numeric page.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('outside the supported range', $exception->getMessage());
+        }
+    }
+
+    /**
+     * Proves application callers cannot bypass delivery's normalized-search contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTypedQueryRejectsNonNormalizedSearch(): void
+    {
+        try {
+            new DashboardPreferenceQuery(search: ' Finance reviewers');
+            self::fail('A non-normalized application search was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('search must be normalized', $exception->getMessage());
+        }
     }
 
     /**
@@ -162,7 +205,7 @@ final class DashboardPreferenceQueryDecoderTest extends TestCase
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function testNormalizesWorkflowStateIndependently(): void
     {

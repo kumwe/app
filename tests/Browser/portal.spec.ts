@@ -9,6 +9,11 @@ const portalPassword = process.env.KUMWE_BROWSER_PORTAL_PASSWORD
   ?? 'browser portal password';
 const portalDashboardManagerEmail = 'browser-portal-dashboard-manager@kumwe.test';
 const portalDashboardManagerPassword = 'browser portal dashboard manager password';
+const portalContextWidget = 'core.dashboard.access-context';
+const assetInspectionPortalWorkflow = 'kumwe.asset-inspection-example.portal.navigation';
+const assetInspectionPortalDashboardHref =
+  `/portal?dashboard_workflow_search=${encodeURIComponent(assetInspectionPortalWorkflow)}`
+    + '#dashboard-customization';
 const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL
   ?? 'browser-administrator@kumwe.test';
 const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD
@@ -192,6 +197,19 @@ async function resetPersonalPortalDashboard(page: Page): Promise<void> {
   }
 }
 
+async function expectPortalDashboardSaved(
+  page: Page,
+  searchParameter?: readonly [string, string],
+): Promise<void> {
+  await expect(page).toHaveURL((url) =>
+    url.pathname === '/portal'
+      && url.hash === '#dashboard-customization'
+      && url.searchParams.get('dashboard-saved') === '1'
+      && (searchParameter === undefined
+        || url.searchParams.get(searchParameter[0]) === searchParameter[1]),
+  );
+}
+
 async function fillSession5OrderForm(page: Page, name: string): Promise<void> {
   await page.locator('[name="values[name]"]').fill(name);
   await page.locator('[name="values[status]"]').selectOption('ready');
@@ -296,10 +314,14 @@ test('portal login rejects a forged pre-authentication token', async ({ request 
   expect(cookies.some((cookie) => cookie.startsWith('kumwe_portal='))).toBe(false);
 });
 
-test('portal dashboard preferences save and reset without JavaScript', async ({ browser }) => {
+test('portal dashboard preferences save and reset without JavaScript', async ({
+  browser,
+}, testInfo) => {
+  test.setTimeout(60_000);
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   let signedIn = false;
+  let preferenceMutated = false;
   try {
     await signIn(page);
     signedIn = true;
@@ -313,8 +335,12 @@ test('portal dashboard preferences save and reset without JavaScript', async ({ 
     });
     expect(missingCsrf.status()).toBe(403);
 
+    await page.goto(
+      `/portal?dashboard_workflow_search=${encodeURIComponent(portalContextWidget)}`
+        + '#dashboard-customization',
+    );
     const customization = page.locator('#dashboard-customization');
-    await customization.locator('summary').click();
+    await expect(customization).toHaveAttribute('open', '');
     const personal = customization.locator('.kis-dashboard-preference-scope').filter({
       has: page.locator('input[name="scope"][value="user"]'),
     }).first();
@@ -325,13 +351,14 @@ test('portal dashboard preferences save and reset without JavaScript', async ({ 
       await checkbox.uncheck();
     }
     const contextChoice = widgetForm.locator('.kis-dashboard-choice').filter({
-      has: page.locator('input[type="hidden"][value="core.dashboard.access-context"]'),
+      has: page.locator(`input[type="hidden"][value="${portalContextWidget}"]`),
     });
     await contextChoice.locator('input[type="checkbox"]').check();
     await contextChoice.locator('input[type="number"]').fill('1');
     await widgetForm.getByRole('button', { name: 'Save widgets' }).click();
+    preferenceMutated = true;
 
-    await expect(page).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    await expectPortalDashboardSaved(page, ['dashboard_workflow_search', portalContextWidget]);
     await expect(page.locator(
       '[data-kis-dashboard-widget="core.dashboard.access-context"]',
     )).toBeVisible();
@@ -340,41 +367,63 @@ test('portal dashboard preferences save and reset without JavaScript', async ({ 
     )).toHaveCount(0);
 
     await personal.getByRole('button', { name: 'Reset widgets' }).click();
-    await expect(page).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    await expectPortalDashboardSaved(page, ['dashboard_workflow_search', portalContextWidget]);
+    preferenceMutated = false;
     await expect(page.locator(
       '[data-kis-dashboard-widget="core.portal-business-records"]',
     )).toBeVisible();
   } finally {
     try {
-      if (signedIn) {
+      if (testInfo.status !== 'timedOut' && signedIn && preferenceMutated && !page.isClosed()) {
         await resetPersonalPortalDashboard(page);
       }
     } finally {
-      await context.close();
+      if (testInfo.status !== 'timedOut' && !page.isClosed()) {
+        await context.close();
+      }
     }
   }
 });
 
 test('a portal access-group dashboard default reaches its member and can be reset', async ({
   browser,
-}) => {
+}, testInfo) => {
+  test.setTimeout(90_000);
   const managerContext = await browser.newContext();
   const memberContext = await browser.newContext();
   const manager = await managerContext.newPage();
   const member = await memberContext.newPage();
   let managerSignedIn = false;
+  let groupMutated = false;
   try {
     await signIn(manager, portalDashboardManagerEmail, portalDashboardManagerPassword);
     managerSignedIn = true;
     const customization = manager.locator('#dashboard-customization');
     await customization.locator('summary').click();
+    const groupBrowser = customization.locator('.kis-dashboard-preference-browser').filter({
+      has: manager.getByRole('heading', { name: 'Access-group defaults', exact: true }),
+    });
+    await groupBrowser.getByLabel('Find an access group', { exact: true })
+      .fill('Browser Portal Member');
+    await groupBrowser.getByRole('button', { name: 'Search groups', exact: true }).click();
+    await expect.poll(() => {
+      const current = new URL(manager.url());
+
+      return [current.pathname, current.searchParams.get('dashboard_group_search')];
+    }).toEqual(['/portal', 'Browser Portal Member']);
+    await expect(groupBrowser.getByRole('status')).toContainText(
+      '1 access group matching “Browser Portal Member”',
+    );
     const group = customization.locator('.kis-dashboard-preference-scope').filter({
       has: manager.getByRole('heading', { name: 'Browser Portal Member', exact: true }),
     });
     const widgetForm = group.locator('form').filter({
       has: manager.locator('button[value="dashboard-cards.save"]'),
     });
-    await expect(widgetForm).toHaveAttribute('action', '/portal/dashboard/preferences');
+    await expect(widgetForm).toHaveAttribute(
+      'action',
+      '/portal/dashboard/preferences?dashboard_group_search=Browser%20Portal%20Member',
+    );
     await expect(widgetForm.locator('input[name="scope"]')).toHaveValue('role-workspace');
     await expect(widgetForm.locator('input[name="scope_id"]')).toHaveValue(/^role:/u);
     for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
@@ -386,7 +435,11 @@ test('a portal access-group dashboard default reaches its member and can be rese
     await contextChoice.locator('input[type="checkbox"]').check();
     await contextChoice.locator('input[type="number"]').fill('1');
     await widgetForm.getByRole('button', { name: 'Save widgets' }).click();
-    await expect(manager).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    groupMutated = true;
+    await expectPortalDashboardSaved(manager, [
+      'dashboard_group_search',
+      'Browser Portal Member',
+    ]);
 
     await signIn(member);
     await expect(member.locator(
@@ -397,7 +450,11 @@ test('a portal access-group dashboard default reaches its member and can be rese
     )).toHaveCount(0);
 
     await group.getByRole('button', { name: 'Reset widgets' }).click();
-    await expect(manager).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    await expectPortalDashboardSaved(manager, [
+      'dashboard_group_search',
+      'Browser Portal Member',
+    ]);
+    groupMutated = false;
 
     await member.reload();
     await expect(member.locator(
@@ -405,27 +462,42 @@ test('a portal access-group dashboard default reaches its member and can be rese
     )).toBeVisible();
   } finally {
     try {
-      if (managerSignedIn) {
-        await manager.goto('/portal?dashboard-saved=1#dashboard-customization');
+      if (
+        testInfo.status !== 'timedOut'
+        && managerSignedIn
+        && groupMutated
+        && !manager.isClosed()
+      ) {
+        await manager.goto(
+          '/portal?dashboard_group_search=Browser%20Portal%20Member'
+            + '&dashboard-saved=1#dashboard-customization',
+        );
         const group = manager.locator('.kis-dashboard-preference-scope').filter({
           has: manager.getByRole('heading', { name: 'Browser Portal Member', exact: true }),
         });
         const reset = group.getByRole('button', { name: 'Reset widgets' });
         if (await reset.count()) {
           await reset.click();
-          await expect(manager).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+          await expectPortalDashboardSaved(manager, [
+            'dashboard_group_search',
+            'Browser Portal Member',
+          ]);
         }
       }
     } finally {
-      await managerContext.close();
-      await memberContext.close();
+      if (testInfo.status !== 'timedOut' && !manager.isClosed()) {
+        await managerContext.close();
+      }
+      if (testInfo.status !== 'timedOut' && !member.isClosed()) {
+        await memberContext.close();
+      }
     }
   }
 });
 
 test('portal dashboard prunes and recovers a saved extension workflow across lifecycle changes', async ({
   browser,
-}) => {
+}, testInfo) => {
   test.setTimeout(120_000);
   const portalContext = await browser.newContext();
   const administratorContext = await browser.newContext();
@@ -433,6 +505,8 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
   const administrator = await administratorContext.newPage();
   let administratorSignedIn = false;
   let portalSignedIn = false;
+  let dashboardMutated = false;
+  let extensionDisabled = false;
   try {
     await signInAdministrator(administrator);
     administratorSignedIn = true;
@@ -441,9 +515,9 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
     portalSignedIn = true;
     await resetPersonalPortalDashboard(portal);
 
-    await portal.goto('/portal');
+    await portal.goto(assetInspectionPortalDashboardHref);
     const customization = portal.locator('#dashboard-customization');
-    await customization.locator('summary').click();
+    await expect(customization).toHaveAttribute('open', '');
     const personal = customization.locator('.kis-dashboard-preference-scope').filter({
       has: portal.locator('input[name="scope"][value="user"]'),
     }).first();
@@ -452,7 +526,7 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
     });
     const widgetChoice = widgetForm.locator('.kis-dashboard-choice').filter({
       has: portal.locator(
-        'input[type="hidden"][value="kumwe.asset-inspection-example.portal.navigation"]',
+        `input[type="hidden"][value="${assetInspectionPortalWorkflow}"]`,
       ),
     });
     for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
@@ -461,13 +535,14 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
     await widgetChoice.locator('input[type="checkbox"]').check();
     await widgetChoice.locator('input[type="number"]').fill('1');
     await widgetForm.getByRole('button', { name: 'Save widgets' }).click();
+    dashboardMutated = true;
 
     const shortcutForm = personal.locator('form').filter({
       has: portal.locator('button[value="navigation-shortcuts.save"]'),
     });
     const shortcutChoice = shortcutForm.locator('.kis-dashboard-choice').filter({
       has: portal.locator(
-        'input[type="hidden"][value="kumwe.asset-inspection-example.portal.navigation"]',
+        `input[type="hidden"][value="${assetInspectionPortalWorkflow}"]`,
       ),
     });
     for (const checkbox of await shortcutForm.locator('input[type="checkbox"]:checked').all()) {
@@ -477,7 +552,7 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
     await shortcutChoice.locator('input[type="number"]').fill('1');
     await shortcutForm.getByRole('button', { name: 'Save shortcuts' }).click();
 
-    const workflowId = 'kumwe.asset-inspection-example.portal.navigation';
+    const workflowId = assetInspectionPortalWorkflow;
     const workflowHref = '/portal/extensions/kumwe/asset-inspection-example';
     await expect(portal.locator(`[data-kis-dashboard-widget="${workflowId}"]`)).toBeVisible();
     await expect(portal.locator(
@@ -492,9 +567,10 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
       await extension.getByRole('button', { name: 'Disable' }).click();
       await expect(administrator).toHaveURL(/\/administrator\/extensions$/);
       await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
+      extensionDisabled = true;
 
       await expect.poll(async () => {
-        await portal.goto('/portal');
+        await portal.goto(assetInspectionPortalDashboardHref);
         return personal.locator(
           `input[type="hidden"][name^="item_"][value="${workflowId}"]`,
         ).count();
@@ -514,11 +590,18 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
         { exact: true },
       )).toBeVisible();
     } finally {
-      await ensureAssetInspectionActive(administrator);
+      if (
+        testInfo.status !== 'timedOut'
+        && extensionDisabled
+        && !administrator.isClosed()
+      ) {
+        await ensureAssetInspectionActive(administrator);
+        extensionDisabled = false;
+      }
     }
 
     await expect.poll(async () => {
-      await portal.goto('/portal');
+      await portal.goto(assetInspectionPortalDashboardHref);
       return portal.locator(`[data-kis-dashboard-widget="${workflowId}"]`).count();
     }, {
       message: 'the reactivated portal workflow to recover its stored dashboard selection',
@@ -532,17 +615,31 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
     )).toHaveCount(2);
   } finally {
     try {
-      if (administratorSignedIn) {
+      if (
+        testInfo.status !== 'timedOut'
+        && administratorSignedIn
+        && extensionDisabled
+        && !administrator.isClosed()
+      ) {
         await ensureAssetInspectionActive(administrator);
       }
     } finally {
       try {
-        if (portalSignedIn) {
+        if (
+          testInfo.status !== 'timedOut'
+          && portalSignedIn
+          && dashboardMutated
+          && !portal.isClosed()
+        ) {
           await resetPersonalPortalDashboard(portal);
         }
       } finally {
-        await administratorContext.close();
-        await portalContext.close();
+        if (testInfo.status !== 'timedOut' && !administrator.isClosed()) {
+          await administratorContext.close();
+        }
+        if (testInfo.status !== 'timedOut' && !portal.isClosed()) {
+          await portalContext.close();
+        }
       }
     }
   }

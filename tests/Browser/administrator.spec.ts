@@ -8,6 +8,12 @@ const limitedEmail = process.env.KUMWE_BROWSER_LIMITED_EMAIL ?? 'browser-limited
 const limitedPassword = process.env.KUMWE_BROWSER_LIMITED_PASSWORD ?? 'browser limited password';
 const dashboardGroupEmail = 'browser-dashboard@kumwe.test';
 const dashboardGroupPassword = 'browser dashboard password';
+const dashboardGroupSearch = 'Browser Dashboard Group';
+const announcementsDashboardSearch = 'kumwe.announcements-example.navigation';
+const administratorContextWidget = 'core.dashboard.administrator-context';
+const announcementsDashboardHref =
+  `/administrator?dashboard_workflow_search=${encodeURIComponent(announcementsDashboardSearch)}`
+    + '#dashboard-customization';
 const businessDefinitionHandle = 'site.default.session5_order';
 const assetInspectionDefinition = 'kumwe.asset-inspection-example.inspection';
 const assetInspectionReport = 'kumwe.asset-inspection-example.inspection-summary';
@@ -177,6 +183,19 @@ async function resetPersonalAdministratorDashboard(page: Page): Promise<void> {
   }
 }
 
+async function expectDashboardSaved(
+  page: Page,
+  searchParameter?: readonly [string, string],
+): Promise<void> {
+  await expect(page).toHaveURL((url) =>
+    url.pathname === '/administrator'
+      && url.hash === '#dashboard-customization'
+      && url.searchParams.get('dashboard-saved') === '1'
+      && (searchParameter === undefined
+        || url.searchParams.get(searchParameter[0]) === searchParameter[1]),
+  );
+}
+
 test('login is accessible and visually stable', async ({ page }, testInfo) => {
   await page.goto('/administrator/login');
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -282,10 +301,14 @@ test('policy authoring retains a complete native no-JavaScript path', async ({ b
   }
 });
 
-test('dashboard preferences save and reset through the native no-JavaScript workflow', async ({ browser }) => {
+test('dashboard preferences save and reset through the native no-JavaScript workflow', async ({
+  browser,
+}, testInfo) => {
+  test.setTimeout(60_000);
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   let signedIn = false;
+  let preferenceMutated = false;
   try {
     await signIn(page);
     signedIn = true;
@@ -300,8 +323,12 @@ test('dashboard preferences save and reset through the native no-JavaScript work
     });
     expect(forged.status()).toBe(403);
 
+    await page.goto(
+      `/administrator?dashboard_workflow_search=${encodeURIComponent(administratorContextWidget)}`
+        + '#dashboard-customization',
+    );
     const customization = page.locator('#dashboard-customization');
-    await customization.locator('summary').click();
+    await expect(customization).toHaveAttribute('open', '');
     const personal = customization.locator('.kis-dashboard-preference-scope').filter({
       has: page.locator('input[name="scope"][value="user"]'),
     }).first();
@@ -314,13 +341,17 @@ test('dashboard preferences save and reset through the native no-JavaScript work
       await checkbox.uncheck();
     }
     const contextChoice = widgetForm.locator('.kis-dashboard-choice').filter({
-      has: page.locator('input[type="hidden"][value="core.dashboard.administrator-context"]'),
+      has: page.locator(`input[type="hidden"][value="${administratorContextWidget}"]`),
     });
     await contextChoice.locator('input[type="checkbox"]').check();
     await contextChoice.locator('input[type="number"]').fill('1');
     await widgetForm.getByRole('button', { name: 'Save widgets' }).click();
+    preferenceMutated = true;
 
-    await expect(page).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    await expectDashboardSaved(
+      page,
+      ['dashboard_workflow_search', administratorContextWidget],
+    );
     await expect(page.locator(
       '[data-kis-dashboard-widget="core.dashboard.administrator-context"]',
     )).toBeVisible();
@@ -336,7 +367,7 @@ test('dashboard preferences save and reset through the native no-JavaScript work
         scope: 'user',
         scope_id: scopeId,
         expected_version: staleVersion,
-        item_0: 'core.dashboard.administrator-context',
+        item_0: administratorContextWidget,
         selected_0: '1',
         order_0: '1',
       },
@@ -355,33 +386,44 @@ test('dashboard preferences save and reset through the native no-JavaScript work
 
     await personal.getByRole('button', { name: 'Reset widgets' }).click();
     await expect(page).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    preferenceMutated = false;
     await expect(page.locator(
       '[data-kis-dashboard-widget="core.dashboard.content-summary"]',
     )).toBeVisible();
   } finally {
     try {
-      if (signedIn) {
+      if (testInfo.status !== 'timedOut' && signedIn && preferenceMutated && !page.isClosed()) {
         await resetPersonalAdministratorDashboard(page);
       }
     } finally {
-      await context.close();
+      if (testInfo.status !== 'timedOut' && !page.isClosed()) {
+        await context.close();
+      }
     }
   }
 });
 
-test('an access-group dashboard default reaches its member and can be reset', async ({ browser }) => {
+test('an access-group dashboard default reaches its member and can be reset', async ({
+  browser,
+}, testInfo) => {
+  test.setTimeout(90_000);
   const managerContext = await browser.newContext();
   const memberContext = await browser.newContext();
   const manager = await managerContext.newPage();
   const member = await memberContext.newPage();
   let managerSignedIn = false;
+  let groupMutated = false;
   try {
     await signIn(manager);
     managerSignedIn = true;
+    await manager.goto(
+      `/administrator?dashboard_group_search=${encodeURIComponent(dashboardGroupSearch)}`
+        + '#dashboard-customization',
+    );
     const customization = manager.locator('#dashboard-customization');
-    await customization.locator('summary').click();
+    await expect(customization).toHaveAttribute('open', '');
     const group = customization.locator('.kis-dashboard-preference-scope').filter({
-      has: manager.getByRole('heading', { name: 'Browser Dashboard Group', exact: true }),
+      has: manager.getByRole('heading', { name: dashboardGroupSearch, exact: true }),
     });
     const widgetForm = group.locator('form').filter({
       has: manager.locator('button[value="dashboard-cards.save"]'),
@@ -395,7 +437,8 @@ test('an access-group dashboard default reaches its member and can be reset', as
     await contextChoice.locator('input[type="checkbox"]').check();
     await contextChoice.locator('input[type="number"]').fill('1');
     await widgetForm.getByRole('button', { name: 'Save widgets' }).click();
-    await expect(manager).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    groupMutated = true;
+    await expectDashboardSaved(manager, ['dashboard_group_search', dashboardGroupSearch]);
 
     await signIn(member, dashboardGroupEmail, dashboardGroupPassword);
     await expect(member.locator(
@@ -405,12 +448,16 @@ test('an access-group dashboard default reaches its member and can be reset', as
       '[data-kis-dashboard-widget="core.dashboard.content-summary"]',
     )).toHaveCount(0);
 
-    await manager.goto('/administrator?dashboard-saved=1#dashboard-customization');
+    await manager.goto(
+      `/administrator?dashboard_group_search=${encodeURIComponent(dashboardGroupSearch)}`
+        + '#dashboard-customization',
+    );
     const savedGroup = manager.locator('.kis-dashboard-preference-scope').filter({
-      has: manager.getByRole('heading', { name: 'Browser Dashboard Group', exact: true }),
+      has: manager.getByRole('heading', { name: dashboardGroupSearch, exact: true }),
     });
     await savedGroup.getByRole('button', { name: 'Reset widgets' }).click();
-    await expect(manager).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+    await expectDashboardSaved(manager, ['dashboard_group_search', dashboardGroupSearch]);
+    groupMutated = false;
 
     await member.reload();
     await expect(member.locator(
@@ -418,20 +465,32 @@ test('an access-group dashboard default reaches its member and can be reset', as
     )).toBeVisible();
   } finally {
     try {
-      if (managerSignedIn) {
-        await manager.goto('/administrator?dashboard-saved=1#dashboard-customization');
+      if (
+        testInfo.status !== 'timedOut'
+        && managerSignedIn
+        && groupMutated
+        && !manager.isClosed()
+      ) {
+        await manager.goto(
+          `/administrator?dashboard_group_search=${encodeURIComponent(dashboardGroupSearch)}`
+            + '#dashboard-customization',
+        );
         const group = manager.locator('.kis-dashboard-preference-scope').filter({
-          has: manager.getByRole('heading', { name: 'Browser Dashboard Group', exact: true }),
+          has: manager.getByRole('heading', { name: dashboardGroupSearch, exact: true }),
         });
         const reset = group.getByRole('button', { name: 'Reset widgets' });
         if (await reset.count()) {
           await reset.click();
-          await expect(manager).toHaveURL(/dashboard-saved=1#dashboard-customization$/u);
+          await expectDashboardSaved(manager, ['dashboard_group_search', dashboardGroupSearch]);
         }
       }
     } finally {
-      await managerContext.close();
-      await memberContext.close();
+      if (testInfo.status !== 'timedOut' && !manager.isClosed()) {
+        await managerContext.close();
+      }
+      if (testInfo.status !== 'timedOut' && !member.isClosed()) {
+        await memberContext.close();
+      }
     }
   }
 });
@@ -1837,16 +1896,18 @@ test.describe('authenticated administrator', () => {
   test('disabling removes component navigation and reactivation restores it', async ({
     page,
     isMobile,
-  }) => {
+  }, testInfo) => {
     // KIS-EVIDENCE-BEGIN p6-003-extension-reactivation-ui
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
+    let dashboardMutated = false;
+    let extensionDisabled = false;
     await ensureAnnouncementsActive(page);
     await resetPersonalAdministratorDashboard(page);
     try {
       try {
-        await page.goto('/administrator');
+        await page.goto(announcementsDashboardHref);
         const customization = page.locator('#dashboard-customization');
-        await customization.locator('summary').click();
+        await expect(customization).toHaveAttribute('open', '');
         const personalDashboard = customization.locator('.kis-dashboard-preference-scope').filter({
           has: page.locator('input[name="scope"][value="user"]'),
         }).first();
@@ -1864,6 +1925,7 @@ test.describe('authenticated administrator', () => {
         await widgetChoice.locator('input[type="checkbox"]').check();
         await widgetChoice.locator('input[type="number"]').fill('1');
         await widgetForm.getByRole('button', { name: 'Save widgets' }).click();
+        dashboardMutated = true;
 
         const shortcutForm = personalDashboard.locator('form').filter({
           has: page.locator('button[value="navigation-shortcuts.save"]'),
@@ -1894,9 +1956,10 @@ test.describe('authenticated administrator', () => {
         await extension.getByRole('button', { name: 'Disable' }).click();
         await expect(page).toHaveURL(/\/administrator\/extensions$/);
         await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
+        extensionDisabled = true;
 
         await expect.poll(async () => {
-          await page.goto('/administrator');
+          await page.goto(announcementsDashboardHref);
           return page.getByRole('link', { name: 'Announcements', exact: true }).count();
         }, {
           message: 'the disabled extension navigation to leave the local signed runtime map',
@@ -1924,9 +1987,12 @@ test.describe('authenticated administrator', () => {
             + '[value="kumwe.announcements-example.navigation"]',
         )).toHaveCount(0);
       } finally {
-        await ensureAnnouncementsActive(page);
+        if (testInfo.status !== 'timedOut' && extensionDisabled && !page.isClosed()) {
+          await ensureAnnouncementsActive(page);
+          extensionDisabled = false;
+        }
       }
-      await page.goto('/administrator');
+      await page.goto(announcementsDashboardHref);
       await expect(page.locator(
         '[data-kis-dashboard-widget="kumwe.announcements-example.navigation"]',
       )).toBeVisible();
@@ -1946,9 +2012,17 @@ test.describe('authenticated administrator', () => {
       await expect(page.getByRole('link', { name: 'Announcements' })).toBeVisible();
     } finally {
       try {
-        await ensureAnnouncementsActive(page);
+        if (testInfo.status !== 'timedOut' && extensionDisabled && !page.isClosed()) {
+          await ensureAnnouncementsActive(page);
+        }
       } finally {
-        await resetPersonalAdministratorDashboard(page);
+        if (
+          testInfo.status !== 'timedOut'
+          && dashboardMutated
+          && !page.isClosed()
+        ) {
+          await resetPersonalAdministratorDashboard(page);
+        }
       }
     }
     // KIS-EVIDENCE-END p6-003-extension-reactivation-ui

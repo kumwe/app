@@ -54,8 +54,12 @@ test.describe('KIS production component gallery', () => {
     const readOnlyPreferences = dashboardGallery.locator('[data-kis-dashboard-preferences-read-only]');
     await expect(readOnlyPreferences).toBeVisible();
     await expect(readOnlyPreferences).toHaveAttribute('disabled', '');
-    await expect(readOnlyPreferences.locator('[name="dashboard_workflow_search"]')).toBeDisabled();
-    await expect(readOnlyPreferences.locator('[name="dashboard_group_search"]')).toBeDisabled();
+    await expect(readOnlyPreferences.locator(
+      'input[type="search"][name="dashboard_workflow_search"]',
+    )).toBeDisabled();
+    await expect(readOnlyPreferences.locator(
+      'input[type="search"][name="dashboard_group_search"]',
+    )).toBeDisabled();
     for (const control of await readOnlyPreferences.locator('button, input, select, textarea').all()) {
       await expect(control).toBeDisabled();
     }
@@ -95,7 +99,8 @@ test.describe('KIS production component gallery', () => {
     const opener = page.getByRole('button', { name: 'Open focused editor' });
     await page.getByRole('link', { name: 'Enter a stable inspection reference.' }).click();
     await expect(page.getByRole('dialog', { name: 'Create inspection' })).toBeVisible();
-    await expect(page.getByLabel('Reference')).toBeFocused();
+    const inspectionDrawer = page.locator('#kis-gallery-panel-forms #kis-gallery-drawer-drawer');
+    await expect(inspectionDrawer.getByLabel('Reference', { exact: true })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(opener).toBeFocused();
 
@@ -158,7 +163,8 @@ test.describe('KIS server-rendered fallback', () => {
       .toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[role="tabpanel"]:visible')).toHaveCount(4);
     await expect(page.locator('#kis-gallery-drawer-drawer')).toBeVisible();
-    await expect(page.getByLabel('Reference')).toHaveValue('INS-004');
+    const inspectionDrawer = page.locator('#kis-gallery-panel-forms #kis-gallery-drawer-drawer');
+    await expect(inspectionDrawer.getByLabel('Reference', { exact: true })).toHaveValue('INS-004');
     await page.getByRole('tab', { name: 'Safety and states' }).click();
     await expect(page).toHaveURL(/\/administrator\/interface-standard\?tab=safety/u);
     await expect(page.getByRole('heading', { name: 'Purge remains separate' })).toBeVisible();

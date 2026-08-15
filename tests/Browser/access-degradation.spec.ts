@@ -77,7 +77,9 @@ test.describe('capability-degraded administrator access', () => {
     await page.getByRole('link', { name: 'Back to the dashboard' }).click();
     await expect(page).toHaveURL(/\/administrator$/);
     await expect(page.getByRole('heading', { name: 'Your work, at a glance' })).toBeVisible();
-    await expect(page.getByText('Recently updated content')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Recently updated content', exact: true }),
+    ).toBeVisible();
   });
 
   test('non-browser callers still receive the machine-readable problem document', async ({ page }) => {

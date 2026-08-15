@@ -93,7 +93,9 @@
       {% if widget.data.progress|default(null) %}
         <div class="kis-dashboard-progress">
           <div>
-            <strong>{{ t(widget.data.progress.label, widget.data.progress.parameters|default({})) }}</strong>
+            <strong id="dashboard-widget-{{ widget_index }}-progress-label">
+              {{ t(widget.data.progress.label, widget.data.progress.parameters|default({})) }}
+            </strong>
             {% if widget.data.progress.help|default('') is not empty %}
               <span>{{ t(widget.data.progress.help, widget.data.progress.help_parameters|default({})) }}</span>
             {% endif %}
@@ -101,6 +103,7 @@
           <div
             class="progress-track"
             role="progressbar"
+            aria-labelledby="dashboard-widget-{{ widget_index }}-progress-label"
             aria-valuemin="0"
             aria-valuemax="100"
             aria-valuenow="{{ widget.data.progress.value }}"
