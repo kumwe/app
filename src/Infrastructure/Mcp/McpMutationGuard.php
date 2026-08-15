@@ -134,6 +134,7 @@ final readonly class McpMutationGuard
      *          canonically so reusing the identifier with different arguments is refused.
      * @param   callable(): TResult   $mutation     The write to perform, invoked at most once per
      *          identifier and from inside the fenced transaction.
+     *
      * @return  TResult  The mutation's own return value on the first run, or the stored copy on a repeat.
      *
      * @throws  InvalidArgumentException  When the context carries no human principal, the identifier is

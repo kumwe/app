@@ -48,7 +48,7 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
      * @param  ContentLayoutCatalog       $layouts    Content-type to site-template layout selection.
      * @param  TranslationGroupPresenter  $languages  Builder of the page's alternate-language links and
      *         the language selector, from the translation group the rendered entry belongs to.
-     * @param  ActiveLocale                $active     Request locale holder aligned to a locale-bearing record
+     * @param  ActiveLocale               $active     Request locale holder aligned to a locale-bearing record
      *         before its template and translated chrome are rendered.
      *
      * @since  2.0.0

@@ -63,28 +63,28 @@ final readonly class KumweMcpHandlers
      * The container builds one unbound instance: neither identity argument is supplied, so every tool refuses
      * until `forContext()` or `forCredential()` hands back a bound copy.
      *
-     * @param  McpCapabilityCatalog          $catalog           Tools, resources and prompts this release exposes,
+     * @param  McpCapabilityCatalog         $catalog           Tools, resources and prompts this release exposes,
      *         as published by `discover()` and the capability resource.
-     * @param  ContentService                $content           Content entries behind the `kumwe_content_*` tools.
-     * @param  NavigationService             $navigation        Menus and menu items behind the `kumwe_menu_*` tools.
-     * @param  AccessControlService          $access            Users, roles, capabilities and token metadata.
-     * @param  SiteSettings                  $settings          The site settings document, read and replaced whole.
-     * @param  ExtensionManager              $extensions        Extension activation, disabling and removal.
-     * @param  TrustStore                    $trust             Extension signing keys, and the installation-wide
+     * @param  ContentService               $content           Content entries behind the `kumwe_content_*` tools.
+     * @param  NavigationService            $navigation        Menus and menu items behind the `kumwe_menu_*` tools.
+     * @param  AccessControlService         $access            Users, roles, capabilities and token metadata.
+     * @param  SiteSettings                 $settings          The site settings document, read and replaced whole.
+     * @param  ExtensionManager             $extensions        Extension activation, disabling and removal.
+     * @param  TrustStore                   $trust             Extension signing keys, and the installation-wide
      *         lifecycle lock the trust and extension writes are taken under.
-     * @param  AutomationManagementService   $automation        Schedules and jobs behind the automation tools.
-     * @param  BusinessDefinitionService     $definitions       Business entity definition drafts and versions.
-     * @param  BusinessSchemaService         $schema            Schema plans and their approval and execution.
-     * @param  BusinessMcpHandlers           $businessRecords   Bounded generated-business MCP delegate.
-     * @param  ReportMcpHandlers             $businessReports   Bounded report and export MCP delegate.
-     * @param  McpMutationGuard              $mutations         Idempotency fence every write is run through.
-     * @param  ClockInterface                $clock             Supplies the first-run instant a new schedule is
+     * @param  AutomationManagementService  $automation        Schedules and jobs behind the automation tools.
+     * @param  BusinessDefinitionService    $definitions       Business entity definition drafts and versions.
+     * @param  BusinessSchemaService        $schema            Schema plans and their approval and execution.
+     * @param  BusinessMcpHandlers          $businessRecords   Bounded generated-business MCP delegate.
+     * @param  ReportMcpHandlers            $businessReports   Bounded report and export MCP delegate.
+     * @param  McpMutationGuard             $mutations         Idempotency fence every write is run through.
+     * @param  ClockInterface               $clock             Supplies the first-run instant a new schedule is
      *         anchored to.
-     * @param  AuthorizationGateway          $authorization     Judges each write against the resource it names,
+     * @param  AuthorizationGateway         $authorization     Judges each write against the resource it names,
      *         before the fence is entered.
-     * @param  ?ExecutionContext             $executionContext  Actor bound by `forContext()`; null while the
+     * @param  ?ExecutionContext            $executionContext  Actor bound by `forContext()`; null while the
      *         instance is unbound.
-     * @param  ?Closure                      $contextRefresh    Callback bound by `forCredential()` that
+     * @param  ?Closure                     $contextRefresh    Callback bound by `forCredential()` that
      *         re-verifies the retained token and mints a fresh context; null when no credential is retained.
      *
      * @since  2.0.0
