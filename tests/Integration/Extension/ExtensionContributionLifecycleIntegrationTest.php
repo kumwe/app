@@ -19,8 +19,10 @@ use Kumwe\CMS\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Kernel\ContainerFactory;
+use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Twig\Loader\FilesystemLoader;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -171,6 +173,30 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
                 [],
                 $recoveryRegistries->inventory(ContributionOwner::extension($identifier))['capabilities'],
             );
+
+            // The extension is installed, active and trusted at this point, so an empty active set and an
+            // empty contribution inventory are evidence that recovery composition ran none of its PHP: a
+            // provider that had executed would have registered the capability asserted absent above. The
+            // remaining half of the claim is that recovery reads none of its templates or assets either,
+            // which is a property of the loader chain rather than of the registry.
+            $recoveryTemplates = $recovery->get(RecoveryAdministratorTwigEnvironment::class);
+            self::assertInstanceOf(RecoveryAdministratorTwigEnvironment::class, $recoveryTemplates);
+            $loader = $recoveryTemplates->getLoader();
+            self::assertInstanceOf(FilesystemLoader::class, $loader);
+            self::assertSame(
+                [FilesystemLoader::MAIN_NAMESPACE, 'core-admin', 'kis'],
+                $loader->getNamespaces(),
+                'Recovery composition must expose no extension template namespace.',
+            );
+            foreach ($loader->getNamespaces() as $namespace) {
+                foreach ($loader->getPaths($namespace) as $path) {
+                    self::assertStringStartsWith(
+                        dirname(__DIR__, 3) . '/templates',
+                        $path,
+                        'Recovery composition must read templates from the core tree alone.',
+                    );
+                }
+            }
 
             $manager->disable($identifier, $context);
             self::assertSame(0, $this->activeDefinitionCount($database, $tables, $identifier));
