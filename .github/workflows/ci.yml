@@ -253,6 +253,9 @@ jobs:
       - name: Verify the quality contract
         run: composer quality:contract
 
+      - name: Verify the frozen extension contract
+        run: composer extension:contract
+
       - name: Verify the interface programme and the roadmap ledger
         run: |
           composer interface:programme
