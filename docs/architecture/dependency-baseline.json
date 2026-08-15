@@ -5,116 +5,6 @@
   "recorded_at": "2026-08-15",
   "violations": [
     {
-      "from": "Kumwe\\CMS\\Administrator\\Http\\Handler\\AdministratorAccessControlHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
-      "from": "Kumwe\\CMS\\Administrator\\Http\\Handler\\AdministratorBusinessSecurityHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
-      "from": "Kumwe\\CMS\\Application\\Authorization\\ResourceOwnershipScopeService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Application\\Authorization\\SiteGroupAdministration",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Application\\Automation\\AutomationManagementService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Application\\Automation\\Job\\DoctrineJobQueue",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Application\\Automation\\Job\\DoctrineJobQueue",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Application\\Automation\\Job\\DoctrineQueueRuntimeOperations",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Application\\Automation\\Job\\DoctrineQueueRuntimeOperations",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Application\\Automation\\Job\\DoctrineScheduler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Application\\Automation\\Job\\DoctrineScheduler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
       "from": "Kumwe\\CMS\\Audit\\Domain\\AuditAnchorDigest",
       "to": "Kumwe\\CMS\\Application\\Automation\\CanonicalJson",
       "from_layer": "domain",
@@ -133,46 +23,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessDefinition\\Application\\BusinessDefinitionService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationEventConsumerDispatcher",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationOperationsService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessIntegration\\Application\\ProcessWorkDispatcher",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
       "from": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventEnvelope",
@@ -215,26 +65,6 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessRecord\\Application\\BusinessRecordIdempotencyPurger",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessRecord\\Application\\BusinessRecordService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
       "from": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyRateProviderDefinition",
       "to": "Kumwe\\CMS\\Extension\\Contribution\\ContributionDefinition",
       "from_layer": "domain",
@@ -253,36 +83,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessReporting\\Application\\ExportAttemptPublisher",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessReporting\\Application\\ExportGenerationService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessReporting\\Application\\ExportService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
       "from": "Kumwe\\CMS\\BusinessReporting\\Domain\\ExportArtifact",
@@ -305,56 +105,6 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessSchema\\Application\\BusinessSchemaExecutor",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSchema\\Application\\BusinessSchemaPlanner",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSchema\\Application\\BusinessSchemaService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSecurity\\Application\\Administration\\BusinessSecurityAdministrationService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSecurity\\Application\\Approval\\ApprovalService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
       "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessFormInputMapper",
       "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentation",
       "from_layer": "application",
@@ -373,36 +123,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessMutationPlanService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessOperationStatusService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessSurfaceCatalog",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
       "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessSurfaceService",
@@ -433,56 +153,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessSurfaceService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\CustomBusinessActionExecutor",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\GeneratedBusinessActionStepUp",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Content\\Application\\ContentModelService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Content\\Application\\ContentService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
       "from": "Kumwe\\CMS\\Content\\Domain\\ContentTypeDefinition",
@@ -695,28 +365,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Http\\Api\\Idempotency\\PersistentIdempotencyMiddleware",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
       "from": "Kumwe\\CMS\\Delivery\\Http\\Api\\Idempotency\\SecretOnceIdempotencyMiddleware",
       "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
-      "from": "Kumwe\\CMS\\Delivery\\Http\\Api\\Idempotency\\SecretOnceIdempotencyMiddleware",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -813,16 +463,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-D: typed configuration is handed to this collaborator by the composition root rather than read out of it."
-    },
-    {
-      "from": "Kumwe\\CMS\\Extension\\Application\\Trust\\TrustStore",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
       "from": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteHandlerFactory",
@@ -1235,26 +875,6 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Identity\\Application\\Administration\\AccessControlService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\CMS\\Identity\\Application\\StepUp\\TotpStepUpProvider",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
       "from": "Kumwe\\CMS\\Infrastructure\\Mcp\\KumweMcpHandlers",
       "to": "Kumwe\\CMS\\Presentation\\ThemeSurface",
       "from_layer": "infrastructure",
@@ -1343,16 +963,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\CMS\\Navigation\\Application\\NavigationService",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
       "from": "Kumwe\\CMS\\OpenApi\\Application\\OpenApiContractCompiler",
@@ -1445,26 +1055,6 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\Portal\\Http\\Handler\\PortalApprovalHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
-      "from": "Kumwe\\CMS\\Presentation\\Application\\Preference\\PresentationPreferenceManager",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
-      "from_layer": "presentation",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
-    },
-    {
       "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\ConsoleAdministratorThemeRecovery",
       "to": "Kumwe\\CMS\\Extension\\Infrastructure\\DatabaseFencedExtensionRegistryLease",
       "from_layer": "presentation",
@@ -1497,16 +1087,6 @@
     {
       "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\DoctrineAdministratorThemeRecovery",
       "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "presentation",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
-    },
-    {
-      "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\DoctrineAdministratorThemeRecovery",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TransactionManager",
       "from_layer": "presentation",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
