@@ -6,6 +6,7 @@ namespace Kumwe\CMS\BusinessSurface\Application;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
@@ -19,7 +20,6 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResul
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
@@ -15,7 +16,6 @@ use Kumwe\CMS\BusinessIntegration\Application\ProcessManagerService;
 use Kumwe\CMS\BusinessIntegration\Application\ProcessManagerStore;
 use Kumwe\CMS\BusinessReporting\Application\ProjectionRebuildResult;
 use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;

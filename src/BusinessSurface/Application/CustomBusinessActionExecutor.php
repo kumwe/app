@@ -7,6 +7,7 @@ namespace Kumwe\CMS\BusinessSurface\Application;
 use DateInterval;
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
@@ -33,7 +34,6 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionResult;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

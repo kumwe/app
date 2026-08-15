@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
 
 use DateTimeImmutable;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorCreateContentHandler;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
@@ -46,7 +47,6 @@ use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\CMS\Infrastructure\Mcp\ReportMcpHandlers;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Navigation\Application\NavigationService;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;

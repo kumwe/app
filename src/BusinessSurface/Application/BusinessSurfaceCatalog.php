@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeDefinitionResolver;
 use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\DocumentViewDefinition;
@@ -31,7 +32,6 @@ use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Ramsey\Uuid\Uuid;
 
 /**

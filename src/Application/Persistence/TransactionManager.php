@@ -2,10 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence;
+namespace Kumwe\CMS\Application\Persistence;
 
 /**
  * Contract for running work atomically and for deferring side effects until the transaction settles.
+ *
+ * Application owns this contract because a transaction boundary is a use-case decision, not a driver
+ * detail: the layer that knows which writes have to settle together is the layer that gets to say so.
+ * Infrastructure supplies the adapter that keeps the promise — `DoctrineTransactionManager` today — and
+ * nothing here names a connection, a platform or a query builder, so a second adapter owes behaviour
+ * rather than a shape.
  *
  * Application services take this rather than a connection, which is what lets a use case compose:
  * calling one service from inside another's transaction joins the scope already open instead of

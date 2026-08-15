@@ -10,6 +10,7 @@ use Doctrine\DBAL\Types\Types;
 use Joomla\DI\Container;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Automation\IdempotencyKey;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
@@ -26,7 +27,6 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 

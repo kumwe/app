@@ -9,6 +9,7 @@ use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
@@ -29,7 +30,6 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaRisk;
 use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

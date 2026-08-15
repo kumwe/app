@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
 
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionCursor;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionRepository;
@@ -17,7 +18,6 @@ use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;

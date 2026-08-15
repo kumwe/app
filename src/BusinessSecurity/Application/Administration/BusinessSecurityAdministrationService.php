@@ -10,6 +10,7 @@ use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
@@ -24,7 +25,6 @@ use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyPredicate;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySchema;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
 use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

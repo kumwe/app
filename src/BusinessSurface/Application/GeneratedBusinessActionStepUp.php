@@ -7,11 +7,11 @@ namespace Kumwe\CMS\BusinessSurface\Application;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
 use Kumwe\CMS\Identity\Application\StepUp\StepUpProvider;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 
 /**
  * Coordinates fresh generated-action proof issuance and execution inside one application transaction.

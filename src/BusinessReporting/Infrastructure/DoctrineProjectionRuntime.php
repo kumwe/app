@@ -7,6 +7,7 @@ namespace Kumwe\CMS\BusinessReporting\Infrastructure;
 use DateTimeInterface;
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
@@ -16,7 +17,6 @@ use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
 use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
 

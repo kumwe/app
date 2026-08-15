@@ -8,8 +8,8 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\RetryPolicy;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 

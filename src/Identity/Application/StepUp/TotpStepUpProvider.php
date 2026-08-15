@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Identity\Application\StepUp;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Domain\StepUp\RotatedStepUpSession;
@@ -15,7 +16,6 @@ use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpMethod;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
 use Kumwe\CMS\Identity\Domain\StepUp\TotpCredential;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Throwable;
 

@@ -21,6 +21,7 @@ use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
+use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentRepository;
@@ -37,7 +38,6 @@ use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition as ExtensionResour
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Domain\GrantScope;
-use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Kumwe\CMS\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
