@@ -556,6 +556,112 @@ final class EntityTypeDefinitionTest extends TestCase
         (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$definition]);
     }
 
+    /**
+     * Proves an entity and its fields read in a locale, and fall back to the text they declare.
+     *
+     * The wording an operator sees is the only translatable part of a definition, and it is resolved
+     * through the requested locale's own fallback chain — `pt-BR` before `pt` — so a definition label
+     * and the interface around it agree about what counts as close enough. Whatever the chain fails to
+     * find resolves to the declared text, which is why every member still has wording in every locale.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEntityAndFieldWordingResolveThroughTheLocaleChainAndThenToTheDeclaredText(): void
+    {
+        $document = self::document();
+        $document['label_translations'] = [
+            'singular_label' => ['de' => 'Anlage', 'pt' => 'Ativo'],
+            'plural_label' => ['de' => 'Anlagen'],
+        ];
+        $document['fields'][1]['description'] = 'Display name of the asset.';
+        $document['fields'][1]['help_text'] = 'Shown in every listing.';
+        $document['fields'][1]['text_translations'] = [
+            'label' => ['de' => 'Bezeichnung'],
+            'description' => ['de' => 'Anzeigename der Anlage.'],
+            'help_text' => ['de' => 'Wird in jeder Liste gezeigt.'],
+        ];
+
+        $definition = EntityTypeDefinition::fromArray($document);
+
+        self::assertSame('Anlage', $definition->singularLabelIn('de'));
+        self::assertSame('Ativo', $definition->singularLabelIn('pt-BR'));
+        self::assertSame('Asset', $definition->singularLabelIn('af'));
+        self::assertSame('Anlagen', $definition->pluralLabelIn('de'));
+        self::assertSame('Assets', $definition->pluralLabelIn('pt'));
+        self::assertSame(
+            ['plural_label' => ['de' => 'Anlagen'], 'singular_label' => ['de' => 'Anlage', 'pt' => 'Ativo']],
+            $definition->labelTranslations(),
+        );
+
+        $field = $definition->fields()[1];
+        self::assertSame('Bezeichnung', $field->labelIn('de'));
+        self::assertSame('Name', $field->labelIn('af'));
+        self::assertSame('Anzeigename der Anlage.', $field->descriptionIn('de'));
+        self::assertSame('Display name of the asset.', $field->descriptionIn('af'));
+        self::assertSame('Wird in jeder Liste gezeigt.', $field->helpTextIn('de'));
+        self::assertSame('Shown in every listing.', $field->helpTextIn('af'));
+    }
+
+    /**
+     * Proves both translation dimensions survive the canonical document a checksum is taken over.
+     *
+     * A published version is immutable and identified by the digest of its bytes, so a definition that
+     * carries translations has to re-encode to the same document it was rebuilt from — otherwise a
+     * re-verification of an already published version would fail on wording alone.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTranslatedWordingSurvivesTheCanonicalDocumentAndItsChecksum(): void
+    {
+        $document = self::document();
+        $document['label_translations'] = ['singular_label' => ['de' => 'Anlage']];
+        $document['fields'][1]['text_translations'] = ['label' => ['de' => 'Bezeichnung']];
+        $definition = EntityTypeDefinition::fromArray($document);
+
+        $exported = $definition->toArray();
+        self::assertSame(['singular_label' => ['de' => 'Anlage']], $exported['label_translations']);
+        self::assertSame(['label' => ['de' => 'Bezeichnung']], $exported['fields'][1]['text_translations']);
+
+        $reloaded = EntityTypeDefinition::fromArray($exported);
+        self::assertSame($exported, $reloaded->toArray());
+        self::assertSame($definition->checksum(), $reloaded->checksum());
+        self::assertNotSame(EntityTypeDefinition::fromArray(self::document())->checksum(), $definition->checksum());
+    }
+
+    /**
+     * Proves a translation map arriving as a list is refused on the entity and on a field alike.
+     *
+     * A locale-keyed object decoded from a document can arrive as a list when the author wrote an
+     * array of strings, and taking it would put positional keys where language tags belong.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAListShapedTranslationMapIsRefusedOnTheEntityAndOnItsFields(): void
+    {
+        $entityDocument = self::document();
+        $entityDocument['label_translations'] = ['Anlage'];
+
+        try {
+            EntityTypeDefinition::fromArray($entityDocument);
+            self::fail('An entity accepted label translations declared as a list.');
+        } catch (InvalidBusinessDefinition $exception) {
+            self::assertStringContainsString('label translations must be an object', $exception->getMessage());
+        }
+
+        $fieldDocument = self::document();
+        $fieldDocument['fields'][1]['text_translations'] = ['Bezeichnung'];
+
+        $this->expectException(InvalidBusinessDefinition::class);
+        $this->expectExceptionMessage('text translations must be an object');
+        EntityTypeDefinition::fromArray($fieldDocument);
+    }
+
     /** @return array<string, mixed> */
     public static function document(): array
     {
