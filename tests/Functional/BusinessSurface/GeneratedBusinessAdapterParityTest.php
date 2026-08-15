@@ -584,10 +584,17 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
                 self::assertArrayNotHasKey('record_key', $browserTarget);
                 self::assertArrayNotHasKey('definition_id', $browserTarget);
                 foreach ($browserTarget['fields'] as $field) {
-                    self::assertSame(['handle', 'label', 'display'], array_keys($field));
+                    self::assertSame(['handle', 'label', 'display', 'provenance'], array_keys($field));
                 }
             }
         }
+        self::assertSame(
+            array_column($adminRelationRead->data['record']['includes']['related_targets'], 'fields'),
+            array_column($portalRelationRead->data['record']['includes']['related_targets'], 'fields'),
+            'The two browser adapters must present a related row identically, conversion provenance included: '
+                . 'a converted amount described on one surface and not the other is the audit defect, not a '
+                . 'rendering difference.',
+        );
         self::assertSame(10, $apiRead['version']);
         self::assertSame('approved', $apiRead['workflow_state']);
         self::assertSame($updateValues['name'], $apiRead['values']['name']);

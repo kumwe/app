@@ -88,11 +88,11 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 ## Ledger snapshot
 
-**57 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**53 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 19 |
+| `accepted_for_implementation` | 15 |
 | `reproduced` | 10 |
 | `open` | 16 |
 | `conditional` | 7 |
@@ -109,7 +109,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 | 2 | 5 |
 | 3 | 1 |
 | 4 | 0 |
-| E | 8 |
+| E | 4 |
 | L | 9 |
 | 5 | 7 |
 | 6 | 7 |
@@ -119,12 +119,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 | Gate | Findings |
 |---|---|
-| A | 26 |
+| A | 22 |
 | B | 16 |
 | none | 15 |
 
-By severity: 0 critical, 24 high, 24 medium, 9 low.
-By origin: 20 from the independent review, 12 still-open entries from the executed gap matrix, 25 discovered
+By severity: 0 critical, 24 high, 21 medium, 8 low.
+By origin: 20 from the independent review, 12 still-open entries from the executed gap matrix, 21 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
@@ -164,7 +164,7 @@ Green: `composer docs:api` (100% across 1,228 classes and 6,569 methods), `compo
 (textual predicates plus the semantic dependency graph, 157 recorded exemptions and no new violation),
 `composer quality:contract` (25 checks, 15 in the local lane, 3 engines), `composer coverage:attribution`
 (9 reasoned rules, 44 tests still owing attribution), `composer interface:programme` (42 surfaces, 13
-journeys, 60 work items), `composer roadmap:check` (57 open findings), `composer openapi:check`, `composer
+journeys, 60 work items), `composer roadmap:check` (53 open findings), `composer openapi:check`, `composer
 cs`, `composer analyse` (PHPStan level `max`, no errors), unit suite (1,698 tests, 23,048 assertions),
 architecture suite (135 tests, 12,031 assertions), and `composer test:artifact` (6 declared cases, 6
 executed).

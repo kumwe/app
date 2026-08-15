@@ -451,7 +451,7 @@ The consolidation resolved 114 findings: 27 from the review, 62 from the execute
 discovered while verifying this roadmap, during the qualification programme, or from the business-group
 decision. Fifty-six of them were already closed. Under the lifecycle rule above those left the ledger and
 their substance is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them, so
-[`findings.json`](findings.json) now carries **57 open entries**: 25 from the review, 12 from the gap
+[`findings.json`](findings.json) now carries **53 open entries**: 25 from the review, 12 from the gap
 matrix and 21 discovered here. Review identifiers are unchanged, so a reference to `V2-SCL-001` resolves
 the same way in both documents, and a reference to a completed identifier such as `GM-AUD-01` or
 `V2-SCL-003` resolves in the changelog.
