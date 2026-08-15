@@ -86,26 +86,6 @@
       "cross_reference": "GM-SUP-05"
     },
     {
-      "id": "V2-ARC-001",
-      "title": "Dependency direction is asserted textually, not enforced semantically",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "2",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "tools/verify-policy.sh",
-          "symbol": "product_name_matches, direct_dependency_matches, framework_import_matches, static_locator_matches",
-          "note": "Four grep predicates: the product-name spelling, Symfony and Laravel as direct Composer dependencies, Symfony and Illuminate use statements, and two static-locator symbols. Nothing evaluates a layer graph."
-        }
-      ],
-      "acceptance_test": "An AST- or type-aware dependency checker implementing the layer graph from the Phase 0 architecture decision. Existing violations recorded with owner and expiry; every new violation fails immediately.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "cross_reference": "V2-QA-002"
-    },
-    {
       "id": "V2-ARC-002",
       "title": "BusinessRecordService owns too many use cases",
       "severity": "medium",
@@ -304,133 +284,73 @@
     },
     {
       "id": "V2-QA-001",
-      "title": "Coverage attribution and floor do not match the documented contract",
+      "title": "Behavioural tests still attribute nothing, and two ratchets are not yet armed",
       "severity": "high",
-      "state": "reproduced",
+      "state": "in_progress",
       "phase": "2",
-      "gate": "B",
+      "gate": "A",
       "origin": "review",
       "source_anchors": [
         {
-          "file": "tests/",
-          "symbol": "#[CoversNothing]",
-          "note": "148 occurrences across 74 files on the verified SHA: 13 under tests/Unit, 36 under tests/Integration, 1 under tests/Functional and 24 under tests/Architecture. 314 test files use #[CoversClass]. Real BusinessRecord and cross-surface integration tests such as tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php exercise behaviour without contributing attribution."
+          "file": "docs/quality/coverage-contract.json",
+          "symbol": "attribution.pending, attribution.pending_directories",
+          "note": "Forty-four test classes still carry #[CoversNothing] while exercising real behaviour: thirty-nine under tests/Integration plus five named individually. Each is recorded with an owner, this finding and an expiry of 2027-06-30, and composer coverage:attribution fails when a new one appears or when a recorded one no longer needs the exemption."
         },
         {
-          "file": ".github/workflows/ci.yml",
-          "symbol": "the coverage leg",
-          "note": "Line 271 sets coverage: 'true' on the PostgreSQL matrix entry only. Line 433 publishes the baseline with the text 'No threshold is enforced yet'."
+          "file": "docs/quality/coverage-contract.json",
+          "symbol": "ratchets",
+          "note": "The changed-line floor is enforced. The global-decrease ratchet is unarmed until the first canonical MariaDB run records a baseline, which the merge run prints. The branch floor cannot be measured at all while the canonical leg is instrumented with pcov, which reports executed lines and no branches."
         }
       ],
-      "acceptance_test": "Behavioural tests attribute the classes they exercise. Architecture and source-shape tests keep #[CoversNothing] only on a reasoned allowlist. The canonical full result is collected on MariaDB. Staged ratchets: no global decrease greater than 0.25 percentage point, at least 90% line coverage on changed executable PHP, at least 80% branch coverage on changed Domain and Application logic.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-QA-002",
-      "title": "The architecture-policy gate is four grep predicates",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "2",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "tools/verify-policy.sh",
-          "symbol": "the whole script",
-          "note": "Invoked by composer architecture:policy and by composer qa. It checks the product-name spelling, forbidden direct dependencies, forbidden framework imports and two static-locator symbols. It reports 'Kumwe architecture policy verified.' without evaluating a single dependency edge."
-        }
-      ],
-      "acceptance_test": "composer architecture:policy runs a semantic checker as well as the textual predicates. Every new dependency-direction violation fails the build. Existing violations are recorded with owner and expiry and reach zero in phase 3.",
+      "acceptance_test": "Every behavioural test names the classes it exercises, so the pending list and the pending directory are both empty and only the reasoned allowlist remains. The measured MariaDB baseline is committed so the global-decrease ratchet is armed. The branch floor is either measurable on the canonical leg or replaced by a rule that is.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
-      "cross_reference": "V2-ARC-001"
-    },
-    {
-      "id": "V2-QA-003",
-      "title": "No single manifest defines the quality contract that local, CI, nightly and release runs execute",
-      "severity": "high",
-      "state": "open",
-      "phase": "2",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "composer.json",
-          "symbol": "the qa script",
-          "note": "qa is a hand-assembled list: architecture:policy, docs:api, interface:programme, openapi:check, cs, analyse, test. security:audit and security:secrets are defined but excluded, and .github/workflows/ci.yml reassembles its own sequence."
-        }
-      ],
-      "acceptance_test": "One data-driven manifest defines the PHP and frontend contracts. CI, nightly and release consume it rather than reassembling it. Every command has one owner, purpose, expected artifact and maximum cadence. No hidden CI subset drifts from the local or release contract.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
+      "progress": "Delivered: the canonical measurement moved to MariaDB, docs/quality/coverage-contract.json states the rules, composer coverage:attribution holds #[CoversNothing] to a reasoned allowlist and a shrinking pending list, and composer coverage:ratchet enforces the 90% floor on the executable lines a change adds or edits. What remains is the attribution work itself and the two ratchets above."
     },
     {
       "id": "V2-QA-004",
-      "title": "The integration suite is not idempotent against a reused database",
+      "title": "The integration suite now has an idempotency gate and has not yet passed one",
       "severity": "medium",
-      "state": "reproduced",
+      "state": "in_progress",
       "phase": "2",
-      "gate": "B",
+      "gate": "A",
       "origin": "new",
       "source_anchors": [
         {
-          "file": "tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php",
-          "symbol": "tearDownAfterClass",
-          "note": "Added by 3fdb4e9 precisely because the class had been leaving the shared fixture database in a state later processes could not use. The suite has no framework-level guarantee of this property; the fix is per-class discipline."
-        },
-        {
-          "file": "phpunit.xml.dist",
-          "symbol": "the integration testsuite",
-          "note": "Lines 16-18. No per-test database isolation, reset or teardown contract is declared."
+          "file": ".github/workflows/ci.yml",
+          "symbol": "Prove the integration suite is idempotent against a reused database",
+          "note": "The database job now runs the integration suite a second time against the database the first run left behind, and a third time with --order-by=reverse, on all three engines. The property is executed rather than assumed; whether the suite holds it is what the first run of this step reports."
         }
       ],
-      "acceptance_test": "The integration suite runs twice in a row against the same database with identical results, and runs in a different class order with identical results, as an executed CI step rather than an assumption. Any class that mutates installation-global state declares and executes its own rollback.",
+      "acceptance_test": "The step passes on MariaDB, MySQL and PostgreSQL at a recorded commit. Every class the step exposes as leaving installation-global state behind declares and executes its own rollback, as RecordSecretRotationIntegrationTest does.",
       "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-QA-005",
-      "title": "No deployed-artifact test lane: four defects in the last programme were found only in production deployment acceptance",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "2",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": ".github/workflows/deployment-acceptance.yml",
-          "symbol": "the whole workflow",
-          "note": "The only job that runs against the production image with the --no-dev authoritative classmap. Everything cheaper runs under the development autoloader with development dependencies present."
-        },
-        {
-          "file": "tests/Support/deployment-drill-autoload.php",
-          "symbol": "the shared drill loader",
-          "note": "Added by 26a7b39 to retire the hand-maintained require list that had silently gone stale. The commit records the argument for this finding: 'the loss here was not the missing lines but a gate no cheap job covers'."
-        }
-      ],
-      "acceptance_test": "A lane that exercises the deployed artifact — production autoloader, --no-dev dependency set, read-only container, the real console binary — early enough to fail before a full deployment is stood up. The four defects it must reproduce as regression cases: the package-admission memory ceiling (cfaf840), the missing production autoloader path (26a7b39), the stranded record-encryption keys (3fdb4e9), and a drill leg that had never executed inside the deployed image (687707c).",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
+      "closure_sha": null,
+      "progress": "Delivered: the executed CI step the acceptance asked for, on all three engines. Outstanding: the run itself, and whatever it surfaces."
     },
     {
       "id": "V2-DB-001",
-      "title": "Browser and coverage depth is PostgreSQL-centric despite MariaDB and MySQL being primary",
+      "title": "The nightly browser matrix covers two more engines and not yet the remaining dimensions",
       "severity": "high",
-      "state": "reproduced",
+      "state": "in_progress",
       "phase": "2",
-      "gate": "B",
+      "gate": "A",
       "origin": "review",
       "source_anchors": [
         {
           "file": ".github/workflows/ci.yml",
           "symbol": "the browser job",
-          "note": "Lines 63-167. One PostgreSQL service, Chromium only. The three-engine matrix at lines 245-275 runs the PHP suite but not the browser journeys, and marks only the PostgreSQL leg for coverage."
+          "note": "The journeys now run on MariaDB, MySQL and PostgreSQL at merge, desktop and mobile Chromium, with first-attempt results summarized separately from retried ones."
+        },
+        {
+          "file": ".github/workflows/nightly.yml",
+          "symbol": "the browser job",
+          "note": "Nightly adds desktop Firefox and desktop WebKit on MariaDB, both declaring ignoreSnapshots because pixel baselines belong to the browser that recorded them. It does not yet add mobile on those engines, nor the keyboard, touch, high-contrast, zoom and reflow dimensions."
         }
       ],
-      "acceptance_test": "Critical administrator, portal, generated-business, owned-line, maker-checker, step-up, policy-denial, no-JavaScript and website journeys run on MariaDB, MySQL and PostgreSQL at merge. Nightly adds Firefox and WebKit, desktop and mobile, accessibility, keyboard, touch, high contrast, zoom and reflow. First-attempt results are reported separately from retry results.",
+      "acceptance_test": "Nightly exercises Firefox and WebKit on desktop and mobile, and adds keyboard and focus, touch, high contrast, zoom and reflow, with the acceptance figures the roadmap states: zero serious or critical accessibility violation, zero horizontal overflow, zero inaccessible critical control, and an overall first-attempt pass rate at or above 99%.",
       "owner": "UNASSIGNED",
-      "closure_sha": null
+      "closure_sha": null,
+      "progress": "Delivered: the three-engine merge matrix that was the finding's substance, the two further browser engines nightly, and first-attempt reporting separated from retries."
     },
     {
       "id": "V2-DB-003",

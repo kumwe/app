@@ -23,6 +23,49 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **One quality contract, and every lane held to it.** What this repository checks used to be written in
+  four places: `composer qa` carried a hand-assembled list, the merge workflow reassembled its own sequence
+  and left out the interface programme, the roadmap ledger and the documentation gate, the release job
+  carried a third and shorter list of four checks out of thirteen, and two security commands were defined
+  and excluded with no recorded reason. [`docs/quality/contract.json`](docs/quality/contract.json) is now the
+  single definition — every check with its owner, its purpose, the artifact it produces, the lane it runs in,
+  the workflow and job that carries it, and a stated reason for every deliberate exclusion. `composer
+  quality:contract` closes the loop in both directions: it fails when a check declared for the local lane is
+  missing from `qa`, when `qa` runs a check the contract does not declare, when a check names a workflow or
+  job that does not exist, when the job declared to carry a command no longer contains it, and when a check
+  claims an engine its lane does not run on. Nightly and release execute the contract instead of restating
+  it, so neither can quietly shrink again. Adding a gate now means declaring it, and the build says so if you
+  forget. Closes `V2-QA-003`. (`1c80a03`)
+- **A nightly lane that exists rather than being mentioned.** [`.github/workflows/nightly.yml`](.github/workflows/nightly.yml)
+  runs the contract's nightly lane on a schedule and adds the browser breadth a merge budget cannot hold:
+  desktop Firefox and desktop WebKit. Both declare `ignoreSnapshots`, and that is deliberate rather than a
+  weakening — a pixel baseline belongs to the browser that recorded it, so comparing a Firefox render against
+  a Chromium baseline reports font hinting instead of the product. Behaviour and accessibility are asserted
+  identically; only the pixel comparison stays with the browser that owns the baselines. (`1c80a03`)
+- **A deployed-artifact lane that reproduces the four defects nothing cheaper caught.** Four defects in the
+  last programme were found only in production deployment acceptance, after a full deployment had already
+  been stood up, and every cheaper job missed all four for one reason: they run under the development
+  autoloader, with development dependencies present, in a writable tree. `composer test:artifact` builds what
+  a release builds — the exported selection, `composer install --no-dev --classmap-authoritative`, the drill
+  directory copied in the way deployment acceptance mounts it, the tree sealed with storage left writable —
+  and runs each defect as a regression case inside it. The archive memory ceiling is pinned under the image's
+  256 MiB limit rather than a development runner's. The autoloader case asserts both halves in order: the
+  production classmap resolves the application and refuses the test namespace, and the shared drill loader
+  closes the gap. The drill case executes each entry point and walks the whole class graph it reaches,
+  including same-namespace collaborators that carry no `use` statement, which is the shape the class that
+  broke actually had. The key case proves a rotation opens what the retired key sealed, that a stranded
+  envelope is byte-identical to a readable one so no digest could have caught it, that a missing key is a
+  named refusal, and that the rotation reverses through the same supported operation. A case declared and not
+  executed fails the lane, because a leg that never ran inside the image is itself one of the four defects.
+  The lane needs no database and no containers, so it fails in minutes rather than after a deployment is up.
+  Closes `V2-QA-005`. (`0d2bfc2`)
+- **A machine-readable layer graph and a dependency baseline that only shrinks.**
+  [`docs/architecture/layers.json`](docs/architecture/layers.json) states which namespace belongs to which
+  layer and which layers each may depend on;
+  [`docs/architecture/dependency-baseline.json`](docs/architecture/dependency-baseline.json) records the 157
+  edges that already pointed the wrong way, each with the finding that removes it, an owner and an expiry.
+  (`5874e23`)
+
 - **A business-group installation: several businesses on one Kumwe, sharing what they choose to share.**
   A resource's owner is now held at a *level* — one site, a declared group of sites, or the installation —
   rather than always at a single site. Every resource still has exactly one owner, so "who owns this?" keeps
@@ -71,7 +114,7 @@ development programme, from the architecture decision that opened it to the curr
   simply its place in the list: two lines can never claim one position, a caller can never leave a hole, and
   a line's identity is meaningful only inside the document it belongs to. Deleting the header still takes
   the whole collection with it. The single-line relate, unrelate and reorder commands are unchanged and
-  remain supported. (`3ed82e7`)
+  remain supported. (`772e523`)
 - **A rule may now state something about a whole document, not just about one row.** A definition can say
   that its total equals the sum of its lines, or that its line count stays within a bound, and the platform
   enforces it. That is the most fundamental document rule there is, and until now no definition could
@@ -86,14 +129,14 @@ development programme, from the architecture decision that opened it to the curr
   command over the collection the write is about to store, never once per line, and a violation names the
   rule and carries the definition author's own wording so an operator is told what to fix. Because the rule
   belongs to the document, every command that can break it enforces it: the document write, an ordinary
-  header edit, and a single-line link or unlink. (`3ed82e7`)
+  header edit, and a single-line link or unlink. (`772e523`)
 - **An extension declares all of that without a core edit.** An extension contributes an entity definition
   through the ordinary package path, and if that definition declares a document rule the platform enforces
   it without having heard of the rule, the vertical or the document. Proven by an integration test that
   registers the definition from outside core and watches core refuse a document that breaks it. The
   contract is recorded in
   [ADR 0005](docs/roadmap/decisions/0005-atomic-aggregate-document-contract.md) and documented for
-  extension authors in [the business runtime guide](docs/business-runtime.md). (`3ed82e7`)
+  extension authors in [the business runtime guide](docs/business-runtime.md). (`772e523`)
 - **A consolidated programme roadmap with a machine-readable findings ledger.** Six competing plans became
   one authority for sequencing: two gates, ten decisions, an enterprise capacity contract, a per-primitive
   judgement of what an enterprise resource planning system needs against what the code actually provides, and
@@ -512,6 +555,44 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **The architecture gate judges dependency edges instead of describing the direction.** It was four grep
+  predicates — a product-name spelling, two forbidden import prefixes and two static-locator symbols — and it
+  printed "Kumwe architecture policy verified." without resolving a single dependency edge. A file could
+  import Doctrine into the application layer, or reach from the domain into a delivery adapter, and nothing
+  said so. `composer architecture:policy` now also resolves each file under `src/` to its layer, extracts
+  every first-party symbol the file actually references from the token stream — imports, grouped imports,
+  aliased imports and inline fully qualified names — and fails on any edge the layer graph forbids. A
+  namespace no rule classifies is itself a failure, because an unclassified namespace is one nothing governs.
+  The 157 edges that already pointed the wrong way are recorded rather than permitted: a new violation fails
+  immediately, an entry that no longer violates fails as stale so it must be deleted, and an entry past its
+  expiry fails outright. The textual predicates stay, because in those four cases the source text is the
+  contract; they are simply no longer the whole check. Closes `V2-ARC-001` and `V2-QA-002`. (`5874e23`)
+- **The browser journeys run on the engines the product runs on.** They ran against one PostgreSQL service
+  while MariaDB and MySQL are the primary engines, so the surfaces an operator actually uses were only ever
+  driven on the engine fewest installations run. They now run on MariaDB, MySQL and PostgreSQL at merge,
+  desktop and mobile Chromium, and a run reports its first-attempt results separately from its retried ones —
+  a journey that only passes on a retry is not a passing journey, and reporting the two together hides the
+  difference the acceptance figure is about. (`1c80a03`)
+- **Coverage is measured on the primary engine, attributed honestly, and ratcheted on the change.** It was
+  collected on the PostgreSQL leg alone and published with the words "No threshold is enforced yet" beside
+  it, while 148 `#[CoversNothing]` attributes across 74 files — 39 of them on integration tests driving real
+  behaviour against real engines — made the report describe a smaller product than the one being tested. The
+  canonical measurement is now MariaDB. `composer coverage:attribution` holds `#[CoversNothing]` to a
+  reasoned allowlist, for tests whose subject is not a class under `src/`, and to a pending list that carries
+  an owner and an expiry, only ever shrinks, and cannot admit a new behavioural test. `composer
+  coverage:ratchet` requires at least 90% of the executable lines a change adds or edits under `src/` to be
+  covered, and refuses a global fall beyond a quarter of a point once a baseline is recorded. The declared
+  branch floor is reported as *not enforced*, with the reason — `pcov` reports executed lines and no branches
+  — because a rule the tooling cannot execute is worth stating and is not worth counting as enforcement.
+  (`1315d47`)
+- **The integration suite is now asked to be idempotent rather than assumed to be.** The database job runs it
+  a second time against the database the first run left behind, and a third time in reverse class order, on
+  all three engines. Anything a class leaves behind installation-wide surfaces there rather than in whatever
+  runs next week. (`1c80a03`)
+- **The release job runs the release lane of the contract instead of its own shorter list.** It carried four
+  checks where a contributor runs thirteen, so a release could pass with a gate never having been executed
+  against the tag. (`1c80a03`)
+
 - **Cross-site isolation is decided by containment instead of string equality, and is provably no wider.**
   The authorization gateway used to compare the owning site identifier with the caller's; it now asks whether
   the caller's site is inside the owning scope. For a resource owned by one site — every resource on an
@@ -649,12 +730,12 @@ development programme, from the architecture decision that opened it to the curr
   reached anybody: because a rule's name is not a field name, every breach of one was collapsed into the
   same generic refusal used to avoid disclosing a field the caller may not see. A rule describes a rule, not
   a value, so it discloses nothing about the record and is now reported as itself — the operator is told
-  which rule was broken, in the words the definition author chose. (`3ed82e7`)
+  which rule was broken, in the words the definition author chose. (`772e523`)
 - **Two exact decimals could be judged unequal for spelling the same number differently.** An equality or
   set-membership test between decimal values compared their text, while an ordering test compared their
   value, so a figure stored at one scale disagreed with the same figure at another — `30.750` was not
   `30.75`, and only the greater-or-equal spelling of the same comparison got it right. Both now compare by
-  value. (`3ed82e7`)
+  value. (`772e523`)
 - **The deployment drills could not load their own classes in the production image.** Production acceptance died
   on all three engines inside the restore drill's seed leg with a class-not-found error: the image installs with
   `--no-dev` and dumps an authoritative classmap, so nothing under the test namespace is loadable there even
