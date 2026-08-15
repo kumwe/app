@@ -147,7 +147,10 @@ final readonly class LocaleNegotiationMiddleware implements MiddlewareInterface
      */
     private function vary(string $current, string $name): string
     {
-        $fields = array_values(array_filter(array_map(trim(...), explode(',', $current))));
+        $fields = array_values(array_filter(
+            array_map(trim(...), explode(',', $current)),
+            static fn (string $field): bool => $field !== '',
+        ));
         foreach ($fields as $field) {
             if (strcasecmp($field, $name) === 0 || $field === '*') {
                 return implode(', ', $fields);

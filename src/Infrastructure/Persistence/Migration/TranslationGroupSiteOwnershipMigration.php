@@ -105,7 +105,14 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
             $this->tables->quoted('content_entries'),
             $this->tables->quoted('content_translation_groups'),
         ));
-        if ((int) $contradictions > 0) {
+        if (is_int($contradictions)) {
+            $contradictionCount = $contradictions;
+        } elseif (is_string($contradictions) && ctype_digit($contradictions)) {
+            $contradictionCount = (int) $contradictions;
+        } else {
+            throw new RuntimeException('The translation-group ownership contradiction count is unreadable.');
+        }
+        if ($contradictionCount > 0) {
             throw new RuntimeException(
                 'Translation group site ownership cannot be enforced while cross-site members exist.',
             );
@@ -237,8 +244,8 @@ final readonly class TranslationGroupSiteOwnershipMigration implements Repeatabl
      * fails closed on an ambiguous relationship.
      *
      * @param   Connection  $database   Installation database whose entry constraints are repaired.
-     * @param   string      $entries    Physical content-entry table name.
-     * @param   string      $groups     Physical translation-group table name.
+     * @param   non-empty-string  $entries  Physical content-entry table name.
+     * @param   non-empty-string  $groups   Physical translation-group table name.
      *
      * @return  void
      *
