@@ -195,19 +195,28 @@ final readonly class ConstraintNameIsolationMigration implements RepeatableMigra
                 continue;
             }
 
+            $constraints = $manager->introspectTableByUnquotedName($tableName)->getForeignKeys();
+            $present = [];
+            foreach ($constraints as $constraint) {
+                $present[$this->constraintName($constraint, $tableName)] = true;
+            }
+
             $statements = [];
-            foreach ($manager->introspectTableByUnquotedName($tableName)->getForeignKeys() as $constraint) {
+            foreach ($constraints as $constraint) {
                 $current = $this->constraintName($constraint, $tableName);
                 if (!self::needsIsolation($current, $prefix)) {
                     continue;
                 }
+                $target = self::isolatedName($tableName, $current);
                 $statements = [...$statements, ...$this->renameStatements(
                     $database,
                     $tableName,
                     $current,
-                    self::isolatedName($tableName, $current),
+                    $target,
                     $constraint,
+                    isset($present[$target]),
                 )];
+                $present[$target] = true;
             }
             if ($statements === []) {
                 continue;
@@ -224,16 +233,25 @@ final readonly class ConstraintNameIsolationMigration implements RepeatableMigra
      * Compose the statements that move one constraint from its shared name to its isolated one.
      *
      * PostgreSQL renames the constraint in its catalogue, which costs nothing and keeps the existing
-     * validation. The MySQL family has no rename for a foreign key, so the constraint is dropped and
-     * recreated — which is also the operation that frees the shared name for the next installation to
-     * take. The recreation carries the referential properties across explicitly rather than relying on
-     * defaults, so an `ON DELETE CASCADE` is still an `ON DELETE CASCADE` afterwards.
+     * validation. The MySQL family has no rename for a foreign key, so the constraint is created under its
+     * new name and the old one is then dropped — which is also the operation that frees the shared name for
+     * the next installation to take. The recreation carries the referential properties across explicitly
+     * rather than relying on defaults, so an `ON DELETE CASCADE` is still an `ON DELETE CASCADE` afterwards.
+     *
+     * **The order is create-then-drop, and that is the whole point of it.** Where DDL commits implicitly,
+     * an attempt interrupted between the two statements has already committed the first. Dropping first
+     * would leave the table with no such foreign key at all, and a replay would find nothing to rename and
+     * silently declare the migration done having lost a constraint. Creating first leaves the table
+     * transiently holding both names, which enforces the same rule twice and loses nothing; the replay then
+     * sees the target already present, skips the create, and drops the old name as it was going to.
      *
      * @param   Connection            $database    Connection whose platform composes the statements.
      * @param   non-empty-string      $tableName   Prefixed physical name of the table being altered.
      * @param   non-empty-string      $current     Name the constraint carries now.
      * @param   non-empty-string      $target      Name it is to carry afterwards.
      * @param   ForeignKeyConstraint  $constraint  Constraint as introspected, supplying its shape.
+     * @param   bool                  $created     Whether the target name is already on the table, which is
+     *          how an attempt interrupted between the two statements resumes without failing on a duplicate.
      *
      * @return  list<string>  One or two statements, in the order they must run.
      *
@@ -245,6 +263,7 @@ final readonly class ConstraintNameIsolationMigration implements RepeatableMigra
         string $current,
         string $target,
         ForeignKeyConstraint $constraint,
+        bool $created,
     ): array {
         $platform = $database->getDatabasePlatform();
         $table = $database->quoteSingleIdentifier($tableName);
@@ -257,10 +276,12 @@ final readonly class ConstraintNameIsolationMigration implements RepeatableMigra
             )];
         }
 
-        return [
-            $platform->getDropForeignKeySQL($database->quoteSingleIdentifier($current), $table),
-            $platform->getCreateForeignKeySQL($this->renamed($constraint, $target), $table),
-        ];
+        $drop = $platform->getDropForeignKeySQL($database->quoteSingleIdentifier($current), $table);
+        if ($created) {
+            return [$drop];
+        }
+
+        return [$platform->getCreateForeignKeySQL($this->renamed($constraint, $target), $table), $drop];
     }
 
     /**
