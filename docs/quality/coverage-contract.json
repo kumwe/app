@@ -117,7 +117,7 @@
         "owner": "quality-engineering",
         "finding": "V2-QA-001",
         "expires": "2027-06-30",
-        "reason": "Thirty-six integration tests exercise real behaviour against real engines and attribute none of it. Each needs the classes it exercises named, which is a judgement per file rather than a rename, so it is recorded here with an owner and an expiry instead of being waved through."
+        "reason": "Thirty-nine integration tests exercise real behaviour against real engines and attribute none of it. Each needs the classes it exercises named, which is a judgement per file rather than a rename, so it is recorded here with an owner and an expiry instead of being waved through."
       }
     ]
   }

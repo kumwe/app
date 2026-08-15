@@ -2,7 +2,7 @@
 
 Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
-**Updated at** `ca240178cdc167f1d32269cd880b13c5751daa5f`
+**Updated at** `fbd7753e0dec8044b30140cc5e741def8f051a50`
 
 > **Open work is here. Finished work is in [`CHANGELOG.md`](../../CHANGELOG.md).** Two paths, and both end in
 > the changelog. **Planned work** lives here while it is open and its entry is deleted from this directory
@@ -23,7 +23,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | **Current phase** | Phase 0 — Truth, contracts and decisions |
 | **In flight** | Phase 3's business-group ownership model has landed ahead of its phase; `P3-F` is reduced to its three-engine proof. `P3-B` is complete and `P3-A` is reduced to its three-engine proof, so the aggregate command's persistence seams now point inward. Phase 2's gate work is part delivered: `P2-A` complete, `P2-C`'s semantic checker complete, `P2-G`'s deployed-artifact lane complete. Phase 0 work packages remain unassigned. |
 | **Next** | `P0-A` reproducible baseline, `P0-B` claim ledger, `P0-C` public contract classification and compatibility fixtures. These three are independent and may run in parallel. `P0-E` architecture and security decisions follows them, because several decisions depend on what the inventories find. |
-| **The one open decision** | `V2-POS-002` — whether a disconnected terminal receives its document number at synchronisation time or from a per-terminal reserved block. It trades against the shipped gapless guarantee, so it is the product owner's to make, in `P0-E` decision 12. It is now the whole of what `PE-G` and Gate A criterion 11 are waiting on. |
+| **Open decisions** | Two ledger entries are `decision_required`. `V2-POS-002` is the one product-owner decision: whether a disconnected terminal receives its document number at synchronisation time or from a per-terminal reserved block. `V2-ERP-006` is the separate architecture decision for role-specific dashboard composition in `P0-E`. The first is the whole of what `PE-G` and Gate A criterion 11 are waiting on. |
 | **Gate A** | Not started. 12 exit criteria, 5 met; criterion 7's ownership model is built and owes only its three-engine proof, and criterion 12 is now assessable rather than unassessed. |
 | **Gate B** | Not started. Blocked on Gate A. |
 
@@ -54,11 +54,11 @@ table when it completes, in the same change that writes it into the changelog.
 |---|---|---|
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-ERP-006`, `V2-ERP-007`, `V2-POS-002` |
 | 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
-| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-QA-006`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
+| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-DB-001`, `V2-DB-004`, `V2-REL-001`, `GM-SUP-09` |
 | 3 | `P3-A`, `P3-C` … `P3-F` (`P3-B` complete) | — |
 | 4 | `P4-A` … `P4-D` | — |
 | E | `PE-D`, `PE-E`, `PE-F` (`PE-A`, `PE-B`, `PE-C` and `PE-G` complete) | `V2-ERP-002`, `V2-ERP-003`, `V2-ERP-005` |
-| L | `PL-C`, `PL-D`, `PL-E`, `PL-F`, `PL-G` (`PL-A` and `PL-B` complete) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-011` |
+| L | `PL-C`, `PL-D`, `PL-E`, `PL-F`, `PL-G` (`PL-A` and `PL-B` complete) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-010`, `V2-LNG-012` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
 | 7 | `P7-A` … `P7-I` | `V2-UX-001`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05` |
@@ -92,9 +92,9 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 10 |
-| `reproduced` | 8 |
-| `open` | 15 |
+| `accepted_for_implementation` | 12 |
+| `reproduced` | 7 |
+| `open` | 14 |
 | `conditional` | 6 |
 | `decision_required` | 2 |
 | `in_progress` | 3 |
@@ -123,7 +123,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 | B | 15 |
 | none | 15 |
 
-By severity: 0 critical, 17 high, 19 medium, 8 low.
+By severity: 0 critical, 19 high, 17 medium, 8 low.
 By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 17 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
@@ -131,8 +131,11 @@ The 56 findings that were closed when this roadmap was consolidated have left th
 the tamper-evident audit work, the record-secret key ring and rotation, the credential lifecycle, the
 supply-chain controls, the contention proofs, the failure drills, the observability contract, the restore
 drill and the four production-only defects — is in [`CHANGELOG.md`](../../CHANGELOG.md) with the commits
-that closed it. Four more have left since: the machine surface's credential transport and risk taxonomy,
-the schema-global constraint names, and the extension trust posture, which together met Gate A criterion 4.
+that closed it. Further findings have left since, including the machine surface's credential transport and risk
+taxonomy,
+the MySQL/MariaDB schema-global foreign-key names, the extension trust posture, the root locale-addressing
+defect and the unreachable catalogue-refusal seam. Their completed substance is recorded in the changelog.
+PostgreSQL's separate schema-global non-primary-index namespace remains open as `V2-DB-004`.
 
 ## Gate A criteria
 
@@ -142,12 +145,12 @@ the schema-global constraint names, and the extension trust posture, which toget
 | 2 | Atomic aggregate command exists and matches the recorded shape | Yes | Recorded in [`CHANGELOG.md`](../../CHANGELOG.md); [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) |
 | 3 | Data-entry integrity holds on all three browser surfaces | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
 | 4 | Correctness and security contradictions fixed | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
-| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute, semantic dependency checking fails new violations against a shrinking baseline, the deployed-artifact lane reproduces all four production-only defects, the browser matrix and canonical coverage moved to the primary engines, and the integration suite's behaviour against a reused database is executed, reproduced and enforced against a shrinking baseline. Outstanding: behavioural coverage attribution, the six recorded non-idempotent tests, one measured run of the corrected class-order pass, and the remaining nightly browser dimensions | `V2-QA-001`, `V2-QA-004`, `V2-QA-006`, `V2-DB-001` |
+| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute and delegates specially provisioned checks to their named jobs; semantic dependency checking handles mixed grouped imports against a shrinking baseline; supplied idempotency evidence must cover every declared pass and agree with independent collection and runner status; changelog citations must resolve in current history; the deployed-artifact lane reproduces all four production-only defects; and the browser matrix runs its locale projects only where their locale contract is defined. Outstanding: behavioural coverage attribution, the recorded non-idempotent tests, one measured run of the corrected class-order pass, the remaining nightly browser dimensions, and schema-wide proof that two complete prefixed core plans keep every PostgreSQL non-primary index name and shape isolated | `V2-QA-001`, `V2-QA-004`, `V2-DB-001`, `V2-DB-004` |
 | 6 | Aggregate seams are clean | Partly — the transaction abstraction is inward and the automation Doctrine adapters sit in Infrastructure behind ports, both now enforced by the architecture gate and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); `P3-C`'s delivery and presentation leakage and `P3-A`'s three-engine transaction proof remain | — |
 | 7 | Business-group ownership model in place | Built; owes the three-engine proof in `P3-F` | — |
-| 8 | Enterprise document primitives exist and are enforced | Partly — the aggregate invariant is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); correction, period close, sequence scoping and unit conversion remain | `V2-ERP-002` – `V2-ERP-005` |
+| 8 | Enterprise document primitives exist and are enforced | Partly — the aggregate invariant and unit-conversion contract are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); correction, period close and sequence scoping remain | `V2-ERP-002`, `V2-ERP-003`, `V2-ERP-005` |
 | 9 | Multi-currency contract holds, with conversion provenance everywhere | Yes — contract, port, pipeline, reports, exports and the rendering half all delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | — |
-| 10 | Language contract and machinery in place, `en-GB` extracted | Partly — locale negotiation, the identifier grammar, the compiled catalogue, ICU formatting, the stored and administered override layers and the extension catalogue path are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-009`, `V2-LNG-011` |
+| 10 | Language contract and machinery in place, `en-GB` extracted | Partly — locale negotiation, the identifier grammar, the compiled catalogue, ICU validation and formatting, transactional and markup-safe administered overrides, organization-aware scope, locale-bearing public delivery, localized generated definition surfaces and the extension catalogue path are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md). Extension translation-set declarations still need a frozen item-association contract | `V2-LNG-001`, `V2-LNG-007`, `V2-LNG-008`, `V2-LNG-009`, `V2-LNG-012` |
 | 11 | Point of sale not foreclosed | Partly — the replay window, the client-asserted instant, late arrival and the deferrable-validation split are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-POS-002`, which is the product owner's decision |
 | 12 | Nothing regressed on three engines | Assessable, and assessed on every merge run. `regression_matrix` in [`docs/quality/contract.json`](../quality/contract.json) names the three engines, the four suites and the commands, and `composer quality:contract` fails when the merge workflow stops running the complete suite on any of them. Assessing the criterion is now reading a run rather than inspecting a workflow; it is asserted at a commit when that run is green and the commit is recorded here | — |
 
@@ -161,23 +164,41 @@ Gate B's ten criteria are unchanged and are listed in [`README.md`](README.md) s
 
 ## Baseline health at this revision
 
-Green: `composer docs:api` (100% across 1,261 classes and 6,727 methods), `composer architecture:policy`
-(textual predicates plus the semantic dependency graph, 115 recorded exemptions and no new violation),
-`composer quality:contract` (26 checks, 16 in the local lane, 3 engines), `composer extension:contract`
-(4 manifest generations, 2 SPI generations, 101 classified public types), `composer coverage:attribution`
-(9 reasoned rules, 43 tests still owing attribution), `composer interface:programme` (43 surfaces, 13
-journeys, 60 work items), `composer roadmap:check` (44 open findings), `composer openapi:check`, `composer
-translation:check`, `composer translation:strings`, `composer assets:direction`, `composer cs`, `composer
-analyse` (PHPStan level `max`, no errors), unit suite (1,923 tests, 25,975 assertions), architecture suite
-(184 tests, 23,063 assertions), and `composer test:artifact` (6 declared cases, 6 executed).
+**Verified at `fbd7753e0dec8044b30140cc5e741def8f051a50`.** CI run `31902616995`, security run
+`31902616730` and Development Compose run `31902616751` all completed successfully.
 
-Not executed here: the integration, functional and browser suites, which need the live database, cache and
-browser services. The coverage ratchet is therefore also unexecuted here: it reads the clover report the
-canonical MariaDB leg produces. It has now been executed at merge and holds — the changed-line floor
-passed on the run that landed the multilingual, machine-surface, conversion and seam work, which is the
-first change it ever judged. The suite
-idempotency check's comparison is executed here against recorded fixtures, in both directions; the passes it
-compares need a database and run at merge.
+- The dependency gate reported 115 recorded exemptions and no new violation. The quality contract verified 26
+  checks, 16 local checks and three engines; the extension contract verified four manifest generations, two SPI
+  generations, 101 public types and two withdrawn types. The interface programme reported 43 surfaces, 86
+  templates, 24 navigation entries, 19 generated instances, 16 actors, 28 tasks, 13 journeys, 60 work items,
+  eight findings and three verification reports. The roadmap held exactly 44 open findings. Coverage attribution
+  reported nine reasoned rules and 43 tests still owing attribution.
+- OpenAPI was current. One compiled catalogue contained 117 messages; 76 templates were checked, 28 enforced and
+  48 remained pending, with all 117 identifiers resolving. Eight stylesheets and 96 direction-sensitive
+  declarations passed. PHPStan reported no error. Coding-standard normalization inspected 1,300 files and changed
+  none. Documentation verification inspected 1,263 files plus 37 immutable migrations: classes were
+  1,263/1,263, constants 351/351, enum cases 466/466, methods 6,747/6,747 and properties 371/371, with zero
+  violation.
+- The unit suite passed 1,978 tests and 26,471 assertions with 23 notices; the architecture suite passed 193 tests
+  and 23,228 assertions. The complete relational suite passed on MariaDB (2,514 tests, 54,763 assertions, 23
+  notices, two skipped), MySQL (2,514, 54,755, 23, four skipped) and PostgreSQL (2,514, 54,597, 23, 28 skipped).
+  Each reused-database run executed 323 integration tests. PostgreSQL reported 4,466 assertions, five expected
+  errors, one expected failure and 28 skips; MariaDB 4,632, five, one and two; MySQL 4,624, five, one and four.
+  Each verifier matched exactly the six recorded non-idempotent tests and found nothing new. Schema verification,
+  signed backup, clean restore and the 16-refusal tamper drill passed on every engine.
+- The canonical MariaDB run covered 115 of 1,011 classes (11.37%), 2,110 of 6,607 methods (31.93%) and 47,936 of
+  86,459 executable lines (55.44%). The measured global baseline held exactly, and 855 of 950 changed executable
+  lines were covered (90.00%) against the 90% floor. Branch coverage remains declared but unenforced because
+  `pcov` does not report it.
+- MariaDB, MySQL and PostgreSQL each passed 146 of 146 browser tests on the first attempt, with no retry-only pass
+  and no failure. The frontend installed 38 packages, audited 39 with no vulnerability, validated 36 sound and 34
+  adversarial schemas, and passed type-check and build. The six-case deployed-artifact lane passed. Reproducible
+  Composer/ZIP installation and complete production deployment acceptance passed in jobs `95057813111`,
+  `95057813132`, `95057813149` and `95057813188` across PostgreSQL, MariaDB and MySQL. The documented Development
+  Compose install, migration, topology, readiness, asset and teardown contract passed on its custom port.
+- Composer audit reported no advisory. Gitleaks scanned 455 commits and 25.86 MB with no secret. Trivy reported no
+  source, lock-file, image or Dockerfile high/critical finding across the Alpine 3.24 production image, its 49 OS
+  packages, Composer dependencies and Node dependencies. The source SBOM and security evidence were produced.
 
 ---
 
