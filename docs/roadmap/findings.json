@@ -1047,6 +1047,162 @@
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "cross_reference": "Decision D12 requires locale variants on extension-contributed content. The core content translation group is delivered; this finding is the missing extension-item bridge, not a request for a second translation model."
+    },
+    {
+      "id": "V2-STU-001",
+      "title": "The Studio contract is not pinned or replayed, so a composition integration would build against a moving draft",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "S",
+      "gate": "B",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "package.json",
+          "symbol": "the dependency set",
+          "note": "The administrator build declares lit as its single runtime dependency and no @kumwe/studio package of any kind. Nothing pins a contract version and nothing fails when one moves."
+        },
+        {
+          "file": "docs/roadmap/studio-integration.md",
+          "symbol": "the published package table",
+          "note": "Seven packages publish on a prerelease dist-tag under a 0.1-draft contract, so an inexact specifier would take a contract change silently."
+        }
+      ],
+      "acceptance_test": "The administrator build declares every Studio package at an exact version, the published schema and fixture corpus is vendored into the test fixtures at those exact versions, and a conformance suite validates every corpus document against its schema and recomputes the published digest manifest. A dependency check fails the build on a non-exact specifier for any Studio package, and the corpus check fails when the vendored fixtures and the pinned release disagree.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "S-A",
+      "product_owner_decision": "Decision D16."
+    },
+    {
+      "id": "V2-STU-002",
+      "title": "No host adapter implements the identity and policy ports, and no session generation invalidates a composition session",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "S",
+      "gate": "B",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Kernel/ContainerFactory.php",
+          "symbol": "administratorRoute() and the container host-service allowlist",
+          "note": "Administrator routes are capability-gated and the extension container exposes five host services, none of them identity, policy, media, preview, localization or telemetry. There is no port surface a composition client could negotiate against."
+        },
+        {
+          "file": "src/Identity/",
+          "symbol": "the security epoch and grant resolution",
+          "note": "Grants are re-read on every session resolve and an epoch advance retires sessions and step-up proofs. A composition session must inherit that invalidation rather than cache an authorization decision."
+        }
+      ],
+      "acceptance_test": "Each implemented port resolves the actor's effective capabilities through the existing deny-by-default gateway and refuses a caller lacking each required capability, proven one capability at a time. Advancing the security epoch or revoking a grant mid-session invalidates the composition session generation, and every subsequent port call is refused with the canonical stale-generation category rather than applied. A client-asserted capability or generation is never trusted.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "S-B",
+      "product_owner_decision": "Decision D16."
+    },
+    {
+      "id": "V2-STU-003",
+      "title": "Composition documents have no versioned artifact store, so there is no conflict, replay or refusal contract for them",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "S",
+      "gate": "B",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "docs/rest-api.md",
+          "symbol": "the retry and concurrency contract",
+          "note": "Mutations require a caller-generated Idempotency-Key with a 24-hour replay window, and versioned resources require the current ETag in If-Match. A composition artifact must inherit exactly this discipline rather than invent a second one."
+        },
+        {
+          "file": "src/Content/",
+          "symbol": "ContentService and the content revision path",
+          "note": "Content carries versions, revisions and a workflow. Composition documents are a different artifact kind and no store, revision path or refusal boundary exists for them."
+        }
+      ],
+      "acceptance_test": "A composition document is stored as a versioned artifact: a write carrying a stale expected revision is refused with the safe current revision and its diagnostics and never overwrites, an identical replay under the same idempotency key returns the recorded outcome once, and the revision history is readable. A document carrying markup, a style declaration, executable content or a URL outside a schema-defined field is refused at the boundary rather than stored and sanitized afterwards. Stored bytes validate against the published schema and round-trip unchanged on MariaDB, MySQL and PostgreSQL.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "S-C",
+      "product_owner_decision": "Decision D16."
+    },
+    {
+      "id": "V2-STU-004",
+      "title": "The media port and the external-source obligations the composition contract names have no host implementation",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "S",
+      "gate": "B",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Media/",
+          "symbol": "MediaService and the storage adapter",
+          "note": "Media exists as a module with its own storage and serving path, but nothing implements the canonical upload session state machine the composition contract negotiates, and no test proves the module's real limits agree with the contract's declared rejections."
+        },
+        {
+          "file": "docs/roadmap/studio-integration.md",
+          "symbol": "the external-source obligations",
+          "note": "The contract's URL policy is lexical by construction. Redirect re-validation, response verification and defence against a host resolving differently between check and fetch are stated as host runtime obligations and cannot be discharged by it."
+        }
+      ],
+      "acceptance_test": "The media port drives the existing media module through the canonical upload session state machine, and every published media policy vector replays against it to the declared accepted plan or stable rejection, so the platform's real limits and the contract agree. Every external media or embed source passes the URL policy before any fetch, and a hardened fetcher refuses a redirect that leaves the policy, a response whose type contradicts its declaration, and a host that resolves to a refused address after the check, each asserted per category and never disclosing the candidate address.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "S-D",
+      "product_owner_decision": "Decision D16."
+    },
+    {
+      "id": "V2-STU-005",
+      "title": "There is no authenticated preview endpoint, so unpublished composition cannot be rendered without exposing it",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "S",
+      "gate": "B",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Kernel/ContainerFactory.php",
+          "symbol": "the published content route",
+          "note": "Published rendering is a public route by slug and the administrator editor links to the public address in a new tab. Nothing renders an unpublished document for an authorized actor."
+        },
+        {
+          "file": "src/Http/Security/SecurityHeaders.php",
+          "symbol": "the administrator content-security policy",
+          "note": "The policy sends frame-ancestors none with a self-only script source. An embedded preview frame is the one deliberate change the integration requires, and it must be bounded to that route."
+        }
+      ],
+      "acceptance_test": "An authenticated, capability-gated, short-lived preview endpoint renders an unpublished composition document through the same template and theme path published output uses, so preview and publication cannot diverge. The preview channel is origin-pinned and replay-resistant on both ends: a foreign origin, a replayed sequence and a wrong channel identifier are each refused. The administrator content-security policy is otherwise byte-identical to its current value, with no inline script or style allowance introduced, proven by a policy test.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "S-E",
+      "product_owner_decision": "Decision D16."
+    },
+    {
+      "id": "V2-STU-006",
+      "title": "No administrator surface embeds a composition editor, and none is declared, localized or qualified",
+      "severity": "medium",
+      "state": "accepted_for_implementation",
+      "phase": "S",
+      "gate": "B",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "templates/administrator/content-form.twig",
+          "symbol": "the content editor surface",
+          "note": "Content is authored through a server-rendered form with retained input, optimistic version and CSRF. It stays, and the composition surface is an additional capability-gated surface rather than its replacement."
+        },
+        {
+          "file": "docs/interface-standard/schemas/surface-declaration.schema.json",
+          "symbol": "the closed surface declaration",
+          "note": "Every administrator surface declares area, actor, intent, resource, purpose, pattern, capabilities, states, customization and responsive behaviour. An embedded composition surface is declared the same way or it is outside the standard."
+        }
+      ],
+      "acceptance_test": "The composition surface is declared through the interface standard, gated by capability, and reachable only by an actor holding it. Its message catalog resolves through the compiled localization chain so site and organization wording overrides reach it, and its locale and direction come from the same per-request negotiation every other surface uses. Every authoring operation is achievable by keyboard, the surface passes the browser, accessibility and visual matrix including one right-to-left locale with zero violations and no horizontal overflow, and the existing server-rendered content editor and its no-JavaScript paths are unchanged.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "work_package": "S-F",
+      "product_owner_decision": "Decision D16."
     }
   ]
 }
