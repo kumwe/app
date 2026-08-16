@@ -41,7 +41,7 @@ development programme, from the architecture decision that opened it to the curr
   correcting the already-documented scope ceiling and keeping every schema-one card identifier readable while
   admitting existing dotted contribution identifiers; roadmap [ADR
   0006](docs/roadmap/decisions/0006-unified-dashboard-composition.md) records why the dashboard composes that
-  unified catalogue instead of adding a parallel extension SPI. Closes `V2-ERP-006`. (`4f0e96f`, `aae661b`, `8333570`)
+  unified catalogue instead of adding a parallel extension SPI. Closes `V2-ERP-006`. (`34da274`, `ee6bfda`, `7e8d460`)
 - **One quality contract, and every lane held to it.** What this repository checks used to be written in
   four places: `composer qa` carried a hand-assembled list, the merge workflow reassembled its own sequence
   and left out the interface programme, the roadmap ledger and the documentation gate, the release job
