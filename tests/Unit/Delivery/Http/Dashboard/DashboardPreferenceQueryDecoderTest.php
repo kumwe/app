@@ -49,6 +49,24 @@ final class DashboardPreferenceQueryDecoderTest extends TestCase
     }
 
     /**
+     * Proves edge Unicode whitespace normalizes away instead of refusing the whole request query.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEdgeUnicodeWhitespaceNormalizesInsteadOfRefusingTheQuery(): void
+    {
+        $query = (new DashboardPreferenceQueryDecoder())->decode([
+            'dashboard_group_search' => "\u{00A0}Finance reviewers\u{3000}",
+            'dashboard_workflow_search' => "\u{0085}Sales\u{00A0}orders\u{00A0}",
+        ]);
+
+        self::assertSame('Finance reviewers', $query->search);
+        self::assertSame('Sales orders', $query->workflowSearch);
+    }
+
+    /**
      * Proves nested, ambiguous, overlong, and computationally excessive values use neutral bounded defaults.
      *
      * @param   mixed  $page    Candidate untrusted page.

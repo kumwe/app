@@ -175,10 +175,15 @@ final readonly class DashboardPreferenceQueryDecoder
         if (!is_string($value) || !mb_check_encoding($value, 'UTF-8')) {
             return '';
         }
-        $normalized = preg_replace('/\s+/u', ' ', trim($value));
+        // Collapse Unicode whitespace before trimming: trim() strips ASCII only, so a leading or
+        // trailing non-ASCII space would otherwise survive as an edge ASCII space the query refuses.
+        $normalized = preg_replace('/\s+/u', ' ', $value);
+        if (!is_string($normalized)) {
+            return '';
+        }
+        $normalized = trim($normalized);
         if (
-            !is_string($normalized)
-            || mb_strlen($normalized, 'UTF-8') > $maximum
+            mb_strlen($normalized, 'UTF-8') > $maximum
             || preg_match('/[\x00-\x1f\x7f]/u', $normalized) === 1
         ) {
             return '';
