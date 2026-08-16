@@ -395,6 +395,30 @@ KIS decision
 [0001](../interface-standard/decisions/0001-dashboard-customization-compatibility.md) separately owns the
 compatible scope-ceiling correction, identifier grammar and retained `kis-1.0` classification.
 
+### D16 — Studio visual composition is the Version 2 authoring surface, integrated at Gate B
+
+Version 2 ships a visual composition capability: authors compose pages and reusable structures from
+typed, theme-bounded building blocks, and the result is a canonical, portable JSON document — never
+stored markup, styles, or code. The capability is delivered by integrating **Studio**, the composition
+platform developed in [`kumwe/studio`](https://github.com/kumwe/studio), as an embedded,
+capability-gated administrator surface over a host adapter this repository owns.
+
+The division of labour is fixed and recorded in
+[ADR 0007](decisions/0007-studio-visual-composition-integration.md): Studio owns the authoring
+experience and its contract — a language-neutral corpus of JSON Schemas and canonical fixtures with a
+deterministic engine, evolved under its own repository's gates and evidence discipline — while Kumwe
+owns the host adapter and every authoritative service behind it: identity, policy, persistence with
+optimistic revisions, media, the authenticated preview renderer, localization, and telemetry. Core
+gains no composition rule. Package versions are pinned exactly until the Studio contract ratifies, and
+the Gate B signed manifest records the exact versions the release qualified.
+
+**This is Gate B scope, deliberately.** Gate A freezes the extension contract and asserts nothing
+about interface capabilities; the composition surface is a release expectation and becomes Gate B
+criterion 12. Phase S owns the work, entering after Gate A with its qualification riding phase 7. The
+integration input — published packages, the corpus a PHPUnit suite replays, the port mapping, and
+every normative contract reference — is collected in
+[`docs/roadmap/studio-integration.md`](studio-integration.md).
+
 ---
 
 ## 3. Reconciliation with the independent review
@@ -779,6 +803,7 @@ answer.
 | Right-to-left presentation | Partial | The stylesheets are direction independent, the layouts emit `dir`, a gate refuses a new physical declaration, and the browser matrix carries a language axis so `he` and `ar` file baselines of their own. `V2-LNG-009` holds the screenshots and the `P2-E` leg that compares them |
 | Multilingual content with per-locale publication state | Provided | `ContentEntry`, `TranslationGroup`, locale-specific slugs and publication windows, negotiated public delivery and explicit root-locale addresses; decision D12 and [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Locale variants on extension-contributed content | Partial | A package can declare a translation set for admission and inventory, but no frozen item-association contract binds contributed content to it at runtime — `V2-LNG-012` |
+| Visual composition authoring over typed, theme-bounded building blocks | **Must add** | Decision D16, [ADR 0007](decisions/0007-studio-visual-composition-integration.md), phase S — the administrator edits content through forms today and no composition surface, host adapter or preview endpoint exists; `V2-STU-001` through `V2-STU-006` |
 
 #### Processing and integration
 
@@ -806,11 +831,12 @@ answer.
 | Operational diagnostics: where the system is struggling | **Must add** | `V2-OPS-001` under decision D6 |
 | Proven capacity at the enterprise envelope | **Must add** | phase 5 and phase 7 |
 
-**Summary.** Of the 70 primitives above: **56 provided, 6 partial, 6 must add, 1 decision required, 1
+**Summary.** Of the 71 primitives above: **56 provided, 6 partial, 7 must add, 1 decision required, 1
 deferred but not foreclosed.**
 
-The six primitives core must still add are exact: numbering scope and fiscal-period reset, immutable linked
-reversal, period close, point-in-time recovery, operational diagnostics, and proven capacity. Atomic document
+The seven primitives core must still add are exact: numbering scope and fiscal-period reset, immutable
+linked reversal, period close, point-in-time recovery, operational diagnostics, proven capacity, and the
+Studio visual composition surface with its host adapter under decision D16. Atomic document
 commit and aggregate invariants, both conversion contracts, multilingual core content, localized definition
 wording, the frozen extension contract and business-group ownership are provided and must not be described as
 missing work.
@@ -1021,7 +1047,7 @@ building against contracts that will not move; they are not building against a q
 
 ### Gate B — Version 2 enterprise release
 
-**Entry conditions.** Gate A passed. Phases 5 through 7 complete.
+**Entry conditions.** Gate A passed. Phases 5 through 7 and phase S complete.
 
 **Exit criteria.**
 
@@ -1054,6 +1080,17 @@ building against contracts that will not move; they are not building against a q
     translatable surface, and the browser, accessibility and visual matrix runs per locale with
     right-to-left carrying its own baselines. Zero horizontal overflow and zero inaccessible critical
     control in any of the nine. `V2-LNG-010` closed.
+12. **The visual composition surface ships and is qualified.** An authorized administrator composes a
+    page from typed, theme-bounded building blocks in the embedded Studio surface, previews it
+    authenticated, and publishes it, with the composition stored as a schema-valid canonical document
+    carrying no markup, style or code. The host adapter implements every required port; its responses
+    validate against the published schema corpus and its refusals against the closed host-error shape;
+    a stale write returns the safe current revision and never overwrites; a permission change
+    invalidates the session generation. The surface passes the browser, accessibility and visual matrix
+    including a right-to-left locale, every authoring operation is achievable by keyboard, and the
+    administrator content-security policy is unchanged except the recorded same-origin preview frame.
+    The signed manifest records the exact Studio package versions the release qualified.
+    `V2-STU-001` through `V2-STU-006` closed.
 
 ---
 
@@ -1075,6 +1112,7 @@ flowchart TD
     P5["Phase 5<br/>Enterprise scale"]
     P6["Phase 6<br/>Continuity and introspection"]
     P7["Phase 7<br/>Qualification"]
+    PS["Phase S<br/>Studio visual composition"]
     GB{{"Gate B<br/>Version 2 release"}}
     LM["Lane M<br/>Maintainability<br/>(never blocking)"]
     P0 --> P1
@@ -1088,9 +1126,11 @@ flowchart TD
     PL --> GA
     GA --> P5
     GA --> P6
+    GA --> PS
     P5 --> P7
     P6 --> P7
     P7 --> GB
+    PS --> P7
     PL --> P7
     P2 -.-> P6
     P2 -.-> PL
@@ -1101,10 +1141,12 @@ Dotted edges are permissions, not dependencies: phase 6 may begin once phase 2 h
 may begin once phase 2 has given it the browser, accessibility and visual matrix its baselines depend on,
 and lane M may begin once phase 3 has settled the seams it must not disturb.
 
-Phases E and L are lettered rather than numbered because they run beside the numbered sequence rather than
-inside it, and because renumbering phases 5, 6 and 7 would invalidate every reference the programme has
-already made to them. Both are Gate A entry conditions. Phase L additionally carries a Gate B tail — the
-eight translated catalogues and per-locale visual qualification — which is why it also feeds phase 7.
+Phases E, L and S are lettered rather than numbered because they run beside the numbered sequence rather
+than inside it, and because renumbering phases 5, 6 and 7 would invalidate every reference the programme
+has already made to them. E and L are Gate A entry conditions. Phase L additionally carries a Gate B tail —
+the eight translated catalogues and per-locale visual qualification — which is why it also feeds phase 7.
+Phase S is Gate B only: it opens once Gate A has frozen the contracts its adapter binds to, and its
+qualification runs inside phase 7 rather than beside it.
 
 ---
 
@@ -2088,6 +2130,100 @@ and may not contradict a release claim.
 accept a green source test as proof of an untested artifact. Do not hide an infrastructure prerequisite or
 a conditional risk. Do not call trusted in-process code sandboxed. Do not resume vertical work before
 section 12.
+
+---
+
+### Phase S — Studio visual composition integration
+
+**Objective.** Give an authorized administrator a visual composition surface over typed, theme-bounded
+building blocks, by implementing the host adapter Studio's contract requires and embedding its authoring
+shell, without moving one authoritative concern out of this repository.
+
+**Entry conditions.** Gate A passed, so the contracts the adapter binds to — extension, authorization,
+persistence, media and localization — no longer move under it. Decision D16 and
+[ADR 0007](decisions/0007-studio-visual-composition-integration.md) are accepted. The integration input
+is [`docs/roadmap/studio-integration.md`](studio-integration.md).
+
+**The rule that governs the whole phase.** The adapter is proved against the published contract corpus,
+never against its own expectations. Every package below names the fixture set or executable check that
+fails the build when its rule is violated, and no package accepts a passing hand-written stub where a
+canonical fixture exists. The corpus is JSON, so it replays from PHPUnit with no Studio code executing on
+the server.
+
+**S-A — Pin the contract and replay its corpus.** Findings: `V2-STU-001`. **Gate B.** Add the exact
+Studio package versions to the administrator build and record them where the release manifest can read
+them. Vendor the published schema and fixture corpus into the test fixtures at those exact versions, with
+a check that fails when the vendored copy and the pinned version disagree. A conformance suite validates
+every corpus document against its schema and recomputes the digest manifest, so a silent contract drift
+under a floating dependency is not a state the build permits.
+
+*The enforcing check:* a dependency check fails on a non-exact version specifier for any `@kumwe/studio`
+package, and the corpus check fails when the vendored fixtures do not match the pinned release.
+
+**S-B — Identity, policy and session generations.** Findings: `V2-STU-002`. **Gate B.** Implement the
+identity and policy ports over the existing administrator session, capability model and deny-by-default
+gateway. A composition session carries the actor's effective capabilities as the adapter resolved them,
+never as the client asserted them; hidden controls are never the authorization. A capability change,
+grant revocation or security-epoch advance invalidates the session generation, and a command arriving
+under a stale generation is refused with the canonical category rather than applied.
+
+*The enforcing check:* an authorization suite that drives each port with an actor lacking each required
+capability and asserts refusal, plus a generation test that advances the epoch mid-session and asserts
+every subsequent port call fails closed.
+
+**S-C — Artifact persistence with optimistic revisions.** Findings: `V2-STU-003`. **Gate B.** Composition
+documents become a stored, versioned artifact with the platform's existing write discipline: expected
+revision on every write, a conflict returning the safe current revision with its diagnostics and never a
+last-write-wins overwrite, idempotent replay under a caller-supplied key, and a revision history the
+platform can read. Stored documents are schema-valid canonical JSON; a document carrying markup, a style
+declaration or a URL outside a schema-defined field is refused at the boundary rather than stored and
+sanitized later.
+
+*The enforcing check:* a persistence suite on all three engines covering the conflict, replay and refusal
+paths, asserting the stored bytes validate against the published schema and round-trip unchanged.
+
+**S-D — Media and external sources.** Findings: `V2-STU-004`. **Gate B.** Implement the media port over
+the existing media module through the canonical upload session state machine, and replay the published
+media policy vectors against it so the platform's real limits and the contract's declared rejections
+agree. External media and embed sources pass the contract's URL policy before any fetch, and the host
+runtime obligations the Studio threat registry records — redirect re-validation, response verification,
+and defence against rebinding between check and fetch — are implemented here and tested here, because the
+contract states plainly that they cannot be discharged by a lexical check.
+
+*The enforcing check:* the media policy vectors replayed as a test case each, plus a hardened-fetcher
+suite whose refusals are asserted per category.
+
+**S-E — Authenticated preview.** Findings: `V2-STU-005`. **Gate B.** Add the preview render endpoint the
+platform does not have: authenticated, capability-gated, short-lived, rendering a composition document
+that has not been published, through the same template and theme path published output uses, so preview
+and publication cannot diverge. The preview channel is origin-pinned and replay-resistant on both ends,
+and the one content-security change — same-origin framing for exactly that route — ships with negative
+tests proving a foreign origin, a replayed sequence and a wrong channel are all refused.
+
+*The enforcing check:* a preview suite covering the negative origin, replay and channel cases, and a
+policy test asserting the administrator policy is otherwise byte-identical to its current value.
+
+**S-F — The embedded authoring surface.** Findings: `V2-STU-006`. **Gate B.** Embed the shell as a
+capability-gated administrator surface declared through the interface standard like any other, with its
+message catalog fed from the compiled localization catalogues so wording and terminology overrides reach
+it, its locale and direction resolved from the same negotiation every other surface uses, and its
+diagnostics rendered in the platform's own vocabulary. The existing server-rendered content editor is
+untouched, so essential operation without JavaScript is unchanged. The surface joins the browser,
+accessibility and visual matrix, including one right-to-left locale.
+
+*The enforcing check:* the matrix leg for the composition surface, with keyboard journeys covering every
+authoring operation and a zero-violation accessibility scan, failing the build on a regression.
+
+**Exit gate.** Section 8, Gate B criterion 12. The qualification itself runs in phase 7: `P7-E` adds a
+composition journey to its accountable human acceptance, `P7-C` covers the preview and media boundaries
+in its security qualification, and `P7-G` records the pinned package versions in the signed manifest.
+
+**Non-goals.** Do not build a composition engine in this repository. Do not move an authoritative concern
+— identity, policy, persistence, media, rendering, localization, telemetry — behind the composition
+layer. Do not add a composition rule to core. Do not turn the dashboard into a composition surface. Do
+not replace the existing content editor. Do not expose composition editing on a public surface in Version
+2. Do not take a floating version on a draft contract. Do not relax the administrator content-security
+policy beyond the one recorded preview frame, and never with an inline script or style allowance.
 
 ---
 
