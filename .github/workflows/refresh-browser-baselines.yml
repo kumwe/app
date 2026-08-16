@@ -126,8 +126,16 @@ jobs:
           REFRESH_ARGUMENTS: ${{ inputs.arguments }}
         run: |
           set -euo pipefail
+          # The verification lanes run the desktop project before the mobile one, so a mobile
+          # screenshot captures whatever state the whole desktop pass left behind. A baseline
+          # re-rendered without that pass would encode a state the verification lane never sees;
+          # the state-building pass therefore runs first, and only the selection is re-captured.
           # The selection intentionally word-splits: it carries test locations and --project flags.
-          arguments="${REFRESH_ARGUMENTS:-tests/Browser/administrator.spec.ts:505 --project=mobile-chromium}"
+          arguments="${REFRESH_ARGUMENTS:-}"
+          if [ -z "$arguments" ]; then
+            npx playwright test --project=desktop-chromium || true
+            arguments='tests/Browser/administrator.spec.ts:505 --project=mobile-chromium'
+          fi
           npx playwright test $arguments --update-snapshots
 
       - name: Print refreshed baselines for retrieval from the log
