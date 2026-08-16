@@ -1,10 +1,11 @@
-# ADR 0007 — Studio visual composition is integrated as a Gate B deliverable
+# ADR 0007 — Studio visual composition: its contribution contract at Gate A, its integration at Gate B
 
 **Status** Accepted
 **Decided by** Product owner
 **Verified against** `47597288f322c3db7a9e334cf915158e6e4cded9`
-**Findings** `V2-STU-001`, `V2-STU-002`, `V2-STU-003`, `V2-STU-004`, `V2-STU-005`, `V2-STU-006`
-**Gate** B
+**Findings** `V2-STU-001`, `V2-STU-002`, `V2-STU-003`, `V2-STU-004`, `V2-STU-005`, `V2-STU-006`,
+`V2-STU-007`
+**Gate** A and B
 
 ---
 
@@ -41,12 +42,19 @@ would be a migration of live artifacts to undo.
 
 ## Decision
 
-### 1. Studio integration is Version 2 scope, gated at Gate B, not Gate A
+### 1. The contribution contract is Gate A; the integration is Gate B
 
-Gate A freezes the extension contract so extension authors build on stable ground; it asserts nothing
-about interface capabilities. The composition surface is an interface capability and a release
-expectation: it becomes **Gate B criterion 12**, and Version 2 does not ship without it. Phase S owns
-the work; it enters after Gate A and its qualification rides phase 7.
+Extensions will contribute to composition — blocks, patterns, inspectors and field controls, design
+vocabulary, migrations for the documents their blocks appear in. Gate A exists to promise an extension
+author that the contracts they build against do not move afterwards, and a composition contribution
+declaration invented after Gate A would break that promise for every extension that had begun
+contributing. So **the declarations are frozen at Gate A** as criterion 13, through the same additive
+classification, generation and compatibility-fixture machinery every other contribution surface uses.
+They declare and validate; they render and store nothing, and they are inert until the runtime exists.
+
+**The integration is Gate B** as criterion 12, and Version 2 does not ship without it: the host
+adapter, the authenticated preview endpoint, and the embedded surface. Phase S carries both halves, the
+way phase L carries a Gate B tail, and its qualification rides phase 7.
 
 ### 2. The division of labour is fixed
 
@@ -99,12 +107,18 @@ contract Studio already proves with canonical vectors and enforced registries, a
 in-house interface stack beside the interface standard rather than a bounded, contract-consuming
 surface.
 
-### Integrate at Gate A
+### Put the whole integration at Gate A
 
-Rejected. Gate A is the extension-contract freeze; adding an interface capability to it delays the
-point where extension authors can build, and the composition surface depends on services — media,
-preview, localization — whose Gate A state is already sufficient through their ordinary contracts.
-The user-visible expectation is the release, and the release is Gate B.
+Rejected. Gate A is the extension-contract freeze, and building the adapter, the preview endpoint and
+the embedded surface before it would delay the point where extension authors can start. Only the part
+an extension author must be able to depend on — the declarations — belongs there.
+
+### Leave the contribution declarations to Gate B with the rest
+
+Rejected, and this is the decision's correction to its own first shape. It would mean an extension
+published after Gate A that contributes a block must be reissued when the surface ships, which is
+exactly the outcome Gate A exists to prevent. Declaring without a runtime is a small, additive cost;
+retrofitting a declaration contract onto published extensions is not.
 
 ### Wait for the Studio contract to reach its stable release before starting
 
@@ -118,8 +132,10 @@ proceed in parallel with an explicit pin.
 a fixture corpus rather than promised; the platform's authoritative boundaries are unchanged; the
 adapter is testable from PHPUnit with no Studio code executing on the server.
 
-**Cost.** A second repository's release discipline enters this programme's critical path at Gate B;
-phase S carries the coordination. The pinned-version rule means Studio fixes reach the integration
+**Cost.** A contribution generation is frozen at Gate A before the runtime that consumes it exists, so
+a shape the runtime later finds insufficient costs an additive generation rather than a silent change.
+A second repository's release discipline enters this programme's critical path at Gate B; phase S
+carries the coordination. The pinned-version rule means Studio fixes reach the integration
 only through deliberate upgrades.
 
 **Risk that must be tested, not assumed.** The preview frame's origin pinning and the channel's
@@ -129,6 +145,7 @@ the embedded surface's conformance to the locale matrix including right-to-left.
 
 ## Non-goals
 
-No composition rule in core. No public composition editing surface in Version 2 — the surface is an
+No composition runtime in the Gate A half. No composition rule in core. No public
+composition editing surface in Version 2 — the surface is an
 administrator capability. No multi-tenant considerations beyond what decision D7 already fixes. No
 change to the dashboard contract. No replacement of the existing content editor.

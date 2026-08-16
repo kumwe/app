@@ -1,8 +1,8 @@
 # Studio visual composition integration
 
 **Companion to** decision D16, [ADR 0007](decisions/0007-studio-visual-composition-integration.md),
-phase S in [`README.md`](README.md) section 9, and Gate B criterion 12.
-**Ledger entries** `V2-STU-001` through `V2-STU-006`.
+phase S in [`README.md`](README.md) section 9, Gate A criterion 13, and Gate B criterion 12.
+**Ledger entries** `V2-STU-001` through `V2-STU-007`.
 
 This document is the integration input for phase S: what Studio is, what it publishes, what the host
 adapter must implement, and where every normative contract lives. It is forward-work material and
@@ -99,6 +99,29 @@ The mapping to mechanisms Kumwe already has:
 | Preview | A new authenticated render endpoint — none exists today — behind the origin-pinned, replay-resistant preview channel |
 | Localization | The Studio shell's host-overridable message catalog fed from the XLIFF-compiled catalogue chain, so wording and terminology overrides apply to the composition surface like any other |
 | Telemetry | The observability contract; Studio's telemetry port carries primitive-only attributes within the established cardinality discipline |
+
+## What an extension contributes, and why it is frozen first
+
+Studio models an extension's contributions as a manifest of typed declarations: composition blocks
+with a bounded property schema, declared slots and a renderer binding; patterns as reusable composition
+structures; inspectors and field controls that edit a contributed field type; design vocabulary
+including tokens, recipes and the size roles a theme remaps; and migrations for documents a contributed
+block appears in. Its own runtime activates them into an immutable generation with owner rules,
+lifecycle states and unresolved-node handling, and its authoring surface validates a declaration
+against exactly the rules that runtime enforces, so an author's mistake surfaces at declaration time
+rather than at activation.
+
+Kumwe's extension contract carries these as its own classified contribution surfaces — `S-A`, the Gate
+A half of phase S. The declaration shapes are the published composition schemas rather than a
+paraphrase of them, so the contract an author reads and the contract the runtime enforces cannot drift.
+A property schema is bounded by the published schema profile, which is what keeps a contributed block
+from smuggling unbounded structure into a stored document. Nothing renders or stores at Gate A; the
+declarations are inert until the Gate B half exists, and freezing them first is what lets an extension
+published the day after Gate A install unchanged when the surface arrives.
+
+The behaviour those declarations get at Gate B is the same lifecycle the platform already guarantees:
+a disabled or untrusted owner's blocks stop executing while documents that used them stay readable and
+diagnosable, and an unresolved block is represented rather than dropped.
 
 ## Contract documents to read before implementing
 

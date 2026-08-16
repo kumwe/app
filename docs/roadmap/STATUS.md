@@ -24,8 +24,8 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | **In flight** | Phase 3's business-group ownership model has landed ahead of its phase; `P3-F` is reduced to its three-engine proof. `P3-B` is complete and `P3-A` is reduced to its three-engine proof, so the aggregate command's persistence seams now point inward. Phase 2's gate work is part delivered: `P2-A` complete, `P2-C`'s semantic checker complete, `P2-G`'s deployed-artifact lane complete. Phase 0 work packages remain unassigned. |
 | **Next** | `P0-A` reproducible baseline, `P0-B` claim ledger, `P0-C` public contract classification and compatibility fixtures. These three are independent and may run in parallel. `P0-E` architecture and security decisions follows them, because several decisions depend on what the inventories find. |
 | **Open decisions** | Two ledger entries are `decision_required`. `V2-POS-002` is the one product-owner decision: whether a disconnected terminal receives its document number at synchronisation time or from a per-terminal reserved block. `V2-ERP-006` is the separate architecture decision for role-specific dashboard composition in `P0-E`. The first is the whole of what `PE-G` and Gate A criterion 11 are waiting on. |
-| **Gate A** | Not started. 12 exit criteria, 5 met; criterion 7's ownership model is built and owes only its three-engine proof, and criterion 12 is now assessable rather than unassessed. |
-| **Gate B** | Not started. Blocked on Gate A. 12 exit criteria; criterion 12 is the Studio visual composition surface added by decision D16. |
+| **Gate A** | Not started. 13 exit criteria, 5 met; criterion 13 is the composition contribution contract added by decision D16; criterion 7's ownership model is built and owes only its three-engine proof, and criterion 12 is now assessable rather than unassessed. |
+| **Gate B** | Not started. Blocked on Gate A. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
 
 ## Phase board
 
@@ -38,11 +38,11 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | 4 — Atomic aggregate documents | A | Not started | Phase 3; phase 0 decision 2 |
 | E — Enterprise document primitives | A | In progress — `PE-A`, `PE-B` and `PE-G` delivered | Phase 3; phase 0 decisions 9 and 12, including the `V2-POS-002` choice. `PE-F` cannot run beside `P4-C` — both own numbering. |
 | L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A` and `PL-B` delivered, `PL-C`, `PL-E` and `PL-F` part delivered | `PL-F`'s screenshots and `PL-G` need phase 2's `P2-E` matrix; the language axis they run on is built. Otherwise parallel to 3, 4 and E. |
-| **Gate A** | | **Not assessed** | **Phases 4, E and L** |
+| **Gate A** | | **Not assessed** | **Phases 4, E and L, and phase S's Gate A half** |
 | 5 — Enterprise scale | B | Not started | Gate A |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
 | 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
-| S — Studio visual composition | B | Not started | Gate A; decision D16 and ADR 0007 accepted |
+| S — Studio visual composition | A, with a B integration | Not started | The Gate A half needs `P0-C`'s classification machinery; the Gate B half needs Gate A. Decision D16 and ADR 0007 accepted |
 | **Gate B** | | **Not assessed** | **Phases 7 and S** |
 | M — Maintainability | — | Not started | Phase 3 seams settled. Blocks nothing. |
 
@@ -62,7 +62,7 @@ table when it completes, in the same change that writes it into the changelog.
 | L | `PL-C`, `PL-D`, `PL-E`, `PL-F`, `PL-G` (`PL-A` and `PL-B` complete) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-010`, `V2-LNG-012` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
-| S | `S-A` … `S-F` | `V2-STU-001` – `V2-STU-006` |
+| S | `S-A` (Gate A), `S-B` … `S-G` | `V2-STU-001` – `V2-STU-007` |
 | 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05` |
 | M | Lane M, no packages assigned yet | `V2-ARC-002` |
 
@@ -92,11 +92,11 @@ Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full 
 
 ## Ledger snapshot
 
-**50 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**51 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 18 |
+| `accepted_for_implementation` | 19 |
 | `reproduced` | 7 |
 | `open` | 15 |
 | `conditional` | 6 |
@@ -118,18 +118,18 @@ Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full 
 | 5 | 7 |
 | 6 | 7 |
 | 7 | 10 |
-| S | 6 |
+| S | 7 |
 | M | 1 |
 | evidence (`GM-AUD-02`, conditional residual) | 1 |
 
 | Gate | Findings |
 |---|---|
-| A | 14 |
+| A | 15 |
 | B | 22 |
 | none | 14 |
 
-By severity: 0 critical, 24 high, 19 medium, 7 low.
-By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 23 discovered
+By severity: 0 critical, 25 high, 19 medium, 7 low.
+By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 24 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14
 and D16.
 
@@ -159,6 +159,7 @@ PostgreSQL's separate schema-global non-primary-index namespace remains open as 
 | 10 | Language contract and machinery in place, `en-GB` extracted | Partly — locale negotiation, the identifier grammar, the compiled catalogue, ICU validation and formatting, transactional and markup-safe administered overrides, organization-aware scope, locale-bearing public delivery, localized generated definition surfaces and the extension catalogue path are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md). Extension translation-set declarations still need a frozen item-association contract | `V2-LNG-001`, `V2-LNG-007`, `V2-LNG-008`, `V2-LNG-009`, `V2-LNG-012` |
 | 11 | Point of sale not foreclosed | Partly — the replay window, the client-asserted instant, late arrival and the deferrable-validation split are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-POS-002`, which is the product owner's decision |
 | 12 | Nothing regressed on three engines | Assessable, and assessed on every merge run. `regression_matrix` in [`docs/quality/contract.json`](../quality/contract.json) names the three engines, the four suites and the commands, and `composer quality:contract` fails when the merge workflow stops running the complete suite on any of them. Assessing the criterion is now reading a run rather than inspecting a workflow; it is asserted at a commit when that run is green and the commit is recorded here | — |
+| 13 | Composition contribution contract frozen with a passing compatibility fixture | No | `V2-STU-001` |
 
 ## Gate B criteria that moved
 
@@ -168,7 +169,7 @@ were added:
 | # | Criterion | Met | Findings |
 |---|---|---|---|
 | 11 | All nine languages ship and each is qualified in its own right | No | `V2-LNG-010` |
-| 12 | The visual composition surface ships and is qualified | No | `V2-STU-001` – `V2-STU-006` |
+| 12 | The visual composition integration ships and is qualified | No | `V2-STU-002` – `V2-STU-007` |
 
 ## Baseline health at this revision
 
