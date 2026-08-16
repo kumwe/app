@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Preference;
+namespace Kumwe\CMS\Application\Presentation\Preference;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
@@ -19,6 +20,7 @@ use Kumwe\CMS\InterfaceStandard\PresentationPreference;
 use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use RuntimeException;
 
 /**
  * Audited application service for preference create, update, import, export, and reset operations.
@@ -36,13 +38,14 @@ final readonly class PresentationPreferenceManager
     /**
      * Bind preference mutations to storage, live KIS policy, authorization, audit, time, and transactions.
      *
-     * @param  PresentationPreferenceRepository  $preferences    Atomic persistence boundary.
-     * @param  PresentationPreferencePolicy      $policy         Current surface owner and customization admission.
-     * @param  AuthorizationGateway              $authorization  Canonical capability decision boundary.
-     * @param  AuditRecorder                     $audit          Recorder sharing the preference transaction.
-     * @param  ClockInterface                    $clock          Source of durable update and audit timestamps.
-     * @param  TransactionManager                $transactions   Atomic scope joining preference and audit writes.
-     * @param  MembershipContextValidator        $memberships    Live authority for role/workspace scope identity.
+     * @param  PresentationPreferenceRepository   $preferences    Atomic persistence boundary.
+     * @param  PresentationPreferencePolicy       $policy         Current surface owner and customization admission.
+     * @param  AuthorizationGateway               $authorization  Canonical capability decision boundary.
+     * @param  AuditRecorder                      $audit          Recorder sharing the preference transaction.
+     * @param  ClockInterface                     $clock          Source of durable update and audit timestamps.
+     * @param  TransactionManager                 $transactions   Atomic scope joining preference and audit writes.
+     * @param  MembershipContextValidator         $memberships    Live authority for role/workspace scope identity.
+     * @param  PresentationAccessGroupRepository  $accessGroups   Canonical role projection and lock boundary.
      *
      * @since  2.0.0
      */
@@ -54,6 +57,7 @@ final readonly class PresentationPreferenceManager
         private ClockInterface $clock,
         private TransactionManager $transactions,
         private MembershipContextValidator $memberships,
+        private PresentationAccessGroupRepository $accessGroups,
     ) {
     }
 
@@ -165,6 +169,115 @@ final readonly class PresentationPreferenceManager
         $this->assertCurrentOwner($preference, $owner);
 
         return $preference->toArray();
+    }
+
+    /**
+     * Read a bounded authorized key set through one preference-store query.
+     *
+     * Role keys may be supplied only with typed groups returned by the canonical bounded catalogue. The core
+     * `users.manage` capability is global-only and its role policy is installation-global, so one collection
+     * decision proves the same grant required by every canonical role read without an item-by-item ownership
+     * query and decision-log amplification. Mutation still rechecks the exact role and locks its existence.
+     * A denied role collection is omitted, while authorized absent rows remain present with null. A stored row
+     * whose owner went stale is returned as null exactly like an absent row, matching the resolver's
+     * `kis.preference.owner-stale` degradation, so one legacy row cannot fail the whole read.
+     *
+     * @param   ExecutionContext                 $context            Authenticated actor and current site.
+     * @param   ContributionOwner                $owner              Expected current surface owner.
+     * @param   list<PresentationPreferenceKey>  $keys               Unique exact records, up to 256.
+     * @param   list<PresentationAccessGroup>    $knownAccessGroups  Canonical groups used by role keys.
+     *
+     * @return  array<string, PresentationPreference|null>  Authorized rows keyed by durable identity.
+     *
+     * @throws  InvalidArgumentException  When keys or groups are malformed, duplicated, unbounded, or unrelated.
+     * @throws  RuntimeException  When persistence returns a row outside the exact authorized key set.
+     *
+     * @since   2.0.0
+     */
+    public function readMany(
+        ExecutionContext $context,
+        ContributionOwner $owner,
+        array $keys,
+        array $knownAccessGroups = [],
+    ): array {
+        if (
+            !array_is_list($keys)
+            || count($keys) > 256
+            || !array_is_list($knownAccessGroups)
+            || count($knownAccessGroups) > 256
+        ) {
+            throw new InvalidArgumentException('A preference export batch must be bounded lists.');
+        }
+        $known = [];
+        foreach ($knownAccessGroups as $group) {
+            if (!$group instanceof PresentationAccessGroup || isset($known[$group->id])) {
+                throw new InvalidArgumentException('A preference export batch contains an invalid access group.');
+            }
+            $known[$group->id] = $group;
+        }
+
+        $authorizedKeys = [];
+        $authorized = [];
+        $preferences = [];
+        $roleCatalogAllowed = null;
+        $seen = [];
+        foreach ($keys as $key) {
+            if (!$key instanceof PresentationPreferenceKey || isset($seen[$key->auditSubjectId()])) {
+                throw new InvalidArgumentException('A preference export batch contains an invalid key.');
+            }
+            $seen[$key->auditSubjectId()] = true;
+            $this->policy->assertAllowed($key->surface, $owner, $key->slot, $key->scope);
+            $scopeId = $key->scopeId;
+            $roleId = $scopeId === null ? null : PresentationAccessGroup::roleIdFromIdentifier($scopeId);
+            if ($roleId === null) {
+                try {
+                    $this->authorize($context, $key);
+                } catch (AuthorizationDenied) {
+                    continue;
+                }
+            } else {
+                if ($scopeId === null) {
+                    throw new InvalidArgumentException('A batched access-group identity is inconsistent.');
+                }
+                if (!array_key_exists($scopeId, $known)) {
+                    throw new InvalidArgumentException('A batched access-group read requires a canonical row.');
+                }
+                if ($roleCatalogAllowed === null) {
+                    try {
+                        $this->authorization->assertAllowed(
+                            $context,
+                            Capability::fromString('users.manage'),
+                            AuthorizationResource::collection('role'),
+                        );
+                        $roleCatalogAllowed = true;
+                    } catch (AuthorizationDenied) {
+                        $roleCatalogAllowed = false;
+                    }
+                }
+                if (!$roleCatalogAllowed) {
+                    continue;
+                }
+            }
+            $authorizedKeys[] = $key;
+            $identity = $key->auditSubjectId();
+            $authorized[$identity] = $key;
+            $preferences[$identity] = null;
+        }
+
+        foreach ($this->preferences->findMany($authorizedKeys) as $identity => $preference) {
+            $key = $authorized[$identity] ?? null;
+            if ($key === null || !PresentationPreferenceKey::fromPreference($preference)->equals($key)) {
+                throw new RuntimeException('The preference repository returned an unauthorized batch row.');
+            }
+            if ($preference->owner()->identifier() !== $owner->identifier()) {
+                // A stored row whose owner went stale degrades like an absent row on the read path, the same
+                // way the resolver reports `kis.preference.owner-stale`; mutation still refuses the stale owner.
+                continue;
+            }
+            $preferences[$identity] = $preference;
+        }
+
+        return $preferences;
     }
 
     /**
@@ -291,12 +404,13 @@ final readonly class PresentationPreferenceManager
      *
      * A user may manage only its own user-scoped value. Site defaults require site-scoped settings
      * authority, administrator defaults require installation-global administrator-theme authority, and
-     * role/workspace defaults additionally require the exact live membership selection carried by the
-     * execution context. Mutation paths call this both before and inside their write transaction.
+     * workspace defaults additionally require the exact live membership selection carried by the execution
+     * context. A `role:<uuid>` access-group default instead requires `users.manage` on that exact current role.
+     * Mutation paths call this both before and inside their write transaction.
      *
      * @param   ExecutionContext           $context         Authenticated actor and current site.
      * @param   PresentationPreferenceKey  $key             Layer being read with attribution or mutated.
-     * @param   bool                       $lockMembership  Whether a live workspace membership is locked for write.
+     * @param   bool                       $lockMembership  Whether live workspace or role identity is locked for write.
      *
      * @return  void
      *
@@ -330,6 +444,28 @@ final readonly class PresentationPreferenceManager
             }
             $this->assertSiteSettingsAuthority($context);
             return;
+        }
+
+        $scopeId = $key->scopeId;
+        if ($scopeId === null) {
+            throw new InvalidArgumentException('A role/workspace preference requires a named scope identity.');
+        }
+        $roleId = PresentationAccessGroup::roleIdFromIdentifier($scopeId);
+        if ($roleId !== null) {
+            $this->authorization->assertAllowed(
+                $context,
+                Capability::fromString('users.manage'),
+                AuthorizationResource::item('role', $roleId),
+            );
+            if (!$this->accessGroups->exists($scopeId, $lockMembership)) {
+                throw new InvalidArgumentException(
+                    'A role/workspace preference requires a current presentation access group.',
+                );
+            }
+            return;
+        }
+        if (str_starts_with($scopeId, 'role:')) {
+            throw new InvalidArgumentException('A presentation access-group preference identity is invalid.');
         }
 
         $membership = $context->membership();

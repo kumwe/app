@@ -96,6 +96,33 @@ final readonly class PortalRenderer
     }
 
     /**
+     * Project the exact portal navigation visible in one authenticated session.
+     *
+     * Dashboard composition and the portal shell deliberately call this same boundary. That keeps
+     * capability, live extension trust, generated-business discovery, and request-session policy from
+     * drifting into two subtly different menus, and means dashboard workflow destinations never come
+     * from request data or an unfiltered registry read.
+     *
+     * @param   PortalSession  $session  Current authenticated and policy-resolved portal session.
+     *
+     * @return  list<array<string, int|string>>  Navigation rows safe to present for this session.
+     *
+     * @since   2.0.0
+     */
+    public function visibleNavigation(PortalSession $session): array
+    {
+        $capabilities = [];
+        foreach ($session->identity->principal->capabilities() as $capability) {
+            $capabilities[$capability->value()] = true;
+        }
+
+        return array_values(array_filter(
+            $this->navigation->visible($capabilities),
+            fn (array $item): bool => $this->visibility->visible($session, $item),
+        ));
+    }
+
+    /**
      * Add only safe shell context derived from the resolved session.
      *
      * @param   array<string, mixed>  $data     Template-specific variables.
@@ -113,13 +140,9 @@ final readonly class PortalRenderer
                 $capabilities[$capability->value()] = true;
             }
         }
-        $navigation = $this->navigation->visible($capabilities);
-        if ($session instanceof PortalSession) {
-            $navigation = array_values(array_filter(
-                $navigation,
-                fn (array $item): bool => $this->visibility->visible($session, $item),
-            ));
-        }
+        $navigation = $session instanceof PortalSession
+            ? $this->visibleNavigation($session)
+            : $this->navigation->visible($capabilities);
 
         $assetEntry = ($this->assets ?? new ViteAssetManifest(''))->entry(
             'assets/portal/main.ts',

@@ -1,0 +1,170 @@
+{#
+  Catalogue references for message identifiers carried by the typed dashboard model. These calls are
+  deliberately non-rendered; runtime values are translated below only after DashboardWidget validation.
+  {{ t('core.administrator.dashboard.content_summary.title') }}
+  {{ t('core.administrator.dashboard.access_context.title') }}
+  {{ t('core.administrator.dashboard.access_context.description') }}
+  {{ t('core.administrator.dashboard.access_context.site_label') }}
+  {{ t('core.administrator.dashboard.access_context.workspace_label') }}
+  {{ t('core.administrator.dashboard.access_context.workflows_label') }}
+  {{ t('core.administrator.dashboard.content_summary.description') }}
+  {{ t('core.administrator.dashboard.content_summary.search_label') }}
+  {{ t('core.administrator.dashboard.content_summary.search_placeholder') }}
+  {{ t('core.administrator.dashboard.content_summary.search_button') }}
+  {{ t('core.administrator.dashboard.content_summary.total_metric') }}
+  {{ t('core.administrator.dashboard.content_summary.published_metric') }}
+  {{ t('core.administrator.dashboard.content_summary.review_metric') }}
+  {{ t('core.administrator.dashboard.content_summary.types_metric') }}
+  {{ t('core.administrator.dashboard.content_summary.publication_progress') }}
+  {{ t('core.administrator.dashboard.content_summary.publication_progress_help') }}
+  {{ t('core.administrator.dashboard.recent_content.title') }}
+  {{ t('core.administrator.dashboard.recent_content.description') }}
+  {{ t('core.administrator.dashboard.recent_content.empty_title') }}
+  {{ t('core.administrator.dashboard.recent_content.empty_message') }}
+  {{ t('core.administrator.dashboard.recent_content.updated_at') }}
+  {{ t('core.administrator.dashboard.recent_content.status_archived') }}
+  {{ t('core.administrator.dashboard.recent_content.status_draft') }}
+  {{ t('core.administrator.dashboard.recent_content.status_review') }}
+  {{ t('core.administrator.dashboard.recent_content.status_published') }}
+  {{ t('core.administrator.dashboard.recent_content.status_trashed') }}
+  {{ t('core.administrator.dashboard.recent_content.status_other') }}
+  {{ t('core.administrator.dashboard.recent_content.view_all') }}
+  {{ t('core.portal.dashboard.access_context.title') }}
+  {{ t('core.portal.dashboard.access_context.description') }}
+  {{ t('core.portal.dashboard.access_context.site_label') }}
+  {{ t('core.portal.dashboard.access_context.organization_label') }}
+  {{ t('core.portal.dashboard.access_context.workspace_label') }}
+  {{ t('core.portal.dashboard.access_context.areas_label') }}
+#}
+{% set widget_title = widget.message_ids ? t(widget.title) : widget.title %}
+{% set widget_description = widget.description is empty
+  ? ''
+  : (widget.message_ids ? t(widget.description) : widget.description) %}
+<article
+  class="panel kis-dashboard-widget kis-dashboard-widget-{{ widget.kind }} kis-dashboard-widget-{{ widget.size }}"
+  data-kis-dashboard-widget="{{ widget.id }}"
+  aria-labelledby="dashboard-widget-{{ widget_index }}-title"
+>
+  <header class="kis-dashboard-widget-header">
+    <span class="kis-dashboard-widget-icon" aria-hidden="true">
+      {% include '@kis/dashboard-icon.twig' with {icon: widget.icon} only %}
+    </span>
+    <div>
+      {% if widget.group is not empty %}<p class="eyebrow">{{ widget.group }}</p>{% endif %}
+      <h2 id="dashboard-widget-{{ widget_index }}-title">{{ widget_title }}</h2>
+      {% if widget_description is not empty %}<p>{{ widget_description }}</p>{% endif %}
+    </div>
+  </header>
+
+  {% if widget.kind == 'workflow' %}
+    <div class="kis-dashboard-widget-body kis-dashboard-workflow">
+      <a class="button" href="{{ widget.href }}">
+        {{ t('core.interface_standard.dashboard.open_action', {area: widget_title}) }}
+      </a>
+    </div>
+  {% elseif widget.kind == 'summary' %}
+    <div class="kis-dashboard-widget-body stack">
+      {% if widget.data.search|default(null) %}
+        <form class="dashboard-search" action="{{ widget.data.search.action }}" method="get" role="search">
+          <label for="dashboard-widget-{{ widget_index }}-search">
+            {{ t(widget.data.search.label) }}
+          </label>
+          <div class="kis-dashboard-search-control">
+            <input
+              id="dashboard-widget-{{ widget_index }}-search"
+              type="search"
+              name="q"
+              placeholder="{{ t(widget.data.search.placeholder) }}"
+            >
+            <button type="submit">{{ t(widget.data.search.button) }}</button>
+          </div>
+        </form>
+      {% endif %}
+      {% if widget.data.metrics|default([]) is not empty %}
+        <dl class="kis-dashboard-metrics">
+          {% for metric in widget.data.metrics %}
+            <div class="kis-dashboard-metric" data-tone="{{ metric.tone|default('neutral') }}">
+              <dt>{{ widget.message_ids ? t(metric.label, metric.parameters|default({})) : metric.label }}</dt>
+              <dd>{{ metric.value }}</dd>
+            </div>
+          {% endfor %}
+        </dl>
+      {% endif %}
+      {% if widget.data.progress|default(null) %}
+        <div class="kis-dashboard-progress">
+          <div>
+            <strong id="dashboard-widget-{{ widget_index }}-progress-label">
+              {{ t(widget.data.progress.label, widget.data.progress.parameters|default({})) }}
+            </strong>
+            {% if widget.data.progress.help|default('') is not empty %}
+              <span>{{ t(widget.data.progress.help, widget.data.progress.help_parameters|default({})) }}</span>
+            {% endif %}
+          </div>
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-labelledby="dashboard-widget-{{ widget_index }}-progress-label"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="{{ widget.data.progress.value }}"
+          ><span style="--progress: {{ widget.data.progress.value }}%"></span></div>
+        </div>
+      {% endif %}
+    </div>
+  {% elseif widget.kind == 'activity' %}
+    <div class="kis-dashboard-widget-body">
+      {% if widget.data.items|default([]) is empty %}
+        {% include '@kis/empty-state.twig' with {
+          title: t(widget.data.empty_title),
+          message: t(widget.data.empty_message)
+        } only %}
+      {% else %}
+        <ul class="kis-dashboard-activity-list">
+          {% for item in widget.data.items %}
+            <li>
+              <div>
+                <strong>{{ item.title }}</strong>
+                {% if item.detail|default('') is not empty %}
+                  <span data-visual-dynamic>
+                    {% if item.detail_label|default('') is not empty %}
+                      <time datetime="{{ item.detail }}">
+                        {{ widget.message_ids
+                          ? t(item.detail_label, item.detail_parameters|default({}))
+                          : item.detail_label }}
+                      </time>
+                    {% else %}
+                      {{ item.detail }}
+                    {% endif %}
+                  </span>
+                {% endif %}
+              </div>
+              {% if item.status|default('') is not empty %}
+                <span class="status status-{{ item.status_tone|default('neutral') }}">
+                  {{ widget.message_ids
+                    ? t(item.status_label, item.status_parameters|default({}))
+                    : item.status_label }}
+                </span>
+              {% endif %}
+              {% if item.href|default('') is not empty %}
+                <a href="{{ item.href }}">{{ t(item.action_label) }}</a>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% if widget.data.action|default(null) %}
+        <p class="kis-dashboard-widget-action">
+          <a class="button" href="{{ widget.data.action.href }}">{{ t(widget.data.action.label) }}</a>
+        </p>
+      {% endif %}
+    </div>
+  {% elseif widget.kind == 'context' %}
+    <div class="kis-dashboard-widget-body">
+      <dl class="kis-dashboard-context-list">
+        {% for item in widget.data.items|default([]) %}
+          <div><dt>{{ t(item.label) }}</dt><dd>{{ item.value }}</dd></div>
+        {% endfor %}
+      </dl>
+    </div>
+  {% endif %}
+</article>

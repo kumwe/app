@@ -473,6 +473,25 @@
       "closure_sha": null
     },
     {
+      "id": "V2-UX-002",
+      "title": "Role dashboard preference editing conflates the editor's visibility with the role's catalogue",
+      "severity": "medium",
+      "state": "open",
+      "phase": "7",
+      "gate": "B",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php",
+          "symbol": "liveIdentifiers",
+          "note": "Role (access-group) preference forms prune stored selections against the editing administrator's capability-filtered catalogue, so an administrator with narrower visibility silently drops valid entries from a role's stored selection on save, and cannot restore them because delivery validates submissions against the editor's own catalogue."
+        }
+      ],
+      "acceptance_test": "An administrator holding users.manage but lacking a capability required by one widget stored in a role's dashboard selection opens and saves that role's preference form; the stored selection retains the invisible widget, the form discloses it as outside the editor's visibility, and members of the role keep the widget. A submission naming an identifier outside the role's own catalogue is still refused.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
       "id": "V2-DOC-001",
       "title": "Programme state was spread across competing documents",
       "severity": "medium",
@@ -582,30 +601,6 @@
         "V2-ERP-002",
         "V2-SCL-003"
       ]
-    },
-    {
-      "id": "V2-ERP-006",
-      "title": "No role-specific dashboard composition primitive",
-      "severity": "low",
-      "state": "decision_required",
-      "phase": "0",
-      "gate": null,
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Extension/Contribution/AdministratorWorkspaceDefinition.php",
-          "symbol": "AdministratorWorkspaceDefinition",
-          "note": "A workspace is a navigation group with a label, description and sort weight. Its own docblock says it 'carries no behaviour of its own'. It is not a dashboard."
-        },
-        {
-          "file": "src/Administrator/Http/Handler/AdministratorDashboardHandler.php",
-          "symbol": "AdministratorDashboardHandler",
-          "note": "One fixed handler that filters its panels by the actor's capability map. There is no contributed-widget composition and no per-role landing selection."
-        }
-      ],
-      "acceptance_test": "Decide whether core gains a contributed dashboard-panel registry and a per-role landing route, or whether extensions ship dashboards as ordinary contributed administrator routes and views. If the latter, prove it in a conformance fixture and remove any documentation implying more.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
     },
     {
       "id": "V2-ERP-007",

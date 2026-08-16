@@ -116,7 +116,7 @@
       "properties": {
         "slot": {"const": "dashboard-cards"},
         "scope": {"enum": ["administrator", "role-workspace", "user"]},
-        "value": {"$ref": "#/$defs/semanticNameList"}
+        "value": {"$ref": "#/$defs/dashboardIdentifierList"}
       }
     },
     {
@@ -184,6 +184,19 @@
       "maxItems": 32,
       "uniqueItems": true,
       "items": {"$ref": "#/$defs/dottedName"}
+    },
+    "dashboardIdentifierList": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/dashboardIdentifier"}
+    },
+    "dashboardIdentifier": {
+      "description": "A schema-one semantic card name or an existing dotted contribution identifier.",
+      "anyOf": [
+        {"$ref": "#/$defs/semanticName"},
+        {"$ref": "#/$defs/dottedName"}
+      ]
     }
   }
 }

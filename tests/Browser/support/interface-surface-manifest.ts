@@ -20,8 +20,8 @@ export const interfaceLandingSurfaces = [
     id: 'administrator.dashboard',
     shell: 'administrator',
     path: '/administrator',
-    heading: 'Good work starts with a clear view.',
-    purpose: 'Orient administrators and expose the primary publishing actions.',
+    heading: 'Your work, at a glance',
+    purpose: 'Orient administrators with access-aware content, business and extension workflows.',
   },
   {
     id: 'administrator.content',
@@ -132,8 +132,8 @@ export const interfaceLandingSurfaces = [
     id: 'portal.overview',
     shell: 'portal',
     path: '/portal',
-    heading: 'Welcome to Kumwe Portal',
-    purpose: 'Orient portal members within their authorized workspace.',
+    heading: 'Welcome to your workspace',
+    purpose: 'Orient portal members with their access context and policy-visible business workflows.',
   },
   {
     id: 'portal.business-records',

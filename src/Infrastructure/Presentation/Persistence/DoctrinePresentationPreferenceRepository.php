@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Infrastructure\Persistence;
+namespace Kumwe\CMS\Infrastructure\Presentation\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -10,12 +10,12 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceRepository;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\InterfaceStandard\PresentationPreference;
 use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceRepository;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceVersionConflict;
 use RuntimeException;
 
 /**
@@ -73,24 +73,70 @@ final readonly class DoctrinePresentationPreferenceRepository implements Present
             return null;
         }
 
-        $preference = PresentationPreference::fromArray([
-            'schema' => self::integer($row['schema_version'] ?? null, 'schema version'),
-            'standard' => self::string($row['standard_version'] ?? null, 'standard version'),
-            'surface' => self::string($row['surface_id'] ?? null, 'surface'),
-            'owner' => self::string($row['owner_identifier'] ?? null, 'owner'),
-            'scope' => self::string($row['scope'] ?? null, 'scope'),
-            'scope_id' => self::nullableString($row['scope_id'] ?? null, 'scope identity'),
-            'slot' => self::string($row['slot'] ?? null, 'slot'),
-            'value' => self::decode($row['preference_value'] ?? null),
-            'version' => self::integer($row['version'] ?? null, 'version'),
-            'updated_by' => self::string($row['updated_by'] ?? null, 'update actor'),
-            'updated_at' => self::timestamp($row['updated_at'] ?? null),
-        ]);
+        $preference = self::preference($row);
         if (!PresentationPreferenceKey::fromPreference($preference)->equals($key)) {
             throw new RuntimeException('A stored KIS presentation preference key is internally inconsistent.');
         }
 
         return $preference;
+    }
+
+    /**
+     * Read a bounded set of exact preference rows in one database query.
+     *
+     * @param   list<PresentationPreferenceKey>  $keys  Unique exact identities to select.
+     *
+     * @return  array<string, PresentationPreference>  Present rows keyed by durable identity.
+     *
+     * @throws  InvalidArgumentException  When the request is malformed, duplicated, or unbounded.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
+     * @throws  RuntimeException  When a stored row is malformed or does not match a requested key.
+     *
+     * @since   2.0.0
+     */
+    public function findMany(array $keys): array
+    {
+        if (!array_is_list($keys) || count($keys) > 256) {
+            throw new InvalidArgumentException('A preference batch read must be a bounded list.');
+        }
+        if ($keys === []) {
+            return [];
+        }
+        $predicates = [];
+        $parameters = [];
+        $requested = [];
+        foreach ($keys as $key) {
+            if (!$key instanceof PresentationPreferenceKey || isset($requested[$key->auditSubjectId()])) {
+                throw new InvalidArgumentException('A preference batch read contains an invalid key.');
+            }
+            $predicates[] = '(surface_id = ? AND slot = ? AND scope = ? AND scope_key = ?)';
+            array_push(
+                $parameters,
+                $key->surface->value(),
+                $key->slot->value,
+                $key->scope->value,
+                $key->storageScopeKey(),
+            );
+            $requested[$key->auditSubjectId()] = true;
+        }
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT schema_version, standard_version, surface_id, owner_identifier, scope, scope_id, '
+            . 'slot, preference_value, version, updated_by, updated_at FROM %s WHERE %s',
+            $this->tables->quoted('interface_presentation_preferences'),
+            implode(' OR ', $predicates),
+        ), $parameters);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $preference = self::preference($row);
+            $identity = PresentationPreferenceKey::fromPreference($preference)->auditSubjectId();
+            if (!isset($requested[$identity]) || isset($result[$identity])) {
+                throw new RuntimeException('A KIS preference batch read returned an inconsistent key.');
+            }
+            $result[$identity] = $preference;
+        }
+
+        return $result;
     }
 
     /**
@@ -115,11 +161,15 @@ final readonly class DoctrinePresentationPreferenceRepository implements Present
         $key = PresentationPreferenceKey::fromPreference($preference);
         if ($expectedVersion === 0) {
             try {
-                $this->database->insert(
+                // The insert runs in its own nested transaction, which the driver emulates with a
+                // savepoint inside the caller's transaction. PostgreSQL refuses every statement after a
+                // constraint violation until the failed scope is rolled back, so without the savepoint
+                // the version lookup below would fail there and the conflict could not be reported.
+                $this->database->transactional(fn (): int|string => $this->database->insert(
                     $this->tables->raw('interface_presentation_preferences'),
                     $this->row($preference),
                     $this->types(),
-                );
+                ));
             } catch (UniqueConstraintViolationException $exception) {
                 throw new PresentationPreferenceVersionConflict(
                     $key,
@@ -239,6 +289,35 @@ final readonly class DoctrinePresentationPreferenceRepository implements Present
             'updated_by' => $preference->updatedBy(),
             'updated_at' => $preference->updatedAt(),
         ];
+    }
+
+    /**
+     * Revalidate one database row through the portable presentation-preference record.
+     *
+     * @param   array<string, mixed>  $row  Driver row containing every portable preference field.
+     *
+     * @return  PresentationPreference  Validated portable record.
+     *
+     * @throws  RuntimeException  When a stored value cannot be decoded or normalized.
+     * @throws  InvalidArgumentException  When stored fields violate the portable KIS contract.
+     *
+     * @since   2.0.0
+     */
+    private static function preference(array $row): PresentationPreference
+    {
+        return PresentationPreference::fromArray([
+            'schema' => self::integer($row['schema_version'] ?? null, 'schema version'),
+            'standard' => self::string($row['standard_version'] ?? null, 'standard version'),
+            'surface' => self::string($row['surface_id'] ?? null, 'surface'),
+            'owner' => self::string($row['owner_identifier'] ?? null, 'owner'),
+            'scope' => self::string($row['scope'] ?? null, 'scope'),
+            'scope_id' => self::nullableString($row['scope_id'] ?? null, 'scope identity'),
+            'slot' => self::string($row['slot'] ?? null, 'slot'),
+            'value' => self::decode($row['preference_value'] ?? null),
+            'version' => self::integer($row['version'] ?? null, 'version'),
+            'updated_by' => self::string($row['updated_by'] ?? null, 'update actor'),
+            'updated_at' => self::timestamp($row['updated_at'] ?? null),
+        ]);
     }
 
     /**

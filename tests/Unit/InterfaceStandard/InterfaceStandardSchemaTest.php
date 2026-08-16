@@ -144,6 +144,17 @@ final class InterfaceStandardSchemaTest extends TestCase
             $schema['$defs']['surfaceIdentifier']['pattern'] ?? null,
         );
         self::assertSame('#/$defs/surfaceIdentifier', $schema['$defs']['dottedName']['$ref'] ?? null);
+        self::assertSame(
+            [
+                ['$ref' => '#/$defs/semanticName'],
+                ['$ref' => '#/$defs/dottedName'],
+            ],
+            $schema['$defs']['dashboardIdentifier']['anyOf'] ?? null,
+        );
+        self::assertSame(
+            '#/$defs/dashboardIdentifier',
+            $schema['$defs']['dashboardIdentifierList']['items']['$ref'] ?? null,
+        );
 
         $branches = $schema['oneOf'] ?? null;
         self::assertIsArray($branches);

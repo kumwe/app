@@ -10,6 +10,14 @@
 </head>
 <body>
 <a class="skip-link" href="#portal-main">{{ t('core.portal.layout.skip_to_content') }}</a>
+<svg class="sr-only" aria-hidden="true" focusable="false">
+    <symbol id="kumwe-icon-home" viewBox="0 0 24 24"><path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4v-9Z"/></symbol>
+    <symbol id="kumwe-icon-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18M10 12v2h4v-2"/></symbol>
+    <symbol id="kumwe-icon-models" viewBox="0 0 24 24"><path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z"/><path d="m4 12 8 4.5 8-4.5M4 16.5l8 4.5 8-4.5"/></symbol>
+    <symbol id="kumwe-icon-shield" viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.6-2.9 8.1-7 10-4.1-1.9-7-5.4-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="kumwe-icon-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></symbol>
+    <symbol id="kumwe-icon-dashboard" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></symbol>
+</svg>
 <header class="portal-header">
     <a class="portal-brand" href="/portal" aria-label="{{ t('core.portal.layout.brand_home') }}">Kumwe <span>{{ t('core.portal.layout.brand_role') }}</span></a>
     {% if portal_session %}

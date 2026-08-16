@@ -52,7 +52,7 @@ table when it completes, in the same change that writes it into the changelog.
 
 | Phase | Packages | Findings |
 |---|---|---|
-| 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-ERP-006`, `V2-ERP-007`, `V2-POS-002` |
+| 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-ERP-007`, `V2-POS-002` |
 | 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
 | 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-DB-001`, `V2-DB-004`, `V2-REL-001`, `GM-SUP-09` |
 | 3 | `P3-A`, `P3-C` … `P3-F` (`P3-B` complete) | — |
@@ -61,12 +61,12 @@ table when it completes, in the same change that writes it into the changelog.
 | L | `PL-C`, `PL-D`, `PL-E`, `PL-F`, `PL-G` (`PL-A` and `PL-B` complete) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-010`, `V2-LNG-012` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
-| 7 | `P7-A` … `P7-I` | `V2-UX-001`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05` |
+| 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05` |
 | M | Lane M, no packages assigned yet | `V2-ARC-002` |
 
 ## Decisions
 
-Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full decision record.
+Fifteen, all recorded in [`README.md`](README.md) section 2. Six carry a full decision record.
 
 | | Decision | Record |
 |---|---|---|
@@ -84,6 +84,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 | D12 | Content is multilingual too, including extension-contributed content | [ADR 0002](decisions/0002-interface-translation-architecture.md) |
 | D13 | The seven enterprise-primitive boundary questions are decided | README section 2; [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) for D13.2 |
 | D14 | Point of sale is deferred but not foreclosed | README section 2 |
+| D15 | Role-specific dashboards compose the unified contribution runtime | [ADR 0006](decisions/0006-unified-dashboard-composition.md) |
 | — | The remaining `P0-E` decisions | Not yet written |
 
 ## Ledger snapshot
@@ -94,9 +95,9 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 |---|---|
 | `accepted_for_implementation` | 12 |
 | `reproduced` | 7 |
-| `open` | 14 |
+| `open` | 15 |
 | `conditional` | 6 |
-| `decision_required` | 2 |
+| `decision_required` | 1 |
 | `in_progress` | 3 |
 | `verified` | 0 |
 | `external` | 0 |
@@ -104,7 +105,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 
 | Phase | Findings |
 |---|---|
-| 0 | 4 |
+| 0 | 3 |
 | 1 | 0 |
 | 2 | 6 |
 | 3 | 0 |
@@ -113,17 +114,17 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Five carry a full 
 | L | 6 |
 | 5 | 7 |
 | 6 | 7 |
-| 7 | 9 |
+| 7 | 10 |
 | M | 1 |
 | evidence (`GM-AUD-02`, conditional residual) | 1 |
 
 | Gate | Findings |
 |---|---|
 | A | 14 |
-| B | 15 |
-| none | 15 |
+| B | 16 |
+| none | 14 |
 
-By severity: 0 critical, 19 high, 17 medium, 8 low.
+By severity: 0 critical, 19 high, 18 medium, 7 low.
 By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 17 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 

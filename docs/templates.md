@@ -103,6 +103,79 @@ warnings and action boundaries. The shell may branch on `csrf is defined` to pro
 and authenticated compositions. Essential reading, navigation, form submission, validation, and
 recovery must remain available without JavaScript.
 
+## Dashboard semantic context
+
+The administrator dashboard and authenticated portal home consume one protected `dashboard` context. It is
+the graphical projection of the existing KIS surface, navigation and presentation-preference contracts, not
+a theme-owned page builder. Core handlers compose it only after navigation has been filtered for actor
+capability, extension trust, contribution lifecycle, owner and delivery area. Stored preferences select
+canonical identifiers from that live result; they never supply data or destinations.
+
+| Value | Stable semantic contract |
+| --- | --- |
+| `dashboard.widgets` | Ordered selected widget documents safe to render now |
+| `dashboard.available_widgets` | Bounded request-local widget catalogue evidence: effective live selections first, followed by core widgets and the current workflow page |
+| `dashboard.shortcuts` | Ordered selected workflow widget documents rendered as quick links |
+| `dashboard.available_shortcuts` | Bounded request-local shortcut catalogue evidence: effective live selections first, followed by the current workflow page |
+| `dashboard.selected_widget_ids`, `dashboard.selected_shortcut_ids` | Effective canonical identifiers, in render order |
+| `dashboard.diagnostics` | Bounded non-sensitive compatibility and fallback codes; never exception text or hidden identifiers |
+| `dashboard.customized`, `dashboard.source`, `dashboard.version` | Read-only resolution evidence for the two preference slots |
+| `dashboard.preference_forms` | Protected mutation metadata for the authenticated actor followed by at most one canonical access group admitted by the installation-global management decision and current bounded browser page |
+| `dashboard.access_group_browser` | Explicit no-JavaScript role browser with `available`, `active`, normalized `search`, one-based `page`, `result_count`, previous/next and numeric-bound flags, and core-owned same-area action, clear, previous and next URLs |
+| `dashboard.workflow_browser` | Explicit no-JavaScript workflow-choice browser with the same closed state and URL fields, an independent one-based page and normalized search over the complete current filtered navigation catalogue |
+| `dashboard.preference_diagnostics` | Bounded non-sensitive preference-query diagnostics; never role names, identifiers, exception text or authorization reasons |
+| `dashboard.preference_action` | Core-owned same-area POST endpoint; templates render it unchanged with the supplied `csrf` value |
+| `dashboard.preference_saved`, `dashboard.preference_error`, `dashboard.preference_open` | Closed redirect-result state; errors are catalogue identifiers, never exception messages |
+
+Each preference-form document provides `scope`, `scope_id`, `scope_label`, `label`, `message_ids`, `help`,
+the optional canonical `group_code`, form-specific `available_widgets` and `available_shortcuts`,
+`selected_widget_ids`, `widget_order`, `widget_version`, `selected_shortcut_ids`, `shortcut_order` and
+`shortcut_version`. The shared component posts only those
+server-prepared identities plus the live item identifiers, selected flags and bounded order numbers. Its
+action vocabulary is `dashboard-cards.save`,
+`dashboard-cards.reset`,
+`navigation-shortcuts.save` and `navigation-shortcuts.reset`.
+
+Workflow discovery renders 32 permitted navigation candidates on each of the first 100 numeric pages. A
+normalized search of at most 191 characters scans the complete already-filtered current catalogue, so an exact
+identifier or visible label can reach a candidate beyond the 3,200-item numeric window. Widget and shortcut
+choices share that workflow query, while each personal or access-group form carries its own live selected
+off-page entries first, then core widgets where applicable and the current page without duplicates. Stale or
+disabled identifiers remain absent. All workflow and role continuation URLs are fixed to the current area and
+preserve the other browser's validated state; templates must render them unchanged.
+
+Every widget has `id`, `kind`, `title`, `description`, `icon`, `group`, `size`, `data`, `message_ids` and
+`href`. `kind` is one of `summary`, `activity`, `context` or `workflow`; `size` is one of `small`, `medium`,
+`large` or `wide`. When `message_ids` is true, the title, description and the documented static labels in
+`data` are catalogue identifiers and the shared component translates them. When it is false, title,
+description and group are already prepared display text from visible navigation. Only a `workflow` widget
+may have a non-null root-relative `href`, and that value comes from filtered navigation. Summary, activity
+and context widgets cannot carry a destination. Quick links use the same widget document and its `title`;
+there is no parallel `label` field.
+
+The protected `@kis/dashboard-icon.twig` component resolves the semantic `icon` hint without relying on an
+administrator-theme or portal-shell sprite. Its closed built-in glyphs cover the core navigation vocabulary;
+every other grammatically valid contributed name renders the generic dashboard glyph and records that fallback
+in the component's semantic data attributes. Activity rows retain a machine `status` for tone semantics while
+`status_label` and optional `status_parameters` carry translated presentation. A timestamp uses its RFC 3339
+`detail` in the `<time datetime>` attribute and an ICU `detail_label` plus `detail_parameters` for display.
+
+An extension grows the dashboard by contributing its owned KIS surface and navigation item through the
+ordinary contribution registry. Once that item is active, trusted, area-matched and permitted, it becomes
+an available workflow widget and quick link automatically. There is deliberately no second dashboard
+registry, extension-authored dashboard markup, arbitrary widget payload, or separate extension-supplied
+dashboard URL channel. Rich summary, activity and context widgets remain typed core projections until a
+future KIS version defines an equally bounded contribution contract.
+
+`dashboard-cards` and `navigation-shortcuts` retain their existing KIS preference hierarchy. A user list
+replaces the access-group result; multiple direct `role:<uuid>` access-group lists form one deterministic
+union below the user layer. Dashboard-card values use the same bounded dotted identifier grammar as KIS
+surfaces and navigation contributions, so every already-valid owned navigation identifier remains
+selectable. The protected form posts semantic identifiers and numeric order only, uses
+optimistic versions and CSRF, and retains reset and no-JavaScript submission. A template may style the
+documented KIS dashboard classes and tokens, but it must not change scope identities, add destinations,
+perform capability decisions, or turn diagnostic codes into technical disclosures.
+
 ## Complete site override contract
 
 Site activation requires regular, non-symlinked, compile-valid `home.twig` and `page.twig` files. Unlike

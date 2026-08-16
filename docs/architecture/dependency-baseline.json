@@ -1115,16 +1115,6 @@
       "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
     },
     {
-      "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\Persistence\\DoctrinePresentationPreferenceRepository",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "presentation",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
-    },
-    {
       "from": "Kumwe\\CMS\\Site\\Application\\PublicPageLocator",
       "to": "Kumwe\\CMS\\Presentation\\Application\\SitePresentation",
       "from_layer": "application",

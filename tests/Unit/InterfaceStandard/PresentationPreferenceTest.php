@@ -173,7 +173,7 @@ final class PresentationPreferenceTest extends TestCase
         yield 'dashboard cards' => [
             CustomizationSlot::DashboardCards,
             CustomizationScope::Administrator,
-            ['work-queue', 'recent-changes'],
+            ['core.dashboard.work-queue', '9ac.me.2-orders_v1.dashboard_card'],
         ];
         yield 'landing workspace' => [
             CustomizationSlot::LandingWorkspace,
@@ -190,6 +190,63 @@ final class PresentationPreferenceTest extends TestCase
             CustomizationScope::Administrator,
             ['field.reference' => 'Inspection reference'],
         ];
+    }
+
+    /**
+     * Schema-one card names remain readable while contribution identifiers use their existing grammar.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDashboardCardIdentifierWideningPreservesExistingPreferenceBytes(): void
+    {
+        $document = $this->document();
+        $document['slot'] = 'dashboard-cards';
+        $document['value'] = [
+            'summary',
+            'work-queue',
+            'core.content',
+            '9ac.me.2-orders_v1.dashboard_card',
+            'a...b.workspace',
+        ];
+
+        self::assertSame($document, PresentationPreference::fromArray($document)->toArray());
+    }
+
+    /**
+     * Dashboard-card compatibility never relaxes list bounds, type safety, grammar, or uniqueness.
+     *
+     * @param   mixed   $value    Candidate dashboard-card value.
+     * @param   string  $message  Stable validation message fragment.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    #[DataProvider('invalidDashboardCardValues')]
+    public function testDashboardCardIdentifierUnionStillFailsClosed(mixed $value, string $message): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage($message);
+
+        PresentationPreferenceValue::from(CustomizationSlot::DashboardCards, $value);
+    }
+
+    /**
+     * Supply malformed dashboard-card values spanning every additive-union refusal.
+     *
+     * @return  iterable<string, array{mixed, string}>
+     *
+     * @since   2.0.0
+     */
+    public static function invalidDashboardCardValues(): iterable
+    {
+        yield 'not a list' => [['named' => 'summary'], 'bounded list'];
+        yield 'over item bound' => [array_fill(0, 65, 'summary'), 'bounded list'];
+        yield 'non-string item' => [[42], 'invalid identifier'];
+        yield 'unsafe identifier' => [['<script>'], 'invalid identifier'];
+        yield 'duplicate identifier' => [['summary', 'summary'], 'duplicate identifier'];
     }
 
     /**

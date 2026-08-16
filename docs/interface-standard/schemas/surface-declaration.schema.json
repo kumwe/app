@@ -115,7 +115,10 @@
               "labels-help"
             ]
           },
-          "scope": {"enum": ["site", "administrator", "role-workspace", "user"]}
+          "scope": {
+            "description": "Highest legal configuration layer for this slot; lower legal area-safe layers remain admitted.",
+            "enum": ["site", "administrator", "role-workspace", "user"]
+          }
         },
         "allOf": [
           {

@@ -1,46 +1,79 @@
 {% extends 'portal/layout.twig' %}
 
-{% block title %}Workspace · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.dashboard.document_title') }}{% endblock %}
 
 {% block content %}
-<div class="kis-phase-five-portal" data-kis-surface="core.portal.home">
-    {% include '@kis/page-header.twig' with {
-        eyebrow: 'Your workspace',
-        title: 'Welcome to Kumwe Portal',
-        purpose: 'Continue the work available to your current organization and workspace membership.'
+<div class="kis-phase-five-portal kis-dashboard" data-kis-surface="core.portal.home">
+    {% embed '@kis/page-header.twig' with {
+        eyebrow: t('core.portal.dashboard.eyebrow'),
+        title: t('core.portal.dashboard.heading'),
+        purpose: t('core.portal.dashboard.purpose'),
+        dashboard: dashboard
     } only %}
+        {% block actions %}
+            {% if dashboard.preference_forms|default([]) is not empty %}
+                <div class="page-actions">
+                    <a class="button" href="#dashboard-customization">
+                        {{ t('core.interface_standard.dashboard.customize_action') }}
+                    </a>
+                </div>
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
 
-    <section class="portal-access-card" aria-labelledby="portal-access-title">
-        <p class="eyebrow">Current access</p>
-        <h2 id="portal-access-title">Access context and readiness</h2>
-        <p>Every area below is filtered before it reaches this page. If work is missing, confirm the active context with an administrator.</p>
-        <dl class="portal-access-context">
-            <div><dt>Site</dt><dd>{{ portal_site }}</dd></div>
-            <div><dt>Organization</dt><dd>{{ portal_organization ?: 'No organization selected' }}</dd></div>
-            <div><dt>Workspace</dt><dd>{{ portal_workspace ?: 'No workspace selected' }}</dd></div>
-            <div><dt>Available areas</dt><dd>{{ portal_navigation|length }}</dd></div>
-        </dl>
-    </section>
+    {% if dashboard.diagnostics|default([]) is not empty %}
+        <p class="notice info" role="status">{{ t('core.interface_standard.dashboard.fallback_notice') }}</p>
+    {% endif %}
 
-    <section class="portal-cards" aria-labelledby="portal-areas-title">
-        <h2 id="portal-areas-title">Available areas</h2>
-        {% if portal_navigation is empty %}
+    <section class="kis-dashboard-workspace" aria-labelledby="portal-dashboard-widgets-title">
+        <header class="kis-dashboard-section-heading">
+            <div>
+                <p class="eyebrow">{{ t('core.portal.dashboard.widgets_eyebrow') }}</p>
+                <h2 id="portal-dashboard-widgets-title">{{ t('core.portal.dashboard.widgets_heading') }}</h2>
+                <p>{{ t('core.portal.dashboard.widgets_help') }}</p>
+            </div>
+        </header>
+        {% if dashboard.widgets is empty %}
             {% include '@kis/empty-state.twig' with {
-                title: 'No work is available in this context',
-                message: 'Your membership is active, but no portal area is available for the selected organization and workspace. Ask an administrator to review the assignment or choose another permitted context.'
+                title: t('core.portal.dashboard.empty_heading'),
+                message: t('core.portal.dashboard.empty_message')
             } only %}
         {% else %}
-            <ul>
-                {% for item in portal_navigation %}
-                    <li>
-                        <a href="{{ item.href }}"{% if item.id == active_navigation %} aria-current="page"{% endif %}>
-                            <strong>{{ item.label }}</strong>
-                            <span>{{ item.description }}</span>
-                        </a>
-                    </li>
+            <div class="kis-dashboard-widget-grid">
+                {% for widget in dashboard.widgets %}
+                    {% include '@kis/dashboard-widget.twig' with {widget: widget, widget_index: loop.index} only %}
                 {% endfor %}
-            </ul>
+            </div>
         {% endif %}
     </section>
+
+    <section class="panel kis-dashboard-shortcuts" aria-labelledby="portal-dashboard-shortcuts-title">
+        <header class="panel-header">
+            <div>
+                <h2 id="portal-dashboard-shortcuts-title">{{ t('core.portal.dashboard.shortcuts_heading') }}</h2>
+                <p>{{ t('core.portal.dashboard.shortcuts_help') }}</p>
+            </div>
+        </header>
+        <div class="panel-body">
+            {% if dashboard.shortcuts is empty %}
+                <p>{{ t('core.portal.dashboard.shortcuts_empty') }}</p>
+            {% else %}
+                <nav aria-label="{{ t('core.portal.dashboard.shortcuts_label') }}">
+                    <ul class="kis-dashboard-shortcut-list">
+                        {% for item in dashboard.shortcuts %}
+                            <li>
+                                <a href="{{ item.href }}">
+                                    {% include '@kis/dashboard-icon.twig' with {icon: item.icon} only %}
+                                    <span><strong>{{ item.title }}</strong><span>{{ item.description }}</span></span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </div>
+    </section>
+
+    {% include '@kis/dashboard-preferences.twig' with {dashboard: dashboard, csrf: csrf} only %}
 </div>
 {% endblock %}

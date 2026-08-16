@@ -16,6 +16,12 @@ A lower layer overrides only slots explicitly opened by the higher contract. Sec
 destructive classification, audit meaning, policy-hidden state, conflict/version state, and accessibility
 semantics cannot be customized away.
 
+Each surface declares a slot once and names the highest configuration layer allowed for it. That declaration
+is a ceiling over the slot-specific legal order, not an exact-layer-only permission: for example, a dashboard
+card slot declared at `user` also admits its legal administrator and role/workspace defaults. The surface area
+still applies, so portal and public surfaces never gain an administrator layer and public surfaces never gain a
+role/workspace layer merely because those layers are below a portable declaration's ceiling.
+
 ## Allowed capabilities
 
 - light, dark, or system mode and comfortable or compact density;

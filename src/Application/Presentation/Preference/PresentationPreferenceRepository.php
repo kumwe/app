@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Preference;
+namespace Kumwe\CMS\Application\Presentation\Preference;
 
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\InterfaceStandard\PresentationPreference;
@@ -28,6 +28,22 @@ interface PresentationPreferenceRepository
      * @since   2.0.0
      */
     public function find(PresentationPreferenceKey $key): ?PresentationPreference;
+
+    /**
+     * Find a bounded set of exact customization rows in one persistence read.
+     *
+     * Implementations reject duplicate keys and more than 256 targets. Returned rows are keyed by the
+     * durable audit-subject identity so absence remains distinguishable without one query per form.
+     *
+     * @param   list<PresentationPreferenceKey>  $keys  Unique exact identities to select.
+     *
+     * @return  array<string, PresentationPreference>  Present rows keyed by durable identity.
+     *
+     * @throws  \InvalidArgumentException  When the request is malformed, duplicated, or unbounded.
+     *
+     * @since   2.0.0
+     */
+    public function findMany(array $keys): array;
 
     /**
      * Insert or compare-and-swap one preference.

@@ -90,9 +90,22 @@ test('Phase 5 portal home exposes plain-language access readiness and secure rec
   await signInPortal(page);
 
   await expect(page.locator('[data-kis-surface="core.portal.home"]')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Access context and readiness' })).toBeVisible();
-  await expect(page.getByText('north', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('acme', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('heading', {
+    level: 1,
+    name: 'Welcome to your workspace',
+  })).toBeVisible();
+  const accessContext = page.locator(
+    '[data-kis-dashboard-widget="core.dashboard.access-context"]',
+  );
+  await expect(accessContext.getByRole('heading', {
+    level: 2,
+    name: 'Your access context',
+  })).toBeVisible();
+  await expect(accessContext).toContainText(
+    'The organization and workspace governing this portal session.',
+  );
+  await expect(accessContext.getByText('north', { exact: true })).toBeVisible();
+  await expect(accessContext.getByText('acme', { exact: true })).toBeVisible();
   await expectNoDocumentOverflow(page, { root: '#portal-main', detectControlOverlaps: false });
 
   await page.goto('/portal/security');

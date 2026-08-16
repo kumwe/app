@@ -791,7 +791,7 @@ final class CoreExtensionContributions
                 'resource' => 'administrator-shell',
                 'purpose' => 'Orient an authenticated actor and provide a clear entry into current permitted work.',
                 'pattern' => 'status-workspace',
-                'capabilities' => ['content.read', 'administrator.access'],
+                'capabilities' => ['administrator.access'],
                 'states' => ['default', 'empty', 'sparse', 'dense', 'error', 'permission-reduced', 'read-only'],
                 'customization' => [
                     ['slot' => 'density', 'scope' => 'user'],
@@ -1282,6 +1282,8 @@ final class CoreExtensionContributions
                 'customization' => [
                     ['slot' => 'density', 'scope' => 'user'],
                     ['slot' => 'theme-mode', 'scope' => 'user'],
+                    ['slot' => 'dashboard-cards', 'scope' => 'user'],
+                    ['slot' => 'navigation-shortcuts', 'scope' => 'user'],
                 ],
                 'responsive' => [
                     ['element' => 'status-summary', 'priority' => 'essential', 'may_collapse' => false],

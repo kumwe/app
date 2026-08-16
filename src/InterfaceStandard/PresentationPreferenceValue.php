@@ -44,8 +44,8 @@ final readonly class PresentationPreferenceValue
     public static function from(CustomizationSlot $slot, mixed $value): self
     {
         $normalized = match ($slot) {
-            CustomizationSlot::Columns,
-            CustomizationSlot::DashboardCards => self::semanticNameList($value, 64),
+            CustomizationSlot::Columns => self::semanticNameList($value, 64),
+            CustomizationSlot::DashboardCards => self::dashboardIdentifierList($value, 64),
             CustomizationSlot::Density => self::choice($value, ['comfortable', 'compact', 'touch'], $slot),
             CustomizationSlot::SavedViews => self::savedView($value),
             CustomizationSlot::Layout => self::choice(
@@ -192,7 +192,62 @@ final readonly class PresentationPreferenceValue
     }
 
     /**
-     * Normalize a list of unique dotted surface or workspace names.
+     * Preserve schema-one card names while admitting existing dotted contribution identifiers.
+     *
+     * A schema-one preference may already contain an undotted semantic name. New dashboard workflow
+     * selections use owner-bound navigation identifiers, whose established grammar additionally admits
+     * digit-led segments, underscores, and legacy repeated dots. The union keeps the grammar widening
+     * additive instead of turning an existing stored preference into repository corruption.
+     *
+     * @param   mixed  $value    Candidate list.
+     * @param   int    $maximum  Maximum entries admitted by the selected schema definition.
+     *
+     * @return  list<string>  Original deterministic order with every item validated.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded unique dashboard-identifier list.
+     *
+     * @since   2.0.0
+     */
+    private static function dashboardIdentifierList(mixed $value, int $maximum): array
+    {
+        if (!is_array($value) || !array_is_list($value) || count($value) > $maximum) {
+            throw new InvalidArgumentException(
+                'A KIS dashboard-cards preference must contain a bounded list of identifiers.',
+            );
+        }
+        $seen = [];
+        $normalized = [];
+        foreach ($value as $item) {
+            if (!is_string($item)) {
+                throw new InvalidArgumentException(
+                    'A KIS dashboard-cards preference contains an invalid identifier.',
+                );
+            }
+            if (!self::isSemanticName($item)) {
+                try {
+                    self::dottedName($item);
+                } catch (InvalidArgumentException $exception) {
+                    throw new InvalidArgumentException(
+                        'A KIS dashboard-cards preference contains an invalid identifier.',
+                        0,
+                        $exception,
+                    );
+                }
+            }
+            if (isset($seen[$item])) {
+                throw new InvalidArgumentException(
+                    'A KIS dashboard-cards preference contains a duplicate identifier.',
+                );
+            }
+            $seen[$item] = true;
+            $normalized[] = $item;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Normalize a list of unique dotted surface, workspace, navigation, or widget names.
      *
      * @param   mixed  $value    Candidate list.
      * @param   int    $maximum  Maximum entries admitted by the selected schema definition.

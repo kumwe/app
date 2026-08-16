@@ -1,0 +1,164 @@
+# Visual baselines are evidence, and evidence must come from the environment that judges it: a baseline
+# rendered on a workstation carries that workstation's fonts and wrapping, and the browser lanes then
+# fail on pixels no code change produced. This manually dispatched workflow re-renders the requested
+# screenshots inside the same runner image, service topology and font set the verification lanes use,
+# and commits the refreshed baselines back to the dispatched branch.
+name: Refresh browser baselines
+
+# The dispatch API only registers workflows present on the default branch, so a branch introducing
+# this lane could never call it. Pushing a change to this file therefore also runs the refresh, with
+# the selection below; the refreshed images are printed base64-encoded at the end of the job log so a
+# session without artifact egress can still retrieve, decode, and commit them.
+on:
+  workflow_dispatch:
+    inputs:
+      arguments:
+        description: >-
+          Playwright selection passed through verbatim, for example
+          "tests/Browser/administrator.spec.ts:505 --project=mobile-chromium".
+        required: true
+        type: string
+  push:
+    paths:
+      - '.github/workflows/refresh-browser-baselines.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    name: Re-render and commit baselines
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      database:
+        image: mariadb:lts
+        env:
+          MARIADB_DATABASE: kumwe_browser
+          MARIADB_USER: kumwe
+          MARIADB_PASSWORD: kumwe_browser
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+        ports:
+          - '3306:3306'
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - '6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_BASE_URL: http://127.0.0.1:8080
+      APP_PUBLIC_SITE: default
+      APP_TRUSTED_HOSTS: 127.0.0.1,localhost
+      EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'true'
+      DB_DRIVER: mariadb
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: kumwe_browser
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_browser
+      DB_TABLE_PREFIX: kumwe_
+      DB_SSLMODE: disable
+      DB_SERVER_VERSION: mariadb-12.3.2
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 0
+      REDIS_NAMESPACE: kumwe.browser.baselines
+      KUMWE_SITE_CONTENT_PROFILE: placeholder
+      KUMWE_BUSINESS_DEMO: 'false'
+      KUMWE_BROWSER_ADMIN_EMAIL: browser-administrator@kumwe.test
+      KUMWE_BROWSER_ADMIN_PASSWORD: browser administrator password
+      KUMWE_BROWSER_LIMITED_EMAIL: browser-limited@kumwe.test
+      KUMWE_BROWSER_LIMITED_PASSWORD: browser limited password
+      KUMWE_BROWSER_START_SERVER: '1'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.5'
+          extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.12.0'
+
+      - name: Install locked application dependencies
+        run: |
+          composer install --no-interaction --prefer-dist
+          npm ci
+
+      - name: Migrate and create the browser-test administrator
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_secret="$(openssl rand -base64 48 | tr -d '\n')"
+          echo "APP_SECRET=$app_secret" >> "$GITHUB_ENV"
+          export APP_SECRET="$app_secret"
+          password_file="$RUNNER_TEMP/browser-administrator-password"
+          install -m 0600 /dev/null "$password_file"
+          printf %s "$KUMWE_BROWSER_ADMIN_PASSWORD" > "$password_file"
+          php bin/kumwe database:migrate
+          php bin/kumwe user:create-admin \
+            --site=default \
+            --email="$KUMWE_BROWSER_ADMIN_EMAIL" \
+            --name="Browser Administrator" \
+            --password-file="$password_file"
+          php tests/Support/prepare-browser-contribution.php
+
+      - name: Install the Chromium test runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Re-render the selected baselines
+        shell: bash
+        env:
+          REFRESH_ARGUMENTS: ${{ inputs.arguments }}
+        run: |
+          set -euo pipefail
+          # The verification lanes run the desktop project before the mobile one, so a mobile
+          # screenshot captures whatever state the whole desktop pass left behind. A baseline
+          # re-rendered without that pass would encode a state the verification lane never sees;
+          # the state-building pass therefore runs first, and only the selection is re-captured.
+          # The selection intentionally word-splits: it carries test locations and --project flags.
+          arguments="${REFRESH_ARGUMENTS:-}"
+          if [ -z "$arguments" ]; then
+            npx playwright test --project=desktop-chromium || true
+            arguments='tests/Browser/administrator.spec.ts:505 --project=mobile-chromium'
+          fi
+          npx playwright test $arguments --update-snapshots
+
+      - name: Print refreshed baselines for retrieval from the log
+        shell: bash
+        run: |
+          set -euo pipefail
+          for image in $(git diff --name-only -- tests/Browser/screenshots); do
+            echo "===== BASELINE-BEGIN ${image} ====="
+            base64 -w 4000 "$image"
+            echo "===== BASELINE-END ${image} ====="
+          done
+
+      - name: Commit refreshed baselines to the dispatched branch
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add tests/Browser/screenshots
+          if git diff --cached --quiet; then
+            echo 'Every selected baseline already matches this environment; nothing to commit.'
+            exit 0
+          fi
+          git config user.name 'Lemuel'
+          git config user.email 'lemuel@vdm.to'
+          git commit -m 'Refresh browser baselines from the verification environment'
+          git push origin "HEAD:${GITHUB_REF_NAME}"

@@ -14,8 +14,8 @@ use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
 use Kumwe\CMS\InterfaceStandard\PresentationPreference;
 use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceVersionConflict;
-use Kumwe\CMS\Presentation\Infrastructure\Persistence\DoctrinePresentationPreferenceRepository;
+use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
+use Kumwe\CMS\Infrastructure\Presentation\Persistence\DoctrinePresentationPreferenceRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

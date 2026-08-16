@@ -66,6 +66,7 @@ conformance evidence is incomplete. Declaring a pattern without a production ren
 | [Preference runtime](presentation-preference-runtime.md) | Typed persistence, resolution precedence, authorization, audit, import/export, and reset |
 | [Template authoring](template-authoring.md) | Installable site/administrator templates and extension-view consumption |
 | [Conformance](conformance.md) | Declarations, deterministic checks, visual evidence, severities, and merge gates |
+| [Compatibility decisions](decisions/) | Accepted compatibility records, migration posture, and evidence |
 | [Programme ledger](programme/README.md) | Surface inventory, journeys, phases, evidence, and continuation procedure |
 
 Machine consumers use the closed
@@ -96,6 +97,9 @@ A KIS proposal must contain:
 
 One current version is authoritative. A prior renderer may exist only for a named, bounded deprecation
 window. Indefinite parallel design systems and unversioned page-local alternatives are prohibited.
+Accepted compatibility decisions are indexed in [`decisions/`](decisions/). A correction may retain the
+current identifier only when the record proves existing declarations and stored preferences remain valid,
+defines migration and reset behavior, and pins that claim in conformance evidence.
 
 ## Ownership
 

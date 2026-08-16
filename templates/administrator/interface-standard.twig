@@ -16,7 +16,10 @@
     <span><strong>Reference implementation.</strong> These examples render through the same Twig, tokens and Lit controllers as operational workspaces.</span>
   </div>
 
-  <kumwe-tabs data-kis-tab-parameter="tab">
+  <kumwe-tabs
+    data-kis-tab-parameter="tab"
+    data-kis-surface="core.interface-standard.gallery"
+  >
     {% include '@kis/tabs.twig' with {
       id: 'kis-gallery',
       label: 'Interface-standard examples',
@@ -24,7 +27,12 @@
       active: active_tab
     } only %}
 
-    {% embed '@kis/tab-panel.twig' with {id: 'kis-gallery', tab: 'overview'} only %}
+    {% embed '@kis/tab-panel.twig' with {
+      id: 'kis-gallery',
+      tab: 'overview',
+      dashboard_gallery: dashboard_gallery,
+      csrf: csrf
+    } only %}
       {% block content %}
         <div class="metric-grid">
           <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">1</strong><span class="metric-label">Current KIS version</span></span></article>
@@ -40,6 +48,44 @@
             value: 'site.default.long_operational_definition_handle_that_remains_inside_its_container',
             copy: true
           } only %}
+        </section>
+        <section
+          class="stack kis-dashboard"
+          data-kis-dashboard-gallery
+          aria-labelledby="kis-dashboard-gallery-title"
+        >
+          <header class="kis-dashboard-section-heading">
+            <div>
+              <p class="eyebrow">Semantic dashboard composition</p>
+              <h2 id="kis-dashboard-gallery-title">Protected widget and preference components</h2>
+              <p>Summary, activity, context and filtered workflow models share one bounded KIS contract.</p>
+            </div>
+          </header>
+          <div class="kis-dashboard-widget-grid">
+            {% for widget in dashboard_gallery.widgets %}
+              {% include '@kis/dashboard-widget.twig' with {
+                widget: widget,
+                widget_index: 'gallery-' ~ loop.index
+              } only %}
+            {% endfor %}
+          </div>
+          <div id="dashboard-gallery-preferences" class="stack">
+            <p id="dashboard-gallery-read-only-help" class="notice info" role="note">
+              Preference and browser controls are representative and disabled in this read-only gallery.
+            </p>
+            <fieldset
+              class="panel stack"
+              data-kis-dashboard-preferences-read-only
+              aria-describedby="dashboard-gallery-read-only-help"
+              disabled
+            >
+              <legend>Read-only dashboard preference reference</legend>
+              {% include '@kis/dashboard-preferences.twig' with {
+                dashboard: dashboard_gallery,
+                csrf: csrf
+              } only %}
+            </fieldset>
+          </div>
         </section>
       {% endblock %}
     {% endembed %}

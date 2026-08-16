@@ -108,12 +108,12 @@ final class InterfaceTranslationGateTest extends TestCase
     public function testTheExtractionRegisterCannotOutliveTheWorkItRecords(): void
     {
         $tree = $this->treeCopy();
-        unlink($tree . '/templates/administrator/dashboard.twig');
+        unlink($tree . '/templates/administrator/media.twig');
 
         [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
 
         self::assertSame(1, $status, $output);
-        self::assertStringContainsString('templates/administrator/dashboard.twig', $output);
+        self::assertStringContainsString('templates/administrator/media.twig', $output);
         self::assertStringContainsString('no longer exists', $output);
     }
 
@@ -121,7 +121,7 @@ final class InterfaceTranslationGateTest extends TestCase
     {
         $tree = $this->treeCopy();
         file_put_contents(
-            $tree . '/templates/administrator/dashboard.twig',
+            $tree . '/templates/administrator/media.twig',
             "{% extends \"layout.twig\" %}\n{% block content %}{{ t('core.site.home.eyebrow') }}{% endblock %}\n",
         );
 

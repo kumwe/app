@@ -53,6 +53,35 @@ final readonly class SurfaceConformanceValidator
     ];
 
     /**
+     * Determine whether one requested layer sits at or below a declaration's legal scope ceiling.
+     *
+     * The scope sequence is slot-specific: unsupported layers are never introduced merely because they
+     * appear earlier in the global customization hierarchy. Area-specific admission remains the live
+     * surface policy's responsibility because this validator evaluates portable declarations in isolation.
+     *
+     * @param   CustomizationSlot   $slot       Safe presentation choice exposed by the surface.
+     * @param   CustomizationScope  $ceiling    Highest layer named by the portable surface declaration.
+     * @param   CustomizationScope  $requested  Exact lower or equal layer considered by the runtime.
+     *
+     * @return  bool  True only when both scopes are legal for the slot and the request does not exceed the ceiling.
+     *
+     * @since   2.0.0
+     */
+    public static function allowsCustomizationAtOrBelow(
+        CustomizationSlot $slot,
+        CustomizationScope $ceiling,
+        CustomizationScope $requested,
+    ): bool {
+        $scopes = self::CUSTOMIZATION_SCOPES[$slot->value] ?? [];
+        $ceilingIndex = array_search($ceiling->value, $scopes, true);
+        $requestedIndex = array_search($requested->value, $scopes, true);
+
+        return is_int($ceilingIndex)
+            && is_int($requestedIndex)
+            && $requestedIndex <= $ceilingIndex;
+    }
+
+    /**
      * Evaluate every cross-field KIS 1.0 invariant without stopping at the first failure.
      *
      * @param   SurfaceDeclaration  $declaration  Locally safe typed semantic candidate.
