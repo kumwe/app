@@ -47,6 +47,10 @@ const walk = (suite, trail) => {
         outcome: test.status ?? 'unknown',
         retried: results.length > 1,
         passedOnlyAfterRetry: results.length > 1 && first !== 'passed' && test.status === 'expected',
+        errors: results.flatMap((result) => [
+          ...(result.error ? [result.error] : []),
+          ...(result.errors ?? []),
+        ].map((error) => error?.message ?? '')).filter(Boolean),
       });
     }
   }
@@ -89,6 +93,17 @@ const lines = [
 ];
 for (const journey of summary.passedOnlyAfterRetry) {
   lines.push(`  - retried to green: ${journey}`);
+}
+
+// The line reporter prints failure detail mid-log, where a bounded log window cannot reach it.
+// Repeating each failure's error text here places the evidence at the end of the job log, so the
+// failure is diagnosable from the log tail alone even when the report artifact is unreachable.
+const stripAnsi = (value) => value.replaceAll(/\[[0-9;]*m/gu, '');
+for (const journey of journeys.filter((entry) => entry.outcome !== 'expected')) {
+  lines.push('', `#### Failed: ${journey.project} › ${journey.title}`);
+  for (const error of journey.errors.slice(0, 2)) {
+    lines.push('```', ...stripAnsi(error).split('\n').slice(0, 40), '```');
+  }
 }
 
 console.log(lines.join('\n'));

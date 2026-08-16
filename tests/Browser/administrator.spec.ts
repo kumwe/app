@@ -14,6 +14,10 @@ const administratorContextWidget = 'core.dashboard.administrator-context';
 const announcementsDashboardHref =
   `/administrator?dashboard_workflow_search=${encodeURIComponent(announcementsDashboardSearch)}`
     + '#dashboard-customization';
+// Poll navigations carry no fragment: a fragment-only difference from the current address is a
+// same-document navigation that never re-requests the page, so a poll would watch a stale DOM.
+const announcementsDashboardPollHref =
+  `/administrator?dashboard_workflow_search=${encodeURIComponent(announcementsDashboardSearch)}`;
 const businessDefinitionHandle = 'site.default.session5_order';
 const assetInspectionDefinition = 'kumwe.asset-inspection-example.inspection';
 const assetInspectionReport = 'kumwe.asset-inspection-example.inspection-summary';
@@ -1963,7 +1967,7 @@ test.describe('authenticated administrator', () => {
         extensionDisabled = true;
 
         await expect.poll(async () => {
-          await page.goto(announcementsDashboardHref);
+          await page.goto(announcementsDashboardPollHref);
           return page.getByRole('link', { name: 'Announcements', exact: true }).count();
         }, {
           message: 'the disabled extension navigation to leave the local signed runtime map',
@@ -1996,10 +2000,15 @@ test.describe('authenticated administrator', () => {
           extensionDisabled = false;
         }
       }
-      await page.goto(announcementsDashboardHref);
-      await expect(page.locator(
-        '[data-kis-dashboard-widget="kumwe.announcements-example.navigation"]',
-      )).toBeVisible();
+      await expect.poll(async () => {
+        await page.goto(announcementsDashboardPollHref);
+        return page.locator(
+          '[data-kis-dashboard-widget="kumwe.announcements-example.navigation"]',
+        ).count();
+      }, {
+        message: 'the reactivated extension workflow to recover its stored dashboard selection',
+        timeout: 25_000,
+      }).toBe(1);
       await expect(page.locator(
         '.kis-dashboard-shortcut-list a[href="/administrator/extensions/kumwe/announcements-example"]',
       )).toBeVisible();
@@ -2013,7 +2022,7 @@ test.describe('authenticated administrator', () => {
       if (isMobile) {
         await page.getByRole('button', { name: 'Open administrator navigation' }).click();
       }
-      await expect(page.getByRole('link', { name: 'Announcements' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Announcements', exact: true })).toBeVisible();
     } finally {
       try {
         if (testInfo.status !== 'timedOut' && extensionDisabled && !page.isClosed()) {
