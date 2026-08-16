@@ -5,6 +5,10 @@
 # and commits the refreshed baselines back to the dispatched branch.
 name: Refresh browser baselines
 
+# The dispatch API only registers workflows present on the default branch, so a branch introducing
+# this lane could never call it. Pushing a change to this file therefore also runs the refresh, with
+# the selection below; the refreshed images are printed base64-encoded at the end of the job log so a
+# session without artifact egress can still retrieve, decode, and commit them.
 on:
   workflow_dispatch:
     inputs:
@@ -14,6 +18,9 @@ on:
           "tests/Browser/administrator.spec.ts:505 --project=mobile-chromium".
         required: true
         type: string
+  push:
+    paths:
+      - '.github/workflows/refresh-browser-baselines.yml'
 
 permissions:
   contents: write
@@ -120,9 +127,21 @@ jobs:
         run: |
           set -euo pipefail
           # The selection intentionally word-splits: it carries test locations and --project flags.
-          npx playwright test $REFRESH_ARGUMENTS --update-snapshots
+          arguments="${REFRESH_ARGUMENTS:-tests/Browser/administrator.spec.ts:505 --project=mobile-chromium}"
+          npx playwright test $arguments --update-snapshots
+
+      - name: Print refreshed baselines for retrieval from the log
+        shell: bash
+        run: |
+          set -euo pipefail
+          for image in $(git diff --name-only -- tests/Browser/screenshots); do
+            echo "===== BASELINE-BEGIN ${image} ====="
+            base64 -w 4000 "$image"
+            echo "===== BASELINE-END ${image} ====="
+          done
 
       - name: Commit refreshed baselines to the dispatched branch
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
