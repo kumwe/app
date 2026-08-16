@@ -161,11 +161,15 @@ final readonly class DoctrinePresentationPreferenceRepository implements Present
         $key = PresentationPreferenceKey::fromPreference($preference);
         if ($expectedVersion === 0) {
             try {
-                $this->database->insert(
+                // The insert runs in its own nested transaction, which the driver emulates with a
+                // savepoint inside the caller's transaction. PostgreSQL refuses every statement after a
+                // constraint violation until the failed scope is rolled back, so without the savepoint
+                // the version lookup below would fail there and the conflict could not be reported.
+                $this->database->transactional(fn (): int|string => $this->database->insert(
                     $this->tables->raw('interface_presentation_preferences'),
                     $this->row($preference),
                     $this->types(),
-                );
+                ));
             } catch (UniqueConstraintViolationException $exception) {
                 throw new PresentationPreferenceVersionConflict(
                     $key,
