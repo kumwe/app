@@ -188,7 +188,7 @@ async function resetPersonalPortalDashboard(page: Page): Promise<void> {
   const personal = page.locator('.kis-dashboard-preference-scope').filter({
     has: page.locator('input[name="scope"][value="user"]'),
   }).first();
-  for (const name of ['Reset widgets', 'Reset shortcuts']) {
+  for (const name of ['Reset widgets', 'Reset quick links']) {
     const reset = personal.getByRole('button', { name, exact: true });
     if (await reset.count()) {
       await reset.click();
@@ -347,7 +347,7 @@ test('portal dashboard preferences save and reset without JavaScript', async ({
     const widgetForm = personal.locator('form').filter({
       has: page.locator('button[value="dashboard-cards.save"]'),
     });
-    for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
+    for (const checkbox of await widgetForm.locator('input[type="checkbox"]').all()) {
       await checkbox.uncheck();
     }
     const contextChoice = widgetForm.locator('.kis-dashboard-choice').filter({
@@ -426,7 +426,7 @@ test('a portal access-group dashboard default reaches its member and can be rese
     );
     await expect(widgetForm.locator('input[name="scope"]')).toHaveValue('role-workspace');
     await expect(widgetForm.locator('input[name="scope_id"]')).toHaveValue(/^role:/u);
-    for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
+    for (const checkbox of await widgetForm.locator('input[type="checkbox"]').all()) {
       await checkbox.uncheck();
     }
     const contextChoice = widgetForm.locator('.kis-dashboard-choice').filter({
@@ -529,7 +529,7 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
         `input[type="hidden"][value="${assetInspectionPortalWorkflow}"]`,
       ),
     });
-    for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
+    for (const checkbox of await widgetForm.locator('input[type="checkbox"]').all()) {
       await checkbox.uncheck();
     }
     await widgetChoice.locator('input[type="checkbox"]').check();
@@ -545,15 +545,18 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
         `input[type="hidden"][value="${assetInspectionPortalWorkflow}"]`,
       ),
     });
-    for (const checkbox of await shortcutForm.locator('input[type="checkbox"]:checked').all()) {
+    for (const checkbox of await shortcutForm.locator('input[type="checkbox"]').all()) {
       await checkbox.uncheck();
     }
     await shortcutChoice.locator('input[type="checkbox"]').check();
     await shortcutChoice.locator('input[type="number"]').fill('1');
-    await shortcutForm.getByRole('button', { name: 'Save shortcuts' }).click();
+    await shortcutForm.getByRole('button', { name: 'Save quick links' }).click();
 
     const workflowId = assetInspectionPortalWorkflow;
     const workflowHref = '/portal/extensions/kumwe/asset-inspection-example';
+    // The poll URL carries no fragment: a fragment-only change from the previous address would be a
+    // same-document navigation that never re-requests the page, so the poll would watch a stale DOM.
+    const workflowPollHref = `/portal?dashboard_workflow_search=${encodeURIComponent(workflowId)}`;
     await expect(portal.locator(`[data-kis-dashboard-widget="${workflowId}"]`)).toBeVisible();
     await expect(portal.locator(
       `.kis-dashboard-shortcut-list a[href="${workflowHref}"]`,
@@ -570,7 +573,7 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
       extensionDisabled = true;
 
       await expect.poll(async () => {
-        await portal.goto(assetInspectionPortalDashboardHref);
+        await portal.goto(workflowPollHref);
         return personal.locator(
           `input[type="hidden"][name^="item_"][value="${workflowId}"]`,
         ).count();
@@ -601,7 +604,7 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
     }
 
     await expect.poll(async () => {
-      await portal.goto(assetInspectionPortalDashboardHref);
+      await portal.goto(workflowPollHref);
       return portal.locator(`[data-kis-dashboard-widget="${workflowId}"]`).count();
     }, {
       message: 'the reactivated portal workflow to recover its stored dashboard selection',
@@ -671,7 +674,11 @@ test('portal shell keeps sessions isolated and protects mutations', async ({ pag
   expect(visualContract.horizontalOverflow).toBe(0);
   expect(visualContract.shellColumns).toBe(isMobile ? 1 : 2);
   expect(visualContract.headerBackground).not.toBe('rgba(0, 0, 0, 0)');
-  await expect(page).toHaveScreenshot('portal-dashboard.png', { fullPage: true });
+  await expect(page).toHaveScreenshot('portal-dashboard.png', {
+    fullPage: true,
+    mask: [page.locator('[data-visual-dynamic]')],
+    maskColor: '#ffffff',
+  });
 
   const cookies = await page.context().cookies();
   const portalCookie = cookies.find((cookie) => cookie.name === 'kumwe_portal');

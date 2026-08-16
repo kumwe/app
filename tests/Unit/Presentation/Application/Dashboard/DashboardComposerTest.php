@@ -90,6 +90,37 @@ final class DashboardComposerTest extends TestCase
     }
 
     /**
+     * Proves one contributed row violating the widget grammar degrades to a diagnostic, not a failure.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAContributedRowFailingTheWidgetGrammarIsSkippedWithADiagnostic(): void
+    {
+        $context = AuthorizationContext::human([]);
+        $view = $this->composer()->compose(
+            SurfaceArea::Administrator,
+            SurfaceId::fromString('core.administrator.dashboard'),
+            ContributionOwner::core(),
+            $context,
+            [
+                $this->navigation('core.dashboard', '/administrator', 'Dashboard'),
+                $this->navigation('core.content', '/administrator/content', 'Content'),
+                ['description' => "Open\nbroken."] + $this->navigation(
+                    'acme.broken',
+                    '/administrator/extensions/acme/broken',
+                    'Broken',
+                ),
+            ],
+            [$this->contextWidget()],
+        );
+
+        self::assertSame(['core.dashboard.context', 'core.content'], $view->selectedWidgetIds);
+        self::assertSame(['dashboard.navigation.invalid-row'], $view->diagnostics);
+    }
+
+    /**
      * Proves candidates beyond the former 128-row prefix remain reachable through page and full search.
      *
      * @return  void

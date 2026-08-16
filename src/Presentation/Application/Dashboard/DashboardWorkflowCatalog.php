@@ -76,7 +76,14 @@ final readonly class DashboardWorkflowCatalog
             if (!is_array($item)) {
                 throw new InvalidArgumentException('Filtered dashboard navigation contains an invalid row.');
             }
-            $widget = DashboardWidget::fromNavigation($item);
+            try {
+                $widget = DashboardWidget::fromNavigation($item);
+            } catch (InvalidArgumentException) {
+                // A contributed row can satisfy navigation validation while violating the stricter widget
+                // grammar; one such row must degrade to a diagnostic instead of failing the whole dashboard.
+                $diagnostics[] = 'dashboard.navigation.invalid-row';
+                continue;
+            }
             $path = self::pathWithoutQuery($widget->href ?? '');
             if (
                 rtrim($path, '/') === $home

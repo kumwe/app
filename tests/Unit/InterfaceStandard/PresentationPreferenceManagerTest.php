@@ -490,6 +490,43 @@ final class PresentationPreferenceManagerTest extends TestCase
     }
 
     /**
+     * Proves a stored row with a stale owner reads as absent instead of failing the whole batch.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBatchReadDegradesAStaleOwnerRowToAbsent(): void
+    {
+        $repository = new InMemoryPresentationPreferenceRepository();
+        $context = AuthorizationContext::human([]);
+        $surface = SurfaceId::fromString('acme.widgets.settings');
+        $key = new PresentationPreferenceKey(
+            $surface,
+            CustomizationSlot::Density,
+            CustomizationScope::User,
+            $context->actorId(),
+        );
+        $repository->seed(PresentationPreference::create(
+            $surface,
+            ContributionOwner::extension('acme/widgets'),
+            CustomizationScope::User,
+            $context->actorId(),
+            CustomizationSlot::Density,
+            'compact',
+            1,
+            $context->actorId(),
+            new DateTimeImmutable('2026-08-15T12:00:00Z'),
+        ));
+        $manager = $this->manager($repository, new PreferenceAuditRecorder());
+
+        $preferences = $manager->readMany($context, ContributionOwner::core(), [$key]);
+
+        self::assertArrayHasKey($key->auditSubjectId(), $preferences);
+        self::assertNull($preferences[$key->auditSubjectId()]);
+    }
+
+    /**
      * Proves a batch adapter cannot disclose a stored row outside the manager's exact authorized key set.
      *
      * @return  void

@@ -125,7 +125,7 @@
               <div>
                 <strong>{{ item.title }}</strong>
                 {% if item.detail|default('') is not empty %}
-                  <span>
+                  <span data-visual-dynamic>
                     {% if item.detail_label|default('') is not empty %}
                       <time datetime="{{ item.detail }}">
                         {{ widget.message_ids

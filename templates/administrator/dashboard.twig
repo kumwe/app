@@ -7,7 +7,8 @@
       eyebrow: t('core.administrator.dashboard.eyebrow'),
       title: t('core.administrator.dashboard.heading'),
       purpose: t('core.administrator.dashboard.purpose'),
-      capabilities: capabilities
+      capabilities: capabilities,
+      dashboard: dashboard
     } only %}
       {% block actions %}
         {% if dashboard.preference_forms|default([]) is not empty %}

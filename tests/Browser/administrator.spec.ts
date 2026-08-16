@@ -174,7 +174,7 @@ async function resetPersonalAdministratorDashboard(page: Page): Promise<void> {
   const personal = page.locator('.kis-dashboard-preference-scope').filter({
     has: page.locator('input[name="scope"][value="user"]'),
   }).first();
-  for (const name of ['Reset widgets', 'Reset shortcuts']) {
+  for (const name of ['Reset widgets', 'Reset quick links']) {
     const reset = personal.getByRole('button', { name, exact: true });
     if (await reset.count()) {
       await reset.click();
@@ -337,7 +337,7 @@ test('dashboard preferences save and reset through the native no-JavaScript work
     });
     const staleVersion = await widgetForm.locator('input[name="expected_version"]').inputValue();
     const scopeId = await widgetForm.locator('input[name="scope_id"]').inputValue();
-    for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
+    for (const checkbox of await widgetForm.locator('input[type="checkbox"]').all()) {
       await checkbox.uncheck();
     }
     const contextChoice = widgetForm.locator('.kis-dashboard-choice').filter({
@@ -428,7 +428,7 @@ test('an access-group dashboard default reaches its member and can be reset', as
     const widgetForm = group.locator('form').filter({
       has: manager.locator('button[value="dashboard-cards.save"]'),
     });
-    for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
+    for (const checkbox of await widgetForm.locator('input[type="checkbox"]').all()) {
       await checkbox.uncheck();
     }
     const contextChoice = widgetForm.locator('.kis-dashboard-choice').filter({
@@ -535,7 +535,11 @@ test.describe('authenticated administrator', () => {
       await expect(toggle).toBeFocused();
     }
     await expectAccessible(page);
-    await expect(page).toHaveScreenshot('dashboard.png', { fullPage: true });
+    await expect(page).toHaveScreenshot('dashboard.png', {
+      fullPage: true,
+      mask: [page.locator('[data-visual-dynamic]')],
+      maskColor: '#ffffff',
+    });
   });
 
   test('content discovery and graphical editor work without raw JSON', async ({ page }, testInfo) => {
@@ -1919,7 +1923,7 @@ test.describe('authenticated administrator', () => {
             'input[type="hidden"][value="kumwe.announcements-example.navigation"]',
           ),
         });
-        for (const checkbox of await widgetForm.locator('input[type="checkbox"]:checked').all()) {
+        for (const checkbox of await widgetForm.locator('input[type="checkbox"]').all()) {
           await checkbox.uncheck();
         }
         await widgetChoice.locator('input[type="checkbox"]').check();
@@ -1935,12 +1939,12 @@ test.describe('authenticated administrator', () => {
             'input[type="hidden"][value="kumwe.announcements-example.navigation"]',
           ),
         });
-        for (const checkbox of await shortcutForm.locator('input[type="checkbox"]:checked').all()) {
+        for (const checkbox of await shortcutForm.locator('input[type="checkbox"]').all()) {
           await checkbox.uncheck();
         }
         await shortcutChoice.locator('input[type="checkbox"]').check();
         await shortcutChoice.locator('input[type="number"]').fill('1');
-        await shortcutForm.getByRole('button', { name: 'Save shortcuts' }).click();
+        await shortcutForm.getByRole('button', { name: 'Save quick links' }).click();
 
         await expect(page.locator(
           '[data-kis-dashboard-widget="kumwe.announcements-example.navigation"]',

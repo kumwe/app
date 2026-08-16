@@ -473,6 +473,25 @@
       "closure_sha": null
     },
     {
+      "id": "V2-UX-002",
+      "title": "Role dashboard preference editing conflates the editor's visibility with the role's catalogue",
+      "severity": "medium",
+      "state": "open",
+      "phase": "7",
+      "gate": "B",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php",
+          "symbol": "liveIdentifiers",
+          "note": "Role (access-group) preference forms prune stored selections against the editing administrator's capability-filtered catalogue, so an administrator with narrower visibility silently drops valid entries from a role's stored selection on save, and cannot restore them because delivery validates submissions against the editor's own catalogue."
+        }
+      ],
+      "acceptance_test": "An administrator holding users.manage but lacking a capability required by one widget stored in a role's dashboard selection opens and saves that role's preference form; the stored selection retains the invisible widget, the form discloses it as outside the editor's visibility, and members of the role keep the widget. A submission naming an identifier outside the role's own catalogue is still refused.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
       "id": "V2-DOC-001",
       "title": "Programme state was spread across competing documents",
       "severity": "medium",

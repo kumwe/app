@@ -178,7 +178,9 @@ final readonly class PresentationPreferenceManager
      * `users.manage` capability is global-only and its role policy is installation-global, so one collection
      * decision proves the same grant required by every canonical role read without an item-by-item ownership
      * query and decision-log amplification. Mutation still rechecks the exact role and locks its existence.
-     * A denied role collection is omitted, while authorized absent rows remain present with null.
+     * A denied role collection is omitted, while authorized absent rows remain present with null. A stored row
+     * whose owner went stale is returned as null exactly like an absent row, matching the resolver's
+     * `kis.preference.owner-stale` degradation, so one legacy row cannot fail the whole read.
      *
      * @param   ExecutionContext                 $context            Authenticated actor and current site.
      * @param   ContributionOwner                $owner              Expected current surface owner.
@@ -267,7 +269,11 @@ final readonly class PresentationPreferenceManager
             if ($key === null || !PresentationPreferenceKey::fromPreference($preference)->equals($key)) {
                 throw new RuntimeException('The preference repository returned an unauthorized batch row.');
             }
-            $this->assertCurrentOwner($preference, $owner);
+            if ($preference->owner()->identifier() !== $owner->identifier()) {
+                // A stored row whose owner went stale degrades like an absent row on the read path, the same
+                // way the resolver reports `kis.preference.owner-stale`; mutation still refuses the stale owner.
+                continue;
+            }
             $preferences[$identity] = $preference;
         }
 

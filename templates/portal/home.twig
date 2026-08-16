@@ -7,7 +7,8 @@
     {% embed '@kis/page-header.twig' with {
         eyebrow: t('core.portal.dashboard.eyebrow'),
         title: t('core.portal.dashboard.heading'),
-        purpose: t('core.portal.dashboard.purpose')
+        purpose: t('core.portal.dashboard.purpose'),
+        dashboard: dashboard
     } only %}
         {% block actions %}
             {% if dashboard.preference_forms|default([]) is not empty %}

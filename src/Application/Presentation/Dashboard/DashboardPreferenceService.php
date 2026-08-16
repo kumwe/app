@@ -222,16 +222,19 @@ final readonly class DashboardPreferenceService
      * Execute one typed dashboard-card or navigation-shortcut save or reset.
      *
      * Both actor-facing areas may target the actor's user row or a canonical `role:<uuid>` row, whose live
-     * existence and exact `users.manage` authorization are rechecked by the manager. Submitted identifiers are
-     * intersected with the caller's current live catalogue before audited persistence is reached.
+     * existence and exact `users.manage` authorization are rechecked by the manager. Catalogue membership of
+     * the submitted identifiers is the caller's duty — the complete live catalogue may exceed this service's
+     * bounded-list ceiling, so delivery proves membership against the full catalogue (`assertMutation`) and
+     * this method enforces that the supplied lists are bounded, unique, well-formed surface identifiers that
+     * admit every submitted identifier before audited persistence is reached.
      *
      * @param   ExecutionContext             $context             Authenticated actor performing the mutation.
      * @param   SurfaceArea                  $area                Administrator or portal delivery area.
      * @param   SurfaceId                    $surface             Exact dashboard surface.
      * @param   ContributionOwner            $owner               Current owner of the dashboard surface.
      * @param   DashboardPreferenceMutation  $mutation            Typed command decoded by delivery.
-     * @param   list<string>                 $allowedWidgetIds    Current live widget identifiers.
-     * @param   list<string>                 $allowedShortcutIds  Current live navigation identifiers.
+     * @param   list<string>                 $allowedWidgetIds    Caller-validated admissible widget identifiers.
+     * @param   list<string>                 $allowedShortcutIds  Caller-validated admissible navigation identifiers.
      *
      * @return  void
      *
