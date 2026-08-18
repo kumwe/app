@@ -1,0 +1,473 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
+
+use DateTimeImmutable;
+use Doctrine\DBAL\Connection;
+use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Automation\IdempotencyKey;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\CMS\BusinessRecord\Application\Command\ArchiveRecordCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\DocumentLineInput;
+use Kumwe\CMS\BusinessRecord\Application\Command\DocumentWriteIntent;
+use Kumwe\CMS\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\RelateRecordsCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\RestoreRecordCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\UnrelateRecordsCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
+use Kumwe\CMS\BusinessRecord\Application\Command\WriteDocumentCommand;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
+use Kumwe\CMS\BusinessRecord\Application\PostingPeriodCalendar;
+use Kumwe\CMS\BusinessRecord\Application\PostingPeriodLock;
+use Kumwe\CMS\BusinessRecord\Application\PostingPeriodService;
+use Kumwe\CMS\BusinessRecord\Domain\PostingPeriod;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrinePostingPeriodRepository;
+use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Joomla\DI\Container;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\TestCase;
+use Ramsey\Uuid\Uuid;
+
+/**
+ * Proves the posting-period acceptance whole, against the real container, database and policies.
+ *
+ * Business records have no delivery adapter of their own — REST, console, MCP, portal and the
+ * administrator screens all arrive at `BusinessRecordService` — so refusing each mutation path at
+ * that one boundary is what refuses the mutation on every surface. What is proven here: a mutation
+ * dated inside a closed period is refused on every mutation path, before the fence, under the one
+ * stable code; closing is capability-gated and audited; a record dated outside the range is entirely
+ * unaffected; a pure workflow transition is deliberately admitted; and re-opening restores posting.
+ *
+ * @since  2.0.0
+ */
+#[CoversClass(PostingPeriodLock::class)]
+#[CoversClass(PostingPeriodService::class)]
+#[CoversClass(DoctrinePostingPeriodRepository::class)]
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(BusinessRecordPostingPeriodClosed::class)]
+final class PostingPeriodLockIntegrationTest extends TestCase
+{
+    /**
+     * Stable per-process suffix keeping this suite's definitions apart from every other run.
+     *
+     * @var    ?string
+     * @since  2.0.0
+     */
+    private static ?string $suffix = null;
+
+    /**
+     * Closing a period is capability-gated, audited, and read back through the calendar seam.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testClosingAPeriodIsCapabilityGatedAndAudited(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $periods = $container->get(PostingPeriodService::class);
+        self::assertInstanceOf(PostingPeriodService::class, $periods);
+        $key = 'gate-' . $this->suffix();
+        $starts = new DateTimeImmutable('2027-01-01T00:00:00Z');
+        $ends = new DateTimeImmutable('2027-02-01T00:00:00Z');
+
+        $reader = TestKernelFactory::contextFromGrantRows($container, [
+            ['capability' => PostingPeriodService::READ, 'scope_type' => 'global', 'scope_identifier' => null],
+        ]);
+        try {
+            $periods->close($reader, $key, $starts, $ends);
+            self::fail('Closing a posting period must demand the manage capability.');
+        } catch (AuthorizationDenied) {
+            self::assertTrue(true);
+        }
+
+        $closed = $periods->close($context, $key, $starts, $ends);
+        self::assertTrue($closed->isClosed());
+        self::assertContains($key, array_map(
+            static fn (PostingPeriod $period): string => $period->key,
+            $periods->list($context),
+        ));
+
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        self::assertSame('1', (string) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE action = ? AND subject_type = ? AND subject_id = ?',
+            $tables->quoted('audit_events'),
+        ), ['business.period.close', 'business_posting_period', 'default::' . $key]));
+
+        // The calendar seam answers with the declared period's stable key, open or closed alike.
+        $calendar = $container->get(PostingPeriodCalendar::class);
+        self::assertInstanceOf(PostingPeriodCalendar::class, $calendar);
+        $resolved = $calendar->periodContaining('default', null, new DateTimeImmutable('2027-01-15T12:00:00Z'));
+        self::assertSame($key, $resolved?->key);
+        self::assertNull($calendar->periodContaining('default', null, new DateTimeImmutable('2027-02-15T12:00:00Z')));
+    }
+
+    /**
+     * Every mutation path refuses a posting date inside the closed range, and only those.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMutationDatedInsideAClosedPeriodIsRefusedOnEveryMutationPath(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $container->get(BusinessRecordService::class);
+        $periods = $container->get(PostingPeriodService::class);
+        self::assertInstanceOf(BusinessRecordService::class, $records);
+        self::assertInstanceOf(PostingPeriodService::class, $periods);
+        $suffix = $this->suffix();
+        [$owner, $target] = $this->installGraph($container, $context, $suffix);
+
+        $targetOne = Uuid::uuid7()->toString();
+        $targetTwo = Uuid::uuid7()->toString();
+        $records->create(new CreateRecordCommand(
+            $context,
+            $target,
+            ['label' => 'Posting target one ' . $suffix],
+            $this->key('target-one'),
+            recordId: $targetOne,
+        ));
+        $records->create(new CreateRecordCommand(
+            $context,
+            $target,
+            ['label' => 'Posting target two ' . $suffix],
+            $this->key('target-two'),
+            recordId: $targetTwo,
+        ));
+
+        $august = Uuid::uuid7()->toString();
+        $records->create(new CreateRecordCommand(
+            $context,
+            $owner,
+            ['title' => 'August owner', 'posted_on' => '2026-08-08'],
+            $this->key('owner-august'),
+            recordId: $august,
+        ));
+        $version = $records->relate(new RelateRecordsCommand(
+            $context,
+            $owner,
+            $august,
+            1,
+            'tags',
+            $targetOne,
+            $this->key('owner-tag-one'),
+            0,
+        ))->version;
+        $version = $records->relate(new RelateRecordsCommand(
+            $context,
+            $owner,
+            $august,
+            $version,
+            'tags',
+            $targetTwo,
+            $this->key('owner-tag-two'),
+            1,
+        ))->version;
+
+        $september = Uuid::uuid7()->toString();
+        $records->create(new CreateRecordCommand(
+            $context,
+            $owner,
+            ['title' => 'September owner', 'posted_on' => '2026-09-02'],
+            $this->key('owner-september'),
+            recordId: $september,
+        ));
+        $archived = Uuid::uuid7()->toString();
+        $records->create(new CreateRecordCommand(
+            $context,
+            $owner,
+            ['title' => 'August archived', 'posted_on' => '2026-08-09'],
+            $this->key('owner-archived'),
+            recordId: $archived,
+        ));
+        $records->archive(new ArchiveRecordCommand($context, $owner, $archived, 1, $this->key('archive-open')));
+        $document = $records->writeDocument(new WriteDocumentCommand(
+            $context,
+            $owner,
+            'lines',
+            ['title' => 'August document', 'posted_on' => '2026-08-05'],
+            [new DocumentLineInput(['description' => 'August line', 'units' => '1.000'])],
+            $this->key('document-open'),
+        ));
+
+        $periods->close(
+            $context,
+            'aug-' . $suffix,
+            new DateTimeImmutable('2026-08-01T00:00:00Z'),
+            new DateTimeImmutable('2026-09-01T00:00:00Z'),
+        );
+
+        $refusals = [
+            'a backdated creation' => fn () => $records->create(new CreateRecordCommand(
+                $context,
+                $owner,
+                ['title' => 'Backdated', 'posted_on' => '2026-08-15'],
+                $this->key('refused-create'),
+            )),
+            'an update of a closed-period record' => fn () => $records->update(new UpdateRecordCommand(
+                $context,
+                $owner,
+                $august,
+                $version,
+                ['title' => 'Renamed'],
+                $this->key('refused-update'),
+            )),
+            'a date moved into the closed period' => fn () => $records->update(new UpdateRecordCommand(
+                $context,
+                $owner,
+                $september,
+                1,
+                ['posted_on' => '2026-08-20'],
+                $this->key('refused-move'),
+            )),
+            'an archive' => fn () => $records->archive(new ArchiveRecordCommand(
+                $context,
+                $owner,
+                $august,
+                $version,
+                $this->key('refused-archive'),
+            )),
+            'a delete' => fn () => $records->delete(new DeleteRecordCommand(
+                $context,
+                $owner,
+                $august,
+                $version,
+                $this->key('refused-delete'),
+            )),
+            'a restore' => fn () => $records->restore(new RestoreRecordCommand(
+                $context,
+                $owner,
+                $archived,
+                2,
+                $this->key('refused-restore'),
+            )),
+            'an owned-line creation' => fn () => $records->relate(new RelateRecordsCommand(
+                $context,
+                $owner,
+                $august,
+                $version,
+                'lines',
+                Uuid::uuid7()->toString(),
+                $this->key('refused-line'),
+                0,
+                targetValues: ['description' => 'Refused line', 'units' => '1.000'],
+            )),
+            'an unrelate' => fn () => $records->unrelate(new UnrelateRecordsCommand(
+                $context,
+                $owner,
+                $august,
+                $version,
+                'tags',
+                $targetOne,
+                $this->key('refused-unrelate'),
+            )),
+            'a reorder' => fn () => $records->reorder(new ReorderRecordLinesCommand(
+                $context,
+                $owner,
+                $august,
+                $version,
+                'tags',
+                [$targetTwo, $targetOne],
+                $this->key('refused-reorder'),
+            )),
+            'a document amendment' => fn () => $records->writeDocument(new WriteDocumentCommand(
+                $context,
+                $owner,
+                'lines',
+                ['title' => 'Amended document', 'posted_on' => '2026-08-05'],
+                [],
+                $this->key('refused-amend'),
+                DocumentWriteIntent::Amend,
+                $document->version,
+                $document->recordId,
+            )),
+            'a backdated document creation' => fn () => $records->writeDocument(new WriteDocumentCommand(
+                $context,
+                $owner,
+                'lines',
+                ['title' => 'Backdated document', 'posted_on' => '2026-08-06'],
+                [new DocumentLineInput(['description' => 'Refused line', 'units' => '2.000'])],
+                $this->key('refused-doc-create'),
+            )),
+            'a custom action attempt' => fn () => $records->guardCustomActionPostingPeriod(
+                new ExecuteRecordActionCommand(
+                    $context,
+                    $owner,
+                    $august,
+                    $version,
+                    'approve',
+                    $this->key('refused-custom'),
+                ),
+            ),
+        ];
+        foreach ($refusals as $name => $attempt) {
+            try {
+                $attempt();
+                self::fail(sprintf('The closed period must refuse %s.', $name));
+            } catch (BusinessRecordPostingPeriodClosed $refused) {
+                self::assertSame('business_record.posting_period_closed', $refused->stableCode(), $name);
+                self::assertSame('aug-' . $suffix, $refused->periodKey, $name);
+            }
+        }
+
+        // A record dated outside the range is unaffected, in both value and date terms.
+        $septemberVersion = $records->update(new UpdateRecordCommand(
+            $context,
+            $owner,
+            $september,
+            1,
+            ['title' => 'September owner, still open'],
+            $this->key('open-update'),
+        ))->version;
+        self::assertSame(2, $septemberVersion);
+        $records->create(new CreateRecordCommand(
+            $context,
+            $owner,
+            ['title' => 'September fresh', 'posted_on' => '2026-09-03'],
+            $this->key('open-create'),
+        ));
+        $records->create(new CreateRecordCommand(
+            $context,
+            $owner,
+            ['title' => 'Undated owner'],
+            $this->key('open-undated'),
+        ));
+
+        // A pure workflow transition writes no posting-dated content, so the closed period admits it.
+        $transitioned = $records->action(new ExecuteRecordActionCommand(
+            $context,
+            $owner,
+            $august,
+            $version,
+            'approve',
+            $this->key('open-transition'),
+        ));
+        self::assertSame('approved', $transitioned->workflowState);
+
+        // Re-opening is the administrative undo: the refused update now applies.
+        $periods->reopen($context, 'aug-' . $suffix);
+        $reopened = $records->update(new UpdateRecordCommand(
+            $context,
+            $owner,
+            $august,
+            $transitioned->version,
+            ['title' => 'After reopen'],
+            $this->key('reopen-update'),
+        ));
+        self::assertSame($transitioned->version + 1, $reopened->version);
+    }
+
+    /**
+     * Install the posting-dated owner graph once per process and answer its handles.
+     *
+     * The owner is the relationship fixture widened by the whole primitive under test: a nullable
+     * `posted_on` date declared as the posting date, and the approve workflow that proves the
+     * transition exemption.
+     *
+     * @param   Container         $container  Real integration container.
+     * @param   ExecutionContext  $context    Administrator the installation runs as.
+     * @param   string            $suffix     Per-process fixture suffix.
+     *
+     * @return  array{string, string}  Owner handle and relation-target handle.
+     *
+     * @since   2.0.0
+     */
+    private function installGraph(Container $container, ExecutionContext $context, string $suffix): array
+    {
+        $target = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid5(
+                Uuid::NAMESPACE_URL,
+                'kumwe:test:posting-target:' . $suffix,
+            )->toString()),
+        );
+        $line = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::ownedLineDocument($suffix, Uuid::uuid5(
+                Uuid::NAMESPACE_URL,
+                'kumwe:test:posting-line:' . $suffix,
+            )->toString()),
+        );
+        $document = NeutralBusinessFixture::relationshipOwnerDocument(
+            $suffix,
+            Uuid::uuid5(Uuid::NAMESPACE_URL, 'kumwe:test:posting-owner:' . $suffix)->toString(),
+            $target->handle,
+            $line->handle,
+        );
+        $document['fields'][] = [
+            'handle' => 'posted_on',
+            'label' => 'Posted on',
+            'type' => 'core.date',
+            'required' => false,
+            'nullable' => true,
+            'filterable' => true,
+            'sortable' => true,
+            'configuration' => ['posting_date' => true],
+        ];
+        $document['actions'] = [[
+            'handle' => 'approve',
+            'label' => 'Approve',
+            'capability' => 'business.record.action',
+            'administrator' => true,
+            'portal' => false,
+            'public' => false,
+            'transition' => 'approve',
+        ]];
+        $document['workflow'] = [
+            'initial_state' => 'draft',
+            'states' => ['draft', 'approved'],
+            'transitions' => [[
+                'handle' => 'approve',
+                'from' => 'draft',
+                'to' => 'approved',
+                'capability' => 'business.record.action',
+            ]],
+        ];
+        $owner = NeutralBusinessFixture::install($container, $context, $document);
+
+        return [$owner->handle, $target->handle];
+    }
+
+    /**
+     * Mint one idempotency key unique to this process and operation.
+     *
+     * @param   string  $operation  Short operation slug.
+     *
+     * @return  IdempotencyKey  Key under the neutral fixture namespace.
+     *
+     * @since   2.0.0
+     */
+    private function key(string $operation): IdempotencyKey
+    {
+        return NeutralBusinessFixture::idempotencyKey('period-' . $operation . '-' . $this->suffix());
+    }
+
+    /**
+     * Answer the per-process suffix, minting it on first use.
+     *
+     * @return  string  Twelve lowercase hex characters.
+     *
+     * @since   2.0.0
+     */
+    private function suffix(): string
+    {
+        return self::$suffix ??= strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
+    }
+}

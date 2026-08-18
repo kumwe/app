@@ -116,42 +116,44 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     /**
      * Wire the service to every collaborator a record operation composes.
      *
-     * @param  BusinessRecordWriteRepository          $writes         Store every record and relationship
+     * @param  BusinessRecordWriteRepository          $writes          Store every record and relationship
      *         write is applied through.
-     * @param  BusinessRecordReadRepository           $reads          Store rows, views and browse pages are
+     * @param  BusinessRecordReadRepository           $reads           Store rows, views and browse pages are
      *         read back from.
-     * @param  BusinessRecordRevisionRepository       $revisions      Append-only log this service writes
+     * @param  BusinessRecordRevisionRepository       $revisions       Append-only log this service writes
      *         history to and pages back.
-     * @param  BusinessRecordIdempotencyRepository    $idempotency    Ledger that claims a command's key and
+     * @param  BusinessRecordIdempotencyRepository    $idempotency     Ledger that claims a command's key and
      *         holds its result for replay.
-     * @param  BusinessRecordMutationFence            $mutationFence  Lock held over a definition's
+     * @param  BusinessRecordMutationFence            $mutationFence   Lock held over a definition's
      *         installation for the whole operation.
-     * @param  BusinessRecordDefinitionResolver       $definitions    Resolver pairing a published definition
+     * @param  BusinessRecordDefinitionResolver       $definitions     Resolver pairing a published definition
      *         version with its installed schema.
-     * @param  BusinessNumberSequenceAllocator        $numbers        Counter every `core.sequence` field
+     * @param  BusinessNumberSequenceAllocator        $numbers         Counter every `core.sequence` field
      *         draws its gapless document number from, inside this service's own transaction.
-     * @param  RecordValueCodec                       $values         Value codec, used here to normalize a
+     * @param  RecordValueCodec                       $values          Value codec, used here to normalize a
      *         caller-supplied record identity.
-     * @param  RecordRuleValidator                    $rules          Field-rule validator that turns
+     * @param  RecordRuleValidator                    $rules           Field-rule validator that turns
      *         submitted values into a stored value set.
-     * @param  BusinessRecordAccessController         $recordAccess   Canonical row, field, action, and relation
+     * @param  BusinessRecordAccessController         $recordAccess    Canonical row, field, action, and relation
      *         policy planner applied before every repository call.
-     * @param  ApprovalService                        $approvals      Generic maker-checker and step-up workflow.
-     * @param  ResourceSiteOwnershipWriter            $ownership      Records approval-resource ownership with
+     * @param  ApprovalService                        $approvals       Generic maker-checker and step-up workflow.
+     * @param  ResourceSiteOwnershipWriter            $ownership       Records approval-resource ownership with
      *         create and removes it only with a physical delete.
-     * @param  AuthorizationGateway                   $authorization  Gateway asked for the operation, action
+     * @param  AuthorizationGateway                   $authorization   Gateway asked for the operation, action
      *         and transition capabilities.
-     * @param  TransactionManager                     $transactions   Owner of the single transaction each
+     * @param  TransactionManager                     $transactions    Owner of the single transaction each
      *         operation runs inside.
-     * @param  AuditRecorder                          $audit          Sink for the redacted audit entry every
+     * @param  AuditRecorder                          $audit           Sink for the redacted audit entry every
      *         mutation writes.
-     * @param  RecordFingerprint                      $fingerprints   Keyed digest used for idempotency
+     * @param  RecordFingerprint                      $fingerprints    Keyed digest used for idempotency
      *         scopes and for identities held in the trail.
-     * @param  ClockInterface                         $clock          Supplies the one instant stamped on
+     * @param  ClockInterface                         $clock           Supplies the one instant stamped on
      *         every row a mutation touches.
-     * @param  ?BusinessRecordMutationEventPublisher  $events         Transactional domain and integration
+     * @param  PostingPeriodLock                      $postingPeriods  Declarative temporal lock evaluated
+     *         before the mutation fence on every mutation path.
+     * @param  ?BusinessRecordMutationEventPublisher  $events          Transactional domain and integration
      *         event publisher; nullable only for isolated legacy tests.
-     * @param  BusinessRecordReplayWindow             $replayWindow   Declared horizons over which a
+     * @param  BusinessRecordReplayWindow             $replayWindow    Declared horizons over which a
      *         caller-minted operation identifier replays, and over which it is remembered so a late
      *         repeat is refused by name instead of applied twice.
      *
@@ -175,6 +177,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         private AuditRecorder $audit,
         private RecordFingerprint $fingerprints,
         private ClockInterface $clock,
+        private PostingPeriodLock $postingPeriods,
         private ?BusinessRecordMutationEventPublisher $events = null,
         private BusinessRecordReplayWindow $replayWindow = new BusinessRecordReplayWindow(),
     ) {
@@ -208,6 +211,15 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     public function create(CreateRecordCommand $command): RecordMutationResult
     {
         $this->authorize($command->context, 'business.record.create');
+        $this->assertPostingPeriodOpen(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->organizationIdentifier,
+            'business.record.create',
+            null,
+            $command->values,
+            true,
+        );
 
         return $this->idempotent(
             $command->context,
@@ -738,6 +750,14 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     public function update(UpdateRecordCommand $command): RecordMutationResult
     {
         $this->authorize($command->context, 'business.record.update');
+        $this->assertPostingPeriodOpen(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->organizationIdentifier,
+            'business.record.update',
+            $command->recordId,
+            $command->values,
+        );
 
         return $this->idempotent(
             $command->context,
@@ -1109,6 +1129,36 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     }
 
     /**
+     * Evaluate the posting-period lock for one custom action attempt, before any fence is taken.
+     *
+     * `CustomBusinessActionExecutor` calls this ahead of its transaction, so a custom action against a
+     * record dated in a closed period refuses without the definition's exclusive fence being acquired.
+     * Declared workflow-transition actions deliberately take no such gate — see `PostingPeriodLock` for
+     * that decision — which is why this hook exists for the custom path alone.
+     *
+     * @param   ExecuteRecordActionCommand  $command  Validated custom action attempt.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When the
+     *          record's declared posting date falls inside a closed period.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          no definition matches the identifier on this site, or its owner is disabled.
+     *
+     * @since   2.0.0
+     */
+    public function guardCustomActionPostingPeriod(ExecuteRecordActionCommand $command): void
+    {
+        $this->assertPostingPeriodOpen(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->organizationIdentifier,
+            'business.record.action',
+            $command->recordId,
+        );
+    }
+
+    /**
      * Request generic maker-checker approval for one exact high-impact record action.
      *
      * The same policy-filtered load, version, action capability, condition, and workflow transition
@@ -1255,6 +1305,13 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     public function relate(RelateRecordsCommand $command): RecordMutationResult
     {
         $this->authorize($command->context, 'business.record.relate');
+        $this->assertPostingPeriodOpen(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->organizationIdentifier,
+            'business.record.relate',
+            $command->recordId,
+        );
 
         return $this->idempotent(
             $command->context,
@@ -1468,6 +1525,13 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     public function unrelate(UnrelateRecordsCommand $command): RecordMutationResult
     {
         $this->authorize($command->context, 'business.record.relate');
+        $this->assertPostingPeriodOpen(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->organizationIdentifier,
+            'business.record.relate',
+            $command->recordId,
+        );
 
         return $this->idempotent(
             $command->context,
@@ -1626,6 +1690,13 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     public function reorder(ReorderRecordLinesCommand $command): RecordMutationResult
     {
         $this->authorize($command->context, 'business.record.relate');
+        $this->assertPostingPeriodOpen(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->organizationIdentifier,
+            'business.record.relate',
+            $command->recordId,
+        );
 
         return $this->idempotent(
             $command->context,
@@ -1801,6 +1872,15 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         $creating = $command->intent === DocumentWriteIntent::Create;
         $this->authorize($command->context, $creating ? 'business.record.create' : 'business.record.update');
         $this->authorize($command->context, 'business.record.relate');
+        $this->assertPostingPeriodOpen(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->organizationIdentifier,
+            $creating ? 'business.record.create' : 'business.record.update',
+            $creating ? null : (string) $command->recordId,
+            $command->values,
+            $creating,
+        );
 
         return $this->idempotent(
             $command->context,
@@ -2700,6 +2780,18 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         IdempotencyKey $key,
         string $operation,
     ): RecordMutationResult {
+        $this->assertPostingPeriodOpen(
+            $context,
+            $definitionIdentifier,
+            $organizationIdentifier,
+            'business.record.' . $operation,
+            $recordId,
+            [],
+            false,
+            $operation !== 'archive',
+            $operation === 'restore',
+        );
+
         return $this->idempotent(
             $context,
             $definitionIdentifier,
@@ -2893,6 +2985,83 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         }
 
         return $target;
+    }
+
+    /**
+     * Evaluate the posting-period lock for one mutation, before its fence acquires anything.
+     *
+     * This runs ahead of the transaction each mutation opens, so a closed period refuses without the
+     * definition's exclusive installation lock ever being taken. A definition that declares no posting
+     * date returns after the resolve alone. When a record is addressed it is loaded through the same
+     * policy-filtered path the mutation itself will use; a record that path cannot see is left for the
+     * mutation to judge, which is also what keeps an idempotent replay of a completed delete reachable.
+     * The refusal decision itself — which dates are read and which are exempt, including the deliberate
+     * exemption of workflow transitions — is `PostingPeriodLock`'s and is documented there.
+     *
+     * @param   ExecutionContext      $context                 Actor and site the mutation runs as.
+     * @param   string                $definitionIdentifier    Definition UUID or handle being mutated.
+     * @param   ?string               $organizationIdentifier  Organization the command is scoped to.
+     * @param   string                $operation               Operation whose access plan the record
+     *          load uses, matching the mutation's own.
+     * @param   ?string               $recordId                Addressed record identity, or null for a
+     *          create.
+     * @param   array<string, mixed>  $values                  Values the command submits.
+     * @param   bool                  $creating                True for a create, so an omitted posting
+     *          value is judged at the field's declared default.
+     * @param   bool                  $includeArchived         Whether the addressed record may be
+     *          archived, mirroring the mutation's own load.
+     * @param   bool                  $includeDeleted          Whether it may be soft-deleted, likewise.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When a
+     *          posting date the mutation touches falls inside a closed period.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          no definition matches the identifier on this site, or its owner is disabled.
+     * @throws  BusinessRecordValidationFailed  When the organization scope is not one this definition
+     *          accepts.
+     *
+     * @since   2.0.0
+     */
+    private function assertPostingPeriodOpen(
+        ExecutionContext $context,
+        string $definitionIdentifier,
+        ?string $organizationIdentifier,
+        string $operation,
+        ?string $recordId,
+        array $values = [],
+        bool $creating = false,
+        bool $includeArchived = false,
+        bool $includeDeleted = false,
+    ): void {
+        $resolved = $this->definitions->forCreate($context, $definitionIdentifier);
+        if ($resolved->definition->postingDateField() === null) {
+            return;
+        }
+        $scope = $this->scope($resolved, $context, $organizationIdentifier);
+        $record = null;
+        if ($recordId !== null) {
+            try {
+                // A short read-only transaction of its own, because the policy planner demands one;
+                // the mutation fence is deliberately never taken here.
+                $record = $this->transactions->transactional(
+                    fn (): BusinessRecord => $this->load(
+                        $context,
+                        $definitionIdentifier,
+                        $recordId,
+                        $organizationIdentifier,
+                        $operation,
+                        $includeArchived,
+                        $includeDeleted,
+                    )[2],
+                );
+            } catch (BusinessRecordNotFound) {
+                // Absence is the mutation's own verdict: it reports not-found itself, or replays the
+                // completed command this key already ran — a gate must not pre-empt either answer.
+                return;
+            }
+        }
+        $this->postingPeriods->assertMutationOpen($resolved->definition, $scope, $record, $values, $creating);
     }
 
     /**

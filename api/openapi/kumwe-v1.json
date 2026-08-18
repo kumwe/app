@@ -2888,6 +2888,50 @@
                 },
                 "type": "object"
             },
+            "PostingPeriodCloseInput": {
+                "additionalProperties": false,
+                "properties": {
+                    "ends_at": {
+                        "description": "First instant past the range, exclusive: a YYYY-MM-DD date or an RFC 3339 UTC instant.",
+                        "type": "string"
+                    },
+                    "key": {
+                        "description": "Extension-declared stable period key, unique per site and organization scope.",
+                        "type": "string"
+                    },
+                    "organization": {
+                        "description": "Organization the period is confined to; omitted for a site-wide period.",
+                        "type": "string"
+                    },
+                    "starts_at": {
+                        "description": "First instant inside the range, inclusive: a YYYY-MM-DD date or an RFC 3339 UTC instant.",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "key",
+                    "starts_at",
+                    "ends_at"
+                ],
+                "type": "object"
+            },
+            "PostingPeriodReopenInput": {
+                "additionalProperties": false,
+                "properties": {
+                    "key": {
+                        "description": "Stable key of the declared period to re-open.",
+                        "type": "string"
+                    },
+                    "organization": {
+                        "description": "Organization scope of the declaration; omitted for the site-wide one.",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "key"
+                ],
+                "type": "object"
+            },
             "PresentationColors": {
                 "additionalProperties": false,
                 "properties": {
@@ -3623,6 +3667,108 @@
                     }
                 ],
                 "summary": "Validate the working draft without publishing"
+            }
+        },
+        "/api/v1/business-periods": {
+            "get": {
+                "operationId": "listPostingPeriods",
+                "responses": {
+                    "200": {
+                        "description": "Declared posting periods"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "List declared posting periods and their closed ranges"
+            }
+        },
+        "/api/v1/business-periods/close": {
+            "post": {
+                "operationId": "closePostingPeriod",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostingPeriodCloseInput"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Posting period closed"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "description": "The declaration contradicts the stored period"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Close a posting period, declaring its range on first close"
+            }
+        },
+        "/api/v1/business-periods/reopen": {
+            "post": {
+                "operationId": "reopenPostingPeriod",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostingPeriodReopenInput"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Posting period re-opened"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "description": "The period is absent or not closed"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Re-open a closed posting period"
             }
         },
         "/api/v1/business-schema-definitions": {

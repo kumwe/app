@@ -662,6 +662,90 @@ final class EntityTypeDefinitionTest extends TestCase
         EntityTypeDefinition::fromArray($fieldDocument);
     }
 
+    /**
+     * A definition names its posting date by declaring it on exactly one date field, or not at all.
+     *
+     * `posting_date` is the whole opt-in of the temporal posting lock, so three properties are pinned:
+     * an undeclared definition answers null and stays untouched by the mechanism, a declared one
+     * answers the single declared field, and a second declaration is refused rather than leaving the
+     * lock to guess which date governs.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testThePostingDateDeclarationNamesExactlyOneDateField(): void
+    {
+        $undeclared = EntityTypeDefinition::fromArray(self::document());
+        self::assertNull($undeclared->postingDateField());
+
+        $document = self::document();
+        $document['fields'][] = [
+            'handle' => 'posted_on',
+            'label' => 'Posted on',
+            'type' => 'core.date',
+            'nullable' => true,
+            'configuration' => ['posting_date' => true],
+        ];
+        $declared = EntityTypeDefinition::fromArray($document);
+        (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$declared]);
+        self::assertSame('posted_on', $declared->postingDateField()?->handle);
+
+        $document['fields'][] = [
+            'handle' => 'also_posted_on',
+            'label' => 'Also posted on',
+            'type' => 'core.instant',
+            'nullable' => true,
+            'configuration' => ['posting_date' => true],
+        ];
+        $twice = EntityTypeDefinition::fromArray($document);
+        $this->expectException(InvalidBusinessDefinition::class);
+        $this->expectExceptionMessage('more than one posting date field');
+        (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$twice]);
+    }
+
+    /**
+     * The posting-date declaration is a boolean on a date-carrying type, and nothing else.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testThePostingDateDeclarationIsABooleanOnADateCarryingType(): void
+    {
+        $mistyped = self::document();
+        $mistyped['fields'][] = [
+            'handle' => 'posted_on',
+            'label' => 'Posted on',
+            'type' => 'core.date',
+            'nullable' => true,
+            'configuration' => ['posting_date' => 'yes'],
+        ];
+        try {
+            (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([
+                EntityTypeDefinition::fromArray($mistyped),
+            ]);
+            self::fail('A non-boolean posting date declaration was accepted.');
+        } catch (InvalidBusinessDefinition $exception) {
+            self::assertStringContainsString('invalid posting date declaration', $exception->getMessage());
+        }
+
+        $misplaced = self::document();
+        $misplaced['fields'][] = [
+            'handle' => 'posted_on',
+            'label' => 'Posted on',
+            'type' => 'core.text',
+            'nullable' => true,
+            'length' => 32,
+            'configuration' => ['posting_date' => true],
+        ];
+        $this->expectException(InvalidBusinessDefinition::class);
+        $this->expectExceptionMessage('unsupported posting_date configuration');
+        (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([
+            EntityTypeDefinition::fromArray($misplaced),
+        ]);
+    }
+
     /** @return array<string, mixed> */
     public static function document(): array
     {

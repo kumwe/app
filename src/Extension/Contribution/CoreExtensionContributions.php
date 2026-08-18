@@ -44,6 +44,8 @@ final class CoreExtensionContributions
         'business.approval.approve' => 'Approve or reject high-impact business operations.',
         'business.approval.manage' => 'Revoke and administer high-impact approval requests.',
         'business.approval.request' => 'Request approval for a bound high-impact business operation.',
+        'business.period.manage' => 'Close and re-open posting periods that refuse dated record mutations.',
+        'business.period.read' => 'List declared posting periods and their closed ranges.',
         'business.record.action' => 'Execute declared business-record actions and workflow transitions.',
         'business.record.archive' => 'Archive business records.',
         'business.record.browse' => 'Browse business records through bounded typed queries.',
@@ -104,6 +106,7 @@ final class CoreExtensionContributions
         'audit.manage',
         'business.approval.approve',
         'business.approval.manage',
+        'business.period.manage',
         'business.record.action',
         'business.record.delete',
         'business.record.rekey',
@@ -377,6 +380,12 @@ final class CoreExtensionContributions
                 new ResourcePolicyTarget('theme'),
                 new ResourcePolicyTarget('user'),
                 new ResourcePolicyTarget('workspace'),
+            ]),
+            self::policy('core.business.period.manage', 'business.period.manage', [
+                new ResourcePolicyTarget('business_posting_period'),
+            ]),
+            self::policy('core.business.period.read', 'business.period.read', [
+                new ResourcePolicyTarget('business_posting_period'),
             ]),
             self::policy('core.business.record.action', 'business.record.action', [
                 new ResourcePolicyTarget('business_record'),
