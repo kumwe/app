@@ -107,6 +107,125 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         self::assertSame('{"recovered":true}', (string) $replayed->getBody());
     }
 
+    public function testExpiredRecordIsTakenOverAndTheMutationRunsAfresh(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        $middleware = $container->get(PersistentIdempotencyMiddleware::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        self::assertInstanceOf(PersistentIdempotencyMiddleware::class, $middleware);
+        $key = 'expired-' . substr(Uuid::uuid7()->toString(), 0, 24);
+        $context = TestKernelFactory::administratorContext($container);
+        $request = $this->request($key, $context);
+        $now = new DateTimeImmutable('now');
+        $body = '{"stale":true}';
+        $database->insert($tables->raw('idempotency'), [
+            'id' => Uuid::uuid7()->toString(),
+            'idempotency_key' => $key,
+            'subject' => $context->actorId(),
+            'operation' => self::OPERATION,
+            'request_digest' => hash('sha256', 'a-request-this-one-no-longer-speaks-for'),
+            'authorization_fingerprint' => hash('sha256', 'an-expired-authorization'),
+            'state' => 'completed',
+            'owner_token' => null,
+            'locked_until' => null,
+            'lease_owner' => null,
+            'lease_expires_at' => null,
+            'result_status' => 200,
+            'result_body' => $body,
+            'result_headers' => ['Content-Type' => 'application/json'],
+            'result_body_digest' => hash('sha256', $body),
+            'created_at' => $now->modify('-2 days'),
+            'completed_at' => $now->modify('-2 days'),
+            'expires_at' => $now->modify('-1 hour'),
+        ], [
+            'result_headers' => Types::JSON,
+            'created_at' => Types::DATETIME_IMMUTABLE,
+            'completed_at' => Types::DATETIME_IMMUTABLE,
+            'expires_at' => Types::DATETIME_IMMUTABLE,
+        ]);
+
+        $response = $middleware->process($request, new class implements RequestHandlerInterface {
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                $response = new Response(status: 201);
+                $response->getBody()->write('{"reclaimed":true}');
+                return $response->withHeader('Content-Type', 'application/json');
+            }
+        });
+
+        self::assertSame(201, $response->getStatusCode());
+        self::assertSame('', $response->getHeaderLine('Idempotency-Replayed'));
+        self::assertSame('{"reclaimed":true}', (string) $response->getBody());
+        self::assertSame($this->digest($request), $database->fetchOne(sprintf(
+            'SELECT request_digest FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ?',
+            $tables->quoted('idempotency'),
+        ), [$context->actorId(), self::OPERATION, $key]));
+    }
+
+    public function testFailedRecordIsReclaimedByARetryOfTheSameRequest(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        $middleware = $container->get(PersistentIdempotencyMiddleware::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        self::assertInstanceOf(PersistentIdempotencyMiddleware::class, $middleware);
+        $key = 'failed-retry-' . substr(Uuid::uuid7()->toString(), 0, 20);
+        $context = TestKernelFactory::administratorContext($container);
+        $request = $this->request($key, $context);
+        $now = new DateTimeImmutable('now');
+        $database->insert($tables->raw('idempotency'), [
+            'id' => Uuid::uuid7()->toString(),
+            'idempotency_key' => $key,
+            'subject' => $context->actorId(),
+            'operation' => self::OPERATION,
+            'request_digest' => $this->digest($request),
+            'authorization_fingerprint' => $context->authorizationFingerprint(),
+            'state' => 'failed',
+            'owner_token' => null,
+            'locked_until' => null,
+            'lease_owner' => null,
+            'lease_expires_at' => null,
+            'result_status' => null,
+            'result_body' => null,
+            'result_headers' => null,
+            'result_body_digest' => null,
+            'created_at' => $now->modify('-5 minutes'),
+            'completed_at' => null,
+            'expires_at' => $now->modify('+1 day'),
+        ], [
+            'created_at' => Types::DATETIME_IMMUTABLE,
+            'expires_at' => Types::DATETIME_IMMUTABLE,
+        ]);
+
+        $calls = new \stdClass();
+        $calls->count = 0;
+        $response = $middleware->process($request, new class ($calls) implements RequestHandlerInterface {
+            public function __construct(private \stdClass $calls)
+            {
+            }
+
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                $this->calls->count++;
+                $response = new Response(status: 201);
+                $response->getBody()->write('{"retried":true}');
+                return $response->withHeader('Content-Type', 'application/json');
+            }
+        });
+
+        self::assertSame(201, $response->getStatusCode());
+        self::assertSame(1, $calls->count);
+        self::assertSame('completed', $database->fetchOne(sprintf(
+            'SELECT state FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ?',
+            $tables->quoted('idempotency'),
+        ), [$context->actorId(), self::OPERATION, $key]));
+    }
+
     public function testExceptionRemovesInProgressOwnershipForImmediateRetry(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());

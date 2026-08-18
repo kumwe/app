@@ -130,6 +130,131 @@ final class SecretOnceIdempotencyMiddlewareTest extends TestCase
         self::assertStringNotContainsString('legacy-plaintext-secret', $stored);
     }
 
+    public function testReusedKeyWithDifferentContentIsRefused(): void
+    {
+        [$middleware, $database, $tables, $context] = $this->services();
+        $marker = Uuid::uuid7()->toString();
+        $key = 'token-reuse-' . $marker;
+        $first = $this->handler($database, $tables, 'reuse-first-' . $marker, false);
+        $second = $this->handler($database, $tables, 'reuse-second-' . $marker, false);
+
+        $middleware->process($this->request($key, $context), $first);
+        $refused = $middleware->process(
+            $this->request($key, $context)->withHeader('If-Match', '"a-precondition-the-first-lacked"'),
+            $second,
+        );
+        $document = json_decode((string) $refused->getBody(), true, 16, JSON_THROW_ON_ERROR);
+
+        self::assertSame(1, $first->calls);
+        self::assertSame(0, $second->calls);
+        self::assertSame(422, $refused->getStatusCode());
+        self::assertSame('urn:kumwe:problem:idempotency-key-reused', $document['type']);
+    }
+
+    public function testKeyPresentedUnderADifferentCredentialIsRefused(): void
+    {
+        [$middleware, $database, $tables, $context] = $this->services();
+        $marker = Uuid::uuid7()->toString();
+        $key = 'token-credential-' . $marker;
+        $request = $this->request($key, $context);
+        $this->reservation($database, $tables, $context, $request, [
+            'authorization_fingerprint' => hash('sha256', 'another-credential-entirely'),
+        ]);
+        $handler = $this->handler($database, $tables, 'credential-' . $marker, false);
+
+        $refused = $middleware->process($request, $handler);
+        $document = json_decode((string) $refused->getBody(), true, 16, JSON_THROW_ON_ERROR);
+
+        self::assertSame(0, $handler->calls);
+        self::assertSame(409, $refused->getStatusCode());
+        self::assertSame('urn:kumwe:problem:idempotency-authorization-changed', $document['type']);
+    }
+
+    public function testLapsedReservationIsTakenOverAndTheMutationRuns(): void
+    {
+        [$middleware, $database, $tables, $context] = $this->services();
+        $marker = Uuid::uuid7()->toString();
+        $key = 'token-lapsed-' . $marker;
+        $request = $this->request($key, $context);
+        $this->reservation($database, $tables, $context, $request, [
+            'lease_expires_at' => (new DateTimeImmutable())->modify('-1 minute'),
+        ]);
+        $handler = $this->handler($database, $tables, 'lapsed-' . $marker, false);
+
+        $response = $middleware->process($request, $handler);
+
+        self::assertSame(1, $handler->calls);
+        self::assertSame(201, $response->getStatusCode());
+        self::assertSame('2', (string) $database->fetchOne(sprintf(
+            'SELECT attempt FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ?',
+            $tables->quoted('idempotency'),
+        ), [$context->actorId(), 'POST /api/v1/tokens', $key]));
+    }
+
+    public function testLiveReservationRefusesAConcurrentAttempt(): void
+    {
+        [$middleware, $database, $tables, $context] = $this->services();
+        $marker = Uuid::uuid7()->toString();
+        $key = 'token-live-' . $marker;
+        $request = $this->request($key, $context);
+        $this->reservation($database, $tables, $context, $request, [
+            'lease_expires_at' => (new DateTimeImmutable())->modify('+2 minutes'),
+        ]);
+        $handler = $this->handler($database, $tables, 'live-' . $marker, false);
+
+        $refused = $middleware->process($request, $handler);
+        $document = json_decode((string) $refused->getBody(), true, 16, JSON_THROW_ON_ERROR);
+
+        self::assertSame(0, $handler->calls);
+        self::assertSame(409, $refused->getStatusCode());
+        self::assertSame('urn:kumwe:problem:idempotency-in-progress', $document['type']);
+    }
+
+    /**
+     * Insert one in-progress reservation held by another request, overriding any column under test.
+     *
+     * @param   Connection              $database   Connection the fixture row is written on.
+     * @param   TableNames              $tables     Resolves the physical `idempotency` table name.
+     * @param   ExecutionContext        $context    Actor whose subject and fingerprint the row carries.
+     * @param   ServerRequestInterface  $request    Request whose digest the row stores.
+     * @param   array<string, mixed>    $overrides  Columns to replace in the fixture row.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function reservation(
+        Connection $database,
+        TableNames $tables,
+        ExecutionContext $context,
+        ServerRequestInterface $request,
+        array $overrides,
+    ): void {
+        $now = new DateTimeImmutable();
+        $database->insert($tables->raw('idempotency'), [
+            ...[
+                'id' => Uuid::uuid7()->toString(),
+                'idempotency_key' => (string) $request->getAttribute(RequireIdempotencyKeyMiddleware::ATTRIBUTE),
+                'subject' => $context->actorId(),
+                'operation' => 'POST /api/v1/tokens',
+                'request_digest' => $this->digest($request),
+                'authorization_fingerprint' => $context->authorizationFingerprint(),
+                'state' => 'in_progress',
+                'owner_token' => 'another-request-owns-this',
+                'lease_owner' => 'another-request-owns-this',
+                'lease_expires_at' => $now->modify('+2 minutes'),
+                'attempt' => 1,
+                'created_at' => $now,
+                'expires_at' => $now->modify('+1 day'),
+            ],
+            ...$overrides,
+        ], [
+            'lease_expires_at' => Types::DATETIME_IMMUTABLE,
+            'created_at' => Types::DATETIME_IMMUTABLE,
+            'expires_at' => Types::DATETIME_IMMUTABLE,
+        ]);
+    }
+
     /** @return array{SecretOnceIdempotencyMiddleware, Connection, TableNames, ExecutionContext} */
     private function services(): array
     {
