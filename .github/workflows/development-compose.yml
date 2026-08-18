@@ -34,6 +34,20 @@ jobs:
           grep -Fxq 'KUMWE_BUSINESS_DEMO=true' .env
           docker compose config --quiet
 
+      - name: Build the documented container with registry retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4; do
+            if docker compose build; then
+              exit 0
+            fi
+            echo "Registry fetch failed on attempt ${attempt}; retrying." >&2
+            sleep $(( 10 * attempt ))
+          done
+          echo 'The development image could not be built after four attempts.' >&2
+          exit 1
+
       - name: Install locked dependencies through the documented container
         shell: bash
         run: |
