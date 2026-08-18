@@ -243,7 +243,7 @@
       "acceptance_test": "docs/quality/idempotency-baseline.json is empty and its enforced_passes carries both passes: every recorded test passes when the integration suite runs a second time against the same database, and the suite gives the same result when its classes run in a different order, on MariaDB, MySQL and PostgreSQL. Any class that mutates installation-global state declares and executes its own rollback, as RecordSecretRotationIntegrationTest does.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
-      "progress": "Delivered: the repeat pass executed and enforced on all three engines, the six-test reproduction it produced, and a baseline that fails anything new. Outstanding: the six removals, each of which names its own fix in its baseline entry; and one measured run of the corrected reverse-order pass, which has never been executed in a form that tests the property the acceptance states."
+      "progress": "Delivered: the repeat pass enforced on all three engines; the six recorded non-idempotent tests fixed at their real mechanisms (fixed idempotency keys and fixed definition identities minted per run; the Redis outage drill scoped to the installation's own namespace and rolled back) and the record emptied; the corrected reverse-order pass executed once on MariaDB, green, 340 tests in reversed class order against the emptied record. Outstanding: the reverse pass enforced in CI beside the repeat pass on all three engines, which the per-site OpenAPI definition ceiling currently blocks as an appended same-database pass - see V2-QA-008."
     },
     {
       "id": "V2-DB-001",
@@ -269,37 +269,6 @@
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "progress": "Delivered: the three-engine merge matrix that was the finding's substance, the two further browser engines nightly, and first-attempt reporting separated from retries."
-    },
-    {
-      "id": "V2-DB-004",
-      "title": "PostgreSQL schema-global non-primary index names still collide between prefixed core installations",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "2",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Persistence/Migration/BusinessSecurityPortalMigration.php",
-          "symbol": "the organizations indexes",
-          "note": "The immutable migration publishes the literal names uniq_org_site_identifier and idx_org_site_status. PostgreSQL keeps non-primary index names in a schema-wide namespace, so a second prefixed plan collides on uniq_org_site_identifier even though its physical table name differs."
-        },
-        {
-          "file": "src/Kernel/ContainerFactory.php",
-          "symbol": "the MigrationPlan service's ordered core migration list",
-          "note": "The complete core plan includes many published self-checksumming migrations that create literal non-primary index names. Their bytes and recorded checksums cannot be rewritten, and a table prefix does not qualify those index names in PostgreSQL's schema namespace."
-        },
-        {
-          "file": "tests/Integration/Persistence/ConstraintNameIsolationPortabilityIntegrationTest.php",
-          "symbol": "the two-prefix PostgreSQL fixture",
-          "note": "The complete prefixed setup at the verified implementation revision reached PostgreSQL's uniq_org_site_identifier collision before the foreign-key repair. The focused fixture assigns test-only isolated index names so it can reach the foreign-key contract; that evidence therefore does not prove that two complete prefixed core migration plans coexist in one PostgreSQL schema."
-        }
-      ],
-      "acceptance_test": "An append-only migration inventories every non-primary index on every prefixed core table whose published name can collide in PostgreSQL's schema namespace. Each replacement name is derived from the physical table name and the published index-name stem with a stable table-plus-stem digest, remains within PostgreSQL's 63-byte identifier limit, and preserves the original index exactly. On PostgreSQL, two complete empty-database core migration plans with distinct prefixes run sequentially in one schema and both finish; a schema-wide catalogue assertion proves that every non-primary index name is unique across both plans and that each index retains its exact table, ordered key columns, uniqueness, predicate, expression, included columns and operator classes. Replaying the append-only migration on either installation is a no-operation, including after an interruption. Existing ledgers and supported upgrades remain accepted, MariaDB and MySQL remain accepted, the bytes and checksums of every published self-checksumming migration remain unchanged, and an existing replacement with the wrong shape fails closed.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "P2-D",
-      "cross_reference": "V2-DB-003 delivered foreign-key-name isolation for the MySQL family and focused cross-engine foreign-key-shape evidence. This finding is the remaining PostgreSQL non-primary-index namespace contract."
     },
     {
       "id": "V2-REL-001",
@@ -511,98 +480,6 @@
       "closure_sha": null
     },
     {
-      "id": "V2-ERP-002",
-      "title": "Number sequences cannot be scoped by document type or legal entity, and reset only never, yearly or monthly",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessDefinition/Domain/NumberSequenceScope.php",
-          "symbol": "the enum cases",
-          "note": "Site and Organization only."
-        },
-        {
-          "file": "src/BusinessDefinition/Domain/NumberSequenceReset.php",
-          "symbol": "the enum cases",
-          "note": "Never, Yearly and Monthly only. There is no fiscal-period reset, and no concept of a fiscal period anywhere in src/."
-        }
-      ],
-      "acceptance_test": "The counter identity widens to include document type and legal entity, and the reset vocabulary gains a fiscal-period reset resolved through the PE-E period declaration. The allocator's advance mechanism is unchanged: only what the scope key and period key are composed from changes. Every existing gapless concurrency test runs unmodified against every new scope and reset combination — if one needs rewriting, the widening is wrong. A migration test proves every existing counter maps forward to exactly one widened counter with its current value intact. A widened scope means more counters each contended less, which is a throughput improvement obtained honestly; the meaning of an existing sequence is never changed for throughput alone.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-F",
-      "product_owner_decision": "Decision D13.4 — core. Small, because the allocator already exists and already derives its counter row from a scope key and a period key.",
-      "enforcing_check": "Existing gapless concurrency tests run unmodified across every new scope and reset combination; a forward-migration test proving one-to-one counter mapping with values intact.",
-      "cross_reference": [
-        "V2-POS-002"
-      ]
-    },
-    {
-      "id": "V2-ERP-003",
-      "title": "No period-close or posting-lock primitive",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessDefinition/Domain/WorkflowBinding.php",
-          "symbol": "WorkflowBinding",
-          "note": "Provides a per-record state machine with capability-gated transitions. There is no cross-record temporal lock — nothing that makes every record whose date falls in a closed range refuse mutation."
-        }
-      ],
-      "acceptance_test": "Core supplies a declarative temporal lock that refuses a mutation to a record whose declared date field falls inside a closed range, evaluated before the mutation fence rather than after it. Core gains NO fiscal calendar: what a period is, when it closes, who may close it and what re-opening means are the extension's, expressed through the lock's administrative surface. A three-engine integration test proves a mutation dated inside a closed period is refused on every surface, that closing a period is capability-gated and audited, and that a record dated outside the range is unaffected. Its interaction with V2-ERP-005 is a required test rather than an emergent behaviour: a correction issued after its original's period closed is dated in an open period, and neither mechanism special-cases the other.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-E",
-      "product_owner_decision": "Decision D13.3 — core mechanism, extension policy.",
-      "enforcing_check": "Three-engine integration test of the refusal on every surface; an architecture test asserting the lock is consulted on every mutation entry point, enumerated from the same table the mutation guard already uses, so a new entry point that skips it fails.",
-      "cross_reference": [
-        "V2-ERP-005"
-      ]
-    },
-    {
-      "id": "V2-ERP-005",
-      "title": "No immutable-correction primitive: an approved document is corrected by mutating it",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "E",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "the update and archive paths",
-          "note": "Revisions record what changed, and the audit chain proves the record was not tampered with, but there is no declared 'this document is immutable after this transition; correct it by issuing a linked reversing document' primitive."
-        },
-        {
-          "file": "src/BusinessDefinition/Domain/FieldDefinition.php",
-          "symbol": "FieldDefinition::$immutableAfterCreate",
-          "note": "Line 130. Freezes one field from creation, which is a different rule from freezing a whole document from a transition. A document is mutable while it is a draft and frozen once approved; no existing declaration expresses that."
-        },
-        {
-          "file": "src/BusinessDefinition/Domain/WorkflowBinding.php",
-          "symbol": "WorkflowBinding",
-          "note": "Supplies the per-record state machine whose transitions run only through an action whose capability the actor holds. The declaration the reversal model needs hangs here, so the mechanism is an addition to an existing shape rather than a new one."
-        }
-      ],
-      "acceptance_test": "A workflow binding may declare that entering a state makes the record immutable. After that transition every mutation of the record's own fields and its owned lines is refused on every surface, including surfaces an extension contributes, with a stable named error rather than a policy denial — the caller may be fully authorized; the document is closed. Correction is a new record of the same definition carrying a first-class typed link to the record it reverses, with its own approval path; the original is never rewritten and never suppressed, and both remain readable and in history. A 1,000-line reversal commits through the P4-A aggregate command; no separate reversal write path exists. Core knows nothing about what reversing means for a ledger or a balance. Definitions that do not declare post-transition immutability are unaffected, so nothing regresses for a definition that never opts in.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PE-D",
-      "product_owner_decision": "Decision D13.2 — core. This is an audit property, not an accounting feature: a platform whose identity is auditability cannot allow an approved document to be edited. Recorded in docs/roadmap/decisions/0003-immutable-correction-by-reversal.md.",
-      "enforcing_check": "An architecture test asserting no mutation path in src/ can write a record whose definition declares it immutable in its current state, so a new write path cannot bypass the rule silently; a three-engine integration test proving update, owned-line mutation and archive are refused with a stable error on every surface and that the reversal path succeeds; a conformance-fixture assertion failing an extension that corrects by mutation.",
-      "cross_reference": [
-        "V2-ERP-003",
-        "V2-ERP-002",
-        "V2-SCL-003"
-      ]
-    },
-    {
       "id": "V2-ERP-007",
       "title": "No offline-tolerant capture primitive for point-of-sale-style surfaces",
       "severity": "low",
@@ -769,37 +646,6 @@
       "work_package": "PL-G",
       "product_owner_decision": "Decision D11 — the translated catalogues for the nine languages and per-locale visual qualification are Gate B; everything that shapes a contract is Gate A.",
       "enforcing_check": "A catalogue-completeness check failing when any of the nine is missing an identifier the source catalogue declares, so 'we shipped eight and a half languages' is not a state the build permits."
-    },
-    {
-      "id": "V2-POS-002",
-      "title": "Numbering under disconnection: the gapless allocator commits inside the caller's transaction, so a disconnected terminal cannot call it",
-      "severity": "medium",
-      "state": "decision_required",
-      "phase": "0",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessNumberSequenceAllocator.php",
-          "symbol": "the class docblock and allocate()",
-          "note": "States it explicitly: 'this class opens none. It joins the transaction BusinessRecordService already has open around the whole create command'. It takes the counter row FOR UPDATE and holds the lock until that transaction ends, which is what makes a rolled-back create hand its number straight back. A disconnected terminal has no such transaction to join."
-        },
-        {
-          "file": "src/BusinessRecord/Application/BusinessNumberSequenceAllocator.php",
-          "symbol": "the documented guarantee",
-          "note": "The shipped promise, stated exactly: within one counter the values handed to committed records are contiguous from one, with no duplicates and no gaps. Either candidate shape changes what that promise means, which is why this is a decision rather than an implementation detail."
-        }
-      ],
-      "acceptance_test": "Choose between two viable shapes and record the consequence of the one chosen. (1) Allocate the human document number at SYNCHRONISATION TIME: the terminal carries its own client reference until then, that reference becomes a declared field with its own uniqueness scope, and the number is allocated by the receiving command exactly as it is today, preserving gaplessness in full. (2) Issue PER-TERMINAL RESERVED BLOCKS: the terminal allocates from its own block while disconnected, which FORFEITS GAPLESSNESS for those counters. If (2) is chosen, the forfeit is declared on the sequence itself and stated in the supported envelope, never left implicit. This interacts directly with the gapless guarantee already documented and shipped, and that trade is the product owner's to make; it is not decided here.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "P0-E decision 12; implemented in PE-F",
-      "product_owner_decision": "Decision D14 records the constraint and the two viable shapes and explicitly leaves the choice open. It must be taken in P0-E, because both shapes change the allocator and one of them changes a shipped promise.",
-      "enforcing_check": "Once decided: if synchronisation-time allocation, the existing gapless concurrency tests run unmodified. If reserved blocks, a test asserts a sequence declaring them reports itself as non-gapless through the same declaration an operator reads, so the forfeit cannot be silent.",
-      "cross_reference": [
-        "V2-ERP-002",
-        "V2-ERP-007"
-      ]
     },
     {
       "id": "GM-AUD-02",
@@ -1234,6 +1080,119 @@
       "closure_sha": null,
       "work_package": "S-G",
       "product_owner_decision": "Decision D16."
+    },
+    {
+      "id": "V2-ERP-008",
+      "title": "A non-site-scoped counter keys on the definition's owning site, which ownership widening can silently change",
+      "severity": "medium",
+      "state": "open",
+      "phase": "E",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
+          "symbol": "allocateNumbers",
+          "note": "Falls back to the definition's owning site for the counter's site coordinate when the record scope carries no site. Under ADR 0001 ownership can widen, so an ownership change would alter the counter identity of every non-site-scoped sequence on that definition and restart its runs at one. A stable sentinel coordinate, or a rule freezing owning-site changes for sequence-bearing definitions, needs deciding."
+        }
+      ],
+      "acceptance_test": "A definition whose ownership widens or moves keeps every existing counter identity and every run's continuity, proven by a test that widens ownership around a definition with allocated numbers.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
+      "id": "V2-ERP-009",
+      "title": "The hard-delete set-null sweep rewrites referencing records without a posting-period evaluation",
+      "severity": "medium",
+      "state": "open",
+      "phase": "E",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
+          "symbol": "clearInboundSetNull",
+          "note": "The posting-period lock judges the addressed record, and the immutability guard already fences this sweep, but a record dated in a closed period can still be re-versioned by deleting an undated record it references set-null. Whether the sweep should refuse, skip, or be judged like any mutation is a decision the lock's addressed-record rule deliberately left open."
+        }
+      ],
+      "acceptance_test": "Deleting a record referenced set-null by a closed-period record either refuses by name or provably leaves the closed-period record's version and audit history untouched, and the chosen rule is stated on the lock.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
+      "id": "V2-UX-003",
+      "title": "Closed and immutable records still render edit affordances, and the definition editor cannot declare immutable states",
+      "severity": "medium",
+      "state": "open",
+      "phase": "7",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/BusinessRecord/Presentation/",
+          "symbol": "generated browser surface",
+          "note": "The generated browser catches only validation and version-conflict problems on submit, so an immutable or closed-period refusal lands on the global error boundary, and generated forms render edit affordances for records the service will refuse because catalog metadata does not expose immutable states or the posting-date declaration."
+        },
+        {
+          "file": "src/BusinessDefinition/Presentation/",
+          "symbol": "definition editor form mapper",
+          "note": "The administrator definition editor cannot yet declare workflow immutable_states; the declaration is reachable only through canonical documents or an extension contribution."
+        }
+      ],
+      "acceptance_test": "A record in an immutable state or a closed period renders read-only affordances with the refusal's own wording, and the definition editor can declare and remove immutable states with validation.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
+      "id": "V2-QA-007",
+      "title": "pdo_pgsql under PHP 8.5 answers a stale empty result when one prepared statement is re-executed many times in one transaction",
+      "severity": "high",
+      "state": "reproduced",
+      "phase": "2",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php",
+          "symbol": "testEachIdentityCoordinateIsolatesItsOwnContiguousRun",
+          "note": "Reproduction: fresh PostgreSQL database, parent schema plus migrate, then this test's choreography - the allocator's identical five-parameter SELECT FOR UPDATE re-executed nine times inside one transaction - reads the first run at one where three were allocated. The backend session never changes, the unique index is valid and live, the committed state is correct whenever any other statement interleaves, and interleaving any statement makes the same sequence answer correctly. MariaDB and MySQL are unaffected. The real write path always interleaves record writes between allocations, so the product is not known to be exposed; the test's PostgreSQL leg skips naming this finding until the driver is cleared or pinned."
+        }
+      ],
+      "acceptance_test": "A minimal PDO-only reproduction either confirms the driver fault upstream (and the toolchain pins or patches pdo_pgsql, after which the skip is removed) or finds the true mechanism in this stack and fixes it; either way the allocator-seam test runs on PostgreSQL again.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
+      "id": "V2-QA-008",
+      "title": "Accumulating fixture definitions hit the per-site OpenAPI component ceiling by the third suite run against one database",
+      "severity": "medium",
+      "state": "reproduced",
+      "phase": "2",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/OpenApi/Application/OpenApiComponentClaimAdmission.php",
+          "symbol": "admit",
+          "note": "Uninstall preserves published definitions by design and each integration run installs roughly one hundred and sixty fixture definitions, so MAX_DEFINITIONS = 256 is exhausted around the third consecutive run against one database. This does not threaten the enforced two-run idempotency property, but it blocks enforcing the reverse pass as an appended same-database pass and will bite any long-lived integration database."
+        }
+      ],
+      "acceptance_test": "Either fixture definitions are retired with the run that made them, or the ceiling's accounting distinguishes live definitions from preserved-but-withdrawn ones; three consecutive full-suite runs against one database stay green.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
+      "id": "V2-QA-009",
+      "title": "Several integration tests read raw getenv and fall back to shared defaults when configuration arrives via .env",
+      "severity": "low",
+      "state": "open",
+      "phase": "2",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "tests/Integration/Infrastructure/RedisLeaseIntegrationTest.php",
+          "symbol": "getenv fallbacks",
+          "note": "RedisLeaseIntegrationTest, DatabaseLossRecoveryIntegrationTest, CredentialLifecycleIntegrationTest and DoctrineThemeManagerIntegrationTest read raw getenv(), which sees nothing under .env loading, so their fallbacks (a shared Redis namespace among them) let unrelated local installations meet each other's residue. RedisOutageIntegrationTest was moved to the container's ApplicationConfiguration; the same sweep is owed to the rest."
+        }
+      ],
+      "acceptance_test": "No integration test reads raw getenv() for connection or namespace configuration; each resolves it from the container's configuration, proven by a grep-shaped architecture check.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
     }
   ]
 }
