@@ -105,56 +105,6 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessFormInputMapper",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentation",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessFormInputMapper",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldWidget",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessSurfaceService",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContext",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessSurfaceService",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationRegistry",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\CMS\\BusinessSurface\\Application\\BusinessSurfaceService",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationRequest",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
       "from": "Kumwe\\CMS\\Content\\Domain\\ContentTypeDefinition",
       "to": "Kumwe\\CMS\\Application\\Authorization\\SiteContext",
       "from_layer": "domain",

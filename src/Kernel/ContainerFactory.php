@@ -221,7 +221,6 @@ use Kumwe\CMS\BusinessReporting\Infrastructure\JobQueueExportJobDispatcher;
 use Kumwe\CMS\BusinessReporting\Infrastructure\LiveExportExecutionContextResolver;
 use Kumwe\CMS\BusinessReporting\Infrastructure\SystemExportQueueProducerContextProvider;
 use Kumwe\CMS\BusinessSurface\Application\BusinessApprovalSurfaceService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessFormInputMapper;
 use Kumwe\CMS\BusinessSurface\Application\BusinessMutationPlanService;
 use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusRepository;
 use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
@@ -230,11 +229,13 @@ use Kumwe\CMS\BusinessSurface\Application\BusinessRecordQueryFactory;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
 use Kumwe\CMS\BusinessSurface\Application\CustomBusinessActionExecutor;
+use Kumwe\CMS\BusinessSurface\Application\FieldModelPresenter;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessActionStepUp;
 use Kumwe\CMS\BusinessSurface\Application\MutationPlanCipher;
 use Kumwe\CMS\BusinessSurface\Delivery\Administrator\AdministratorBusinessSurfaceHandler;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessCustomViewPresenter;
+use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessFormInputMapper;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessDocumentPresenter;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
 use Kumwe\CMS\BusinessSurface\Delivery\Portal\GeneratedBusinessPortalNavigationVisibility;
@@ -242,6 +243,7 @@ use Kumwe\CMS\BusinessSurface\Delivery\Portal\PortalBusinessSurfaceHandler;
 use Kumwe\CMS\BusinessSurface\Infrastructure\Persistence\DoctrineBusinessOperationStatusRepository;
 use Kumwe\CMS\BusinessSurface\Infrastructure\Security\KeyRingMutationPlanCipher;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRepository;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryRepository;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryService;
@@ -2932,6 +2934,11 @@ final class ContainerFactory
             self::service($container, ExtensionContributionRegistrySet::class)->fieldPresentations(),
             true,
         );
+        $container->share(FieldModelPresenter::class, static fn (
+            Container $container,
+        ): FieldModelPresenter => new RegistryFieldModelPresenter(
+            self::service($container, FieldPresentationRegistry::class),
+        ), true);
         $container->share(BusinessRecordQueryFactory::class, new BusinessRecordQueryFactory(), true);
         $container->share(BusinessRecordProjector::class, new BusinessRecordProjector(), true);
         $container->share(BusinessFormInputMapper::class, new BusinessFormInputMapper(), true);
@@ -3014,7 +3021,7 @@ final class ContainerFactory
             self::service($container, BusinessRecordProjector::class),
             self::service($container, CustomBusinessSurfaceDispatcher::class),
             self::service($container, CustomBusinessActionExecutor::class),
-            self::service($container, FieldPresentationRegistry::class),
+            self::service($container, FieldModelPresenter::class),
             self::service($container, MediaService::class),
             self::service($container, TransactionManager::class),
             self::service($container, ActiveLocale::class),
