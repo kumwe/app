@@ -2554,6 +2554,7 @@ final class ContainerFactory
             self::service($container, RecordFingerprint::class),
             self::service($container, ClockInterface::class),
             self::service($container, PostingPeriodLock::class),
+            self::service($container, PostingPeriodCalendar::class),
             self::service($container, BusinessRecordMutationEventPublisher::class),
             $configuration->idempotencyReplay,
         ), true);
