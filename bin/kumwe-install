@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Interactive project bootstrap used by `composer create-project kumwe/cms`.
+ * Interactive project bootstrap used by `composer create-project kumwe/app`.
  *
  * The script writes an initial `.env` and stops there: it deliberately delegates schema migration and
  * owner creation to Kumwe's public CLI so that a scripted installation and an interactive one follow
@@ -22,8 +22,8 @@ $autoloadFile = $root . '/vendor/autoload.php';
 
 if (is_file($autoloadFile)) {
     require $autoloadFile;
-    $prettyVersion = Composer\InstalledVersions::isInstalled('kumwe/cms')
-        ? Composer\InstalledVersions::getPrettyVersion('kumwe/cms')
+    $prettyVersion = Composer\InstalledVersions::isInstalled('kumwe/app')
+        ? Composer\InstalledVersions::getPrettyVersion('kumwe/app')
         : null;
 
     if (is_string($prettyVersion)) {

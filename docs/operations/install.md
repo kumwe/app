@@ -96,10 +96,10 @@ Open the canonical `/administrator` URL, sign in, and follow [Administrator](../
 
 ## Composer project
 
-Composer can deploy the complete CMS as a project package. The post-create hook starts an interactive installer when run in a terminal. Once `kumwe/cms` is registered on Packagist, use:
+Composer can deploy the complete CMS as a project package. The post-create hook starts an interactive installer when run in a terminal. Once `kumwe/app` is registered on Packagist, use:
 
 ```bash
-composer create-project kumwe/cms:^2.0 /srv/kumwe \
+composer create-project kumwe/app:^2.0 /srv/kumwe \
   --no-dev \
   --prefer-dist
 ```
@@ -109,7 +109,7 @@ Until Packagist registration is complete, resolve the signed GitHub release thro
 ```bash
 composer create-project \
   --repository='{"type":"vcs","url":"https://github.com/kumwe/app.git"}' \
-  kumwe/cms:^2.0 /srv/kumwe \
+  kumwe/app:^2.0 /srv/kumwe \
   --no-dev \
   --prefer-dist
 ```

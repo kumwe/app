@@ -5,7 +5,7 @@
   "license": "proprietary",
   "require": {
     "php": "^8.5",
-    "kumwe/cms": "^2.0"
+    "kumwe/app": "^2.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^11.5"

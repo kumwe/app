@@ -54,7 +54,7 @@ table when it completes, in the same change that writes it into the changelog.
 
 | Phase | Packages | Findings |
 |---|---|---|
-| 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-ERP-007` |
+| 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-DOC-002`, `V2-ERP-007` |
 | 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
 | 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-009`, `V2-DB-001`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
 | 3 | `P3-A`, `P3-C` … `P3-F` (`P3-B` complete) | — |
@@ -95,13 +95,13 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 
 ## Ledger snapshot
 
-**57 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**58 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
 | `accepted_for_implementation` | 16 |
 | `reproduced` | 9 |
-| `open` | 23 |
+| `open` | 24 |
 | `conditional` | 6 |
 | `decision_required` | 0 |
 | `in_progress` | 3 |
@@ -111,7 +111,7 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 
 | Phase | Findings |
 |---|---|
-| 0 | 2 |
+| 0 | 3 |
 | 1 | 0 |
 | 2 | 9 |
 | 3 | 0 |
@@ -130,10 +130,10 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 |---|---|
 | A | 10 |
 | B | 22 |
-| none | 25 |
+| none | 26 |
 
-By severity: 0 critical, 26 high, 22 medium, 9 low.
-By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 30 discovered
+By severity: 0 critical, 26 high, 23 medium, 9 low.
+By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 31 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
 D16 and D17.
 
