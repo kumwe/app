@@ -32,8 +32,8 @@ final class ForeignKeyConstraintNamingTest extends TestCase
     /**
      * Derivations already unique to one installation, which the rename deliberately leaves alone.
      *
-     * This is a list rather than a set, and `$foreignKey` appearing three times is not a duplicate to
-     * tidy away: three migrations hash their own prefixed table into a variable spelled that way, and
+     * This is a list rather than a set, and `$foreignKey` appearing four times is not a duplicate to
+     * tidy away: four migrations hash their own prefixed table into a variable spelled that way, and
      * dropping one entry would let another such declaration ship without ever being read.
      *
      * @var    list<string>
@@ -46,6 +46,7 @@ final class ForeignKeyConstraintNamingTest extends TestCase
         "'fk_site_theme_activation_' . substr(hash('sha256', "
             . "\$this->tables->raw('site_theme_activations')), 0, 16)",
         '$target',
+        '$foreignKey',
         '$foreignKey',
         '$foreignKey',
         "\$this->tables->raw('fk_site_group_member_group')",
@@ -217,7 +218,7 @@ final class ForeignKeyConstraintNamingTest extends TestCase
         $declarations = self::declarations();
 
         self::assertCount(54, $declarations['literal']);
-        self::assertCount(11, $declarations['derived']);
+        self::assertCount(12, $declarations['derived']);
         self::assertSame(63, ConstraintNameIsolationMigration::MAXIMUM_IDENTIFIER_BYTES);
         self::assertSame(ConstraintNameIsolationMigration::ID, ConstraintNameIsolationCompatibilityMigration::ID);
         self::assertSame(

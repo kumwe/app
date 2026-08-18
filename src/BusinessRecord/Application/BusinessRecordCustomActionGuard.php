@@ -43,4 +43,25 @@ interface BusinessRecordCustomActionGuard
         ExecuteRecordActionCommand $command,
         BusinessRecordMutationGeneration $generation,
     ): void;
+
+    /**
+     * Evaluate the posting-period lock for one custom action attempt, before any fence is taken.
+     *
+     * A custom action hands the record to extension code that may write anything, so it is a mutation
+     * path the temporal lock covers. The executor calls this ahead of its transaction — the lock is
+     * declared to run before the mutation fence, and only the record service knows how to read a
+     * definition's declared posting date — while `guardCustomAction()` keeps its post-fence duties.
+     *
+     * @param   ExecuteRecordActionCommand  $command  Validated custom action attempt.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When the
+     *          record's declared posting date falls inside a closed period.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          no definition matches the identifier on this site, or its owner is disabled.
+     *
+     * @since   2.0.0
+     */
+    public function guardCustomActionPostingPeriod(ExecuteRecordActionCommand $command): void;
 }

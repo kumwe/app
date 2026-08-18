@@ -445,6 +445,30 @@ final readonly class EntityTypeDefinition
     }
 
     /**
+     * The date field this definition declares as the posting date the temporal lock reads.
+     *
+     * A definition opts into the posting-period mechanism by setting `posting_date: true` in the
+     * configuration of exactly one date-carrying field; `BusinessDefinitionValidator` refuses a second
+     * declaration. A definition that declares none returns null and is untouched by the whole
+     * mechanism — no period is consulted and no mutation is refused.
+     *
+     * @return  ?FieldDefinition  The declared posting-date field, or null when the definition makes no
+     *          declaration.
+     *
+     * @since   2.0.0
+     */
+    public function postingDateField(): ?FieldDefinition
+    {
+        foreach ($this->fields as $field) {
+            if (($field->configuration['posting_date'] ?? null) === true) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Associations the definition declares explicitly, in the order they were declared.
      *
      * Ordered-line fields are not folded in here; `runtimeRelationship()` is the lookup that sees both.

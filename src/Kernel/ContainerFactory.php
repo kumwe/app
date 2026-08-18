@@ -131,6 +131,10 @@ use Kumwe\CMS\BusinessRecord\Application\BusinessRecordWriteRepository;
 use Kumwe\CMS\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\MoneyConversionPipeline;
 use Kumwe\CMS\BusinessRecord\Application\MoneyRateProviderCatalog;
+use Kumwe\CMS\BusinessRecord\Application\PostingPeriodCalendar;
+use Kumwe\CMS\BusinessRecord\Application\PostingPeriodLock;
+use Kumwe\CMS\BusinessRecord\Application\PostingPeriodRepository;
+use Kumwe\CMS\BusinessRecord\Application\PostingPeriodService;
 use Kumwe\CMS\BusinessRecord\Domain\MoneyConverter;
 use Kumwe\CMS\BusinessRecord\Application\UnitConversionPipeline;
 use Kumwe\CMS\BusinessRecord\Application\UnitConversionProviderCatalog;
@@ -152,6 +156,7 @@ use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRe
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRevisionRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessSchemaRecordRepinGateway;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrinePostingPeriodRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineRecordSecretRotation;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Security\ConfiguredSecretKeyRings;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
@@ -275,6 +280,7 @@ use Kumwe\CMS\Delivery\Http\Api\Business\BusinessOperationStatusApiHandler;
 use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiHandler;
 use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiPresenter;
 use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiResponder;
+use Kumwe\CMS\Delivery\Http\Api\Business\PostingPeriodApiHandler;
 use Kumwe\CMS\BusinessSchema\Delivery\Administrator\ApproveBusinessSchemaPlanHandler;
 use Kumwe\CMS\BusinessSchema\Delivery\Administrator\BusinessSchemaPlansHandler;
 use Kumwe\CMS\BusinessSchema\Delivery\Administrator\CreateBusinessSchemaPlanHandler;
@@ -394,6 +400,7 @@ use Kumwe\CMS\Delivery\Console\Command\BusinessRecordConsolePresenter;
 use Kumwe\CMS\Delivery\Console\Command\ManageBusinessRecordsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageBusinessSchemaCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageContentModelsCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManagePostingPeriodsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageNavigationCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageSettingsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageTrustStoreCommand;
@@ -545,6 +552,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigrat
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfaceMessageOverrideMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\PeriodPostingLockMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TranslationGroupSiteOwnershipMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
@@ -1710,6 +1718,7 @@ final class ContainerFactory
                     new MultilingualContentMigration(self::service($container, TableNames::class)),
                     new TranslationGroupSiteOwnershipMigration(self::service($container, TableNames::class)),
                     new ConstraintNameIsolationPortabilityMigration(self::service($container, TableNames::class)),
+                    new PeriodPostingLockMigration(self::service($container, TableNames::class)),
                     new NumberSequenceIdentityMigration(self::service($container, TableNames::class)),
                 ],
                 [
@@ -2501,6 +2510,29 @@ final class ContainerFactory
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
         ), true);
+        $container->share(DoctrinePostingPeriodRepository::class, static fn (
+            Container $container,
+        ): DoctrinePostingPeriodRepository => new DoctrinePostingPeriodRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->alias(PostingPeriodRepository::class, DoctrinePostingPeriodRepository::class);
+        $container->alias(PostingPeriodCalendar::class, DoctrinePostingPeriodRepository::class);
+        $container->share(PostingPeriodLock::class, static fn (
+            Container $container,
+        ): PostingPeriodLock => new PostingPeriodLock(
+            self::service($container, PostingPeriodRepository::class),
+            self::service($container, RecordValueCodec::class),
+        ), true);
+        $container->share(PostingPeriodService::class, static fn (
+            Container $container,
+        ): PostingPeriodService => new PostingPeriodService(
+            self::service($container, PostingPeriodRepository::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(BusinessRecordService::class, static fn (
             Container $container,
         ): BusinessRecordService => new BusinessRecordService(
@@ -2521,6 +2553,7 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, RecordFingerprint::class),
             self::service($container, ClockInterface::class),
+            self::service($container, PostingPeriodLock::class),
             self::service($container, BusinessRecordMutationEventPublisher::class),
             $configuration->idempotencyReplay,
         ), true);
@@ -3536,6 +3569,13 @@ final class ContainerFactory
             self::service($container, BusinessSchemaApiPresenter::class),
             self::service($container, BusinessApiResponder::class),
             self::service($container, HighImpactCredentialGuard::class),
+        ), true);
+        $container->share(PostingPeriodApiHandler::class, static fn (
+            Container $container,
+        ): PostingPeriodApiHandler => new PostingPeriodApiHandler(
+            self::service($container, PostingPeriodService::class),
+            self::service($container, BusinessApiResponder::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
         ), true);
         $container->share(BusinessSchemaPlansHandler::class, static fn (
             Container $container,
@@ -4722,6 +4762,25 @@ final class ContainerFactory
             ), $capability);
         }
 
+        // Posting periods. Listing and managing are independently grantable, so the read route
+        // declares only the read capability while close and reopen each demand the manage one.
+        self::apiRoute($application->get(
+            '/api/v1/business-periods',
+            PostingPeriodApiHandler::class,
+            'api.v1.business-periods.list',
+        ), 'business.period.read');
+        foreach (['close', 'reopen'] as $periodAction) {
+            self::apiRoute($application->post(
+                '/api/v1/business-periods/' . $periodAction,
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    PostingPeriodApiHandler::class,
+                ],
+                'api.v1.business-periods.' . $periodAction,
+            ), 'business.period.manage');
+        }
+
         self::apiRoute($application->get(
             '/api/v1/menus',
             MenuCollectionHandler::class,
@@ -5445,6 +5504,12 @@ final class ContainerFactory
             self::service($container, BusinessSchemaService::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(ManagePostingPeriodsCommand::class, static fn (
+            Container $container,
+        ): ManagePostingPeriodsCommand => new ManagePostingPeriodsCommand(
+            self::service($container, PostingPeriodService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(ManageNavigationCommand::class, static fn (
             Container $container,
         ): ManageNavigationCommand => new ManageNavigationCommand(
@@ -5530,6 +5595,7 @@ final class ContainerFactory
                 self::service($container, ManageBusinessDefinitionsCommand::class),
                 self::service($container, ManageBusinessRecordsCommand::class),
                 self::service($container, ManageBusinessSchemaCommand::class),
+                self::service($container, ManagePostingPeriodsCommand::class),
                 self::service($container, ManageNavigationCommand::class),
                 self::service($container, ManageSettingsCommand::class),
                 self::service($container, ManageAccessCommand::class),

@@ -71,9 +71,10 @@ final readonly class BusinessDefinitionValidator
      *
      * @throws  InvalidBusinessDefinition  When the set is empty or above 128 entities, a handle is
      *          duplicated, a field type or a targeted entity cannot be resolved, a field carries
-     *          configuration its type does not register, a reference crosses site or scope, a declared
-     *          inverse is missing, ambiguous or not reciprocal, a delete behaviour does not suit its
-     *          cardinality, or owned collections form a cycle.
+     *          configuration its type does not register, an entity declares more than one posting date
+     *          field, a reference crosses site or scope, a declared inverse is missing, ambiguous or not
+     *          reciprocal, a delete behaviour does not suit its cardinality, or owned collections form a
+     *          cycle.
      *
      * @since   2.0.0
      */
@@ -90,7 +91,11 @@ final readonly class BusinessDefinitionValidator
             }
             $byHandle[$definition->handle] = $definition;
             $this->validateIdentity($definition);
+            $postingDates = 0;
             foreach ($definition->fields() as $field) {
+                if (($field->configuration['posting_date'] ?? null) === true) {
+                    ++$postingDates;
+                }
                 if ($field->handle === 'runtime_relation_evidence') {
                     throw new InvalidBusinessDefinition(
                         'A business field handle is reserved for immutable runtime revision evidence.',
@@ -117,6 +122,12 @@ final readonly class BusinessDefinitionValidator
                     }
                     $fieldTargets[] = [$definition, $field, $target];
                 }
+            }
+            if ($postingDates > 1) {
+                throw new InvalidBusinessDefinition(sprintf(
+                    'Business entity %s declares more than one posting date field.',
+                    $definition->handle,
+                ));
             }
         }
         $ownershipEdges = [];
@@ -1392,7 +1403,8 @@ final readonly class BusinessDefinitionValidator
      *
      * @throws  InvalidBusinessDefinition  When `options` is not a bounded list of non-empty strings, the
      *          currency is not a three-letter uppercase code, the unit is not a bounded token, the target
-     *          does not read as a namespaced handle, or the JSON byte bound falls outside 2 to 1,000,000.
+     *          does not read as a namespaced handle, the JSON byte bound falls outside 2 to 1,000,000, or
+     *          the posting date declaration is not a boolean.
      *
      * @since   2.0.0
      */
@@ -1430,6 +1442,12 @@ final readonly class BusinessDefinitionValidator
         $maxBytes = $configuration['max_bytes'] ?? null;
         if ($maxBytes !== null && (!is_int($maxBytes) || $maxBytes < 2 || $maxBytes > 1_000_000)) {
             throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid JSON byte bound.');
+        }
+        $postingDate = $configuration['posting_date'] ?? null;
+        if ($postingDate !== null && !is_bool($postingDate)) {
+            throw new InvalidBusinessDefinition(
+                'Business field ' . $field . ' has an invalid posting date declaration.',
+            );
         }
     }
 

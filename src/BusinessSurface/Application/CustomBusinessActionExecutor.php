@@ -102,6 +102,20 @@ final readonly class CustomBusinessActionExecutor
             throw new BusinessRecordTemporarilyUnavailable();
         }
         $operation = 'business.record.action';
+        // The posting-period lock is declared to run before the mutation fence, so it is evaluated
+        // here, ahead of the transaction the fence is taken in, through the same guard that later
+        // proves the attempt under the fence.
+        $this->guard->guardCustomActionPostingPeriod(new ExecuteRecordActionCommand(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->recordId,
+            $command->expectedVersion,
+            $command->action,
+            $command->idempotencyKey,
+            $command->input,
+            $command->organizationIdentifier,
+            $command->approvalRequestId,
+        ));
         $authenticatedOrganization = $command->context->organization()?->identifier();
         $scopeDigest = $this->fingerprints->digest([
             'site' => $command->context->site()->identifier(),
