@@ -32,6 +32,17 @@ final class ConsoleApplicationTest extends TestCase
         self::assertStringContainsString('Unknown Kumwe command: unknown', $output->errors[0]);
     }
 
+    /**
+     * Proves the command listing resolves every description through the message catalogue.
+     *
+     * The summary beside each command name is user-facing text on a translatable surface, so it is looked up
+     *      * rather than written inline. Pinning it here keeps a future command from reintroducing an English
+     *      * literal that no catalogue could ever translate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testTheListingResolvesEachDescriptionThroughTheCatalogue(): void
     {
         $output = new BufferedOutput();

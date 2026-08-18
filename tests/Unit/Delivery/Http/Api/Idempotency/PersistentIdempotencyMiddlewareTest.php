@@ -93,6 +93,17 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
         });
     }
 
+    /**
+     * Proves a lost reservation surfaces as ownership loss rather than being masked by the handler's failure.
+     *
+     * When the fenced release finds the reservation already taken, that is the more important fact: silently
+     *      * swallowing it would let two processes believe they each own the key. The ownership loss is raised
+     *      * even though a server failure was already in flight.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testServerFailureWithALostReservationRaisesTheOwnershipLoss(): void
     {
         $database = $this->database();

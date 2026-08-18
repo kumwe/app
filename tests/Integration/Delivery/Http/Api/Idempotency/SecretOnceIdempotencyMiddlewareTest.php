@@ -130,6 +130,17 @@ final class SecretOnceIdempotencyMiddlewareTest extends TestCase
         self::assertStringNotContainsString('legacy-plaintext-secret', $stored);
     }
 
+    /**
+     * Proves one key cannot be reused for different content, and the first request's effect stands.
+     *
+     * The key names one request, not one caller's licence to mutate repeatedly. A second body under the same
+     *      * key is refused, and the handler count proves the original mutation ran exactly once and was not
+     *      * replaced by the impostor.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testReusedKeyWithDifferentContentIsRefused(): void
     {
         [$middleware, $database, $tables, $context] = $this->services();
@@ -151,6 +162,17 @@ final class SecretOnceIdempotencyMiddlewareTest extends TestCase
         self::assertSame('urn:kumwe:problem:idempotency-key-reused', $document['type']);
     }
 
+    /**
+     * Proves a key presented under a different credential is refused without reaching the handler.
+     *
+     * An idempotency key is scoped to the credential that minted it, so a key that leaks cannot be used to
+     *      * replay another subject's mutation or read its recorded response. The refusal is its own named
+     *      * conflict and the handler is never called.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testKeyPresentedUnderADifferentCredentialIsRefused(): void
     {
         [$middleware, $database, $tables, $context] = $this->services();
@@ -170,6 +192,17 @@ final class SecretOnceIdempotencyMiddlewareTest extends TestCase
         self::assertSame('urn:kumwe:problem:idempotency-authorization-changed', $document['type']);
     }
 
+    /**
+     * Proves a lapsed reservation is taken over so the mutation runs rather than deadlocking on a dead lease.
+     *
+     * A process that dies mid-mutation leaves a reservation nobody will release. Once its lease has expired
+     *      * the next attempt takes ownership and executes, which is what keeps a crash from making a key
+     *      * permanently unusable.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testLapsedReservationIsTakenOverAndTheMutationRuns(): void
     {
         [$middleware, $database, $tables, $context] = $this->services();
@@ -191,6 +224,17 @@ final class SecretOnceIdempotencyMiddlewareTest extends TestCase
         ), [$context->actorId(), 'POST /api/v1/tokens', $key]));
     }
 
+    /**
+     * Proves a live reservation refuses a concurrent attempt instead of running the mutation twice.
+     *
+     * While one request holds an unexpired lease on the key, a second arrival is refused with a named
+     *      * conflict and the handler is never entered, which is the whole guarantee: at most one execution
+     *      * per key while an attempt is genuinely in flight.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testLiveReservationRefusesAConcurrentAttempt(): void
     {
         [$middleware, $database, $tables, $context] = $this->services();
