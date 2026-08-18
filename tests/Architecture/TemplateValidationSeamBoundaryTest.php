@@ -104,6 +104,25 @@ final class TemplateValidationSeamBoundaryTest extends TestCase
     }
 
     /**
+     * Operator input still resolves to a surface the same way from the enum's domain home.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOperatorInputStillResolvesToASurface(): void
+    {
+        self::assertNull(ThemeSurface::optional(null));
+        self::assertNull(ThemeSurface::optional('   '));
+        self::assertSame(ThemeSurface::Site, ThemeSurface::optional(' Site '));
+        self::assertSame(ThemeSurface::Administrator, ThemeSurface::optional('ADMINISTRATOR'));
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('A theme surface must be site or administrator.');
+        ThemeSurface::optional('kiosk');
+    }
+
+    /**
      * No application-layer file anywhere in the tree names a Twig type in its executable code.
      *
      * Both the shared `src/Application` root and each module's own `src/<Module>/Application` count,
