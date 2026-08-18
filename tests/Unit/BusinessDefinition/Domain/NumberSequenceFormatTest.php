@@ -140,4 +140,52 @@ final class NumberSequenceFormatTest extends TestCase
             NumberSequenceReset::Never->key(new DateTimeImmutable(), new DateTimeZone('Africa/Windhoek')),
         );
     }
+
+    /**
+     * A fiscal-period declaration parses, and renders a declared period key like any calendar segment.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAFiscalPeriodDeclarationParsesAndRendersTheDeclaredKey(): void
+    {
+        $format = NumberSequenceFormat::fromConfiguration(['reset' => 'fiscal-period', 'prefix' => 'FIS-']);
+
+        self::assertSame(NumberSequenceReset::FiscalPeriod, $format->reset);
+        self::assertSame('FIS-FY26.P08-000001', $format->render(1, 'FY26.P08'));
+    }
+
+    /**
+     * The fiscal case refuses the instant-and-timezone question instead of guessing a period key.
+     *
+     * An empty or invented answer would silently merge every fiscal run into the lifetime counter, so
+     * the enum refuses plainly: only the posting-period calendar can say which declared period a
+     * posting date belongs to.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheFiscalPeriodKeyIsNeverDerivedFromAnInstantAndTimezone(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/declared posting period/');
+        NumberSequenceReset::FiscalPeriod->key(new DateTimeImmutable(), new DateTimeZone('UTC'));
+    }
+
+    /**
+     * The refusal propagates through `counter()`, which composes its period half from the enum's key.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAFiscalFormatRefusesToComposeACounterFromTheAllocationInstant(): void
+    {
+        $format = NumberSequenceFormat::fromConfiguration(['reset' => 'fiscal-period']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $format->counter(null, new DateTimeImmutable('2026-08-18T09:00:00+00:00'));
+    }
 }

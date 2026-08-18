@@ -14,6 +14,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
 use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
+use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceReset;
 use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceScope;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
@@ -72,9 +73,9 @@ final readonly class BusinessDefinitionValidator
      * @throws  InvalidBusinessDefinition  When the set is empty or above 128 entities, a handle is
      *          duplicated, a field type or a targeted entity cannot be resolved, a field carries
      *          configuration its type does not register, an entity declares more than one posting date
-     *          field, a reference crosses site or scope, a declared inverse is missing, ambiguous or not
-     *          reciprocal, a delete behaviour does not suit its cardinality, or owned collections form a
-     *          cycle.
+     *          field or a fiscal-period number sequence without one, a reference crosses site or scope,
+     *          a declared inverse is missing, ambiguous or not reciprocal, a delete behaviour does not
+     *          suit its cardinality, or owned collections form a cycle.
      *
      * @since   2.0.0
      */
@@ -92,9 +93,16 @@ final readonly class BusinessDefinitionValidator
             $byHandle[$definition->handle] = $definition;
             $this->validateIdentity($definition);
             $postingDates = 0;
+            $fiscalSequence = null;
             foreach ($definition->fields() as $field) {
                 if (($field->configuration['posting_date'] ?? null) === true) {
                     ++$postingDates;
+                }
+                if (
+                    $field->type === 'core.sequence'
+                    && ($field->configuration['reset'] ?? null) === NumberSequenceReset::FiscalPeriod->value
+                ) {
+                    $fiscalSequence ??= $field->handle;
                 }
                 if ($field->handle === 'runtime_relation_evidence') {
                     throw new InvalidBusinessDefinition(
@@ -126,6 +134,14 @@ final readonly class BusinessDefinitionValidator
             if ($postingDates > 1) {
                 throw new InvalidBusinessDefinition(sprintf(
                     'Business entity %s declares more than one posting date field.',
+                    $definition->handle,
+                ));
+            }
+            if ($fiscalSequence !== null && $postingDates === 0) {
+                throw new InvalidBusinessDefinition(sprintf(
+                    'Business field %s declares a fiscal-period number sequence, '
+                    . 'but entity %s declares no posting date field to resolve the period from.',
+                    $fiscalSequence,
                     $definition->handle,
                 ));
             }

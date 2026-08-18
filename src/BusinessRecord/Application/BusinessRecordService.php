@@ -22,6 +22,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
 use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
+use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceReset;
 use Kumwe\CMS\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
@@ -46,6 +47,7 @@ use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConf
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordImmutable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodUndeclared;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
@@ -68,6 +70,7 @@ use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
 use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
 use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
@@ -151,6 +154,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *         every row a mutation touches.
      * @param  PostingPeriodLock                      $postingPeriods  Declarative temporal lock evaluated
      *         before the mutation fence on every mutation path.
+     * @param  PostingPeriodCalendar                  $periodCalendar  Containment seam a `fiscal-period`
+     *         number sequence resolves its counter's period key through, from the record's declared
+     *         posting date.
      * @param  ?BusinessRecordMutationEventPublisher  $events          Transactional domain and integration
      *         event publisher; nullable only for isolated legacy tests.
      * @param  BusinessRecordReplayWindow             $replayWindow    Declared horizons over which a
@@ -178,6 +184,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         private RecordFingerprint $fingerprints,
         private ClockInterface $clock,
         private PostingPeriodLock $postingPeriods,
+        private PostingPeriodCalendar $periodCalendar,
         private ?BusinessRecordMutationEventPublisher $events = null,
         private BusinessRecordReplayWindow $replayWindow = new BusinessRecordReplayWindow(),
     ) {
@@ -277,7 +284,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $resolved->definition->siteIdentifier,
                         $recordKey,
                         $recordId,
-                        $this->allocateNumbers($resolved, $scope, $now),
+                        $this->allocateNumbers($resolved, $scope, $now, $command->values),
                         $this->invariantLineValues($command->context, $resolved, null),
                     );
                 } catch (BusinessRecordValidationFailed $exception) {
@@ -2479,7 +2486,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 $resolved->definition->siteIdentifier,
                 $recordKey,
                 $recordId,
-                $this->allocateNumbers($resolved, $scope, $now),
+                $this->allocateNumbers($resolved, $scope, $now, $command->values),
                 $collections,
             );
         } catch (BusinessRecordValidationFailed $exception) {
@@ -3542,17 +3549,30 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * A definition declaring no sequence field allocates nothing and takes no lock.
      *
-     * @param   ResolvedBusinessDefinition  $resolved  Definition and installed schema the record is being
-     *          created against.
-     * @param   RecordScope                 $scope     Resolved site and organization the record belongs to.
-     * @param   DateTimeImmutable           $now       Instant the command runs at; also what decides which
-     *          calendar period a resetting counter allocates from.
+     * The period key is composed here, per reset case. The calendar resets read the command instant, so
+     * their behaviour is untouched by anything declared over the posting timeline; a `fiscal-period`
+     * reset instead reads the record's declared posting date and resolves the declared posting period
+     * containing it through the `PostingPeriodCalendar` seam, because a fiscal period is about when the
+     * document is posted and not about when the command happens to run.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved         Definition and installed schema the record is
+     *          being created against.
+     * @param   RecordScope                 $scope            Resolved site and organization the record
+     *          belongs to.
+     * @param   DateTimeImmutable           $now              Instant the command runs at; also what decides
+     *          which calendar period a resetting counter allocates from.
+     * @param   array<string, mixed>        $submittedValues  Values the create command submits, read only
+     *          for the declared posting-date field a `fiscal-period` reset keys its counter on.
      *
      * @return  array<string, string>  Rendered numbers keyed by the field handle each belongs to; empty
      *          when the definition declares no allocated-number field.
      *
      * @throws  \InvalidArgumentException  When a published definition carries a sequence declaration this
      *          runtime cannot allocate under, which `BusinessDefinitionValidator` should have refused.
+     * @throws  BusinessRecordPostingPeriodUndeclared  When a `fiscal-period` counter's posting date is
+     *          contained by no declared posting period, or the record declares no posting date at all.
+     * @throws  BusinessRecordValidationFailed  When the submitted posting date a `fiscal-period` counter
+     *          must be keyed on is malformed.
      * @throws  BusinessRecordTemporarilyUnavailable  When another allocator holds the counter and this
      *          command must be replayed rather than guess at a number.
      *
@@ -3562,6 +3582,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
         DateTimeImmutable $now,
+        array $submittedValues,
     ): array {
         $allocated = [];
         foreach ($resolved->definition->fields() as $field) {
@@ -3569,7 +3590,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 continue;
             }
             $format = NumberSequenceFormat::fromConfiguration($field->configuration);
-            $counter = $format->counter($scope->organizationIdentifier, $now);
+            $counter = $format->reset === NumberSequenceReset::FiscalPeriod
+                ? [
+                    'scope' => $format->scope->key($scope->organizationIdentifier),
+                    'period' => $this->fiscalPeriodKey($resolved, $scope, $submittedValues),
+                ]
+                : $format->counter($scope->organizationIdentifier, $now);
             $allocated[$field->handle] = $format->render($this->numbers->allocate(
                 $scope->siteIdentifier ?? $resolved->definition->siteIdentifier,
                 $resolved->definition->id,
@@ -3581,6 +3607,83 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         }
 
         return $allocated;
+    }
+
+    /**
+     * Resolve the stable key of the declared posting period a fiscal-period counter belongs to.
+     *
+     * The instant read is the record's declared posting date — the submitted value of the definition's
+     * `posting_date` field, or that field's declared default when the create omits it — never the
+     * allocation instant, because a backdated document belongs to the period it is posted in. The date
+     * is exchanged for a declared period through the `PostingPeriodCalendar` seam, in the record's own
+     * resolved scope. A date no declaration contains refuses by name rather than allocating under an
+     * empty key: an empty key is the lifetime run, and handing a fiscal document a lifetime number
+     * would be a lie the rendered value repeats forever. A malformed submitted date is reported as the
+     * same field violation the validation pass would raise, so the caller sees one kind of refusal for
+     * one kind of mistake.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved         Definition declaring the posting-date field.
+     * @param   RecordScope                 $scope            Site and organization whose declared periods
+     *          answer.
+     * @param   array<string, mixed>        $submittedValues  Values the create command submits.
+     *
+     * @return  string  Stable key of the declared period containing the posting date.
+     *
+     * @throws  \InvalidArgumentException  When the definition declares no posting-date field, which
+     *          `BusinessDefinitionValidator` refuses at publication.
+     * @throws  BusinessRecordValidationFailed  Carrying one violation on the posting-date field, when
+     *          the submitted value is malformed.
+     * @throws  BusinessRecordPostingPeriodUndeclared  When the record carries no posting date, or no
+     *          declared period contains it.
+     *
+     * @since   2.0.0
+     */
+    private function fiscalPeriodKey(
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        array $submittedValues,
+    ): string {
+        $definition = $resolved->definition;
+        $field = $definition->postingDateField() ?? throw new InvalidArgumentException(
+            'A fiscal-period number sequence requires a declared posting date field.',
+        );
+        $value = array_key_exists($field->handle, $submittedValues)
+            ? $submittedValues[$field->handle]
+            : $field->default;
+        $instant = null;
+        if ($value !== null) {
+            try {
+                $normalized = $this->values->normalize(
+                    $field,
+                    $value,
+                    $definition->siteIdentifier,
+                    $definition->id,
+                    '',
+                );
+            } catch (InvalidArgumentException $exception) {
+                throw new BusinessRecordValidationFailed([
+                    new ValidationViolation($field->handle, 'invalid_type', $exception->getMessage()),
+                ]);
+            }
+            if ($normalized instanceof DateTimeImmutable) {
+                $instant = $normalized;
+            } elseif ($normalized instanceof ZonedDateTimeValue) {
+                $instant = $normalized->instant;
+            }
+        }
+        if ($instant === null) {
+            throw new BusinessRecordPostingPeriodUndeclared(null);
+        }
+        $period = $this->periodCalendar->periodContaining(
+            $scope->siteIdentifier ?? $definition->siteIdentifier,
+            $scope->organizationIdentifier,
+            $instant,
+        );
+        if ($period === null) {
+            throw new BusinessRecordPostingPeriodUndeclared($instant);
+        }
+
+        return $period->key;
     }
 
     /**
