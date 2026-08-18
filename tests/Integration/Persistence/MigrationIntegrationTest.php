@@ -146,10 +146,13 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
             $tables->quoted('resource_site_ownership'),
         ), ['schedule', '00000000-0000-7000-8000-000000000802']));
+        // The epoch claim belongs to the row the parent schema seeded, so it is addressed by its fixed
+        // identifier: the harness re-bootstraps an administrator under the same email when mid-suite
+        // authentication fails, and that recreated user legitimately starts a fresh epoch count.
         $legacyAdministrator = $database->fetchAssociative(sprintf(
-            'SELECT id, security_epoch FROM %s WHERE email_normalized = ?',
+            'SELECT id, security_epoch FROM %s WHERE id = ?',
             $tables->quoted('users'),
-        ), ['integration-administrator@example.test']);
+        ), ['018f22e2-7c8b-7ab0-8f3a-88e8026bb901']);
         if ($legacyAdministrator !== false) {
             self::assertSame('4', (string) $legacyAdministrator['security_epoch']);
             self::assertSame('2', (string) $database->fetchOne(sprintf(
