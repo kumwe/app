@@ -24,6 +24,7 @@ use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
 use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparison;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
@@ -35,12 +36,13 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
-#[CoversNothing]
+#[CoversClass(DoctrineBusinessRecordQueryCompiler::class)]
+#[CoversClass(DoctrineBusinessRecordAccessController::class)]
 final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
 {
     public function testRowPolicyPrecedesPagingAndSharesBindingsWithAggregatesAndEvaluator(): void

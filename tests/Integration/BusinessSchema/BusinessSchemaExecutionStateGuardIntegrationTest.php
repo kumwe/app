@@ -12,6 +12,7 @@ use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrinePackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaExecutionLock;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaExecutionStateGuard;
@@ -19,18 +20,25 @@ use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaPlanRepository;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Application\PhysicalSchemaGateway;
+use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Execution\DoctrineBusinessSchemaExecutionStateGuard;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaInstallationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessSchemaService::class)]
+#[CoversClass(DoctrinePackageDefinitionSynchronizer::class)]
+#[CoversClass(DoctrineBusinessSchemaExecutionStateGuard::class)]
+#[CoversClass(DoctrineBusinessSchemaInstallationRepository::class)]
+#[CoversClass(SchemaInstallation::class)]
 final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
 {
     public function testDisabledUpgradeCannotReactivateBeforeRecoveryThenRemainsPreserved(): void

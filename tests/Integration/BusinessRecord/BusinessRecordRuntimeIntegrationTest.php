@@ -16,6 +16,8 @@ use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordMutationFence;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
 use Kumwe\CMS\BusinessRecord\Application\Command\ArchiveRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
@@ -53,11 +55,13 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(DoctrineBusinessRecordMutationFence::class)]
+#[CoversClass(DoctrineBusinessRecordReadRepository::class)]
 final class BusinessRecordRuntimeIntegrationTest extends TestCase
 {
     /**

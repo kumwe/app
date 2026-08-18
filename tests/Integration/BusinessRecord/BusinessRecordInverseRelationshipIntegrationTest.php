@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
 use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrinePackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionView;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
@@ -30,12 +31,14 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(DoctrinePackageDefinitionSynchronizer::class)]
+#[CoversClass(BusinessSchemaService::class)]
 final class BusinessRecordInverseRelationshipIntegrationTest extends TestCase
 {
     public function testInverseFiltersAndHistorySurviveDisabledAndPreservedOwnerState(): void

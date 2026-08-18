@@ -26,10 +26,11 @@ use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
 use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\CMS\BusinessIntegration\Infrastructure\DoctrineInboxStore;
+use Kumwe\CMS\Infrastructure\Automation\DoctrineJobQueue;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Psr\Log\NullLogger;
@@ -53,7 +54,10 @@ use Throwable;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(IntegrationEventConsumerDispatcher::class)]
+#[CoversClass(DoctrineInboxStore::class)]
+#[CoversClass(Worker::class)]
+#[CoversClass(DoctrineJobQueue::class)]
 final class PoisonAndDeadLetterIntegrationTest extends TestCase
 {
     public function testAConsumerThatNeverSucceedsIsQuarantinedAndFreedOnlyByAHandlerUpgrade(): void

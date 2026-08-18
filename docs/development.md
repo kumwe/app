@@ -206,8 +206,10 @@ before you write a test:
   owner and an expiry, only ever shrinks, and a new behavioural test cannot join it.
 - **The ratchet judges your change, not the average.** At least 90% of the executable lines a change adds or
   edits under `src/` must be covered, and the global figure may not fall by more than a quarter of a point.
-  The branch floor is declared and is not yet enforced, because `pcov` reports no branches; the contract says
-  so in the entry itself rather than leaving the gate looking stronger than it is.
+  The branch floor `pcov` could never measure has been replaced by one it can: at least 80% of the refusal
+  lines — executable `throw` lines — a change adds or edits under Domain and Application logic must have
+  been executed, because a covered `throw` line is line-level proof the refusing branch was actually taken.
+  The contract entry records what it replaced and why, so the gate never looks stronger than it is.
 
 ## Full deployment contract
 

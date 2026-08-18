@@ -17,7 +17,7 @@ use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Site\Infrastructure\Persistence\CachedSiteSettings;
 use Kumwe\CMS\Site\Infrastructure\Persistence\DoctrineSiteSettings;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Redis;
@@ -44,7 +44,10 @@ use Stringable;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(RedisRuntime::class)]
+#[CoversClass(RedisAuthenticationRateLimiter::class)]
+#[CoversClass(CachedSiteSettings::class)]
+#[CoversClass(DoctrineAdministratorIdentityGateway::class)]
 final class RedisOutageIntegrationTest extends TestCase
 {
     public function testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone(): void

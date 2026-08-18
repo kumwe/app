@@ -10,8 +10,11 @@ use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationGeneration;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\CMS\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolver;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordMutationFence;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
@@ -19,11 +22,13 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(DoctrineBusinessRecordMutationFence::class)]
+#[CoversClass(InstalledBusinessRecordDefinitionResolver::class)]
+#[CoversClass(BusinessRecordMutationGeneration::class)]
 final class BusinessRecordMutationGenerationIntegrationTest extends TestCase
 {
     public function testStaleResolutionRejectsActiveInstallingActiveGenerationAbaAcrossKernels(): void

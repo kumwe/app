@@ -15,17 +15,18 @@ use Kumwe\CMS\OpenApi\Application\OpenApiContractUnavailable;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
 /**
  * Proves definition publication invalidates caller-specific OpenAPI generations without stale reuse.
  *
  * @since  2.0.0
  */
+#[CoversClass(OpenApiContractService::class)]
+#[CoversClass(OpenApiContractCompiler::class)]
 final class OpenApiContractGenerationIntegrationTest extends TestCase
 {
     /**

@@ -14,10 +14,11 @@ use Doctrine\DBAL\Types\Types;
 use Joomla\DI\Container;
 use Kumwe\CMS\BusinessRecord\Application\BusinessNumberSequenceAllocator;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -39,7 +40,8 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(DoctrineBusinessNumberSequenceAllocator::class)]
+#[CoversClass(BusinessRecordTemporarilyUnavailable::class)]
 final class BusinessRecordDeadlockIntegrationTest extends TestCase
 {
     public function testALockOrderInversionAcrossTwoProcessesIsClassifiedRetryable(): void

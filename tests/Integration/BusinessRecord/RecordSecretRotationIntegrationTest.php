@@ -15,22 +15,27 @@ use Kumwe\CMS\BusinessRecord\Application\SecretAssociatedData;
 use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
 use Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider;
 use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineRecordSecretRotation;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
-#[CoversNothing]
 /**
  * Proves record secrets survive a key rotation on a real database, one bounded pass at a time.
  *
  * @since  2.0.0
  */
+#[CoversClass(DoctrineRecordSecretRotation::class)]
+#[CoversClass(KeyRingSecretCipher::class)]
+#[CoversClass(KeyRingSecretKeyProvider::class)]
 final class RecordSecretRotationIntegrationTest extends TestCase
 {
     /**

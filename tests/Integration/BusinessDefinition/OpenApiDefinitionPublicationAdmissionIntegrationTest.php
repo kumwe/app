@@ -10,16 +10,17 @@ use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
 /**
  * Proves site definition publication rejects OpenAPI component collisions before commit.
  *
  * @since  2.0.0
  */
+#[CoversClass(BusinessDefinitionService::class)]
+#[CoversClass(EntityTypeDefinition::class)]
 final class OpenApiDefinitionPublicationAdmissionIntegrationTest extends TestCase
 {
     /**

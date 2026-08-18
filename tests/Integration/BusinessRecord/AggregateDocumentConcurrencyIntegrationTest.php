@@ -19,7 +19,7 @@ use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -35,7 +35,7 @@ use Throwable;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(BusinessRecordService::class)]
 final class AggregateDocumentConcurrencyIntegrationTest extends TestCase
 {
     /**

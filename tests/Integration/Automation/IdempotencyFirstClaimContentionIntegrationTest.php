@@ -19,7 +19,7 @@ use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\ServerRequestFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -40,7 +40,7 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(PersistentIdempotencyMiddleware::class)]
 final class IdempotencyFirstClaimContentionIntegrationTest extends TestCase
 {
     private const OPERATION = 'POST /api/v1/content';

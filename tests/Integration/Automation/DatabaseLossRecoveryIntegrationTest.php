@@ -9,10 +9,11 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Joomla\DI\Container;
 use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Infrastructure\Automation\DoctrineJobQueue;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
@@ -34,7 +35,7 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(DoctrineJobQueue::class)]
 final class DatabaseLossRecoveryIntegrationTest extends TestCase
 {
     /**

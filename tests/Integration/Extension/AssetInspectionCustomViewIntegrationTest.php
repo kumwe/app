@@ -9,9 +9,11 @@ use DateTimeImmutable;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
 use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
 use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparison;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
@@ -21,16 +23,18 @@ use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use KumweExample\AssetInspection\Application\InspectionSummaryViewHandler;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
 /**
  * Exercises the example custom view against the real record service and persisted row/field policies.
  *
  * @since  2.0.0
  */
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(DoctrineBusinessRecordAccessController::class)]
+#[CoversClass(DoctrineBusinessRecordReadRepository::class)]
 final class AssetInspectionCustomViewIntegrationTest extends TestCase
 {
     /**

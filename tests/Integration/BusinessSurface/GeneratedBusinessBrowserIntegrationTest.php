@@ -37,16 +37,19 @@ use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use Laminas\Diactoros\ServerRequestFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
 /**
  * Exercises generated browser delivery against the installed business-record runtime.
  *
  * @since  2.0.0
  */
+#[CoversClass(GeneratedBusinessBrowserController::class)]
+#[CoversClass(AdministratorBusinessSurfaceHandler::class)]
+#[CoversClass(BusinessSurfaceService::class)]
+#[CoversClass(BusinessOperationStatusService::class)]
 final class GeneratedBusinessBrowserIntegrationTest extends TestCase
 {
     /**

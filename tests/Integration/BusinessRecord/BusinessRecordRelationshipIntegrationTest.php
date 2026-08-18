@@ -25,6 +25,7 @@ use Kumwe\CMS\BusinessRecord\Application\Query\OwnedLineFormQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
 use Kumwe\CMS\BusinessRecord\Query\BooleanFilter;
 use Kumwe\CMS\BusinessRecord\Query\BooleanOperator;
 use Kumwe\CMS\BusinessRecord\Query\ComparisonFilter;
@@ -40,12 +41,13 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(DoctrineBusinessRecordReadRepository::class)]
 final class BusinessRecordRelationshipIntegrationTest extends TestCase
 {
     /**

@@ -21,16 +21,19 @@ use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnav
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\ValidationViolation;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
-#[CoversNothing]
+#[CoversClass(DoctrineBusinessNumberSequenceAllocator::class)]
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(BusinessRecordValidationFailed::class)]
 final class BusinessNumberSequenceContentionIntegrationTest extends TestCase
 {
     private const FIELD = 'document_number';
