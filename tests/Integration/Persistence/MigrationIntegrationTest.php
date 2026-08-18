@@ -528,7 +528,7 @@ final class MigrationIntegrationTest extends TestCase
             self::markTestSkipped('This regression exercises MariaDB textual foreign-key collation equality.');
         }
 
-        $prefix = 'c' . substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 10) . '_';
+        $prefix = 'c' . bin2hex(random_bytes(5)) . '_';
         $tables = new TableNames($database, $prefix);
         $sites = $tables->quoted('sites');
         $organizations = $tables->quoted('organizations');
@@ -626,7 +626,7 @@ final class MigrationIntegrationTest extends TestCase
                 ? "SET time_zone = '+00:00'"
                 : "SET TIME ZONE 'UTC'",
         );
-        $prefix = 'l' . substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 10) . '_';
+        $prefix = 'l' . bin2hex(random_bytes(5)) . '_';
         $primaryTables = new TableNames($database, $prefix);
         $secondaryTables = new TableNames($secondary, $prefix);
         $primaryLock = new DoctrineMigrationLock($database, $primaryTables);
@@ -666,7 +666,7 @@ final class MigrationIntegrationTest extends TestCase
         $container = (new ContainerFactory())->create(Environment::fromGlobals());
         $database = $container->get(Connection::class);
         self::assertInstanceOf(Connection::class, $database);
-        $prefix = 'k' . substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 10) . '_';
+        $prefix = 'k' . bin2hex(random_bytes(5)) . '_';
         $tables = new TableNames($database, $prefix);
         $lock = new DoctrineMigrationLock($database, $tables);
         $owner = str_repeat('a', 64);
@@ -734,7 +734,7 @@ final class MigrationIntegrationTest extends TestCase
         $container = (new ContainerFactory())->create(Environment::fromGlobals());
         $database = $container->get(Connection::class);
         self::assertInstanceOf(Connection::class, $database);
-        $prefix = 'u' . substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 8) . '_';
+        $prefix = 'u' . bin2hex(random_bytes(4)) . '_';
         $tables = new TableNames($database, $prefix);
         $this->createParentLifecycleSchema($database, $tables);
         $legacyUserId = Uuid::uuid7()->toString();
