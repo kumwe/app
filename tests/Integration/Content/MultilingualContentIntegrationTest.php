@@ -27,6 +27,7 @@ use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineTranslationGroupReposit
 use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\CMS\Http\Handler\HomePageHandler;
 use Kumwe\CMS\Http\Handler\PublishedContentHandler;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\IndexNameIsolationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TranslationGroupSiteOwnershipMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -98,10 +99,22 @@ final class MultilingualContentIntegrationTest extends TestCase
         self::assertTrue($entries->hasColumn('locale'));
         self::assertTrue($entries->hasColumn('translation_group_id'));
         self::assertTrue($entries->hasColumn('translation_group_site_identifier'));
-        self::assertTrue($entries->hasIndex('uniq_content_translation_locale'));
-        self::assertTrue($entries->getIndex('uniq_content_translation_locale')->isUnique());
-        self::assertTrue($entries->hasIndex('uniq_content_site_slug'));
-        self::assertTrue($entries->getIndex('uniq_content_site_slug')->isUnique());
+        // The installed schema carries these under their installation-unique names: the index-name
+        // isolation at the end of the plan renames every literal, so two prefixed installations can
+        // share one PostgreSQL schema. The literal spellings are asserted on the fixture-built table
+        // below, where the migration under test runs alone.
+        $translationLocale = IndexNameIsolationMigration::isolatedName(
+            $tables->raw('content_entries'),
+            'uniq_content_translation_locale',
+        );
+        $siteSlug = IndexNameIsolationMigration::isolatedName(
+            $tables->raw('content_entries'),
+            'uniq_content_site_slug',
+        );
+        self::assertTrue($entries->hasIndex($translationLocale));
+        self::assertTrue($entries->getIndex($translationLocale)->isUnique());
+        self::assertTrue($entries->hasIndex($siteSlug));
+        self::assertTrue($entries->getIndex($siteSlug)->isUnique());
         $groupsName = $tables->raw('content_translation_groups');
         self::assertTrue($manager->tablesExist([$groupsName]));
         $ownership = array_values(array_filter(
