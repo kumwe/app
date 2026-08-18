@@ -42,9 +42,6 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
 use Kumwe\CMS\Localization\Application\ActiveLocale;
 use Kumwe\CMS\Media\Application\MediaAsset;
 use Kumwe\CMS\Media\Application\MediaService;
@@ -56,7 +53,8 @@ use Ramsey\Uuid\Uuid;
  * This service is the parity seam: it verifies surface exposure through `BusinessSurfaceCatalog`, derives
  * organization scope only from the authenticated context, maps bounded query documents into the canonical
  * AST, and delegates every read or mutation to `BusinessRecordService`. Browser field models are produced
- * through the same owner-aware safe registry after policy and conditional rules are known. Adapters never
+ * through the application-owned `FieldModelPresenter` contract after policy and conditional rules are
+ * known. Adapters never
  * receive a definition repository, policy evaluator, transaction, persistence connection, or raw record.
  *
  * @since  2.0.0
@@ -74,7 +72,8 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * @param  BusinessRecordProjector           $projector       Shared omission-safe result projector.
      * @param  CustomBusinessSurfaceDispatcher   $customBusiness  Signed custom view and action dispatcher.
      * @param  CustomBusinessActionExecutor      $customActions   Durable guarded custom-action executor.
-     * @param  FieldPresentationRegistry         $presentations   Owner-aware safe field presenter registry.
+     * @param  FieldModelPresenter               $presentations   Application-owned rendering contract for
+     *         generated field models.
      * @param  MediaService                      $media           Authorized bounded media-choice service.
      * @param  TransactionManager                $transactions    Atomic boundary for bounded bulk mutations.
      * @param  ActiveLocale                      $active          Locale for user-facing definition labels.
@@ -90,7 +89,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         private BusinessRecordProjector $projector,
         private CustomBusinessSurfaceDispatcher $customBusiness,
         private CustomBusinessActionExecutor $customActions,
-        private FieldPresentationRegistry $presentations,
+        private FieldModelPresenter $presentations,
         private MediaService $media,
         private TransactionManager $transactions,
         private ActiveLocale $active,
@@ -308,7 +307,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             $items[$index]['fields'] = $this->present(
                 $resolved->definition,
                 $metadata,
-                FieldPresentationContext::List,
+                FieldModelContext::List,
                 $record->values,
             );
         }
@@ -557,14 +556,14 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             if (!isset($allowed[$field->handle]) || !$this->conditionVisible($field, $values)) {
                 continue;
             }
-            $presentation = $this->presentations->present(new FieldPresentationRequest(
+            $presentation = $this->presentations->present(
                 $field,
                 $this->fieldTypes->get($field->type),
-                FieldPresentationContext::Relation,
+                FieldModelContext::Relation,
                 $values[$field->handle] ?? $field->default,
                 errors: $errors[$field->handle] ?? [],
                 editable: $this->conditionEditable($field, $values),
-            ))->toArray();
+            )->model;
             $fields[] = [
                 ...$presentation,
                 'label' => $field->labelIn($this->active->locale()),
@@ -711,7 +710,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
                 'fields' => $this->present(
                     $resolved->definition,
                     $metadata,
-                    FieldPresentationContext::Detail,
+                    FieldModelContext::Detail,
                     $view->values,
                 ),
             ];
@@ -849,7 +848,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
                 'fields' => $this->present(
                     $resolved->definition,
                     $metadata,
-                    FieldPresentationContext::Detail,
+                    FieldModelContext::Detail,
                     $recordView->values,
                 ),
             ];
@@ -972,7 +971,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             'fields' => $this->present(
                 $resolved->definition,
                 $metadata,
-                FieldPresentationContext::Detail,
+                FieldModelContext::Detail,
                 $view->values,
             ),
             'relationship_focus' => $relationship,
@@ -1033,7 +1032,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             'fields' => $this->present(
                 $resolved->definition,
                 $metadata,
-                $record === null ? FieldPresentationContext::Create : FieldPresentationContext::Update,
+                $record === null ? FieldModelContext::Create : FieldModelContext::Update,
                 $values,
                 $errors,
             ),
@@ -1978,7 +1977,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      *
      * @param   EntityTypeDefinition         $definition  Pinned declarative entity.
      * @param   array<string, mixed>         $metadata    Policy-filtered definition metadata.
-     * @param   FieldPresentationContext     $context     Exact render or edit context.
+     * @param   FieldModelContext            $context     Exact render or edit context.
      * @param   array<string, mixed>         $values      Disclosed or retained values.
      * @param   array<string, list<string>>  $errors      Caller-visible validation errors by handle.
      *
@@ -1989,7 +1988,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
     private function present(
         EntityTypeDefinition $definition,
         array $metadata,
-        FieldPresentationContext $context,
+        FieldModelContext $context,
         array $values,
         array $errors = [],
     ): array {
@@ -2013,14 +2012,14 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             }
             $value = $values[$field->handle] ?? $field->default;
             $editable = $context->edits() && $this->conditionEditable($field, $values);
-            $presentation = $this->presentations->present(new FieldPresentationRequest(
+            $presentation = $this->presentations->present(
                 $field,
                 $this->fieldTypes->get($field->type),
                 $context,
                 $value,
                 errors: $errors[$field->handle] ?? [],
                 editable: $editable,
-            ))->toArray();
+            )->model;
             $fieldMetadata = $allowed[$field->handle];
             $presented[] = [
                 ...$presentation,
@@ -2061,13 +2060,13 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             if (!array_key_exists($field->handle, $values)) {
                 continue;
             }
-            $presentation = $this->presentations->present(new FieldPresentationRequest(
+            $presentation = $this->presentations->present(
                 $field,
                 $this->fieldTypes->get($field->type),
-                FieldPresentationContext::Relation,
+                FieldModelContext::Relation,
                 $values[$field->handle],
                 editable: false,
-            ));
+            );
             $fields[] = [
                 'handle' => $field->handle,
                 'label' => $field->labelIn($this->active->locale()),
@@ -2191,13 +2190,13 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
                 $display = '';
                 $provenance = null;
                 if (array_key_exists($column['handle'], $record->values)) {
-                    $presentation = $this->presentations->present(new FieldPresentationRequest(
+                    $presentation = $this->presentations->present(
                         $fields[$column['handle']],
                         $this->fieldTypes->get($fields[$column['handle']]->type),
-                        FieldPresentationContext::Relation,
+                        FieldModelContext::Relation,
                         $record->values[$column['handle']],
                         editable: false,
-                    ));
+                    );
                     $display = self::presentedText(
                         $presentation->display,
                         $presentation->provenance,

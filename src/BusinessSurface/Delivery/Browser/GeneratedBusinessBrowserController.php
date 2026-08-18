@@ -13,7 +13,6 @@ use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessSurface\Application\BusinessFormInputMapper;
 use Kumwe\CMS\BusinessSurface\Application\BusinessOperationNotFound;
 use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
