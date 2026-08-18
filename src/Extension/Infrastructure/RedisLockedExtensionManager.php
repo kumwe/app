@@ -12,7 +12,7 @@ use Kumwe\CMS\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
 use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use RuntimeException;
 use Throwable;
 

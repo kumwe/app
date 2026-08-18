@@ -10,7 +10,7 @@ use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeActivationGuard;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

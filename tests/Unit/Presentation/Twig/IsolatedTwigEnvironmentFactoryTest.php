@@ -9,7 +9,7 @@ use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Kumwe\CMS\Presentation\Twig\ContractRestrictedLoader;
 use Kumwe\CMS\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use LogicException;

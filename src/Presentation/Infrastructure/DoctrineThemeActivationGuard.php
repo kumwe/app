@@ -11,7 +11,7 @@ use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired;
 use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 
 /**
  * Demands re-entry of the actor's current password before an administrator theme is activated.

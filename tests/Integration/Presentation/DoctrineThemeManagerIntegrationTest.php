@@ -43,9 +43,9 @@ use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
 use Kumwe\CMS\Tests\Support\AuditTamperHarness;
 use Kumwe\CMS\Tests\Support\CapabilityThemeAuthorizer;
 use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
-use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
+use Kumwe\CMS\Presentation\Infrastructure\TwigThemePackageValidator;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineAdministratorThemeRecovery;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -679,7 +679,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             $clock,
             $this->createStub(DispatcherInterface::class),
             new AllowThemeActivationGuard(),
-            new ThemePackageValidator($this->root . '/core'),
+            new TwigThemePackageValidator($this->root . '/core'),
             $themeAuthorization ?? new CapabilityThemeAuthorizer(),
             $trust,
             $authorization,

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Presentation\Application;
 
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 
 /**
  * Port deciding whether an actor may change which theme is bound to a presentation surface.
