@@ -123,8 +123,27 @@ jobs:
             --password-file="$password_file"
           php tests/Support/prepare-browser-contribution.php
 
+      - name: Cache the Playwright browser download
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install the Chromium test runtime
-        run: npx playwright install --with-deps chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          # An Ubuntu mirror stalling mid-fetch has eaten this step whole; each attempt is bounded
+          # and announced so a hang costs five minutes and says so instead of consuming the job.
+          for attempt in 1 2 3 4; do
+            if timeout 300 npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "Chromium runtime install attempt ${attempt} failed or stalled; retrying." >&2
+            sleep $(( 15 * attempt ))
+          done
+          echo 'The Chromium test runtime could not be installed after four bounded attempts.' >&2
+          exit 1
 
       - name: Re-render the selected baselines
         shell: bash
