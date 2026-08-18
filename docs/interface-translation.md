@@ -140,6 +140,33 @@ than inferred:
 names its reason. A template that appears in neither the enforced set nor the register is enforced,
 so a newly added template cannot quietly reintroduce hardcoded text.
 
+The same register carries the source half. `untranslatable_categories` states each category above
+once, in its own words; `untranslatable_sources` names the files whose user-facing keys carry text of
+that kind, each entry pointing at the category that justifies it. A file in neither list is enforced,
+and an entry whose file has been deleted, or whose category the register never declared, fails the
+build rather than lingering.
+
+### The console
+
+Console output is a translatable surface. A command writes wording through `message()` and
+`failure()` on the `Output` it is handed, and names the message rather than the words:
+
+```php
+$output->message('core.console.database_status.pending', ['id' => $migration->id()]);
+```
+
+`description()` returns an identifier too — `core.console.<command>.description` — and the listing
+`bin/kumwe list` prints resolves it. The translator is bound once, where the container builds the
+console output, exactly as one Twig extension serves all three rendering surfaces; no command carries
+a translator of its own.
+
+`line()` and `error()` remain, and remain untranslated, for what is not wording: a JSON envelope, an
+identifier, a secret printed once. Exit codes, stable JSON field names and machine error codes are
+never translated — a caller matches on them.
+
+Numbers substituted into console wording are passed to ICU as their own digits, so a count or an
+identifier stays greppable instead of gaining a locale's digit grouping.
+
 ---
 
 ## For an operator: changing the wording without a deployment
@@ -283,9 +310,21 @@ surface stays visible and keyboard-reachable after the mirroring.
 ```bash
 composer translation:compile    # XLIFF -> compiled PHP catalogues
 composer translation:check      # the compiled catalogues match their XLIFF source
-composer translation:strings    # no enforced template carries user-facing text inline
+composer translation:strings    # no enforced template, console command or error path carries text inline
 composer assets:direction       # no stylesheet pins a rule to one writing direction
 ```
+
+`composer translation:strings` covers three surfaces. It refuses user-facing text nodes, translatable
+attributes and prose in Twig expressions across `templates/`; it refuses a prose literal handed to the
+console sink's `line()` or `error()` anywhere in `src/`; and it refuses a prose literal filed under a
+user-facing key — `error`, `detail`, `summary` and their siblings — on an error path that has not been
+exempted by category. It proves both directions of the catalogue contract over both surfaces: every
+identifier a template or a source file looks up exists, and every identifier the catalogue carries is
+referenced by something.
+
+The console rule reads the sink rather than the method name, so a PSR-3 logger's `error()` is left
+alone: a log line is read through a log pipeline, and translating it would break the tooling that
+greps it.
 
 The last three run inside `composer qa`. Each is proven in both directions by
 `tests/Architecture/InterfaceTranslationGateTest.php`: green on the committed tree, and red with a
