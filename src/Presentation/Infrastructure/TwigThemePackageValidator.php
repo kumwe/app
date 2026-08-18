@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application;
+namespace Kumwe\CMS\Presentation\Infrastructure;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Presentation\ThemePackageValidator;
 use Kumwe\CMS\Extension\Domain\SemanticVersion;
 use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Presentation\Application\SitePresentation;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -17,20 +19,22 @@ use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
 /**
- * Compiles a candidate theme ahead of activation so a broken package can never reach a visitor.
+ * Twig adapter of `ThemePackageValidator`: compiles a candidate theme ahead of activation.
  *
  * Activating a theme that does not compile would turn every page into a render error — including the
- * administrator console an operator would use to undo the change. This validator runs before the
- * registry write: it insists the surface's entry templates are ordinary files rather than symlinks that
- * could reach outside the package, compiles every Twig file the package ships against the same loader
- * chain the renderer will use, and renders administrator layouts against synthetic host data to prove
- * protected KIS 1.0 shell contracts. Site markup remains theme-owned inside a minimal public document,
- * asset, navigation, and keyboard-recovery boundary. Every failure is reported as an
- * `InvalidArgumentException`, which `DoctrineExtensionManager` lets abort activation.
+ * administrator console an operator would use to undo the change. This adapter keeps the
+ * application-owned contract's promise before the registry write: it insists the surface's entry
+ * templates are ordinary files rather than symlinks that could reach outside the package, compiles
+ * every Twig file the package ships against the same loader chain the renderer will use, and renders
+ * administrator layouts against synthetic host data to prove protected KIS 1.0 shell contracts. Site
+ * markup remains theme-owned inside a minimal public document, asset, navigation, and
+ * keyboard-recovery boundary. Every failure is reported as an `InvalidArgumentException`, which
+ * `DoctrineExtensionManager` lets abort activation. It is the one place the template engine is named on
+ * this seam, which is why it lives here and not in the application layer that consults it.
  *
  * @since  2.0.0
  */
-final readonly class ThemePackageValidator
+final readonly class TwigThemePackageValidator implements ThemePackageValidator
 {
     /**
      * KIS major/minor standard implemented by this host.

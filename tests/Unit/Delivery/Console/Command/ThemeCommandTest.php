@@ -12,7 +12,7 @@ use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

@@ -609,7 +609,7 @@ use Kumwe\CMS\Media\Application\MediaService;
 use Kumwe\CMS\Media\Application\MediaStorage;
 use Kumwe\CMS\Media\Infrastructure\FilesystemMediaStorage;
 use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
-use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
+use Kumwe\CMS\Application\Presentation\ThemePackageValidator;
 use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
 use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
 use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
@@ -626,6 +626,7 @@ use Kumwe\CMS\Presentation\Infrastructure\DoctrineAdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Infrastructure\ConsoleAdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
+use Kumwe\CMS\Presentation\Infrastructure\TwigThemePackageValidator;
 use Kumwe\CMS\Infrastructure\Presentation\Persistence\DoctrinePresentationPreferenceRepository;
 use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
 use Kumwe\CMS\Presentation\ContentLayoutCatalog;
@@ -2612,7 +2613,7 @@ final class ContainerFactory
         $container->alias(ThemeMutationAuthorizer::class, DoctrineThemeMutationAuthorizer::class);
         $container->share(ThemePackageValidator::class, static fn (
             Container $container,
-        ): ThemePackageValidator => new ThemePackageValidator(
+        ): ThemePackageValidator => new TwigThemePackageValidator(
             $root . '/templates',
             self::service($container, TranslationTwigExtension::class),
         ), true);

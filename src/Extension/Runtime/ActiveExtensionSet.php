@@ -11,7 +11,7 @@ use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Kumwe\CMS\Portal\Presentation\PortalRenderer;
 use LogicException;
 use Mezzio\Application;

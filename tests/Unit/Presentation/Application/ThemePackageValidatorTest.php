@@ -7,8 +7,8 @@ namespace Kumwe\CMS\Tests\Unit\Presentation\Application;
 use InvalidArgumentException;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
-use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Presentation\Infrastructure\TwigThemePackageValidator;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @since  2.0.0
  */
-#[CoversClass(ThemePackageValidator::class)]
+#[CoversClass(TwigThemePackageValidator::class)]
 final class ThemePackageValidatorTest extends TestCase
 {
     /**
@@ -535,13 +535,13 @@ final class ThemePackageValidatorTest extends TestCase
     /**
      * Build the validator against the disposable core tree.
      *
-     * @return  ThemePackageValidator
+     * @return  TwigThemePackageValidator
      *
      * @since   2.0.0
      */
-    private function validator(): ThemePackageValidator
+    private function validator(): TwigThemePackageValidator
     {
-        return new ThemePackageValidator($this->root . '/core');
+        return new TwigThemePackageValidator($this->root . '/core');
     }
 
     /**

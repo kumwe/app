@@ -8,7 +8,7 @@ use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionSummary;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Throwable;
 
 /**

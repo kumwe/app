@@ -7,7 +7,7 @@ namespace Kumwe\CMS\Presentation\Twig;
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Twig\Environment;
 use Twig\Loader\ChainLoader;
 use Twig\Loader\FilesystemLoader;

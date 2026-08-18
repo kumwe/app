@@ -35,7 +35,7 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Time\SystemClock;
 use Kumwe\CMS\Navigation\Application\NavigationService;
 use Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;

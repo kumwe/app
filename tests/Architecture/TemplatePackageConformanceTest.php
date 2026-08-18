@@ -6,8 +6,8 @@ namespace Kumwe\CMS\Tests\Architecture;
 
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Extension\Domain\ExtensionType;
-use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Presentation\Infrastructure\TwigThemePackageValidator;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -135,7 +135,7 @@ final class TemplatePackageConformanceTest extends TestCase
             'examples/extensions/' . $directory . '/README.md',
         ));
 
-        (new ThemePackageValidator($this->root . '/templates'))->validate(
+        (new TwigThemePackageValidator($this->root . '/templates'))->validate(
             $package . '/templates/' . $surface->value,
             $surface,
             $compatibility,

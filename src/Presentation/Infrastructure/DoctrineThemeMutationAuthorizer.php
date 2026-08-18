@@ -13,7 +13,7 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 
 /**
  * Authorizes a theme mutation for one surface, confirming the decision against a freshly read grant row.

@@ -32,7 +32,7 @@ use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
-use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Extension\Domain\ThemeSurface;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Identity\Domain\UserStatus;
 use Psr\Clock\ClockInterface;

@@ -77,7 +77,7 @@
       "src/Presentation/Infrastructure/Persistence",
       "src/Infrastructure/Persistence/Migration/InterfacePresentationPreferenceMigration.php",
       "src/Extension/Contribution",
-      "src/Presentation/Application/ThemePackageValidator.php",
+      "src/Presentation/Infrastructure/TwigThemePackageValidator.php",
       "templates/interface-standard",
       "templates/administrator/business-definitions.twig",
       "templates/administrator/business-schema-plans.twig",
@@ -649,7 +649,7 @@
       "environment": "focused PHP 8.5 WASM checks available; native Composer dependencies and Chromium unavailable",
       "result_summary": "Versioned KIS compatibility, schema-1 conservative compatibility, visible semantic administrator/site shell validation, synthetic page-content proof, examples, and negative fixtures are committed. Focused WASM checks passed during implementation, but canonical native integration and browser lifecycle qualification remain blocked.",
       "artifact_paths": [
-        "src/Presentation/Application/ThemePackageValidator.php",
+        "src/Presentation/Infrastructure/TwigThemePackageValidator.php",
         "src/Extension/Domain/TemplateKisCompatibility.php",
         "tests/Unit/Presentation/Application/ThemePackageValidatorTest.php",
         "tests/Integration/Presentation/DoctrineThemeManagerIntegrationTest.php",

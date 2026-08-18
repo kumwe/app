@@ -335,16 +335,6 @@
       "justification": "P3-D: the adapter is constructed with its typed configuration rather than importing the composition root's configuration type."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Application\\ExtensionManager",
-      "to": "Kumwe\\CMS\\Presentation\\ThemeSurface",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
       "from": "Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionMigrationRunner",
       "to": "Kumwe\\CMS\\Extension\\Infrastructure\\Trust\\FilesystemExtensionArtifactVerifier",
       "from_layer": "application",
@@ -595,36 +585,6 @@
       "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Infrastructure\\DoctrineExtensionManager",
-      "to": "Kumwe\\CMS\\Presentation\\Application\\ThemePackageValidator",
-      "from_layer": "infrastructure",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
-    },
-    {
-      "from": "Kumwe\\CMS\\Extension\\Infrastructure\\DoctrineExtensionManager",
-      "to": "Kumwe\\CMS\\Presentation\\ThemeSurface",
-      "from_layer": "infrastructure",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
-    },
-    {
-      "from": "Kumwe\\CMS\\Extension\\Infrastructure\\RedisLockedExtensionManager",
-      "to": "Kumwe\\CMS\\Presentation\\ThemeSurface",
-      "from_layer": "infrastructure",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
-    },
-    {
       "from": "Kumwe\\CMS\\Extension\\Runtime\\ActiveExtensionSet",
       "to": "Kumwe\\CMS\\Administrator\\Presentation\\AdministratorRenderer",
       "from_layer": "application",
@@ -637,26 +597,6 @@
     {
       "from": "Kumwe\\CMS\\Extension\\Runtime\\ActiveExtensionSet",
       "to": "Kumwe\\CMS\\Portal\\Presentation\\PortalRenderer",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\CMS\\Extension\\Runtime\\ActiveExtensionSet",
-      "to": "Kumwe\\CMS\\Presentation\\ThemeSurface",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\CMS\\Extension\\Runtime\\ExtensionRuntimeLoader",
-      "to": "Kumwe\\CMS\\Presentation\\ThemeSurface",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -793,16 +733,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
-      "from": "Kumwe\\CMS\\Infrastructure\\Mcp\\KumweMcpHandlers",
-      "to": "Kumwe\\CMS\\Presentation\\ThemeSurface",
-      "from_layer": "infrastructure",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
     },
     {
       "from": "Kumwe\\CMS\\Infrastructure\\Mcp\\ReportMcpHandlers",
