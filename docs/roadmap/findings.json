@@ -1211,6 +1211,96 @@
       "acceptance_test": "A verification run performs no unpinned network fetch: every tool it executes arrives from a digest-pinned image, a lockfile-keyed cache, or the runner image itself, enumerated in the quality contract so a new workflow step that fetches at run time fails review by construction. A cold cache may download; only through a pinned, bounded, announced path.",
       "owner": "UNASSIGNED",
       "closure_sha": null
+    },
+    {
+      "id": "V3-NC-001",
+      "title": "No native application sign-in exists; the decided flow is the authentication link",
+      "severity": "high",
+      "state": "open",
+      "phase": "N",
+      "gate": null,
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Identity/Infrastructure/Authentication/DoctrineAccessTokenVerifier.php",
+          "symbol": "DoctrineAccessTokenVerifier",
+          "note": "The single verifier every token-bearing surface uses admits only pre-issued, administrator- or CLI-created tokens; no anonymous path mints a credential, no refresh grant exists, and there is no /api/v1/native/ route family."
+        },
+        {
+          "file": "src/Administrator/Http/Handler/AdministratorLoginHandler.php",
+          "symbol": "AdministratorLoginHandler",
+          "note": "People authenticate on the web with a password into area-separated cookie sessions (the portal twin is src/Portal/Http/Handler/PortalLoginHandler.php); the decided native flow bypasses password entry in clients while leaving these handlers exactly as they are."
+        }
+      ],
+      "acceptance_test": "When the Version 3 programme opens, core adopts a descendant of the kumwe/dart-sdk native-authorization proposal: an anonymous link-request resource that answers identically for known and unknown addresses, an emailed single-use S256 proof-key-bound link code, a token endpoint honouring the authentication_link and refresh grants with rotating families, area-bound issuance (administrator or portal), revocation and logout, all under a versioned public contract with compatibility fixtures. Until then this entry records that no such surface exists and that Version 2 identity and token changes must not foreclose it.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "product_owner_decision": "Decision D17, ADR 0009. The authentication link is the native sign-in; the web keeps password login; nothing in this entry is Version 2 scope."
+    },
+    {
+      "id": "V3-NC-002",
+      "title": "No pre-authentication native discovery document exists for self-hosted deployment bootstrap",
+      "severity": "medium",
+      "state": "open",
+      "phase": "N",
+      "gate": null,
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "docs/rest-api.md",
+          "symbol": "the API identity document",
+          "note": "GET /api/v1 returns a constant product/version/status object. A native client that holds nothing but an entered deployment URL needs the proposed closed discovery document - installation identity, exact allowed origins, compatibility window, advertised authorization profiles and sign-in areas - before it can offer sign-in or manage several deployments side by side."
+        }
+      ],
+      "acceptance_test": "When the Version 3 programme opens, core serves an anonymous, non-secret, ETag-cacheable native discovery document (a descendant of the kumwe/dart-sdk native-discovery proposal) identical for every caller, never disclosing sites, users or policies, and advertising exactly the authorization profiles and areas the deployment enables.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "product_owner_decision": "Decision D17, ADR 0009."
+    },
+    {
+      "id": "V3-NC-003",
+      "title": "No guest arrival lifecycle exists: unknown addresses cannot arrive, and no mailer exists to notify anyone",
+      "severity": "medium",
+      "state": "open",
+      "phase": "N",
+      "gate": null,
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Identity/Domain/UserStatus.php",
+          "symbol": "Pending",
+          "note": "Pending is a starting state that cannot authenticate - the natural seed of the decided guest state, which signs in with a minimal arrival-only capability set instead. docs/getting-started.md's rule that public registration cannot claim an installation stays true: a guest can never claim ownership."
+        },
+        {
+          "file": "src/",
+          "symbol": "absence",
+          "note": "No mailer exists anywhere under src/ (only the EmailAddress value object); the authentication link, the steward arrival notification and the positioning-complete notification all require one, making a reviewed mail path a Version 3 prerequisite."
+        }
+      ],
+      "acceptance_test": "When the Version 3 programme opens, requesting an authentication link for an unknown address creates a pending guest account behind an unchanged response shape, notifies designated stewards, signs the guest in to a minimal arrival context reported as account state pending, and emails the person when an administrator has positioned the account - with rate limits and non-enumeration proven by fixtures.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "product_owner_decision": "Decision D17, ADR 0009. Guests can never claim installation ownership; positioning stays an administrator act in core's own UI."
+    },
+    {
+      "id": "V3-NC-004",
+      "title": "No path exchanges a native credential for a web session, so a client cannot open the website signed in",
+      "severity": "low",
+      "state": "open",
+      "phase": "N",
+      "gate": null,
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Http/Middleware/BearerAuthenticationMiddleware.php",
+          "symbol": "BearerAuthenticationMiddleware",
+          "note": "Bearer credentials and the two cookie-session boundaries never meet: only the password login handlers mint web sessions, and a handoff-minted session would need its own provenance semantics beside AuthenticationStrength::Password before step-up policy can reason about it."
+        }
+      ],
+      "acceptance_test": "When the Version 3 programme opens, a bearer-authenticated resource mints a single-use HTTPS handoff URL, bounded to roughly a minute, that signs the same subject into the same area's web session with a recorded non-password provenance; the URL is served no-store, dies on first use or expiry, cannot broaden authority, and never carries the bearer token itself.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null,
+      "product_owner_decision": "Decision D17, ADR 0009. A browser-only outcome still cannot satisfy native parity; the handoff is a convenience bridge, not parity evidence."
     }
   ]
 }

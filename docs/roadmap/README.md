@@ -426,6 +426,24 @@ phase L carries its own tail. The integration input — published packages, the 
 replays, the port mapping, the contribution kinds an extension declares, and every normative contract
 reference — is collected in [`docs/roadmap/studio-integration.md`](studio-integration.md).
 
+### D17 — The native client platform is a Version 3 programme, and its sign-in is the authentication link
+
+Kumwe will ship native clients — Flutter applications for desktop, Android and iOS — when Version 3
+opens. The preparatory work already runs in two sibling repositories on the Studio division-of-labour
+pattern: [`kumwe/dart-sdk`](https://github.com/kumwe/dart-sdk) owns a machine-readable, non-authoritative
+contract corpus audited against this repository, and [`kumwe/client`](https://github.com/kumwe/client)
+owns the documentation-first product foundation. Nothing in either repository is adopted by existing;
+adoption happens here, through this ledger, when the Version 3 programme opens.
+
+The product owner has decided the native sign-in: the **authentication link**. The person chooses the
+deployment URL and the area — administrator or portal — enters their email address, and the emailed
+single-use link returns them to the requesting client, which redeems the link code with a proof-key
+verifier that never left it. Unknown addresses arrive as pending guests, positioned by an administrator
+and notified by email. Sessions persist until logout; a single-use web-session handoff opens the website
+already signed in; the web's password login stays exactly as it is. Recorded with its evidence and
+non-goals in [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md); the ledger
+entries live in lane N, which blocks no Version 2 gate. See also section 5.3.
+
 ---
 
 ## 3. Reconciliation with the independent review
@@ -880,6 +898,25 @@ interoperability — a format, a schema, a mapping — rather than comparison.
 Kumwe stands equal with established platforms in capability and intends to exceed them. It is not
 positioned in opposition to any of them.
 
+### 5.3 Beyond Version 2: the native client platform
+
+**Not Version 2 scope. Not a work package. Recorded here because it is a stated product objective and it
+shapes how Version 2's identity, session, token and email decisions are judged.**
+
+At Version 3, Kumwe intends to ship a **native client platform**: Flutter applications for desktop,
+Android and iOS, fed by a Flutter-independent Dart SDK, consuming this repository's machine contracts —
+never scraped markup, embedded WebViews or duplicated business rules. Sign-in is the authentication
+link, per decision D17 and [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md):
+email-addressed, proof-key-bound, area-scoped, guest-tolerant, persistent until logout, with a
+single-use web-session handoff into the browser and the web's password login unchanged.
+
+The preparatory contract corpus lives in [`kumwe/dart-sdk`](https://github.com/kumwe/dart-sdk) and the
+product foundation in [`kumwe/client`](https://github.com/kumwe/client); both are non-authoritative
+until adopted here. When the Version 3 programme opens, its roadmap adds a native-client
+contract/SDK-readiness gate and a final parity-qualification gate, both closed only by evidence in this
+repository. Until then, lane N holds the ledger entries, and the standing reviewer question is the same
+one decision D14 established for point of sale: does this Version 2 change foreclose the native client?
+
 ---
 
 ## 6. Non-negotiable preservation covenant
@@ -1132,6 +1169,7 @@ flowchart TD
     PS["Phase S<br/>Studio visual composition"]
     GB{{"Gate B<br/>Version 2 release"}}
     LM["Lane M<br/>Maintainability<br/>(never blocking)"]
+    LN["Lane N<br/>Native client contracts<br/>(Version 3 seed, never blocking)"]
     P0 --> P1
     P0 --> P2
     P1 --> P3
@@ -1156,7 +1194,9 @@ flowchart TD
 
 Dotted edges are permissions, not dependencies: phase 6 may begin once phase 2 has given it gates, phase L
 may begin once phase 2 has given it the browser, accessibility and visual matrix its baselines depend on,
-and lane M may begin once phase 3 has settled the seams it must not disturb.
+and lane M may begin once phase 3 has settled the seams it must not disturb. Lane N has no edges at all:
+it is the Version 3 native-client seed (decision D17), holds ledger entries rather than Version 2 work,
+and neither feeds nor gates anything in this diagram.
 
 Phases E, L and S are lettered rather than numbered because they run beside the numbered sequence rather
 than inside it, and because renumbering phases 5, 6 and 7 would invalidate every reference the programme
@@ -2297,6 +2337,29 @@ query complexity and incident risk.
 maintenance or correctness problem, its public and internal contract, its proposed seam and invariant
 owner, its characterization coverage, its migration and rollback plan, and why it cannot wait for a normal
 feature change. A collaborator that merely forwards lines is rejected.
+
+---
+
+### Lane N — Native client platform contracts
+
+**Status.** Version 3 seed. Parallel. Blocks no gate. Decision D17, [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md).
+
+**Entry conditions.** None for the ledger entries themselves — they exist so adoption review has a hook.
+Implementation work enters only when the Version 3 programme opens, and its wire-contract half rides on
+`P0-C`'s public-contract classification machinery the way phase S's Gate A half does.
+
+**Scope.** Adoption review of the `kumwe/dart-sdk` contract corpus, and the core-owned capabilities the
+authentication-link decision requires when Version 3 opens: the native authorization endpoints and grant
+handling with rotating refresh families (`V3-NC-001`), the pre-authentication native discovery document
+(`V3-NC-002`), the guest arrival and positioning lifecycle with its steward notification and mailer
+prerequisite (`V3-NC-003`), and the single-use authenticated web-session handoff with its session
+provenance semantics (`V3-NC-004`). Sign-in areas remain the two that exist — administrator and portal —
+and the web's password login is out of this lane's scope entirely.
+
+**Rules.** Nothing in this lane is claimed as a Version 2 deliverable or cited as Gate A or Gate B
+evidence. No proposal byte from a sibling repository is authoritative until adopted here with a version,
+compatibility fixture and release evidence. A Version 2 change to identity, sessions, tokens or email
+records in review that it does not foreclose this lane, the same discipline decision D14 established.
 
 ---
 
