@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Localization\Application\Translator;
 
 /**
  * Maps one native custom-view GET request through policy-filtered metadata and its signed query schema.
@@ -41,10 +42,11 @@ final readonly class BusinessCustomViewRequest
     /**
      * Decode one custom-view query against policy-visible metadata and its active signed schema.
      *
-     * @param   array<string, mixed>        $query   Decoded browser query string.
-     * @param   array<string, mixed>        $view    Policy-filtered custom view metadata.
-     * @param   list<array<string, mixed>>  $fields  Policy-filtered definition fields.
-     * @param   array<string, mixed>        $schema  Closed custom-view query schema.
+     * @param   Translator                  $translator  Resolves the parameter form's display wording.
+     * @param   array<string, mixed>        $query       Decoded browser query string.
+     * @param   array<string, mixed>        $view        Policy-filtered custom view metadata.
+     * @param   list<array<string, mixed>>  $fields      Policy-filtered definition fields.
+     * @param   array<string, mixed>        $schema      Closed custom-view query schema.
      *
      * @return  self  Typed parameters, recursive controls, and bounded record query.
      *
@@ -52,8 +54,13 @@ final readonly class BusinessCustomViewRequest
      *
      * @since   2.0.0
      */
-    public static function fromQuery(array $query, array $view, array $fields, array $schema): self
-    {
+    public static function fromQuery(
+        Translator $translator,
+        array $query,
+        array $view,
+        array $fields,
+        array $schema,
+    ): self {
         if (array_key_exists('query', $query)) {
             throw new InvalidArgumentException('A custom business browser view does not accept raw query JSON.');
         }
@@ -69,6 +76,7 @@ final readonly class BusinessCustomViewRequest
         }
         $form = BusinessSchemaForm::fromInput(
             $schema,
+            $translator,
             'parameters',
             $raw,
             self::object($query, 'schema_counts'),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Localization\Application\Translator;
 
 /**
  * Converts contract-validated custom view data into a bounded markup-free browser projection.
@@ -18,6 +19,17 @@ use InvalidArgumentException;
  */
 final readonly class BusinessCustomViewPresenter
 {
+    /**
+     * Bind the presenter to the translator its scalar display wording resolves through.
+     *
+     * @param  Translator  $translator  Resolves the null and boolean display text for the locale in flight.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private Translator $translator)
+    {
+    }
+
     /**
      * Present one bounded custom result object.
      *
@@ -64,9 +76,9 @@ final readonly class BusinessCustomViewPresenter
             return [
                 'kind' => 'scalar',
                 'value' => match ($value) {
-                    null => 'Not set',
-                    true => 'Yes',
-                    false => 'No',
+                    null => $this->translator->translate('core.business.form.not_set'),
+                    true => $this->translator->translate('core.business.form.yes'),
+                    false => $this->translator->translate('core.business.form.no'),
                     default => (string) $value,
                 },
                 'empty' => $value === null || $value === '',

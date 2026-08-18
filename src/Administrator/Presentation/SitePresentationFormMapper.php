@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Administrator\Presentation;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Presentation\Application\SitePresentation;
 
 /**
@@ -21,6 +22,16 @@ use Kumwe\CMS\Presentation\Application\SitePresentation;
  */
 final readonly class SitePresentationFormMapper
 {
+    /**
+     * Bind the mapper to the translator its refusal wording resolves through.
+     *
+     * @param  Translator  $translator  Resolves the refusal an operator reads on the settings screen.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private Translator $translator)
+    {
+    }
     /**
      * Colour roles read out of each scheme's fields, matching the roles a presentation scheme must define.
      *
@@ -117,7 +128,10 @@ final readonly class SitePresentationFormMapper
     {
         $value = $form[$key] ?? null;
         if (!is_string($value) || ($required && trim($value) === '')) {
-            throw new InvalidArgumentException(sprintf('Presentation field %s is required.', $key));
+            throw new InvalidArgumentException($this->translator->translate(
+                'core.administrator.settings.presentation_field_required',
+                ['field' => $key],
+            ));
         }
 
         return trim($value);

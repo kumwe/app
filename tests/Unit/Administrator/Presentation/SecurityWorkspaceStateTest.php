@@ -87,28 +87,28 @@ final class SecurityWorkspaceStateTest extends TestCase
         self::assertSame([
             [
                 'id' => 'scope',
-                'label' => '1. Scope',
+                'label' => 'core.administrator.business_security.policy_step_scope',
                 'url' => '/administrator/business-security?section=policies&mode=create'
                     . '&kind=resource&step=scope#policy-step-scope',
                 'current' => false,
             ],
             [
                 'id' => 'predicate',
-                'label' => '2. Predicate',
+                'label' => 'core.administrator.business_security.policy_step_predicate',
                 'url' => '/administrator/business-security?section=policies&mode=create'
                     . '&kind=resource&step=predicate#policy-step-predicate',
                 'current' => true,
             ],
             [
                 'id' => 'disclosure',
-                'label' => '3. Disclosure',
+                'label' => 'core.administrator.business_security.policy_step_disclosure',
                 'url' => '/administrator/business-security?section=policies&mode=create'
                     . '&kind=resource&step=disclosure#policy-step-disclosure',
                 'current' => false,
             ],
             [
                 'id' => 'review',
-                'label' => '4. Review',
+                'label' => 'core.administrator.business_security.policy_step_review',
                 'url' => '/administrator/business-security?section=policies&mode=create'
                     . '&kind=resource&step=review#policy-step-review',
                 'current' => false,

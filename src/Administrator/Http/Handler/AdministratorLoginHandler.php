@@ -14,6 +14,7 @@ use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
@@ -41,6 +42,8 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
      * @param  AdministratorIdentityGateway  $identities       Verifies the credential and applies throttling.
      * @param  AdministratorSessionStore     $sessions         Creates the stored session the cookie points at.
      * @param  AdministratorRenderer         $renderer         Renders the `login` template.
+     * @param  Translator                    $translator       Resolves the rejection wording for the locale
+     *         in flight.
      * @param  bool                          $secureCookie     Whether the cookie carries `Secure`; true when the
      *         configured base URL is served over HTTPS.
      * @param  int                           $sessionLifetime  Cookie `Max-Age` in seconds, matching the stored
@@ -54,6 +57,7 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
         private AdministratorIdentityGateway $identities,
         private AdministratorSessionStore $sessions,
         private AdministratorRenderer $renderer,
+        private Translator $translator,
         private bool $secureCookie,
         private int $sessionLifetime,
         private ?SiteContext $site = null,
@@ -96,16 +100,16 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
                 $form['password'] ?? '',
                 $remoteAddress,
             );
-        } catch (AuthenticationThrottled $exception) {
+        } catch (AuthenticationThrottled) {
             return new HtmlResponse($this->renderer->render('login', [
-                'error' => $exception->getMessage(),
+                'error' => $this->translator->translate('core.security.authentication.throttled'),
                 'email' => $form['email'] ?? '',
             ]), 429, ['Cache-Control' => 'no-store', 'Retry-After' => '900']);
         }
 
         if ($principal === null) {
             return new HtmlResponse($this->renderer->render('login', [
-                'error' => 'The email address or password is incorrect.',
+                'error' => $this->translator->translate('core.administrator.login.invalid_credentials'),
                 'email' => $form['email'] ?? '',
             ]), 401, ['Cache-Control' => 'no-store']);
         }

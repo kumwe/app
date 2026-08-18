@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Delivery\Browser;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use InvalidArgumentException;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessStructuredFieldForm;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -27,6 +28,7 @@ final class BusinessStructuredFieldFormTest extends TestCase
     public function testDecodesNestedKeyValueAndRowControls(): void
     {
         $form = BusinessStructuredFieldForm::fromInput(
+            InterfaceTranslation::translator(),
             'object',
             'structured[metadata]',
             [
@@ -70,6 +72,7 @@ final class BusinessStructuredFieldFormTest extends TestCase
     public function testConfiguresBoundedRowsWithoutSubmittingAValue(): void
     {
         $form = BusinessStructuredFieldForm::fromInput(
+            InterfaceTranslation::translator(),
             'array',
             'structured[items]',
             [
@@ -121,6 +124,7 @@ final class BusinessStructuredFieldFormTest extends TestCase
         ) {
             try {
                 BusinessStructuredFieldForm::fromInput(
+                    InterfaceTranslation::translator(),
                     'object',
                     'structured[metadata]',
                     $controls,
@@ -152,6 +156,7 @@ final class BusinessStructuredFieldFormTest extends TestCase
         ) {
             try {
                 BusinessStructuredFieldForm::fromInput(
+                    InterfaceTranslation::translator(),
                     $root,
                     'structured[metadata]',
                     null,

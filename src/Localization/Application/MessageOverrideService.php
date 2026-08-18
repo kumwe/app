@@ -76,6 +76,7 @@ final readonly class MessageOverrideService
      * @param  AuthorizationGateway        $authorization  Policy deciding who may change wording.
      * @param  TransactionManager          $transactions   Atomic boundary shared by state and audit writes.
      * @param  MessagePatternValidator     $patterns       ICU syntax validator run before wording is stored.
+     * @param  Translator                  $translator     Resolves the refusal wording an operator reads.
      * @param  AuditRecorder               $audit          Sink every wording change is recorded to.
      * @param  ClockInterface              $clock          Source of the instant stored and audited.
      *
@@ -88,6 +89,7 @@ final readonly class MessageOverrideService
         private AuthorizationGateway $authorization,
         private TransactionManager $transactions,
         private MessagePatternValidator $patterns,
+        private Translator $translator,
         private AuditRecorder $audit,
         private ClockInterface $clock,
     ) {
@@ -187,9 +189,9 @@ final readonly class MessageOverrideService
                 $known[$record->identifier] = true;
             }
             if (!isset($known[$validated]) && count($known) >= self::MAXIMUM_PER_SCOPE) {
-                throw new InvalidArgumentException(sprintf(
-                    'This scope already carries the maximum of %d overrides for one locale.',
-                    self::MAXIMUM_PER_SCOPE,
+                throw new InvalidArgumentException($this->translator->translate(
+                    'core.administrator.wording.error_scope_quota',
+                    ['maximum' => self::MAXIMUM_PER_SCOPE],
                 ));
             }
 
@@ -336,7 +338,7 @@ final readonly class MessageOverrideService
         return match ($layer) {
             MessageCatalogueLayer::Site, MessageCatalogueLayer::Organization => $layer,
             default => throw new InvalidArgumentException(
-                'Core and extension wording ships in files and cannot be administered as an override.',
+                $this->translator->translate('core.administrator.wording.error_layer_not_administered'),
             ),
         };
     }
@@ -361,7 +363,7 @@ final readonly class MessageOverrideService
 
         return $context->organization()?->identifier()
             ?? throw new InvalidArgumentException(
-                'Organization wording can only be changed from inside the organization it applies to.',
+                $this->translator->translate('core.administrator.wording.error_outside_organization'),
             );
     }
 
@@ -381,10 +383,16 @@ final readonly class MessageOverrideService
         try {
             $tag = LocaleTag::fromString($locale);
         } catch (InvalidLocaleTag $malformed) {
-            throw new InvalidArgumentException('This installation does not carry that locale.', 0, $malformed);
+            throw new InvalidArgumentException(
+                $this->translator->translate('core.administrator.wording.error_locale_not_carried'),
+                0,
+                $malformed,
+            );
         }
         if (!$this->supported->carries($tag)) {
-            throw new InvalidArgumentException('This installation does not carry that locale.');
+            throw new InvalidArgumentException(
+                $this->translator->translate('core.administrator.wording.error_locale_not_carried'),
+            );
         }
 
         return $tag;
@@ -405,12 +413,14 @@ final readonly class MessageOverrideService
     {
         $trimmed = trim($pattern);
         if ($trimmed === '') {
-            throw new InvalidArgumentException('Replacement wording cannot be empty; withdraw the override instead.');
+            throw new InvalidArgumentException(
+                $this->translator->translate('core.administrator.wording.error_empty_replacement'),
+            );
         }
         if (strlen($trimmed) > self::MAXIMUM_PATTERN_BYTES) {
-            throw new InvalidArgumentException(sprintf(
-                'Replacement wording is limited to %d bytes.',
-                self::MAXIMUM_PATTERN_BYTES,
+            throw new InvalidArgumentException($this->translator->translate(
+                'core.administrator.wording.error_replacement_too_long',
+                ['maximum' => self::MAXIMUM_PATTERN_BYTES],
             ));
         }
         $this->assertSafeMarkup($trimmed);
@@ -441,7 +451,7 @@ final readonly class MessageOverrideService
     {
         $stack = [];
         $containsMarkup = false;
-        $plain = preg_replace_callback('/<[^<>]*>/', static function (array $match) use (
+        $plain = preg_replace_callback('/<[^<>]*>/', function (array $match) use (
             &$stack,
             &$containsMarkup,
         ): string {
@@ -455,25 +465,29 @@ final readonly class MessageOverrideService
             if (preg_match('/^<\/(code|em|span|strong)>$/iD', $tag, $closed) === 1) {
                 $expected = array_pop($stack);
                 if ($expected !== strtolower($closed[1])) {
-                    throw new InvalidArgumentException('Replacement wording contains unbalanced inline markup.');
+                    throw new InvalidArgumentException(
+                        $this->translator->translate('core.administrator.wording.error_unbalanced_markup'),
+                    );
                 }
 
                 return '';
             }
 
             throw new InvalidArgumentException(
-                'Replacement wording contains an element or attribute that administered wording may not use.',
+                $this->translator->translate('core.administrator.wording.error_disallowed_markup'),
             );
         }, $pattern);
         if (!is_string($plain) || str_contains($plain, '<') || $stack !== []) {
-            throw new InvalidArgumentException('Replacement wording contains unbalanced inline markup.');
+            throw new InvalidArgumentException(
+                $this->translator->translate('core.administrator.wording.error_unbalanced_markup'),
+            );
         }
         if (
             $containsMarkup
             && preg_match('/\{[^{}]+,\s*(?:choice|plural|select|selectordinal)\s*,/i', $plain) === 1
         ) {
             throw new InvalidArgumentException(
-                'Replacement wording cannot combine inline markup with a branching ICU pattern.',
+                $this->translator->translate('core.administrator.wording.error_markup_in_branching_pattern'),
             );
         }
     }
@@ -505,7 +519,7 @@ final readonly class MessageOverrideService
         }
 
         throw new InvalidArgumentException(
-            'No shipped catalogue declares that message identifier, so there is nothing to override.',
+            $this->translator->translate('core.administrator.wording.error_unknown_identifier'),
         );
     }
 

@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Administrator\Presentation\SecurityWorkspaceState;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
@@ -46,6 +47,7 @@ final readonly class AdministratorBusinessSecurityHandler implements RequestHand
      * @param  BusinessSecurityAdministrationService  $security         Guarded security runtime.
      * @param  ApprovalService                        $approvals        Canonical maker-checker workflow.
      * @param  AdministratorRenderer                  $renderer         Core administrator renderer.
+     * @param  Translator                             $translator       Resolves the policy-step labels.
      * @param  AdministratorStepUpProvider            $stepUp           Administrator MFA provider.
      * @param  AuthorizationStepUpProofAdapter        $proofs           Verification-to-context adapter.
      * @param  TransactionManager                     $transactions     Atomic verification and mutation scope.
@@ -58,6 +60,7 @@ final readonly class AdministratorBusinessSecurityHandler implements RequestHand
         private BusinessSecurityAdministrationService $security,
         private ApprovalService $approvals,
         private AdministratorRenderer $renderer,
+        private Translator $translator,
         private AdministratorStepUpProvider $stepUp,
         private AuthorizationStepUpProofAdapter $proofs,
         private TransactionManager $transactions,
@@ -140,7 +143,10 @@ final readonly class AdministratorBusinessSecurityHandler implements RequestHand
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'security' => $this->security->overview($context),
             'workspace' => $workspace->toArray(),
-            'policy_steps' => $workspace->policySteps('/administrator/business-security'),
+            'policy_steps' => array_map(
+                fn (array $step): array => [...$step, 'label' => $this->translator->translate($step['label'])],
+                $workspace->policySteps('/administrator/business-security'),
+            ),
             'active_organization' => $context->organization()?->identifier(),
             'active_workspace' => $context->workspace()?->identifier(),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',

@@ -812,7 +812,11 @@ final class ContainerFactory
         $container->alias(ContainerInterface::class, Container::class);
         $container->share(ApplicationConfiguration::class, $configuration, true);
         $container->share(ClockInterface::class, new SystemClock(), true);
-        $container->share(AutomationJobFormRegistry::class, AutomationJobFormRegistry::core(), true);
+        $container->share(AutomationJobFormRegistry::class, static fn (
+            Container $container,
+        ): AutomationJobFormRegistry => AutomationJobFormRegistry::core(
+            self::service($container, Translator::class),
+        ), true);
         $container->share(JitterSource::class, new CryptographicJitterSource(), true);
         $container->share(RetryPolicy::class, static fn (Container $container): RetryPolicy => new RetryPolicy(
             self::service($container, ClockInterface::class),
@@ -1806,7 +1810,11 @@ final class ContainerFactory
         $container->share(ContentFormDataMapper::class, new ContentFormDataMapper(), true);
         $container->share(ContentModelFormMapper::class, new ContentModelFormMapper(), true);
         $container->share(ContentModelFormPresenter::class, new ContentModelFormPresenter(), true);
-        $container->share(SitePresentationFormMapper::class, new SitePresentationFormMapper(), true);
+        $container->share(SitePresentationFormMapper::class, static fn (
+            Container $container,
+        ): SitePresentationFormMapper => new SitePresentationFormMapper(
+            self::service($container, Translator::class),
+        ), true);
         $container->share(RichTextFormatter::class, new RichTextFormatter(), true);
         $container->share(ContentPresenter::class, static fn (Container $container): ContentPresenter =>
             new ContentPresenter(self::service($container, RichTextFormatter::class)), true);
@@ -1842,6 +1850,7 @@ final class ContainerFactory
             self::service($container, AuthorizationGateway::class),
             self::service($container, TransactionManager::class),
             self::service($container, MessagePatternValidator::class),
+            self::service($container, Translator::class),
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
         ), true);
@@ -2944,7 +2953,11 @@ final class ContainerFactory
         $container->share(BusinessRecordQueryFactory::class, new BusinessRecordQueryFactory(), true);
         $container->share(BusinessRecordProjector::class, new BusinessRecordProjector(), true);
         $container->share(BusinessFormInputMapper::class, new BusinessFormInputMapper(), true);
-        $container->share(BusinessCustomViewPresenter::class, new BusinessCustomViewPresenter(), true);
+        $container->share(BusinessCustomViewPresenter::class, static fn (
+            Container $container,
+        ): BusinessCustomViewPresenter => new BusinessCustomViewPresenter(
+            self::service($container, Translator::class),
+        ), true);
         $container->share(BusinessDocumentPresenter::class, new BusinessDocumentPresenter(), true);
         $container->share(GeneratedBusinessActionStepUp::class, static fn (
             Container $container,
@@ -3050,6 +3063,7 @@ final class ContainerFactory
             self::service($container, BusinessDocumentPresenter::class),
             self::service($container, ReportService::class),
             self::service($container, RecordExportReportProvider::class),
+            self::service($container, Translator::class),
         ), true);
         $container->share(OpenApiContractCompiler::class, new OpenApiContractCompiler(), true);
         $container->share(
@@ -3188,7 +3202,12 @@ final class ContainerFactory
         ): AdministratorAuthorizationMiddleware => new AdministratorAuthorizationMiddleware(
             self::service($container, AdministratorRenderer::class),
         ), true);
-        $container->share(AdministratorCsrfMiddleware::class, new AdministratorCsrfMiddleware(), true);
+        $container->share(AdministratorCsrfMiddleware::class, static fn (
+            Container $container,
+        ): AdministratorCsrfMiddleware => new AdministratorCsrfMiddleware(
+            self::service($container, Translator::class),
+            self::service($container, ActiveLocale::class),
+        ), true);
         if ($portalEnabled) {
             $container->share(PortalSessionMiddleware::class, static fn (
                 Container $container,
@@ -3202,7 +3221,12 @@ final class ContainerFactory
             ): PortalAuthorizationMiddleware => new PortalAuthorizationMiddleware(
                 self::service($container, AuthorizationGateway::class),
             ), true);
-            $container->share(PortalCsrfMiddleware::class, new PortalCsrfMiddleware(), true);
+            $container->share(PortalCsrfMiddleware::class, static fn (
+                Container $container,
+            ): PortalCsrfMiddleware => new PortalCsrfMiddleware(
+                self::service($container, Translator::class),
+                self::service($container, ActiveLocale::class),
+            ), true);
         }
         $container->share(BearerAuthenticationMiddleware::class, static function (
             Container $container,
@@ -3365,6 +3389,7 @@ final class ContainerFactory
             self::service($container, AdministratorIdentityGateway::class),
             self::service($container, AdministratorSessionStore::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, Translator::class),
             $secureCookie,
             $configuration->administratorSessionSeconds,
             SiteContext::fromString($configuration->publicSite),
@@ -3383,6 +3408,7 @@ final class ContainerFactory
                 self::service($container, PortalContextResolver::class),
                 self::service($container, PortalSessionStore::class),
                 self::service($container, PortalRenderer::class),
+                self::service($container, Translator::class),
                 $secureCookie,
                 $configuration->administratorSessionSeconds,
             ), true);
@@ -3414,6 +3440,7 @@ final class ContainerFactory
             ): PortalSecurityHandler => new PortalSecurityHandler(
                 self::service($container, StepUpProvider::class),
                 self::service($container, PortalRenderer::class),
+                self::service($container, Translator::class),
                 $secureCookie,
                 $configuration->administratorSessionSeconds,
             ), true);
@@ -3426,6 +3453,7 @@ final class ContainerFactory
                 self::service($container, AuthorizationStepUpProofAdapter::class),
                 self::service($container, TransactionManager::class),
                 self::service($container, PortalRenderer::class),
+                self::service($container, Translator::class),
                 $secureCookie,
                 $configuration->administratorSessionSeconds,
             ), true);
@@ -3568,6 +3596,7 @@ final class ContainerFactory
             self::service($container, AdministratorRenderer::class),
             self::service($container, AdministratorStepUpProvider::class),
             self::service($container, GeneratedBusinessActionStepUp::class),
+            self::service($container, Translator::class),
             $secureCookie,
             $configuration->administratorSessionSeconds,
         ), true);
@@ -3579,6 +3608,7 @@ final class ContainerFactory
                 self::service($container, PortalRenderer::class),
                 self::service($container, StepUpProvider::class),
                 self::service($container, GeneratedBusinessActionStepUp::class),
+                self::service($container, Translator::class),
                 $secureCookie,
                 $configuration->administratorSessionSeconds,
             ), true);
@@ -3611,6 +3641,7 @@ final class ContainerFactory
             self::service($container, BusinessSchemaService::class),
             self::service($container, BusinessSchemaEnvironment::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, Translator::class),
             self::service($container, ClockInterface::class),
         ), true);
         $container->share(CreateBusinessSchemaPlanHandler::class, static fn (
@@ -3662,6 +3693,7 @@ final class ContainerFactory
         ): AdministratorMediaHandler => new AdministratorMediaHandler(
             self::service($container, MediaService::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, Translator::class),
             $root . '/storage/tmp',
         ), true);
         $container->share(AdministratorContentModelsHandler::class, static fn (
@@ -3724,8 +3756,8 @@ final class ContainerFactory
         ): AdministratorSettingsHandler => new AdministratorSettingsHandler(
             self::service($container, SiteSettings::class),
             self::service($container, AdministratorRenderer::class),
-            self::service($container, ContentService::class),
             self::service($container, SitePresentationFormMapper::class),
+            self::service($container, ContentService::class),
             self::service($container, MediaService::class),
             self::service($container, NavigationService::class),
         ), true);
@@ -3766,6 +3798,7 @@ final class ContainerFactory
             self::service($container, BusinessSecurityAdministrationService::class),
             self::service($container, ApprovalService::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, Translator::class),
             self::service($container, AdministratorStepUpProvider::class),
             self::service($container, AuthorizationStepUpProofAdapter::class),
             self::service($container, TransactionManager::class),

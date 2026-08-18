@@ -7,6 +7,7 @@ namespace Kumwe\CMS\BusinessSurface\Delivery\Browser;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\CMS\Localization\Application\Translator;
 
 /**
  * Builds and decodes a no-JavaScript editor for the closed custom-business schema subset.
@@ -57,12 +58,13 @@ final readonly class BusinessSchemaForm
     /**
      * Build one schema form from decoded browser controls.
      *
-     * @param   array<string, mixed>  $schema     Closed custom-business root schema.
-     * @param   string                $prefix     Root HTML input name, such as `parameters` or `input`.
-     * @param   array<string, mixed>  $raw        Nested native input values.
-     * @param   array<string, mixed>  $counts     Opaque array-path tokens mapped to requested row counts.
-     * @param   array<string, mixed>  $presence   Opaque structured-path tokens explicitly included by users.
-     * @param   bool                  $submitted  Whether to coerce and validate a typed result now.
+     * @param   array<string, mixed>  $schema      Closed custom-business root schema.
+     * @param   Translator            $translator  Resolves the form's own display wording.
+     * @param   string                $prefix      Root HTML input name, such as `parameters` or `input`.
+     * @param   array<string, mixed>  $raw         Nested native input values.
+     * @param   array<string, mixed>  $counts      Opaque array-path tokens mapped to requested row counts.
+     * @param   array<string, mixed>  $presence    Opaque structured-path tokens explicitly included by users.
+     * @param   bool                  $submitted   Whether to coerce and validate a typed result now.
      *
      * @return  self  Recursive semantic field tree and optional typed object.
      *
@@ -72,6 +74,7 @@ final readonly class BusinessSchemaForm
      */
     public static function fromInput(
         array $schema,
+        Translator $translator,
         string $prefix,
         array $raw = [],
         array $counts = [],
@@ -92,6 +95,7 @@ final readonly class BusinessSchemaForm
         $usedPresence = [];
         $nodes = 0;
         $result = self::node(
+            $translator,
             $schema,
             $prefix,
             $prefix,
@@ -138,6 +142,7 @@ final readonly class BusinessSchemaForm
     /**
      * Build and optionally decode one recursive schema node.
      *
+     * @param   Translator            $translator    Resolves the form's own display wording.
      * @param   array<string, mixed>  $schema        Current closed schema node.
      * @param   string                $label         Human-readable field label.
      * @param   string                $name          Native nested HTML input name.
@@ -158,6 +163,7 @@ final readonly class BusinessSchemaForm
      * @since   2.0.0
      */
     private static function node(
+        Translator $translator,
         array $schema,
         string $label,
         string $name,
@@ -188,13 +194,22 @@ final readonly class BusinessSchemaForm
             'path_token' => $token,
         ];
         if (array_key_exists('const', $schema)) {
-            return self::constant($base, $schema['const'], $required, $presence, $usedPresence, $submitted);
+            return self::constant(
+                $translator,
+                $base,
+                $schema['const'],
+                $required,
+                $presence,
+                $usedPresence,
+                $submitted,
+            );
         }
         if (isset($schema['enum'])) {
-            return self::enumeration($base, $schema, $raw, $required, $submitted);
+            return self::enumeration($translator, $base, $schema, $raw, $required, $submitted);
         }
         if ($type === 'object') {
             return self::object(
+                $translator,
                 $base,
                 $schema,
                 $path,
@@ -210,6 +225,7 @@ final readonly class BusinessSchemaForm
         }
         if ($type === 'array') {
             return self::array(
+                $translator,
                 $base,
                 $schema,
                 $path,
@@ -225,6 +241,7 @@ final readonly class BusinessSchemaForm
         }
         if ($type === 'null') {
             return self::constant(
+                $translator,
                 $base,
                 null,
                 $required,
@@ -243,6 +260,7 @@ final readonly class BusinessSchemaForm
     /**
      * Build one closed object fieldset and recurse through declared properties.
      *
+     * @param   Translator            $translator    Resolves the form's own display wording.
      * @param   FormBase              $base          Common semantic model members.
      * @param   array<string, mixed>  $schema        Object schema.
      * @param   list<string|int>      $path          Current path.
@@ -260,6 +278,7 @@ final readonly class BusinessSchemaForm
      * @since   2.0.0
      */
     private static function object(
+        Translator $translator,
         array $base,
         array $schema,
         array $path,
@@ -297,6 +316,7 @@ final readonly class BusinessSchemaForm
                 throw new InvalidArgumentException('A generated schema object property is malformed.');
             }
             $child = self::node(
+                $translator,
                 self::objectValue($property, 'A generated schema object property is malformed.'),
                 ucfirst(str_replace('_', ' ', $handle)),
                 $base['name'] . '[' . $handle . ']',
@@ -346,6 +366,7 @@ final readonly class BusinessSchemaForm
      * @since   2.0.0
      */
     private static function array(
+        Translator $translator,
         array $base,
         array $schema,
         array $path,
@@ -381,8 +402,9 @@ final readonly class BusinessSchemaForm
         $value = [];
         for ($index = 0; $index < $count; ++$index) {
             $item = self::node(
+                $translator,
                 $items,
-                'Item ' . ($index + 1),
+                $translator->translate('core.business.form.item_number', ['number' => $index + 1]),
                 $base['name'] . '[' . $index . ']',
                 [...$path, $index],
                 true,
@@ -487,17 +509,19 @@ final readonly class BusinessSchemaForm
     /**
      * Build one exact enum selector and optionally decode its chosen token.
      *
-     * @param   FormBase              $base       Common semantic model members.
-     * @param   array<string, mixed>  $schema     Enum schema.
-     * @param   mixed                 $raw        Native option token.
-     * @param   bool                  $required   Whether absence is invalid.
-     * @param   bool                  $submitted  Whether typed coercion is required.
+     * @param   Translator            $translator  Resolves the choice display wording.
+     * @param   FormBase              $base        Common semantic model members.
+     * @param   array<string, mixed>  $schema      Enum schema.
+     * @param   mixed                 $raw         Native option token.
+     * @param   bool                  $required    Whether absence is invalid.
+     * @param   bool                  $submitted   Whether typed coercion is required.
      *
      * @return  array{model: array<string, mixed>, included: bool, value: mixed}  Select model and value.
      *
      * @since   2.0.0
      */
     private static function enumeration(
+        Translator $translator,
         array $base,
         array $schema,
         mixed $raw,
@@ -514,7 +538,7 @@ final readonly class BusinessSchemaForm
         $input = is_string($raw) ? $raw : '';
         $options = [];
         foreach ($values as $index => $value) {
-            $options[] = ['value' => self::token($value), 'label' => self::choiceLabel($value, $index)];
+            $options[] = ['value' => self::token($value), 'label' => self::choiceLabel($translator, $value, $index)];
         }
         $included = $required || $input !== '';
         $model = [
@@ -544,6 +568,7 @@ final readonly class BusinessSchemaForm
     /**
      * Build one server-owned constant value with optional presence control.
      *
+     * @param   Translator            $translator    Resolves the constant display wording.
      * @param   FormBase              $base          Common semantic model members.
      * @param   mixed                 $value         Exact declared constant.
      * @param   bool                  $required      Whether the parent requires the property.
@@ -556,6 +581,7 @@ final readonly class BusinessSchemaForm
      * @since   2.0.0
      */
     private static function constant(
+        Translator $translator,
         array $base,
         mixed $value,
         bool $required,
@@ -568,7 +594,7 @@ final readonly class BusinessSchemaForm
             'model' => [
                 ...$base,
                 'kind' => 'const',
-                'display' => self::choiceLabel($value, 0),
+                'display' => self::choiceLabel($translator, $value, 0),
                 'included' => $included,
                 'presence_name' => 'schema_presence[' . $base['path_token'] . ']',
             ],
@@ -788,21 +814,22 @@ final readonly class BusinessSchemaForm
     /**
      * Produce a safe short label for an exact enum or constant value.
      *
-     * @param   mixed  $value  Exact declared value.
-     * @param   int    $index  Zero-based declaration index.
+     * @param   Translator  $translator  Resolves the display wording.
+     * @param   mixed       $value       Exact declared value.
+     * @param   int         $index       Zero-based declaration index.
      *
      * @return  string  Human-readable scalar text or numbered structured choice.
      *
      * @since   2.0.0
      */
-    private static function choiceLabel(mixed $value, int $index): string
+    private static function choiceLabel(Translator $translator, mixed $value, int $index): string
     {
         return match (true) {
-            $value === null => 'Not set',
-            $value === true => 'Yes',
-            $value === false => 'No',
+            $value === null => $translator->translate('core.business.form.not_set'),
+            $value === true => $translator->translate('core.business.form.yes'),
+            $value === false => $translator->translate('core.business.form.no'),
             is_string($value), is_int($value) => (string) $value,
-            default => 'Declared choice ' . ($index + 1),
+            default => $translator->translate('core.business.form.declared_choice', ['number' => $index + 1]),
         };
     }
 

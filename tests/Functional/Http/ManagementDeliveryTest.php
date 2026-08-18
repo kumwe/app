@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Functional\Http;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
@@ -299,7 +300,10 @@ final class ManagementDeliveryTest extends TestCase
         $router = $container->get(RouterInterface::class);
         self::assertInstanceOf(RouterInterface::class, $router);
         $authorization = new AdministratorAuthorizationMiddleware();
-        $csrf = new AdministratorCsrfMiddleware();
+        $csrf = new AdministratorCsrfMiddleware(
+            InterfaceTranslation::translator(),
+            InterfaceTranslation::activeLocale(),
+        );
         $factory = new ServerRequestFactory();
 
         foreach (self::SCHEMA_MUTATION_CAPABILITIES as [$path, $capability]) {

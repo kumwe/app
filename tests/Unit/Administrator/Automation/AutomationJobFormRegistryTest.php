@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Administrator\Automation;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Automation\AutomationJobField;
 use Kumwe\CMS\Administrator\Automation\AutomationJobFormRegistry;
@@ -17,7 +18,7 @@ final class AutomationJobFormRegistryTest extends TestCase
 {
     public function testMapsTypedGraphicalFieldsToAJobPayload(): void
     {
-        $registry = AutomationJobFormRegistry::core();
+        $registry = AutomationJobFormRegistry::core(InterfaceTranslation::translator());
         $payload = $registry->payload('content.workflow.transition', [
             'payload__id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb160',
             'payload__version' => '4',
@@ -40,7 +41,7 @@ final class AutomationJobFormRegistryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('outside its limits');
 
-        AutomationJobFormRegistry::core()->payload('system.idempotency.purge', [
+        AutomationJobFormRegistry::core(InterfaceTranslation::translator())->payload('system.idempotency.purge', [
             'payload__batch_size' => '1000',
             'payload__maximum_batches' => '101',
         ]);

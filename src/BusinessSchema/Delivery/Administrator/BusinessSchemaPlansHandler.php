@@ -7,6 +7,7 @@ namespace Kumwe\CMS\BusinessSchema\Delivery\Administrator;
 use DateInterval;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaEnvironment;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
@@ -53,7 +54,7 @@ final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterfa
     /**
      * Sentences shown for the `notice` key each schema action redirects with.
      *
-     * The keys are the vocabulary the sibling handlers pass to
+     * Message identifiers keyed by the vocabulary the sibling handlers pass to
      * `BusinessSchemaAdministratorRequest::redirect()`. Resolving through a fixed map rather than
      * echoing the query string is what keeps an arbitrary URL from putting text on the screen; an
      * unrecognised key renders no notice at all.
@@ -62,12 +63,12 @@ final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterfa
      * @since  2.0.0
      */
     private const NOTICES = [
-        'planned' => 'The immutable schema plan was persisted. No physical schema work has run.',
-        'purge-planned' => 'The destructive purge plan was persisted for independent review and approval.',
-        'approved' => 'The exact persisted plan was approved.',
-        'executed' => 'The approved schema plan finished execution.',
-        'recovered' => 'Recovery finished and the execution journal was reconciled.',
-        'evidence-recorded' => 'Tested backup and recovery evidence was recorded for this approval.',
+        'planned' => 'core.administrator.business_schema_plans.notice_planned',
+        'purge-planned' => 'core.administrator.business_schema_plans.notice_purge_planned',
+        'approved' => 'core.administrator.business_schema_plans.notice_approved',
+        'executed' => 'core.administrator.business_schema_plans.notice_executed',
+        'recovered' => 'core.administrator.business_schema_plans.notice_recovered',
+        'evidence-recorded' => 'core.administrator.business_schema_plans.notice_evidence_recorded',
     ];
 
     /**
@@ -78,6 +79,7 @@ final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterfa
      * @param  BusinessSchemaEnvironment  $environment  Driver, server version, and application release
      *         recovery evidence must have been drilled against.
      * @param  AdministratorRenderer      $renderer     Renders the `business-schema-plans` template.
+     * @param  Translator                 $translator   Resolves notice wording for the locale in flight.
      * @param  ClockInterface             $clock        Supplies now, from which the evidence freshness
      *         floor is measured.
      *
@@ -87,6 +89,7 @@ final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterfa
         private BusinessSchemaService $schemas,
         private BusinessSchemaEnvironment $environment,
         private AdministratorRenderer $renderer,
+        private Translator $translator,
         private ClockInterface $clock,
     ) {
     }
@@ -155,7 +158,8 @@ final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterfa
                 $freshnessFloor,
             );
         $noticeKey = is_string($query['notice'] ?? null) ? $query['notice'] : '';
-        $notice = self::NOTICES[$noticeKey] ?? null;
+        $noticeId = self::NOTICES[$noticeKey] ?? null;
+        $notice = $noticeId === null ? null : $this->translator->translate($noticeId);
 
         return new HtmlResponse($this->renderer->render('business-schema-plans', [
             'csrf' => AdministratorRequest::session($request)->csrfToken,

@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Portal\Http\Handler;
 
 use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Portal\Application\PortalAuthenticator;
 use Kumwe\CMS\Portal\Application\PortalContextResolver;
 use Kumwe\CMS\Portal\Application\PortalPasswordIdentity;
@@ -28,12 +29,13 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class PortalLoginHandler implements RequestHandlerInterface
 {
     /**
-     * Non-enumerating response shared by credentials and unavailable membership selections.
+     * Message identifier of the non-enumerating response shared by credentials and unavailable
+     * membership selections.
      *
      * @var    string
      * @since  2.0.0
      */
-    private const SIGN_IN_REJECTED = 'The email address, password, or portal access is unavailable.';
+    private const SIGN_IN_REJECTED = 'core.portal.login.sign_in_rejected';
 
     /**
      * Host-only double-submit cookie used before a portal session exists.
@@ -58,6 +60,7 @@ final readonly class PortalLoginHandler implements RequestHandlerInterface
      * @param   PortalContextResolver  $contexts         Server-owned membership selection authority.
      * @param   PortalSessionStore     $sessions         Dedicated portal session store.
      * @param   PortalRenderer         $renderer         Distinct portal shell renderer.
+     * @param   Translator             $translator       Resolves rejection wording for the locale in flight.
      * @param   bool                   $secureCookie     Whether HTTPS requires the `Secure` attribute.
      * @param   int                    $sessionLifetime  Cookie `Max-Age`, matching stored lifetime.
      *
@@ -70,6 +73,7 @@ final readonly class PortalLoginHandler implements RequestHandlerInterface
         private PortalContextResolver $contexts,
         private PortalSessionStore $sessions,
         private PortalRenderer $renderer,
+        private Translator $translator,
         private bool $secureCookie,
         private int $sessionLifetime,
     ) {
@@ -94,7 +98,11 @@ final readonly class PortalLoginHandler implements RequestHandlerInterface
         }
         $form = PortalRequest::form($request);
         if (!$this->validLoginCsrf($request, $form)) {
-            return $this->error('The portal security token is invalid.', $form['email'] ?? '', 403);
+            return $this->error(
+                $this->translator->translate('core.portal.login.security_token_invalid'),
+                $form['email'] ?? '',
+                403,
+            );
         }
         $source = $request->getAttribute(TrustedProxyMiddleware::ATTRIBUTE_CLIENT_ADDRESS, 'unknown');
         if (!is_string($source) || $source === '') {
@@ -106,19 +114,24 @@ final readonly class PortalLoginHandler implements RequestHandlerInterface
                 $form['password'] ?? '',
                 $source,
             );
-        } catch (AuthenticationThrottled $exception) {
-            return $this->error($exception->getMessage(), $form['email'] ?? '', 429, ['Retry-After' => '900']);
+        } catch (AuthenticationThrottled) {
+            return $this->error(
+                $this->translator->translate('core.security.authentication.throttled'),
+                $form['email'] ?? '',
+                429,
+                ['Retry-After' => '900'],
+            );
         }
         if (!$identity instanceof PortalPasswordIdentity) {
-            return $this->error(self::SIGN_IN_REJECTED, $form['email'] ?? '', 401);
+            return $this->error($this->translator->translate(self::SIGN_IN_REJECTED), $form['email'] ?? '', 401);
         }
         $hint = trim($form['workspace'] ?? '');
         if ($hint !== '' && preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,190}$/D', $hint) !== 1) {
-            return $this->error(self::SIGN_IN_REJECTED, $form['email'] ?? '', 401);
+            return $this->error($this->translator->translate(self::SIGN_IN_REJECTED), $form['email'] ?? '', 401);
         }
         $context = $this->contexts->resolve($identity->principal, $hint === '' ? null : $hint);
         if (!$context instanceof PortalContext) {
-            return $this->error(self::SIGN_IN_REJECTED, $form['email'] ?? '', 401);
+            return $this->error($this->translator->translate(self::SIGN_IN_REJECTED), $form['email'] ?? '', 401);
         }
         $created = $this->sessions->create($identity, $context, $request->getHeaderLine('User-Agent'));
 

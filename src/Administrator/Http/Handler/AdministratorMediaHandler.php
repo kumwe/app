@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Administrator\Http\Handler;
 use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Media\Application\MediaAsset;
 use Kumwe\CMS\Media\Application\MediaService;
 use Laminas\Diactoros\Response\HtmlResponse;
@@ -35,6 +36,7 @@ final readonly class AdministratorMediaHandler implements RequestHandlerInterfac
      *
      * @param  MediaService           $media               Browses, stores and removes the site's assets.
      * @param  AdministratorRenderer  $renderer            Renders the `media` template.
+     * @param  Translator             $translator          Resolves the refusal wording for the locale in flight.
      * @param  string                 $temporaryDirectory  Private directory uploads are staged in; it is created
      *         mode 0700 when it does not yet exist.
      *
@@ -43,6 +45,7 @@ final readonly class AdministratorMediaHandler implements RequestHandlerInterfac
     public function __construct(
         private MediaService $media,
         private AdministratorRenderer $renderer,
+        private Translator $translator,
         private string $temporaryDirectory,
     ) {
     }
@@ -79,7 +82,11 @@ final readonly class AdministratorMediaHandler implements RequestHandlerInterfac
         }
         $upload = $request->getUploadedFiles()['media'] ?? null;
         if (!$upload instanceof UploadedFileInterface || $upload->getError() !== UPLOAD_ERR_OK) {
-            return $this->page($request, 'Choose a media file to upload.', 422);
+            return $this->page(
+                $request,
+                $this->translator->translate('core.administrator.media.choose_file_first'),
+                422,
+            );
         }
         if (!is_dir($this->temporaryDirectory)) {
             mkdir($this->temporaryDirectory, 0700, true);

@@ -158,8 +158,9 @@ final readonly class SecurityWorkspaceState
      *
      * @param   string  $path  Absolute Business Security path without a query string.
      *
-     * @return  list<array{id: string, label: string, url: string, current: bool}>  Ordered authoring steps,
-     *          or an empty list outside resource-policy creation.
+     * @return  list<array{id: string, label: string, url: string, current: bool}>  Ordered authoring steps
+     *          whose labels are message identifiers the handler resolves, or an empty list outside
+     *          resource-policy creation.
      *
      * @since   2.0.0
      */
@@ -170,10 +171,10 @@ final readonly class SecurityWorkspaceState
         }
 
         $labels = [
-            'scope' => '1. Scope',
-            'predicate' => '2. Predicate',
-            'disclosure' => '3. Disclosure',
-            'review' => '4. Review',
+            'scope' => 'core.administrator.business_security.policy_step_scope',
+            'predicate' => 'core.administrator.business_security.policy_step_predicate',
+            'disclosure' => 'core.administrator.business_security.policy_step_disclosure',
+            'review' => 'core.administrator.business_security.policy_step_review',
         ];
         $steps = [];
         foreach ($labels as $step => $label) {

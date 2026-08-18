@@ -22,6 +22,7 @@ use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
 use Kumwe\CMS\Portal\Application\PortalSession;
 use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Portal\Http\PortalRequest;
 use Kumwe\CMS\Portal\Presentation\PortalRenderer;
 use Laminas\Diactoros\Response\HtmlResponse;
@@ -46,6 +47,8 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      * @param   AuthorizationStepUpProofAdapter  $proofs           Proof adapter for authorization contexts.
      * @param   TransactionManager               $transactions     Atomic verification and decision scope.
      * @param   PortalRenderer                   $renderer         Isolated portal template renderer.
+     * @param   Translator                       $translator       Resolves notice wording for the locale
+     *          in flight.
      * @param   bool                             $secureCookie     Whether portal cookies require HTTPS.
      * @param   int                              $sessionLifetime  Portal cookie lifetime in seconds.
      *
@@ -60,6 +63,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
         private AuthorizationStepUpProofAdapter $proofs,
         private TransactionManager $transactions,
         private PortalRenderer $renderer,
+        private Translator $translator,
         private bool $secureCookie,
         private int $sessionLifetime,
     ) {
@@ -83,7 +87,9 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
         $context = PortalRequest::context($request);
         if ($request->getMethod() === 'GET' && $request->getUri()->getPath() === '/portal/approvals') {
             $query = $request->getQueryParams();
-            $notice = is_string($query['updated'] ?? null) ? 'The approval request was updated.' : '';
+            $notice = is_string($query['updated'] ?? null)
+                ? $this->translator->translate('core.portal.approvals.request_updated')
+                : '';
             return $this->inbox($session, $this->queries->portalInbox($context), $notice);
         }
 
@@ -97,7 +103,9 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
         }
         if ($request->getMethod() === 'GET') {
             $query = $request->getQueryParams();
-            $notice = is_string($query['updated'] ?? null) ? 'The approval request was updated.' : '';
+            $notice = is_string($query['updated'] ?? null)
+                ? $this->translator->translate('core.portal.approvals.request_updated')
+                : '';
             $view = ($query['view'] ?? null) === 'history' ? 'history' : 'review';
 
             return $this->detail($session, $detail, $notice, view: $view);
@@ -146,14 +154,21 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
 
                 return $verification;
             });
-        } catch (AuthenticationThrottled $exception) {
-            return $this->detail($session, $detail, '', $exception->getMessage(), 429, ['Retry-After' => '900']);
+        } catch (AuthenticationThrottled) {
+            return $this->detail(
+                $session,
+                $detail,
+                '',
+                $this->translator->translate('core.security.authentication.throttled'),
+                429,
+                ['Retry-After' => '900'],
+            );
         } catch (StepUpRejected) {
             return $this->detail(
                 $session,
                 $detail,
                 '',
-                'The verification code is invalid, expired, or already used.',
+                $this->translator->translate('core.security.step_up.verification_code_rejected'),
                 403,
             );
         } catch (\InvalidArgumentException $exception) {
@@ -165,7 +180,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
                     $session,
                     $fresh,
                     '',
-                    'The approval request changed or the decision is no longer permitted.',
+                    $this->translator->translate('core.portal.approvals.decision_no_longer_permitted'),
                     409,
                 )
                 : $this->notFound($session);

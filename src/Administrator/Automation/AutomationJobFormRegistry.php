@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Administrator\Automation;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Localization\Application\Translator;
+use Kumwe\CMS\Localization\Domain\MessageIdentifier;
 
 /**
  * Catalogue of the payload forms the administrator automation screen offers, one per job type.
@@ -27,6 +29,35 @@ final class AutomationJobFormRegistry
      * @since  2.0.0
      */
     private array $forms = [];
+
+    /**
+     * Bind the registry to the translator its captions and refusals resolve through.
+     *
+     * @param  Translator  $translator  Resolves a caption that names a catalogue message.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private readonly Translator $translator)
+    {
+    }
+
+    /**
+     * Present one caption, resolving it when it names a catalogue message rather than saying words.
+     *
+     * Core registers message identifiers; an extension registers the wording its own manifest
+     * carries, which core has no catalogue for. Resolving only what satisfies the frozen identifier
+     * grammar keeps both working without an extension's literal caption being mistaken for a lookup.
+     *
+     * @param   string  $caption  Registered caption: a message identifier, or literal wording.
+     *
+     * @return  string  The resolved message, or the caption unchanged.
+     *
+     * @since   2.0.0
+     */
+    private function display(string $caption): string
+    {
+        return MessageIdentifier::isValid($caption) ? $this->translator->translate($caption) : $caption;
+    }
 
     /**
      * Register the payload form one job type presents.
@@ -81,9 +112,13 @@ final class AutomationJobFormRegistry
             $form = $this->forms[$jobType] ?? ['label' => $this->label($jobType), 'fields' => []];
             $definitions[] = [
                 'type' => $jobType,
-                'label' => $form['label'],
+                'label' => $this->display($form['label']),
                 'fields' => array_map(
-                    static fn (AutomationJobField $field): array => $field->toArray(),
+                    fn (AutomationJobField $field): array => [
+                        ...$field->toArray(),
+                        'label' => $this->display($field->label),
+                        'help' => $field->help === '' ? '' : $this->display($field->help),
+                    ],
                     $form['fields'],
                 ),
             ];
@@ -121,15 +156,18 @@ final class AutomationJobFormRegistry
                     continue;
                 }
                 if ($field->required) {
-                    throw new InvalidArgumentException(sprintf('The %s job field is required.', $field->label));
+                    throw new InvalidArgumentException($this->translator->translate(
+                        'core.administrator.automation.field_required',
+                        ['label' => $this->display($field->label)],
+                    ));
                 }
                 continue;
             }
             if ($field->type === 'integer') {
                 if (preg_match('/^-?[0-9]+$/D', $raw) !== 1) {
-                    throw new InvalidArgumentException(sprintf(
-                        'The %s job field must be a whole number.',
-                        $field->label,
+                    throw new InvalidArgumentException($this->translator->translate(
+                        'core.administrator.automation.field_not_whole_number',
+                        ['label' => $this->display($field->label)],
                     ));
                 }
                 $value = (int) $raw;
@@ -137,9 +175,9 @@ final class AutomationJobFormRegistry
                     ($field->minimum !== null && $value < $field->minimum)
                     || ($field->maximum !== null && $value > $field->maximum)
                 ) {
-                    throw new InvalidArgumentException(sprintf(
-                        'The %s job field is outside its limits.',
-                        $field->label,
+                    throw new InvalidArgumentException($this->translator->translate(
+                        'core.administrator.automation.field_outside_limits',
+                        ['label' => $this->display($field->label)],
                     ));
                 }
                 $payload[$field->key] = $value;
@@ -147,22 +185,25 @@ final class AutomationJobFormRegistry
             }
             if ($field->type === 'boolean') {
                 if (!in_array($raw, ['true', 'false'], true)) {
-                    throw new InvalidArgumentException(sprintf(
-                        'The %s job field must be true or false.',
-                        $field->label,
+                    throw new InvalidArgumentException($this->translator->translate(
+                        'core.administrator.automation.field_not_boolean',
+                        ['label' => $this->display($field->label)],
                     ));
                 }
                 $payload[$field->key] = $raw === 'true';
                 continue;
             }
             if ($field->options !== [] && !in_array($raw, $field->options, true)) {
-                throw new InvalidArgumentException(sprintf(
-                    'The %s job field has an unsupported value.',
-                    $field->label,
+                throw new InvalidArgumentException($this->translator->translate(
+                    'core.administrator.automation.field_unsupported_value',
+                    ['label' => $this->display($field->label)],
                 ));
             }
             if ($field->pattern !== null && preg_match($field->pattern, $raw) !== 1) {
-                throw new InvalidArgumentException(sprintf('The %s job field is invalid.', $field->label));
+                throw new InvalidArgumentException($this->translator->translate(
+                    'core.administrator.automation.field_invalid',
+                    ['label' => $this->display($field->label)],
+                ));
             }
             $payload[$field->key] = $raw;
         }
@@ -177,34 +218,48 @@ final class AutomationJobFormRegistry
      * content-transition, purge, and runtime-rebuild jobs always have a form even when nothing has
      * registered one.
      *
+     * @param   Translator  $translator  Resolves the registered captions and refusal wording.
+     *
      * @return  self  A registry pre-populated with the core job forms.
      *
      * @since   2.0.0
      */
-    public static function core(): self
+    public static function core(Translator $translator): self
     {
-        $registry = new self();
-        $registry->register('content.workflow.transition', 'Transition content', [
+        $registry = new self($translator);
+        $registry->register('content.workflow.transition', 'core.administrator.automation.job_transition_content', [
             new AutomationJobField(
                 'id',
-                'Content ID',
+                'core.administrator.automation.field_content_id',
                 required: true,
                 pattern: '/^[0-9a-f-]{36}$/Di',
-                help: 'The canonical content identifier.',
+                help: 'core.administrator.automation.field_content_id_help',
             ),
-            new AutomationJobField('version', 'Expected version', 'integer', true, minimum: 1),
+            new AutomationJobField(
+                'version',
+                'core.administrator.automation.field_expected_version',
+                'integer',
+                true,
+                minimum: 1,
+            ),
             new AutomationJobField(
                 'status',
-                'Destination state',
+                'core.administrator.automation.field_destination_state',
                 required: true,
                 pattern: '/^[a-z][a-z0-9_-]{0,62}$/D',
             ),
         ]);
-        $registry->register('system.idempotency.purge', 'Purge expired idempotency records', [
-            new AutomationJobField('batch_size', 'Batch size', 'integer', default: 1_000, minimum: 1),
+        $registry->register('system.idempotency.purge', 'core.administrator.automation.job_purge_idempotency', [
+            new AutomationJobField(
+                'batch_size',
+                'core.administrator.automation.field_batch_size',
+                'integer',
+                default: 1_000,
+                minimum: 1,
+            ),
             new AutomationJobField(
                 'maximum_batches',
-                'Maximum batches',
+                'core.administrator.automation.field_maximum_batches',
                 'integer',
                 default: 10,
                 minimum: 1,
@@ -213,12 +268,19 @@ final class AutomationJobFormRegistry
         ]);
         $registry->register(
             'business.record.idempotency.purge',
-            'Purge expired business-record idempotency entries',
+            'core.administrator.automation.job_purge_business_idempotency',
             [
-                new AutomationJobField('batch_size', 'Batch size', 'integer', default: 500, minimum: 1, maximum: 1_000),
+                new AutomationJobField(
+                    'batch_size',
+                    'core.administrator.automation.field_batch_size',
+                    'integer',
+                    default: 500,
+                    minimum: 1,
+                    maximum: 1_000,
+                ),
                 new AutomationJobField(
                     'maximum_batches',
-                    'Maximum batches',
+                    'core.administrator.automation.field_maximum_batches',
                     'integer',
                     default: 10,
                     minimum: 1,
@@ -226,8 +288,8 @@ final class AutomationJobFormRegistry
                 ),
             ],
         );
-        $registry->register('system.sessions.purge', 'Purge expired administrator sessions');
-        $registry->register('extensions.runtime.rebuild', 'Rebuild extension runtime map');
+        $registry->register('system.sessions.purge', 'core.administrator.automation.job_purge_sessions');
+        $registry->register('extensions.runtime.rebuild', 'core.administrator.automation.job_rebuild_runtime');
 
         return $registry;
     }
