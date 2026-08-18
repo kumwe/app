@@ -9,6 +9,7 @@ use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
+use Joomla\DI\Container;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -21,6 +22,7 @@ use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorSessio
 use Kumwe\CMS\Identity\Infrastructure\StepUp\DoctrineStepUpCredentialStore;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -78,7 +80,7 @@ final class CredentialLifecycleIntegrationTest extends TestCase
         $issued = $identities->issueAccessToken($context, $email, 'Reset proof', ['content.read']);
         self::assertNotNull($tokens->verify($issued['token']));
         self::assertNotNull($identities->authenticate($email, 'the original passphrase', 'integration'));
-        $this->insertSession($database, $tables, $userId, $marker);
+        $this->insertSession($container, $database, $tables, $userId, $marker);
 
         $ended = $access->resetUserPassword($context, $userId, 'a replacement passphrase', 'ticket 4711');
 
@@ -174,7 +176,7 @@ final class CredentialLifecycleIntegrationTest extends TestCase
             'Session epoch subject',
             'the original passphrase',
         );
-        $token = $this->insertSession($database, $tables, $userId, $marker);
+        $token = $this->insertSession($container, $database, $tables, $userId, $marker);
         self::assertNotNull($sessions->find($token, 'Kumwe integration browser'));
 
         $access->emergencyRevokeAllSubjectTokens($context, $userId, 'break-glass ' . $marker);
@@ -204,8 +206,8 @@ final class CredentialLifecycleIntegrationTest extends TestCase
         $marker = Uuid::uuid7()->toString();
         $email = sprintf('session-terminate-%s@example.test', $marker);
         $userId = $access->createUser($context, $email, 'Termination subject', 'the original passphrase');
-        $this->insertSession($database, $tables, $userId, $marker . '-a');
-        $this->insertSession($database, $tables, $userId, $marker . '-b');
+        $this->insertSession($container, $database, $tables, $userId, $marker . '-a');
+        $this->insertSession($container, $database, $tables, $userId, $marker . '-b');
 
         $ended = $access->terminateUserSessions($context, $userId, 'shared workstation ' . $marker);
 
@@ -275,16 +277,18 @@ final class CredentialLifecycleIntegrationTest extends TestCase
      * what these subjects do not have; the row is what the assertions are about, so it is written here
      * the way the store writes it.
      *
-     * @param   Connection  $database  Installation connection.
-     * @param   TableNames  $tables    Prefixed table resolver.
-     * @param   string      $userId    Subject the session belongs to.
-     * @param   string      $marker    Unique marker distinguishing this row's credentials.
+     * @param   Container   $container  Booted integration container supplying the fingerprint secret.
+     * @param   Connection  $database   Installation connection.
+     * @param   TableNames  $tables     Prefixed table resolver.
+     * @param   string      $userId     Subject the session belongs to.
+     * @param   string      $marker     Unique marker distinguishing this row's credentials.
      *
      * @return  string  The plaintext session token the store will be asked to resolve.
      *
      * @since   2.0.0
      */
     private function insertSession(
+        Container $container,
         Connection $database,
         TableNames $tables,
         string $userId,
@@ -306,7 +310,7 @@ final class CredentialLifecycleIntegrationTest extends TestCase
             'user_agent_digest' => hash_hmac(
                 'sha256',
                 'Kumwe integration browser',
-                $this->applicationSecret(),
+                $this->applicationSecret($container),
             ),
             'created_at' => $now,
             'last_seen_at' => $now,
@@ -419,15 +423,22 @@ final class CredentialLifecycleIntegrationTest extends TestCase
     /**
      * Read the installation secret the session store keys its browser fingerprint with.
      *
+     * It comes from the booted container's own configuration rather than from raw `getenv()`, because
+     * configuration that arrives through `.env` never reaches the process environment: the raw read
+     * answered false there, and a fingerprint keyed on anything but the container's secret would make
+     * the inserted row one the store under test could never resolve.
+     *
+     * @param   Container  $container  Booted integration container.
+     *
      * @return  string  Configured application secret.
      *
      * @since   2.0.0
      */
-    private function applicationSecret(): string
+    private function applicationSecret(Container $container): string
     {
-        $secret = getenv('APP_SECRET');
-        self::assertIsString($secret);
+        $configuration = $container->get(ApplicationConfiguration::class);
+        self::assertInstanceOf(ApplicationConfiguration::class, $configuration);
 
-        return $secret;
+        return $configuration->secret;
     }
 }
