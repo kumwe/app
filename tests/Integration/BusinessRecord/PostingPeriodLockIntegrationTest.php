@@ -22,6 +22,7 @@ use Kumwe\CMS\BusinessRecord\Application\Command\RestoreRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\UnrelateRecordsCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\WriteDocumentCommand;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
 use Kumwe\CMS\BusinessRecord\Application\PostingPeriodCalendar;
 use Kumwe\CMS\BusinessRecord\Application\PostingPeriodLock;
@@ -78,8 +79,11 @@ final class PostingPeriodLockIntegrationTest extends TestCase
         $periods = $container->get(PostingPeriodService::class);
         self::assertInstanceOf(PostingPeriodService::class, $periods);
         $key = 'gate-' . $this->suffix();
-        $starts = new DateTimeImmutable('2027-01-01T00:00:00Z');
-        $ends = new DateTimeImmutable('2027-02-01T00:00:00Z');
+        // The database outlives test processes, so the declared range is unique per run — a repeated
+        // range would let an earlier run's declaration answer the containment assertions below.
+        $offset = (int) hexdec(substr($this->suffix(), 0, 8)) % 500_000;
+        $starts = (new DateTimeImmutable('3000-01-01T00:00:00Z'))->modify('+' . $offset . ' minutes');
+        $ends = $starts->modify('+1 hour');
 
         $reader = TestKernelFactory::contextFromGrantRows($container, [
             ['capability' => PostingPeriodService::READ, 'scope_type' => 'global', 'scope_identifier' => null],
@@ -110,9 +114,9 @@ final class PostingPeriodLockIntegrationTest extends TestCase
         // The calendar seam answers with the declared period's stable key, open or closed alike.
         $calendar = $container->get(PostingPeriodCalendar::class);
         self::assertInstanceOf(PostingPeriodCalendar::class, $calendar);
-        $resolved = $calendar->periodContaining('default', null, new DateTimeImmutable('2027-01-15T12:00:00Z'));
+        $resolved = $calendar->periodContaining('default', null, $starts->modify('+30 minutes'));
         self::assertSame($key, $resolved?->key);
-        self::assertNull($calendar->periodContaining('default', null, new DateTimeImmutable('2027-02-15T12:00:00Z')));
+        self::assertNull($calendar->periodContaining('default', null, $ends->modify('+30 minutes')));
     }
 
     /**
@@ -323,6 +327,23 @@ final class PostingPeriodLockIntegrationTest extends TestCase
                 self::assertSame('business_record.posting_period_closed', $refused->stableCode(), $name);
                 self::assertSame('aug-' . $suffix, $refused->periodKey, $name);
             }
+        }
+
+        // Absence stays the mutation's own verdict: a missing record is reported as not found even
+        // while a period is closed, so the gate opens no existence side channel and replay of a
+        // completed delete stays reachable.
+        try {
+            $records->update(new UpdateRecordCommand(
+                $context,
+                $owner,
+                Uuid::uuid7()->toString(),
+                1,
+                ['title' => 'Ghost'],
+                $this->key('missing-update'),
+            ));
+            self::fail('A missing record must answer not-found, not a period refusal.');
+        } catch (BusinessRecordNotFound) {
+            self::assertTrue(true);
         }
 
         // A record dated outside the range is unaffected, in both value and date terms.
