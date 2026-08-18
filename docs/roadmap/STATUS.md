@@ -2,7 +2,7 @@
 
 Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
-**Updated at** `7a83c295bce6c23f250384ba787dd5e4595fff0e`
+**Updated at** `df715e39c6269c50c6f4c73d6fb32d1570917945`
 
 > **Open work is here. Finished work is in [`CHANGELOG.md`](../../CHANGELOG.md).** Two paths, and both end in
 > the changelog. **Planned work** lives here while it is open and its entry is deleted from this directory
@@ -45,6 +45,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | S — Studio visual composition | A, with a B integration | Not started | The Gate A half needs `P0-C`'s classification machinery; the Gate B half needs Gate A. Decision D16 and ADR 0007 accepted |
 | **Gate B** | | **Not assessed** | **Phases 7 and S** |
 | M — Maintainability | — | Not started | Phase 3 seams settled. Blocks nothing. |
+| N — Native client platform contracts | — | Version 3 seed — not started | Nothing in Version 2; blocks nothing. Decision D17, [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md). |
 
 ## Open work packages by phase
 
@@ -65,10 +66,11 @@ table when it completes, in the same change that writes it into the changelog.
 | S | `S-A` (Gate A), `S-B` … `S-G` | `V2-STU-001` – `V2-STU-007` |
 | 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
 | M | Lane M, no packages assigned yet | `V2-ARC-002` |
+| N | Lane N, no packages assigned yet | `V3-NC-001` – `V3-NC-004` |
 
 ## Decisions
 
-Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full decision record.
+Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a full decision record.
 
 | | Decision | Record |
 |---|---|---|
@@ -88,17 +90,18 @@ Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full 
 | D14 | Point of sale is deferred but not foreclosed | README section 2 |
 | D15 | Role-specific dashboards compose the unified contribution runtime | [ADR 0006](decisions/0006-unified-dashboard-composition.md) |
 | D16 | Studio visual composition is the Version 2 authoring surface, integrated at Gate B | [ADR 0007](decisions/0007-studio-visual-composition-integration.md) |
+| D17 | The native client platform is a Version 3 programme; its sign-in is the authentication link | [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md) |
 | — | The remaining `P0-E` decisions | Not yet written |
 
 ## Ledger snapshot
 
-**53 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**57 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
 | `accepted_for_implementation` | 16 |
 | `reproduced` | 9 |
-| `open` | 19 |
+| `open` | 23 |
 | `conditional` | 6 |
 | `decision_required` | 0 |
 | `in_progress` | 3 |
@@ -120,18 +123,19 @@ Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full 
 | 7 | 11 |
 | S | 7 |
 | M | 1 |
+| N | 4 |
 | evidence (`GM-AUD-02`, conditional residual) | 1 |
 
 | Gate | Findings |
 |---|---|
 | A | 10 |
 | B | 22 |
-| none | 20 |
+| none | 25 |
 
-By severity: 0 critical, 25 high, 20 medium, 8 low.
-By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 26 discovered
-while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14
-and D16.
+By severity: 0 critical, 26 high, 22 medium, 9 low.
+By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 30 discovered
+while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
+D16 and D17.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
 the tamper-evident audit work, the record-secret key ring and rotation, the credential lifecycle, the
