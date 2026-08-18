@@ -9,14 +9,17 @@ use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Application\PhysicalSchemaGateway;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessSchemaService::class)]
+#[CoversClass(DoctrinePhysicalSchemaGateway::class)]
+#[CoversClass(BusinessRecordService::class)]
 final class BusinessSchemaPhysicalDefaultIntegrationTest extends TestCase
 {
     public function testExactDefaultsInstallAndReinspectOnTheConfiguredDatabaseEngine(): void

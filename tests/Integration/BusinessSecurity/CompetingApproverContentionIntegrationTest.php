@@ -20,7 +20,7 @@ use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalReposi
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -36,7 +36,7 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(DoctrineApprovalRepository::class)]
 final class CompetingApproverContentionIntegrationTest extends TestCase
 {
     public function testTheSameApproverCannotVoteTwiceEvenFromASecondConnection(): void

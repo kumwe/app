@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Architecture;
 
+use FilesystemIterator;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 
 /**
  * Holds the gates to what they claim, at the one moment a claim is cheap to check.
@@ -423,6 +427,94 @@ PHP;
     }
 
     /**
+     * The coverage contract must carry no attribution debt and only ratchets that are actually enforced.
+     *
+     * The pending list was emptied when every behavioural test named the classes it exercises, and the
+     * unenforceable branch floor was replaced by the refusal-line floor the driver can measure. Neither
+     * regression may come back quietly: a re-grown pending list would excuse new untruthful attribution,
+     * and a ratchet declared without enforcement is a gate that looks stronger than it is.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheCoverageContractCarriesNoPendingDebtAndNoUnenforcedRatchet(): void
+    {
+        $contract = $this->decode('docs/quality/coverage-contract.json');
+
+        self::assertSame([], $contract['attribution']['pending'] ?? null, 'The pending list only ever shrinks.');
+        self::assertSame([], $contract['attribution']['pending_directories'] ?? null);
+
+        $ratchets = $contract['ratchets'] ?? null;
+        self::assertIsArray($ratchets);
+        $identifiers = [];
+        foreach ($ratchets as $ratchet) {
+            self::assertIsArray($ratchet);
+            $identifiers[] = $ratchet['id'] ?? null;
+            self::assertTrue(
+                $ratchet['enforced'] ?? null,
+                sprintf('Ratchet "%s" is declared and not enforced.', (string) ($ratchet['id'] ?? '(unnamed)')),
+            );
+        }
+        self::assertContains(
+            'changed-refusal-floor',
+            $identifiers,
+            'The branch floor needs its measurable substitute.',
+        );
+        self::assertNotContains('changed-branch-floor', $identifiers, 'The unmeasurable branch floor was replaced.');
+    }
+
+    /**
+     * The refusal-line floor must fail an unexecuted refusal and pass an executed one, on real history.
+     *
+     * A scaffolded repository adds one guard `throw` under `src/Demo/Application/`, and a clover report
+     * marks it first unexecuted and then executed. The tool has to refuse the first and accept the
+     * second, so the substitute for the branch floor is proven in both directions rather than trusted
+     * by reading its arithmetic.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheRefusalFloorJudgesAScaffoldedChangeInBothDirections(): void
+    {
+        [$scaffold, $base] = $this->scaffoldRefusalChange();
+        $contract = $this->writeTemporary([
+            'ratchets' => [
+                ['id' => 'changed-refusal-floor', 'statement' => 'scaffold', 'floor_percent' => 80, 'enforced' => true],
+            ],
+        ]);
+        $clover = $scaffold . '/clover.xml';
+        $arguments = [
+            '--ratchet',
+            '--root=' . $scaffold,
+            '--contract=' . $contract,
+            '--clover=' . $clover,
+            '--base=' . $base,
+        ];
+
+        try {
+            file_put_contents($clover, $this->refusalClover($scaffold, 0));
+            $refused = $this->execute('tools/coverage-contract.php', $arguments);
+            self::assertSame(1, $refused['status'], 'An unexecuted refusal line must fail the floor.');
+            self::assertStringContainsString('refusal lines', $refused['output']);
+            self::assertStringContainsString('src/Demo/Application/Guard.php:5', $refused['output']);
+
+            file_put_contents($clover, $this->refusalClover($scaffold, 3));
+            $accepted = $this->execute('tools/coverage-contract.php', $arguments);
+            self::assertSame(
+                0,
+                $accepted['status'],
+                "An executed refusal line must satisfy the floor:\n" . $accepted['output'],
+            );
+            self::assertStringContainsString('100.00% of 1 changed refusal line(s)', $accepted['output']);
+        } finally {
+            @unlink($contract);
+            $this->removeDirectory($scaffold);
+        }
+    }
+
+    /**
      * The idempotency check must excuse exactly what a baseline records, and nothing else.
      *
      * The six-test reproduction `V2-QA-004` recorded has been removed entry by entry, so the live record
@@ -776,6 +868,97 @@ PHP;
                 $configuration,
             );
         }
+    }
+
+    /**
+     * Build a two-commit repository whose change adds exactly one guard `throw` under Application logic.
+     *
+     * @return  array{0: string, 1: string}  The scaffold's absolute path and the base commit hash.
+     *
+     * @since   2.0.0
+     */
+    private function scaffoldRefusalChange(): array
+    {
+        $scaffold = sys_get_temp_dir() . '/kumwe-refusal-floor-' . bin2hex(random_bytes(6));
+        self::assertTrue(mkdir($scaffold . '/src/Demo/Application', 0o700, true));
+        $guard = $scaffold . '/src/Demo/Application/Guard.php';
+        $git = sprintf(
+            'git -C %s -c user.name=kumwe-quality-gate -c user.email=quality-gate@kumwe.invalid',
+            escapeshellarg($scaffold),
+        );
+        $run = static function (string $command): string {
+            $lines = [];
+            $status = 0;
+            exec($command . ' 2>&1', $lines, $status);
+            self::assertSame(0, $status, sprintf("Scaffold command failed: %s\n%s", $command, implode("\n", $lines)));
+
+            return implode("\n", $lines);
+        };
+
+        $run(sprintf('git init -q %s', escapeshellarg($scaffold)));
+        file_put_contents($guard, "<?php\nfunction guard(int \$value): int\n{\n    return \$value;\n}\n");
+        $run($git . ' add -A');
+        $run($git . ' commit -qm base');
+        $base = trim($run($git . ' rev-parse HEAD'));
+        file_put_contents(
+            $guard,
+            "<?php\nfunction guard(int \$value): int\n{\n    if (\$value < 0) {\n"
+            . "        throw new RuntimeException('negative');\n    }\n    return \$value;\n}\n",
+        );
+        $run($git . ' add -A');
+        $run($git . ' commit -qm refusal');
+
+        return [$scaffold, $base];
+    }
+
+    /**
+     * Render the scaffold's clover report with the guard's `throw` line executed the given number of times.
+     *
+     * @param   string  $scaffold  Absolute path of the scaffolded repository.
+     * @param   int     $hits      Hit count for the refusal line; zero leaves the refusal unexecuted.
+     *
+     * @return  string  Clover XML naming the scaffolded guard file.
+     *
+     * @since   2.0.0
+     */
+    private function refusalClover(string $scaffold, int $hits): string
+    {
+        return sprintf(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<coverage><project>"
+            . '<file name="%s/src/Demo/Application/Guard.php">'
+            . '<line num="4" type="stmt" count="1"/>'
+            . '<line num="5" type="stmt" count="%d"/>'
+            . '<line num="7" type="stmt" count="1"/>'
+            . "</file></project></coverage>\n",
+            $scaffold,
+            $hits,
+        );
+    }
+
+    /**
+     * Remove a scaffolded directory tree, leaving nothing for the next run to trip over.
+     *
+     * @param   string  $directory  Absolute path to remove.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function removeDirectory(string $directory): void
+    {
+        if (!is_dir($directory)) {
+            return;
+        }
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        );
+        foreach ($files as $file) {
+            if ($file instanceof SplFileInfo) {
+                $file->isDir() && !$file->isLink() ? rmdir($file->getPathname()) : unlink($file->getPathname());
+            }
+        }
+        rmdir($directory);
     }
 
     /**

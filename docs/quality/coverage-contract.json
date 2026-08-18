@@ -32,11 +32,12 @@
       "note": "The first canonical run after this contract merged prints the measurement and the command that records it. Until it is recorded the tool says the ratchet is unarmed rather than reporting a pass."
     },
     {
-      "id": "changed-branch-floor",
-      "statement": "At least 80% of the branches a change adds or edits under Domain and Application logic are covered.",
+      "id": "changed-refusal-floor",
+      "statement": "At least 80% of the refusal lines a change adds or edits under Domain and Application logic are covered, where a refusal line is an executable line that raises with `throw`.",
       "floor_percent": 80,
-      "enforced": false,
-      "unenforceable_reason": "pcov reports executed lines and no branches at all, so this floor cannot be measured on the canonical leg as it is instrumented today. It arms when the canonical run collects branch data, and until then this entry is a declared intention rather than a gate."
+      "enforced": true,
+      "replaces": "changed-branch-floor",
+      "note": "This is the honest substitute for the branch floor that stood here unenforced: pcov reports executed lines and no branches at all, so an 80% branch floor could not be measured on the canonical leg and was a declared intention rather than a gate. The branch class that floor existed to protect is the refusal path — the guard that throws instead of proceeding — and a covered `throw` line is line-level proof the refusing branch was actually taken, which coverage of the surrounding method alone never shows. The rule is measured from exactly what the canonical run already produces. A true branch floor may replace this entry if the canonical run ever collects branch data."
     }
   ],
   "baseline": {
@@ -46,7 +47,7 @@
     "note": "Recorded by the canonical MariaDB CI leg after 2,513 tests and 54,760 assertions measured 47,935 of 86,459 executable lines."
   },
   "attribution": {
-    "note": "A behavioural test that executes real code and attributes none of it makes the coverage report describe a smaller product than the one being tested. #[CoversNothing] is therefore allowed in exactly two places: on tests whose subject is not a class under src/ at all, which is the reasoned list, and on the behavioural tests that carried it when this gate was switched on, which is the pending list. The pending list only ever shrinks — an entry that no longer carries the attribute fails as stale and has to be deleted — and a new behavioural test cannot join it.",
+    "note": "A behavioural test that executes real code and attributes none of it makes the coverage report describe a smaller product than the one being tested. #[CoversNothing] is therefore allowed in exactly two places: on tests whose subject is not a class under src/ at all, which is the reasoned list, and on the behavioural tests that carried it when this gate was switched on, which was the pending list. That list only ever shrinks and was emptied on 2026-08-18 — every test it excused now names the classes it exercises — and it stays empty, because a new behavioural test cannot join it.",
     "reasoned": [
       {
         "path": "tests/Architecture/",
@@ -85,40 +86,7 @@
         "reason": "The subject is an example package's presenter under examples/, deliberately outside the released source tree."
       }
     ],
-    "pending": [
-      {
-        "path": "tests/Functional/BusinessSurface/GeneratedBusinessDataEntryRetentionTest.php",
-        "owner": "quality-engineering",
-        "finding": "V2-QA-001",
-        "expires": "2027-06-30"
-      },
-      {
-        "path": "tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php",
-        "owner": "quality-engineering",
-        "finding": "V2-QA-001",
-        "expires": "2027-06-30"
-      },
-      {
-        "path": "tests/Unit/BusinessDefinition/Application/AllocatedNumberFieldRuleTest.php",
-        "owner": "quality-engineering",
-        "finding": "V2-QA-001",
-        "expires": "2027-06-30"
-      },
-      {
-        "path": "tests/Unit/BusinessRecord/NeutralBusinessFixtureTest.php",
-        "owner": "quality-engineering",
-        "finding": "V2-QA-001",
-        "expires": "2027-06-30"
-      }
-    ],
-    "pending_directories": [
-      {
-        "path": "tests/Integration/",
-        "owner": "quality-engineering",
-        "finding": "V2-QA-001",
-        "expires": "2027-06-30",
-        "reason": "Thirty-nine integration tests exercise real behaviour against real engines and attribute none of it. Each needs the classes it exercises named, which is a judgement per file rather than a rename, so it is recorded here with an owner and an expiry instead of being waved through."
-      }
-    ]
+    "pending": [],
+    "pending_directories": []
   }
 }

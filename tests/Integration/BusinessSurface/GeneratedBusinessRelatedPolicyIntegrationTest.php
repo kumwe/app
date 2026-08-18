@@ -35,7 +35,7 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
@@ -44,7 +44,10 @@ use Ramsey\Uuid\Uuid;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(BusinessSurfaceCatalog::class)]
+#[CoversClass(BusinessSurfaceService::class)]
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(BusinessRecordProjector::class)]
 final class GeneratedBusinessRelatedPolicyIntegrationTest extends TestCase
 {
     /**

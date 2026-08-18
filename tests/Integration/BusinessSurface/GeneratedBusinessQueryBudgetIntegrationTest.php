@@ -55,12 +55,15 @@ use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\BusinessQueryCounter;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(InstalledBusinessRecordDefinitionResolver::class)]
+#[CoversClass(BusinessSurfaceCatalog::class)]
+#[CoversClass(DoctrineBusinessRecordAccessController::class)]
+#[CoversClass(DoctrineBusinessRecordReadRepository::class)]
 /**
  * Proves generated discovery and relationship hydration keep constant database-query budgets.
  *

@@ -27,17 +27,21 @@ use Kumwe\CMS\BusinessRecord\Query\ComparisonOperator;
 use Kumwe\CMS\BusinessRecord\Query\RecordAggregate;
 use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
 use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
 use Kumwe\CMS\BusinessRecord\Query\RelationFilter;
 use Kumwe\CMS\BusinessRecord\Query\RelationQuantifier;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(DoctrineBusinessRecordReadRepository::class)]
+#[CoversClass(DoctrineBusinessRecordAccessController::class)]
 final class BusinessRecordPolicyEnforcementIntegrationTest extends TestCase
 {
     public function testPolicyPrecedesDirectPageCountAggregateIncludeAndRelationReads(): void

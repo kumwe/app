@@ -9,7 +9,7 @@ use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -22,7 +22,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(BusinessDefinitionValidator::class)]
+#[CoversClass(EntityTypeDefinition::class)]
 final class AllocatedNumberFieldRuleTest extends TestCase
 {
     public function testACloselyDeclaredAllocatedNumberFieldPublishes(): void

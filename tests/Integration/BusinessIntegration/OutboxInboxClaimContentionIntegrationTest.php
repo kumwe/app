@@ -25,7 +25,7 @@ use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -41,7 +41,8 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(DoctrineOutboxStore::class)]
+#[CoversClass(DoctrineInboxStore::class)]
 final class OutboxInboxClaimContentionIntegrationTest extends TestCase
 {
     private const CONSUMER = 'acme.contention-index';

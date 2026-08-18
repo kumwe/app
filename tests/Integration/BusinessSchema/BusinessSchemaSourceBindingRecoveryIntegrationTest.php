@@ -16,17 +16,27 @@ use Kumwe\CMS\BusinessSchema\Application\PhysicalSchemaGateway;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaStepStatus;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaInstallationRepository;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaPlanRepository;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessSchemaService::class)]
+#[CoversClass(DoctrineBusinessSchemaPlanRepository::class)]
+#[CoversClass(DoctrineBusinessSchemaInstallationRepository::class)]
+#[CoversClass(DoctrinePhysicalSchemaGateway::class)]
+#[CoversClass(SchemaPlan::class)]
+#[CoversClass(SchemaPlanStep::class)]
 final class BusinessSchemaSourceBindingRecoveryIntegrationTest extends TestCase
 {
     public function testRecoveryRejectsTamperedSourceMetadataThenResumesPartialPhysicalWork(): void

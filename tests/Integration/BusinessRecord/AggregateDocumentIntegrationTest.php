@@ -39,7 +39,7 @@ use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\BusinessQueryCounter;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -55,7 +55,8 @@ use Throwable;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(DoctrineBusinessRecordWriteRepository::class)]
 final class AggregateDocumentIntegrationTest extends TestCase
 {
     /**

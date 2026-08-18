@@ -15,12 +15,16 @@
  * new behavioural test cannot join it.
  *
  * `--ratchet` reads the clover report from the canonical engine and refuses a change that leaves its own new
- * lines uncovered, or that lowers the global figure past the declared tolerance. A ratchet the instrumented
- * driver cannot measure is reported as unenforced rather than quietly passed.
+ * lines uncovered, that leaves the refusal lines it adds under Domain or Application logic unexecuted, or
+ * that lowers the global figure past the declared tolerance. A ratchet the instrumented driver cannot
+ * measure is reported as unenforced rather than quietly passed.
  *
  * Usage:
- *   php tools/coverage-contract.php --attribution [--contract=PATH]
- *   php tools/coverage-contract.php --ratchet [--clover=PATH] [--base=REF] [--record]
+ *   php tools/coverage-contract.php --attribution [--contract=PATH] [--root=PATH]
+ *   php tools/coverage-contract.php --ratchet [--clover=PATH] [--base=REF] [--record] [--root=PATH]
+ *
+ * `--root` points the tool at another repository, which is how the architecture suite proves the failure
+ * directions against a scaffolded history instead of trusting the arithmetic by reading it.
  *
  * @since  2.0.0
  */
@@ -28,8 +32,8 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$contractPath = $root . '/docs/quality/coverage-contract.json';
-$cloverPath = $root . '/build/coverage/clover.xml';
+$contractPath = null;
+$cloverPath = null;
 $mode = null;
 $base = null;
 $record = false;
@@ -56,9 +60,16 @@ foreach (array_slice($argv, 1) as $argument) {
         $base = substr($argument, strlen('--base='));
         continue;
     }
+    if (str_starts_with($argument, '--root=')) {
+        $root = substr($argument, strlen('--root='));
+        continue;
+    }
 
     $startup[] = sprintf('Unknown argument %s.', $argument);
 }
+
+$contractPath ??= $root . '/docs/quality/coverage-contract.json';
+$cloverPath ??= $root . '/build/coverage/clover.xml';
 
 if ($mode === null) {
     $startup[] = 'Choose --attribution or --ratchet.';
@@ -331,6 +342,10 @@ function checkRatchet(
             checkChangedLineFloor($ratchet, $root, $coverage['lines'], $base, $errors);
             continue;
         }
+        if ($id === 'changed-refusal-floor') {
+            checkChangedRefusalFloor($ratchet, $root, $coverage['lines'], $base, $errors);
+            continue;
+        }
         if ($id === 'global-decrease') {
             checkGlobalDecrease($contract, $contractPath, $global, $errors);
         }
@@ -380,38 +395,9 @@ function checkChangedLineFloor(array $ratchet, string $root, array $lines, ?stri
         return;
     }
 
-    $command = sprintf(
-        'cd %s && git diff --unified=0 --no-color %s -- src 2>&1',
-        escapeshellarg($root),
-        escapeshellarg($base . '...HEAD'),
-    );
-    $output = [];
-    $status = 0;
-    exec($command, $output, $status);
-    if ($status !== 0) {
-        $errors[] = sprintf('The change could not be resolved against %s: %s', $base, implode(' ', $output));
-
+    $changed = changedSourceLines($root, $base, $errors);
+    if ($changed === null) {
         return;
-    }
-
-    $changed = [];
-    $file = null;
-    foreach ($output as $line) {
-        if (str_starts_with($line, '+++ b/')) {
-            $file = substr($line, 6);
-            continue;
-        }
-        if ($file === null || !str_starts_with($line, '@@')) {
-            continue;
-        }
-        if (preg_match('/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/', $line, $matched) !== 1) {
-            continue;
-        }
-        $start = (int) $matched[1];
-        $count = isset($matched[2]) ? (int) $matched[2] : 1;
-        for ($number = $start; $number < $start + $count; $number++) {
-            $changed[$file][$number] = true;
-        }
     }
 
     $executable = 0;
@@ -457,6 +443,149 @@ function checkChangedLineFloor(array $ratchet, string $root, array $lines, ?stri
         (string) $floor,
         implode("\n     - ", array_slice($uncovered, 0, 40)),
     );
+}
+
+/**
+ * Require the refusal lines a change adds or edits under Domain and Application logic to be executed.
+ *
+ * The substitute for the branch floor pcov cannot measure: the branch that floor existed to protect is
+ * the refusal path, and a `throw` line that ran is line-level proof the refusing branch was taken. A
+ * refusal line is a changed line that the clover report marks executable and whose source carries the
+ * `throw` keyword, in a file under a `Domain/` or `Application/` segment of `src/`.
+ *
+ * @param   array<string, mixed>            $ratchet  The ratchet's declaration.
+ * @param   string                          $root     Repository root.
+ * @param   array<string, array<int, int>>  $lines    Hit counts by repository-relative file and line.
+ * @param   string|null                     $base     Git reference the change is measured against.
+ * @param   list<string>                    $errors   Accumulated failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function checkChangedRefusalFloor(array $ratchet, string $root, array $lines, ?string $base, array &$errors): void
+{
+    $floor = $ratchet['floor_percent'] ?? null;
+    if (!is_int($floor) && !is_float($floor)) {
+        $errors[] = 'The changed-refusal ratchet declares no floor.';
+
+        return;
+    }
+    if ($base === null || $base === '') {
+        $errors[] = 'The changed-refusal ratchet needs --base=REF naming what the change is measured against.';
+
+        return;
+    }
+
+    $changed = changedSourceLines($root, $base, $errors);
+    if ($changed === null) {
+        return;
+    }
+
+    $refusals = 0;
+    $covered = 0;
+    $unexecuted = [];
+    foreach ($changed as $path => $numbers) {
+        if (preg_match('#^src/(?:.*/)?(?:Domain|Application)/#', $path) !== 1) {
+            continue;
+        }
+        $source = file($root . '/' . $path);
+        if ($source === false) {
+            continue;
+        }
+        foreach (array_keys($numbers) as $number) {
+            if (!isset($lines[$path][$number])) {
+                continue;
+            }
+            if (preg_match('/\bthrow\b/', $source[$number - 1] ?? '') !== 1) {
+                continue;
+            }
+            $refusals++;
+            if ($lines[$path][$number] > 0) {
+                $covered++;
+                continue;
+            }
+            $unexecuted[] = sprintf('%s:%d', $path, $number);
+        }
+    }
+
+    if ($refusals === 0) {
+        fwrite(STDOUT, "- changed-refusal-floor: the change adds no refusal line under Domain or Application logic.\n");
+
+        return;
+    }
+
+    $percent = round($covered / $refusals * 100, 2);
+    fwrite(STDOUT, sprintf(
+        "- changed-refusal-floor: %.2f%% of %d changed refusal line(s) executed, floor %s%%.\n",
+        $percent,
+        $refusals,
+        (string) $floor,
+    ));
+
+    if ($percent >= (float) $floor) {
+        return;
+    }
+
+    sort($unexecuted, SORT_STRING);
+    $errors[] = sprintf(
+        "Only %.2f%% of the refusal lines this change adds or edits were ever executed; the floor is %s%%. "
+        . "A refusal nothing has taken is a branch nothing has tested. Unexecuted:\n     - %s",
+        $percent,
+        (string) $floor,
+        implode("\n     - ", array_slice($unexecuted, 0, 40)),
+    );
+}
+
+/**
+ * Collect the line numbers a change adds or edits under `src/`, from the git history at the root.
+ *
+ * @param   string        $root    Repository root the diff is resolved in.
+ * @param   string        $base    Git reference the change is measured against.
+ * @param   list<string>  $errors  Accumulated failures.
+ *
+ * @return  array<string, array<int, true>>|null  Changed line numbers by repository-relative file, or
+ *          null when the diff could not be resolved.
+ *
+ * @since   2.0.0
+ */
+function changedSourceLines(string $root, string $base, array &$errors): ?array
+{
+    $command = sprintf(
+        'cd %s && git diff --unified=0 --no-color %s -- src 2>&1',
+        escapeshellarg($root),
+        escapeshellarg($base . '...HEAD'),
+    );
+    $output = [];
+    $status = 0;
+    exec($command, $output, $status);
+    if ($status !== 0) {
+        $errors[] = sprintf('The change could not be resolved against %s: %s', $base, implode(' ', $output));
+
+        return null;
+    }
+
+    $changed = [];
+    $file = null;
+    foreach ($output as $line) {
+        if (str_starts_with($line, '+++ b/')) {
+            $file = substr($line, 6);
+            continue;
+        }
+        if ($file === null || !str_starts_with($line, '@@')) {
+            continue;
+        }
+        if (preg_match('/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/', $line, $matched) !== 1) {
+            continue;
+        }
+        $start = (int) $matched[1];
+        $count = isset($matched[2]) ? (int) $matched[2] : 1;
+        for ($number = $start; $number < $start + $count; $number++) {
+            $changed[$file][$number] = true;
+        }
+    }
+
+    return $changed;
 }
 
 /**

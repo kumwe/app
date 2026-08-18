@@ -14,11 +14,12 @@ use Joomla\DI\Container;
 use Kumwe\CMS\Application\Automation\JobExecutionClass;
 use Kumwe\CMS\Application\Automation\ScheduleOccurrenceKey;
 use Kumwe\CMS\Application\Automation\Scheduler;
+use Kumwe\CMS\Infrastructure\Automation\DoctrineScheduler;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -34,7 +35,8 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(DoctrineScheduler::class)]
+#[CoversClass(ScheduleOccurrenceKey::class)]
 final class SchedulerOccurrenceContentionIntegrationTest extends TestCase
 {
     public function testAnOccurrenceAnotherSchedulerAlreadyEmittedIsSwallowedAndTheScheduleStillAdvances(): void

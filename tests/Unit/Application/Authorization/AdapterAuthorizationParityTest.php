@@ -50,12 +50,19 @@ use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Kumwe\CMS\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use ReflectionClass;
 
-#[CoversNothing]
+#[CoversClass(AdministratorCreateContentHandler::class)]
+#[CoversClass(ManageContentCommand::class)]
+#[CoversClass(ConsoleAuthorizer::class)]
+#[CoversClass(KumweMcpHandlers::class)]
+#[CoversClass(Worker::class)]
+#[CoversClass(ScheduleRunCommand::class)]
+#[CoversClass(RestrictedExtensionContainer::class)]
+#[CoversClass(ContentService::class)]
 final class AdapterAuthorizationParityTest extends TestCase
 {
     private const SUBJECT = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';

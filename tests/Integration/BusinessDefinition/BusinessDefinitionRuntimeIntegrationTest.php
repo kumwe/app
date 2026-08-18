@@ -12,11 +12,13 @@ use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessDefinitionService::class)]
+#[CoversClass(EntityTypeDefinition::class)]
+#[CoversClass(CanonicalDefinitionJson::class)]
 final class BusinessDefinitionRuntimeIntegrationTest extends TestCase
 {
     public function testGraphicalRuntimePublicationIsImmutablePortableAndRejectsInvalidImports(): void

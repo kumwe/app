@@ -17,20 +17,24 @@ use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRevisionRepository;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
 /**
  * Proves record history resolves identity ambiguity before it pages, and pages on a total ordering key.
  *
  * @since  2.0.0
  */
+#[CoversClass(BusinessRecordService::class)]
+#[CoversClass(DoctrineBusinessRecordRevisionRepository::class)]
+#[CoversClass(BusinessRecordRevisionCursor::class)]
+#[CoversClass(BusinessRecordReferenceConflict::class)]
 final class BusinessRecordHistoryPagingIntegrationTest extends TestCase
 {
     /**

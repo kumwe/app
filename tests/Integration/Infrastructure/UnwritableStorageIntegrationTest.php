@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\BusinessReporting\Infrastructure\FilesystemExportArtifactStorage;
 use Kumwe\CMS\Media\Infrastructure\FilesystemMediaStorage;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
@@ -29,7 +29,8 @@ use Throwable;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(FilesystemMediaStorage::class)]
+#[CoversClass(FilesystemExportArtifactStorage::class)]
 final class UnwritableStorageIntegrationTest extends TestCase
 {
     public function testAStorageRootThatIsNotThereFailsClosedWithoutDebris(): void

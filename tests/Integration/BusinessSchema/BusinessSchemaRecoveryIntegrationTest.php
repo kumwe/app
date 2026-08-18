@@ -23,18 +23,28 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaOperation;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaOperationKind;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaStepStatus;
 use Kumwe\CMS\BusinessSchema\Infrastructure\Execution\DoctrineBusinessSchemaExecutionLock;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaPlanRepository;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
-#[CoversNothing]
+#[CoversClass(BusinessSchemaService::class)]
+#[CoversClass(DoctrineBusinessSchemaExecutionLock::class)]
+#[CoversClass(DoctrineBusinessSchemaPlanRepository::class)]
+#[CoversClass(CanonicalDefinitionPhysicalSchemaCompiler::class)]
+#[CoversClass(DoctrinePhysicalSchemaGateway::class)]
+#[CoversClass(SchemaPlan::class)]
+#[CoversClass(SchemaPlanStep::class)]
 final class BusinessSchemaRecoveryIntegrationTest extends TestCase
 {
     private const EMPTY_SCHEMA_CHECKSUM = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';

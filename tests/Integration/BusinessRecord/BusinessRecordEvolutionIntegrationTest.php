@@ -27,12 +27,14 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaStepStatus;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
+#[CoversClass(BusinessDefinitionService::class)]
+#[CoversClass(BusinessSchemaService::class)]
+#[CoversClass(BusinessRecordService::class)]
 final class BusinessRecordEvolutionIntegrationTest extends TestCase
 {
     public function testTypedV2EvolutionIsPlannedApprovedExecutedAndUsedByRecords(): void

@@ -17,16 +17,17 @@ use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversNothing]
 /**
  * Proves action dispatch cannot bypass exact generated-surface exposure metadata.
  *
  * @since  2.0.0
  */
+#[CoversClass(BusinessSurfaceService::class)]
+#[CoversClass(BusinessRecordService::class)]
 final class GeneratedBusinessActionExposureIntegrationTest extends TestCase
 {
     /**

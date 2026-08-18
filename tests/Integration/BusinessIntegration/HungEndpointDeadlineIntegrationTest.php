@@ -27,7 +27,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Psr\Log\NullLogger;
@@ -47,7 +47,9 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(IntegrationWorkCommand::class)]
+#[CoversClass(OutboxDispatcher::class)]
+#[CoversClass(DoctrineOutboxStore::class)]
 final class HungEndpointDeadlineIntegrationTest extends TestCase
 {
     /**
