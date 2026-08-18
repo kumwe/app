@@ -36,7 +36,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | 2 — Truthful gates | A | In progress — one quality contract, semantic dependency checking and the deployed-artifact lane are delivered | Phase 0 decisions 1, 7, 8 |
 | 3 — Seams and the ownership model | A | In progress — the business-group ownership model and the inward persistence seams have landed; `P3-A` and `P3-F` now only owe their three-engine proofs | Phases 1 and 2 |
 | 4 — Atomic aggregate documents | A | Not started | Phase 3; phase 0 decision 2 |
-| E — Enterprise document primitives | A | In progress — `PE-A`, `PE-B`, `PE-C`, `PE-D`, `PE-E`, `PE-F` and `PE-G` delivered | Phase 3. The `V2-POS-002` choice is decided and implemented (ADR 0008). |
+| E — Enterprise document primitives | A | Delivered — every package complete; two follow-up findings remain | Phase 3. The offline-numbering choice is decided and implemented (ADR 0008). |
 | L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A` and `PL-B` delivered, `PL-C`, `PL-E` and `PL-F` part delivered | `PL-F`'s screenshots and `PL-G` need phase 2's `P2-E` matrix; the language axis they run on is built. Otherwise parallel to 3, 4 and E. |
 | **Gate A** | | **Not assessed** | **Phases 4, E and L, and phase S's Gate A half** |
 | 5 — Enterprise scale | B | Not started | Gate A |
