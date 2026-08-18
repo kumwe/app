@@ -12,7 +12,7 @@
       {% if not field.required %}
         <label class="check" for="{{ input_id }}-present">
           <input id="{{ input_id }}-present" type="checkbox" name="{{ field.presence_name }}" value="1"{% if field.included %} checked{% endif %}>
-          <span>Include {{ field.label|lower }}</span>
+          <span>{{ t('core.administrator.business_schema_fields.include', {label: (field.label|lower)}) }}</span>
         </label>
       {% endif %}
       {% if field.description %}<p class="field-help">{{ field.description }}</p>{% endif %}
@@ -24,11 +24,11 @@
       {% if not field.required %}
         <label class="check" for="{{ input_id }}-present">
           <input id="{{ input_id }}-present" type="checkbox" name="{{ field.presence_name }}" value="1"{% if field.included %} checked{% endif %}>
-          <span>Include {{ field.label|lower }}</span>
+          <span>{{ t('core.administrator.business_schema_fields.include', {label: (field.label|lower)}) }}</span>
         </label>
       {% endif %}
       {% if field.description %}<p class="field-help">{{ field.description }}</p>{% endif %}
-      <label for="{{ input_id }}-count">Number of rows
+      <label for="{{ input_id }}-count">{{ t('core.administrator.business_schema_fields.number_of_rows') }}
         <input id="{{ input_id }}-count" type="number" name="{{ field.count_name }}" value="{{ field.count }}" min="{{ field.min_items }}" max="{{ field.max_items }}" step="1">
       </label>
       <div class="business-schema-array-items kis-business-schema-array-items">
@@ -40,7 +40,7 @@
       {% if not field.required %}
         <label class="check" for="{{ input_id }}-present">
           <input id="{{ input_id }}-present" type="checkbox" name="{{ field.presence_name }}" value="1"{% if field.included %} checked{% endif %}>
-          <span>Include {{ field.label|lower }}</span>
+          <span>{{ t('core.administrator.business_schema_fields.include', {label: (field.label|lower)}) }}</span>
         </label>
       {% endif %}
       <span class="business-field-label">{{ field.label }}</span><output>{{ field.display }}</output>
@@ -50,7 +50,7 @@
       <label for="{{ input_id }}">{{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}</label>
       {% if field.kind == 'select' %}
         <select id="{{ input_id }}" name="{{ field.name }}"{% if field.required and not field.nullable %} required{% endif %}>
-          {% if not field.required or field.nullable or field.input_value is empty %}<option value="">{{ field.nullable ? 'Not set' : 'Choose an option' }}</option>{% endif %}
+          {% if not field.required or field.nullable or field.input_value is empty %}<option value="">{{ field.nullable ? t('core.administrator.business_fields.not_set') : t('core.administrator.business_schema_fields.choose_an_option') }}</option>{% endif %}
           {% for option in field.options %}<option value="{{ option.value }}"{% if field.input_value is same as(option.value) %} selected{% endif %}>{{ option.label }}</option>{% endfor %}
         </select>
       {% else %}

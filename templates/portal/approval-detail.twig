@@ -1,14 +1,14 @@
 {% extends 'portal/layout.twig' %}
 
-{% block title %}Approval request · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.approval_detail.approval_request_kumwe_portal') }}{% endblock %}
 
 {% block content %}
 <div data-kis-surface="core.portal.approvals" data-kis-component="review-workspace">
-    <p><a href="/portal/approvals">← Approval inbox</a></p>
+    <p><a href="/portal/approvals">{{ t('core.administrator.business_security.approval_inbox') }}</a></p>
     {% include '@kis/page-header.twig' with {
         eyebrow: approval.status,
-        title: 'Approval request',
-        purpose: 'Review the exact target and current decision history before recording a protected decision.'
+        title: t('core.administrator.business_security.approval_request'),
+        purpose: t('core.portal.approval_detail.review_the_exact_target_and_current')
     } only %}
     {% if notice %}<div class="portal-notice" role="status">{{ notice }}</div>{% endif %}
     {% if error %}<div class="portal-alert" role="alert">{{ error }}</div>{% endif %}
@@ -16,11 +16,11 @@
     <kumwe-tabs data-kis-tab-parameter="view">
         {% include '@kis/tabs.twig' with {
             id: 'portal-approval',
-            label: 'Approval request concerns',
+            label: t('core.portal.approval_detail.approval_request_concerns'),
             active: view,
             tabs: [
                 {id: 'review', label: 'Review', href: '/portal/approvals/' ~ (approval.id|url_encode) ~ '?view=review'},
-                {id: 'history', label: 'Decision history', href: '/portal/approvals/' ~ (approval.id|url_encode) ~ '?view=history', count: approval.votes|length}
+                {id: 'history', label: t('core.administrator.business_security.decision_history'), href: '/portal/approvals/' ~ (approval.id|url_encode) ~ '?view=history', count: approval.votes|length}
             ]
         } only %}
 
@@ -33,48 +33,48 @@
             tabindex="0"
         >
             <section aria-labelledby="approval-review-title">
-                <h2 id="approval-review-title">Review target and consequence</h2>
-                <p>Confirm the action, resource version, quorum, and expiry. Your decision is recorded in the immutable approval history.</p>
+                <h2 id="approval-review-title">{{ t('core.portal.approval_detail.review_target_and_consequence') }}</h2>
+                <p>{{ t('core.portal.approval_detail.confirm_the_action_resource_version_quorum') }}</p>
                 <dl class="portal-details">
-                    <div><dt>Request</dt><dd>{% include '@kis/technical-value.twig' with {label: 'Request ID', value: approval.id} only %}</dd></div>
-                    <div><dt>Action</dt><dd><code>{{ approval.action }}</code></dd></div>
-                    <div><dt>Resource</dt><dd>{{ approval.resourceType }}, version {{ approval.resourceVersion }}</dd></div>
-                    <div><dt>Quorum</dt><dd>{{ approval.approvalCount }} of {{ approval.requiredQuorum }}</dd></div>
-                    <div><dt>Created</dt><dd><time datetime="{{ approval.createdAt|date('c') }}">{{ approval.createdAt|date('Y-m-d H:i T') }}</time></dd></div>
-                    <div><dt>Expires</dt><dd><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></dd></div>
+                    <div><dt>{{ t('core.administrator.business_confirm.request') }}</dt><dd>{% include '@kis/technical-value.twig' with {label: t('core.portal.approval_detail.request_id'), value: approval.id} only %}</dd></div>
+                    <div><dt>{{ t('core.administrator.access_control.action') }}</dt><dd><code>{{ approval.action }}</code></dd></div>
+                    <div><dt>{{ t('core.administrator.business_security.resource') }}</dt><dd>{{ t('core.portal.approval_detail.version', {resourceType: approval.resourceType, resourceVersion: approval.resourceVersion}) }}</dd></div>
+                    <div><dt>{{ t('core.administrator.business_security.quorum') }}</dt><dd>{{ t('core.portal.approval_detail.of', {approvalCount: approval.approvalCount, requiredQuorum: approval.requiredQuorum}) }}</dd></div>
+                    <div><dt>{{ t('core.administrator.business_detail.created') }}</dt><dd><time datetime="{{ approval.createdAt|date('c') }}">{{ approval.createdAt|date('Y-m-d H:i T') }}</time></dd></div>
+                    <div><dt>{{ t('core.administrator.access_control.expires') }}</dt><dd><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></dd></div>
                 </dl>
             </section>
 
             {% if approval.canApprove or approval.canRevoke %}
             <section class="portal-security-panel" aria-labelledby="approval-decision-title">
-                <h2 id="approval-decision-title">Record a protected decision</h2>
-                <p>Step-up verification occurs only at this final action boundary. The authenticator or recovery code is bound to this exact decision and cannot be replayed.</p>
+                <h2 id="approval-decision-title">{{ t('core.portal.approval_detail.record_a_protected_decision') }}</h2>
+                <p>{{ t('core.portal.approval_detail.step_up_verification_occurs_only_at') }}</p>
                 <form method="post" class="portal-security-form" id="approval-decision-form">
                     <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
                     <fieldset>
-                        <legend>Verification method</legend>
-                        <label><input type="radio" name="verification_method" value="totp" checked> Authenticator code</label>
-                        <label><input type="radio" name="verification_method" value="recovery"> Recovery code</label>
+                        <legend>{{ t('core.administrator.access_control.verification_method') }}</legend>
+                        <label><input type="radio" name="verification_method" value="totp" checked> {{ t('core.administrator.access_control.authenticator_code') }}</label>
+                        <label><input type="radio" name="verification_method" value="recovery"> {{ t('core.administrator.access_control.recovery_code') }}</label>
                     </fieldset>
-                    <label for="approval-verification">Verification code</label>
+                    <label for="approval-verification">{{ t('core.administrator.business_confirm.verification_code') }}</label>
                     <input id="approval-verification" name="verification" autocomplete="one-time-code" required>
                     {% if approval.canApprove %}
-                        <label for="approval-reason">Reason <span>(optional, 500 characters)</span></label>
+                        <label for="approval-reason">{{ t('core.administrator.business_security.reason') }} <span>{{ t('core.portal.approval_detail.optional_500_characters') }}</span></label>
                         <textarea id="approval-reason" name="reason" maxlength="500"></textarea>
                         <div class="portal-actions">
-                            <button type="submit" formaction="/portal/approvals/{{ approval.id }}/approve">Approve</button>
-                            <button type="submit" class="portal-danger" formaction="/portal/approvals/{{ approval.id }}/reject">Reject</button>
+                            <button type="submit" formaction="/portal/approvals/{{ approval.id }}/approve">{{ t('core.portal.approval_detail.approve') }}</button>
+                            <button type="submit" class="portal-danger" formaction="/portal/approvals/{{ approval.id }}/reject">{{ t('core.portal.approval_detail.reject') }}</button>
                         </div>
                     {% endif %}
                     {% if approval.canRevoke %}
-                        <button type="submit" class="portal-danger" formaction="/portal/approvals/{{ approval.id }}/revoke">Revoke approval</button>
+                        <button type="submit" class="portal-danger" formaction="/portal/approvals/{{ approval.id }}/revoke">{{ t('core.portal.approval_detail.revoke_approval') }}</button>
                     {% endif %}
                 </form>
             </section>
             {% else %}
                 {% include '@kis/empty-state.twig' with {
-                    title: 'No decision is available',
-                    message: 'This request is visible for review, but its current state or policy does not permit another decision.'
+                    title: t('core.portal.approval_detail.no_decision_is_available'),
+                    message: t('core.portal.approval_detail.this_request_is_visible_for_review')
                 } only %}
             {% endif %}
         </section>
@@ -87,17 +87,17 @@
             data-kis-tab-panel="history"
             tabindex="0"
         >
-            <h2>Decision history</h2>
-            <p>This append-only record discloses decision, time, and supplied reason. Internal actor and policy evidence remain protected.</p>
+            <h2>{{ t('core.administrator.business_security.decision_history') }}</h2>
+            <p>{{ t('core.portal.approval_detail.this_append_only_record_discloses_decision') }}</p>
             {% if approval.votes is empty %}
                 {% include '@kis/empty-state.twig' with {
-                    title: 'No decisions have been recorded',
-                    message: 'The request has not yet received a visible decision.'
+                    title: t('core.portal.approval_detail.no_decisions_have_been_recorded'),
+                    message: t('core.portal.approval_detail.the_request_has_not_yet_received')
                 } only %}
             {% else %}
                 <ol>
                 {% for vote in approval.votes %}
-                    <li><strong>{{ vote.decision }}</strong> at <time datetime="{{ vote.decidedAt|date('c') }}">{{ vote.decidedAt|date('Y-m-d H:i T') }}</time>{% if vote.reason %}: {{ vote.reason }}{% endif %}</li>
+                    <li><strong>{{ vote.decision }}</strong> {{ t('core.administrator.business_schema_plans.at') }} <time datetime="{{ vote.decidedAt|date('c') }}">{{ vote.decidedAt|date('Y-m-d H:i T') }}</time>{% if vote.reason %}: {{ vote.reason }}{% endif %}</li>
                 {% endfor %}
                 </ol>
             {% endif %}

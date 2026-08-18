@@ -108,6 +108,7 @@ final class InterfaceTranslationGateTest extends TestCase
     public function testTheExtractionRegisterCannotOutliveTheWorkItRecords(): void
     {
         $tree = $this->treeCopy();
+        $this->registerPendingTemplate($tree, 'templates/administrator/media.twig');
         unlink($tree . '/templates/administrator/media.twig');
 
         [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
@@ -120,10 +121,7 @@ final class InterfaceTranslationGateTest extends TestCase
     public function testAnExtractedTemplateMustLeaveTheRegisterRatherThanLingerInIt(): void
     {
         $tree = $this->treeCopy();
-        file_put_contents(
-            $tree . '/templates/administrator/media.twig',
-            "{% extends \"layout.twig\" %}\n{% block content %}{{ t('core.site.home.eyebrow') }}{% endblock %}\n",
-        );
+        $this->registerPendingTemplate($tree, 'templates/administrator/media.twig');
 
         [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
 
@@ -183,6 +181,34 @@ final class InterfaceTranslationGateTest extends TestCase
             self::assertStringContainsString('dir="{{ text_direction() }}"', $layout, $surface);
             self::assertStringNotContainsString('<html lang="en">', $layout, $surface);
         }
+    }
+
+    /**
+     * Record one template in a tree copy's extraction register, as the pending era did.
+     *
+     * The committed register holds no pending templates any more, so the register semantics —
+     * a stale entry fails, a lingering entry fails — are proven against an entry this writes
+     * into the copy rather than against an entry the tree no longer carries.
+     *
+     * @param  string  $tree      Root of the copied tree whose register is edited.
+     * @param  string  $template  Repository-relative template path to record as pending.
+     *
+     * @return void
+     *
+     * @since  2.0.0
+     */
+    private function registerPendingTemplate(string $tree, string $template): void
+    {
+        $path = $tree . '/tools/translation-extraction.json';
+        $encoded = file_get_contents($path);
+        self::assertIsString($encoded);
+        /** @var array{pending_extraction: list<array{path: string, reason: string}>} $register */
+        $register = json_decode($encoded, true, 16, JSON_THROW_ON_ERROR);
+        $register['pending_extraction'][] = [
+            'path' => $template,
+            'reason' => 'Awaiting extraction, reintroduced by this test fixture. V2-LNG-008.',
+        ];
+        file_put_contents($path, json_encode($register, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     /**

@@ -1,72 +1,72 @@
 {% extends 'portal/layout.twig' %}
 
-{% block title %}Account security · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.security.account_security_kumwe_portal') }}{% endblock %}
 
 {% block content %}
 <div class="kis-phase-five-portal" data-kis-surface="core.portal.security">
     {% include '@kis/page-header.twig' with {
-        eyebrow: 'Account security',
-        title: 'Two-step verification',
-        purpose: 'Use an authenticator code for sensitive actions. Recovery codes are single-use.'
+        eyebrow: t('core.portal.security.account_security'),
+        title: t('core.portal.security.two_step_verification'),
+        purpose: t('core.portal.security.use_an_authenticator_code_for_sensitive')
     } only %}
     {% if notice %}<div class="portal-notice notice" role="status">{{ notice }}</div>{% endif %}
     {% if error %}<div class="portal-alert notice danger" role="alert">{{ error }}</div>{% endif %}
 
     {% if recovery_codes is not empty %}
         <section class="portal-security-panel portal-secret-once" aria-labelledby="recovery-codes-title">
-            <p class="eyebrow">Shown once</p>
-            <h2 id="recovery-codes-title">Your recovery codes</h2>
-            <p>Store these somewhere private before leaving this page. Each code works once and Kumwe will not display this set again.</p>
+            <p class="eyebrow">{{ t('core.portal.security.shown_once') }}</p>
+            <h2 id="recovery-codes-title">{{ t('core.administrator.access_control.your_recovery_codes') }}</h2>
+            <p>{{ t('core.portal.security.store_these_somewhere_private_before_leaving') }}</p>
             <ol class="portal-recovery-codes">
                 {% for code in recovery_codes %}<li><code>{{ code }}</code></li>{% endfor %}
             </ol>
         </section>
     {% elseif enrollment %}
         <section class="portal-security-panel" aria-labelledby="enrollment-title">
-            <p class="eyebrow">Enrollment in progress</p>
-            <h2 id="enrollment-title">Connect your authenticator</h2>
-            <p class="portal-secret-once"><strong>This setup secret is shown only for the current enrollment.</strong> Do not share it or include it in screenshots or support messages.</p>
-            <p>Enter this setup key in your authenticator, then confirm with its current code.</p>
-            <p><strong>Setup key:</strong> <code class="portal-secret">{{ enrollment.secret }}</code></p>
-            <details><summary>Show authenticator URI</summary><code class="portal-uri">{{ enrollment.provisioningUri }}</code></details>
-            <p>This setup expires at <time datetime="{{ enrollment.expiresAt|date('c') }}">{{ enrollment.expiresAt|date('Y-m-d H:i T') }}</time>.</p>
+            <p class="eyebrow">{{ t('core.portal.security.enrollment_in_progress') }}</p>
+            <h2 id="enrollment-title">{{ t('core.portal.security.connect_your_authenticator') }}</h2>
+            <p class="portal-secret-once"><strong>{{ t('core.portal.security.this_setup_secret_is_shown_only') }}</strong> {{ t('core.portal.security.do_not_share_it_or_include') }}</p>
+            <p>{{ t('core.portal.security.enter_this_setup_key_in_your') }}</p>
+            <p><strong>{{ t('core.portal.security.setup_key') }}</strong> <code class="portal-secret">{{ enrollment.secret }}</code></p>
+            <details><summary>{{ t('core.portal.security.show_authenticator_uri') }}</summary><code class="portal-uri">{{ enrollment.provisioningUri }}</code></details>
+            <p>{{ t('core.portal.security.this_setup_expires_at') }} <time datetime="{{ enrollment.expiresAt|date('c') }}">{{ enrollment.expiresAt|date('Y-m-d H:i T') }}</time>.</p>
             <form method="post" action="/portal/security/totp/confirm" class="portal-security-form">
                 <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
                 <input type="hidden" name="enrollment_id" value="{{ enrollment.enrollmentId }}">
-                <label for="portal-enrollment-code">Authenticator code</label>
+                <label for="portal-enrollment-code">{{ t('core.administrator.access_control.authenticator_code') }}</label>
                 <input id="portal-enrollment-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" required>
-                <button type="submit">Confirm authenticator</button>
+                <button type="submit">{{ t('core.portal.security.confirm_authenticator') }}</button>
             </form>
         </section>
     {% else %}
         <section class="portal-security-primary" aria-labelledby="enroll-title">
-            <p class="eyebrow">Recommended</p>
-            <h2 id="enroll-title">Set up an authenticator</h2>
-            <p>Start a new ten-minute enrollment. An existing active authenticator is never overwritten.</p>
+            <p class="eyebrow">{{ t('core.portal.security.recommended') }}</p>
+            <h2 id="enroll-title">{{ t('core.portal.security.set_up_an_authenticator') }}</h2>
+            <p>{{ t('core.portal.security.start_a_new_ten_minute_enrollment') }}</p>
             <form method="post" action="/portal/security/totp/enroll">
                 <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
-                <button type="submit">Start setup</button>
+                <button type="submit">{{ t('core.portal.security.start_setup') }}</button>
             </form>
         </section>
-        <section class="portal-security-actions" aria-label="Existing authenticator and recovery options">
+        <section class="portal-security-actions" aria-label="{{ t('core.portal.security.existing_authenticator_and_recovery_options') }}">
             <details>
-                <summary>Verify with an authenticator</summary>
-                <p>Use this when a sensitive action asks you to verify your identity.</p>
+                <summary>{{ t('core.portal.security.verify_with_an_authenticator') }}</summary>
+                <p>{{ t('core.portal.security.use_this_when_a_sensitive_action') }}</p>
                 <form method="post" action="/portal/security/challenge" class="portal-security-form">
                     <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
-                    <label for="portal-challenge-code">Authenticator code</label>
+                    <label for="portal-challenge-code">{{ t('core.administrator.access_control.authenticator_code') }}</label>
                     <input id="portal-challenge-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" required>
-                    <button type="submit">Verify identity</button>
+                    <button type="submit">{{ t('core.portal.security.verify_identity') }}</button>
                 </form>
             </details>
             <details>
-                <summary>Use a recovery code</summary>
-                <p>Each recovery code works once. The code is never retained after verification.</p>
+                <summary>{{ t('core.portal.security.use_a_recovery_code') }}</summary>
+                <p>{{ t('core.portal.security.each_recovery_code_works_once_the') }}</p>
                 <form method="post" action="/portal/security/recovery" class="portal-security-form">
                     <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
-                    <label for="portal-recovery-code">Recovery code</label>
+                    <label for="portal-recovery-code">{{ t('core.administrator.access_control.recovery_code') }}</label>
                     <input id="portal-recovery-code" name="recovery_code" autocomplete="one-time-code" required>
-                    <button type="submit">Use recovery code</button>
+                    <button type="submit">{{ t('core.portal.security.use_recovery_code') }}</button>
                 </form>
             </details>
         </section>

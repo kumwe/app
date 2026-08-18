@@ -1,22 +1,22 @@
 {% extends "layout.twig" %}
-{% block title %}Site settings · Kumwe{% endblock %}
-{% block context_title %}Site settings{% endblock %}
+{% block title %}{{ t('core.administrator.settings.site_settings_kumwe') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.settings.site_settings') }}{% endblock %}
 {% block content %}
   <div class="kis-phase-five" data-kis-surface="core.administrator.settings">
   {% embed '@kis/page-header.twig' with {
     eyebrow: 'Website',
-    title: 'Site settings',
-    purpose: 'Control the public identity, homepage, menu, design system, regional defaults, and search visibility.'
+    title: t('core.administrator.settings.site_settings'),
+    purpose: t('core.administrator.settings.control_the_public_identity_homepage_menu')
   } only %}
-    {% block actions %}<div class="page-actions"><a class="button" href="/" target="_blank" rel="noopener">View website</a></div>{% endblock %}
+    {% block actions %}<div class="page-actions"><a class="button" href="/" target="_blank" rel="noopener">{{ t('core.administrator.navigation.view_website') }}</a></div>{% endblock %}
   {% endembed %}
-  <nav class="kis-phase-five-section-nav" aria-label="Site setting groups">
-    <a href="#settings-identity">Public identity</a>
-    <a href="#settings-design">Design system</a>
-    <a href="#settings-regional">Regional defaults</a>
-    <a href="#settings-search">Search engines</a>
+  <nav class="kis-phase-five-section-nav" aria-label="{{ t('core.administrator.settings.site_setting_groups') }}">
+    <a href="#settings-identity">{{ t('core.administrator.settings.public_identity') }}</a>
+    <a href="#settings-design">{{ t('core.administrator.settings.design_system') }}</a>
+    <a href="#settings-regional">{{ t('core.administrator.settings.regional_defaults') }}</a>
+    <a href="#settings-search">{{ t('core.administrator.settings.search_engines') }}</a>
   </nav>
-  {% if saved %}<div class="notice success" role="status"><span>Settings and presentation saved.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
+  {% if saved %}<div class="notice success" role="status"><span>{{ t('core.administrator.settings.settings_and_presentation_saved') }}</span><button class="notice-dismiss" type="button" aria-label="{{ t('core.administrator.access_control.dismiss') }}" data-dismiss-notice>×</button></div>{% endif %}
   {% if error %}<div class="notice danger" role="alert"><span>{{ error }}</span></div>{% endif %}
 
   <div class="editor-grid">
@@ -25,94 +25,94 @@
       <input type="hidden" name="_csrf" value="{{ csrf }}">
 
       <fieldset id="settings-identity" class="field-group stack kis-phase-five-card">
-        <legend>Public identity</legend>
-        <label>Site name<small>Shown in the public header, page titles, and footer.</small><input name="site_name" value="{{ settings.site_name }}" maxlength="160" required></label>
-        <div class="stack"><label for="presentation-logo">Site logo<small>Choose a managed image or enter a root-relative URL. This identity is independent of the homepage content.</small></label><span class="media-input"><input id="presentation-logo" name="presentation_logo" value="{{ settings.presentation.logo }}" maxlength="2048"><button type="button" data-open-media-picker data-media-target="presentation-logo">Choose media</button></span></div>
-        <label>Footer text<input name="presentation_footer_text" value="{{ settings.presentation.footer_text }}" maxlength="255" required></label>
-        <label>Homepage<small>Select the managed page rendered at the root address. It remains editable like every other page.</small><select name="homepage_content_id" required><option value="">Choose a page…</option>{% for page in pages %}<option value="{{ page.id }}"{% if page.id == settings.homepage_content_id %} selected{% endif %}>{{ page.title }} · {{ page.status|replace({'_': ' '})|title }} · /{{ page.slug }}</option>{% endfor %}</select></label>
-        <label>Primary menu<small>The selected database menu supplies the public header links and canonical page paths.</small><select name="presentation_primary_menu" required><option value="{{ settings.presentation.primary_menu }}">{{ settings.presentation.primary_menu }} · Current menu</option>{% for menu in menus %}{% if menu.handle != settings.presentation.primary_menu %}<option value="{{ menu.handle }}">{{ menu.title }} · {{ menu.handle }}</option>{% endif %}{% endfor %}</select></label>
+        <legend>{{ t('core.administrator.settings.public_identity') }}</legend>
+        <label>{{ t('core.administrator.settings.site_name') }}<small>{{ t('core.administrator.settings.shown_in_the_public_header_page') }}</small><input name="site_name" value="{{ settings.site_name }}" maxlength="160" required></label>
+        <div class="stack"><label for="presentation-logo">{{ t('core.administrator.settings.site_logo') }}<small>{{ t('core.administrator.settings.choose_a_managed_image_or_enter') }}</small></label><span class="media-input"><input id="presentation-logo" name="presentation_logo" value="{{ settings.presentation.logo }}" maxlength="2048"><button type="button" data-open-media-picker data-media-target="presentation-logo">{{ t('core.administrator.fields.choose_media') }}</button></span></div>
+        <label>{{ t('core.administrator.settings.footer_text') }}<input name="presentation_footer_text" value="{{ settings.presentation.footer_text }}" maxlength="255" required></label>
+        <label>{{ t('core.administrator.settings.homepage') }}<small>{{ t('core.administrator.settings.select_the_managed_page_rendered_at') }}</small><select name="homepage_content_id" required><option value="">{{ t('core.administrator.settings.choose_a_page') }}</option>{% for page in pages %}<option value="{{ page.id }}"{% if page.id == settings.homepage_content_id %} selected{% endif %}>{{ page.title }} · {{ page.status|replace({'_': ' '})|title }} · /{{ page.slug }}</option>{% endfor %}</select></label>
+        <label>{{ t('core.administrator.settings.primary_menu') }}<small>{{ t('core.administrator.settings.the_selected_database_menu_supplies_the') }}</small><select name="presentation_primary_menu" required><option value="{{ settings.presentation.primary_menu }}">{{ t('core.administrator.settings.current_menu', {primary_menu: settings.presentation.primary_menu}) }}</option>{% for menu in menus %}{% if menu.handle != settings.presentation.primary_menu %}<option value="{{ menu.handle }}">{{ menu.title }} · {{ menu.handle }}</option>{% endif %}{% endfor %}</select></label>
       </fieldset>
 
       <fieldset id="settings-design" class="field-group stack kis-phase-five-card">
-        <legend>Design system</legend>
-        <p class="field-help">Choose a coordinated scheme and interaction treatment. Every value below is stored as managed site data and used by the built-in public theme.</p>
+        <legend>{{ t('core.administrator.settings.design_system') }}</legend>
+        <p class="field-help">{{ t('core.administrator.settings.choose_a_coordinated_scheme_and_interaction') }}</p>
         <div class="two-column">
-          <label>Active color scheme<select name="presentation_active_scheme" required data-active-presentation-scheme>{% for scheme in settings.presentation.schemes %}<option value="{{ scheme.handle }}"{% if scheme.handle == settings.presentation.active_scheme %} selected{% endif %}>{{ scheme.name }}</option>{% endfor %}</select></label>
-          <label>Button treatment<select name="presentation_button_style" required><option value="solid"{% if settings.presentation.button_style == 'solid' %} selected{% endif %}>Solid corporate</option><option value="soft"{% if settings.presentation.button_style == 'soft' %} selected{% endif %}>Soft accent</option><option value="outline"{% if settings.presentation.button_style == 'outline' %} selected{% endif %}>Outline</option></select></label>
-          <label>Button shape<select name="presentation_button_shape" required><option value="square"{% if settings.presentation.button_shape == 'square' %} selected{% endif %}>Square</option><option value="rounded"{% if settings.presentation.button_shape == 'rounded' %} selected{% endif %}>Rounded</option><option value="pill"{% if settings.presentation.button_shape == 'pill' %} selected{% endif %}>Pill</option></select></label>
-          <label>Header treatment<select name="presentation_header_style" required><option value="solid"{% if settings.presentation.header_style == 'solid' %} selected{% endif %}>Solid</option><option value="glass"{% if settings.presentation.header_style == 'glass' %} selected{% endif %}>Corporate glass</option><option value="borderless"{% if settings.presentation.header_style == 'borderless' %} selected{% endif %}>Borderless</option></select></label>
+          <label>{{ t('core.administrator.settings.active_color_scheme') }}<select name="presentation_active_scheme" required data-active-presentation-scheme>{% for scheme in settings.presentation.schemes %}<option value="{{ scheme.handle }}"{% if scheme.handle == settings.presentation.active_scheme %} selected{% endif %}>{{ scheme.name }}</option>{% endfor %}</select></label>
+          <label>{{ t('core.administrator.settings.button_treatment') }}<select name="presentation_button_style" required><option value="solid"{% if settings.presentation.button_style == 'solid' %} selected{% endif %}>{{ t('core.administrator.settings.solid_corporate') }}</option><option value="soft"{% if settings.presentation.button_style == 'soft' %} selected{% endif %}>{{ t('core.administrator.settings.soft_accent') }}</option><option value="outline"{% if settings.presentation.button_style == 'outline' %} selected{% endif %}>{{ t('core.administrator.settings.outline') }}</option></select></label>
+          <label>{{ t('core.administrator.settings.button_shape') }}<select name="presentation_button_shape" required><option value="square"{% if settings.presentation.button_shape == 'square' %} selected{% endif %}>{{ t('core.administrator.settings.square') }}</option><option value="rounded"{% if settings.presentation.button_shape == 'rounded' %} selected{% endif %}>{{ t('core.administrator.settings.rounded') }}</option><option value="pill"{% if settings.presentation.button_shape == 'pill' %} selected{% endif %}>{{ t('core.administrator.settings.pill') }}</option></select></label>
+          <label>{{ t('core.administrator.settings.header_treatment') }}<select name="presentation_header_style" required><option value="solid"{% if settings.presentation.header_style == 'solid' %} selected{% endif %}>{{ t('core.administrator.settings.solid') }}</option><option value="glass"{% if settings.presentation.header_style == 'glass' %} selected{% endif %}>{{ t('core.administrator.settings.corporate_glass') }}</option><option value="borderless"{% if settings.presentation.header_style == 'borderless' %} selected{% endif %}>{{ t('core.administrator.settings.borderless') }}</option></select></label>
         </div>
 
         <kumwe-presentation-schemes>
           <div class="stack" data-presentation-scheme-rows>
             {% for scheme in settings.presentation.schemes %}
               <article class="builder-row builder-row-expanded presentation-scheme-row" data-presentation-scheme-row>
-                <div class="builder-row-heading"><div><p class="eyebrow">Color scheme</p><h3 data-presentation-scheme-heading>{{ scheme.name }}</h3></div><button class="remove-row" type="button" data-remove-presentation-scheme>Remove</button></div>
+                <div class="builder-row-heading"><div><p class="eyebrow">{{ t('core.administrator.settings.color_scheme') }}</p><h3 data-presentation-scheme-heading>{{ scheme.name }}</h3></div><button class="remove-row" type="button" data-remove-presentation-scheme>{{ t('core.administrator.business_definitions.remove') }}</button></div>
                 <div class="three-column">
-                  <label>Name<input name="scheme_{{ loop.index0 }}_name" value="{{ scheme.name }}" maxlength="80" required data-presentation-scheme-name></label>
-                  <label>Handle<input name="scheme_{{ loop.index0 }}_handle" value="{{ scheme.handle }}" pattern="[a-z][a-z0-9_]*" maxlength="64" required data-presentation-scheme-handle></label>
-                  <label>Browser color mode<select name="scheme_{{ loop.index0 }}_color_mode" required><option value="light"{% if scheme.color_mode == 'light' %} selected{% endif %}>Light</option><option value="dark"{% if scheme.color_mode == 'dark' %} selected{% endif %}>Dark</option></select></label>
+                  <label>{{ t('core.administrator.access_control.name') }}<input name="scheme_{{ loop.index0 }}_name" value="{{ scheme.name }}" maxlength="80" required data-presentation-scheme-name></label>
+                  <label>{{ t('core.administrator.business_definitions.handle') }}<input name="scheme_{{ loop.index0 }}_handle" value="{{ scheme.handle }}" pattern="[a-z][a-z0-9_]*" maxlength="64" required data-presentation-scheme-handle></label>
+                  <label>{{ t('core.administrator.settings.browser_color_mode') }}<select name="scheme_{{ loop.index0 }}_color_mode" required><option value="light"{% if scheme.color_mode == 'light' %} selected{% endif %}>{{ t('core.administrator.settings.light') }}</option><option value="dark"{% if scheme.color_mode == 'dark' %} selected{% endif %}>{{ t('core.administrator.settings.dark') }}</option></select></label>
                 </div>
                 <div class="presentation-color-grid">
-                  <label>Corporate navy<input type="color" name="scheme_{{ loop.index0 }}_navy" value="{{ scheme.colors.navy }}" required></label>
-                  <label>Primary text<input type="color" name="scheme_{{ loop.index0 }}_ink" value="{{ scheme.colors.ink }}" required></label>
-                  <label>Muted text<input type="color" name="scheme_{{ loop.index0 }}_muted" value="{{ scheme.colors.muted }}" required></label>
-                  <label>Page canvas<input type="color" name="scheme_{{ loop.index0 }}_canvas" value="{{ scheme.colors.canvas }}" required></label>
-                  <label>Surface<input type="color" name="scheme_{{ loop.index0 }}_surface" value="{{ scheme.colors.surface }}" required></label>
-                  <label>Border<input type="color" name="scheme_{{ loop.index0 }}_border" value="{{ scheme.colors.border }}" required></label>
-                  <label>Accent<input type="color" name="scheme_{{ loop.index0 }}_accent" value="{{ scheme.colors.accent }}" required></label>
-                  <label>Strong accent<input type="color" name="scheme_{{ loop.index0 }}_accent_strong" value="{{ scheme.colors.accent_strong }}" required></label>
-                  <label>Soft accent<input type="color" name="scheme_{{ loop.index0 }}_accent_soft" value="{{ scheme.colors.accent_soft }}" required></label>
-                  <label>On accent<input type="color" name="scheme_{{ loop.index0 }}_on_accent" value="{{ scheme.colors.on_accent }}" required></label>
+                  <label>{{ t('core.administrator.settings.corporate_navy') }}<input type="color" name="scheme_{{ loop.index0 }}_navy" value="{{ scheme.colors.navy }}" required></label>
+                  <label>{{ t('core.administrator.settings.primary_text') }}<input type="color" name="scheme_{{ loop.index0 }}_ink" value="{{ scheme.colors.ink }}" required></label>
+                  <label>{{ t('core.administrator.settings.muted_text') }}<input type="color" name="scheme_{{ loop.index0 }}_muted" value="{{ scheme.colors.muted }}" required></label>
+                  <label>{{ t('core.administrator.settings.page_canvas') }}<input type="color" name="scheme_{{ loop.index0 }}_canvas" value="{{ scheme.colors.canvas }}" required></label>
+                  <label>{{ t('core.administrator.settings.surface') }}<input type="color" name="scheme_{{ loop.index0 }}_surface" value="{{ scheme.colors.surface }}" required></label>
+                  <label>{{ t('core.administrator.settings.border') }}<input type="color" name="scheme_{{ loop.index0 }}_border" value="{{ scheme.colors.border }}" required></label>
+                  <label>{{ t('core.administrator.settings.accent') }}<input type="color" name="scheme_{{ loop.index0 }}_accent" value="{{ scheme.colors.accent }}" required></label>
+                  <label>{{ t('core.administrator.settings.strong_accent') }}<input type="color" name="scheme_{{ loop.index0 }}_accent_strong" value="{{ scheme.colors.accent_strong }}" required></label>
+                  <label>{{ t('core.administrator.settings.soft_accent') }}<input type="color" name="scheme_{{ loop.index0 }}_accent_soft" value="{{ scheme.colors.accent_soft }}" required></label>
+                  <label>{{ t('core.administrator.settings.on_accent') }}<input type="color" name="scheme_{{ loop.index0 }}_on_accent" value="{{ scheme.colors.on_accent }}" required></label>
                 </div>
               </article>
             {% endfor %}
           </div>
-          <button type="button" data-add-presentation-scheme>Add color scheme</button>
+          <button type="button" data-add-presentation-scheme>{{ t('core.administrator.settings.add_color_scheme') }}</button>
           <template data-presentation-scheme-template>
             <article class="builder-row builder-row-expanded presentation-scheme-row" data-presentation-scheme-row>
-              <div class="builder-row-heading"><div><p class="eyebrow">Color scheme</p><h3 data-presentation-scheme-heading>New scheme</h3></div><button class="remove-row" type="button" data-remove-presentation-scheme>Remove</button></div>
+              <div class="builder-row-heading"><div><p class="eyebrow">{{ t('core.administrator.settings.color_scheme') }}</p><h3 data-presentation-scheme-heading>{{ t('core.administrator.settings.new_scheme') }}</h3></div><button class="remove-row" type="button" data-remove-presentation-scheme>{{ t('core.administrator.business_definitions.remove') }}</button></div>
               <div class="three-column">
-                <label>Name<input name="scheme___INDEX___name" value="New scheme" maxlength="80" required data-presentation-scheme-name></label>
-                <label>Handle<input name="scheme___INDEX___handle" value="scheme___INDEX__" pattern="[a-z][a-z0-9_]*" maxlength="64" required data-presentation-scheme-handle></label>
-                <label>Browser color mode<select name="scheme___INDEX___color_mode" required><option value="light">Light</option><option value="dark">Dark</option></select></label>
+                <label>{{ t('core.administrator.access_control.name') }}<input name="scheme___INDEX___name" value="New scheme" maxlength="80" required data-presentation-scheme-name></label>
+                <label>{{ t('core.administrator.business_definitions.handle') }}<input name="scheme___INDEX___handle" value="scheme___INDEX__" pattern="[a-z][a-z0-9_]*" maxlength="64" required data-presentation-scheme-handle></label>
+                <label>{{ t('core.administrator.settings.browser_color_mode') }}<select name="scheme___INDEX___color_mode" required><option value="light">{{ t('core.administrator.settings.light') }}</option><option value="dark">{{ t('core.administrator.settings.dark') }}</option></select></label>
               </div>
               <div class="presentation-color-grid">
-                <label>Corporate navy<input type="color" name="scheme___INDEX___navy" value="#07182d" required></label>
-                <label>Primary text<input type="color" name="scheme___INDEX___ink" value="#13233a" required></label>
-                <label>Muted text<input type="color" name="scheme___INDEX___muted" value="#5c6f84" required></label>
-                <label>Page canvas<input type="color" name="scheme___INDEX___canvas" value="#f5f8fb" required></label>
-                <label>Surface<input type="color" name="scheme___INDEX___surface" value="#ffffff" required></label>
-                <label>Border<input type="color" name="scheme___INDEX___border" value="#dce5ed" required></label>
-                <label>Accent<input type="color" name="scheme___INDEX___accent" value="#0c9189" required></label>
-                <label>Strong accent<input type="color" name="scheme___INDEX___accent_strong" value="#08726d" required></label>
-                <label>Soft accent<input type="color" name="scheme___INDEX___accent_soft" value="#dff6f4" required></label>
-                <label>On accent<input type="color" name="scheme___INDEX___on_accent" value="#ffffff" required></label>
+                <label>{{ t('core.administrator.settings.corporate_navy') }}<input type="color" name="scheme___INDEX___navy" value="#07182d" required></label>
+                <label>{{ t('core.administrator.settings.primary_text') }}<input type="color" name="scheme___INDEX___ink" value="#13233a" required></label>
+                <label>{{ t('core.administrator.settings.muted_text') }}<input type="color" name="scheme___INDEX___muted" value="#5c6f84" required></label>
+                <label>{{ t('core.administrator.settings.page_canvas') }}<input type="color" name="scheme___INDEX___canvas" value="#f5f8fb" required></label>
+                <label>{{ t('core.administrator.settings.surface') }}<input type="color" name="scheme___INDEX___surface" value="#ffffff" required></label>
+                <label>{{ t('core.administrator.settings.border') }}<input type="color" name="scheme___INDEX___border" value="#dce5ed" required></label>
+                <label>{{ t('core.administrator.settings.accent') }}<input type="color" name="scheme___INDEX___accent" value="#0c9189" required></label>
+                <label>{{ t('core.administrator.settings.strong_accent') }}<input type="color" name="scheme___INDEX___accent_strong" value="#08726d" required></label>
+                <label>{{ t('core.administrator.settings.soft_accent') }}<input type="color" name="scheme___INDEX___accent_soft" value="#dff6f4" required></label>
+                <label>{{ t('core.administrator.settings.on_accent') }}<input type="color" name="scheme___INDEX___on_accent" value="#ffffff" required></label>
               </div>
             </article>
           </template>
         </kumwe-presentation-schemes>
       </fieldset>
 
-      <fieldset id="settings-regional" class="field-group stack kis-phase-five-card"><legend>Regional defaults</legend><div class="two-column"><label>Default locale<small>Use a language-region value such as en-NA.</small><input name="default_locale" value="{{ settings.default_locale }}" maxlength="35" required></label><label>Timezone<small>Use an IANA timezone such as Africa/Windhoek.</small><input name="timezone" value="{{ settings.timezone }}" maxlength="80" required></label></div></fieldset>
-      <fieldset id="settings-search" class="field-group stack kis-phase-five-card"><legend>Search engines</legend><label class="check"><input type="checkbox" name="search_indexing_enabled" value="1"{% if settings.search_indexing_enabled %} checked{% endif %}><span>Allow search indexing<small>When disabled, Kumwe publishes no-index instructions. It does not make content private.</small></span></label></fieldset>
-      <p class="kis-dirty-status" role="status" aria-live="polite" data-kis-dirty-status>Changes are saved when you submit this form.</p>
-      <div class="page-actions"><button class="primary" type="submit">Save settings and design</button></div>
+      <fieldset id="settings-regional" class="field-group stack kis-phase-five-card"><legend>{{ t('core.administrator.settings.regional_defaults') }}</legend><div class="two-column"><label>{{ t('core.administrator.settings.default_locale') }}<small>{{ t('core.administrator.settings.use_a_language_region_value_such') }}</small><input name="default_locale" value="{{ settings.default_locale }}" maxlength="35" required></label><label>{{ t('core.administrator.automation.timezone') }}<small>{{ t('core.administrator.settings.use_an_iana_timezone_such_as') }}</small><input name="timezone" value="{{ settings.timezone }}" maxlength="80" required></label></div></fieldset>
+      <fieldset id="settings-search" class="field-group stack kis-phase-five-card"><legend>{{ t('core.administrator.settings.search_engines') }}</legend><label class="check"><input type="checkbox" name="search_indexing_enabled" value="1"{% if settings.search_indexing_enabled %} checked{% endif %}><span>{{ t('core.administrator.settings.allow_search_indexing') }}<small>{{ t('core.administrator.settings.when_disabled_kumwe_publishes_no_index') }}</small></span></label></fieldset>
+      <p class="kis-dirty-status" role="status" aria-live="polite" data-kis-dirty-status>{{ t('core.administrator.content_form.changes_are_saved_when_you_submit') }}</p>
+      <div class="page-actions"><button class="primary" type="submit">{{ t('core.administrator.settings.save_settings_and_design') }}</button></div>
     </form>
     </kumwe-dirty-form>
 
     <aside class="editor-sidebar stack">
-      <section class="panel panel-body stack"><div><p class="eyebrow">Presentation</p><h2>Public website</h2></div><p class="text-muted text-small">The built-in Twig theme reads these database values on every site render. Installed site templates may override the markup while retaining managed content.</p><a href="/administrator/navigation">Manage public menus</a>{% if capabilities['extensions.manage'] is defined %}<a href="/administrator/extensions">Install or activate templates</a>{% endif %}</section>
-      <section class="panel panel-body stack"><div><p class="eyebrow">Shared contract</p><h2>Every management surface</h2></div><p class="text-muted text-small">The REST API, CLI, MCP tools, and this graphical form all update the same validated site-settings service.</p></section>
-      <section class="panel panel-body stack"><div><p class="eyebrow">Protected boundary</p><h2>Infrastructure settings</h2></div><p class="text-muted text-small">Database, Redis, secrets, trusted proxies, and releases remain deployment configuration and cannot be changed from a browser session.</p></section>
+      <section class="panel panel-body stack"><div><p class="eyebrow">{{ t('core.administrator.settings.presentation') }}</p><h2>{{ t('core.administrator.settings.public_website') }}</h2></div><p class="text-muted text-small">{{ t('core.administrator.settings.the_built_in_twig_theme_reads') }}</p><a href="/administrator/navigation">{{ t('core.administrator.settings.manage_public_menus') }}</a>{% if capabilities['extensions.manage'] is defined %}<a href="/administrator/extensions">{{ t('core.administrator.settings.install_or_activate_templates') }}</a>{% endif %}</section>
+      <section class="panel panel-body stack"><div><p class="eyebrow">{{ t('core.administrator.settings.shared_contract') }}</p><h2>{{ t('core.administrator.settings.every_management_surface') }}</h2></div><p class="text-muted text-small">{{ t('core.administrator.settings.the_rest_api_cli_mcp_tools') }}</p></section>
+      <section class="panel panel-body stack"><div><p class="eyebrow">{{ t('core.administrator.settings.protected_boundary') }}</p><h2>{{ t('core.administrator.settings.infrastructure_settings') }}</h2></div><p class="text-muted text-small">{{ t('core.administrator.settings.database_redis_secrets_trusted_proxies_and') }}</p></section>
     </aside>
   </div>
 
   {% if media_assets is not empty %}
     <kumwe-media-picker>
       <dialog class="media-dialog" aria-labelledby="settings-media-dialog-title">
-        <div class="media-dialog-header"><div><p class="eyebrow">Media library</p><h2 id="settings-media-dialog-title">Choose the site logo</h2></div><form method="dialog"><button type="submit" aria-label="Close media library">Close</button></form></div>
-        <label class="media-dialog-search">Filter media<input type="search" placeholder="Search file names" data-media-filter></label>
+        <div class="media-dialog-header"><div><p class="eyebrow">{{ t('core.administrator.content_form.media_library') }}</p><h2 id="settings-media-dialog-title">{{ t('core.administrator.settings.choose_the_site_logo') }}</h2></div><form method="dialog"><button type="submit" aria-label="{{ t('core.administrator.content_form.close_media_library') }}">{{ t('core.administrator.content_form.close') }}</button></form></div>
+        <label class="media-dialog-search">{{ t('core.administrator.content_form.filter_media') }}<input type="search" placeholder="{{ t('core.administrator.content_form.search_file_names') }}" data-media-filter></label>
         <div class="media-picker-grid">{% for asset in media_assets %}<button type="button" class="media-picker-item" data-select-media data-media-url="{{ asset.url }}" data-media-name="{{ asset.name }}">{% if asset.is_image %}<img src="{{ asset.url }}" alt="" loading="lazy">{% endif %}<span>{{ asset.name }}</span></button>{% endfor %}</div>
       </dialog>
     </kumwe-media-picker>

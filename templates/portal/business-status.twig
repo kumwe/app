@@ -1,57 +1,57 @@
 {% extends 'portal/layout.twig' %}
 
-{% block title %}Operation status · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.business_status.operation_status_kumwe_portal') }}{% endblock %}
 
 {% block content %}
 <div data-kis-business data-kis-component="generated-operation-status" data-kis-surface="core.portal.generated-operation">
 <header class="portal-business-heading">
-    <div><p class="eyebrow">Generated business operation</p><h1>Operation status</h1><p>Only operations bound to your current identity, scope, policy, and portal are disclosed.</p></div>
+    <div><p class="eyebrow">{{ t('core.administrator.business_status.generated_business_operation') }}</p><h1>{{ t('core.administrator.business_status.operation_status') }}</h1><p>{{ t('core.portal.business_status.only_operations_bound_to_your_current') }}</p></div>
 </header>
 
 {% if operation_status is null %}
     <section class="portal-business-empty" aria-labelledby="portal-business-operation-unavailable">
-        <h2 id="portal-business-operation-unavailable">Operation unavailable</h2>
-        <p>The operation does not exist or is not available in your current context.</p>
-        <a class="portal-button secondary" href="{{ business_base_path }}">Return to business records</a>
+        <h2 id="portal-business-operation-unavailable">{{ t('core.administrator.business_status.operation_unavailable') }}</h2>
+        <p>{{ t('core.administrator.business_status.the_operation_does_not_exist_or') }}</p>
+        <a class="portal-button secondary" href="{{ business_base_path }}">{{ t('core.administrator.business_status.return_to_business_records') }}</a>
     </section>
 {% else %}
     <section class="portal-business-panel portal-business-stack" aria-labelledby="portal-business-operation-complete">
         <div class="portal-business-section-heading">
             <div>
                 <p class="eyebrow">{{ operation_status.state }}</p>
-                <h2 id="portal-business-operation-complete">Operation completed</h2>
+                <h2 id="portal-business-operation-complete">{{ t('core.administrator.business_status.operation_completed') }}</h2>
             </div>
             <span class="portal-business-status">
                 {{ operation_status.operation == 'business.record.action_approval_request'
-                    ? 'Approval request'
+                    ? t('core.administrator.business_security.approval_request')
                     : operation_status.result.operation|title }}
             </span>
         </div>
         <dl class="portal-details portal-business-metadata kis-business-operation-stage">
-            <div><dt>Operation ID</dt><dd><code>{{ operation_status.operation_id }}</code></dd></div>
-            <div><dt>Operation</dt><dd><code>{{ operation_status.operation }}</code></dd></div>
+            <div><dt>{{ t('core.administrator.business_status.operation_id') }}</dt><dd><code>{{ operation_status.operation_id }}</code></dd></div>
+            <div><dt>{{ t('core.administrator.business_schema_plans.operation') }}</dt><dd><code>{{ operation_status.operation }}</code></dd></div>
             {% if operation_status.operation == 'business.record.action_approval_request' %}
                 <div>
-                    <dt>Approval request</dt>
-                    <dd><code>{{ operation_status.result.approval_request_id|default('No active rule') }}</code></dd>
+                    <dt>{{ t('core.administrator.business_security.approval_request') }}</dt>
+                    <dd><code>{{ operation_status.result.approval_request_id|default(t('core.administrator.business_status.no_active_rule')) }}</code></dd>
                 </div>
             {% else %}
-                <div><dt>Record</dt><dd><code>{{ operation_status.result.record_id }}</code></dd></div>
-                <div><dt>Version</dt><dd>{{ operation_status.result.version }}</dd></div>
+                <div><dt>{{ t('core.administrator.business_bulk_confirm.record') }}</dt><dd><code>{{ operation_status.result.record_id }}</code></dd></div>
+                <div><dt>{{ t('core.administrator.business_status.version') }}</dt><dd>{{ operation_status.result.version }}</dd></div>
             {% endif %}
-            <div><dt>Created</dt><dd><time datetime="{{ operation_status.created_at }}">{{ operation_status.created_at|date('Y-m-d H:i:s') }}</time></dd></div>
-            <div><dt>Completed</dt><dd><time datetime="{{ operation_status.completed_at }}">{{ operation_status.completed_at|date('Y-m-d H:i:s') }}</time></dd></div>
-            <div><dt>Expires</dt><dd><time datetime="{{ operation_status.expires_at }}">{{ operation_status.expires_at|date('Y-m-d H:i:s') }}</time></dd></div>
+            <div><dt>{{ t('core.administrator.business_detail.created') }}</dt><dd><time datetime="{{ operation_status.created_at }}">{{ operation_status.created_at|date('Y-m-d H:i:s') }}</time></dd></div>
+            <div><dt>{{ t('core.administrator.business_status.completed') }}</dt><dd><time datetime="{{ operation_status.completed_at }}">{{ operation_status.completed_at|date('Y-m-d H:i:s') }}</time></dd></div>
+            <div><dt>{{ t('core.administrator.access_control.expires') }}</dt><dd><time datetime="{{ operation_status.expires_at }}">{{ operation_status.expires_at|date('Y-m-d H:i:s') }}</time></dd></div>
         </dl>
         <div class="portal-actions">
             {% if operation_status.operation == 'business.record.action_approval_request' %}
                 {% if operation_status.result.approval_request_id %}
-                    <a class="portal-button" href="/portal/approvals/{{ operation_status.result.approval_request_id|url_encode }}">Open approval request</a>
+                    <a class="portal-button" href="/portal/approvals/{{ operation_status.result.approval_request_id|url_encode }}">{{ t('core.portal.business_status.open_approval_request') }}</a>
                 {% endif %}
             {% elseif operation_status.result.deleted == false %}
-                <a class="portal-button" href="{{ business_base_path }}/{{ operation_status.definition_reference|url_encode }}/{{ operation_status.result.record_id|url_encode }}{% if operation_status.result.operation == 'archive' %}?archived=1{% endif %}">Return to record</a>
+                <a class="portal-button" href="{{ business_base_path }}/{{ operation_status.definition_reference|url_encode }}/{{ operation_status.result.record_id|url_encode }}{% if operation_status.result.operation == 'archive' %}?archived=1{% endif %}">{{ t('core.administrator.business_confirm.return_to_record') }}</a>
             {% endif %}
-            <a class="portal-button secondary" href="{{ business_base_path }}/{{ operation_status.definition_reference|url_encode }}">Return to records</a>
+            <a class="portal-button secondary" href="{{ business_base_path }}/{{ operation_status.definition_reference|url_encode }}">{{ t('core.administrator.business_status.return_to_records') }}</a>
         </div>
     </section>
 {% endif %}

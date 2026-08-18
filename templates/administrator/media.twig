@@ -1,54 +1,54 @@
 {% extends "layout.twig" %}
-{% block title %}Media · Kumwe{% endblock %}
-{% block context_title %}Media library{% endblock %}
+{% block title %}{{ t('core.administrator.media.media_kumwe') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.content_form.media_library') }}{% endblock %}
 {% block content %}
   <div class="kis-phase-five" data-kis-surface="core.administrator.media">
   {% include '@kis/page-header.twig' with {
     eyebrow: 'Workspace',
-    title: 'Media library',
-    purpose: 'Upload, find and reuse images and documents across your content.'
+    title: t('core.administrator.content_form.media_library'),
+    purpose: t('core.administrator.media.upload_find_and_reuse_images_and')
   } only %}
-  {% if uploaded %}<div class="notice success" role="status"><span>Media uploaded successfully.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
-  {% if deleted %}<div class="notice success" role="status"><span>Media deleted successfully.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
+  {% if uploaded %}<div class="notice success" role="status"><span>{{ t('core.administrator.media.media_uploaded_successfully') }}</span><button class="notice-dismiss" type="button" aria-label="{{ t('core.administrator.access_control.dismiss') }}" data-dismiss-notice>×</button></div>{% endif %}
+  {% if deleted %}<div class="notice success" role="status"><span>{{ t('core.administrator.media.media_deleted_successfully') }}</span><button class="notice-dismiss" type="button" aria-label="{{ t('core.administrator.access_control.dismiss') }}" data-dismiss-notice>×</button></div>{% endif %}
   {% if error %}<div class="notice danger" role="alert">{{ error }}</div>{% endif %}
 
   <section class="media-layout{% if capabilities['content.update'] is not defined %} media-layout-single{% endif %}">
     {% if capabilities['content.update'] is defined %}
     <form class="panel panel-body media-upload stack" action="/administrator/media" method="post" enctype="multipart/form-data">
       <input type="hidden" name="_csrf" value="{{ csrf }}">
-      <div><p class="eyebrow">Add media</p><h2>Upload a file</h2><p class="text-muted text-small">JPEG, PNG, GIF, WebP, AVIF or PDF. The server upload limit applies.</p></div>
-      <label class="file-drop"><input type="file" name="media" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,application/pdf" required><span><strong>Choose a file</strong><small>or drop it here</small></span></label>
-      <button class="primary full" type="submit">Upload media</button>
+      <div><p class="eyebrow">{{ t('core.administrator.media.add_media') }}</p><h2>{{ t('core.administrator.media.upload_a_file') }}</h2><p class="text-muted text-small">{{ t('core.administrator.media.jpeg_png_gif_webp_avif_or') }}</p></div>
+      <label class="file-drop"><input type="file" name="media" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,application/pdf" required><span><strong>{{ t('core.administrator.content_form.choose_a_file') }}</strong><small>{{ t('core.administrator.media.or_drop_it_here') }}</small></span></label>
+      <button class="primary full" type="submit">{{ t('core.administrator.media.upload_media') }}</button>
     </form>
     {% endif %}
 
     <section class="panel media-library-panel">
       <form action="/administrator/media" method="get" role="search">
         {% embed '@kis/resource-toolbar.twig' with {
-          label: 'Discover media',
-          title: 'Managed files',
-          summary: total ~ ' file' ~ (total == 1 ? '' : 's'),
+          label: t('core.administrator.media.discover_media'),
+          title: t('core.administrator.media.managed_files'),
+          summary: t('core.administrator.media.file_count', {count: total}),
           query: query,
           kind: kind
         } only %}
           {% block filters %}
-            <label class="search-field">Search<input type="search" name="q" value="{{ query }}" placeholder="File name"></label>
-            <label>File type<select name="kind"><option value="all"{% if kind == 'all' %} selected{% endif %}>All files</option><option value="image"{% if kind == 'image' %} selected{% endif %}>Images</option><option value="document"{% if kind == 'document' %} selected{% endif %}>Documents</option></select></label>
+            <label class="search-field">{{ t('core.administrator.business_choices.search') }}<input type="search" name="q" value="{{ query }}" placeholder="{{ t('core.administrator.media.file_name') }}"></label>
+            <label>{{ t('core.administrator.media.file_type') }}<select name="kind"><option value="all"{% if kind == 'all' %} selected{% endif %}>{{ t('core.administrator.media.all_files') }}</option><option value="image"{% if kind == 'image' %} selected{% endif %}>{{ t('core.administrator.media.images') }}</option><option value="document"{% if kind == 'document' %} selected{% endif %}>{{ t('core.administrator.media.documents') }}</option></select></label>
           {% endblock %}
-          {% block actions %}<button class="toolbar-submit" type="submit">Apply filters</button>{% if query or kind != 'all' %}<a class="button" href="/administrator/media">Clear filters</a>{% endif %}{% endblock %}
+          {% block actions %}<button class="toolbar-submit" type="submit">{{ t('core.administrator.content_list.apply_filters') }}</button>{% if query or kind != 'all' %}<a class="button" href="/administrator/media">{{ t('core.administrator.content_list.clear_filters') }}</a>{% endif %}{% endblock %}
         {% endembed %}
       </form>
       {% if assets is empty %}
         {% include '@kis/empty-state.twig' with {
-          title: 'No media found',
-          message: query or kind != 'all' ? 'Try a broader search or clear the filters.' : 'Upload the first image or document to make it available to editors.'
+          title: t('core.administrator.media.no_media_found'),
+          message: query or kind != 'all' ? t('core.administrator.media.try_a_broader_search_or_clear') : t('core.administrator.media.upload_the_first_image_or_document')
         } only %}
       {% else %}
         <div class="media-grid">{% for asset in assets %}<article class="media-card">
-          <div class="media-preview">{% if asset.is_image %}<img src="{{ asset.url }}" alt="Preview of {{ asset.name }}" loading="lazy">{% else %}<span class="media-file-placeholder" aria-hidden="true">PDF</span>{% endif %}</div>
-          <div class="media-card-body"><strong title="{{ asset.name }}">{{ asset.name }}</strong><span>{{ asset.size_label }} · {{ asset.created_at|date('M j, Y') }}</span><div class="media-card-actions"><a href="{{ asset.url }}" target="_blank" rel="noopener">View</a><button class="link-button js-only" type="button" data-copy-value="{{ asset.url }}">Copy URL</button>{% if asset.deletable and capabilities['content.delete'] is defined %}<form action="/administrator/media/{{ asset.id }}/delete" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="link-button danger" type="submit" data-confirm="Delete {{ asset.name }}? Content using its URL will show a broken link.">Delete</button></form>{% endif %}</div></div>
+          <div class="media-preview">{% if asset.is_image %}<img src="{{ asset.url }}" alt="{{ t('core.administrator.media.preview_of', {name: asset.name}) }}" loading="lazy">{% else %}<span class="media-file-placeholder" aria-hidden="true">PDF</span>{% endif %}</div>
+          <div class="media-card-body"><strong title="{{ asset.name }}">{{ asset.name }}</strong><span>{{ asset.size_label }} · {{ asset.created_at|date('M j, Y') }}</span><div class="media-card-actions"><a href="{{ asset.url }}" target="_blank" rel="noopener">{{ t('core.administrator.business_list.view') }}</a><button class="link-button js-only" type="button" data-copy-value="{{ asset.url }}">{{ t('core.administrator.media.copy_url') }}</button>{% if asset.deletable and capabilities['content.delete'] is defined %}<form action="/administrator/media/{{ asset.id }}/delete" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="link-button danger" type="submit" data-confirm="Delete {{ asset.name }}? Content using its URL will show a broken link.">{{ t('core.administrator.automation.delete') }}</button></form>{% endif %}</div></div>
         </article>{% endfor %}</div>
-        <nav class="pagination" aria-label="Media pages"><span>{{ total }} file{{ total == 1 ? '' : 's' }} · Page {{ page }} of {{ pages }}</span><span class="pagination-actions">{% if page > 1 %}<a class="button" href="?q={{ query|url_encode }}&kind={{ kind|url_encode }}&page={{ page - 1 }}">Previous</a>{% endif %}{% if page < pages %}<a class="button" href="?q={{ query|url_encode }}&kind={{ kind|url_encode }}&page={{ page + 1 }}">Next</a>{% endif %}</span></nav>
+        <nav class="pagination" aria-label="{{ t('core.administrator.media.media_pages') }}"><span>{{ t('core.administrator.media.file_page_of', {count: total, page: page, pages: pages}) }}</span><span class="pagination-actions">{% if page > 1 %}<a class="button" href="?q={{ query|url_encode }}&kind={{ kind|url_encode }}&page={{ page - 1 }}">{{ t('core.administrator.content_list.previous') }}</a>{% endif %}{% if page < pages %}<a class="button" href="?q={{ query|url_encode }}&kind={{ kind|url_encode }}&page={{ page + 1 }}">{{ t('core.administrator.content_list.next') }}</a>{% endif %}</span></nav>
       {% endif %}
     </section>
   </section>

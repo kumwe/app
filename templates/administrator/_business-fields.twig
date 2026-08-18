@@ -3,7 +3,7 @@
     {% if node.fixed_kind %}
       <input type="hidden" name="{{ node.kind_name }}" value="{{ node.kind }}">
     {% else %}
-      <label for="{{ input_id }}-kind">Value type
+      <label for="{{ input_id }}-kind">{{ t('core.administrator.business_fields.value_type') }}
         <select id="{{ input_id }}-kind" name="{{ node.kind_name }}">
           {% for option in node.kind_options %}
             <option value="{{ option.value }}"{% if node.kind == option.value %} selected{% endif %}>
@@ -15,7 +15,7 @@
     {% endif %}
 
     {% if node.kind in ['object', 'array'] %}
-      <label for="{{ input_id }}-count">{{ node.kind == 'object' ? 'Property count' : 'Row count' }}
+      <label for="{{ input_id }}-count">{{ node.kind == 'object' ? t('core.administrator.business_fields.property_count') : t('core.administrator.business_fields.row_count') }}
         <input
           id="{{ input_id }}-count"
           type="number"
@@ -29,9 +29,9 @@
       <div class="business-structured-entries kis-business-structured-entries">
         {% for entry in node.entries %}
           <fieldset class="business-structured-entry kis-business-structured-entry">
-            <legend>{{ node.kind == 'object' ? 'Property ' ~ loop.index : 'Row ' ~ loop.index }}</legend>
+            <legend>{{ node.kind == 'object' ? t('core.administrator.business_fields.property', {number: loop.index}) : t('core.administrator.business_fields.row', {number: loop.index}) }}</legend>
             {% if node.kind == 'object' %}
-              <label for="{{ input_id }}-{{ loop.index0 }}-key">Key
+              <label for="{{ input_id }}-{{ loop.index0 }}-key">{{ t('core.administrator.business_fields.key') }}
                 <input
                   id="{{ input_id }}-{{ loop.index0 }}-key"
                   type="text"
@@ -45,20 +45,20 @@
             {{ _self.structured_node(entry.node, input_id ~ '-' ~ loop.index0 ~ '-value') }}
           </fieldset>
         {% else %}
-          <p class="empty-state">This structure has no {{ node.kind == 'object' ? 'properties' : 'rows' }}.</p>
+          <p class="empty-state">{{ t('core.administrator.business_fields.this_structure_has_no', {value: (node.kind == 'object' ? 'properties' : 'rows')}) }}</p>
         {% endfor %}
       </div>
     {% elseif node.kind == 'boolean' %}
-      <label for="{{ input_id }}-value">Value
+      <label for="{{ input_id }}-value">{{ t('core.administrator.business_fields.value') }}
         <select id="{{ input_id }}-value" name="{{ node.value_name }}">
-          <option value="1"{% if node.value == '1' %} selected{% endif %}>Yes</option>
-          <option value="0"{% if node.value == '0' %} selected{% endif %}>No</option>
+          <option value="1"{% if node.value == '1' %} selected{% endif %}>{{ t('core.administrator.business_fields.yes') }}</option>
+          <option value="0"{% if node.value == '0' %} selected{% endif %}>{{ t('core.administrator.business_fields.no') }}</option>
         </select>
       </label>
     {% elseif node.kind == 'null' %}
-      <p class="field-help">This value is explicitly null.</p>
+      <p class="field-help">{{ t('core.administrator.business_fields.this_value_is_explicitly_null') }}</p>
     {% else %}
-      <label for="{{ input_id }}-value">Value
+      <label for="{{ input_id }}-value">{{ t('core.administrator.business_fields.value') }}
         {% if node.kind == 'string' %}
           <textarea
             id="{{ input_id }}-value"
@@ -93,15 +93,15 @@
         {% if field.widget == 'output' %}
           <span class="business-field-label kis-business-field-label" id="{{ input_id }}-label">{{ field.label }}</span>
           <output class="business-field-output kis-business-field-output" aria-labelledby="{{ input_id }}-label"{% if has_help %} aria-describedby="{{ help_id }}"{% endif %}>
-            {{ field.display is not same as('') ? field.display : 'Not set' }}
+            {{ field.display is not same as('') ? field.display : t('core.administrator.business_fields.not_set') }}
           </output>
           {% if field.provenance %}
             <dl class="business-field-provenance kis-business-field-provenance" data-converted="true">
-              <div><dt>Converted from</dt><dd>{{ field.provenance.source.amount }} {{ field.provenance.source.currency }}</dd></div>
-              <div><dt>Rate</dt><dd>{{ field.provenance.rate.rate }}</dd></div>
-              <div><dt>As at</dt><dd>{{ field.provenance.rate.as_at }}</dd></div>
-              <div><dt>Rate provider</dt><dd>{{ field.provenance.rate.provider }}</dd></div>
-              <div><dt>Rounding</dt><dd>{{ field.provenance.rounding.mode }} to {{ field.provenance.rounding.scale }} from {{ field.provenance.rounding.unrounded_amount }}</dd></div>
+              <div><dt>{{ t('core.administrator.business_fields.converted_from') }}</dt><dd>{{ field.provenance.source.amount }} {{ field.provenance.source.currency }}</dd></div>
+              <div><dt>{{ t('core.administrator.business_fields.rate') }}</dt><dd>{{ field.provenance.rate.rate }}</dd></div>
+              <div><dt>{{ t('core.administrator.business_fields.as_at') }}</dt><dd>{{ field.provenance.rate.as_at }}</dd></div>
+              <div><dt>{{ t('core.administrator.business_fields.rate_provider') }}</dt><dd>{{ field.provenance.rate.provider }}</dd></div>
+              <div><dt>{{ t('core.administrator.business_fields.rounding') }}</dt><dd>{{ t('core.administrator.business_fields.to_from', {mode: field.provenance.rounding.mode, scale: field.provenance.rounding.scale, unrounded_amount: field.provenance.rounding.unrounded_amount}) }}</dd></div>
             </dl>
           {% endif %}
         {% elseif field.widget == 'checkbox' %}
@@ -128,7 +128,7 @@
             <div class="two-column kis-business-columns">
               {% if field.widget in ['money', 'quantity'] %}
                 {% set qualifier = field.widget == 'money' ? 'currency' : 'unit' %}
-                <label for="{{ input_id }}-amount">Amount
+                <label for="{{ input_id }}-amount">{{ t('core.administrator.business_fields.amount') }}
                   <input
                     id="{{ input_id }}-amount"
                     type="text"
@@ -152,7 +152,7 @@
                   >
                 </label>
               {% else %}
-                <label for="{{ input_id }}-instant">Instant (ISO 8601)
+                <label for="{{ input_id }}-instant">{{ t('core.administrator.business_fields.instant_iso_8601') }}
                   <input
                     id="{{ input_id }}-instant"
                     type="text"
@@ -163,7 +163,7 @@
                     {% if field.errors is not empty %}aria-invalid="true"{% endif %}
                   >
                 </label>
-                <label for="{{ input_id }}-timezone">Time zone
+                <label for="{{ input_id }}-timezone">{{ t('core.administrator.business_fields.time_zone') }}
                   <input
                     id="{{ input_id }}-timezone"
                     type="text"
@@ -207,9 +207,9 @@
               {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
             >
               {% if field.required and field.input_value is null %}
-                <option value="" selected disabled>Choose {{ field.label|lower }}</option>
+                <option value="" selected disabled>{{ t('core.administrator.business_fields.choose', {label: (field.label|lower)}) }}</option>
               {% elseif not field.required %}
-                <option value="">Not set</option>
+                <option value="">{{ t('core.administrator.business_fields.not_set') }}</option>
               {% endif %}
               {% for option in field.options %}
                 <option value="{{ option.value }}"{% if field.input_value is same as(option.value) %} selected{% endif %}>
@@ -226,9 +226,9 @@
               {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
             >
               {% if field.required and field.input_value is null %}
-                <option value="" selected disabled>Choose {{ field.label|lower }}</option>
+                <option value="" selected disabled>{{ t('core.administrator.business_fields.choose', {label: (field.label|lower)}) }}</option>
               {% elseif not field.required %}
-                <option value="">Not set</option>
+                <option value="">{{ t('core.administrator.business_fields.not_set') }}</option>
               {% endif %}
               {% for option in field.options %}
                 <option value="{{ option.value }}"{% if field.input_value is same as(option.value) %} selected{% endif %}>
@@ -245,13 +245,13 @@
             {% endif %}
             <p class="field-help">
               <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}{% if record %}/{{ record.record_id|url_encode }}{% endif %}/choices/{{ field.choice_path }}?operation={{ field.choice_operation|url_encode }}">
-                Search and browse available {{ field.widget == 'media_reference' ? 'media' : 'records' }}
+                {{ t('core.administrator.business_fields.search_and_browse_available', {value: (field.widget == 'media_reference' ? 'media' : 'records')}) }}
               </a>
             </p>
           {% elseif field.widget in ['json', 'collection'] %}
             {% if field.structured_managed_by_relationship|default(false) %}
               <p class="field-help">
-                Owned lines are edited through the relationship controls on the record detail page.
+                {{ t('core.administrator.business_fields.owned_lines_are_edited_through_the') }}
               </p>
             {% else %}
               <div
@@ -267,9 +267,9 @@
                   name="prepare_structure"
                   value="1"
                   formnovalidate
-                >Update rows and value types</button>
+                >{{ t('core.administrator.business_fields.update_rows_and_value_types') }}</button>
                 <p class="field-help">
-                  Choose a bounded type for each value. The form submits native fields, never raw JSON.
+                  {{ t('core.administrator.business_fields.choose_a_bounded_type_for_each') }}
                 </p>
               </div>
             {% endif %}

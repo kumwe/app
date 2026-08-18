@@ -1,33 +1,33 @@
 {% extends "layout.twig" %}
 {% import "_business-fields.twig" as business_fields %}
 
-{% block title %}{{ record ? 'Edit ' ~ definition.singular_label : 'Create ' ~ definition.singular_label }} · Kumwe{% endblock %}
-{% block context_title %}{{ record ? 'Edit ' ~ definition.singular_label : 'Create ' ~ definition.singular_label }}{% endblock %}
-{% block context_subtitle %}Generated, policy-aware record form{% endblock %}
+{% block title %}{{ t('core.administrator.business_form.kumwe', {value: (record ? t('core.administrator.business_form.edit', {label: definition.singular_label}) : t('core.administrator.business_form.create', {label: definition.singular_label}))}) }}{% endblock %}
+{% block context_title %}{{ record ? t('core.administrator.business_form.edit', {label: definition.singular_label}) : t('core.administrator.business_form.create', {label: definition.singular_label}) }}{% endblock %}
+{% block context_subtitle %}{{ t('core.administrator.business_form.generated_policy_aware_record_form') }}{% endblock %}
 
 {% block content %}
   <kumwe-business-surface data-kis-business data-kis-component="generated-record-form" data-kis-surface="core.administrator.generated-definition">
     <header class="page-heading">
       <div>
         <p class="eyebrow">{{ definition.plural_label }}</p>
-        <h1>{{ record ? 'Edit ' ~ definition.singular_label : 'Create ' ~ definition.singular_label }}</h1>
-        <p>Fields are generated from the published definition and your current field policy.</p>
+        <h1>{{ record ? t('core.administrator.business_form.edit', {label: definition.singular_label}) : t('core.administrator.business_form.create', {label: definition.singular_label}) }}</h1>
+        <p>{{ t('core.administrator.business_form.fields_are_generated_from_the_published') }}</p>
       </div>
       <div class="page-actions">
-        <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">Cancel</a>
+        <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">{{ t('core.administrator.access_control.cancel') }}</a>
       </div>
     </header>
 
     {% if version_conflict is defined and record %}
       <section class="notice warning business-version-conflict" data-kis-state="conflict" role="alert" aria-labelledby="business-conflict-title" tabindex="-1">
         <div>
-          <h2 id="business-conflict-title">Another actor saved a newer version</h2>
-          <p>{{ version_conflict.summary }} You composed this form against version {{ version_conflict.expected_version }}; the stored record is now at version {{ record.version }}.</p>
-          <p>Everything you typed is still below. Choose one:</p>
+          <h2 id="business-conflict-title">{{ t('core.administrator.business_detail.another_actor_saved_a_newer_version') }}</h2>
+          <p>{{ t('core.administrator.business_detail.you_composed_this_form_against_version', {summary: version_conflict.summary, expected_version: version_conflict.expected_version, version: record.version}) }}</p>
+          <p>{{ t('core.administrator.business_form.everything_you_typed_is_still_below') }}</p>
           <ul>
-            <li>Save changes again to apply your entries on top of version {{ record.version }}.</li>
-            <li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?edit=1">Reload version {{ record.version }}</a> and lose what you typed here.</li>
-            {% if available_operations.history is defined %}<li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?task=history">Review what changed</a> before you decide.</li>{% endif %}
+            <li>{{ t('core.administrator.business_form.save_changes_again_to_apply_your', {version: record.version}) }}</li>
+            <li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?edit=1">{{ t('core.administrator.business_form.reload_version', {version: record.version}) }}</a> {{ t('core.administrator.business_detail.and_lose_what_you_typed_here') }}</li>
+            {% if available_operations.history is defined %}<li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?task=history">{{ t('core.administrator.business_form.review_what_changed') }}</a> {{ t('core.administrator.business_form.before_you_decide') }}</li>{% endif %}
           </ul>
         </div>
       </section>
@@ -36,7 +36,7 @@
     {% if error_summary is defined %}
       <section class="notice danger business-error-summary kis-validation-summary" data-kis-component="validation-summary" role="alert" aria-labelledby="business-error-title" tabindex="-1">
         <div>
-          <h2 id="business-error-title">The record could not be saved</h2>
+          <h2 id="business-error-title">{{ t('core.administrator.business_form.the_record_could_not_be_saved') }}</h2>
           <p>{{ error_summary }}</p>
           <ul>
             {% for field in fields %}
@@ -59,21 +59,21 @@
 
       <div class="section-heading">
         <div>
-          <h2>Record fields</h2>
-          <p class="field-help"><span aria-hidden="true">*</span> indicates a required field.</p>
+          <h2>{{ t('core.administrator.business_form.record_fields') }}</h2>
+          <p class="field-help"><span aria-hidden="true">*</span> {{ t('core.administrator.business_form.indicates_a_required_field') }}</p>
         </div>
-        {% if record %}<span class="status">Version {{ record.version }}</span>{% endif %}
+        {% if record %}<span class="status">{{ t('core.administrator.business_definitions.version', {version: record.version}) }}</span>{% endif %}
       </div>
 
       {% if fields is empty %}
-        <p class="empty-state">No editable fields are available for this operation.</p>
+        <p class="empty-state">{{ t('core.administrator.business_form.no_editable_fields_are_available_for') }}</p>
       {% else %}
         {{ business_fields.render(fields, definition, record, business_base_path) }}
       {% endif %}
 
       <div class="page-actions">
-        <button class="primary" type="submit">{{ record ? 'Save changes' : 'Create record' }}</button>
-        <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">Cancel</a>
+        <button class="primary" type="submit">{{ record ? t('core.administrator.business_form.save_changes') : t('core.administrator.business_form.create_record') }}</button>
+        <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">{{ t('core.administrator.access_control.cancel') }}</a>
       </div>
     </form>
   </kumwe-business-surface>

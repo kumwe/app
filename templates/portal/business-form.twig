@@ -1,35 +1,35 @@
 {% extends 'portal/layout.twig' %}
 {% import 'portal/_business-fields.twig' as business_fields %}
 
-{% block title %}{{ record ? 'Edit ' ~ definition.singular_label : 'Create ' ~ definition.singular_label }} · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.business_form.kumwe_portal', {value: (record ? t('core.administrator.business_form.edit', {label: definition.singular_label}) : t('core.administrator.business_form.create', {label: definition.singular_label}))}) }}{% endblock %}
 
 {% block content %}
 <div data-kis-business data-kis-component="generated-record-form" data-kis-surface="core.portal.generated-definition">
 <header class="portal-business-heading">
     <div>
         <p class="eyebrow">{{ definition.plural_label }}</p>
-        <h1>{{ record ? 'Edit ' ~ definition.singular_label : 'Create ' ~ definition.singular_label }}</h1>
-        <p>Fields are generated from the published definition and your portal policy.</p>
+        <h1>{{ record ? t('core.administrator.business_form.edit', {label: definition.singular_label}) : t('core.administrator.business_form.create', {label: definition.singular_label}) }}</h1>
+        <p>{{ t('core.portal.business_form.fields_are_generated_from_the_published') }}</p>
     </div>
-    <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">Cancel</a>
+    <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">{{ t('core.administrator.access_control.cancel') }}</a>
 </header>
 
 {% if version_conflict is defined and record %}
     <section class="portal-alert portal-business-version-conflict" data-kis-state="conflict" role="alert" aria-labelledby="portal-business-conflict-title" tabindex="-1">
-        <h2 id="portal-business-conflict-title">Another actor saved a newer version</h2>
-        <p>{{ version_conflict.summary }} You composed this form against version {{ version_conflict.expected_version }}; the stored record is now at version {{ record.version }}.</p>
-        <p>Everything you typed is still below. Choose one:</p>
+        <h2 id="portal-business-conflict-title">{{ t('core.administrator.business_detail.another_actor_saved_a_newer_version') }}</h2>
+        <p>{{ t('core.administrator.business_detail.you_composed_this_form_against_version', {summary: version_conflict.summary, expected_version: version_conflict.expected_version, version: record.version}) }}</p>
+        <p>{{ t('core.administrator.business_form.everything_you_typed_is_still_below') }}</p>
         <ul>
-            <li>Save changes again to apply your entries on top of version {{ record.version }}.</li>
-            <li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?edit=1">Reload version {{ record.version }}</a> and lose what you typed here.</li>
-            {% if available_operations.history is defined %}<li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?task=history">Review what changed</a> before you decide.</li>{% endif %}
+            <li>{{ t('core.administrator.business_form.save_changes_again_to_apply_your', {version: record.version}) }}</li>
+            <li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?edit=1">{{ t('core.administrator.business_form.reload_version', {version: record.version}) }}</a> {{ t('core.administrator.business_detail.and_lose_what_you_typed_here') }}</li>
+            {% if available_operations.history is defined %}<li><a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}?task=history">{{ t('core.administrator.business_form.review_what_changed') }}</a> {{ t('core.administrator.business_form.before_you_decide') }}</li>{% endif %}
         </ul>
     </section>
 {% endif %}
 
 {% if error_summary is defined %}
     <section class="portal-alert portal-business-error-summary kis-validation-summary" data-kis-component="validation-summary" role="alert" aria-labelledby="portal-business-error-title" tabindex="-1">
-        <h2 id="portal-business-error-title">The record could not be saved</h2>
+        <h2 id="portal-business-error-title">{{ t('core.administrator.business_form.the_record_could_not_be_saved') }}</h2>
         <p>{{ error_summary }}</p>
         <ul>
             {% for field in fields %}
@@ -49,15 +49,15 @@
     <input type="hidden" name="operation_id" value="{{ operation_id }}">
     {% if record %}<input type="hidden" name="expected_version" value="{{ record.version }}">{% endif %}
 
-    <div><h2>Record fields</h2><p><span aria-hidden="true">*</span> indicates a required field.</p></div>
+    <div><h2>{{ t('core.administrator.business_form.record_fields') }}</h2><p><span aria-hidden="true">*</span> {{ t('core.administrator.business_form.indicates_a_required_field') }}</p></div>
     {% if fields is empty %}
-        <p>No editable fields are available for this operation.</p>
+        <p>{{ t('core.administrator.business_form.no_editable_fields_are_available_for') }}</p>
     {% else %}
         {{ business_fields.render(fields, definition, record, business_base_path) }}
     {% endif %}
     <div class="portal-actions">
-        <button type="submit">{{ record ? 'Save changes' : 'Create record' }}</button>
-        <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">Cancel</a>
+        <button type="submit">{{ record ? t('core.administrator.business_form.save_changes') : t('core.administrator.business_form.create_record') }}</button>
+        <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">{{ t('core.administrator.access_control.cancel') }}</a>
     </div>
 </form>
 </div>

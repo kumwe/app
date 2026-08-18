@@ -1,6 +1,6 @@
 {% extends 'portal/layout.twig' %}
 
-{% block title %}{{ definition.plural_label }} · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.business_list.kumwe_portal', {plural_label: definition.plural_label}) }}{% endblock %}
 
 {% block content %}
 {% set searchable_fields = definition.fields|filter(field => field.uses.search)|slice(0, 16) %}
@@ -26,10 +26,10 @@
     <div>
         <p class="eyebrow">{{ definition.scope|replace({'_': ' '}) }}</p>
         <h1>{{ definition.plural_label }}</h1>
-        <p>Policy-filtered records in your active portal context.</p>
+        <p>{{ t('core.portal.business_list.policy_filtered_records_in_your_active') }}</p>
     </div>
-    <nav class="portal-actions" aria-label="Workspace actions">
-        <a class="portal-button secondary" href="{{ business_base_path }}">All workspaces</a>
+    <nav class="portal-actions" aria-label="{{ t('core.portal.business_list.workspace_actions') }}">
+        <a class="portal-button secondary" href="{{ business_base_path }}">{{ t('core.administrator.business_list.all_workspaces') }}</a>
         {% for declared_view in definition.views %}
             {% if declared_view.custom and (
                 declared_view.kind == 'list'
@@ -39,24 +39,24 @@
             {% endif %}
         {% endfor %}
         {% if available_operations.report is defined %}
-            <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">Report</a>
+            <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">{{ t('core.administrator.business_detail.report') }}</a>
         {% endif %}
         {% if record_export_report %}
             <form class="portal-business-export-form" method="post" action="/portal/reports/{{ record_export_report|url_encode }}/exports">
                 <input type="hidden" name="_csrf" value="{{ csrf }}">
-                <button class="portal-button secondary" type="submit">Queue CSV export</button>
+                <button class="portal-button secondary" type="submit">{{ t('core.administrator.business_list.queue_csv_export') }}</button>
             </form>
         {% endif %}
         {% if available_operations.create is defined %}
             <a class="portal-button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?new=1">
-                Create {{ definition.singular_label|lower }}
+                {{ t('core.administrator.business_list.create', {singular_label: (definition.singular_label|lower)}) }}
             </a>
         {% endif %}
     </nav>
 </header>
 
-<nav class="kis-business-view-nav" aria-label="Collection views">
-    <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">All fields</a>
+<nav class="kis-business-view-nav" aria-label="{{ t('core.administrator.business_list.collection_views') }}">
+    <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">{{ t('core.administrator.business_list.all_fields') }}</a>
     {% for declared_view in definition.views %}
         {% if declared_view.kind == 'list' and not declared_view.custom %}
             <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?{% for column in declared_view.fields %}columns%5B%5D={{ column|url_encode }}{% if not loop.last %}&amp;{% endif %}{% endfor %}" aria-current="{{ collection_presentation.columns == declared_view.fields ? 'page' : 'false' }}">{{ declared_view.label }}</a>
@@ -66,14 +66,14 @@
 
 {% if completed_operation_id %}
     <div class="portal-notice" role="status">
-        The operation completed.{% if available_operations.status is defined %} <a href="{{ business_base_path }}/operations/{{ completed_operation_id|url_encode }}">View operation status</a>.{% endif %}
+        {{ t('core.administrator.business_detail.the_operation_completed') }}{% if available_operations.status is defined %} <a href="{{ business_base_path }}/operations/{{ completed_operation_id|url_encode }}">{{ t('core.administrator.business_detail.view_operation_status') }}</a>.{% endif %}
     </div>
 {% elseif completed_bulk_count %}
-    <div class="portal-notice" role="status">The bulk operation completed for {{ completed_bulk_count }} record{{ completed_bulk_count == 1 ? '' : 's' }}.</div>
+    <div class="portal-notice" role="status">{{ t('core.administrator.business_list.the_bulk_operation_completed_for_record', {completed_bulk_count: completed_bulk_count, value: (completed_bulk_count == 1 ? '' : 's')}) }}</div>
 {% endif %}
 
 {% if aggregates is not empty %}
-    <section class="portal-business-aggregates kis-business-aggregates" aria-label="Report totals">
+    <section class="portal-business-aggregates kis-business-aggregates" aria-label="{{ t('core.administrator.business_list.report_totals') }}">
         {% for label, value in aggregates %}
             <article class="kis-business-aggregate"><span>{{ label|replace({'_': ' '})|title }}</span><strong>{{ value }}</strong></article>
         {% endfor %}
@@ -82,23 +82,23 @@
 
 <section class="portal-business-panel kis-business-collection" aria-labelledby="portal-business-results-title">
     <div class="portal-business-toolbar">
-        <div><h2 id="portal-business-results-title">Records</h2><p>Only disclosed fields are shown.</p></div>
+        <div><h2 id="portal-business-results-title">{{ t('core.administrator.business_list.records') }}</h2><p>{{ t('core.portal.business_list.only_disclosed_fields_are_shown') }}</p></div>
         <form class="portal-business-query-form kis-business-query-form" action="{{ business_base_path }}/{{ definition.handle|url_encode }}" method="get">
             {% if query_purpose != 'browse' %}<input type="hidden" name="purpose" value="{{ query_purpose }}">{% endif %}
             {% if searchable_fields is not empty %}
-                <label for="portal-business-search">Search records
+                <label for="portal-business-search">{{ t('core.administrator.business_custom_view.search_records') }}
                     <input id="portal-business-search" type="search" name="search_term" value="{{ query_state.search_term|default('') }}">
                 </label>
                 {% for field in searchable_fields %}<input type="hidden" name="search_fields[]" value="{{ field.handle }}">{% endfor %}
             {% endif %}
             <details class="kis-business-advanced-filters">
-                <summary>Filters, sorting and lifecycle</summary>
+                <summary>{{ t('core.administrator.business_list.filters_sorting_and_lifecycle') }}</summary>
                 <div class="kis-business-advanced-grid">
             {% for field in graphical_filter_fields %}
                 {% if field.schema.enum is defined %}
                     <label for="portal-business-filter-{{ field.handle }}">{{ field.label }}
                         <select id="portal-business-filter-{{ field.handle }}" name="filters[{{ field.handle }}]">
-                            <option value="">Any</option>
+                            <option value="">{{ t('core.administrator.business_custom_view.any') }}</option>
                             {% for option in field.schema.enum %}
                                 <option value="{{ option }}"{% if query_state.filters[field.handle] is defined and query_state.filters[field.handle] is same as(option) %} selected{% endif %}>{{ option|replace({'_': ' '})|title }}</option>
                             {% endfor %}
@@ -107,9 +107,9 @@
                 {% elseif field.value_type == 'boolean' %}
                     <label for="portal-business-filter-{{ field.handle }}">{{ field.label }}
                         <select id="portal-business-filter-{{ field.handle }}" name="boolean_filters[{{ field.handle }}]">
-                            <option value="">Any</option>
-                            <option value="true"{% if query_state.filters[field.handle] is defined and query_state.filters[field.handle] is same as(true) %} selected{% endif %}>Yes</option>
-                            <option value="false"{% if query_state.filters[field.handle] is defined and query_state.filters[field.handle] is same as(false) %} selected{% endif %}>No</option>
+                            <option value="">{{ t('core.administrator.business_custom_view.any') }}</option>
+                            <option value="true"{% if query_state.filters[field.handle] is defined and query_state.filters[field.handle] is same as(true) %} selected{% endif %}>{{ t('core.administrator.business_fields.yes') }}</option>
+                            <option value="false"{% if query_state.filters[field.handle] is defined and query_state.filters[field.handle] is same as(false) %} selected{% endif %}>{{ t('core.administrator.business_fields.no') }}</option>
                         </select>
                     </label>
                 {% elseif field.value_type == 'integer' %}
@@ -122,94 +122,94 @@
                     </label>
                 {% endif %}
             {% endfor %}
-            {% if graphical_filter_fields is not empty %}<span>Choose at most 16 exact field filters.</span>{% endif %}
-            <label for="portal-business-sort-field">Sort field
+            {% if graphical_filter_fields is not empty %}<span>{{ t('core.administrator.business_list.choose_at_most_16_exact_field') }}</span>{% endif %}
+            <label for="portal-business-sort-field">{{ t('core.administrator.business_list.sort_field') }}
                 <select id="portal-business-sort-field" name="sort_field">
-                    <option value="">Definition order</option>
+                    <option value="">{{ t('core.administrator.business_custom_view.definition_order') }}</option>
                     {% for field in definition.fields %}
                         {% if field.uses.sort %}<option value="{{ field.handle }}"{% if query_state.sort_field is same as(field.handle) %} selected{% endif %}>{{ field.label }}</option>{% endif %}
                     {% endfor %}
                 </select>
             </label>
-            <label for="portal-business-sort-direction">Direction
+            <label for="portal-business-sort-direction">{{ t('core.administrator.business_custom_view.direction') }}
                 <select id="portal-business-sort-direction" name="sort_direction">
-                    <option value=""{% if query_state.sort_direction is null %} selected{% endif %}>Default</option>
-                    <option value="asc"{% if query_state.sort_direction == 'asc' %} selected{% endif %}>Ascending</option>
-                    <option value="desc"{% if query_state.sort_direction == 'desc' %} selected{% endif %}>Descending</option>
+                    <option value=""{% if query_state.sort_direction is null %} selected{% endif %}>{{ t('core.administrator.business_custom_view.default') }}</option>
+                    <option value="asc"{% if query_state.sort_direction == 'asc' %} selected{% endif %}>{{ t('core.administrator.business_custom_view.ascending') }}</option>
+                    <option value="desc"{% if query_state.sort_direction == 'desc' %} selected{% endif %}>{{ t('core.administrator.business_custom_view.descending') }}</option>
                 </select>
             </label>
-            <label for="portal-business-page-size">Rows per page
+            <label for="portal-business-page-size">{{ t('core.administrator.business_list.rows_per_page') }}
                 <select id="portal-business-page-size" name="page_size">
                     {% for size in [25, 50, 100, 200] %}<option value="{{ size }}"{% if query_state.page_size == size %} selected{% endif %}>{{ size }}</option>{% endfor %}
                 </select>
             </label>
             {% if available_operations.restore is defined %}
-                <label class="portal-business-checkbox"><input type="checkbox" name="include_archived" value="1"{% if query_state.include_archived %} checked{% endif %}> <span>Include archived</span></label>
+                <label class="portal-business-checkbox"><input type="checkbox" name="include_archived" value="1"{% if query_state.include_archived %} checked{% endif %}> <span>{{ t('core.administrator.business_list.include_archived') }}</span></label>
                 {% if definition.soft_delete %}
-                    <label class="portal-business-checkbox"><input type="checkbox" name="include_deleted" value="1"{% if query_state.include_deleted %} checked{% endif %}> <span>Include deleted</span></label>
+                    <label class="portal-business-checkbox"><input type="checkbox" name="include_deleted" value="1"{% if query_state.include_deleted %} checked{% endif %}> <span>{{ t('core.administrator.business_list.include_deleted') }}</span></label>
                 {% endif %}
             {% endif %}
                 </div>
             </details>
             <details class="kis-business-column-picker">
-                <summary>Columns and display</summary>
+                <summary>{{ t('core.administrator.business_list.columns_and_display') }}</summary>
                 <div class="kis-business-column-grid">
                     {% for field in definition.fields %}
                         <label><input type="checkbox" name="columns[]" value="{{ field.handle }}"{% if field.handle in collection_presentation.columns %} checked{% endif %}> <span>{{ field.label }}</span></label>
                     {% endfor %}
-                    <label for="portal-business-density">Density
+                    <label for="portal-business-density">{{ t('core.administrator.business_list.density') }}
                         <select id="portal-business-density" name="density">
                             {% for density in ['comfortable', 'compact', 'touch'] %}<option value="{{ density }}"{% if collection_presentation.density == density %} selected{% endif %}>{{ density|title }}</option>{% endfor %}
                         </select>
                     </label>
-                    <label for="portal-business-representation">Small-screen view
+                    <label for="portal-business-representation">{{ t('core.administrator.business_list.small_screen_view') }}
                         <select id="portal-business-representation" name="representation">
-                            <option value="auto"{% if collection_presentation.representation == 'auto' %} selected{% endif %}>Automatic</option>
-                            <option value="table"{% if collection_presentation.representation == 'table' %} selected{% endif %}>Table</option>
-                            <option value="cards"{% if collection_presentation.representation == 'cards' %} selected{% endif %}>Cards</option>
+                            <option value="auto"{% if collection_presentation.representation == 'auto' %} selected{% endif %}>{{ t('core.administrator.business_list.automatic') }}</option>
+                            <option value="table"{% if collection_presentation.representation == 'table' %} selected{% endif %}>{{ t('core.administrator.business_list.table') }}</option>
+                            <option value="cards"{% if collection_presentation.representation == 'cards' %} selected{% endif %}>{{ t('core.administrator.business_list.cards') }}</option>
                         </select>
                     </label>
                 </div>
             </details>
             <div class="portal-actions">
-                <button type="submit">Apply</button>
-                <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{% if query_purpose != 'browse' %}?purpose={{ query_purpose|url_encode }}{% endif %}">Reset</a>
+                <button type="submit">{{ t('core.administrator.business_list.apply') }}</button>
+                <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{% if query_purpose != 'browse' %}?purpose={{ query_purpose|url_encode }}{% endif %}">{{ t('core.administrator.business_custom_view.reset') }}</a>
             </div>
         </form>
     </div>
 
     {% if query_state.filters is not empty or query_state.search_term or query_state.include_archived or query_state.include_deleted %}
-        <div class="kis-business-applied-filters" aria-label="Applied filters">
-            <strong>Applied:</strong>
-            {% if query_state.search_term %}<span class="kis-business-filter-token">Search “{{ query_state.search_term }}”</span>{% endif %}
+        <div class="kis-business-applied-filters" aria-label="{{ t('core.administrator.business_list.applied_filters') }}">
+            <strong>{{ t('core.administrator.business_list.applied') }}</strong>
+            {% if query_state.search_term %}<span class="kis-business-filter-token">{{ t('core.administrator.business_list.search', {search_term: query_state.search_term}) }}</span>{% endif %}
             {% for handle, value in query_state.filters %}<span class="kis-business-filter-token">{{ handle|replace({'_': ' '})|title }}: {{ value is same as(true) ? 'Yes' : (value is same as(false) ? 'No' : value) }}</span>{% endfor %}
-            {% if query_state.include_archived %}<span class="kis-business-filter-token">Archived included</span>{% endif %}
-            {% if query_state.include_deleted %}<span class="kis-business-filter-token">Deleted included</span>{% endif %}
-            <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}">Clear all</a>
+            {% if query_state.include_archived %}<span class="kis-business-filter-token">{{ t('core.administrator.business_list.archived_included') }}</span>{% endif %}
+            {% if query_state.include_deleted %}<span class="kis-business-filter-token">{{ t('core.administrator.business_list.deleted_included') }}</span>{% endif %}
+            <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}">{{ t('core.administrator.business_list.clear_all') }}</a>
         </div>
     {% endif %}
 
     {% if items is empty %}
         <div class="portal-business-empty">
-            <h2>No {{ definition.plural_label|lower }} found</h2>
-            <p>The current scope returned no visible records.</p>
+            <h2>{{ t('core.administrator.business_list.no_found', {plural_label: (definition.plural_label|lower)}) }}</h2>
+            <p>{{ t('core.portal.business_list.the_current_scope_returned_no_visible') }}</p>
             {% if available_operations.create is defined %}
                 <a class="portal-button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?new=1">
-                    Create {{ definition.singular_label|lower }}
+                    {{ t('core.administrator.business_list.create', {singular_label: (definition.singular_label|lower)}) }}
                 </a>
             {% endif %}
         </div>
     {% else %}
         {% if bulk_available %}<form class="portal-business-bulk-form" action="{{ business_base_path }}/{{ definition.handle|url_encode }}" method="get">{% endif %}
-        <div class="portal-table-wrap kis-business-table-region" tabindex="0" role="region" aria-label="{{ definition.plural_label }} results" data-scroll-label="Scroll horizontally to review every selected column">
+        <div class="portal-table-wrap kis-business-table-region" tabindex="0" role="region" aria-label="{{ t('core.administrator.business_list.results', {plural_label: definition.plural_label}) }}" data-scroll-label="Scroll horizontally to review every selected column">
             <table class="portal-table portal-business-table kis-business-table">
                 <thead>
                     <tr>
-                        {% if bulk_available %}<th scope="col"><span class="portal-sr-only">Select</span></th>{% endif %}
-                        <th scope="col">Record</th>
+                        {% if bulk_available %}<th scope="col"><span class="portal-sr-only">{{ t('core.administrator.business_choices.select') }}</span></th>{% endif %}
+                        <th scope="col">{{ t('core.administrator.business_bulk_confirm.record') }}</th>
                         {% for field in visible_columns %}<th scope="col">{{ field.label }}</th>{% endfor %}
-                        <th scope="col">State</th>
-                        <th scope="col"><span class="portal-sr-only">Actions</span></th>
+                        <th scope="col">{{ t('core.administrator.business_list.state') }}</th>
+                        <th scope="col"><span class="portal-sr-only">{{ t('core.administrator.automation.actions') }}</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -220,7 +220,7 @@
                                 <td data-label="Select">
                                     <label class="portal-business-checkbox">
                                         <input type="checkbox" name="bulk_records[]" value="{{ {'record_id': item.record_id, 'expected_version': item.version}|json_encode }}">
-                                        <span class="portal-sr-only">Select record {{ item.record_id }}</span>
+                                        <span class="portal-sr-only">{{ t('core.administrator.business_list.select_record', {record_id: item.record_id}) }}</span>
                                     </label>
                                 </td>
                             {% endif %}
@@ -229,16 +229,16 @@
                                 {% set matches = item.fields|filter(field => field.handle == column.handle) %}
                                 <td data-label="{{ column.label }}">
                                     {% if matches is not empty %}
-                                        {{ (matches|first).display is not same as('') ? (matches|first).display : 'Not set' }}
+                                        {{ (matches|first).display is not same as('') ? (matches|first).display : t('core.administrator.business_fields.not_set') }}
                                     {% else %}
-                                        <span aria-label="Not available">—</span>
+                                        <span aria-label="{{ t('core.administrator.business_list.not_available') }}">—</span>
                                     {% endif %}
                                 </td>
                             {% endfor %}
                             <td data-label="State">{{ item_state|replace({'_': ' '})|title }}</td>
                             <td>
                                 {% if available_operations.read is defined %}
-                                    <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ item.record_id|url_encode }}">View</a>
+                                    <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ item.record_id|url_encode }}">{{ t('core.administrator.business_list.view') }}</a>
                                 {% endif %}
                             </td>
                         </tr>
@@ -246,44 +246,44 @@
                 </tbody>
             </table>
         </div>
-        <ul class="kis-business-card-list" aria-label="{{ definition.plural_label }} summary cards">
+        <ul class="kis-business-card-list" aria-label="{{ t('core.administrator.business_list.summary_cards', {plural_label: definition.plural_label}) }}">
             {% for item in items %}
                 {% set item_state = item.deleted_at ? 'Deleted' : (item.archived_at ? 'Archived' : item.workflow_state|default('Active')) %}
                 <li class="kis-business-result-card">
                     <header><span><strong>{{ definition.singular_label }}</strong><br><code>{{ item.record_id }}</code></span><span>{{ item_state|replace({'_': ' '})|title }}</span></header>
-                    {% if bulk_available %}<label class="portal-business-checkbox"><input type="checkbox" name="bulk_records[]" value="{{ {'record_id': item.record_id, 'expected_version': item.version}|json_encode }}"><span>Select this record</span></label>{% endif %}
+                    {% if bulk_available %}<label class="portal-business-checkbox"><input type="checkbox" name="bulk_records[]" value="{{ {'record_id': item.record_id, 'expected_version': item.version}|json_encode }}"><span>{{ t('core.administrator.business_list.select_this_record') }}</span></label>{% endif %}
                     <dl>
                         {% for column in visible_columns %}
                             {% set matches = item.fields|filter(field => field.handle == column.handle) %}
-                            <div><dt>{{ column.label }}</dt><dd>{{ matches is not empty ? ((matches|first).display is not same as('') ? (matches|first).display : 'Not set') : 'Not available' }}</dd></div>
+                            <div><dt>{{ column.label }}</dt><dd>{{ matches is not empty ? ((matches|first).display is not same as('') ? (matches|first).display : t('core.administrator.business_fields.not_set')) : t('core.administrator.business_list.not_available') }}</dd></div>
                         {% endfor %}
                     </dl>
-                    {% if available_operations.read is defined %}<a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ item.record_id|url_encode }}">Open record</a>{% endif %}
+                    {% if available_operations.read is defined %}<a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ item.record_id|url_encode }}">{{ t('core.administrator.business_list.open_record') }}</a>{% endif %}
                 </li>
             {% endfor %}
         </ul>
         {% if bulk_available %}
             <div class="portal-business-bulk-controls kis-business-bulk-controls">
-                <label for="portal-business-bulk-operation">Bulk operation
+                <label for="portal-business-bulk-operation">{{ t('core.administrator.business_list.bulk_operation') }}
                     <select id="portal-business-bulk-operation" name="bulk_operation" required>
-                        <option value="" selected disabled>Choose an operation</option>
-                        {% if available_operations.archive is defined %}<option value="archive">Archive selected</option>{% endif %}
-                        {% if available_operations.restore is defined %}<option value="restore">Restore selected</option>{% endif %}
+                        <option value="" selected disabled>{{ t('core.administrator.business_list.choose_an_operation') }}</option>
+                        {% if available_operations.archive is defined %}<option value="archive">{{ t('core.administrator.business_list.archive_selected') }}</option>{% endif %}
+                        {% if available_operations.restore is defined %}<option value="restore">{{ t('core.administrator.business_list.restore_selected') }}</option>{% endif %}
                         {% if available_operations.action is defined %}
-                            {% for action in bulk_actions %}<option value="action:{{ action.handle }}">{{ action.label }} selected</option>{% endfor %}
+                            {% for action in bulk_actions %}<option value="action:{{ action.handle }}">{{ t('core.administrator.business_list.selected', {label: action.label}) }}</option>{% endfor %}
                         {% endif %}
                     </select>
                 </label>
-                <button type="submit">Review bulk operation</button>
-                <span>Select no more than 50 records. Versions are rechecked when you confirm.</span>
+                <button type="submit">{{ t('core.administrator.business_list.review_bulk_operation') }}</button>
+                <span>{{ t('core.administrator.business_list.select_no_more_than_50_records') }}</span>
             </div>
         </form>
         {% endif %}
     {% endif %}
 
     {% if next_query %}
-        <nav class="portal-actions portal-pagination kis-business-pagination" aria-label="Record pages">
-            <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?{% if query_purpose != 'browse' %}purpose={{ query_purpose|url_encode }}&amp;{% endif %}query={{ next_query|url_encode }}&amp;{{ presentation_query }}" rel="next">Next page</a>
+        <nav class="portal-actions portal-pagination kis-business-pagination" aria-label="{{ t('core.administrator.business_list.record_pages') }}">
+            <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?{% if query_purpose != 'browse' %}purpose={{ query_purpose|url_encode }}&amp;{% endif %}query={{ next_query|url_encode }}&amp;{{ presentation_query }}" rel="next">{{ t('core.administrator.business_list.next_page') }}</a>
         </nav>
     {% endif %}
 </section>

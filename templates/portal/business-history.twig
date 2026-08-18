@@ -1,17 +1,17 @@
 {% extends 'portal/layout.twig' %}
 
-{% block title %}Record history · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.business_history.record_history_kumwe_portal') }}{% endblock %}
 
 {% block content %}
 {% set record_path = business_base_path ~ '/' ~ (definition_handle|url_encode) ~ '/' ~ (record_id|url_encode) %}
 <div data-kis-business data-kis-component="generated-record-history" data-kis-surface="core.portal.generated-record" data-record-task="history">
 <header class="portal-business-heading">
-    <div><p class="eyebrow">{{ definition_handle }}</p><h1>Record history</h1><p>{% include '@kis/technical-value.twig' with {label: 'Record ID', value: record_id} only %}</p></div>
-    <a class="portal-button secondary" href="{{ record_path }}">Back to record</a>
+    <div><p class="eyebrow">{{ definition_handle }}</p><h1>{{ t('core.administrator.business_history.record_history') }}</h1><p>{% include '@kis/technical-value.twig' with {label: t('core.administrator.business_confirm.record_id'), value: record_id} only %}</p></div>
+    <a class="portal-button secondary" href="{{ record_path }}">{{ t('core.administrator.business_custom_view.back_to_record') }}</a>
 </header>
 
 {% include '@kis/task-navigation.twig' with {
-    label: 'Record tasks',
+    label: t('core.administrator.business_detail.record_tasks'),
     active: 'history',
     tasks: [
         {id: 'summary', label: 'Summary', href: record_path ~ '?task=summary'},
@@ -22,7 +22,7 @@
 } only %}
 
 {% if items is empty %}
-    <section class="portal-business-empty"><h2>No revisions are available</h2><p>This record has no visible history entries.</p></section>
+    <section class="portal-business-empty"><h2>{{ t('core.administrator.business_history.no_revisions_are_available') }}</h2><p>{{ t('core.administrator.business_history.this_record_has_no_visible_history') }}</p></section>
 {% else %}
     <ol class="portal-business-history kis-business-history">
         {% for revision in items %}
@@ -30,17 +30,17 @@
                 <header class="portal-business-section-heading">
                     <div>
                         <p class="eyebrow">{{ revision.operation|replace({'_': ' '}) }}</p>
-                        <h2>Version {{ revision.record_version }} · Revision {{ revision.revision_number }}</h2>
+                        <h2>{{ t('core.administrator.business_history.version_revision', {record_version: revision.record_version, revision_number: revision.revision_number}) }}</h2>
                     </div>
                     <time datetime="{{ revision.occurred_at }}">{{ revision.occurred_at|date('Y-m-d H:i:s') }}</time>
                 </header>
                 <p>
-                    {% if revision.actor_id is defined and revision.actor_id %}Performed by <code>{{ revision.actor_id }}</code>.{% else %}Actor attribution is not disclosed.{% endif %}
-                    {% if revision.changed_fields is not empty %}Changed {{ revision.changed_fields|join(', ') }}.{% endif %}
+                    {% if revision.actor_id is defined and revision.actor_id %}{{ t('core.administrator.business_history.performed_by') }} <code>{{ revision.actor_id }}</code>.{% else %}{{ t('core.administrator.business_history.actor_attribution_is_not_disclosed') }}{% endif %}
+                    {% if revision.changed_fields is not empty %}{{ t('core.administrator.business_history.changed', {changed_fields: (revision.changed_fields|join(', '))}) }}{% endif %}
                 </p>
                 {% if revision.snapshot is not empty %}
                     <details>
-                        <summary>View disclosed snapshot</summary>
+                        <summary>{{ t('core.administrator.business_history.view_disclosed_snapshot') }}</summary>
                         <dl class="portal-details">
                             {% for handle, value in revision.snapshot %}
                                 <div>
@@ -51,7 +51,7 @@
                                             : (value is same as(false)
                                                 ? 'No'
                                                 : (value is null
-                                                    ? 'Not set'
+                                                    ? t('core.administrator.business_fields.not_set')
                                                     : (value is iterable ? value|json_encode : value)))
                                         }}
                                     </dd>
@@ -61,13 +61,13 @@
                     </details>
                 {% endif %}
                 {% if revision.integrity_checksum is defined %}
-                    <small>Integrity checksum <code class="portal-digest">{{ revision.integrity_checksum }}</code></small>
+                    <small>{{ t('core.administrator.business_history.integrity_checksum') }} <code class="portal-digest">{{ revision.integrity_checksum }}</code></small>
                 {% endif %}
             </li>
         {% endfor %}
     </ol>
     {% if has_more and before_version %}
-        <nav class="portal-actions" aria-label="History pages"><a class="portal-button secondary" href="?task=history&amp;before_version={{ before_version }}" rel="next">Older revisions</a></nav>
+        <nav class="portal-actions" aria-label="{{ t('core.administrator.business_history.history_pages') }}"><a class="portal-button secondary" href="?task=history&amp;before_version={{ before_version }}" rel="next">{{ t('core.administrator.business_history.older_revisions') }}</a></nav>
     {% endif %}
 {% endif %}
 </div>

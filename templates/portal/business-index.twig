@@ -1,28 +1,28 @@
 {% extends 'portal/layout.twig' %}
 
-{% block title %}Business records · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.business_index.business_records_kumwe_portal') }}{% endblock %}
 
 {% block content %}
 <div data-kis-business data-kis-component="generated-catalog" data-kis-surface="core.portal.generated-catalog">
 {% embed '@kis/page-header.twig' with {
-    eyebrow: 'Generated workspaces',
-    title: 'Business records',
-    purpose: 'Only business definitions explicitly enabled for this portal and your current scope appear here.'
+    eyebrow: t('core.administrator.business_index.generated_workspaces'),
+    title: t('core.administrator.business_index.business_records'),
+    purpose: t('core.portal.business_index.only_business_definitions_explicitly_enabled_for')
 } only %}{% endembed %}
 
 {% if definitions is empty %}
     {% embed '@kis/empty-state.twig' with {
-        title: 'No business workspaces are available',
-        message: 'Your portal permissions and organization scope do not currently expose any business definitions.'
+        title: t('core.administrator.business_index.no_business_workspaces_are_available'),
+        message: t('core.portal.business_index.your_portal_permissions_and_organization_scope')
     } only %}{% endembed %}
 {% else %}
-    <section class="portal-business-cards kis-business-workspaces" aria-label="Available business workspaces">
+    <section class="portal-business-cards kis-business-workspaces" aria-label="{{ t('core.administrator.business_index.available_business_workspaces') }}">
         {% for definition in definitions %}
             <article class="kis-business-workspace-card">
                 <p class="eyebrow">{{ definition.scope|replace({'_': ' '}) }}</p>
                 <h2>{{ definition.plural_label }}</h2>
-                <p>{{ definition.fields|length }} visible fields · definition version {{ definition.version }}</p>
-                <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}">Open {{ definition.plural_label }}</a>
+                <p>{{ t('core.portal.business_index.visible_fields_definition_version', {fields: (definition.fields|length), version: definition.version}) }}</p>
+                <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}">{{ t('core.administrator.business_index.open', {plural_label: definition.plural_label}) }}</a>
             </article>
         {% endfor %}
     </section>

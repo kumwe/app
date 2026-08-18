@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Architecture;
 
+use Kumwe\CMS\Tests\Support\ResolvedWording;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -103,6 +104,6 @@ final class BusinessWorkspaceInterfaceStandardTest extends TestCase
         $contents = file_get_contents($this->root . '/' . $path);
         self::assertIsString($contents);
 
-        return $contents;
+        return str_ends_with($path, '.twig') ? ResolvedWording::withResolved($contents) : $contents;
     }
 }

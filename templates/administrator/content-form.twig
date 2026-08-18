@@ -1,41 +1,41 @@
 {% extends "layout.twig" %}
 {% import "_fields.twig" as field_renderer %}
-{% block title %}{{ entry ? 'Edit ' ~ entry.title : 'Create content' }} · Kumwe{% endblock %}
-{% block context_title %}{{ entry ? 'Edit content' : 'Create content' }}{% endblock %}
+{% block title %}{{ t('core.administrator.business_form.kumwe', {value: (entry ? t('core.administrator.content_form.edit_title', {title: entry.title}) : t('core.administrator.content_form.create_content'))}) }}{% endblock %}
+{% block context_title %}{{ entry ? t('core.administrator.content_form.edit_content') : t('core.administrator.content_form.create_content') }}{% endblock %}
 {% block content %}
   <div class="kis-phase-five" data-kis-surface="core.administrator.content-editor">
     {% embed '@kis/page-header.twig' with {
       eyebrow: content_type.name,
-      title: entry ? entry.title : 'Create content',
-      purpose: entry ? 'Update fields, publication timing and workflow state.' : 'Complete the fields below; Kumwe validates them against the content model.',
+      title: entry ? entry.title : t('core.administrator.content_form.create_content'),
+      purpose: entry ? t('core.administrator.content_form.update_fields_publication_timing_and_workflow') : t('core.administrator.content_form.complete_the_fields_below_kumwe_validates'),
       entry: entry
     } only %}
       {% block metadata %}
-        {% if entry %}<p class="kis-phase-five-status-line"><span>{{ entry.status|replace({'_': ' '})|title }}</span><span>Version {{ entry.version }}</span></p>{% endif %}
+        {% if entry %}<p class="kis-phase-five-status-line"><span>{{ entry.status|replace({'_': ' '})|title }}</span><span>{{ t('core.administrator.business_definitions.version', {version: entry.version}) }}</span></p>{% endif %}
       {% endblock %}
-      {% block actions %}<div class="page-actions"><a class="button" href="/administrator/content">Back to content</a>{% if entry and entry.public_url %}<a class="button" href="{{ entry.public_url }}" target="_blank" rel="noopener">View page</a>{% endif %}</div>{% endblock %}
+      {% block actions %}<div class="page-actions"><a class="button" href="/administrator/content">{{ t('core.administrator.content_form.back_to_content') }}</a>{% if entry and entry.public_url %}<a class="button" href="{{ entry.public_url }}" target="_blank" rel="noopener">{{ t('core.administrator.content_form.view_page') }}</a>{% endif %}</div>{% endblock %}
     {% endembed %}
 
-    <nav class="kis-phase-five-section-nav" aria-label="Content editor sections">
-      <a href="#content-details">Details</a>
-      <a href="#content-fields">Content fields</a>
-      <a href="#content-publication">Publication</a>
-      {% if entry %}<a href="#content-workflow">Workflow</a>{% endif %}
+    <nav class="kis-phase-five-section-nav" aria-label="{{ t('core.administrator.content_form.content_editor_sections') }}">
+      <a href="#content-details">{{ t('core.administrator.business_choices.details') }}</a>
+      <a href="#content-fields">{{ t('core.administrator.content_form.content_fields') }}</a>
+      <a href="#content-publication">{{ t('core.administrator.business_definitions.publication') }}</a>
+      {% if entry %}<a href="#content-workflow">{{ t('core.administrator.business_definitions.workflow') }}</a>{% endif %}
     </nav>
 
     {% if not entry and content_types|length > 1 %}
-      <form class="panel panel-body form-grid" action="/administrator/content/new" method="get"><label>Content type<select name="content_type" data-content-type-selector>{% for type in content_types %}<option value="{{ type.id }}"{% if type.id == content_type.id %} selected{% endif %}>{{ type.name }}</option>{% endfor %}</select></label><div><span class="field-help">Changing the type changes the fields available for this item.</span><noscript><button type="submit">Use selected type</button></noscript></div></form>
+      <form class="panel panel-body form-grid" action="/administrator/content/new" method="get"><label>{{ t('core.administrator.access_control.content_type') }}<select name="content_type" data-content-type-selector>{% for type in content_types %}<option value="{{ type.id }}"{% if type.id == content_type.id %} selected{% endif %}>{{ type.name }}</option>{% endfor %}</select></label><div><span class="field-help">{{ t('core.administrator.content_form.changing_the_type_changes_the_fields') }}</span><noscript><button type="submit">{{ t('core.administrator.content_form.use_selected_type') }}</button></noscript></div></form>
     {% endif %}
 
     {% if version_conflict %}
       <section class="notice warning content-version-conflict" data-kis-state="conflict" role="alert" aria-labelledby="content-conflict-title" tabindex="-1">
         <div>
-          <h2 id="content-conflict-title">Another actor saved a newer version</h2>
-          <p>Another save changed this item after you opened it, so nothing you submitted was written and the newer version is untouched. You composed this form against version {{ version_conflict.expected_version }}; the stored item is now at version {{ version_conflict.current_version }}.</p>
-          <p>Everything you typed is still below. Choose one:</p>
+          <h2 id="content-conflict-title">{{ t('core.administrator.business_detail.another_actor_saved_a_newer_version') }}</h2>
+          <p>{{ t('core.administrator.content_form.another_save_changed_this_item_after', {expected_version: version_conflict.expected_version, current_version: version_conflict.current_version}) }}</p>
+          <p>{{ t('core.administrator.business_form.everything_you_typed_is_still_below') }}</p>
           <ul>
-            <li>Save changes again to apply your entries on top of version {{ version_conflict.current_version }}.</li>
-            <li><a href="/administrator/content/{{ entry.id }}/edit">Reload version {{ version_conflict.current_version }}</a> and lose what you typed here.</li>
+            <li>{{ t('core.administrator.content_form.save_changes_again_to_apply_your', {current_version: version_conflict.current_version}) }}</li>
+            <li><a href="/administrator/content/{{ entry.id }}/edit">{{ t('core.administrator.content_form.reload_version', {current_version: version_conflict.current_version}) }}</a> {{ t('core.administrator.business_detail.and_lose_what_you_typed_here') }}</li>
           </ul>
         </div>
       </section>
@@ -43,8 +43,8 @@
     {% if content_violations is not empty %}
       <section class="notice danger content-error-summary kis-validation-summary" data-kis-component="validation-summary" role="alert" aria-labelledby="content-error-title" tabindex="-1">
         <div>
-          <h2 id="content-error-title">The item could not be saved</h2>
-          <p>The content model refused these values. Everything you typed is still below; correct the fields named here and save again.</p>
+          <h2 id="content-error-title">{{ t('core.administrator.content_form.the_item_could_not_be_saved') }}</h2>
+          <p>{{ t('core.administrator.content_form.the_content_model_refused_these_values') }}</p>
           <ul>{% for violation in content_violations %}<li>{{ violation }}</li>{% endfor %}</ul>
         </div>
       </section>
@@ -57,39 +57,39 @@
       <input type="hidden" name="content_type" value="{{ content_type.id }}">
       {% if entry %}<input type="hidden" name="version" value="{{ entry.version }}">{% endif %}
       <section id="content-details" class="stack kis-phase-five-card" aria-labelledby="content-details-title">
-        <div><p class="eyebrow">Identity</p><h2 id="content-details-title">Content details</h2><p class="field-help">Name the item and choose the stable public address editors will recognize.</p></div>
+        <div><p class="eyebrow">{{ t('core.administrator.business_definitions.identity') }}</p><h2 id="content-details-title">{{ t('core.administrator.content_form.content_details') }}</h2><p class="field-help">{{ t('core.administrator.content_form.name_the_item_and_choose_the') }}</p></div>
         <div class="two-column">
-        <label>Title<input type="text" name="title" maxlength="255" value="{{ editor_input ? editor_input.title : entry.title|default('') }}" required data-title-input></label>
-        <label>URL slug<small>Used as /{{ editor_input and editor_input.slug is not empty ? editor_input.slug : entry.slug|default('your-page') }} until a menu path becomes canonical.</small><span class="input-prefix"><span>/</span><input type="text" name="slug" maxlength="160" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{ editor_input ? editor_input.slug : entry.slug|default('') }}" required data-slug-input></span></label>
+        <label>{{ t('core.administrator.content_form.title') }}<input type="text" name="title" maxlength="255" value="{{ editor_input ? editor_input.title : entry.title|default('') }}" required data-title-input></label>
+        <label>{{ t('core.administrator.content_form.url_slug') }}<small>{{ t('core.administrator.content_form.used_as_until_a_menu_path', {value: (editor_input and editor_input.slug is not empty ? editor_input.slug : entry.slug|default('your-page'))}) }}</small><span class="input-prefix"><span>/</span><input type="text" name="slug" maxlength="160" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{ editor_input ? editor_input.slug : entry.slug|default('') }}" required data-slug-input></span></label>
         </div>
       </section>
       <section id="content-fields" class="stack kis-phase-five-card" aria-labelledby="content-fields-title">
-        <div><p class="eyebrow">Authoring</p><h2 id="content-fields-title">Content fields</h2><p class="field-help">Complete the fields supplied by the {{ content_type.name }} model.</p></div>
+        <div><p class="eyebrow">{{ t('core.administrator.content_form.authoring') }}</p><h2 id="content-fields-title">{{ t('core.administrator.content_form.content_fields') }}</h2><p class="field-help">{{ t('core.administrator.content_form.complete_the_fields_supplied_by_the', {name: content_type.name}) }}</p></div>
         <kumwe-schema-form class="stack">{{ field_renderer.render(fields) }}</kumwe-schema-form>
       </section>
-      <fieldset id="content-publication" class="field-group stack kis-phase-five-card"><legend>Publication timing</legend><p class="field-help">Leave these fields empty to publish immediately when the workflow reaches a public state.</p><div class="two-column"><label>Publish at<input type="datetime-local" name="publish_at" value="{{ editor_input ? editor_input.publish_at : (entry.publication_window.starts_at|default('') ? entry.publication_window.starts_at|date('Y-m-d\\TH:i') : '') }}"></label><label>Unpublish at<input type="datetime-local" name="unpublish_at" value="{{ editor_input ? editor_input.unpublish_at : (entry.publication_window.ends_at|default('') ? entry.publication_window.ends_at|date('Y-m-d\\TH:i') : '') }}"></label></div></fieldset>
-      <p class="kis-dirty-status" role="status" aria-live="polite" data-kis-dirty-status>Changes are saved when you submit this form.</p>
-      <div class="page-actions"><button class="primary" type="submit">{{ entry ? 'Save changes' : 'Create draft' }}</button><a class="button" href="/administrator/content">Cancel</a></div>
+      <fieldset id="content-publication" class="field-group stack kis-phase-five-card"><legend>{{ t('core.administrator.content_form.publication_timing') }}</legend><p class="field-help">{{ t('core.administrator.content_form.leave_these_fields_empty_to_publish') }}</p><div class="two-column"><label>{{ t('core.administrator.content_form.publish_at') }}<input type="datetime-local" name="publish_at" value="{{ editor_input ? editor_input.publish_at : (entry.publication_window.starts_at|default('') ? entry.publication_window.starts_at|date('Y-m-d\\TH:i') : '') }}"></label><label>{{ t('core.administrator.content_form.unpublish_at') }}<input type="datetime-local" name="unpublish_at" value="{{ editor_input ? editor_input.unpublish_at : (entry.publication_window.ends_at|default('') ? entry.publication_window.ends_at|date('Y-m-d\\TH:i') : '') }}"></label></div></fieldset>
+      <p class="kis-dirty-status" role="status" aria-live="polite" data-kis-dirty-status>{{ t('core.administrator.content_form.changes_are_saved_when_you_submit') }}</p>
+      <div class="page-actions"><button class="primary" type="submit">{{ entry ? t('core.administrator.business_form.save_changes') : t('core.administrator.content_form.create_draft') }}</button><a class="button" href="/administrator/content">{{ t('core.administrator.access_control.cancel') }}</a></div>
       </form>
       </kumwe-dirty-form>
 
       <aside class="editor-sidebar stack">
         <section class="panel panel-body stack">
-          <div><p class="eyebrow">Content model</p><h2>{{ content_type.name }}</h2><p class="text-muted text-small">{{ fields|length }} top-level fields · model version {{ content_type.version }}</p></div>
-          {% if capabilities['content.update'] is defined %}<a href="/administrator/content-models">Manage content model</a>{% endif %}
+          <div><p class="eyebrow">{{ t('core.administrator.content_form.content_model') }}</p><h2>{{ content_type.name }}</h2><p class="text-muted text-small">{{ t('core.administrator.content_form.top_level_fields_model_version', {fields: (fields|length), version: content_type.version}) }}</p></div>
+          {% if capabilities['content.update'] is defined %}<a href="/administrator/content-models">{{ t('core.administrator.content_form.manage_content_model') }}</a>{% endif %}
         </section>
-        {% if entry %}<section id="content-workflow" class="panel panel-body stack kis-phase-five-card"><div class="workflow-state"><span class="workflow-state-dot" aria-hidden="true"></span><div><p class="eyebrow">Workflow state</p><h2>{{ entry.status|replace({'_': ' '})|title }}</h2><p class="text-muted text-small">Content version {{ entry.version }}</p></div></div><div class="workflow-actions">
+        {% if entry %}<section id="content-workflow" class="panel panel-body stack kis-phase-five-card"><div class="workflow-state"><span class="workflow-state-dot" aria-hidden="true"></span><div><p class="eyebrow">{{ t('core.administrator.content_form.workflow_state') }}</p><h2>{{ entry.status|replace({'_': ' '})|title }}</h2><p class="text-muted text-small">{{ t('core.administrator.content_form.content_version', {version: entry.version}) }}</p></div></div><div class="workflow-actions">
           {% set available_transition = false %}
-          {% for transition in workflow.transitions %}{% if transition.from == entry.status and capabilities[transition.required_capability] is defined %}{% set available_transition = true %}<form action="/administrator/content/{{ entry.id }}/transition" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="{{ transition.to }}"><button class="full{% if transition.to == 'published' %} primary{% endif %}" type="submit">Move to {{ transition.to|replace({'_': ' '})|title }}</button></form>{% endif %}{% endfor %}
-          {% if not available_transition %}<p class="text-muted text-small">No workflow action is available for your permissions and the current state.</p>{% endif %}
+          {% for transition in workflow.transitions %}{% if transition.from == entry.status and capabilities[transition.required_capability] is defined %}{% set available_transition = true %}<form action="/administrator/content/{{ entry.id }}/transition" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="{{ transition.to }}"><button class="full{% if transition.to == 'published' %} primary{% endif %}" type="submit">{{ t('core.administrator.content_form.move_to', {to: (transition.to|replace({'_': ' '})|title)}) }}</button></form>{% endif %}{% endfor %}
+          {% if not available_transition %}<p class="text-muted text-small">{{ t('core.administrator.content_form.no_workflow_action_is_available_for') }}</p>{% endif %}
         </div></section>{% endif %}
       </aside>
       </div>
     {% if media_assets is not empty %}
     <kumwe-media-picker>
       <dialog class="media-dialog" aria-labelledby="media-dialog-title">
-        <div class="media-dialog-header"><div><p class="eyebrow">Media library</p><h2 id="media-dialog-title">Choose a file</h2></div><form method="dialog"><button type="submit" aria-label="Close media library">Close</button></form></div>
-        <label class="media-dialog-search">Filter media<input type="search" placeholder="Search file names" data-media-filter></label>
+        <div class="media-dialog-header"><div><p class="eyebrow">{{ t('core.administrator.content_form.media_library') }}</p><h2 id="media-dialog-title">{{ t('core.administrator.content_form.choose_a_file') }}</h2></div><form method="dialog"><button type="submit" aria-label="{{ t('core.administrator.content_form.close_media_library') }}">{{ t('core.administrator.content_form.close') }}</button></form></div>
+        <label class="media-dialog-search">{{ t('core.administrator.content_form.filter_media') }}<input type="search" placeholder="{{ t('core.administrator.content_form.search_file_names') }}" data-media-filter></label>
         <div class="media-picker-grid">{% for asset in media_assets %}<button type="button" class="media-picker-item" data-select-media data-media-url="{{ asset.url }}" data-media-name="{{ asset.name }}">{% if asset.is_image %}<img src="{{ asset.url }}" alt="" loading="lazy">{% else %}<span class="media-file-placeholder" aria-hidden="true">PDF</span>{% endif %}<span>{{ asset.name }}</span></button>{% endfor %}</div>
       </dialog>
     </kumwe-media-picker>

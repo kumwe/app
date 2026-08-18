@@ -3,9 +3,9 @@
 {% set record_path = business_base_path ~ '/' ~ (definition.handle|url_encode)
   ~ '/' ~ (record.record_id|url_encode) %}
 
-{% block title %}{{ definition.singular_label }} · Kumwe{% endblock %}
+{% block title %}{{ t('core.administrator.business_detail.kumwe', {singular_label: definition.singular_label}) }}{% endblock %}
 {% block context_title %}{{ definition.singular_label }}{% endblock %}
-{% block context_subtitle %}Generated business record detail{% endblock %}
+{% block context_subtitle %}{{ t('core.administrator.business_detail.generated_business_record_detail') }}{% endblock %}
 
 {% block content %}
   <kumwe-business-surface data-kis-business data-kis-component="generated-record" data-kis-surface="{{ relationship_focus|default(null) ? 'core.administrator.generated-relationship' : 'core.administrator.generated-record' }}" data-record-task="{{ record_task }}">
@@ -13,13 +13,13 @@
       <div>
         <p class="eyebrow">{{ definition.plural_label }}</p>
         <h1>{{ definition.singular_label }}</h1>
-        <p>{% include '@kis/technical-value.twig' with {label: 'Record ID', value: record.record_id} only %} · Version {{ record.version }}</p>
+        <p>{% include '@kis/technical-value.twig' with {label: t('core.administrator.business_confirm.record_id'), value: record.record_id} only %} {{ t('core.administrator.business_detail.version', {version: record.version}) }}</p>
       </div>
       <div class="page-actions">
         {% if relationship_focus|default(null) %}
-          <a class="button" href="{{ record_path }}">Back to record</a>
+          <a class="button" href="{{ record_path }}">{{ t('core.administrator.business_custom_view.back_to_record') }}</a>
         {% endif %}
-        <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">Back to list</a>
+        <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">{{ t('core.administrator.business_detail.back_to_list') }}</a>
         {% for declared_view in definition.views %}
           {% if declared_view.custom and (
             declared_view.kind == 'detail'
@@ -33,28 +33,28 @@
           {% endif %}
         {% endfor %}
         {% if available_operations.report is defined %}
-          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">Report</a>
+          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">{{ t('core.administrator.business_detail.report') }}</a>
         {% endif %}
-        {% if available_operations.update is defined and record.deleted_at is null %}<a class="button primary" href="{{ record_path }}?edit=1">Edit</a>{% endif %}
+        {% if available_operations.update is defined and record.deleted_at is null %}<a class="button primary" href="{{ record_path }}?edit=1">{{ t('core.administrator.business_detail.edit') }}</a>{% endif %}
       </div>
     </header>
 
     {% if completed_operation_id %}
       <div class="notice success" role="status">
-        The operation completed.{% if available_operations.status is defined %} <a href="{{ business_base_path }}/operations/{{ completed_operation_id|url_encode }}">View operation status</a>.{% endif %}
+        {{ t('core.administrator.business_detail.the_operation_completed') }}{% if available_operations.status is defined %} <a href="{{ business_base_path }}/operations/{{ completed_operation_id|url_encode }}">{{ t('core.administrator.business_detail.view_operation_status') }}</a>.{% endif %}
       </div>
     {% endif %}
     {% if error_summary is defined and error_summary %}
       <section class="notice danger business-error-summary" role="alert" tabindex="-1">
-        <div><h2>The relationship could not be saved</h2><p>{{ error_summary }}</p></div>
+        <div><h2>{{ t('core.administrator.business_detail.the_relationship_could_not_be_saved') }}</h2><p>{{ error_summary }}</p></div>
       </section>
     {% endif %}
     {% if version_conflict is defined %}
       <section class="notice warning business-version-conflict" data-kis-state="conflict" role="alert" tabindex="-1">
         <div>
-          <h2>Another actor saved a newer version</h2>
-          <p>{{ version_conflict.summary }} You composed this form against version {{ version_conflict.expected_version }}; the stored record is now at version {{ record.version }}.</p>
-          <p>Your entries are kept in the form below. Submit again to apply them to version {{ record.version }}, or <a href="{{ record_path }}?task=relations">reload version {{ record.version }}</a> and lose what you typed here.</p>
+          <h2>{{ t('core.administrator.business_detail.another_actor_saved_a_newer_version') }}</h2>
+          <p>{{ t('core.administrator.business_detail.you_composed_this_form_against_version', {summary: version_conflict.summary, expected_version: version_conflict.expected_version, version: record.version}) }}</p>
+          <p>{{ t('core.administrator.business_detail.your_entries_are_kept_in_the', {version: record.version}) }} <a href="{{ record_path }}?task=relations">{{ t('core.administrator.business_detail.reload_version', {version: record.version}) }}</a> {{ t('core.administrator.business_detail.and_lose_what_you_typed_here') }}</p>
         </div>
       </section>
     {% endif %}
@@ -68,7 +68,7 @@
       {% set record_tasks = record_tasks|merge([{id: 'history', label: 'History', href: record_path ~ '?task=history'}]) %}
     {% endif %}
     <div class="kis-business-record-tabs">
-      {% include '@kis/task-navigation.twig' with {label: 'Record tasks', tasks: record_tasks, active: record_task} only %}
+      {% include '@kis/task-navigation.twig' with {label: t('core.administrator.business_detail.record_tasks'), tasks: record_tasks, active: record_task} only %}
     </div>
 
     <div class="business-detail-layout kis-business-record-grid">
@@ -76,17 +76,17 @@
         {% if record_task == 'summary' %}
         <section class="panel panel-body kis-business-section" aria-labelledby="business-values-title">
           <div class="section-heading">
-            <h2 id="business-values-title">Record details</h2>
+            <h2 id="business-values-title">{{ t('core.administrator.business_detail.record_details') }}</h2>
             <span class="status">
               {{ record.deleted_at ? 'Deleted' : (record.archived_at ? 'Archived' : record.workflow_state|default('Active'))|replace({'_': ' '})|title }}
             </span>
           </div>
           {% if fields is empty %}
-            <p class="text-muted">No field values are available for this record.</p>
+            <p class="text-muted">{{ t('core.administrator.business_detail.no_field_values_are_available_for') }}</p>
           {% else %}
             <dl class="business-detail-fields kis-business-details">
               {% for field in fields %}
-                <div><dt>{{ field.label }}</dt><dd>{{ field.display is not same as('') ? field.display : 'Not set' }}</dd></div>
+                <div><dt>{{ field.label }}</dt><dd>{{ field.display is not same as('') ? field.display : t('core.administrator.business_fields.not_set') }}</dd></div>
               {% endfor %}
             </dl>
           {% endif %}
@@ -95,7 +95,7 @@
 
         {% if record_task in ['summary', 'relations'] and definition.relationships is not empty %}
           <section class="panel panel-body stack kis-business-section" aria-labelledby="business-relations-title">
-            <div><p class="eyebrow">Connected records</p><h2 id="business-relations-title">Relationships and ordered lines</h2></div>
+            <div><p class="eyebrow">{{ t('core.administrator.business_detail.connected_records') }}</p><h2 id="business-relations-title">{{ t('core.administrator.business_detail.relationships_and_ordered_lines') }}</h2></div>
             {% for relationship in definition.relationships %}
               {% set related = record.includes[relationship.handle]|default([]) %}
               {% set relationship_loaded = relationship.loaded|default(false) %}
@@ -103,7 +103,7 @@
                 <div class="section-heading">
                   <div>
                     <h3 id="relation-{{ relationship.handle }}-title">{{ relationship.label }}</h3>
-                    <p class="text-muted text-small">{{ relationship.kind|replace({'_': ' '})|title }}{% if relationship.ordered %} · ordered{% endif %}</p>
+                    <p class="text-muted text-small">{{ relationship.kind|replace({'_': ' '})|title }}{% if relationship.ordered %} {{ t('core.administrator.business_detail.ordered') }}{% endif %}</p>
                   </div>
                   <div class="page-actions">
                     <span class="count-badge">{{ relationship_loaded ? related|length : '…' }}</span>
@@ -111,22 +111,22 @@
                       <a
                         class="button"
                         href="{{ record_path }}/relationships/{{ relationship.handle|url_encode }}"
-                      >View and manage</a>
+                      >{{ t('core.administrator.business_detail.view_and_manage') }}</a>
                     {% endif %}
                   </div>
                 </div>
 
                 {% if not relationship_loaded %}
-                  <p class="text-muted">Open this relationship to load its current records.</p>
+                  <p class="text-muted">{{ t('core.administrator.business_detail.open_this_relationship_to_load_its') }}</p>
                 {% elseif related is empty %}
-                  <p class="text-muted">No related records are currently included.</p>
+                  <p class="text-muted">{{ t('core.administrator.business_detail.no_related_records_are_currently_included') }}</p>
                 {% else %}
                   <ul class="business-related-records kis-business-related-records">
                     {% for related_record in related %}
                       <li>
                         <span>
-                          <strong>{{ related_record.label|default('Unnamed record') }}</strong>
-                          <small>Version {{ related_record.version }}</small>
+                          <strong>{{ related_record.label|default(t('core.administrator.business_detail.unnamed_record')) }}</strong>
+                          <small>{{ t('core.administrator.business_definitions.version', {version: related_record.version}) }}</small>
                         </span>
                         {% if relationship_focus|default(null) == relationship.handle
                           and available_operations.relation is defined
@@ -138,7 +138,7 @@
                             <input type="hidden" name="expected_version" value="{{ record.version }}">
                             <input type="hidden" name="relationship" value="{{ relationship.handle }}">
                             <input type="hidden" name="target_record_id" value="{{ related_record.record_id }}">
-                            <button class="link-button danger" type="submit">Remove</button>
+                            <button class="link-button danger" type="submit">{{ t('core.administrator.business_definitions.remove') }}</button>
                           </form>
                         {% endif %}
                       </li>
@@ -162,8 +162,8 @@
                     {% endif %}
                     <div class="section-heading">
                       <div>
-                        <h4>Add {{ line_form.target_label }}</h4>
-                        <p class="field-help">The new line is created and attached in one transaction.</p>
+                        <h4>{{ t('core.administrator.business_detail.add', {target_label: line_form.target_label}) }}</h4>
+                        <p class="field-help">{{ t('core.administrator.business_detail.the_new_line_is_created_and') }}</p>
                       </div>
                     </div>
                     {{ business_fields.render(
@@ -174,7 +174,7 @@
                       'target_values'
                     ) }}
                     {% if relationship.ordered %}
-                      <label for="relation-{{ relationship.handle }}-owned-position">Position
+                      <label for="relation-{{ relationship.handle }}-owned-position">{{ t('core.administrator.business_detail.position') }}
                         <input
                           id="relation-{{ relationship.handle }}-owned-position"
                           type="number"
@@ -183,7 +183,7 @@
                         >
                       </label>
                     {% endif %}
-                    <button type="submit">Add {{ line_form.target_label }}</button>
+                    <button type="submit">{{ t('core.administrator.business_detail.add', {target_label: line_form.target_label}) }}</button>
                   </form>
                 {% elseif relationship_focus|default(null) == relationship.handle
                   and available_operations.relation is defined
@@ -195,10 +195,10 @@
                     <input type="hidden" name="operation_id" value="{{ operation_id }}">
                     <input type="hidden" name="expected_version" value="{{ record.version }}">
                     <input type="hidden" name="relationship" value="{{ relationship.handle }}">
-                    <label for="relation-{{ relationship.handle }}-target">Target record
+                    <label for="relation-{{ relationship.handle }}-target">{{ t('core.administrator.business_detail.target_record') }}
                       <select id="relation-{{ relationship.handle }}-target" name="target_record_id" required>
                         <option value=""{% if relationship.selected_choice is not defined %} selected{% endif %} disabled>
-                          Choose a related record
+                          {{ t('core.administrator.business_detail.choose_a_related_record') }}
                         </option>
                         {% for choice in relationship.choices %}
                           <option
@@ -211,19 +211,19 @@
                     <a
                       class="button"
                       href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}/choices/relations/{{ relationship.handle|url_encode }}?operation=relation"
-                    >Search available records</a>
+                    >{{ t('core.administrator.business_detail.search_available_records') }}</a>
                     {% if relationship.ordered %}
-                      <label for="relation-{{ relationship.handle }}-position">Position
+                      <label for="relation-{{ relationship.handle }}-position">{{ t('core.administrator.business_detail.position') }}
                         <input id="relation-{{ relationship.handle }}-position" type="number" min="0" name="position">
                       </label>
                     {% endif %}
-                    <button type="submit">Add relationship</button>
+                    <button type="submit">{{ t('core.administrator.business_definitions.add_relationship') }}</button>
                   </form>
                 {% elseif relationship_focus|default(null) == relationship.handle
                   and available_operations.relation is defined
                   and relationship.kind == 'owned_line_collection'
                 %}
-                  <p class="field-help">No owned-line fields are available for this record and policy.</p>
+                  <p class="field-help">{{ t('core.administrator.business_detail.no_owned_line_fields_are_available') }}</p>
                 {% endif %}
 
                 {% if relationship_focus|default(null) == relationship.handle
@@ -238,13 +238,13 @@
                       <input type="hidden" name="operation_id" value="{{ operation_id }}">
                       <input type="hidden" name="expected_version" value="{{ record.version }}">
                       <input type="hidden" name="relationship" value="{{ relationship.handle }}">
-                      <h4>Change order</h4>
-                      <p class="field-help">Choose each related record exactly once in its numbered position.</p>
+                      <h4>{{ t('core.administrator.business_detail.change_order') }}</h4>
+                      <p class="field-help">{{ t('core.administrator.business_detail.choose_each_related_record_exactly_once') }}</p>
                       <ol data-business-order-list>
                         {% for related_record in related %}
                           <li data-record-id="{{ related_record.record_id }}">
                             <label for="relation-{{ relationship.handle }}-order-{{ loop.index }}">
-                              <span data-business-order-position>Position {{ loop.index }}</span>
+                              <span data-business-order-position>{{ t('core.administrator.business_detail.position_2', {index: loop.index}) }}</span>
                               <select
                                 id="relation-{{ relationship.handle }}-order-{{ loop.index }}"
                                 name="ordered_record_ids[]"
@@ -255,7 +255,7 @@
                                   <option
                                     value="{{ candidate.record_id }}"
                                     {% if candidate.record_id is same as(related_record.record_id) %}selected{% endif %}
-                                  >{{ candidate.label|default('Unnamed record') }}</option>
+                                  >{{ candidate.label|default(t('core.administrator.business_detail.unnamed_record')) }}</option>
                                 {% endfor %}
                               </select>
                             </label>
@@ -263,18 +263,18 @@
                               <button
                                 type="button"
                                 data-move="up"
-                                aria-label="Move {{ related_record.label|default('record') }} up"
+                                aria-label="{{ t('core.administrator.business_detail.move_up', {label: (related_record.label|default('record'))}) }}"
                               >↑</button>
                               <button
                                 type="button"
                                 data-move="down"
-                                aria-label="Move {{ related_record.label|default('record') }} down"
+                                aria-label="{{ t('core.administrator.business_detail.move_down', {label: (related_record.label|default('record'))}) }}"
                               >↓</button>
                             </span>
                           </li>
                         {% endfor %}
                       </ol>
-                      <button type="submit">Save order</button>
+                      <button type="submit">{{ t('core.administrator.business_detail.save_order') }}</button>
                     </form>
                   </kumwe-business-ordered-lines>
                 {% endif %}
@@ -285,28 +285,28 @@
       </div>
 
       {% if record_task in ['summary', 'actions'] %}
-      <aside class="stack business-detail-sidebar kis-business-record-sidebar" aria-label="Record operations">
+      <aside class="stack business-detail-sidebar kis-business-record-sidebar" aria-label="{{ t('core.administrator.business_detail.record_operations') }}">
         {% if record_task == 'summary' %}
         <section class="panel panel-body stack">
-          <div><p class="eyebrow">Record state</p><h2>{{ record.workflow_state|default('Active')|replace({'_': ' '})|title }}</h2></div>
+          <div><p class="eyebrow">{{ t('core.administrator.business_detail.record_state') }}</p><h2>{{ record.workflow_state|default('Active')|replace({'_': ' '})|title }}</h2></div>
           <dl class="business-record-metadata kis-business-metadata">
-            <div><dt>Created</dt><dd><time datetime="{{ record.created_at }}">{{ record.created_at|date('M j, Y H:i') }}</time></dd></div>
-            <div><dt>Updated</dt><dd><time datetime="{{ record.updated_at }}">{{ record.updated_at|date('M j, Y H:i') }}</time></dd></div>
-            <div><dt>Definition</dt><dd>v{{ record.definition_version }}</dd></div>
+            <div><dt>{{ t('core.administrator.business_detail.created') }}</dt><dd><time datetime="{{ record.created_at }}">{{ record.created_at|date('M j, Y H:i') }}</time></dd></div>
+            <div><dt>{{ t('core.administrator.business_detail.updated') }}</dt><dd><time datetime="{{ record.updated_at }}">{{ record.updated_at|date('M j, Y H:i') }}</time></dd></div>
+            <div><dt>{{ t('core.administrator.business_detail.definition') }}</dt><dd>v{{ record.definition_version }}</dd></div>
           </dl>
         </section>
         {% endif %}
 
         {% if record_task in ['summary', 'actions'] and available_operations.action is defined and definition.actions is not empty %}
           <section class="panel panel-body stack" aria-labelledby="business-actions-title">
-            <div><p class="eyebrow">Workflow</p><h2 id="business-actions-title">Available actions</h2></div>
+            <div><p class="eyebrow">{{ t('core.administrator.business_definitions.workflow') }}</p><h2 id="business-actions-title">{{ t('core.administrator.business_detail.available_actions') }}</h2></div>
             {% for action in definition.actions %}
               <a class="button{% if action.high_impact %} danger{% endif %}" href="{{ record_path }}?confirm=action&amp;action={{ action.handle|url_encode }}">
                 {{ action.label }}{% if action.transition %} → {{ action.transition|replace({'_': ' '})|title }}{% endif %}
               </a>
               {% if available_operations.approval is defined and action.high_impact %}
                 <a class="button" href="{{ record_path }}?confirm=action&amp;action={{ action.handle|url_encode }}&amp;approval=1">
-                  Request approval for {{ action.label }}
+                  {{ t('core.administrator.business_detail.request_approval_for', {label: action.label}) }}
                 </a>
               {% endif %}
             {% endfor %}
@@ -315,15 +315,15 @@
 
         {% if record_task in ['summary', 'actions'] %}
         <section class="panel panel-body stack" aria-labelledby="business-lifecycle-title">
-          <div><p class="eyebrow">Lifecycle</p><h2 id="business-lifecycle-title">Record controls</h2></div>
+          <div><p class="eyebrow">{{ t('core.administrator.business_definitions.lifecycle') }}</p><h2 id="business-lifecycle-title">{{ t('core.administrator.business_detail.record_controls') }}</h2></div>
           {% if available_operations.restore is defined and (record.archived_at or record.deleted_at) %}
-            <a class="button" href="{{ record_path }}?confirm=restore&archived=1&deleted=1">Restore record</a>
+            <a class="button" href="{{ record_path }}?confirm=restore&archived=1&deleted=1">{{ t('core.administrator.business_confirm.restore_record') }}</a>
           {% endif %}
           {% if available_operations.archive is defined and record.archived_at is null and record.deleted_at is null %}
-            <a class="button" href="{{ record_path }}?confirm=archive">Archive record</a>
+            <a class="button" href="{{ record_path }}?confirm=archive">{{ t('core.administrator.business_confirm.archive_record') }}</a>
           {% endif %}
           {% if available_operations.delete is defined and record.deleted_at is null %}
-            <a class="button danger" href="{{ record_path }}?confirm=delete{% if record.archived_at %}&archived=1{% endif %}">Delete record</a>
+            <a class="button danger" href="{{ record_path }}?confirm=delete{% if record.archived_at %}&archived=1{% endif %}">{{ t('core.administrator.business_confirm.delete_record') }}</a>
           {% endif %}
         </section>
         {% endif %}

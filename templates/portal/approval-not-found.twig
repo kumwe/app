@@ -1,12 +1,12 @@
 {% extends 'portal/layout.twig' %}
 
-{% block title %}Approval unavailable · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.approval_not_found.approval_unavailable_kumwe_portal') }}{% endblock %}
 
 {% block content %}
 <section aria-labelledby="approval-not-found-title">
-    <p class="eyebrow">Approval inbox</p>
-    <h1 id="approval-not-found-title">Approval request unavailable</h1>
-    <p>The request does not exist or is not visible in your current workspace.</p>
-    <p><a href="/portal/approvals">Return to the approval inbox</a></p>
+    <p class="eyebrow">{{ t('core.portal.approval_not_found.approval_inbox') }}</p>
+    <h1 id="approval-not-found-title">{{ t('core.portal.approval_not_found.approval_request_unavailable') }}</h1>
+    <p>{{ t('core.portal.approval_not_found.the_request_does_not_exist_or') }}</p>
+    <p><a href="/portal/approvals">{{ t('core.portal.approval_not_found.return_to_the_approval_inbox') }}</a></p>
 </section>
 {% endblock %}

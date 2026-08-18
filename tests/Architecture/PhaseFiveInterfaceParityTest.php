@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Architecture;
 
 use JsonException;
+use Kumwe\CMS\Tests\Support\ResolvedWording;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -180,6 +181,6 @@ final class PhaseFiveInterfaceParityTest extends TestCase
         $contents = file_get_contents($this->root . '/' . $path);
         self::assertIsString($contents, sprintf('Unable to read %s.', $path));
 
-        return $contents;
+        return str_ends_with($path, '.twig') ? ResolvedWording::withResolved($contents) : $contents;
     }
 }

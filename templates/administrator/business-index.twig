@@ -1,38 +1,38 @@
 {% extends "layout.twig" %}
 
-{% block title %}Business records · Kumwe{% endblock %}
-{% block context_title %}Business records{% endblock %}
-{% block context_subtitle %}Definition-driven operational workspaces{% endblock %}
+{% block title %}{{ t('core.administrator.business_index.business_records_kumwe') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.business_index.business_records') }}{% endblock %}
+{% block context_subtitle %}{{ t('core.administrator.business_index.definition_driven_operational_workspaces') }}{% endblock %}
 
 {% block content %}
   <kumwe-business-surface data-kis-business data-kis-component="generated-catalog" data-kis-surface="core.administrator.generated-catalog">
     {% embed '@kis/page-header.twig' with {
-      eyebrow: 'Generated workspaces',
-      title: 'Business records',
-      purpose: 'Open a published business definition to work with the records your current scope permits.'
+      eyebrow: t('core.administrator.business_index.generated_workspaces'),
+      title: t('core.administrator.business_index.business_records'),
+      purpose: t('core.administrator.business_index.open_a_published_business_definition_to')
     } only %}{% endembed %}
 
     {% if definitions is empty %}
       {% embed '@kis/empty-state.twig' with {
-        title: 'No business workspaces are available',
-        message: 'Published definitions appear here only when their exposure and record policies allow discovery.'
+        title: t('core.administrator.business_index.no_business_workspaces_are_available'),
+        message: t('core.administrator.business_index.published_definitions_appear_here_only_when')
       } only %}{% endembed %}
     {% else %}
-      <section class="business-workspace-grid kis-business-workspaces" aria-label="Available business workspaces">
+      <section class="business-workspace-grid kis-business-workspaces" aria-label="{{ t('core.administrator.business_index.available_business_workspaces') }}">
         {% for definition in definitions %}
           <article class="panel business-workspace-card kis-business-workspace-card">
             <div>
               <p class="eyebrow">{{ definition.scope|replace({'_': ' '}) }}</p>
               <h2>{{ definition.plural_label }}</h2>
-              <p>{{ definition.singular_label }} records generated from definition version {{ definition.version }}.</p>
+              <p>{{ t('core.administrator.business_index.records_generated_from_definition_version', {singular_label: definition.singular_label, version: definition.version}) }}</p>
             </div>
             <dl class="business-workspace-facts kis-business-facts">
-              <div><dt>Fields</dt><dd>{{ definition.fields|length }}</dd></div>
-              <div><dt>Views</dt><dd>{{ definition.views|length }}</dd></div>
-              <div><dt>Actions</dt><dd>{{ definition.actions|length }}</dd></div>
+              <div><dt>{{ t('core.administrator.business_definitions.fields') }}</dt><dd>{{ definition.fields|length }}</dd></div>
+              <div><dt>{{ t('core.administrator.business_index.views') }}</dt><dd>{{ definition.views|length }}</dd></div>
+              <div><dt>{{ t('core.administrator.automation.actions') }}</dt><dd>{{ definition.actions|length }}</dd></div>
             </dl>
             <a class="button primary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">
-              Open {{ definition.plural_label }}
+              {{ t('core.administrator.business_index.open', {plural_label: definition.plural_label}) }}
             </a>
           </article>
         {% endfor %}
