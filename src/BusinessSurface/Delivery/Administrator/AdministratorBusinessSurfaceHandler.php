@@ -18,6 +18,7 @@ use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessBrowserResult;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessConfirmationQuery;
 use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
 use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
@@ -43,6 +44,8 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
      * @param   AdministratorRenderer               $renderer         Protected core Twig renderer.
      * @param   AdministratorStepUpProvider         $stepUp           Administrator MFA provider.
      * @param   GeneratedBusinessActionStepUp       $actionStepUp     Exact-purpose proof coordinator.
+     * @param   Translator                          $translator       Resolves step-up wording for
+     *          the locale in flight.
      * @param   bool                                $secureCookie     Whether rotated cookies require HTTPS.
      * @param   int                                 $sessionLifetime  Administrator cookie lifetime in seconds.
      *
@@ -55,6 +58,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
         private AdministratorRenderer $renderer,
         private AdministratorStepUpProvider $stepUp,
         private GeneratedBusinessActionStepUp $actionStepUp,
+        private Translator $translator,
         private bool $secureCookie,
         private int $sessionLifetime,
     ) {
@@ -140,7 +144,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
                 $request,
                 $context,
                 $body,
-                'The verification code is invalid, expired, or already used.',
+                $this->translator->translate('core.security.step_up.verification_code_rejected'),
                 403,
             );
         } catch (GeneratedBusinessStepUpInputRejected $exception) {

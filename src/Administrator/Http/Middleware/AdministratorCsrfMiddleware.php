@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Administrator\Http\Middleware;
 
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
+use Kumwe\CMS\Localization\Application\ActiveLocale;
+use Kumwe\CMS\Localization\Application\Translator;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -25,6 +27,20 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 final class AdministratorCsrfMiddleware implements MiddlewareInterface
 {
+    /**
+     * Bind the guard to the translator and locale holder its refusal page renders with.
+     *
+     * @param  Translator    $translator  Resolves the refusal wording for the locale in flight.
+     * @param  ActiveLocale  $locale      Names the language and direction the refusal page declares.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(
+        private readonly Translator $translator,
+        private readonly ActiveLocale $locale,
+    ) {
+    }
+
     /**
      * Request attribute carrying the original parsed body after successful CSRF validation.
      *
@@ -65,12 +81,26 @@ final class AdministratorCsrfMiddleware implements MiddlewareInterface
         }
 
         if ($provided === '' || !hash_equals($session->csrfToken, $provided)) {
+            $tag = $this->locale->locale()->toString();
+            $title = $this->translator->translate('core.administrator.csrf.forbidden');
+
             return new HtmlResponse(
-                '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><title>Forbidden</title></head>'
-                . '<body><main><h1>Forbidden</h1><p>The administrator security token is invalid or expired.</p>'
-                . '<p><a href="/administrator">Return to Kumwe</a></p></main></body></html>',
+                sprintf(
+                    '<!doctype html><html lang="%s" dir="%s"><head><meta charset="utf-8"><title>%s</title>'
+                        . '</head><body><main><h1>%s</h1><p>%s</p><p><a href="/administrator">%s</a></p>'
+                        . '</main></body></html>',
+                    htmlspecialchars($tag, ENT_QUOTES),
+                    $this->locale->locale()->direction()->value,
+                    htmlspecialchars($title, ENT_QUOTES),
+                    htmlspecialchars($title, ENT_QUOTES),
+                    htmlspecialchars(
+                        $this->translator->translate('core.administrator.csrf.token_invalid_or_expired'),
+                        ENT_QUOTES,
+                    ),
+                    htmlspecialchars($this->translator->translate('core.administrator.csrf.return_link'), ENT_QUOTES),
+                ),
                 403,
-                ['Cache-Control' => 'no-store', 'Content-Language' => 'en-GB'],
+                ['Cache-Control' => 'no-store', 'Content-Language' => $tag],
             );
         }
 

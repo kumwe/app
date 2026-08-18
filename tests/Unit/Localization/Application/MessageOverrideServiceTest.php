@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Localization\Application;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
@@ -435,6 +436,7 @@ final class MessageOverrideServiceTest extends TestCase
             AuthorizationContext::gateway(),
             new ImmediateTransactionManager(),
             new IntlMessagePatternFormatter(),
+            InterfaceTranslation::translator(),
             $recorder,
             $this->clock(),
         );

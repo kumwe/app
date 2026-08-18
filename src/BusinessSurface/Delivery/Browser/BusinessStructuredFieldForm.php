@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Localization\Application\Translator;
 
 /**
  * Builds and decodes bounded native controls for open structured business fields.
@@ -77,12 +78,13 @@ final readonly class BusinessStructuredFieldForm
     /**
      * Build an object or list editor from retained controls or a normalized initial value.
      *
-     * @param   string  $rootKind   Fixed root kind, `object` or `array`.
-     * @param   string  $name       Native nested input name for this field.
-     * @param   mixed   $input      Retained structured control document, or null on the first render.
-     * @param   mixed   $initial    Normalized existing or retained application value.
-     * @param   int     $maximum    Signed root property or item maximum.
-     * @param   bool    $submitted  Whether to decode the final typed value.
+     * @param   Translator  $translator  Resolves the editor's own display wording.
+     * @param   string      $rootKind    Fixed root kind, `object` or `array`.
+     * @param   string      $name        Native nested input name for this field.
+     * @param   mixed       $input       Retained structured control document, or null on the first render.
+     * @param   mixed       $initial     Normalized existing or retained application value.
+     * @param   int         $maximum     Signed root property or item maximum.
+     * @param   bool        $submitted   Whether to decode the final typed value.
      *
      * @return  self  Recursive editor model and optional typed result.
      *
@@ -91,6 +93,7 @@ final readonly class BusinessStructuredFieldForm
      * @since   2.0.0
      */
     public static function fromInput(
+        Translator $translator,
         string $rootKind,
         string $name,
         mixed $input,
@@ -116,7 +119,7 @@ final readonly class BusinessStructuredFieldForm
             'A generated structured field control document is malformed.',
         );
         $nodes = 0;
-        $result = self::node($controls, $name, $rootKind, $maximum, 0, $nodes, $submitted);
+        $result = self::node($translator, $controls, $name, $rootKind, $maximum, 0, $nodes, $submitted);
 
         return new self($result['model'], $submitted ? $result['value'] : null, $submitted);
     }
@@ -124,13 +127,14 @@ final readonly class BusinessStructuredFieldForm
     /**
      * Build one recursive node and optionally decode its typed value.
      *
-     * @param   array<string, mixed>  $input      Current structured control node.
-     * @param   string                $name       Native nested input name.
-     * @param   ?string               $fixedKind  Fixed root kind, null for a user-selectable nested kind.
-     * @param   int                   $maximum    Child bound for this composite node.
-     * @param   int                   $depth      Current structural depth.
-     * @param   int                   $nodes      Shared rendered-node count.
-     * @param   bool                  $submitted  Whether typed decoding is required.
+     * @param   Translator            $translator  Resolves the editor's own display wording.
+     * @param   array<string, mixed>  $input       Current structured control node.
+     * @param   string                $name        Native nested input name.
+     * @param   ?string               $fixedKind   Fixed root kind, null for a user-selectable nested kind.
+     * @param   int                   $maximum     Child bound for this composite node.
+     * @param   int                   $depth       Current structural depth.
+     * @param   int                   $nodes       Shared rendered-node count.
+     * @param   bool                  $submitted   Whether typed decoding is required.
      *
      * @return  array{model: array<string, mixed>, value: mixed}  Semantic node and decoded value.
      *
@@ -139,6 +143,7 @@ final readonly class BusinessStructuredFieldForm
      * @since   2.0.0
      */
     private static function node(
+        Translator $translator,
         array $input,
         string $name,
         ?string $fixedKind,
@@ -159,29 +164,41 @@ final readonly class BusinessStructuredFieldForm
             throw new InvalidArgumentException('A generated structured field root kind cannot be changed.');
         }
         if (in_array($kind, ['object', 'array'], true)) {
-            return self::composite($input, $name, $kind, $fixedKind !== null, $maximum, $depth, $nodes, $submitted);
+            return self::composite(
+                $translator,
+                $input,
+                $name,
+                $kind,
+                $fixedKind !== null,
+                $maximum,
+                $depth,
+                $nodes,
+                $submitted,
+            );
         }
 
-        return self::scalar($input, $name, $kind, $fixedKind !== null, $submitted);
+        return self::scalar($translator, $input, $name, $kind, $fixedKind !== null, $submitted);
     }
 
     /**
      * Build an object property editor or ordered list editor.
      *
-     * @param   array<string, mixed>  $input      Current composite controls.
-     * @param   string                $name       Native nested input name.
-     * @param   string                $kind       `object` or `array`.
-     * @param   bool                  $fixed      Whether the kind is fixed by the root field.
-     * @param   int                   $maximum    Maximum members for this node.
-     * @param   int                   $depth      Current structural depth.
-     * @param   int                   $nodes      Shared rendered-node count.
-     * @param   bool                  $submitted  Whether typed decoding is required.
+     * @param   Translator            $translator  Resolves the editor's own display wording.
+     * @param   array<string, mixed>  $input       Current composite controls.
+     * @param   string                $name        Native nested input name.
+     * @param   string                $kind        `object` or `array`.
+     * @param   bool                  $fixed       Whether the kind is fixed by the root field.
+     * @param   int                   $maximum     Maximum members for this node.
+     * @param   int                   $depth       Current structural depth.
+     * @param   int                   $nodes       Shared rendered-node count.
+     * @param   bool                  $submitted   Whether typed decoding is required.
      *
      * @return  array{model: array<string, mixed>, value: array<mixed>}  Composite model and value.
      *
      * @since   2.0.0
      */
     private static function composite(
+        Translator $translator,
         array $input,
         string $name,
         string $kind,
@@ -228,6 +245,7 @@ final readonly class BusinessStructuredFieldForm
             $child = self::objectValue($child, 'A generated structured field child node is malformed.');
             $childName = $name . '[entries][' . $index . '][node]';
             $result = self::node(
+                $translator,
                 $child,
                 $childName,
                 null,
@@ -260,7 +278,7 @@ final readonly class BusinessStructuredFieldForm
                 'count' => $count,
                 'max_count' => $maximum,
                 'entries' => $models,
-                'kind_options' => self::kindOptions(),
+                'kind_options' => self::kindOptions($translator),
             ],
             'value' => $value,
         ];
@@ -269,17 +287,19 @@ final readonly class BusinessStructuredFieldForm
     /**
      * Build and optionally coerce one scalar structured value.
      *
-     * @param   array<string, mixed>  $input      Current scalar controls.
-     * @param   string                $name       Native nested input name.
-     * @param   string                $kind       Scalar kind.
-     * @param   bool                  $fixed      Whether the kind is fixed by the root.
-     * @param   bool                  $submitted  Whether typed decoding is required.
+     * @param   Translator            $translator  Resolves the editor's own display wording.
+     * @param   array<string, mixed>  $input       Current scalar controls.
+     * @param   string                $name        Native nested input name.
+     * @param   string                $kind        Scalar kind.
+     * @param   bool                  $fixed       Whether the kind is fixed by the root.
+     * @param   bool                  $submitted   Whether typed decoding is required.
      *
      * @return  array{model: array<string, mixed>, value: mixed}  Scalar model and value.
      *
      * @since   2.0.0
      */
     private static function scalar(
+        Translator $translator,
         array $input,
         string $name,
         string $kind,
@@ -307,7 +327,7 @@ final readonly class BusinessStructuredFieldForm
                 'kind_name' => $name . '[kind]',
                 'value_name' => $name . '[value]',
                 'value' => $kind === 'boolean' && is_bool($value) ? ($value ? '1' : '0') : $rawValue,
-                'kind_options' => self::kindOptions(),
+                'kind_options' => self::kindOptions($translator),
             ],
             'value' => $value,
         ];
@@ -567,19 +587,21 @@ final readonly class BusinessStructuredFieldForm
     /**
      * Return label-bearing type choices for core-owned templates.
      *
+     * @param   Translator  $translator  Resolves the choice labels for the locale in flight.
+     *
      * @return  list<array{value: string, label: string}>  Stable type choices.
      *
      * @since   2.0.0
      */
-    private static function kindOptions(): array
+    private static function kindOptions(Translator $translator): array
     {
         return [
-            ['value' => 'string', 'label' => 'Text'],
-            ['value' => 'integer', 'label' => 'Integer'],
-            ['value' => 'boolean', 'label' => 'Yes or no'],
-            ['value' => 'null', 'label' => 'Null'],
-            ['value' => 'object', 'label' => 'Key/value object'],
-            ['value' => 'array', 'label' => 'Ordered list'],
+            ['value' => 'string', 'label' => $translator->translate('core.business.form.kind_text')],
+            ['value' => 'integer', 'label' => $translator->translate('core.business.form.kind_integer')],
+            ['value' => 'boolean', 'label' => $translator->translate('core.business.form.kind_boolean')],
+            ['value' => 'null', 'label' => $translator->translate('core.business.form.kind_null')],
+            ['value' => 'object', 'label' => $translator->translate('core.business.form.kind_object')],
+            ['value' => 'array', 'label' => $translator->translate('core.business.form.kind_array')],
         ];
     }
 }

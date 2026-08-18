@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Portal\Http;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -113,6 +114,7 @@ final class PortalLoginHandlerTest extends TestCase
             new DenyingPortalContextResolver(),
             new UnusedPortalSessionStore(),
             $renderer,
+            InterfaceTranslation::translator(),
             $secure,
             3600,
         );

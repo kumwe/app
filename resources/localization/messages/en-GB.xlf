@@ -491,6 +491,350 @@
     </unit>
   </file>
   <file id="core-administrator">
+    <unit id="core.administrator.settings.presentation_field_required">
+      <notes>
+        <note category="context">Refusal on the settings screen when a presentation field was left empty. {field} is the form field name.</note>
+      </notes>
+      <segment>
+        <source>Presentation field {field} is required.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.job_transition_content">
+      <notes>
+        <note category="context">Job-type caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Transition content</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.job_purge_idempotency">
+      <notes>
+        <note category="context">Job-type caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Purge expired idempotency records</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.job_purge_business_idempotency">
+      <notes>
+        <note category="context">Job-type caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Purge expired business-record idempotency entries</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.job_purge_sessions">
+      <notes>
+        <note category="context">Job-type caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Purge expired administrator sessions</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.job_rebuild_runtime">
+      <notes>
+        <note category="context">Job-type caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Rebuild extension runtime map</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_content_id">
+      <notes>
+        <note category="context">Payload field caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Content ID</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_content_id_help">
+      <notes>
+        <note category="context">Hint under the content identifier field in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>The canonical content identifier.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_expected_version">
+      <notes>
+        <note category="context">Payload field caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Expected version</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_destination_state">
+      <notes>
+        <note category="context">Payload field caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Destination state</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_batch_size">
+      <notes>
+        <note category="context">Payload field caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Batch size</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_maximum_batches">
+      <notes>
+        <note category="context">Payload field caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Maximum batches</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_required">
+      <notes>
+        <note category="context">Refusal when a required automation payload field was left empty. {label} is the field caption.</note>
+      </notes>
+      <segment>
+        <source>The {label} job field is required.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_not_whole_number">
+      <notes>
+        <note category="context">Refusal when an integer automation payload field is not a whole number.</note>
+      </notes>
+      <segment>
+        <source>The {label} job field must be a whole number.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_outside_limits">
+      <notes>
+        <note category="context">Refusal when an integer automation payload field falls outside its declared range.</note>
+      </notes>
+      <segment>
+        <source>The {label} job field is outside its limits.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_not_boolean">
+      <notes>
+        <note category="context">Refusal when a boolean automation payload field carries another value.</note>
+      </notes>
+      <segment>
+        <source>The {label} job field must be true or false.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_unsupported_value">
+      <notes>
+        <note category="context">Refusal when an automation payload field carries a value outside its declared options.</note>
+      </notes>
+      <segment>
+        <source>The {label} job field has an unsupported value.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.field_invalid">
+      <notes>
+        <note category="context">Refusal when an automation payload field fails its declared pattern.</note>
+      </notes>
+      <segment>
+        <source>The {label} job field is invalid.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.notice_planned">
+      <notes>
+        <note category="context">Confirmation notice on the schema plans screen after a plan is persisted.</note>
+      </notes>
+      <segment>
+        <source>The immutable schema plan was persisted. No physical schema work has run.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.notice_purge_planned">
+      <notes>
+        <note category="context">Confirmation notice on the schema plans screen after a purge plan is persisted.</note>
+      </notes>
+      <segment>
+        <source>The destructive purge plan was persisted for independent review and approval.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.notice_approved">
+      <notes>
+        <note category="context">Confirmation notice on the schema plans screen after approval.</note>
+      </notes>
+      <segment>
+        <source>The exact persisted plan was approved.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.notice_executed">
+      <notes>
+        <note category="context">Confirmation notice on the schema plans screen after execution.</note>
+      </notes>
+      <segment>
+        <source>The approved schema plan finished execution.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.notice_recovered">
+      <notes>
+        <note category="context">Confirmation notice on the schema plans screen after recovery.</note>
+      </notes>
+      <segment>
+        <source>Recovery finished and the execution journal was reconciled.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.notice_evidence_recorded">
+      <notes>
+        <note category="context">Confirmation notice on the schema plans screen after evidence is recorded.</note>
+      </notes>
+      <segment>
+        <source>Tested backup and recovery evidence was recorded for this approval.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_security.policy_step_scope">
+      <notes>
+        <note category="context">First policy-authoring step label on the business security screen.</note>
+      </notes>
+      <segment>
+        <source>1. Scope</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_security.policy_step_predicate">
+      <notes>
+        <note category="context">Second policy-authoring step label on the business security screen.</note>
+      </notes>
+      <segment>
+        <source>2. Predicate</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_security.policy_step_disclosure">
+      <notes>
+        <note category="context">Third policy-authoring step label on the business security screen.</note>
+      </notes>
+      <segment>
+        <source>3. Disclosure</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_security.policy_step_review">
+      <notes>
+        <note category="context">Fourth policy-authoring step label on the business security screen.</note>
+      </notes>
+      <segment>
+        <source>4. Review</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.csrf.forbidden">
+      <notes>
+        <note category="context">Title and heading of the fallback page shown when an administrator submission fails its CSRF check.</note>
+      </notes>
+      <segment>
+        <source>Forbidden</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.csrf.token_invalid_or_expired">
+      <notes>
+        <note category="context">Body of the administrator CSRF refusal page.</note>
+      </notes>
+      <segment>
+        <source>The administrator security token is invalid or expired.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.csrf.return_link">
+      <notes>
+        <note category="context">Link back into the administrator on the CSRF refusal page.</note>
+      </notes>
+      <segment>
+        <source>Return to Kumwe</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.login.invalid_credentials">
+      <notes>
+        <note category="context">Rejection shown on the administrator sign-in form. Deliberately does not say which field was wrong.</note>
+      </notes>
+      <segment>
+        <source>The email address or password is incorrect.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.media.choose_file_first">
+      <notes>
+        <note category="context">Shown on the media library when an upload was posted without a usable file.</note>
+      </notes>
+      <segment>
+        <source>Choose a media file to upload.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_scope_quota">
+      <notes>
+        <note category="context">Wording-screen refusal when the per-scope override quota is reached.</note>
+      </notes>
+      <segment>
+        <source>This scope already carries the maximum of {maximum} overrides for one locale.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_layer_not_administered">
+      <notes>
+        <note category="context">Wording-screen refusal for a core or extension layer write.</note>
+      </notes>
+      <segment>
+        <source>Core and extension wording ships in files and cannot be administered as an override.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_outside_organization">
+      <notes>
+        <note category="context">Wording-screen refusal for an organization write without that organization.</note>
+      </notes>
+      <segment>
+        <source>Organization wording can only be changed from inside the organization it applies to.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_locale_not_carried">
+      <notes>
+        <note category="context">Wording-screen refusal for a locale outside the installed set.</note>
+      </notes>
+      <segment>
+        <source>This installation does not carry that locale.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_empty_replacement">
+      <notes>
+        <note category="context">Wording-screen refusal for a blank replacement.</note>
+      </notes>
+      <segment>
+        <source>Replacement wording cannot be empty; withdraw the override instead.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_replacement_too_long">
+      <notes>
+        <note category="context">Wording-screen refusal for an oversized replacement. {maximum} is the byte ceiling.</note>
+      </notes>
+      <segment>
+        <source>Replacement wording is limited to {maximum} bytes.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_unbalanced_markup">
+      <notes>
+        <note category="context">Wording-screen refusal for markup that does not balance.</note>
+      </notes>
+      <segment>
+        <source>Replacement wording contains unbalanced inline markup.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_disallowed_markup">
+      <notes>
+        <note category="context">Wording-screen refusal for markup outside the safe inline subset.</note>
+      </notes>
+      <segment>
+        <source>Replacement wording contains an element or attribute that administered wording may not use.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_markup_in_branching_pattern">
+      <notes>
+        <note category="context">Wording-screen refusal for markup inside a plural or select pattern.</note>
+      </notes>
+      <segment>
+        <source>Replacement wording cannot combine inline markup with a branching ICU pattern.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.wording.error_unknown_identifier">
+      <notes>
+        <note category="context">Wording-screen refusal for an identifier no shipped catalogue declares.</note>
+      </notes>
+      <segment>
+        <source>No shipped catalogue declares that message identifier, so there is nothing to override.</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.layout.document_title">
       <segment>
         <source>Kumwe Administrator</source>
@@ -14069,6 +14413,86 @@
     </unit>
   </file>
   <file id="core-portal">
+    <unit id="core.portal.approvals.request_updated">
+      <notes>
+        <note category="context">Notice on the portal approval inbox and detail after a decision.</note>
+      </notes>
+      <segment>
+        <source>The approval request was updated.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.approvals.decision_no_longer_permitted">
+      <notes>
+        <note category="context">Conflict notice when a portal approval decision no longer applies.</note>
+      </notes>
+      <segment>
+        <source>The approval request changed or the decision is no longer permitted.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.csrf.forbidden">
+      <notes>
+        <note category="context">Title and heading of the fallback page shown when a portal submission fails its CSRF check.</note>
+      </notes>
+      <segment>
+        <source>Forbidden</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.csrf.token_invalid_or_expired">
+      <notes>
+        <note category="context">Body of the portal CSRF refusal page.</note>
+      </notes>
+      <segment>
+        <source>The portal security token is invalid or expired.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.csrf.return_link">
+      <notes>
+        <note category="context">Link back into the portal on the CSRF refusal page.</note>
+      </notes>
+      <segment>
+        <source>Return to the portal</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.security_token_invalid">
+      <notes>
+        <note category="context">Rejection when the pre-authentication portal login token fails.</note>
+      </notes>
+      <segment>
+        <source>The portal security token is invalid.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.login.sign_in_rejected">
+      <notes>
+        <note category="context">Non-enumerating portal sign-in rejection shared by credential and membership failures.</note>
+      </notes>
+      <segment>
+        <source>The email address, password, or portal access is unavailable.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.security.verification_succeeded">
+      <notes>
+        <note category="context">Notice on the portal account-security page after a verification.</note>
+      </notes>
+      <segment>
+        <source>Identity verification succeeded.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.security.operation_unavailable">
+      <notes>
+        <note category="context">Shown when a portal security path names no supported operation.</note>
+      </notes>
+      <segment>
+        <source>The requested security operation is unavailable.</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.security.enrollment_complete">
+      <notes>
+        <note category="context">Shown once after authenticator enrollment, above the single-use recovery codes.</note>
+      </notes>
+      <segment>
+        <source>Authenticator enrollment is complete. Save these recovery codes now; they will not be shown again.</source>
+      </segment>
+    </unit>
     <unit id="core.portal.layout.document_title">
       <segment>
         <source>Kumwe Portal</source>
@@ -15726,6 +16150,170 @@
       </notes>
       <segment>
         <source>Continuously verify authority/artifacts and refresh local runtime readiness.</source>
+      </segment>
+    </unit>
+  </file>
+  <file id="core-business-browser">
+    <unit id="core.business.browser.record_failed_validation">
+      <notes>
+        <note category="context">Error summary above a generated record form whose values were refused.</note>
+      </notes>
+      <segment>
+        <source>The business record failed validation. Review the marked fields.</source>
+      </segment>
+    </unit>
+    <unit id="core.business.browser.related_record_failed_validation">
+      <notes>
+        <note category="context">Error summary above a generated related-record form whose values were refused.</note>
+      </notes>
+      <segment>
+        <source>The related record failed validation. Review the marked fields.</source>
+      </segment>
+    </unit>
+    <unit id="core.business.browser.version_conflict">
+      <notes>
+        <note category="context">Optimistic-concurrency notice on the generated record surfaces.</note>
+      </notes>
+      <segment>
+        <source>Another save changed this record after you opened it, so nothing you submitted was written and the newer record is untouched.</source>
+      </segment>
+    </unit>
+    <unit id="core.business.browser.custom_view_failed">
+      <notes>
+        <note category="context">Shown when a generated custom view refuses its parameters or its handler fails.</note>
+      </notes>
+      <segment>
+        <source>The custom view could not be completed safely.</source>
+      </segment>
+    </unit>
+    <unit id="core.business.browser.current_selection">
+      <notes>
+        <note category="context">Label of the already-chosen option in a generated reference picker.</note>
+      </notes>
+      <segment>
+        <source>Current selection</source>
+      </segment>
+    </unit>
+    <unit id="core.business.browser.selected_option">
+      <notes>
+        <note category="context">Label of the option chosen through a generated reference picker.</note>
+      </notes>
+      <segment>
+        <source>Selected option</source>
+      </segment>
+    </unit>
+    <unit id="core.business.browser.selected_record">
+      <notes>
+        <note category="context">Label of the record chosen through a generated relationship picker.</note>
+      </notes>
+      <segment>
+        <source>Selected record</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.item_number">
+      <notes>
+        <note category="context">Legend of one repeated entry in a generated array editor. {number} is one-based.</note>
+      </notes>
+      <segment>
+        <source>Item {number}</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.declared_choice">
+      <notes>
+        <note category="context">Label for a structured declared value that has no scalar text. {number} is one-based.</note>
+      </notes>
+      <segment>
+        <source>Declared choice {number}</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.not_set">
+      <notes>
+        <note category="context">Display of a null value on the generated business surfaces.</note>
+      </notes>
+      <segment>
+        <source>Not set</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.yes">
+      <notes>
+        <note category="context">Display of a true value on the generated business surfaces.</note>
+      </notes>
+      <segment>
+        <source>Yes</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.no">
+      <notes>
+        <note category="context">Display of a false value on the generated business surfaces.</note>
+      </notes>
+      <segment>
+        <source>No</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.kind_text">
+      <notes>
+        <note category="context">Type choice in the structured value editor.</note>
+      </notes>
+      <segment>
+        <source>Text</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.kind_integer">
+      <notes>
+        <note category="context">Type choice in the structured value editor.</note>
+      </notes>
+      <segment>
+        <source>Integer</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.kind_boolean">
+      <notes>
+        <note category="context">Type choice in the structured value editor.</note>
+      </notes>
+      <segment>
+        <source>Yes or no</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.kind_null">
+      <notes>
+        <note category="context">Type choice in the structured value editor.</note>
+      </notes>
+      <segment>
+        <source>Null</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.kind_object">
+      <notes>
+        <note category="context">Type choice in the structured value editor.</note>
+      </notes>
+      <segment>
+        <source>Key/value object</source>
+      </segment>
+    </unit>
+    <unit id="core.business.form.kind_array">
+      <notes>
+        <note category="context">Type choice in the structured value editor.</note>
+      </notes>
+      <segment>
+        <source>Ordered list</source>
+      </segment>
+    </unit>
+  </file>
+  <file id="core-security">
+    <unit id="core.security.authentication.throttled">
+      <notes>
+        <note category="context">Shown on sign-in and step-up forms when attempts from one address are throttled.</note>
+      </notes>
+      <segment>
+        <source>Too many unsuccessful authentication attempts. Try again later.</source>
+      </segment>
+    </unit>
+    <unit id="core.security.step_up.verification_code_rejected">
+      <notes>
+        <note category="context">Shown when a step-up verification or recovery code is refused.</note>
+      </notes>
+      <segment>
+        <source>The verification code is invalid, expired, or already used.</source>
       </segment>
     </unit>
   </file>

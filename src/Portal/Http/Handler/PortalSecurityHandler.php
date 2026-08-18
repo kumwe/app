@@ -12,6 +12,7 @@ use Kumwe\CMS\Identity\Domain\StepUp\RotatedStepUpSession;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
 use Kumwe\CMS\Portal\Application\PortalSession;
 use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Portal\Http\PortalRequest;
 use Kumwe\CMS\Portal\Presentation\PortalRenderer;
 use Laminas\Diactoros\Response\HtmlResponse;
@@ -36,6 +37,7 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
      *
      * @param   StepUpProvider  $stepUp           Portal authenticator and recovery verifier.
      * @param   PortalRenderer  $renderer         Isolated portal template renderer.
+     * @param   Translator      $translator       Resolves notice wording for the locale in flight.
      * @param   bool            $secureCookie     Whether portal cookies require HTTPS.
      * @param   int             $sessionLifetime  Portal cookie lifetime in seconds.
      *
@@ -46,6 +48,7 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
     public function __construct(
         private StepUpProvider $stepUp,
         private PortalRenderer $renderer,
+        private Translator $translator,
         private bool $secureCookie,
         private int $sessionLifetime,
     ) {
@@ -69,7 +72,12 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
         $path = $request->getUri()->getPath();
         if ($request->getMethod() === 'GET' && $path === '/portal/security') {
             $query = $request->getQueryParams();
-            return $this->page($session, isset($query['verified']) ? 'Identity verification succeeded.' : '');
+            return $this->page(
+                $session,
+                isset($query['verified'])
+                    ? $this->translator->translate('core.portal.security.verification_succeeded')
+                    : '',
+            );
         }
 
         $form = PortalRequest::form($request);
@@ -79,12 +87,28 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
                 '/portal/security/totp/confirm' => $this->confirm($session, $form, $request),
                 '/portal/security/challenge' => $this->challenge($session, $form, $request, false),
                 '/portal/security/recovery' => $this->challenge($session, $form, $request, true),
-                default => $this->page($session, '', 'The requested security operation is unavailable.', 404),
+                default => $this->page(
+                    $session,
+                    '',
+                    $this->translator->translate('core.portal.security.operation_unavailable'),
+                    404,
+                ),
             };
-        } catch (AuthenticationThrottled $exception) {
-            return $this->page($session, '', $exception->getMessage(), 429, ['Retry-After' => '900']);
+        } catch (AuthenticationThrottled) {
+            return $this->page(
+                $session,
+                '',
+                $this->translator->translate('core.security.authentication.throttled'),
+                429,
+                ['Retry-After' => '900'],
+            );
         } catch (StepUpRejected) {
-            return $this->page($session, '', 'The verification code is invalid, expired, or already used.', 403);
+            return $this->page(
+                $session,
+                '',
+                $this->translator->translate('core.security.step_up.verification_code_rejected'),
+                403,
+            );
         } catch (\InvalidArgumentException $exception) {
             return $this->page($session, '', $exception->getMessage(), 422);
         }
@@ -138,7 +162,7 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
 
         return $this->page(
             $this->rotatedSession($session, $rotated, $completion->verification->issuedAt),
-            'Authenticator enrollment is complete. Save these recovery codes now; they will not be shown again.',
+            $this->translator->translate('core.portal.security.enrollment_complete'),
             '',
             200,
             ['Set-Cookie' => $this->cookie($rotated->cookieToken)],

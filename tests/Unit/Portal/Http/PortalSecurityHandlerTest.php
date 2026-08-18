@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Portal\Http;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\SiteContext;
@@ -39,7 +40,13 @@ final class PortalSecurityHandlerTest extends TestCase
     public function testConfirmationUsesOnlyResolvedSessionContextAndPublishesRotatedCookieAndCodes(): void
     {
         $provider = new CapturingStepUpProvider();
-        $handler = new PortalSecurityHandler($provider, $this->renderer(), true, 3600);
+        $handler = new PortalSecurityHandler(
+            $provider,
+            $this->renderer(),
+            InterfaceTranslation::translator(),
+            true,
+            3600,
+        );
         $request = (new ServerRequest(
             [],
             [],
@@ -71,7 +78,13 @@ final class PortalSecurityHandlerTest extends TestCase
     public function testChallengePurposeCannotBeSelectedByTheSubmittedForm(): void
     {
         $provider = new CapturingStepUpProvider();
-        $handler = new PortalSecurityHandler($provider, $this->renderer(), false, 3600);
+        $handler = new PortalSecurityHandler(
+            $provider,
+            $this->renderer(),
+            InterfaceTranslation::translator(),
+            false,
+            3600,
+        );
         $request = (new ServerRequest(
             [],
             [],

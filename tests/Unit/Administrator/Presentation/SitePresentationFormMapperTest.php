@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Administrator\Presentation;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use Kumwe\CMS\Administrator\Presentation\SitePresentationFormMapper;
 use Kumwe\CMS\Presentation\Application\SitePresentation;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -32,7 +33,7 @@ final class SitePresentationFormMapperTest extends TestCase
             $form['scheme_4_' . $color] = $value;
         }
 
-        $mapped = (new SitePresentationFormMapper())->map($form);
+        $mapped = (new SitePresentationFormMapper(InterfaceTranslation::translator()))->map($form);
 
         self::assertSame('brand', $mapped['active_scheme']);
         self::assertSame('corporate', $mapped['primary_menu']);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Delivery\Browser;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use InvalidArgumentException;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessCustomViewPresenter;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessCustomViewRequest;
@@ -30,9 +31,15 @@ final class BusinessCustomViewRequestTest extends TestCase
      */
     public function testMapsSchemaDrivenParametersAndDeclaredRecordControls(): void
     {
-        $initial = BusinessCustomViewRequest::fromQuery([], self::view(), self::fields(), self::schema());
+        $initial = BusinessCustomViewRequest::fromQuery(
+            InterfaceTranslation::translator(),
+            [],
+            self::view(),
+            self::fields(),
+            self::schema(),
+        );
         $term = $initial->fields[0]['options'][0]['value'];
-        $request = BusinessCustomViewRequest::fromQuery([
+        $request = BusinessCustomViewRequest::fromQuery(InterfaceTranslation::translator(), [
             'run' => '1',
             'parameters' => ['term' => $term, 'minimum' => '7'],
             'filters' => ['status' => 'ready'],
@@ -68,7 +75,13 @@ final class BusinessCustomViewRequestTest extends TestCase
             ] as $query
         ) {
             try {
-                BusinessCustomViewRequest::fromQuery($query, self::view(), self::fields(), self::schema());
+                BusinessCustomViewRequest::fromQuery(
+                    InterfaceTranslation::translator(),
+                    $query,
+                    self::view(),
+                    self::fields(),
+                    self::schema(),
+                );
                 self::fail('An opaque or undeclared custom-view query was accepted.');
             } catch (InvalidArgumentException) {
                 self::addToAssertionCount(1);
@@ -111,15 +124,21 @@ final class BusinessCustomViewRequestTest extends TestCase
             ],
             'required' => ['criteria'],
         ];
-        $initial = BusinessCustomViewRequest::fromQuery([], self::view(), self::fields(), $schema);
+        $initial = BusinessCustomViewRequest::fromQuery(
+            InterfaceTranslation::translator(),
+            [],
+            self::view(),
+            self::fields(),
+            $schema,
+        );
         $rows = $initial->fields[0]['children'][0];
-        $configured = BusinessCustomViewRequest::fromQuery([
+        $configured = BusinessCustomViewRequest::fromQuery(InterfaceTranslation::translator(), [
             'configure' => '1',
             'schema_counts' => [$rows['path_token'] => '2'],
         ], self::view(), self::fields(), $schema);
         self::assertCount(2, $configured->fields[0]['children'][0]['items']);
 
-        $request = BusinessCustomViewRequest::fromQuery([
+        $request = BusinessCustomViewRequest::fromQuery(InterfaceTranslation::translator(), [
             'run' => '1',
             'schema_counts' => [$rows['path_token'] => '2'],
             'parameters' => [
@@ -141,7 +160,7 @@ final class BusinessCustomViewRequestTest extends TestCase
      */
     public function testPresentsNestedExactDataAsCoreSemanticNodes(): void
     {
-        $projection = (new BusinessCustomViewPresenter())->present([
+        $projection = (new BusinessCustomViewPresenter(InterfaceTranslation::translator()))->present([
             'title' => 'Northern summary',
             'items' => [['label' => 'Windhoek', 'ready' => true]],
             'count' => 1,
@@ -175,12 +194,13 @@ final class BusinessCustomViewRequestTest extends TestCase
             ],
             'required' => ['required_null'],
         ];
-        $initial = BusinessSchemaForm::fromInput($schema, 'input');
+        $initial = BusinessSchemaForm::fromInput($schema, InterfaceTranslation::translator(), 'input');
         $optional = $initial->fields[1];
         self::assertSame('const', $optional['kind']);
 
         $submitted = BusinessSchemaForm::fromInput(
             $schema,
+            InterfaceTranslation::translator(),
             'input',
             [],
             [],

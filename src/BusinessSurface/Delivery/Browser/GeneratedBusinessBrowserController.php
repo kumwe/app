@@ -22,6 +22,7 @@ use Kumwe\CMS\BusinessReporting\Application\RecordExportReportProvider;
 use Kumwe\CMS\BusinessReporting\Application\ReportService;
 use Kumwe\CMS\BusinessReporting\Application\ReportUnavailable;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessHandlerFailed;
+use Kumwe\CMS\Localization\Application\Translator;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -46,6 +47,7 @@ final readonly class GeneratedBusinessBrowserController
      * @param  BusinessDocumentPresenter       $documents      Document-view arrangement of safe read models.
      * @param  ReportService                   $reports        Shared report discovery and execution seam.
      * @param  RecordExportReportProvider      $recordExports  Derived record-set export reports.
+     * @param  Translator                      $translator     Resolves browser wording for the locale in flight.
      *
      * @since  2.0.0
      */
@@ -57,6 +59,7 @@ final readonly class GeneratedBusinessBrowserController
         private BusinessDocumentPresenter $documents,
         private ReportService $reports,
         private RecordExportReportProvider $recordExports,
+        private Translator $translator,
     ) {
     }
 
@@ -437,20 +440,33 @@ final readonly class GeneratedBusinessBrowserController
         );
 
         try {
-            $request = BusinessCustomViewRequest::fromQuery($query, $viewMetadata, $fields, $schema);
+            $request = BusinessCustomViewRequest::fromQuery(
+                $this->translator,
+                $query,
+                $viewMetadata,
+                $fields,
+                $schema,
+            );
         } catch (InvalidArgumentException $exception) {
             $retainedQuery = $query;
             unset($retainedQuery['run']);
             $retainedQuery['configure'] = '1';
             try {
                 $retained = BusinessCustomViewRequest::fromQuery(
+                    $this->translator,
                     $retainedQuery,
                     $viewMetadata,
                     $fields,
                     $schema,
                 );
             } catch (InvalidArgumentException) {
-                $retained = BusinessCustomViewRequest::fromQuery([], $viewMetadata, $fields, $schema);
+                $retained = BusinessCustomViewRequest::fromQuery(
+                    $this->translator,
+                    [],
+                    $viewMetadata,
+                    $fields,
+                    $schema,
+                );
             }
 
             return $this->customViewError($metadata, $record, $retained, $exception->getMessage());
@@ -488,7 +504,7 @@ final readonly class GeneratedBusinessBrowserController
                 $metadata,
                 $record,
                 $request,
-                'The custom view could not be completed safely.',
+                $this->translator->translate('core.business.browser.custom_view_failed'),
             );
         }
 
@@ -1187,7 +1203,8 @@ final readonly class GeneratedBusinessBrowserController
                 return new BusinessBrowserResult('business-detail', [
                     ...$model,
                     'record_task' => 'relations',
-                    'error_summary' => 'The related record failed validation. Review the marked fields.',
+                    'error_summary' => $this->translator
+                        ->translate('core.business.browser.related_record_failed_validation'),
                 ], status: 422);
             }
             $retained = $this->values($form);
@@ -1203,7 +1220,7 @@ final readonly class GeneratedBusinessBrowserController
             );
             return new BusinessBrowserResult('business-form', [
                 ...$model,
-                'error_summary' => 'The business record failed validation. Review the marked fields.',
+                'error_summary' => $this->translator->translate('core.business.browser.record_failed_validation'),
             ], status: 422);
         } catch (BusinessRecordVersionConflict $exception) {
             if ($record === null || !in_array($operation, ['update', 'relate'], true)) {
@@ -1253,8 +1270,7 @@ final readonly class GeneratedBusinessBrowserController
     ): BusinessBrowserResult {
         $conflict = [
             'expected_version' => $expectedVersion,
-            'summary' => 'Another save changed this record after you opened it, so nothing you submitted '
-                . 'was written and the newer record is untouched.',
+            'summary' => $this->translator->translate('core.business.browser.version_conflict'),
         ];
         if ($operation === 'relate') {
             $relationship = $this->required($form, 'relationship');
@@ -1577,6 +1593,7 @@ final readonly class GeneratedBusinessBrowserController
 
         return BusinessSchemaForm::fromInput(
             $schema,
+            $this->translator,
             'input',
             $this->nestedObject($input, 'input'),
             $this->nestedObject($input, 'schema_counts'),
@@ -1695,7 +1712,10 @@ final readonly class GeneratedBusinessBrowserController
             $field['options'] = [];
             $current = $field['input_value'] ?? null;
             if (is_string($current) && $current !== '') {
-                $field['options'][] = ['value' => $current, 'label' => 'Current selection'];
+                $field['options'][] = [
+                    'value' => $current,
+                    'label' => $this->translator->translate('core.business.browser.current_selection'),
+                ];
             }
             $field['choice_kind'] = $widget === 'entity_reference' ? 'relations' : 'media';
             $field['choice_path'] = $field['choice_kind'] . '/' . $handle;
@@ -1705,7 +1725,10 @@ final readonly class GeneratedBusinessBrowserController
                 && $selected['relationship'] === null
                 && $selected['handle'] === $handle
             ) {
-                $field['options'] = [['value' => $selected['value'], 'label' => 'Selected option']];
+                $field['options'] = [[
+                    'value' => $selected['value'],
+                    'label' => $this->translator->translate('core.business.browser.selected_option'),
+                ]];
                 $field['input_value'] = $selected['value'];
             }
         }
@@ -1751,6 +1774,7 @@ final readonly class GeneratedBusinessBrowserController
             $allowed[$handle] = true;
             $input = array_key_exists($handle, $controls) ? $controls[$handle] : null;
             $form = BusinessStructuredFieldForm::fromInput(
+                $this->translator,
                 $widget === 'collection' ? 'array' : 'object',
                 'structured[' . $handle . ']',
                 $input,
@@ -1843,6 +1867,7 @@ final readonly class GeneratedBusinessBrowserController
             }
             $allowedStructured[$handle] = true;
             $form = BusinessStructuredFieldForm::fromInput(
+                $this->translator,
                 $widget === 'collection' ? 'array' : 'object',
                 'target_structured[' . $handle . ']',
                 $structured[$handle] ?? null,
@@ -1926,6 +1951,7 @@ final readonly class GeneratedBusinessBrowserController
                 throw new InvalidArgumentException('A generated structured field is missing its graphical controls.');
             }
             $structured = BusinessStructuredFieldForm::fromInput(
+                $this->translator,
                 $widget === 'collection' ? 'array' : 'object',
                 $prefix . '[' . $handle . ']',
                 $controls[$handle],
@@ -2065,7 +2091,7 @@ final readonly class GeneratedBusinessBrowserController
             ) {
                 $relationship['choices'][] = [
                     'value' => $selected['value'],
-                    'label' => 'Selected record',
+                    'label' => $this->translator->translate('core.business.browser.selected_record'),
                 ];
                 $relationship['selected_choice'] = $selected['value'];
             }

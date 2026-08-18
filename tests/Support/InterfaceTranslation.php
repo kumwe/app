@@ -39,6 +39,18 @@ final class InterfaceTranslation
         );
     }
 
+    /** An active-locale holder with a unit of work open at the requested (or source) locale. */
+    public static function activeLocale(?string $locale = null): ActiveLocale
+    {
+        $active = new ActiveLocale(new SupportedLocales());
+        $active->begin(
+            LocaleTag::fromString($locale ?? SupportedLocales::SOURCE),
+            TranslationScope::default(),
+        );
+
+        return $active;
+    }
+
     /** Build the Twig extension the three rendering surfaces are given in production. */
     public static function twigExtension(?string $locale = null): TranslationTwigExtension
     {

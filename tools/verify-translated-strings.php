@@ -379,6 +379,32 @@ function php_referenced_identifiers(string $source): array
     ));
 }
 
+/**
+ * Collect every grammar-shaped literal a PHP source carries, wherever it sits.
+ *
+ * A handler that maps stable keys onto message identifiers and resolves them through a variable —
+ * a notice table, a step-label map, a class constant — references its identifiers without the call
+ * shapes above. Such a literal anchors its catalogue entry against the orphan check, but it is
+ * deliberately not treated as a resolvable reference: only an explicit call proves the identifier
+ * must exist, so a stable machine code that happens to have three segments cannot fail the build.
+ *
+ * @param  string  $source  PHP source.
+ *
+ * @return list<string> Identifier-shaped literals in the order they appear.
+ *
+ * @since  2.0.0
+ */
+function php_anchored_identifiers(string $source): array
+{
+    $matched = preg_match_all(
+        '/\'([a-z0-9][a-z0-9_-]*(?:\.[a-z0-9][a-z0-9_-]*){2,})\'/',
+        $source,
+        $matches,
+    );
+
+    return $matched === false ? [] : $matches[1];
+}
+
 $root = dirname(__DIR__);
 $arguments = array_slice($argv, 1);
 $asJson = $arguments === ['--json'];
@@ -439,6 +465,7 @@ foreach ($templates as $relative) {
 }
 
 $sources = [];
+$anchored = [];
 $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
     $root . '/src',
     FilesystemIterator::SKIP_DOTS,
@@ -457,6 +484,9 @@ foreach ($sources as $relative) {
     }
     foreach (php_referenced_identifiers($source) as $identifier) {
         $referenced[$identifier] = true;
+    }
+    foreach (php_anchored_identifiers($source) as $identifier) {
+        $anchored[$identifier] = true;
     }
 }
 
@@ -481,7 +511,7 @@ if (is_file($compiled)) {
     }
 }
 $missing = array_values(array_diff(array_keys($referenced), array_keys($catalogue)));
-$orphaned = array_values(array_diff(array_keys($catalogue), array_keys($referenced)));
+$orphaned = array_values(array_diff(array_keys($catalogue), array_keys($referenced), array_keys($anchored)));
 sort($missing, SORT_STRING);
 sort($orphaned, SORT_STRING);
 

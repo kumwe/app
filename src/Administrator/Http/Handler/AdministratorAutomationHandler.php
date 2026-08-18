@@ -38,14 +38,14 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
      *
      * @param  AutomationManagementService  $automation  Reads and mutates schedules and queued jobs.
      * @param  AdministratorRenderer        $renderer    Renders the `automation` template.
-     * @param  ?AutomationJobFormRegistry   $forms       Per-job-type fields; null uses the core registry.
+     * @param  AutomationJobFormRegistry    $forms       Per-job-type fields the screen renders and validates.
      *
      * @since  2.0.0
      */
     public function __construct(
         private AutomationManagementService $automation,
         private AdministratorRenderer $renderer,
-        private ?AutomationJobFormRegistry $forms = null,
+        private AutomationJobFormRegistry $forms,
     ) {
     }
 
@@ -80,7 +80,7 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'schedules' => $this->automation->schedules($context),
             'jobs' => $this->automation->jobs($context, 200),
-            'job_types' => ($this->forms ?? AutomationJobFormRegistry::core())->definitions($jobTypes),
+            'job_types' => $this->forms->definitions($jobTypes),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
         ]), 200, ['Cache-Control' => 'no-store']);
     }
@@ -165,7 +165,7 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
     private function payload(array $form, string $jobType): array
     {
         if (!array_key_exists('payload', $form)) {
-            return ($this->forms ?? AutomationJobFormRegistry::core())->payload($jobType, $form);
+            return $this->forms->payload($jobType, $form);
         }
         try {
             $payload = json_decode($form['payload'] ?? '{}', true, 32, JSON_THROW_ON_ERROR);

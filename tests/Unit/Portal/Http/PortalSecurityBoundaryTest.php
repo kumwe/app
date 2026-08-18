@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Portal\Http;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
@@ -79,7 +80,10 @@ final class PortalSecurityBoundaryTest extends TestCase
     public function testPortalCsrfTokenIsIndependentAndComparedBeforeDispatch(): void
     {
         [$session] = $this->session();
-        $middleware = new PortalCsrfMiddleware();
+        $middleware = new PortalCsrfMiddleware(
+            InterfaceTranslation::translator(),
+            InterfaceTranslation::activeLocale(),
+        );
         $handler = new CapturingPortalHandler();
         $request = (new ServerRequest([], [], new Uri('https://example.test/portal/logout'), 'POST'))
             ->withAttribute(PortalSession::REQUEST_ATTRIBUTE, $session)

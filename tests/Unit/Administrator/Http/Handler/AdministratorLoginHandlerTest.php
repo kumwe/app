@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Handler;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorLoginHandler;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
@@ -48,6 +49,7 @@ final class AdministratorLoginHandlerTest extends TestCase
             $identities,
             $sessions,
             $this->renderer(),
+            InterfaceTranslation::translator(),
             false,
             3600,
             SiteContext::fromString('corporate'),

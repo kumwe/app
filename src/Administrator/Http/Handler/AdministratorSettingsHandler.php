@@ -37,14 +37,13 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
     /**
      * Wire the settings form to the settings document and to the sources its pickers offer.
      *
-     * @param  SiteSettings                 $settings      Reads the managed settings document and writes it back.
-     * @param  AdministratorRenderer        $renderer      Renders the `settings` template.
-     * @param  ?ContentService              $content       Supplies the pages offered as the homepage; null offers
+     * @param  SiteSettings                $settings      Reads the managed settings document and writes it back.
+     * @param  AdministratorRenderer       $renderer      Renders the `settings` template.
+     * @param  ?ContentService             $content       Supplies the pages offered as the homepage; null offers
      *         none.
-     * @param  ?SitePresentationFormMapper  $presentation  Folds the theme fields into the presentation document; a
-     *         default instance is built when null.
-     * @param  ?MediaService                $media         Supplies the images the picker browses; null offers none.
-     * @param  ?NavigationService           $navigation    Supplies the menus offered as the primary menu; null
+     * @param  SitePresentationFormMapper  $presentation  Folds the theme fields into the presentation document.
+     * @param  ?MediaService               $media         Supplies the images the picker browses; null offers none.
+     * @param  ?NavigationService          $navigation    Supplies the menus offered as the primary menu; null
      *         offers none.
      *
      * @since  2.0.0
@@ -52,8 +51,8 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
     public function __construct(
         private SiteSettings $settings,
         private AdministratorRenderer $renderer,
+        private SitePresentationFormMapper $presentation,
         private ?ContentService $content = null,
-        private ?SitePresentationFormMapper $presentation = null,
         private ?MediaService $media = null,
         private ?NavigationService $navigation = null,
     ) {
@@ -88,7 +87,7 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
                     'default_locale' => AdministratorRequest::required($form, 'default_locale'),
                     'timezone' => AdministratorRequest::required($form, 'timezone'),
                     'search_indexing_enabled' => ($form['search_indexing_enabled'] ?? '') === '1',
-                    'presentation' => ($this->presentation ?? new SitePresentationFormMapper())->map($form),
+                    'presentation' => $this->presentation->map($form),
                 ]);
             } catch (InvalidArgumentException $exception) {
                 return $this->render($request, 422, $exception->getMessage());
