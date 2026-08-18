@@ -21,7 +21,6 @@ use Kumwe\CMS\Extension\Contribution\OwnedExtensionContributionRegistrar;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(CompositionBlockDeclaration::class)]
@@ -34,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(ManifestContributionSet::class)]
 #[CoversClass(OwnedExtensionContributionRegistrar::class)]
 #[CoversClass(ExtensionContributionRegistrySet::class)]
-#[UsesClass(ExtensionManifest::class)]
+#[CoversClass(ExtensionManifest::class)]
 /**
  * Pins the composition contribution contract as decision D16 froze it at Gate A.
  *
@@ -226,6 +225,24 @@ final class CompositionContributionTest extends TestCase
             self::fail('A schema-5 manifest declaring SPI 2 was accepted.');
         } catch (InvalidArgumentException $exception) {
             self::assertStringContainsString('requires extension contribution SPI version 3', $exception->getMessage());
+        }
+
+        try {
+            ManifestContributionSet::fromManifest(
+                ExtensionIdentifier::fromString('acme/brochures'),
+                ['version' => ManifestContributionSet::COMPOSITION_SPI_VERSION],
+                6,
+            );
+            self::fail('An undeclared manifest schema was accepted for typed contributions.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('manifest schema 2, 3, 4, or 5', $exception->getMessage());
+        }
+
+        try {
+            ExtensionManifest::fromJson('{"schema": 6}');
+            self::fail('An undeclared manifest schema was accepted at the install boundary.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('schema must be 1, 2, 3, 4, or 5', $exception->getMessage());
         }
 
         $this->expectException(InvalidArgumentException::class);
