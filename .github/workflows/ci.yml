@@ -208,10 +208,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # An Ubuntu mirror stalling mid-fetch has eaten this step whole; each attempt is bounded
-          # and announced so a hang costs five minutes and says so instead of consuming the job.
+          # No apt here, deliberately: the ubuntu-24.04 runner image ships Google Chrome and
+          # Chromium preinstalled (its published manifest says so), so every shared library the
+          # Playwright Chromium build needs is already on the image, and the mirror fetch that once
+          # hung this step for forty-four minutes installed nothing that was not already present.
+          # What remains is the browser download from the Playwright CDN, cached on the lock file
+          # above, bounded and announced per attempt for the cold path.
           for attempt in 1 2 3 4; do
-            if timeout 300 npx playwright install --with-deps chromium; then
+            if timeout 300 npx playwright install chromium; then
               exit 0
             fi
             echo "Chromium runtime install attempt ${attempt} failed or stalled; retrying." >&2

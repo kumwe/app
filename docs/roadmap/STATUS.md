@@ -55,7 +55,7 @@ table when it completes, in the same change that writes it into the changelog.
 |---|---|---|
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-ERP-007` |
 | 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
-| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-009`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
+| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-009`, `V2-DB-001`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
 | 3 | `P3-A`, `P3-C` … `P3-F` (`P3-B` complete) | — |
 | 4 | `P4-A` … `P4-D` | — |
 | E | All packages complete (`PE-A` … `PE-G`) | `V2-ERP-008`, `V2-ERP-009` |
@@ -92,11 +92,11 @@ Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full 
 
 ## Ledger snapshot
 
-**52 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**53 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 15 |
+| `accepted_for_implementation` | 16 |
 | `reproduced` | 9 |
 | `open` | 19 |
 | `conditional` | 6 |
@@ -110,7 +110,7 @@ Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full 
 |---|---|
 | 0 | 2 |
 | 1 | 0 |
-| 2 | 8 |
+| 2 | 9 |
 | 3 | 0 |
 | 4 | 0 |
 | E | 2 |
@@ -128,8 +128,8 @@ Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full 
 | B | 22 |
 | none | 20 |
 
-By severity: 0 critical, 24 high, 20 medium, 8 low.
-By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 25 discovered
+By severity: 0 critical, 25 high, 20 medium, 8 low.
+By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 26 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14
 and D16.
 
