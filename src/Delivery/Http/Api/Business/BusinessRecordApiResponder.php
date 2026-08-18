@@ -12,6 +12,8 @@ use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordImmutable;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodUndeclared;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
@@ -263,6 +265,20 @@ final readonly class BusinessRecordApiResponder
                 'Business Record Immutable',
                 'The business record is immutable in its current workflow state and is corrected by a linked reversal.',
                 'urn:kumwe:problem:business-record-immutable',
+                $instance,
+            ),
+            $exception instanceof BusinessRecordPostingPeriodClosed => $this->problems->create(
+                409,
+                'Business Posting Period Closed',
+                'The record is dated inside a closed posting period.',
+                'urn:kumwe:problem:business-record-posting-period-closed',
+                $instance,
+            ),
+            $exception instanceof BusinessRecordPostingPeriodUndeclared => $this->problems->create(
+                409,
+                'Business Posting Period Undeclared',
+                'No declared posting period contains the record\'s posting date.',
+                'urn:kumwe:problem:business-record-posting-period-undeclared',
                 $instance,
             ),
             $exception instanceof BusinessRecordUniqueConflict => $this->problems->create(

@@ -6,8 +6,11 @@ namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use DateTimeImmutable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordImmutable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodUndeclared;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
@@ -143,6 +146,44 @@ final class BusinessRecordApiResponderTest extends TestCase
         self::assertSame('urn:kumwe:problem:business-record-immutable', $this->body($response)['type']);
         self::assertSame('', $response->getHeaderLine('Retry-After'), 'A closed document does not reopen on retry.');
         self::assertStringNotContainsString('approved', (string) json_encode($this->body($response)));
+    }
+
+    /**
+     * Proves a closed-period refusal is its own stable conflict rather than the global error boundary.
+     *
+     * The caller may be fully authorized and the record perfectly valid; the period its posting date
+     * falls in has been closed, so the surface answers a named 409 a client can branch on, and the
+     * period key stays out of the body because administrative structure is not the caller's to read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMapsAClosedPostingPeriodRefusalToItsOwnStableConflict(): void
+    {
+        $refusal = new BusinessRecordPostingPeriodClosed('fy2026-q1', new DateTimeImmutable('2026-02-14T00:00:00Z'));
+        $response = $this->responder()->problem($refusal, self::INSTANCE);
+
+        self::assertSame(409, $response->getStatusCode());
+        self::assertSame('urn:kumwe:problem:business-record-posting-period-closed', $this->body($response)['type']);
+        self::assertStringNotContainsString('fy2026-q1', (string) json_encode($this->body($response)));
+    }
+
+    /**
+     * Proves an undeclared-period refusal is its own stable conflict with the posting date withheld.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMapsAnUndeclaredPostingPeriodRefusalToItsOwnStableConflict(): void
+    {
+        $refusal = new BusinessRecordPostingPeriodUndeclared(new DateTimeImmutable('2026-03-01T00:00:00Z'));
+        $response = $this->responder()->problem($refusal, self::INSTANCE);
+
+        self::assertSame(409, $response->getStatusCode());
+        self::assertSame('urn:kumwe:problem:business-record-posting-period-undeclared', $this->body($response)['type']);
+        self::assertStringNotContainsString('2026-03-01', (string) json_encode($this->body($response)));
     }
 
     /**
