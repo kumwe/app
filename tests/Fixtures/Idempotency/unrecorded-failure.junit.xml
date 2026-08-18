@@ -2,9 +2,10 @@
 <!--
   The recorded set plus one test the baseline does not carry, which must fail the check.
 
-  This fixture is the exact result docs/quality/idempotency-baseline.json records, so the architecture
-  suite can prove the check passes on it without needing a database. Its companions add a test the
-  baseline does not carry, and remove one the baseline does, so both directions of the gate are proven.
+  This fixture is the exact result the baseline recorded while V2-QA-004 was being reproduced. The live
+  record has since shrunk to empty, so the architecture suite rebuilds the recorded-era baseline and
+  judges this fixture against it without needing a database. Its companions add a test that record does
+  not carry, and remove one it does, so both directions of the gate stay proven.
 -->
 <testsuites>
   <testsuite name="integration" tests="7" assertions="7" errors="5" failures="2" time="1.000000">

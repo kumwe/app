@@ -2,8 +2,9 @@
   "baseline": "kumwe-suite-idempotency",
   "finding": "V2-QA-004",
   "authority": "docs/roadmap/README.md",
-  "note": "The integration suite is not idempotent against a database another run already used. That is the finding, and this file is its reproduction: the tests and passes that fail when the suite runs against the database the first run left behind. It is a record, not a permission. tools/verify-suite-idempotency.php fails on any test outside its pass-aware entry, fails when a listed test stops needing the exemption in a recorded pass, and fails when an entry passes its expiry, so the list can only ever shrink and phase 2 empties it.",
+  "note": "The integration suite was not idempotent against a database another run already used. That was the finding, and this file was its reproduction: the tests and passes that fail when the suite runs against the database the first run left behind. It is a record, not a permission. tools/verify-suite-idempotency.php fails on any test outside its pass-aware entry, fails when a listed test stops needing the exemption in a recorded pass, and fails when an entry passes its expiry, so the list can only ever shrink. The six recorded tests each executed the removal their entry named — run-unique fixture identities for the ledger-backed idempotency keys and operation identifiers, per-run definition identities for the contributed package, and a declared rollback of the outage drill's poisoned cache entry — so the record is empty and anything that fails now is new.",
   "recorded_at": "2026-08-15",
+  "emptied_at": "2026-08-18",
   "recorded_from": [
     "https://github.com/kumwe/app/actions/runs/31876448442",
     "https://github.com/kumwe/app/actions/runs/31877919073"
@@ -12,131 +13,16 @@
     "enforced_passes": [
       "repeat"
     ],
-    "note": "`repeat` runs the integration suite again against the database the first run left behind. That is the property this check enforces, and the entries below are what it found.",
+    "note": "`repeat` runs the integration suite again against the database the first run left behind. That is the property this check enforces. The entries list is what it found, and it is empty now that every recorded test rolls its installation-global state back or mints per-run identities.",
     "engines_note": "Two fields carry two different claims, and conflating them would make the gate lie in one direction or the other. `observed_on` is fact: the engines on which this exact failure was seen. `applies_to` is scope: the engines on which the entry excuses a failure. `passes` limits both claims to the execution passes that actually produced the record. A test failing on an engine or pass outside that scope is a new violation; an entry whose test passes on an observed engine in a recorded pass is stale and must be deleted. An engine in `applies_to` but not in `observed_on` is therefore neither excused into silence nor asserted as fact.",
     "not_yet_enforced": {
       "pass": "reverse",
       "statement": "The suite gives the same result when its classes run in a different order.",
       "finding": "V2-QA-004",
       "owner": "quality-engineering",
-      "why_not_enforced": "It has never been executed in a form that tests the stated property. The first attempt used PHPUnit's --order-by=reverse, which also reverses the order of the tests inside each class, so a class whose methods are written to run in declaration order fails for a reason that has nothing to do with a reused database. That run reported 38 failures across roughly 21 classes — seven of them methods of one class, five of another — which is the signature of intra-class ordering rather than database residue. Recording 21 classes as exemptions would have been a blanket permission rather than a record, and enforcing an unmeasured property is what produced the wrong measurement in the first place. The mechanism is corrected and ready: tools/verify-suite-idempotency.php generates a configuration that lists the integration classes in reverse and leaves method order alone, verified to collect the same 283 tests. What is owed is one measured run of it, and then either a green pass or entries recorded the way the six below were.",
+      "why_not_enforced": "The first attempt used PHPUnit's --order-by=reverse, which also reverses the order of the tests inside each class, so a class whose methods are written to run in declaration order fails for a reason that has nothing to do with a reused database. That run reported 38 failures across roughly 21 classes — seven of them methods of one class, five of another — which is the signature of intra-class ordering rather than database residue, so recording it would have been a blanket permission rather than a record. The corrected mechanism — tools/verify-suite-idempotency.php generating a configuration that lists the integration classes in reverse and leaves method order alone — was executed for the first time on 2026-08-18 with --pass=reverse against a freshly provisioned MariaDB database: it collected the same 340 tests the suite collects in declaration order and passed every one, runner exit 0, nothing outside the by-then-empty record. Still owed before enforcement: the same measurement on MySQL and PostgreSQL in CI, and a decision about where the pass runs — appended to the enforced sequence it would be the third consecutive suite run against one database, and the per-run fixture definitions each run installs meet the per-site OpenAPI component bound of 256 definitions at about that third run, so enforcement needs either fixture retirement or a database of its own.",
       "how_to_run": "php tools/verify-suite-idempotency.php --engine=ID --pass=reverse"
     }
   },
-  "entries": [
-    {
-      "test": "Kumwe\\CMS\\Tests\\Integration\\BusinessSurface\\GeneratedBusinessBrowserIntegrationTest::testArchiveAndDeleteRedirectToLifecycleReadableDestinations",
-      "passes": [
-        "repeat"
-      ],
-      "observed_on": [
-        "mysql",
-        "postgresql"
-      ],
-      "applies_to": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "owner": "quality-engineering",
-      "finding": "V2-QA-004",
-      "expires": "2027-06-30",
-      "removal": "The class installs a generated business definition and its physical tables under a fixed identity and does not remove them, so the second run meets a schema installation it expects to create. Give the class a tearDownAfterClass that uninstalls what it installed, the way RecordSecretRotationIntegrationTest rolls its rotation back, or make the fixture identity unique per run."
-    },
-    {
-      "test": "Kumwe\\CMS\\Tests\\Integration\\BusinessSurface\\GeneratedBusinessBrowserIntegrationTest::testGraphicalQueryControlsSurviveOpaqueCursorPagination",
-      "passes": [
-        "repeat"
-      ],
-      "observed_on": [
-        "mysql",
-        "postgresql"
-      ],
-      "applies_to": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "owner": "quality-engineering",
-      "finding": "V2-QA-004",
-      "expires": "2027-06-30",
-      "removal": "Same cause and same fix as the other two methods of this class: the installation the class creates survives it, so the second run inherits records and definitions it expects to be absent."
-    },
-    {
-      "test": "Kumwe\\CMS\\Tests\\Integration\\BusinessSurface\\GeneratedBusinessBrowserIntegrationTest::testWorkflowActionConfirmationExecutesWithoutJavascript",
-      "passes": [
-        "repeat"
-      ],
-      "observed_on": [
-        "mysql",
-        "postgresql"
-      ],
-      "applies_to": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "owner": "quality-engineering",
-      "finding": "V2-QA-004",
-      "expires": "2027-06-30",
-      "removal": "Same cause and same fix as the other two methods of this class."
-    },
-    {
-      "test": "Kumwe\\CMS\\Tests\\Integration\\Extension\\AssetInspectionCustomViewIntegrationTest::testSummaryUsesCanonicalBrowsePolicyAndOmitsRestrictedFields",
-      "passes": [
-        "repeat"
-      ],
-      "observed_on": [
-        "mysql",
-        "postgresql"
-      ],
-      "applies_to": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "owner": "quality-engineering",
-      "finding": "V2-QA-004",
-      "expires": "2027-06-30",
-      "removal": "The example extension's contribution and its custom view stay registered after the class finishes, so a second admission of the same package meets its own previous installation. Uninstall the contribution in tearDownAfterClass, or admit it under a per-run identity."
-    },
-    {
-      "test": "Kumwe\\CMS\\Tests\\Integration\\Extension\\ExtensionContributionLifecycleIntegrationTest::testSignedContributionLifecycleIsPermissionAwareTrustBoundAndDataPreserving",
-      "passes": [
-        "repeat"
-      ],
-      "observed_on": [
-        "mysql",
-        "postgresql"
-      ],
-      "applies_to": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "owner": "quality-engineering",
-      "finding": "V2-QA-004",
-      "expires": "2027-06-30",
-      "removal": "The lifecycle it exercises ends with the extension installed and trusted, and the trust store keeps the decision, so the second run starts from a state its first assertion says cannot exist. The class has to finish by returning the extension and its trust decision to absent — which is also the operator-facing uninstall path it already tests, so the rollback is a call it can already make."
-    },
-    {
-      "test": "Kumwe\\CMS\\Tests\\Integration\\Infrastructure\\RedisOutageIntegrationTest::testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone",
-      "passes": [
-        "repeat"
-      ],
-      "observed_on": [
-        "mysql",
-        "postgresql"
-      ],
-      "applies_to": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "owner": "quality-engineering",
-      "finding": "V2-QA-004",
-      "expires": "2027-06-30",
-      "removal": "This one is not database state at all, which is worth saying because it changes the fix. The class asserts that a healthy cache records no degradation, and the second run finds two degradation notices left in the settings-cache diagnostic by the outage the first run staged. The diagnostic is process-global and is never cleared, so the assertion is only true the first time. Either the diagnostic is reset when the cache recovers — which is arguably the product behaviour an operator wants — or the test asserts the notices it caused rather than their absence."
-    }
-  ]
+  "entries": []
 }

@@ -423,12 +423,14 @@ PHP;
     }
 
     /**
-     * The idempotency baseline must excuse exactly what it records, and nothing else.
+     * The idempotency check must excuse exactly what a baseline records, and nothing else.
      *
-     * The suite is not idempotent against a reused database, which is `V2-QA-004`. A gate that simply fails
-     * on that would block every pull request and report the same six tests forever, and an advisory one
-     * would not be a gate. The baseline is the reproduction: it fails on a test outside the record, fails
-     * on an entry whose test now passes, and fails on an entry past its expiry.
+     * The six-test reproduction `V2-QA-004` recorded has been removed entry by entry, so the live record
+     * is empty and the gate's directions are proven against the recorded-era baseline this test rebuilds:
+     * the check passes the exact result that record carries, fails on a test outside it, fails on an
+     * entry whose test now passes, and fails on an entry past its expiry. The live record then gets the
+     * two claims an empty record makes: a clean run stays green, and the once-recorded failures would be
+     * reported as new rather than quietly excused by history.
      *
      * @return  void
      *
@@ -437,43 +439,70 @@ PHP;
     public function testTheIdempotencyBaselineExcusesOnlyWhatItRecords(): void
     {
         $repeat = 'tests/Fixtures/Idempotency/recorded-repeat.junit.xml';
+        $baseline = $this->writeRecordedIdempotencyBaseline();
 
-        $recorded = $this->execute('tools/verify-suite-idempotency.php', [
-            '--engine=pgsql',
-            '--expected-tests=7',
-            '--junit=repeat:' . $this->root . '/' . $repeat,
-            '--status=repeat:2',
-        ]);
-        self::assertSame(0, $recorded['status'], "The recorded result must pass:\n" . $recorded['output']);
-        self::assertStringContainsString('nothing new', $recorded['output']);
+        try {
+            $recorded = $this->execute('tools/verify-suite-idempotency.php', [
+                '--engine=pgsql',
+                '--baseline=' . $baseline,
+                '--expected-tests=7',
+                '--junit=repeat:' . $this->root . '/' . $repeat,
+                '--status=repeat:2',
+            ]);
+            self::assertSame(0, $recorded['status'], "The recorded result must pass:\n" . $recorded['output']);
+            self::assertStringContainsString('nothing new', $recorded['output']);
 
-        $unrecorded = $this->execute('tools/verify-suite-idempotency.php', [
-            '--engine=mysql',
-            '--expected-tests=7',
-            '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/unrecorded-failure.junit.xml',
-            '--status=repeat:2',
-        ]);
-        self::assertSame(1, $unrecorded['status'], 'A test outside the baseline must fail the check.');
-        self::assertStringContainsString('are not in the baseline', $unrecorded['output']);
+            $unrecorded = $this->execute('tools/verify-suite-idempotency.php', [
+                '--engine=mysql',
+                '--baseline=' . $baseline,
+                '--expected-tests=7',
+                '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/unrecorded-failure.junit.xml',
+                '--status=repeat:2',
+            ]);
+            self::assertSame(1, $unrecorded['status'], 'A test outside the baseline must fail the check.');
+            self::assertStringContainsString('are not in the baseline', $unrecorded['output']);
 
-        $stale = $this->execute('tools/verify-suite-idempotency.php', [
-            '--engine=mysql',
+            $stale = $this->execute('tools/verify-suite-idempotency.php', [
+                '--engine=mysql',
+                '--baseline=' . $baseline,
+                '--expected-tests=7',
+                '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
+                '--status=repeat:0',
+            ]);
+            self::assertSame(1, $stale['status'], 'A baseline entry that no longer fails must be deleted.');
+            self::assertStringContainsString('only ever shrinks', $stale['output']);
+
+            $expired = $this->execute('tools/verify-suite-idempotency.php', [
+                '--engine=pgsql',
+                '--baseline=' . $baseline,
+                '--today=2099-01-01',
+                '--expected-tests=7',
+                '--junit=repeat:' . $this->root . '/' . $repeat,
+                '--status=repeat:2',
+            ]);
+            self::assertSame(1, $expired['status'], 'An expired exemption must fail the check.');
+            self::assertStringContainsString('does not outlive the work', $expired['output']);
+        } finally {
+            @unlink($baseline);
+        }
+
+        $emptied = $this->execute('tools/verify-suite-idempotency.php', [
+            '--engine=mariadb',
             '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
             '--status=repeat:0',
         ]);
-        self::assertSame(1, $stale['status'], 'A baseline entry that no longer fails must be deleted.');
-        self::assertStringContainsString('only ever shrinks', $stale['output']);
+        self::assertSame(0, $emptied['status'], "A clean run must pass the live record:\n" . $emptied['output']);
+        self::assertStringContainsString('0 recorded non-idempotent test(s)', $emptied['output']);
 
-        $expired = $this->execute('tools/verify-suite-idempotency.php', [
+        $regressed = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=pgsql',
-            '--today=2099-01-01',
             '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/' . $repeat,
             '--status=repeat:2',
         ]);
-        self::assertSame(1, $expired['status'], 'An expired exemption must fail the check.');
-        self::assertStringContainsString('does not outlive the work', $expired['output']);
+        self::assertSame(1, $regressed['status'], 'A removed entry must not keep excusing its failure.');
+        self::assertStringContainsString('are not in the baseline', $regressed['output']);
     }
 
     /**
@@ -534,9 +563,11 @@ PHP;
     /**
      * An exploratory pass neither borrows exemptions from nor declares staleness in another pass.
      *
-     * The six existing entries record failures from `repeat`. A green `reverse` measurement must therefore
-     * stay green without claiming those repeat failures disappeared, while the same test identifier failing
-     * under `reverse` must be reported as new rather than excused by its repeat-era entry.
+     * The entries the record carried were failures from `repeat`, and the recorded-era baseline is
+     * rebuilt here so the pass-scoping still gets proven now that the live record is empty. A green
+     * `reverse` measurement must stay green without claiming the repeat failures disappeared, while the
+     * same test identifier failing under `reverse` must be reported as new rather than excused by its
+     * repeat-era entry.
      *
      * @return  void
      *
@@ -544,33 +575,44 @@ PHP;
      */
     public function testExploratoryIdempotencyEvidenceIsPassAware(): void
     {
-        $green = $this->execute('tools/verify-suite-idempotency.php', [
-            '--engine=mysql',
-            '--pass=reverse',
-            '--expected-tests=7',
-            '--junit=reverse:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
-            '--status=reverse:0',
-        ]);
-        self::assertSame(0, $green['status'], $green['output']);
-        self::assertStringContainsString('0 recorded non-idempotent test(s)', $green['output']);
-        self::assertStringNotContainsString('only ever shrinks', $green['output']);
+        $baseline = $this->writeRecordedIdempotencyBaseline();
 
-        $borrowed = $this->execute('tools/verify-suite-idempotency.php', [
-            '--engine=mysql',
-            '--pass=reverse',
-            '--expected-tests=7',
-            '--junit=reverse:' . $this->root
-                . '/tests/Fixtures/Idempotency/repeat-entry-reverse-failure.junit.xml',
-            '--status=reverse:1',
-        ]);
-        self::assertSame(1, $borrowed['status'], 'A repeat exemption must not excuse a reverse failure.');
-        self::assertStringContainsString('failed in the reverse pass', $borrowed['output']);
-        self::assertStringContainsString('are not in the baseline', $borrowed['output']);
-        self::assertStringNotContainsString('only ever shrinks', $borrowed['output']);
+        try {
+            $green = $this->execute('tools/verify-suite-idempotency.php', [
+                '--engine=mysql',
+                '--baseline=' . $baseline,
+                '--pass=reverse',
+                '--expected-tests=7',
+                '--junit=reverse:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
+                '--status=reverse:0',
+            ]);
+            self::assertSame(0, $green['status'], $green['output']);
+            self::assertStringContainsString('0 recorded non-idempotent test(s)', $green['output']);
+            self::assertStringNotContainsString('only ever shrinks', $green['output']);
+
+            $borrowed = $this->execute('tools/verify-suite-idempotency.php', [
+                '--engine=mysql',
+                '--baseline=' . $baseline,
+                '--pass=reverse',
+                '--expected-tests=7',
+                '--junit=reverse:' . $this->root
+                    . '/tests/Fixtures/Idempotency/repeat-entry-reverse-failure.junit.xml',
+                '--status=reverse:1',
+            ]);
+            self::assertSame(1, $borrowed['status'], 'A repeat exemption must not excuse a reverse failure.');
+            self::assertStringContainsString('failed in the reverse pass', $borrowed['output']);
+            self::assertStringContainsString('are not in the baseline', $borrowed['output']);
+            self::assertStringNotContainsString('only ever shrinks', $borrowed['output']);
+        } finally {
+            @unlink($baseline);
+        }
     }
 
     /**
      * Every idempotency exemption must name an owner, a finding, an expiry and its own removal.
+     *
+     * An empty record is the goal state and needs no exemptions, so nothing here requires entries to
+     * exist — only that any entry that does exist is owned, expires, and names its own removal.
      *
      * @return  void
      *
@@ -581,7 +623,6 @@ PHP;
         $baseline = $this->decode('docs/quality/idempotency-baseline.json');
         $entries = $baseline['entries'];
         self::assertIsArray($entries);
-        self::assertNotSame([], $entries);
 
         foreach ($entries as $entry) {
             self::assertIsArray($entry);
@@ -759,6 +800,59 @@ PHP;
         exec($command . ' 2>&1', $lines, $status);
 
         return ['status' => $status, 'output' => implode("\n", $lines)];
+    }
+
+    /**
+     * Rebuild the idempotency baseline as it stood while the six-test reproduction was recorded.
+     *
+     * The live record shrank to empty when the six tests became genuinely idempotent, but the gate's
+     * failure directions still deserve proof against a record that carries entries. Rebuilding the
+     * recorded shape here keeps that proof alive without keeping exemptions alive in the shipping
+     * record, and pins it to the same test identifiers the JUnit fixtures carry.
+     *
+     * @return  string  Absolute path to the written baseline.
+     *
+     * @since   2.0.0
+     */
+    private function writeRecordedIdempotencyBaseline(): string
+    {
+        $browser = 'Kumwe\\CMS\\Tests\\Integration\\BusinessSurface\\GeneratedBusinessBrowserIntegrationTest';
+        $extension = 'Kumwe\\CMS\\Tests\\Integration\\Extension';
+        $entries = [];
+        foreach (
+            [
+                $browser . '::testArchiveAndDeleteRedirectToLifecycleReadableDestinations',
+                $browser . '::testGraphicalQueryControlsSurviveOpaqueCursorPagination',
+                $browser . '::testWorkflowActionConfirmationExecutesWithoutJavascript',
+                $extension . '\\AssetInspectionCustomViewIntegrationTest'
+                    . '::testSummaryUsesCanonicalBrowsePolicyAndOmitsRestrictedFields',
+                $extension . '\\ExtensionContributionLifecycleIntegrationTest'
+                    . '::testSignedContributionLifecycleIsPermissionAwareTrustBoundAndDataPreserving',
+                'Kumwe\\CMS\\Tests\\Integration\\Infrastructure\\RedisOutageIntegrationTest'
+                    . '::testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone',
+            ] as $test
+        ) {
+            $entries[] = [
+                'test' => $test,
+                'passes' => ['repeat'],
+                'observed_on' => ['mysql', 'postgresql'],
+                'applies_to' => ['mariadb', 'mysql', 'postgresql'],
+                'owner' => 'quality-engineering',
+                'finding' => 'V2-QA-004',
+                'expires' => '2027-06-30',
+                'removal' => 'Removed from the live record; rebuilt here only to prove the gate.',
+            ];
+        }
+
+        return $this->writeTemporary([
+            'baseline' => 'kumwe-suite-idempotency',
+            'finding' => 'V2-QA-004',
+            'scope' => [
+                'enforced_passes' => ['repeat'],
+                'not_yet_enforced' => ['pass' => 'reverse'],
+            ],
+            'entries' => $entries,
+        ]);
     }
 
     /**

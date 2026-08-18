@@ -11,6 +11,7 @@ use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdenti
 use Kumwe\CMS\Identity\Infrastructure\Administration\RedisAuthenticationRateLimiter;
 use Kumwe\CMS\Infrastructure\Redis\RedisConnectionFactory;
 use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
+use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Kernel\Configuration\RedisConfiguration;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Site\Infrastructure\Persistence\CachedSiteSettings;
@@ -49,14 +50,15 @@ final class RedisOutageIntegrationTest extends TestCase
     public function testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
+        $upstream = $this->upstream($container);
         $room = sys_get_temp_dir() . '/kumwe-redis-outage-' . bin2hex(random_bytes(6));
         self::assertTrue(mkdir($room, 0o700, true));
         $port = $this->freePort();
         $relay = null;
 
         try {
-            $relay = $this->startRelay($port, $room);
-            $runtime = $this->runtimeThrough($port);
+            $relay = $this->startRelay($port, $room, $upstream);
+            $runtime = $this->runtimeThrough($port, $upstream);
             $limiter = new RedisAuthenticationRateLimiter($runtime);
             $logger = new RecordingLogger();
             $settings = new CachedSiteSettings($this->siteSettings($container), $runtime, $logger);
@@ -109,7 +111,7 @@ final class RedisOutageIntegrationTest extends TestCase
                 'A lock must never be reported as taken while the server holding it is unreachable.',
             );
 
-            $relay = $this->startRelay($port, $room);
+            $relay = $this->startRelay($port, $room, $upstream);
             usleep(300_000);
 
             self::assertFalse(
@@ -117,7 +119,7 @@ final class RedisOutageIntegrationTest extends TestCase
                 'An established client does not heal on its own; the replica stays drained until recycled.',
             );
 
-            $replacement = $this->runtimeThrough($port);
+            $replacement = $this->runtimeThrough($port, $upstream);
             self::assertTrue($replacement->ready(), 'A replacement connection must find the server back.');
             $counted = (new RedisAuthenticationRateLimiter($replacement));
             $counted->assertAllowed($subject, $origin);
@@ -128,7 +130,7 @@ final class RedisOutageIntegrationTest extends TestCase
             // The other way a cache stops answering: an entry that is present and unreadable. A public
             // read must survive that too, and for the same reason — the table already has the answer.
             $poisoned = count($logger->warnings);
-            $this->clientThrough($port)->set('cache:site-settings', 'this is not a settings document');
+            $this->clientThrough($port, $upstream)->set('cache:site-settings', 'this is not a settings document');
             self::assertSame($warm, $recovered->current(), 'A damaged entry must not fail a public read.');
             self::assertGreaterThan($poisoned, count($logger->warnings), 'A damaged entry must be recorded.');
         } finally {
@@ -136,7 +138,54 @@ final class RedisOutageIntegrationTest extends TestCase
                 posix_kill($relay['pid'], SIGKILL);
             }
             $this->cleanUp($room);
+            $this->rollBackSettingsEntry($upstream);
         }
+    }
+
+    /**
+     * Return the drill's one cache entry to absent on the server that outlives this process.
+     *
+     * The drill both warms and poisons `cache:site-settings` inside its own namespace, and the poison is
+     * written without an expiry, so it would survive into the next suite run: the warm read there would
+     * meet it, be answered from the database with a degradation notice for each read, and rightly fail
+     * the assertion that a healthy cache records none. The class staged the residue, so the class removes
+     * it — straight against the deployment's own server, because the relay it poisoned through is already
+     * dead when this runs.
+     *
+     * @param   RedisConfiguration  $upstream  The deployment's Redis settings the drill namespaced under.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function rollBackSettingsEntry(RedisConfiguration $upstream): void
+    {
+        (new RedisRuntime($this->client($upstream, $upstream->host, $upstream->port)))
+            ->forgetCache('site-settings');
+    }
+
+    /**
+     * Read the deployment's Redis settings from the booted container rather than from raw process env.
+     *
+     * The suite's configuration arrives through `Environment::fromGlobals()`, which reads `.env` without
+     * exporting it, so `getenv()` here can disagree with what the rest of the suite is using — and a
+     * fallback namespace shared between installations is exactly how one run's poisoned entry reaches
+     * another's healthy-cache assertion. The container's own configuration is the one truth.
+     *
+     * @param   Container  $container  Booted integration container.
+     *
+     * @return  RedisConfiguration  The deployment's Redis settings.
+     *
+     * @since   2.0.0
+     */
+    private function upstream(Container $container): RedisConfiguration
+    {
+        $configuration = $container->get(ApplicationConfiguration::class);
+        if (!$configuration instanceof ApplicationConfiguration) {
+            throw new RuntimeException('The integration application configuration is unavailable.');
+        }
+
+        return $configuration->redis;
     }
 
     /**
@@ -155,27 +204,57 @@ final class RedisOutageIntegrationTest extends TestCase
 
     /**
      * Open a real client through the relay's port, using the deployment's own connection factory.
+     *
+     * @param   int                 $port      Local port the relay listens on.
+     * @param   RedisConfiguration  $upstream  The deployment's Redis settings behind the relay.
+     *
+     * @return  RedisRuntime  Runtime whose connection dies with the relay.
+     *
+     * @since   2.0.0
      */
-    private function runtimeThrough(int $port): RedisRuntime
+    private function runtimeThrough(int $port, RedisConfiguration $upstream): RedisRuntime
     {
-        return new RedisRuntime($this->clientThrough($port));
+        return new RedisRuntime($this->clientThrough($port, $upstream));
     }
 
     /**
      * Open the raw client, so the drill can put something in the keyspace the runtime cannot write.
+     *
+     * @param   int                 $port      Local port the relay listens on.
+     * @param   RedisConfiguration  $upstream  The deployment's Redis settings behind the relay.
+     *
+     * @return  Redis  Connected client whose keys live in the drill's own namespace.
+     *
+     * @since   2.0.0
      */
-    private function clientThrough(int $port): Redis
+    private function clientThrough(int $port, RedisConfiguration $upstream): Redis
     {
-        $namespace = getenv('REDIS_NAMESPACE');
-        $database = getenv('REDIS_DATABASE');
-        $password = getenv('REDIS_PASSWORD');
+        return $this->client($upstream, '127.0.0.1', $port);
+    }
 
+    /**
+     * Open one client against an explicit endpoint, inside the drill's own namespace.
+     *
+     * The namespace suffix keeps the drill's writes away from the keys the rest of the suite shares, and
+     * deriving the stem from the deployment's configuration keeps two installations on one server from
+     * meeting each other's residue.
+     *
+     * @param   RedisConfiguration  $upstream  The deployment's Redis settings supplying credentials.
+     * @param   string              $host      Host to connect to: the relay's, or the server's own.
+     * @param   int                 $port      Port to connect to.
+     *
+     * @return  Redis  Connected client whose keys live in the drill's own namespace.
+     *
+     * @since   2.0.0
+     */
+    private function client(RedisConfiguration $upstream, string $host, int $port): Redis
+    {
         return (new RedisConnectionFactory(new RedisConfiguration(
-            '127.0.0.1',
+            $host,
             $port,
-            is_string($password) && $password !== '' ? $password : null,
-            is_string($database) && ctype_digit($database) ? (int) $database : 0,
-            (is_string($namespace) && $namespace !== '' ? $namespace : 'kumwe.test') . '.outage-drill',
+            $upstream->password,
+            $upstream->database,
+            $upstream->namespace . '.outage-drill',
         )))->create();
     }
 
@@ -215,21 +294,27 @@ final class RedisOutageIntegrationTest extends TestCase
     }
 
     /**
+     * Start the relay process the drill's connections run through, and wait until it listens.
+     *
+     * @param   int                 $port      Local port the relay should listen on.
+     * @param   string              $room      Scratch directory the relay reports into.
+     * @param   RedisConfiguration  $upstream  The deployment's Redis settings the relay forwards to.
+     *
      * @return  array{process: resource, pid: int}
+     *
+     * @since   2.0.0
      */
-    private function startRelay(int $port, string $room): array
+    private function startRelay(int $port, string $room, RedisConfiguration $upstream): array
     {
         $ready = $room . '/relay-ready-' . bin2hex(random_bytes(4));
-        $host = getenv('REDIS_HOST');
-        $upstream = getenv('REDIS_PORT');
         $pipes = [];
         $process = proc_open(
             [
                 PHP_BINARY,
                 dirname(__DIR__, 2) . '/Support/tcp-outage-relay.php',
                 (string) $port,
-                is_string($host) && $host !== '' ? $host : '127.0.0.1',
-                is_string($upstream) && $upstream !== '' ? $upstream : '6379',
+                $upstream->host,
+                (string) $upstream->port,
                 $ready,
             ],
             [1 => ['file', $room . '/relay-stdout', 'a'], 2 => ['file', $room . '/relay-stderr', 'a']],
