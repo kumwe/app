@@ -58,8 +58,9 @@ manifest grammar and the runtime registrar are two different things to break.
 | `schema: 2` | `1` | Typed contributions: capabilities, resource policies and the administrator shell. The manifest becomes closed to unknown keys. |
 | `schema: 3` | `1` | The portal surface, safe field presentation, and custom business view and action handlers. |
 | `schema: 4` | `2` | Durable integration — event contracts, listeners, consumers, jobs, queues, schedules, projections, reports, webhooks, money rate providers — and KIS semantic surfaces bound to every graphical route. |
+| `schema: 5` | `3` | The declarative composition contract, frozen at Gate A ahead of the Gate B surface that consumes it: blocks with bounded property schemas, slots and renderer bindings, patterns, field controls, inspectors, design vocabularies including size roles, and composition migrations. |
 
-Every one of those four is still promised. A package on schema 1 installs on this release exactly as it
+Every one of those five is still promised. A package on schema 1 installs on this release exactly as it
 did, and nothing obliges you to move.
 
 ### What a generation guarantees
@@ -93,14 +94,15 @@ Declare the schema you want, and the SPI it binds to:
 ```
 
 Declaring the wrong SPI for the schema is refused rather than corrected: schema 2 and 3 require
-`contributions.version` 1, schema 4 requires 2. That is the point of the pairing — a package built
-against a later runtime cannot install itself into an older one by accident.
+`contributions.version` 1, schema 4 requires 2, schema 5 requires 3. That is the point of the pairing —
+a package built against a later runtime cannot install itself into an older one by accident.
 
 Pick the **lowest** generation that carries what you need. Nothing is gained by moving to schema 4 for a
 package that only contributes an administrator workspace, and staying low keeps your package installable
 on more sites.
 
-Two of the SPI-2 registrars are **additive** and must be feature-detected rather than assumed:
+Several registrars are **additive** and must be feature-detected rather than assumed — the KIS surface,
+money rate, content translation, unit conversion, and composition registrars all arrived this way:
 
 ```php
 if ($contributions instanceof InterfaceSurfaceRegistrar) {

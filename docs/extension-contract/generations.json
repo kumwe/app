@@ -47,7 +47,13 @@
     "integration.webhooks",
     "integration.money_rate_providers",
     "integration.unit_conversion_providers",
-    "content.translation_groups"
+    "content.translation_groups",
+    "composition.blocks",
+    "composition.patterns",
+    "composition.field_controls",
+    "composition.inspectors",
+    "composition.design_vocabularies",
+    "composition.migrations"
   ],
   "host_services": {
     "note": "The complete set of host services an extension may resolve from the container it is handed. The composition root allowlists these and nothing else, so a package that resolves anything absent from this list fails closed at runtime. Their identifiers are frozen; the method surface behind each is classified public but is not byte-pinned at this generation.",
@@ -250,6 +256,82 @@
         }
       },
       "surface_digest": "5277d5d7249f24312dadb58c6487b1d6b824df7da0828a9f1375a7c61acfb60d"
+    },
+    {
+      "id": "manifest-5",
+      "schema": 5,
+      "spi": 3,
+      "status": "frozen",
+      "promise": "Everything schema 4 promises, on contribution SPI 3 rather than SPI 2, plus the `composition` top-level key SPI 3 opened and the two additions the parser accepted since schema 4 froze: the `content` contribution section and the `unit_converters` integration list. Composition is the substance of the generation — blocks with bounded property schemas, slots and renderer bindings, patterns, field controls, inspectors, design vocabularies including size roles, and composition migrations — declared, validated at admission and at install against the published composition schema profile, and inert until the Gate B surface consumes them. A schema-5 package built the day after this freeze installs unchanged when that surface ships.",
+      "manifest_keys": [
+        {"key": "schema", "status": "interpreted"},
+        {"key": "name", "status": "interpreted"},
+        {"key": "type", "status": "interpreted"},
+        {"key": "version", "status": "interpreted"},
+        {"key": "provider", "status": "interpreted"},
+        {"key": "autoload", "status": "interpreted"},
+        {"key": "requires", "status": "interpreted"},
+        {"key": "dependencies", "status": "interpreted"},
+        {"key": "migrations", "status": "interpreted"},
+        {"key": "assets", "status": "interpreted"},
+        {"key": "permissions", "status": "interpreted"},
+        {"key": "contributions", "status": "interpreted"},
+        {"key": "template", "status": "interpreted"},
+        {"key": "events", "status": "advisory"},
+        {"key": "routes", "status": "advisory"},
+        {"key": "configuration", "status": "accepted_uninterpreted"}
+      ],
+      "contribution_keys": [
+        "version",
+        "capabilities",
+        "resource_policies",
+        "administrator",
+        "portal",
+        "business",
+        "integration",
+        "interface",
+        "content",
+        "composition"
+      ],
+      "business_keys": ["field_types", "definitions", "field_presentations", "view_handlers", "action_handlers"],
+      "integration_keys": [
+        "event_schemas",
+        "domain_listeners",
+        "consumers",
+        "jobs",
+        "queues",
+        "schedules",
+        "projections",
+        "reports",
+        "webhooks",
+        "rate_providers",
+        "unit_converters"
+      ],
+      "content_keys": ["translation_groups"],
+      "composition_keys": [
+        "blocks",
+        "patterns",
+        "field_controls",
+        "inspectors",
+        "design_vocabularies",
+        "migrations"
+      ],
+      "closed_to_unknown_keys": true,
+      "fixture": {
+        "package": "tests/Fixtures/ExtensionApi/generations/manifest-5",
+        "identifier": "kumwe/contract-manifest-five",
+        "manifest_sha256": "1f63dc05bcc4faacedc42827e78fadcd582f03843b20a5557ad0b02831ea01e5",
+        "lifecycle": ["install", "activate", "upgrade", "disable", "reactivate", "uninstall"],
+        "contributions": {
+          "composition.blocks": 1,
+          "composition.patterns": 1,
+          "composition.field_controls": 1,
+          "composition.inspectors": 1,
+          "composition.design_vocabularies": 1,
+          "composition.migrations": 1
+        }
+      },
+      "surface_digest": "84aedb00fb2347d87cda25c651e9cf139cead8adb322483bccdb6c451bfe1772"
     }
   ],
   "spi_generations": [
@@ -332,6 +414,68 @@
       ],
       "fixtures": ["tests/Fixtures/ExtensionApi/generations/manifest-4"],
       "surface_digest": "b301940914ff4a5f17edb61e6a018159ae26654ccb918c3ab1a7355b61ae86a7"
+    },
+    {
+      "id": "spi-3",
+      "version": 3,
+      "status": "frozen",
+      "constant": "Kumwe\\CMS\\Extension\\Contribution\\ManifestContributionSet::COMPOSITION_SPI_VERSION",
+      "manifest_schemas": [5],
+      "promise": "Everything SPI 2 carries, plus every additive registrar published since it froze — content translation groups and unit conversion providers — and the composition contribution surfaces this generation exists for: blocks, patterns, field controls, inspectors, design vocabularies and composition migrations. A schema-5 manifest must declare `contributions.version` as 3. Every additive registrar is feature-detected rather than assumed, so a provider written against the base registrar keeps working unchanged, and every composition declaration is data: nothing renders, stores or executes until the Gate B surface consumes the declarations exactly as admitted.",
+      "registrar": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar",
+      "additive_registrars": [
+        "Kumwe\\CMS\\Extension\\Contribution\\InterfaceSurfaceRegistrar",
+        "Kumwe\\CMS\\Extension\\Contribution\\MoneyRateProviderRegistrar",
+        "Kumwe\\CMS\\Extension\\Contribution\\ContentTranslationRegistrar",
+        "Kumwe\\CMS\\Extension\\Contribution\\UnitConversionProviderRegistrar",
+        "Kumwe\\CMS\\Extension\\Contribution\\CompositionContributionRegistrar"
+      ],
+      "surfaces": [
+        "capabilities",
+        "resource_policies",
+        "administrator.workspaces",
+        "administrator.navigation",
+        "administrator.routes",
+        "administrator.views",
+        "portal.workspaces",
+        "portal.navigation",
+        "portal.templates",
+        "portal.routes",
+        "interface.surfaces",
+        "business.field_types",
+        "business.field_presentations",
+        "business.definitions",
+        "business.view_handlers",
+        "business.action_handlers",
+        "integration.event_schemas",
+        "integration.domain_listeners",
+        "integration.consumers",
+        "integration.jobs",
+        "integration.queues",
+        "integration.schedules",
+        "integration.projections",
+        "integration.reports",
+        "integration.webhooks",
+        "integration.money_rate_providers",
+        "integration.unit_conversion_providers",
+        "content.translation_groups",
+        "composition.blocks",
+        "composition.patterns",
+        "composition.field_controls",
+        "composition.inspectors",
+        "composition.design_vocabularies",
+        "composition.migrations"
+      ],
+      "pinned_by": [
+        "tests/Fixtures/ExtensionApi/public-interfaces-v2.json",
+        "tests/Fixtures/ExtensionApi/interface-surface-registrar-v1.json",
+        "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json",
+        "tests/Fixtures/ExtensionApi/content-translation-registrar-v1.json",
+        "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json",
+        "tests/Fixtures/ExtensionApi/composition-contribution-registrar-v1.json"
+      ],
+      "fixtures": ["tests/Fixtures/ExtensionApi/generations/manifest-5"],
+      "surface_digest": "1ec24d1c7ea65993808a2686afd8fd863c1cc3d90f4edb8b9146bcca3519be7c"
     }
   ],
   "withdrawn": [

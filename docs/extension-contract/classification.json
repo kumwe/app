@@ -781,6 +781,96 @@
       "pinned_by": null
     },
     {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionBlockDeclaration",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-5",
+      "spi": 3,
+      "path": "src/Extension/Contribution/CompositionBlockDeclaration.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionContributionRegistrar",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-5",
+      "spi": 3,
+      "path": "src/Extension/Contribution/CompositionContributionRegistrar.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/composition-contribution-registrar-v1.json"
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionDesignVocabularyDeclaration",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-5",
+      "spi": 3,
+      "path": "src/Extension/Contribution/CompositionDesignVocabularyDeclaration.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionFieldControlDeclaration",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-5",
+      "spi": 3,
+      "path": "src/Extension/Contribution/CompositionFieldControlDeclaration.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionInspectorDeclaration",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-5",
+      "spi": 3,
+      "path": "src/Extension/Contribution/CompositionInspectorDeclaration.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionMigrationDeclaration",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-5",
+      "spi": 3,
+      "path": "src/Extension/Contribution/CompositionMigrationDeclaration.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionPatternDeclaration",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-5",
+      "spi": 3,
+      "path": "src/Extension/Contribution/CompositionPatternDeclaration.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionPropertySchema",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-5",
+      "spi": 3,
+      "path": "src/Extension/Contribution/CompositionPropertySchema.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionPropertyType",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-5",
+      "spi": 3,
+      "path": "src/Extension/Contribution/CompositionPropertyType.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/composition-contribution-registrar-v1.json"
+    },
+    {
       "type": "Kumwe\\CMS\\Extension\\Contribution\\ContentTranslationRegistrar",
       "kind": "interface",
       "visibility": "public",

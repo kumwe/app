@@ -75,6 +75,19 @@ final readonly class ManifestContributionSet
     public const CURRENT_SPI_VERSION = 2;
 
     /**
+     * Contribution SPI used by manifest schema 5 packages, which opened the composition surfaces.
+     *
+     * The constant sits beside `CURRENT_SPI_VERSION` rather than replacing its value, because schema-4
+     * manifests are frozen on SPI 2: changing what schema 4 requires would refuse every admitted
+     * schema-4 package. A schema-5 manifest must declare `contributions.version` as 3, and only schema 5
+     * may carry the `composition` contribution section.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const COMPOSITION_SPI_VERSION = 3;
+
+    /**
      * Declared permission codes, keyed and sorted by capability identifier.
      *
      * @var    array<string, CapabilityDefinition>
@@ -299,47 +312,108 @@ final readonly class ManifestContributionSet
     private array $contentTranslationGroups;
 
     /**
+     * Manifest-declared composition blocks keyed by stable identifier.
+     *
+     * @var    array<string, CompositionBlockDeclaration>  Declared placeable blocks.
+     * @since  2.0.0
+     */
+    private array $compositionBlocks;
+
+    /**
+     * Manifest-declared composition patterns keyed by stable identifier.
+     *
+     * @var    array<string, CompositionPatternDeclaration>  Declared reusable structures.
+     * @since  2.0.0
+     */
+    private array $compositionPatterns;
+
+    /**
+     * Manifest-declared composition field controls keyed by stable identifier.
+     *
+     * @var    array<string, CompositionFieldControlDeclaration>  Declared editing controls.
+     * @since  2.0.0
+     */
+    private array $compositionFieldControls;
+
+    /**
+     * Manifest-declared composition inspectors keyed by stable identifier.
+     *
+     * @var    array<string, CompositionInspectorDeclaration>  Declared inspector panels.
+     * @since  2.0.0
+     */
+    private array $compositionInspectors;
+
+    /**
+     * Manifest-declared composition design vocabularies keyed by stable identifier.
+     *
+     * @var    array<string, CompositionDesignVocabularyDeclaration>  Declared tokens, recipes and size roles.
+     * @since  2.0.0
+     */
+    private array $compositionDesignVocabularies;
+
+    /**
+     * Manifest-declared composition migrations keyed by stable identifier.
+     *
+     * @var    array<string, CompositionMigrationDeclaration>  Declared document migrations.
+     * @since  2.0.0
+     */
+    private array $compositionMigrations;
+
+    /**
      * Assemble one package's declarations and reject any set that is already inconsistent.
      *
      * Called directly only for an empty or hand-built set, such as core's; a real manifest arrives
      * through `fromManifest()`. Business identifiers are checked against the business context's own
      * owner, which is why a field type or entity type belonging to another package fails here.
      *
-     * @param   ContributionOwner                            $owner                     Package declaring all of it.
-     * @param   iterable<CapabilityDefinition>               $capabilities              Permission codes it adds.
-     * @param   iterable<AdministratorWorkspaceDefinition>   $workspaces                Administrator groupings.
-     * @param   iterable<AdministratorNavigationDefinition>  $navigation                Menu entries it adds.
-     * @param   iterable<AdministratorRouteDefinition>       $routes                    Guarded routes it serves.
-     * @param   iterable<AdministratorViewDefinition>        $views                     Templates its routes render.
-     * @param   iterable<FieldTypeDefinition>                $fieldTypes                Field types it publishes.
-     * @param   iterable<EntityTypeDefinition>               $businessDefinitions       Entity types it publishes.
-     * @param   iterable<ResourcePolicyDefinition>           $resourcePolicies          Capability/resource bindings.
-     * @param   iterable<PortalWorkspaceDefinition>          $portalWorkspaces          Portal groupings it adds.
-     * @param   iterable<PortalNavigationDefinition>         $portalNavigation          Portal menu entries it adds.
-     * @param   iterable<PortalRouteDefinition>              $portalRoutes              Guarded portal routes it serves.
+     * @param ContributionOwner $owner Package declaring all of it.
+     * @param   iterable<CapabilityDefinition>                    $capabilities              Permission codes it adds.
+     * @param   iterable<AdministratorWorkspaceDefinition>        $workspaces                Administrator groupings.
+     * @param   iterable<AdministratorNavigationDefinition>       $navigation                Menu entries it adds.
+     * @param   iterable<AdministratorRouteDefinition>            $routes                    Guarded routes it serves.
+     * @param iterable<AdministratorViewDefinition> $views Templates its routes render.
+     * @param   iterable<FieldTypeDefinition>                     $fieldTypes                Field types it publishes.
+     * @param   iterable<EntityTypeDefinition>                    $businessDefinitions       Entity types it publishes.
+     * @param iterable<ResourcePolicyDefinition> $resourcePolicies Capability/resource bindings.
+     * @param   iterable<PortalWorkspaceDefinition>               $portalWorkspaces          Portal groupings it adds.
+     * @param iterable<PortalNavigationDefinition> $portalNavigation Portal menu entries it adds.
+     * @param iterable<PortalRouteDefinition> $portalRoutes Guarded portal routes it serves.
      * @param iterable<PortalTemplateDefinition> $portalTemplates Portal templates its routes render.
-     * @param   iterable<CustomBusinessViewContract>         $customBusinessViews       Custom view handler contracts.
-     * @param   iterable<CustomBusinessActionContract>       $customBusinessActions     Custom action handler contracts.
-     * @param   iterable<FieldPresentationContribution>      $fieldPresentations        Safe presenter declarations.
-     * @param   iterable<EventSchemaDefinition>              $eventSchemas              Versioned event contracts.
-     * @param   iterable<DomainListenerDefinition>           $domainListeners           Synchronous listener contracts.
-     * @param   iterable<EventConsumerDefinition>            $eventConsumers            Durable consumer contracts.
-     * @param   iterable<JobContributionDefinition>          $jobs                      Job and payload contracts.
-     * @param   iterable<QueueContributionDefinition>        $queues                    Logical queue declarations.
-     * @param   iterable<ScheduleContributionDefinition>     $schedules                 Recurring schedules.
-     * @param   iterable<ProjectionDefinition>               $projections               Rebuildable projections.
-     * @param   iterable<ReportDefinition>                   $reports                   Safe report definitions.
-     * @param   iterable<WebhookContributionDefinition>      $webhooks                  Outbound adapter declarations.
-     * @param   int                                          $spiVersion                Contribution SPI revision.
-     * @param   iterable<SurfaceDefinition>                  $interfaceSurfaces         KIS semantic surfaces.
-     * @param   iterable<MoneyRateProviderDefinition>        $moneyRateProviders        Exchange-rate sources.
-     * @param   iterable<UnitConversionProviderDefinition>   $unitConverters            Unit conversion sources.
-     * @param   iterable<TranslationGroupDeclaration>        $contentTranslationGroups  Multilingual content
+     * @param iterable<CustomBusinessViewContract> $customBusinessViews Custom view handler contracts.
+     * @param iterable<CustomBusinessActionContract> $customBusinessActions Custom action handler contracts.
+     * @param iterable<FieldPresentationContribution> $fieldPresentations Safe presenter declarations.
+     * @param   iterable<EventSchemaDefinition>                   $eventSchemas              Versioned event contracts.
+     * @param iterable<DomainListenerDefinition> $domainListeners Synchronous listener contracts.
+     * @param   iterable<EventConsumerDefinition>                 $eventConsumers            Durable consumer contracts.
+     * @param   iterable<JobContributionDefinition>               $jobs                      Job and payload contracts.
+     * @param   iterable<QueueContributionDefinition>             $queues                    Logical queue declarations.
+     * @param   iterable<ScheduleContributionDefinition>          $schedules                 Recurring schedules.
+     * @param   iterable<ProjectionDefinition>                    $projections               Rebuildable projections.
+     * @param   iterable<ReportDefinition>                        $reports                   Safe report definitions.
+     * @param iterable<WebhookContributionDefinition> $webhooks Outbound adapter declarations.
+     * @param   int                                               $spiVersion                Contribution SPI revision.
+     * @param   iterable<SurfaceDefinition>                       $interfaceSurfaces         KIS semantic surfaces.
+     * @param   iterable<MoneyRateProviderDefinition>             $moneyRateProviders        Exchange-rate sources.
+     * @param   iterable<UnitConversionProviderDefinition>        $unitConverters            Unit conversion sources.
+     * @param   iterable<TranslationGroupDeclaration>             $contentTranslationGroups  Multilingual content
      *          sets, each naming the locales the package publishes it in and the locale it falls back to.
+     * @param   iterable<CompositionBlockDeclaration>             $compositionBlocks         Placeable blocks with
+     *          bounded properties, slots and renderer bindings.
+     * @param   iterable<CompositionPatternDeclaration>           $compositionPatterns       Reusable structures
+     *          arranged from this owner's declared blocks.
+     * @param   iterable<CompositionFieldControlDeclaration>      $compositionControls       Editing controls for
+     *          published property types.
+     * @param   iterable<CompositionInspectorDeclaration>         $compositionInspectors     Inspector panels for
+     *          this owner's declared blocks.
+     * @param   iterable<CompositionDesignVocabularyDeclaration>  $compositionVocabularies   Design vocabularies
+     *          of tokens, recipes and size roles.
+     * @param   iterable<CompositionMigrationDeclaration>         $compositionMigrations     Declared migrations for
+     *          documents a declared block appears in.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          navigation or a route references something this set does not declare, a business definition
-     *          names another owner, or SPI 2 claims ordering that has no portable storage shape.
+     *          names another owner, SPI 2 claims ordering that has no portable storage shape, or a
+     *          composition declaration references a renderer or block this set does not own.
      *
      * @since   2.0.0
      */
@@ -374,8 +448,15 @@ final readonly class ManifestContributionSet
         iterable $moneyRateProviders = [],
         iterable $unitConverters = [],
         iterable $contentTranslationGroups = [],
+        iterable $compositionBlocks = [],
+        iterable $compositionPatterns = [],
+        iterable $compositionControls = [],
+        iterable $compositionInspectors = [],
+        iterable $compositionVocabularies = [],
+        iterable $compositionMigrations = [],
     ) {
-        if (!in_array($spiVersion, [self::SPI_VERSION, self::CURRENT_SPI_VERSION], true)) {
+        $supported = [self::SPI_VERSION, self::CURRENT_SPI_VERSION, self::COMPOSITION_SPI_VERSION];
+        if (!in_array($spiVersion, $supported, true)) {
             throw new InvalidArgumentException('The extension contribution SPI version is unsupported.');
         }
         $this->capabilities = $this->index($capabilities, 'capability');
@@ -406,6 +487,15 @@ final readonly class ManifestContributionSet
         $this->moneyRateProviders = $this->index($moneyRateProviders, 'money_rate_provider');
         $this->unitConversionProviders = $this->index($unitConverters, 'unit_conversion_provider');
         $this->contentTranslationGroups = $this->index($contentTranslationGroups, 'content_translation_group');
+        $this->compositionBlocks = $this->index($compositionBlocks, 'composition_block');
+        $this->compositionPatterns = $this->index($compositionPatterns, 'composition_pattern');
+        $this->compositionFieldControls = $this->index($compositionControls, 'composition_field_control');
+        $this->compositionInspectors = $this->index($compositionInspectors, 'composition_inspector');
+        $this->compositionDesignVocabularies = $this->index(
+            $compositionVocabularies,
+            'composition_design_vocabulary',
+        );
+        $this->compositionMigrations = $this->index($compositionMigrations, 'composition_migration');
         if ($this->spiVersion >= self::CURRENT_SPI_VERSION) {
             $this->assertPortableRelationshipOrdering();
         }
@@ -528,6 +618,59 @@ final readonly class ManifestContributionSet
             }
         }
         $this->assertIntegrationReferences();
+        $this->assertCompositionReferences();
+    }
+
+    /**
+     * Validate references that must stay inside one extension's declared composition surface.
+     *
+     * A renderer binding must be the owner's to claim, because an unresolvable or foreign binding would
+     * surface as a runtime hole once Gate B consumes it. A pattern may only arrange blocks this same
+     * manifest declares, an inspector may only open for one of them, and a migration may only step a
+     * declared block between revisions the block has actually reached. Running at construction means the
+     * same refusals happen at admission and again at install, before any runtime exists.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When a renderer, pattern, inspector, or migration reference falls
+     *          outside this set's declared blocks or the block's declared revisions.
+     *
+     * @since   2.0.0
+     */
+    private function assertCompositionReferences(): void
+    {
+        foreach ($this->compositionBlocks as $block) {
+            $this->owner->assertOwns($block->renderer(), 'composition renderer');
+        }
+        foreach ($this->compositionPatterns as $pattern) {
+            foreach ($pattern->blocks as $reference) {
+                if (!isset($this->compositionBlocks[$reference])) {
+                    throw new InvalidArgumentException(
+                        'A composition pattern must arrange blocks its own manifest declares.',
+                    );
+                }
+            }
+        }
+        foreach ($this->compositionInspectors as $inspector) {
+            if (!isset($this->compositionBlocks[$inspector->block()])) {
+                throw new InvalidArgumentException(
+                    'A composition inspector must open for a block its own manifest declares.',
+                );
+            }
+        }
+        foreach ($this->compositionMigrations as $migration) {
+            $block = $this->compositionBlocks[$migration->block()] ?? null;
+            if ($block === null) {
+                throw new InvalidArgumentException(
+                    'A composition migration must step a block its own manifest declares.',
+                );
+            }
+            if ($migration->toVersion() > $block->version()) {
+                throw new InvalidArgumentException(
+                    'A composition migration cannot target a revision its block has not reached.',
+                );
+            }
+        }
     }
 
     /**
@@ -687,7 +830,8 @@ final readonly class ManifestContributionSet
      * @param   ExtensionIdentifier  $extension       Package the manifest belongs to, which owns everything in it.
      * @param   array<mixed>         $data            The manifest's decoded `contributions` value.
      * @param   int                  $manifestSchema  Manifest grammar: 2 for original typed contributions,
-     *          3 for signed presentations/custom handlers, or 4 for durable integration contributions.
+     *          3 for signed presentations/custom handlers, 4 for durable integration contributions, or 5
+     *          for composition contributions.
      *
      * @return  self  The package's declarations, indexed and consistency-checked.
      *
@@ -699,8 +843,8 @@ final readonly class ManifestContributionSet
      */
     public static function fromManifest(ExtensionIdentifier $extension, array $data, int $manifestSchema = 3): self
     {
-        if (!in_array($manifestSchema, [2, 3, 4], true)) {
-            throw new InvalidArgumentException('Typed extension contributions require manifest schema 2, 3, or 4.');
+        if (!in_array($manifestSchema, [2, 3, 4, 5], true)) {
+            throw new InvalidArgumentException('Typed extension contributions require manifest schema 2, 3, 4, or 5.');
         }
         $data = self::object($data, 'contributions');
         $topLevelKeys = ['version', 'capabilities', 'resource_policies', 'administrator', 'portal', 'business'];
@@ -709,12 +853,19 @@ final readonly class ManifestContributionSet
             $topLevelKeys[] = 'interface';
             $topLevelKeys[] = 'content';
         }
+        if ($manifestSchema >= 5) {
+            $topLevelKeys[] = 'composition';
+        }
         self::knownKeys(
             $data,
             $topLevelKeys,
             'contributions',
         );
-        $expectedSpi = $manifestSchema >= 4 ? self::CURRENT_SPI_VERSION : self::SPI_VERSION;
+        $expectedSpi = match (true) {
+            $manifestSchema >= 5 => self::COMPOSITION_SPI_VERSION,
+            $manifestSchema >= 4 => self::CURRENT_SPI_VERSION,
+            default => self::SPI_VERSION,
+        };
         if (($data['version'] ?? null) !== $expectedSpi) {
             throw new InvalidArgumentException(sprintf(
                 'Manifest schema %d requires extension contribution SPI version %d.',
@@ -739,6 +890,19 @@ final readonly class ManifestContributionSet
         self::knownKeys($interface, ['surfaces'], 'interface contributions');
         $content = self::object($data['content'] ?? [], 'contributions.content');
         self::knownKeys($content, ['translation_groups'], 'content contributions');
+        $composition = self::object($data['composition'] ?? [], 'contributions.composition');
+        self::knownKeys(
+            $composition,
+            [
+                'blocks',
+                'patterns',
+                'field_controls',
+                'inspectors',
+                'design_vocabularies',
+                'migrations',
+            ],
+            'composition contributions',
+        );
         $integration = self::object($data['integration'] ?? [], 'contributions.integration');
         self::knownKeys(
             $integration,
@@ -1045,6 +1209,37 @@ final readonly class ManifestContributionSet
             static fn (array $item): TranslationGroupDeclaration => TranslationGroupDeclaration::fromArray($item),
             self::objects($content['translation_groups'] ?? [], 'contributions.content.translation_groups'),
         );
+        $compositionBlocks = array_map(
+            static fn (array $item): CompositionBlockDeclaration => CompositionBlockDeclaration::fromArray($item),
+            self::objects($composition['blocks'] ?? [], 'contributions.composition.blocks'),
+        );
+        $compositionPatterns = array_map(
+            static fn (array $item): CompositionPatternDeclaration => CompositionPatternDeclaration::fromArray($item),
+            self::objects($composition['patterns'] ?? [], 'contributions.composition.patterns'),
+        );
+        $compositionControls = array_map(
+            static fn (array $item): CompositionFieldControlDeclaration
+                => CompositionFieldControlDeclaration::fromArray($item),
+            self::objects($composition['field_controls'] ?? [], 'contributions.composition.field_controls'),
+        );
+        $compositionInspectors = array_map(
+            static fn (array $item): CompositionInspectorDeclaration
+                => CompositionInspectorDeclaration::fromArray($item),
+            self::objects($composition['inspectors'] ?? [], 'contributions.composition.inspectors'),
+        );
+        $compositionVocabularies = array_map(
+            static fn (array $item): CompositionDesignVocabularyDeclaration
+                => CompositionDesignVocabularyDeclaration::fromArray($item),
+            self::objects(
+                $composition['design_vocabularies'] ?? [],
+                'contributions.composition.design_vocabularies',
+            ),
+        );
+        $compositionMigrations = array_map(
+            static fn (array $item): CompositionMigrationDeclaration
+                => CompositionMigrationDeclaration::fromArray($item),
+            self::objects($composition['migrations'] ?? [], 'contributions.composition.migrations'),
+        );
 
         $set = new self(
             $owner,
@@ -1077,6 +1272,12 @@ final readonly class ManifestContributionSet
             $moneyRateProviders,
             $unitConverters,
             $contentTranslationGroups,
+            $compositionBlocks,
+            $compositionPatterns,
+            $compositionControls,
+            $compositionInspectors,
+            $compositionVocabularies,
+            $compositionMigrations,
         );
         $set->assertFieldPresentationCoverage();
 
@@ -1448,6 +1649,79 @@ final readonly class ManifestContributionSet
     }
 
     /**
+     * Return the composition blocks carried by this manifest contribution set.
+     *
+     * @return  list<CompositionBlockDeclaration>  Declared placeable blocks in identifier order; empty for
+     *          a package that composes nothing.
+     *
+     * @since   2.0.0
+     */
+    public function compositionBlocks(): array
+    {
+        return array_values($this->compositionBlocks);
+    }
+
+    /**
+     * Return the composition patterns carried by this manifest contribution set.
+     *
+     * @return  list<CompositionPatternDeclaration>  Declared reusable structures in identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function compositionPatterns(): array
+    {
+        return array_values($this->compositionPatterns);
+    }
+
+    /**
+     * Return the composition field controls carried by this manifest contribution set.
+     *
+     * @return  list<CompositionFieldControlDeclaration>  Declared editing controls in identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function compositionFieldControls(): array
+    {
+        return array_values($this->compositionFieldControls);
+    }
+
+    /**
+     * Return the composition inspectors carried by this manifest contribution set.
+     *
+     * @return  list<CompositionInspectorDeclaration>  Declared inspector panels in identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function compositionInspectors(): array
+    {
+        return array_values($this->compositionInspectors);
+    }
+
+    /**
+     * Return the composition design vocabularies carried by this manifest contribution set.
+     *
+     * @return  list<CompositionDesignVocabularyDeclaration>  Declared vocabularies in identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function compositionDesignVocabularies(): array
+    {
+        return array_values($this->compositionDesignVocabularies);
+    }
+
+    /**
+     * Return the composition migrations carried by this manifest contribution set.
+     *
+     * @return  list<CompositionMigrationDeclaration>  Declared document migrations in identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function compositionMigrations(): array
+    {
+        return array_values($this->compositionMigrations);
+    }
+
+    /**
      * Return the SPI version carried by this manifest contribution set.
      *
      * @return  int  Contribution service-provider interface revision.
@@ -1479,6 +1753,14 @@ final readonly class ManifestContributionSet
      *              },
      *              interface?: array{surfaces: list<array<string, mixed>>},
      *              content?: array{translation_groups: list<array<string, mixed>>},
+     *              composition?: array{
+     *                  blocks?: list<array<string, mixed>>,
+     *                  patterns?: list<array<string, mixed>>,
+     *                  field_controls?: list<array<string, mixed>>,
+     *                  inspectors?: list<array<string, mixed>>,
+     *                  design_vocabularies?: list<array<string, mixed>>,
+     *                  migrations?: list<array<string, mixed>>
+     *              },
      *              business: array{
      *                  field_types: list<array<string, mixed>>,
      *                  definitions: list<array<string, mixed>>,
@@ -1599,6 +1881,21 @@ final readonly class ManifestContributionSet
             $document['content'] = [
                 'translation_groups' => $this->exports($this->contentTranslationGroups()),
             ];
+        }
+        // Written only when the package composes, and each list only when non-empty, so a package that
+        // declares nothing here exports the bytes it exported before the composition surfaces existed.
+        $compositionSections = [
+            'blocks' => $this->compositionBlocks(),
+            'patterns' => $this->compositionPatterns(),
+            'field_controls' => $this->compositionFieldControls(),
+            'inspectors' => $this->compositionInspectors(),
+            'design_vocabularies' => $this->compositionDesignVocabularies(),
+            'migrations' => $this->compositionMigrations(),
+        ];
+        foreach ($compositionSections as $key => $declarations) {
+            if ($declarations !== []) {
+                $document['composition'][$key] = $this->exports($declarations);
+            }
         }
 
         return $document;

@@ -60,7 +60,8 @@ final class OwnedExtensionContributionRegistrar implements
     InterfaceSurfaceRegistrar,
     MoneyRateProviderRegistrar,
     ContentTranslationRegistrar,
-    UnitConversionProviderRegistrar
+    UnitConversionProviderRegistrar,
+    CompositionContributionRegistrar
 {
     /**
      * Array exports of the manifest declarations, keyed by contribution kind and then by identifier.
@@ -143,6 +144,12 @@ final class OwnedExtensionContributionRegistrar implements
             'money_rate_provider' => $this->index($declared->moneyRateProviders()),
             'content_translation_group' => $this->index($declared->contentTranslationGroups()),
             'unit_conversion_provider' => $this->index($declared->unitConversionProviders()),
+            'composition_block' => $this->index($declared->compositionBlocks()),
+            'composition_pattern' => $this->index($declared->compositionPatterns()),
+            'composition_field_control' => $this->index($declared->compositionFieldControls()),
+            'composition_inspector' => $this->index($declared->compositionInspectors()),
+            'composition_design_vocabulary' => $this->index($declared->compositionDesignVocabularies()),
+            'composition_migration' => $this->index($declared->compositionMigrations()),
         ];
     }
 
@@ -735,6 +742,125 @@ final class OwnedExtensionContributionRegistrar implements
         }
         $this->accept('unit_conversion_provider', $definition->identifier(), $definition->toArray());
         $this->registries->unitConversionProviders()->register($this->owner, $definition, $provider);
+    }
+
+    /**
+     * Register a composition block only as the signed manifest declared it.
+     *
+     * The declaration is inert data — the Gate B surface is what will consume it — but the reconciliation
+     * is not deferred with it: a provider cannot register a property schema, slot set or renderer binding
+     * its manifest never carried, so what an operator inspected before install is what the surface will
+     * eventually consume.
+     *
+     * @param   CompositionBlockDeclaration  $declaration  Signed declaration of one placeable block.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identifier is outside the owner's namespace, repeated,
+     *          or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function compositionBlock(CompositionBlockDeclaration $declaration): void
+    {
+        $this->accept('composition_block', $declaration->identifier(), $declaration->toArray());
+        $this->registries->compositionBlocks()->register($this->owner, $declaration);
+    }
+
+    /**
+     * Register a composition pattern only as the signed manifest declared it.
+     *
+     * @param   CompositionPatternDeclaration  $declaration  Signed declaration of one reusable structure.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identifier is outside the owner's namespace, repeated,
+     *          or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function compositionPattern(CompositionPatternDeclaration $declaration): void
+    {
+        $this->accept('composition_pattern', $declaration->identifier(), $declaration->toArray());
+        $this->registries->compositionPatterns()->register($this->owner, $declaration);
+    }
+
+    /**
+     * Register a composition field control only as the signed manifest declared it.
+     *
+     * @param   CompositionFieldControlDeclaration  $declaration  Signed declaration of one editing control.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identifier is outside the owner's namespace, repeated,
+     *          or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function compositionFieldControl(CompositionFieldControlDeclaration $declaration): void
+    {
+        $this->accept('composition_field_control', $declaration->identifier(), $declaration->toArray());
+        $this->registries->compositionFieldControls()->register($this->owner, $declaration);
+    }
+
+    /**
+     * Register a composition inspector only as the signed manifest declared it.
+     *
+     * @param   CompositionInspectorDeclaration  $declaration  Signed declaration of one inspector panel.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identifier is outside the owner's namespace, repeated,
+     *          or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function compositionInspector(CompositionInspectorDeclaration $declaration): void
+    {
+        $this->accept('composition_inspector', $declaration->identifier(), $declaration->toArray());
+        $this->registries->compositionInspectors()->register($this->owner, $declaration);
+    }
+
+    /**
+     * Register a design vocabulary only as the signed manifest declared it.
+     *
+     * @param   CompositionDesignVocabularyDeclaration  $declaration  Signed vocabulary a theme remaps.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identifier is outside the owner's namespace, repeated,
+     *          or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function compositionDesignVocabulary(CompositionDesignVocabularyDeclaration $declaration): void
+    {
+        $this->accept('composition_design_vocabulary', $declaration->identifier(), $declaration->toArray());
+        $this->registries->compositionDesignVocabularies()->register($this->owner, $declaration);
+    }
+
+    /**
+     * Register a composition migration only as the signed manifest declared it.
+     *
+     * @param   CompositionMigrationDeclaration  $declaration  Signed declared document migration.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identifier is outside the owner's namespace, repeated,
+     *          or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function compositionMigration(CompositionMigrationDeclaration $declaration): void
+    {
+        $this->accept('composition_migration', $declaration->identifier(), $declaration->toArray());
+        $this->registries->compositionMigrations()->register($this->owner, $declaration);
     }
 
     /**
