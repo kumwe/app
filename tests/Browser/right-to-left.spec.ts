@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
 
 /**
@@ -10,6 +10,12 @@ import { expectNoDocumentOverflow } from './support/interface-diagnostics';
  * that the mirrored page still lays out without horizontal overflow, which is where a stray physical
  * declaration shows up first.
  *
+ * Each surface also holds a committed screenshot baseline and its critical controls to the same
+ * acceptance every other locale carries: zero horizontal overflow, and zero inaccessible critical
+ * control — every control a visitor needs on the surface stays visible, keyboard-focusable and free
+ * of overlap after the mirroring. The baseline is the mirrored render itself, so a regression that
+ * flips a surface back to left-to-right fails the comparison rather than passing a directionless one.
+ *
  * This file runs once per right-to-left project rather than looping over the languages itself, so the
  * language is an axis of the matrix and not a loop inside one cell. That is what gives `he` and `ar`
  * their own screenshot directory: a baseline is filed under the project name, and a right-to-left
@@ -20,9 +26,38 @@ import { expectNoDocumentOverflow } from './support/interface-diagnostics';
  */
 
 const surfaces = [
-  { id: 'public-home', path: '/' },
-  { id: 'administrator-login', path: '/administrator/login' },
-  { id: 'portal-login', path: '/portal/login' },
+  {
+    id: 'public-home',
+    path: '/',
+    // The mobile navigation lives behind its toggle, so the toggle is the critical control there;
+    // on desktop the navigation itself is on the surface and its first link stands for it.
+    criticalControls: (page: Page, isMobile: boolean): Locator[] =>
+      isMobile
+        ? [page.getByRole('button', { name: 'Open site navigation' })]
+        : [
+            page
+              .getByRole('navigation', { name: 'Main navigation' })
+              .getByRole('link', { name: 'Home' }),
+          ],
+  },
+  {
+    id: 'administrator-login',
+    path: '/administrator/login',
+    criticalControls: (page: Page): Locator[] => [
+      page.getByLabel('Email address'),
+      page.getByLabel('Password'),
+      page.getByRole('button', { name: 'Sign in to Kumwe' }),
+    ],
+  },
+  {
+    id: 'portal-login',
+    path: '/portal/login',
+    criticalControls: (page: Page): Locator[] => [
+      page.getByLabel('Email address'),
+      page.getByLabel('Password'),
+      page.getByRole('button', { name: 'Sign in' }),
+    ],
+  },
 ] as const;
 
 /** Locales this suite knows to be written from the right, keyed by the subtag a project name carries. */
@@ -57,7 +92,7 @@ async function open(page: Page, path: string, locale: string): Promise<void> {
 
 test.describe('Right-to-left presentation', () => {
   for (const surface of surfaces) {
-    test(`${surface.id} renders right-to-left`, async ({ page }, testInfo) => {
+    test(`${surface.id} renders right-to-left`, async ({ page, isMobile }, testInfo) => {
       const locale = projectLocale(testInfo.project.name);
       await open(page, surface.path, locale);
 
@@ -65,7 +100,21 @@ test.describe('Right-to-left presentation', () => {
       await expect(root).toHaveAttribute('dir', 'rtl');
       await expect(root).toHaveAttribute('lang', locale);
 
-      await expectNoDocumentOverflow(page);
+      const report = await expectNoDocumentOverflow(page);
+      const overlaps = report.findings.filter((finding) => finding.kind === 'control-overlap');
+      expect(overlaps, JSON.stringify(overlaps, null, 2)).toEqual([]);
+
+      // The pixel baseline is compared before any control is focused, so a focus ring cannot enter
+      // the evidence; the comparison is against this project's own committed right-to-left baseline.
+      await expect(page).toHaveScreenshot(`${surface.id}.png`, { fullPage: true });
+
+      // Zero inaccessible critical control: every control a visitor needs on this surface remains
+      // visible and reachable by keyboard after the mirroring.
+      for (const control of surface.criticalControls(page, isMobile)) {
+        await expect(control).toBeVisible();
+        await control.focus();
+        await expect(control).toBeFocused();
+      }
     });
   }
 
