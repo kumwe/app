@@ -94,6 +94,12 @@ jobs:
         with:
           node-version: '22.12.0'
 
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
       - name: Install locked application dependencies
         run: |
           composer install --no-interaction --prefer-dist
