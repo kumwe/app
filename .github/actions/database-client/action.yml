@@ -7,21 +7,57 @@ inputs:
 runs:
   using: composite
   steps:
+    # The runner resolves apt through a mirror list whose primary has stalled mid-fetch for a
+    # quarter of an hour while the canonical archive answered instantly, so every apt path below
+    # first points the list at the canonical archive and then runs in bounded, announced attempts:
+    # a sick host costs minutes and says so instead of consuming the job. jq ships on the runner
+    # image and is not installed here.
+    - name: Prefer the canonical archive over the runner's mirror
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -f /etc/apt/apt-mirrors.txt ]; then
+          sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' \
+            /etc/apt/apt-mirrors.txt
+        fi
+
     - name: Install MariaDB client
       if: inputs.driver == 'mariadb'
       shell: bash
       run: |
         set -euo pipefail
-        sudo apt-get update
-        sudo apt-get install --yes jq mariadb-client
+        for attempt in 1 2 3; do
+          if timeout 240 sudo apt-get update \
+            && timeout 240 sudo apt-get install --yes --no-install-recommends mariadb-client; then
+            exit 0
+          fi
+          echo "MariaDB client install attempt ${attempt} failed or stalled; retrying." >&2
+          sleep $(( 10 * attempt ))
+        done
+        echo 'The MariaDB client could not be installed after three bounded attempts.' >&2
+        exit 1
 
-    - name: Install MySQL client
+    - name: Use the preinstalled MySQL client
       if: inputs.driver == 'mysql'
       shell: bash
       run: |
         set -euo pipefail
-        sudo apt-get update
-        sudo apt-get install --yes jq mysql-client-8.0
+        # The runner image ships MySQL 8.0 with its client binaries; install only if a future
+        # image stops carrying them.
+        if command -v mysql >/dev/null && command -v mysqldump >/dev/null; then
+          mysql --version
+          exit 0
+        fi
+        for attempt in 1 2 3; do
+          if timeout 240 sudo apt-get update \
+            && timeout 240 sudo apt-get install --yes --no-install-recommends mysql-client-8.0; then
+            exit 0
+          fi
+          echo "MySQL client install attempt ${attempt} failed or stalled; retrying." >&2
+          sleep $(( 10 * attempt ))
+        done
+        echo 'The MySQL client could not be installed after three bounded attempts.' >&2
+        exit 1
 
     - name: Install verified PostgreSQL 17 client
       if: inputs.driver == 'pgsql'
@@ -42,6 +78,14 @@ runs:
         printf 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt %s-pgdg main\n' \
           "$VERSION_CODENAME" \
           | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
-        sudo apt-get update
-        sudo apt-get install --yes jq postgresql-client-17
-        echo '/usr/lib/postgresql/17/bin' >> "$GITHUB_PATH"
+        for attempt in 1 2 3; do
+          if timeout 240 sudo apt-get update \
+            && timeout 240 sudo apt-get install --yes --no-install-recommends postgresql-client-17; then
+            echo '/usr/lib/postgresql/17/bin' >> "$GITHUB_PATH"
+            exit 0
+          fi
+          echo "PostgreSQL client install attempt ${attempt} failed or stalled; retrying." >&2
+          sleep $(( 10 * attempt ))
+        done
+        echo 'The PostgreSQL client could not be installed after three bounded attempts.' >&2
+        exit 1
