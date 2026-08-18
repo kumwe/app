@@ -172,6 +172,18 @@ final readonly class BusinessDefinitionValidator
                     $ownershipEdges[$definition->handle][] = $target->handle;
                     $this->validateLineAggregations($definition, $relationship, $target);
                 }
+                if ($relationship->kind === RelationshipKind::Reversal) {
+                    if ($relationship->target !== $definition->handle) {
+                        throw new InvalidBusinessDefinition(
+                            'A reversal relationship must target a record of its own definition.',
+                        );
+                    }
+                    if ($relationship->onDelete !== DeleteBehavior::Restrict) {
+                        throw new InvalidBusinessDefinition(
+                            'A reversal relationship must restrict deletion of the record it reverses.',
+                        );
+                    }
+                }
                 if (
                     $relationship->onDelete === DeleteBehavior::Cascade
                     && $relationship->kind !== RelationshipKind::OwnedLineCollection
@@ -331,10 +343,11 @@ final readonly class BusinessDefinitionValidator
     /**
      * Decide whether two relationship declarations are cardinality-compatible as each other's inverse.
      *
-     * Each kind admits exactly one partner: one-to-one pairs with one-to-one, many-to-one with one-to-many
-     * and the reverse, and many-to-many with many-to-many, where the two sides must additionally agree on
-     * whether members are ordered. An owned line collection never pairs, on either side, because its lines
-     * belong to their owner rather than standing as an entity that declares a relationship back.
+     * Each kind admits a closed partner set: one-to-one pairs with one-to-one, many-to-one and reversal
+     * each pair with one-to-many — which therefore accepts either of them back — and many-to-many with
+     * many-to-many, where the two sides must additionally agree on whether members are ordered. An owned
+     * line collection never pairs, on either side, because its lines belong to their owner rather than
+     * standing as an entity that declares a relationship back.
      *
      * @param   RelationshipDefinition  $relationship  Side being checked, as its own entity declared it.
      * @param   RelationshipDefinition  $inverse       Relationship the target entity declares back at it.
@@ -354,16 +367,19 @@ final readonly class BusinessDefinitionValidator
             return false;
         }
         if ($relationship->kind === RelationshipKind::OneToOne) {
-            $expected = RelationshipKind::OneToOne;
-        } elseif ($relationship->kind === RelationshipKind::ManyToOne) {
-            $expected = RelationshipKind::OneToMany;
+            $expected = [RelationshipKind::OneToOne];
+        } elseif (
+            $relationship->kind === RelationshipKind::ManyToOne
+            || $relationship->kind === RelationshipKind::Reversal
+        ) {
+            $expected = [RelationshipKind::OneToMany];
         } elseif ($relationship->kind === RelationshipKind::OneToMany) {
-            $expected = RelationshipKind::ManyToOne;
+            $expected = [RelationshipKind::ManyToOne, RelationshipKind::Reversal];
         } else {
-            $expected = RelationshipKind::ManyToMany;
+            $expected = [RelationshipKind::ManyToMany];
         }
 
-        return $inverse->kind === $expected
+        return in_array($inverse->kind, $expected, true)
             && ($relationship->kind !== RelationshipKind::ManyToMany
                 || $relationship->ordered === $inverse->ordered);
     }

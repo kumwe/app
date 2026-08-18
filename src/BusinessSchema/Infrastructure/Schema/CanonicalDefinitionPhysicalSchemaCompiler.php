@@ -106,7 +106,11 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             $target = $this->targetFor($definition, $site, $relationship->target);
             if (
                 !$this->materializes($definition, $target, $relationship)
-                || in_array($relationship->kind, [RelationshipKind::OneToOne, RelationshipKind::ManyToOne], true)
+                || in_array($relationship->kind, [
+                    RelationshipKind::OneToOne,
+                    RelationshipKind::ManyToOne,
+                    RelationshipKind::Reversal,
+                ], true)
             ) {
                 continue;
             }
@@ -246,7 +250,11 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             $target = $this->targetFor($definition, $site, $relationship->target);
             if (
                 !$this->materializes($definition, $target, $relationship)
-                || !in_array($relationship->kind, [RelationshipKind::OneToOne, RelationshipKind::ManyToOne], true)
+                || !in_array($relationship->kind, [
+                    RelationshipKind::OneToOne,
+                    RelationshipKind::ManyToOne,
+                    RelationshipKind::Reversal,
+                ], true)
             ) {
                 continue;
             }
@@ -1109,8 +1117,9 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
      *
      * A relationship declared without an inverse, and an owned line collection, always materializes. Where
      * two sides name each other only one may carry the storage, or the pair would install twice: the
-     * many-to-one side wins over its one-to-many partner, and any other pairing is settled by comparing
-     * each side's `entity#relationship` handles, so both definitions reach the same verdict independently.
+     * many-to-one and reversal sides win over their one-to-many partner, and any other pairing is settled
+     * by comparing each side's `entity#relationship` handles, so both definitions reach the same verdict
+     * independently.
      *
      * @param   EntityTypeDefinition    $source        Definition being compiled.
      * @param   EntityTypeDefinition    $target        Definition on the other side, searched for the
@@ -1144,14 +1153,14 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             throw new InvalidBusinessSchema('A compiled relationship inverse is unavailable.');
         }
         if (
-            $relationship->kind === RelationshipKind::ManyToOne
+            in_array($relationship->kind, [RelationshipKind::ManyToOne, RelationshipKind::Reversal], true)
             && $inverse->kind === RelationshipKind::OneToMany
         ) {
             return true;
         }
         if (
             $relationship->kind === RelationshipKind::OneToMany
-            && $inverse->kind === RelationshipKind::ManyToOne
+            && in_array($inverse->kind, [RelationshipKind::ManyToOne, RelationshipKind::Reversal], true)
         ) {
             return false;
         }

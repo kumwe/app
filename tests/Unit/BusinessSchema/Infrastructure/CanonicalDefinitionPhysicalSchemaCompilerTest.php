@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\BusinessSchema\Infrastructure;
 
+use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\CMS\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\CMS\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalNameCompiler;
@@ -155,13 +160,133 @@ final class CanonicalDefinitionPhysicalSchemaCompilerTest extends TestCase
         self::assertSame(['source_id'], $indexes[0]->columns);
     }
 
-    private function compiler(): CanonicalDefinitionPhysicalSchemaCompiler
+    /**
+     * Proves a reversal link compiles to a restricted target column on the correcting record's own table.
+     *
+     * The reversal side stores exactly as a many-to-one: one column, one supporting index, one RESTRICT
+     * foreign key onto its own record table — so the record a correction names can never be deleted out
+     * from under it by the storage engine, and no junction table is invented for either side.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAReversalCompilesToARestrictedSelfTargetColumn(): void
     {
+        $definition = self::reversalDefinition();
+        $blueprint = $this->compiler($definition)->compile($definition, SiteContext::fromString('default'));
+        $record = $blueprint->table('record');
+
+        self::assertNotNull($record);
+        $column = $record->column('relation:reverses.target_id');
+        self::assertNotNull($column, 'The reversal side carries the storage, as a many-to-one would.');
+        self::assertTrue($column->nullable, 'An ordinary record reverses nothing.');
+        $foreignKey = null;
+        foreach ($record->foreignKeys() as $candidate) {
+            if ($candidate->logicalName === 'relation.reverses') {
+                $foreignKey = $candidate;
+            }
+        }
+        self::assertNotNull($foreignKey);
+        self::assertSame($record->physicalName, $foreignKey->foreignTable, 'A reversal points at its own table.');
+        self::assertSame('RESTRICT', $foreignKey->onDelete);
+        self::assertNull(
+            $record->column('relation:reversed_by.target_id'),
+            'The one-to-many inverse reads the reversal column and stores nothing of its own.',
+        );
+        self::assertCount(
+            1,
+            $blueprint->tables(),
+            'Neither side of the reversal pair may emit a junction table.',
+        );
+    }
+
+    /**
+     * Build a compiler able to resolve the given definitions as published targets.
+     *
+     * @param   EntityTypeDefinition  $targets  Definitions the stubbed repository resolves by handle.
+     *
+     * @return  CanonicalDefinitionPhysicalSchemaCompiler  Compiler over the stubbed catalog.
+     *
+     * @since   2.0.0
+     */
+    private function compiler(EntityTypeDefinition ...$targets): CanonicalDefinitionPhysicalSchemaCompiler
+    {
+        $repository = $this->createStub(BusinessDefinitionRepository::class);
+        if ($targets !== []) {
+            $entries = [];
+            $versions = [];
+            $publishedAt = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
+            foreach ($targets as $definition) {
+                $entries[$definition->handle] = new DefinitionCatalogEntry(
+                    $definition->id,
+                    $definition->siteIdentifier,
+                    $definition->handle,
+                    $definition->owner,
+                    true,
+                    0,
+                    $definition->definitionVersion,
+                    DefinitionStatus::Published,
+                    $publishedAt,
+                );
+                $versions[$definition->handle] = new DefinitionVersionRecord(
+                    $definition,
+                    new CompatibilityPlan(null, 1, null, $definition->checksum(), []),
+                    DefinitionStatus::Published,
+                    '00000000-0000-7000-8000-000000000001',
+                    $publishedAt,
+                );
+            }
+            $repository->method('entry')->willReturnCallback(
+                static fn (SiteContext $site, string $identifier): ?DefinitionCatalogEntry =>
+                    $entries[$identifier] ?? null,
+            );
+            $repository->method('published')->willReturnCallback(
+                static fn (SiteContext $site, string $identifier, ?int $version = null): ?DefinitionVersionRecord =>
+                    $versions[$identifier] ?? null,
+            );
+        }
+
         return new CanonicalDefinitionPhysicalSchemaCompiler(
-            $this->createStub(BusinessDefinitionRepository::class),
+            $repository,
             new FieldTypeRegistry(),
             new PhysicalNameCompiler('kumwe_'),
         );
+    }
+
+    /**
+     * The neutral asset definition extended with a reciprocal same-definition reversal pair.
+     *
+     * @return  EntityTypeDefinition  Published definition declaring `reverses` and `reversed_by`.
+     *
+     * @since   2.0.0
+     */
+    private static function reversalDefinition(): EntityTypeDefinition
+    {
+        $document = self::document(
+            '018f4f24-98d8-7ad4-8f3f-38c909178b6b',
+            'site.default.asset',
+        );
+        $document['relationships'] = [
+            [
+                'handle' => 'reverses',
+                'label' => 'Reverses',
+                'kind' => 'reversal',
+                'target' => 'site.default.asset',
+                'inverse' => 'reversed_by',
+                'on_delete' => 'restrict',
+            ],
+            [
+                'handle' => 'reversed_by',
+                'label' => 'Reversed by',
+                'kind' => 'one_to_many',
+                'target' => 'site.default.asset',
+                'inverse' => 'reverses',
+                'on_delete' => 'restrict',
+            ],
+        ];
+
+        return EntityTypeDefinition::fromArray($document);
     }
 
     /** @return array<string, mixed> */

@@ -11,6 +11,7 @@ use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordImmutable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
@@ -255,6 +256,13 @@ final readonly class BusinessRecordApiResponder
                 'Precondition Failed',
                 'The supplied record version is no longer current.',
                 'urn:kumwe:problem:precondition-failed',
+                $instance,
+            ),
+            $exception instanceof BusinessRecordImmutable => $this->problems->create(
+                409,
+                'Business Record Immutable',
+                'The business record is immutable in its current workflow state and is corrected by a linked reversal.',
+                'urn:kumwe:problem:business-record-immutable',
                 $instance,
             ),
             $exception instanceof BusinessRecordUniqueConflict => $this->problems->create(

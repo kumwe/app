@@ -1123,6 +1123,7 @@ final readonly class OpenApiContractCompiler
                     'type' => 'string',
                     'enum' => [
                         'one_to_one', 'many_to_one', 'one_to_many', 'many_to_many', 'owned_line_collection',
+                        'reversal',
                     ],
                 ],
                 'target' => ['type' => 'string', 'maxLength' => 191],

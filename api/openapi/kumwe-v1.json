@@ -1997,7 +1997,8 @@
                             "many_to_one",
                             "one_to_many",
                             "many_to_many",
-                            "owned_line_collection"
+                            "owned_line_collection",
+                            "reversal"
                         ],
                         "type": "string"
                     },

@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordImmutable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
@@ -121,6 +122,27 @@ final class BusinessRecordApiResponderTest extends TestCase
         self::assertSame('urn:kumwe:problem:precondition-failed', $this->body($precondition)['type']);
         self::assertSame(409, $idempotency->getStatusCode());
         self::assertSame('1', $idempotency->getHeaderLine('Retry-After'));
+    }
+
+    /**
+     * Proves an immutable-record refusal is its own stable, non-retryable conflict problem.
+     *
+     * The refusal is not a policy denial and must not read as one: the caller may be fully authorized,
+     * the document is simply closed, so the surface answers with a named 409 whose type a client can
+     * branch on to offer the reversal path instead of a retry.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMapsAnImmutableRecordRefusalToItsOwnStableConflict(): void
+    {
+        $response = $this->responder()->problem(new BusinessRecordImmutable('approved'), self::INSTANCE);
+
+        self::assertSame(409, $response->getStatusCode());
+        self::assertSame('urn:kumwe:problem:business-record-immutable', $this->body($response)['type']);
+        self::assertSame('', $response->getHeaderLine('Retry-After'), 'A closed document does not reopen on retry.');
+        self::assertStringNotContainsString('approved', (string) json_encode($this->body($response)));
     }
 
     /**
