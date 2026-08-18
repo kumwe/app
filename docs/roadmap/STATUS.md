@@ -23,8 +23,8 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | **Current phase** | Phase 0 — Truth, contracts and decisions |
 | **In flight** | Phase 3's business-group ownership model has landed ahead of its phase; `P3-F` is reduced to its three-engine proof. `P3-B` is complete and `P3-A` is reduced to its three-engine proof, so the aggregate command's persistence seams now point inward. Phase 2's gate work is part delivered: `P2-A` complete, `P2-C`'s semantic checker complete, `P2-G`'s deployed-artifact lane complete. Phase 0 work packages remain unassigned. |
 | **Next** | `P0-A` reproducible baseline, `P0-B` claim ledger, `P0-C` public contract classification and compatibility fixtures. These three are independent and may run in parallel. `P0-E` architecture and security decisions follows them, because several decisions depend on what the inventories find. |
-| **Open decisions** | Two ledger entries are `decision_required`. `V2-POS-002` is the one product-owner decision: whether a disconnected terminal receives its document number at synchronisation time or from a per-terminal reserved block. `V2-ERP-006` is the separate architecture decision for role-specific dashboard composition in `P0-E`. The first is the whole of what `PE-G` and Gate A criterion 11 are waiting on. |
-| **Gate A** | Not started. 13 exit criteria, 5 met; criterion 13 is the composition contribution contract added by decision D16; criterion 7's ownership model is built and owes only its three-engine proof, and criterion 12 is now assessable rather than unassessed. |
+| **Open decisions** | None in `decision_required`. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
+| **Gate A** | Not started. 13 exit criteria, 9 met; criterion 13 is the composition contribution contract added by decision D16. The enterprise document primitives, the offline-numbering decision, the three-engine seam and ownership proofs and the PostgreSQL index isolation all landed in the ERP-primitives wave. |
 | **Gate B** | Not started. Blocked on Gate A. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
 
 ## Phase board
@@ -36,7 +36,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | 2 — Truthful gates | A | In progress — one quality contract, semantic dependency checking and the deployed-artifact lane are delivered | Phase 0 decisions 1, 7, 8 |
 | 3 — Seams and the ownership model | A | In progress — the business-group ownership model and the inward persistence seams have landed; `P3-A` and `P3-F` now only owe their three-engine proofs | Phases 1 and 2 |
 | 4 — Atomic aggregate documents | A | Not started | Phase 3; phase 0 decision 2 |
-| E — Enterprise document primitives | A | In progress — `PE-A`, `PE-B` and `PE-G` delivered | Phase 3; phase 0 decisions 9 and 12, including the `V2-POS-002` choice. `PE-F` cannot run beside `P4-C` — both own numbering. |
+| E — Enterprise document primitives | A | In progress — `PE-A`, `PE-B`, `PE-C`, `PE-D`, `PE-E`, `PE-F` and `PE-G` delivered | Phase 3. The `V2-POS-002` choice is decided and implemented (ADR 0008). |
 | L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A` and `PL-B` delivered, `PL-C`, `PL-E` and `PL-F` part delivered | `PL-F`'s screenshots and `PL-G` need phase 2's `P2-E` matrix; the language axis they run on is built. Otherwise parallel to 3, 4 and E. |
 | **Gate A** | | **Not assessed** | **Phases 4, E and L, and phase S's Gate A half** |
 | 5 — Enterprise scale | B | Not started | Gate A |
@@ -53,17 +53,17 @@ table when it completes, in the same change that writes it into the changelog.
 
 | Phase | Packages | Findings |
 |---|---|---|
-| 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-ERP-007`, `V2-POS-002` |
+| 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-ERP-007` |
 | 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
-| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-DB-001`, `V2-DB-004`, `V2-REL-001`, `GM-SUP-09` |
+| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-001`, `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-009`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
 | 3 | `P3-A`, `P3-C` … `P3-F` (`P3-B` complete) | — |
 | 4 | `P4-A` … `P4-D` | — |
-| E | `PE-D`, `PE-E`, `PE-F` (`PE-A`, `PE-B`, `PE-C` and `PE-G` complete) | `V2-ERP-002`, `V2-ERP-003`, `V2-ERP-005` |
+| E | All packages complete (`PE-A` … `PE-G`) | `V2-ERP-008`, `V2-ERP-009` |
 | L | `PL-C`, `PL-D`, `PL-E`, `PL-F`, `PL-G` (`PL-A` and `PL-B` complete) | `V2-LNG-001`, `V2-LNG-007` – `V2-LNG-010`, `V2-LNG-012` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
 | S | `S-A` (Gate A), `S-B` … `S-G` | `V2-STU-001` – `V2-STU-007` |
-| 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05` |
+| 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
 | M | Lane M, no packages assigned yet | `V2-ARC-002` |
 
 ## Decisions
@@ -92,15 +92,15 @@ Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full 
 
 ## Ledger snapshot
 
-**51 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**52 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 19 |
-| `reproduced` | 7 |
-| `open` | 15 |
+| `accepted_for_implementation` | 15 |
+| `reproduced` | 9 |
+| `open` | 19 |
 | `conditional` | 6 |
-| `decision_required` | 1 |
+| `decision_required` | 0 |
 | `in_progress` | 3 |
 | `verified` | 0 |
 | `external` | 0 |
@@ -108,28 +108,28 @@ Sixteen, all recorded in [`README.md`](README.md) section 2. Seven carry a full 
 
 | Phase | Findings |
 |---|---|
-| 0 | 3 |
+| 0 | 2 |
 | 1 | 0 |
-| 2 | 6 |
+| 2 | 8 |
 | 3 | 0 |
 | 4 | 0 |
-| E | 3 |
+| E | 2 |
 | L | 6 |
 | 5 | 7 |
 | 6 | 7 |
-| 7 | 10 |
+| 7 | 11 |
 | S | 7 |
 | M | 1 |
 | evidence (`GM-AUD-02`, conditional residual) | 1 |
 
 | Gate | Findings |
 |---|---|
-| A | 15 |
+| A | 10 |
 | B | 22 |
-| none | 14 |
+| none | 20 |
 
-By severity: 0 critical, 25 high, 19 medium, 7 low.
-By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 24 discovered
+By severity: 0 critical, 24 high, 20 medium, 8 low.
+By origin: 15 from the independent review, 12 still-open entries from the executed gap matrix, 25 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14
 and D16.
 
@@ -141,7 +141,7 @@ that closed it. Further findings have left since, including the machine surface'
 taxonomy,
 the MySQL/MariaDB schema-global foreign-key names, the extension trust posture, the root locale-addressing
 defect and the unreachable catalogue-refusal seam. Their completed substance is recorded in the changelog.
-PostgreSQL's separate schema-global non-primary-index namespace remains open as `V2-DB-004`.
+PostgreSQL's separate schema-global non-primary-index namespace is closed: migration `20260823010000` renames every literal non-primary index to the digest derivation, proven by installing two complete prefixed core plans into one PostgreSQL schema.
 
 ## Gate A criteria
 
@@ -151,13 +151,13 @@ PostgreSQL's separate schema-global non-primary-index namespace remains open as 
 | 2 | Atomic aggregate command exists and matches the recorded shape | Yes | Recorded in [`CHANGELOG.md`](../../CHANGELOG.md); [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) |
 | 3 | Data-entry integrity holds on all three browser surfaces | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
 | 4 | Correctness and security contradictions fixed | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
-| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute and delegates specially provisioned checks to their named jobs; semantic dependency checking handles mixed grouped imports against a shrinking baseline; supplied idempotency evidence must cover every declared pass and agree with independent collection and runner status; changelog citations must resolve in current history; the deployed-artifact lane reproduces all four production-only defects; and the browser matrix runs its locale projects only where their locale contract is defined. Outstanding: behavioural coverage attribution, the recorded non-idempotent tests, one measured run of the corrected class-order pass, the remaining nightly browser dimensions, and schema-wide proof that two complete prefixed core plans keep every PostgreSQL non-primary index name and shape isolated | `V2-QA-001`, `V2-QA-004`, `V2-DB-001`, `V2-DB-004` |
-| 6 | Aggregate seams are clean | Partly — the transaction abstraction is inward and the automation Doctrine adapters sit in Infrastructure behind ports, both now enforced by the architecture gate and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); `P3-C`'s delivery and presentation leakage and `P3-A`'s three-engine transaction proof remain | — |
-| 7 | Business-group ownership model in place | Built; owes the three-engine proof in `P3-F` | — |
-| 8 | Enterprise document primitives exist and are enforced | Partly — the aggregate invariant and unit-conversion contract are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); correction, period close and sequence scoping remain | `V2-ERP-002`, `V2-ERP-003`, `V2-ERP-005` |
+| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute and delegates specially provisioned checks to their named jobs; semantic dependency checking handles mixed grouped imports against a shrinking baseline; supplied idempotency evidence must cover every declared pass and agree with independent collection and runner status; changelog citations must resolve in current history; the deployed-artifact lane reproduces all four production-only defects; and the browser matrix runs its locale projects only where their locale contract is defined. Outstanding: behavioural coverage attribution, the reverse-order pass enforced in CI beside the repeat pass (its first corrected run is green and the record is empty), the remaining nightly browser dimensions, the pdo_pgsql stale-result anomaly and the fixture-accumulation ceiling it exposed, and the getenv configuration sweep | `V2-QA-001`, `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-009`, `V2-DB-001` |
+| 6 | Aggregate seams are clean | Partly — the transaction abstraction is inward and the automation Doctrine adapters sit in Infrastructure behind ports, both now enforced by the architecture gate and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); `P3-A`'s three-engine transaction proof is delivered — commit ordering, rollback residue, exception translation, retryable contention, nested semantics and audit-and-outbox atomicity proven on the engine matrix; `P3-C`'s delivery and presentation leakage remains | — |
+| 7 | Business-group ownership model in place | Yes — the three-engine proof landed with the ERP-primitives wave, demand by demand against the four-business installation, and it caught and fixed a real PostgreSQL narrowing crash | — |
+| 8 | Enterprise document primitives exist and are enforced | Yes — immutable correction by linked reversal, the posting-period lock, the proven counter identity with its fiscal-period reset, the aggregate invariant and the unit-conversion contract are all delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); two follow-up findings cover the owning-site counter coordinate and the set-null sweep | — |
 | 9 | Multi-currency contract holds, with conversion provenance everywhere | Yes — contract, port, pipeline, reports, exports and the rendering half all delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | — |
 | 10 | Language contract and machinery in place, `en-GB` extracted | Partly — locale negotiation, the identifier grammar, the compiled catalogue, ICU validation and formatting, transactional and markup-safe administered overrides, organization-aware scope, locale-bearing public delivery, localized generated definition surfaces and the extension catalogue path are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md). Extension translation-set declarations still need a frozen item-association contract | `V2-LNG-001`, `V2-LNG-007`, `V2-LNG-008`, `V2-LNG-009`, `V2-LNG-012` |
-| 11 | Point of sale not foreclosed | Partly — the replay window, the client-asserted instant, late arrival and the deferrable-validation split are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | `V2-POS-002`, which is the product owner's decision |
+| 11 | Point of sale not foreclosed | Yes — the replay window, the client-asserted instant, late arrival, the deferrable-validation split and now the synchronisation-time numbering decision ([ADR 0008](decisions/0008-numbering-under-disconnection.md)) with its client-reference uniqueness are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | — |
 | 12 | Nothing regressed on three engines | Assessable, and assessed on every merge run. `regression_matrix` in [`docs/quality/contract.json`](../quality/contract.json) names the three engines, the four suites and the commands, and `composer quality:contract` fails when the merge workflow stops running the complete suite on any of them. Assessing the criterion is now reading a run rather than inspecting a workflow; it is asserted at a commit when that run is green and the commit is recorded here | — |
 | 13 | Composition contribution contract frozen with a passing compatibility fixture | No | `V2-STU-001` |
 

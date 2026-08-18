@@ -23,6 +23,53 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **An approved document can no longer be edited — it is corrected by a linked reversal.** A workflow
+  binding may declare `immutable_states`; entering one closes the record, and every mutation of its fields
+  and owned lines refuses on every surface with the stable error `business_record.immutable` and its own
+  409 problem type, while workflow transitions still move the state machine. Correction is a new record of
+  the same definition carrying the typed `reversal` relationship to the one it corrects, committing through
+  the existing aggregate document command with its own approval path; the original is never rewritten and
+  never suppressed, and both directions of the link are declared queries. An architecture test enumerates
+  every write site in `BusinessRecordService` and fails the build on an unclassified new one, so a future
+  write path cannot bypass the rule. Definitions that declare nothing are untouched. Implements
+  [ADR 0003](docs/roadmap/decisions/0003-immutable-correction-by-reversal.md). Closes `V2-ERP-005`. (#90)
+- **A declarative posting-period lock, with no fiscal calendar in core.** A definition names which of its
+  date fields is the posting date; closed ranges per site (with optional organization scope, the narrower
+  winning) refuse every mutation of a record dated inside them — including creation, so backdating by
+  omission is closed — with the stable error `business_record.posting_period_closed` and its own problem
+  type, evaluated before the mutation fence so the refusal costs no lock. What a period is, when it closes,
+  who closes it and what re-opening means stay with the extension, expressed through capability-gated,
+  audited close and re-open commands on the console and the management API. Pure workflow transitions stay
+  open on closed-period records, custom actions are guarded, and a correction issued after its original's
+  period closed succeeds because of its date in an open period — neither primitive special-cases the other,
+  and a test proves it. Closes `V2-ERP-003`. (#90)
+- **The number-sequence identity proven, policed at publication, and given a fiscal-period reset.** The
+  counter identity was already the five coordinates site, definition, field, scope key and period key —
+  document type and legal entity included — so instead of widening it, the wave proves each coordinate
+  isolates its own contiguous run, certifies with the sequence-identity migration that every existing counter
+  maps forward identity-intact while any malformed row fails the upgrade loudly, and refuses at publication
+  the per-organization sequence on a definition with no organization dimension that previously published
+  and then threw on first create. The reset vocabulary gains `fiscal-period`: the period key becomes the
+  stable key of the declared posting period containing the record's posting date, resolved through the
+  period calendar; a fiscal reset without a posting-date declaration refuses at publication, and a posting
+  date no declared period contains refuses at allocation with `business_record.posting_period_undeclared`
+  and no number burned. The existing gapless concurrency tests ran unmodified. Closes `V2-ERP-002`. (#90)
+- **Numbering under disconnection is decided and implemented: allocation at synchronisation time.**
+  [ADR 0008](docs/roadmap/decisions/0008-numbering-under-disconnection.md) records the product owner's
+  choice and rejects per-terminal reserved blocks because they forfeit the shipped gapless guarantee. An
+  offline terminal carries its client reference — an ordinary unique, immutable-after-create declared
+  field — and the human document number is allocated by the receiving command at synchronisation time by
+  the unchanged allocator. A duplicate sync refuses with the unique conflict and burns no number; the next
+  document still takes the next contiguous value. Closes `V2-POS-002`. (#90)
+- **The integration suite's idempotency record is empty, and the reverse-order pass has finally run.** The
+  six recorded non-idempotent tests are fixed at their demonstrated mechanisms — fixed idempotency keys and
+  fixed definition identities now minted per run, and the Redis outage drill scoped to the installation's
+  own namespace and rolled back — so the repeat pass is judged against an empty record, and anything new
+  fails as new. The corrected reverse-order pass, never before executed in a form that measured the stated
+  property, ran green: the full integration suite in reversed class order against the emptied record.
+  Shrinks `V2-QA-004` to enforcing the reverse pass in CI on all three engines. (#90)
+
+
 - **The administrator and portal home pages are now access-aware dashboards instead of fixed content
   pages.** One `DashboardComposer` projects the navigation that the existing contribution registries have
   already filtered for owner, extension trust and lifecycle, delivery area and actor capability into
@@ -956,6 +1003,27 @@ development programme, from the architecture decision that opened it to the curr
   and export payloads are unchanged. (`72cc3e6`)
 
 ### Fixed
+
+- **Every non-primary index name a second prefixed installation could collide with is isolated on
+  PostgreSQL.** Index names there are schema-global, and the shipped self-checksumming migrations create
+  around a hundred and ten literals, so a second prefixed core plan entering an occupied schema failed at
+  `CREATE UNIQUE INDEX`. The index-isolation migration renames what they created to the published
+  stem-plus-digest derivation — the shipped bytes stay immutable, already-unique names are left alone, and
+  the rename is a no-op where names are table-scoped. An integration test installs two complete prefixed
+  core schemas into one PostgreSQL schema and proves every non-primary index isolated. Closes `V2-DB-004`. (#90)
+- **The nightly's migration test no longer gambles on suite order.** Its upgrade-path epoch claim looked
+  the legacy administrator up by email, and the harness re-bootstraps an administrator under the same email
+  when mid-suite authentication fails, so whichever order let a destructive test run first failed the claim
+  against a legitimately fresh user. The claim is now addressed to the seeded row's fixed identifier. The
+  same file's scratch-schema prefixes came from a UUIDv7's leading characters — timestamp bits identical
+  for about sixty-five seconds — and now come from random bytes, so quick re-runs stop colliding with their
+  predecessor's leftovers. (#90)
+- **CI stopped failing on other people's infrastructure.** Every installing workflow now restores a
+  Composer download cache keyed on the lock file, after a lane died mid-install on a rate-limited archive
+  host; the development image's sources are pinned by digest — the last mutable tags in the repository —
+  and the compose lane builds the image explicitly with backed-off retries, after a lane died on a registry
+  gateway error. (#90)
+
 
 - **A caught nested transaction failure can no longer commit the enclosing transaction.** Only the outermost
   application scope now opens the physical DBAL transaction; inner scopes join it and retain the first failure as
