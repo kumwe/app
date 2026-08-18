@@ -180,6 +180,8 @@ final class TestKernelFactory
     private static function output(): Output
     {
         return new class implements Output {
+            use TranslatesConsoleOutput;
+
             public function line(string $message): void
             {
             }

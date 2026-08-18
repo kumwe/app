@@ -59,7 +59,7 @@ final readonly class ListExtensionsCommand implements Command
      */
     public function description(): string
     {
-        return 'List installed extensions, versions and runtime status.';
+        return 'core.console.extension_list.description';
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
@@ -245,6 +246,8 @@ final class DrainHandler implements JobHandler
 
 final class DrainOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /** @var list<string> */
     public array $lines = [];
     /** @var list<string> */

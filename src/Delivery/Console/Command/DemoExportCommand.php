@@ -71,7 +71,7 @@ final readonly class DemoExportCommand implements Command
      */
     public function description(): string
     {
-        return 'Export the running site into an installable demo-profile package with integrity checksums.';
+        return 'core.console.demo_export_profile.description';
     }
 
     /**
@@ -124,21 +124,21 @@ final readonly class DemoExportCommand implements Command
             $verified = $catalog->content($profile);
             $content = $manifest['content'];
             $menus = $manifest['menus'];
-            $output->line(sprintf(
-                'Exported %d content entries and %d menus as profile %s.',
-                is_array($content) ? count($content) : 0,
-                is_array($menus) ? count($menus) : 0,
-                $profile,
-            ));
+            $output->message('core.console.demo_export_profile.exported_content_entries_and_menus_as', [
+                'is_array' => is_array($content) ? count($content) : 0,
+                'is_array2' => is_array($menus) ? count($menus) : 0,
+                'profile' => $profile,
+            ]);
             $this->reportBusiness($output, $catalog, $profile, $business, $exportsBusiness);
             foreach ($checksums as $relative => $checksum) {
                 $output->line(sprintf('%s %s', $checksum, $relative));
             }
-            $output->line(sprintf('Catalog re-validation checksum %s.', $verified['checksum']));
-            $output->line(sprintf(
-                'Copy %s/resources/demo over an installation\'s resources/demo to make it selectable.',
-                $directory,
-            ));
+            $output->message('core.console.demo_export_profile.catalog_re_validation_checksum', [
+                'verified' => $verified['checksum'],
+            ]);
+            $output->message('core.console.demo_export_profile.copy_resources_demo_over_an_installation', [
+                'directory' => $directory,
+            ]);
 
             return 0;
         } catch (Throwable $exception) {
@@ -177,38 +177,39 @@ final readonly class DemoExportCommand implements Command
         bool $exportsBusiness,
     ): void {
         if (!$exportsBusiness) {
-            $output->line('No published site-owned business definitions; the business dataset was not exported.');
+            $output->message('core.console.demo_export_profile.no_published_site_owned_business_definitions');
 
             return;
         }
         $verified = $catalog->business($profile);
         $expected = $business['records']['expected'] ?? null;
         $counts = is_array($expected) ? $expected : [];
-        $output->line(sprintf(
-            'Exported %d business definitions, %d records, %d relations, %d actions, and %d archives.',
-            count($business['definitions']),
-            $this->count($counts, 'record_count'),
-            $this->count($counts, 'relation_count'),
-            $this->count($counts, 'action_count'),
-            $this->count($counts, 'archive_count'),
-        ));
-        $output->line(sprintf('Business catalog re-validation checksum %s.', $verified['checksum']));
+        $output->message('core.console.demo_export_profile.exported_business_definitions_records_relations', [
+            'count' => count($business['definitions']),
+            'count2' => $this->count($counts, 'record_count'),
+            'count3' => $this->count($counts, 'relation_count'),
+            'count4' => $this->count($counts, 'action_count'),
+            'count5' => $this->count($counts, 'archive_count'),
+        ]);
+        $output->message('core.console.demo_export_profile.business_catalog_re_validation_checksum', [
+            'verified' => $verified['checksum'],
+        ]);
         if ($business['access'] !== []) {
             $access = $catalog->access($profile);
-            $output->line(sprintf(
-                'Exported the demonstration access cast with %d roles, %d staff, and %d organizations.',
-                $this->count($business['access'], 'roles'),
-                $this->count($business['access'], 'staff'),
-                $this->count($business['access'], 'organizations'),
-            ));
-            $output->line(sprintf('Access catalog re-validation checksum %s.', $access['checksum']));
+            $output->message('core.console.demo_export_profile.exported_the_demonstration_access_cast_with', [
+                'count' => $this->count($business['access'], 'roles'),
+                'count2' => $this->count($business['access'], 'staff'),
+                'count3' => $this->count($business['access'], 'organizations'),
+            ]);
+            $output->message('core.console.demo_export_profile.access_catalog_re_validation_checksum', [
+                'access' => $access['checksum'],
+            ]);
         } else {
-            $output->line('No .example identities qualified; access.json was not written.');
+            $output->message('core.console.demo_export_profile.no_example_identities_qualified_access_json');
         }
-        $output->line(sprintf(
-            'Withheld %d identities outside the reserved .example zone.',
-            $business['withheld_identities'],
-        ));
+        $output->message('core.console.demo_export_profile.withheld_identities_outside_the_reserved_example', [
+            'business' => $business['withheld_identities'],
+        ]);
     }
 
     /**

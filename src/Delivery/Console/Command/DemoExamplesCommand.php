@@ -77,7 +77,7 @@ final readonly class DemoExamplesCommand implements Command
      */
     public function description(): string
     {
-        return 'Install and activate the shipped example extensions through the signed pipeline.';
+        return 'core.console.demo_install_examples.description';
     }
 
     /**
@@ -112,9 +112,13 @@ final readonly class DemoExamplesCommand implements Command
             );
             foreach ($selection as $example) {
                 $result = $this->installer->install($context, $example);
-                $verb = $result['installed'] ? 'Installed' : ($result['activated'] ? 'Reactivated' : 'Confirmed');
-                $note = $result['installed'] && !$result['activated'] ? '; selectable, not activated' : '';
-                $output->line(sprintf('%s %s (%s%s).', $verb, $result['identifier'], $example, $note));
+                $output->message('core.console.demo_install_examples.example_outcome', [
+                    'installed' => $result['installed'],
+                    'activated' => $result['activated'],
+                    'selectable' => $result['installed'] && !$result['activated'],
+                    'identifier' => $result['identifier'],
+                    'example' => $example,
+                ]);
                 foreach ($result['contributions'] as $line) {
                     $output->line('  ' . $line);
                 }

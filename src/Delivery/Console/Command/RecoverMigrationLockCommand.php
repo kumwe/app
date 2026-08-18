@@ -60,7 +60,7 @@ final readonly class RecoverMigrationLockCommand implements Command
      */
     public function description(): string
     {
-        return 'CAS-remove one expired legacy migration owner after quiescing every older binary.';
+        return 'core.console.database_recover_lock.description';
     }
 
     /**
@@ -93,15 +93,15 @@ final readonly class RecoverMigrationLockCommand implements Command
             } elseif ($argument === '--confirm-legacy-quiesced') {
                 $confirmed = true;
             } else {
-                $output->error(sprintf('Unknown database:recover-lock argument: %s', $argument));
+                $output->failure('core.console.database_recover_lock.unknown_database_recover_lock_argument', [
+                    'argument' => $argument,
+                ]);
 
                 return 64;
             }
         }
         if (!is_string($expectedOwner) || $expectedOwner === '' || !$confirmed) {
-            $output->error(
-                'Usage: database:recover-lock --expected-owner=<64-hex-token> --confirm-legacy-quiesced',
-            );
+            $output->failure('core.console.database_recover_lock.usage');
 
             return 64;
         }
@@ -111,7 +111,7 @@ final readonly class RecoverMigrationLockCommand implements Command
             $expectedOwner,
             true,
         );
-        $output->line('Expired legacy migration owner removed. Run database:migrate immediately.');
+        $output->message('core.console.database_recover_lock.expired_legacy_migration_owner_removed_run');
 
         return 0;
     }

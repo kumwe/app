@@ -14,10 +14,57 @@ namespace Kumwe\CMS\Delivery\Console;
  * another, which is what lets an operator pipe a command's result somewhere while still seeing why it
  * stopped. Implementations write whole lines and own the line terminator; a command never sends one.
  *
+ * This is also where the translator is bound into the console — once, into the surface every command
+ * already receives, exactly as the Twig environments receive it through one extension. A command
+ * writes user-facing text through `message()` and `failure()` with a stable message identifier, and
+ * composes a longer line through `text()`; the raw `line()` and `error()` methods remain for machine
+ * output — JSON envelopes, identifiers, secrets printed once — which is deliberately not translated.
+ *
  * @since  2.0.0
  */
 interface Output
 {
+    /**
+     * Resolve one catalogue message and write it as a line of ordinary command output.
+     *
+     * @param   string                                                   $identifier  Stable message
+     *          identifier the catalogue carries.
+     * @param   array<string, string|int|float|bool|\DateTimeInterface>  $parameters  Values the ICU
+     *          pattern names, keyed by placeholder name.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function message(string $identifier, array $parameters = []): void;
+
+    /**
+     * Resolve one catalogue message and write it as a line of failure text.
+     *
+     * @param   string                                                   $identifier  Stable message
+     *          identifier the catalogue carries.
+     * @param   array<string, string|int|float|bool|\DateTimeInterface>  $parameters  Values the ICU
+     *          pattern names, keyed by placeholder name.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function failure(string $identifier, array $parameters = []): void;
+
+    /**
+     * Resolve one catalogue message and return it, for composing a longer line.
+     *
+     * @param   string                                                   $identifier  Stable message
+     *          identifier the catalogue carries.
+     * @param   array<string, string|int|float|bool|\DateTimeInterface>  $parameters  Values the ICU
+     *          pattern names, keyed by placeholder name.
+     *
+     * @return  string  The resolved message text.
+     *
+     * @since   2.0.0
+     */
+    public function text(string $identifier, array $parameters = []): string;
     /**
      * Write one line of ordinary command output.
      *

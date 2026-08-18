@@ -52,7 +52,7 @@ final readonly class ManageIntegrationsCommand implements Command
      */
     public function description(): string
     {
-        return 'Inspect durable integrations and authorize projection rebuild, replay, retention, or cancellation.';
+        return 'core.console.integration_manage.description';
     }
 
     /**

@@ -71,7 +71,7 @@ final readonly class CreateAccessTokenCommand implements Command
      */
     public function description(): string
     {
-        return 'Create a scoped API/MCP access token and print it once.';
+        return 'core.console.token_create.description';
     }
 
     /**
@@ -113,9 +113,9 @@ final readonly class CreateAccessTokenCommand implements Command
                 $options['audience'] ?? 'kumwe-http',
                 $options['purpose'] ?? 'api',
             );
-            $output->line('Store this token now; Kumwe will not display it again:');
+            $output->message('core.console.token_create.store_this_token_now_kumwe_will');
             $output->line($created['token']);
-            $output->line(sprintf('Token ID: %s', $created['token_id']));
+            $output->message('core.console.token_create.token_id', ['created' => $created['token_id']]);
 
             return 0;
         } catch (Throwable $exception) {

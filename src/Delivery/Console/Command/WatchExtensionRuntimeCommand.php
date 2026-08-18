@@ -68,7 +68,7 @@ final readonly class WatchExtensionRuntimeCommand implements Command
      */
     public function description(): string
     {
-        return 'Continuously verify authority/artifacts and refresh local runtime readiness.';
+        return 'core.console.extension_runtime_watch.description';
     }
 
     /**

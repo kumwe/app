@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
@@ -482,6 +483,8 @@ final class DemoInstallCommandTest extends TestCase
  */
 final class DemoInstallCommandOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /** @var list<string> */
     public array $lines = [];
 

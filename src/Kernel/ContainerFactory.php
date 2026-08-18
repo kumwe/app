@@ -674,6 +674,7 @@ use Kumwe\CMS\Localization\Application\SupportedLocales;
 use Kumwe\CMS\Localization\Application\Translator;
 use Kumwe\CMS\Localization\Http\Middleware\LocaleNegotiationMiddleware;
 use Kumwe\CMS\Localization\Http\Middleware\TranslationScopeMiddleware;
+use Kumwe\CMS\Localization\Infrastructure\ArrayMessageOverrideRepository;
 use Kumwe\CMS\Localization\Infrastructure\CompiledMessageCatalogueRepository;
 use Kumwe\CMS\Localization\Infrastructure\DoctrineMessageOverrideRepository;
 use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
@@ -5261,7 +5262,18 @@ final class ContainerFactory
             SystemPrincipal::issue($provenance, SystemIdentity::ProfileInstaller),
         ), true);
         $container->alias(DemoProfileReconciler::class, DemoProfileInstaller::class);
-        $container->share(Output::class, static fn (): Output => StreamOutput::standard(), true);
+        // The console's one translator binding: catalogue-backed, without the database-held override
+        // layers, so a recovery command still renders its wording when the database is unreachable.
+        // The console negotiates no locale, so messages resolve at the source locale.
+        $container->share(Output::class, static fn (Container $container): Output => StreamOutput::standard(
+            new CatalogueTranslator(
+                self::service($container, MessageCatalogueRepository::class),
+                new ArrayMessageOverrideRepository(),
+                self::service($container, MessagePatternFormatter::class),
+                self::service($container, ActiveLocale::class),
+                self::service($container, SupportedLocales::class),
+            ),
+        ), true);
         $container->share(MigrateCommand::class, static fn (Container $container): MigrateCommand =>
             new MigrateCommand(
                 self::service($container, MigrationRunner::class),

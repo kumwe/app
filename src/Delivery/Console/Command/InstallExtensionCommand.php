@@ -63,7 +63,7 @@ final readonly class InstallExtensionCommand implements Command
      */
     public function description(): string
     {
-        return 'Verify and install a disabled Kumwe extension ZIP.';
+        return 'core.console.extension_install.description';
     }
 
     /**
@@ -109,12 +109,11 @@ final readonly class InstallExtensionCommand implements Command
             $identifier = $this->resultString($installed, 'identifier');
             $version = $this->resultString($installed, 'installed_version');
             $status = $this->resultString($installed, 'status');
-            $output->line(sprintf(
-                'Installed %s %s (%s).',
-                $identifier,
-                $version,
-                $status,
-            ));
+            $output->message('core.console.extension_install.installed', [
+                'identifier' => $identifier,
+                'version' => $version,
+                'status' => $status,
+            ]);
             foreach ($this->extensions->installed($context) as $row) {
                 if (($row['identifier'] ?? null) !== $identifier) {
                     continue;

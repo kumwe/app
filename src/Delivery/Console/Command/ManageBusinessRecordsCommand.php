@@ -227,7 +227,7 @@ final readonly class ManageBusinessRecordsCommand implements Command
      */
     public function description(): string
     {
-        return 'Discover, query, mutate, relate, request approvals, report, export, and inspect business operations.';
+        return 'core.console.business_record.description';
     }
 
     /**

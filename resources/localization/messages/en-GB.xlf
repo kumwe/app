@@ -14959,4 +14959,774 @@
       </segment>
     </unit>
   </file>
+  <file id="core-console">
+    <unit id="core.console.demo_install_examples.example_outcome">
+      <notes>
+        <note category="context">Per-example outcome line of demo:install-examples. {identifier} is the extension identifier and {example} the shipped example name.</note>
+      </notes>
+      <segment>
+        <source>{installed, select, true {Installed} other {{activated, select, true {Reactivated} other {Confirmed}}}} {identifier} ({example}{selectable, select, true {; selectable, not activated} other {}}).</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_install.example_outcome">
+      <notes>
+        <note category="context">Per-example outcome line of demo:install. {identifier} is the extension identifier and {example} the shipped example name.</note>
+      </notes>
+      <segment>
+        <source>{installed, select, true {Installed} other {{activated, select, true {Reactivated} other {Confirmed}}}} {identifier} ({example}{selectable, select, true {; selectable, not activated} other {}}).</source>
+      </segment>
+    </unit>
+    <unit id="core.console.application.banner">
+      <notes>
+        <note category="context">Product banner atop the bin/kumwe command listing. The product name and version stay the same in every language.</note>
+      </notes>
+      <segment>
+        <source>Kumwe CMS 2.0</source>
+      </segment>
+    </unit>
+    <unit id="core.console.application.available_commands">
+      <notes>
+        <note category="context">Heading above the bin/kumwe command listing.</note>
+      </notes>
+      <segment>
+        <source>Available commands:</source>
+      </segment>
+    </unit>
+    <unit id="core.console.application.unknown_command">
+      <notes>
+        <note category="context">Failure line when bin/kumwe is invoked with a name no command carries. {name} is what the operator typed.</note>
+      </notes>
+      <segment>
+        <source>Unknown Kumwe command: {name}</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_install.no_business_demonstration_dataset">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoInstallCommand.php.</note>
+      </notes>
+      <segment>
+        <source>No business demonstration dataset is selected; skipping the demonstration cast and its credentials file.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_install.dataset_installed_by_migrate">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoInstallCommand.php.</note>
+      </notes>
+      <segment>
+        <source>The selected site content and business dataset were already installed by database:migrate.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.mcp_serve.token_file_requirements">
+      <notes>
+        <note category="context">Console failure line on src/Delivery/Console/Command/McpServeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>The MCP token file must be absolute, readable, non-symlinked, non-empty, and mode 0600 or stricter.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_recover_lock.usage">
+      <notes>
+        <note category="context">Console usage line on src/Delivery/Console/Command/RecoverMigrationLockCommand.php. The option names and token shape are machine syntax.</note>
+      </notes>
+      <segment>
+        <source>Usage: database:recover-lock --expected-owner=&lt;64-hex-token&gt; --confirm-legacy-quiesced</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_runtime_materialize.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/MaterializeExtensionRuntimeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Materialize and verify the authoritative extension runtime before process startup. Pass --repair to discard a diverged local generation first.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_report.description">
+      <notes>
+        <note category="context">Console command summary on src/BusinessReporting/Delivery/Console/ReportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Run permission-aware reports and request, inspect, or download verified CSV exports.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_activate.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ActivateExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Activate an extension or a site theme selected with --surface=site.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_activate.activated">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/ActivateExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Activated {installedIdentifier}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_build.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BuildExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Build and verify a deterministic Kumwe extension ZIP.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.token_create.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/CreateAccessTokenCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Create a scoped API/MCP access token and print it once.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.token_create.store_this_token_now_kumwe_will">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/CreateAccessTokenCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Store this token now; Kumwe will not display it again:</source>
+      </segment>
+    </unit>
+    <unit id="core.console.token_create.token_id">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/CreateAccessTokenCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Token ID: {created}</source>
+      </segment>
+    </unit>
+    <unit id="core.console.user_create_admin.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/CreateAdministratorCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Create an administrator from a protected password file.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.user_create_admin.created_administrator">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/CreateAdministratorCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Created administrator {id}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_provision_access.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/DemoAccessCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Provision demonstration staff and portal sign-ins with generated credentials.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_provision_access.identity_line">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoAccessCommand.php.</note>
+      </notes>
+      <segment>
+        <source>{created, select, true {Provisioned} other {Confirmed}} {email} as {role} ({area}{organization}){has_password, select, true { password {password}} other {}}</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_provision_access.wrote_the_demonstration_credentials_file">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoAccessCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Wrote the demonstration credentials file {credentialsPath}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_install_examples.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/DemoExamplesCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Install and activate the shipped example extensions through the signed pipeline.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Export the running site into an installable demo-profile package with integrity checksums.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.exported_content_entries_and_menus_as">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Exported {is_array} content entries and {is_array2} menus as profile {profile}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.catalog_re_validation_checksum">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Catalog re-validation checksum {verified}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.copy_resources_demo_over_an_installation">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Copy {directory}/resources/demo over an installation's resources/demo to make it selectable.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.no_published_site_owned_business_definitions">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>No published site-owned business definitions; the business dataset was not exported.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.exported_business_definitions_records_relations">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Exported {count} business definitions, {count2} records, {count3} relations, {count4} actions, and {count5} archives.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.business_catalog_re_validation_checksum">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Business catalog re-validation checksum {verified}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.exported_the_demonstration_access_cast_with">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Exported the demonstration access cast with {count} roles, {count2} staff, and {count3} organizations.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.access_catalog_re_validation_checksum">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Access catalog re-validation checksum {access}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.no_example_identities_qualified_access_json">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>No .example identities qualified; access.json was not written.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_export_profile.withheld_identities_outside_the_reserved_example">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Withheld {business} identities outside the reserved .example zone.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_install.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/DemoInstallCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Provision the demonstration sign-ins and install the example extensions in one step.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_install.identity_line">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoInstallCommand.php.</note>
+      </notes>
+      <segment>
+        <source>{created, select, true {Provisioned} other {Confirmed}} {email} as {role} ({area}{organization}){has_password, select, true { password {password}} other {}}</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_install.wrote_the_demonstration_credentials_file">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoInstallCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Wrote the demonstration credentials file {credentialsPath}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_install.no_new_credentials_were_generated_existing">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoInstallCommand.php.</note>
+      </notes>
+      <segment>
+        <source>No new credentials were generated; existing sign-ins remain valid.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.demo_install.staff_sign_in_at_administrator_portal">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DemoInstallCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Staff sign in at /administrator; portal organization members sign in at /portal.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_disable.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/DisableExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Disable an extension and remove it from the runtime map.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_disable.disabled">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/DisableExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Disabled {installedIdentifier}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.audit_export.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ExportAuditTrailCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Export the audit trail as a protected, checksummed archive.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.app_health.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/HealthCheckCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Check whether Kumwe is ready to serve traffic.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.app_health.kumwe_is_ready">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/HealthCheckCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Kumwe is ready.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.app_health.kumwe_is_not_ready">
+      <notes>
+        <note category="context">Console failure line on src/Delivery/Console/Command/HealthCheckCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Kumwe is not ready.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_inspect.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/InspectExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Inspect a Kumwe extension ZIP without executing package code.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_install.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/InstallExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Verify and install a disabled Kumwe extension ZIP.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_install.installed">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/InstallExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Installed {identifier} {version} ({status}).</source>
+      </segment>
+    </unit>
+    <unit id="core.console.integration_work.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/IntegrationWorkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Dispatch durable integration events and process work under the trusted runtime generation.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.integration_work.integration_worker_processed_item_batch_es">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/IntegrationWorkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Integration worker processed {handled} item batch(es).</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_list.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ListExtensionsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List installed extensions, versions and runtime status.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.access.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageAccessCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List and manage users, roles, and capability grants.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.automation.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageAutomationCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List and manage schedules and queued jobs.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_definition.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageBusinessDefinitionsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, inspect, draft, validate, publish, and retire business entity definitions.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_record.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageBusinessRecordsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Discover, query, mutate, relate, request approvals, report, export, and inspect business operations.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_schema.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageBusinessSchemaCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Inspect, approve, execute, and recover business schema plans.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.content.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageContentCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, read, create, update, transition, trash, or restore content.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.content_model.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageContentModelsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, read, create, or publish versioned content types and workflows.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.integration_manage.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageIntegrationsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Inspect durable integrations and authorize projection rebuild, replay, retention, or cancellation.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.navigation.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageNavigationCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List and manage menus and menu items.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_periods.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManagePostingPeriodsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, close, and re-open business posting periods.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.settings.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Read or update site configuration.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_trust.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ManageTrustStoreCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, add, rotate, or emergency-revoke extension signing keys.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_runtime_materialize.discarded_local_generation">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/MaterializeExtensionRuntimeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Discarded the local extension runtime generation.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_runtime_materialize.materialized_generation">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/MaterializeExtensionRuntimeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Materialized trusted extension runtime generation {generation}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.mcp_serve.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/McpServeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Serve capability-protected Kumwe MCP over standard input and output.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.mcp_serve.usage_mcp_serve_site_site_token">
+      <notes>
+        <note category="context">Console failure line on src/Delivery/Console/Command/McpServeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>{reason} Usage: mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token</source>
+      </segment>
+    </unit>
+    <unit id="core.console.mcp_serve.the_mcp_access_token_is_invalid">
+      <notes>
+        <note category="context">Console failure line on src/Delivery/Console/Command/McpServeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>The MCP access token is invalid, expired, or revoked.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_migrate.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/MigrateCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Apply pending forward-only Kumwe 2.x migrations.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_migrate.database_schema_is_current_reconciling_the">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/MigrateCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Database schema is current; reconciling the extension runtime publication.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_migrate.applied">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/MigrateCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Applied {migration}</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_migrate.materialized_extension_runtime_generation">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/MigrateCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Materialized extension runtime generation {generation}</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_status.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/MigrationStatusCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Show pending Kumwe database migrations.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_status.database_schema_is_current">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/MigrationStatusCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Database schema is current.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_status.pending">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/MigrationStatusCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Pending {id}</source>
+      </segment>
+    </unit>
+    <unit id="core.console.queue_work.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/QueueWorkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Run the durable, crash-recovering job worker.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.queue_work.kumwe_worker_is_consuming_queue">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/QueueWorkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Kumwe worker {workerId} is consuming queue {queue}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.queue_work.queue_policy_generation_lease_s_attempts">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/QueueWorkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Queue policy generation {runtimeGeneration}: lease {leaseSeconds}s, attempts {maximumAttempts}, in-flight {maximumInFlight}, retention {retentionDays}d.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.queue_work.kumwe_worker_drained_after_job_s">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/QueueWorkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Kumwe worker {workerId} drained after {handledJobs} job(s).</source>
+      </segment>
+    </unit>
+    <unit id="core.console.queue_work.worker_heartbeat_cleanup_failed">
+      <notes>
+        <note category="context">Console failure line on src/Delivery/Console/Command/QueueWorkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Worker heartbeat cleanup failed: {reason}</source>
+      </segment>
+    </unit>
+    <unit id="core.console.theme_administrator_recover.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/RecoverAdministratorThemeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Atomically restore the protected built-in administrator theme.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.theme_administrator_recover.restored_the_protected_built_in_administrator">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/RecoverAdministratorThemeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Restored the protected built-in administrator theme.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.user_recover_credentials.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/RecoverCredentialsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Break-glass: reset a password, retire second factors, or end sessions from the host.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_recover_lock.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/RecoverMigrationLockCommand.php.</note>
+      </notes>
+      <segment>
+        <source>CAS-remove one expired legacy migration owner after quiescing every older binary.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_recover_lock.unknown_database_recover_lock_argument">
+      <notes>
+        <note category="context">Console failure line on src/Delivery/Console/Command/RecoverMigrationLockCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Unknown database:recover-lock argument: {argument}</source>
+      </segment>
+    </unit>
+    <unit id="core.console.database_recover_lock.expired_legacy_migration_owner_removed_run">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/RecoverMigrationLockCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Expired legacy migration owner removed. Run database:migrate immediately.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_record_rekey.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/RotateRecordSecretsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Re-encrypt stored business-record secrets under the active encryption key.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_conformance.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/RunExtensionConformanceCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Run static conformance checks over a Kumwe extension ZIP.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_scaffold.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ScaffoldExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Create a complete Kumwe component extension source tree.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.schedule_run.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/ScheduleRunCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Dispatch due schedules once or continuously with --loop.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.schedule_run.dispatched_due_schedule_s">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/ScheduleRunCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Dispatched {dispatched} due schedule(s).</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_sign.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/SignExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Sign a verified extension ZIP with a protected Ed25519 key.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_uninstall.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/UninstallExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Remove an extension registry entry and its active files.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_uninstall.uninstalled">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/UninstallExtensionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Uninstalled {identifier}.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.audit_verify.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/VerifyAuditTrailCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Verify the audit trail digest chain and its anchors.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.extension_runtime_watch.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/WatchExtensionRuntimeCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Continuously verify authority/artifacts and refresh local runtime readiness.</source>
+      </segment>
+    </unit>
+  </file>
 </xliff>

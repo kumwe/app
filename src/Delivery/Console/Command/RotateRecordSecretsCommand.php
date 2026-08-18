@@ -66,7 +66,7 @@ final readonly class RotateRecordSecretsCommand implements Command
      */
     public function description(): string
     {
-        return 'Re-encrypt stored business-record secrets under the active encryption key.';
+        return 'core.console.business_record_rekey.description';
     }
 
     /**

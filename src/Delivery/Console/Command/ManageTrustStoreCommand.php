@@ -60,7 +60,7 @@ final readonly class ManageTrustStoreCommand implements Command
      */
     public function description(): string
     {
-        return 'List, add, rotate, or emergency-revoke extension signing keys.';
+        return 'core.console.extension_trust.description';
     }
 
     /**

@@ -63,7 +63,7 @@ final readonly class ManageAutomationCommand implements Command
      */
     public function description(): string
     {
-        return 'List and manage schedules and queued jobs.';
+        return 'core.console.automation.description';
     }
 
     /**

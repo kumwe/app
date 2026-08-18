@@ -77,7 +77,7 @@ final readonly class QueueWorkCommand implements Command
      */
     public function description(): string
     {
-        return 'Run the durable, crash-recovering job worker.';
+        return 'core.console.queue_work.description';
     }
 
     /**
@@ -142,16 +142,18 @@ final readonly class QueueWorkCommand implements Command
             $workerId = $this->loadedRuntime === null
                 ? 'worker:' . bin2hex(random_bytes(16))
                 : 'runtime:' . $this->loadedRuntime->replicaId;
-            $output->line(sprintf('Kumwe worker %s is consuming queue %s.', $workerId, $queue));
+            $output->message('core.console.queue_work.kumwe_worker_is_consuming_queue', [
+                'workerId' => $workerId,
+                'queue' => $queue,
+            ]);
             if ($policy !== null) {
-                $output->line(sprintf(
-                    'Queue policy generation %d: lease %ds, attempts %d, in-flight %d, retention %dd.',
-                    $policy->runtimeGeneration,
-                    $policy->leaseSeconds,
-                    $policy->maximumAttempts,
-                    $policy->maximumInFlight,
-                    $policy->retentionDays,
-                ));
+                $output->message('core.console.queue_work.queue_policy_generation_lease_s_attempts', [
+                    'runtimeGeneration' => $policy->runtimeGeneration,
+                    'leaseSeconds' => $policy->leaseSeconds,
+                    'maximumAttempts' => $policy->maximumAttempts,
+                    'maximumInFlight' => $policy->maximumInFlight,
+                    'retentionDays' => $policy->retentionDays,
+                ]);
             }
             $context = $this->system->context(
                 SiteContext::default(),
@@ -190,11 +192,10 @@ final readonly class QueueWorkCommand implements Command
                 }
             } while (!$once && !$draining);
 
-            $output->line(sprintf(
-                'Kumwe worker %s drained after %d job(s).',
-                $workerId,
-                $handledJobs,
-            ));
+            $output->message('core.console.queue_work.kumwe_worker_drained_after_job_s', [
+                'workerId' => $workerId,
+                'handledJobs' => $handledJobs,
+            ]);
 
             return 0;
         } catch (Throwable $exception) {
@@ -206,7 +207,9 @@ final readonly class QueueWorkCommand implements Command
                 try {
                     $this->worker->disconnect($context, $workerId, $queue);
                 } catch (Throwable $exception) {
-                    $output->error(sprintf('Worker heartbeat cleanup failed: %s', $exception->getMessage()));
+                    $output->failure('core.console.queue_work.worker_heartbeat_cleanup_failed', [
+                        'reason' => $exception->getMessage(),
+                    ]);
                 }
             }
         }

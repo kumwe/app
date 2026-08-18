@@ -62,7 +62,7 @@ final readonly class ActivateExtensionCommand implements Command
      */
     public function description(): string
     {
-        return 'Activate an extension or a site theme selected with --surface=site.';
+        return 'core.console.extension_activate.description';
     }
 
     /**
@@ -110,7 +110,9 @@ final readonly class ActivateExtensionCommand implements Command
                 throw new \RuntimeException('The extension manager returned an invalid identifier.');
             }
 
-            $output->line(sprintf('Activated %s.', $installedIdentifier));
+            $output->message('core.console.extension_activate.activated', [
+                'installedIdentifier' => $installedIdentifier,
+            ]);
             foreach ($this->extensions->installed($context) as $row) {
                 if (($row['identifier'] ?? null) !== $installedIdentifier) {
                     continue;

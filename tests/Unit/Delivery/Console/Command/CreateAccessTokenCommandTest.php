@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
@@ -243,6 +244,8 @@ final class CreateAccessTokenCommandTest extends TestCase
  */
 final class AccessTokenCommandOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /**
      * Normal command lines in emission order.
      *

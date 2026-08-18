@@ -71,7 +71,7 @@ final readonly class ScheduleRunCommand implements Command
      */
     public function description(): string
     {
-        return 'Dispatch due schedules once or continuously with --loop.';
+        return 'core.console.schedule_run.description';
     }
 
     /**
@@ -115,7 +115,9 @@ final readonly class ScheduleRunCommand implements Command
                 $dispatched = $this->scheduler->dispatchDue($context);
 
                 if (!$loop) {
-                    $output->line(sprintf('Dispatched %d due schedule(s).', $dispatched));
+                    $output->message('core.console.schedule_run.dispatched_due_schedule_s', [
+                        'dispatched' => $dispatched,
+                    ]);
                 } else {
                     sleep(15);
                 }

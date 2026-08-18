@@ -64,7 +64,7 @@ final readonly class CreateAdministratorCommand implements Command
      */
     public function description(): string
     {
-        return 'Create an administrator from a protected password file.';
+        return 'core.console.user_create_admin.description';
     }
 
     /**
@@ -95,7 +95,7 @@ final readonly class CreateAdministratorCommand implements Command
                 $this->required($options, 'name'),
                 $password,
             );
-            $output->line(sprintf('Created administrator %s.', $id));
+            $output->message('core.console.user_create_admin.created_administrator', ['id' => $id]);
 
             return 0;
         } catch (Throwable $exception) {

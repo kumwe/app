@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Integration\BusinessIntegration;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
@@ -259,6 +260,8 @@ final class HungOutboundEndpoint implements IntegrationEventTransport
  */
 final class DiscardedOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /**
      * Discard one ordinary line.
      *

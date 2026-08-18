@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditTrailExport;
 use Kumwe\CMS\Audit\Application\AuditTrailExporter;
@@ -269,6 +270,8 @@ final class AuditConsoleCommandTest extends TestCase
  */
 final class CollectingConsoleOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /**
      * Result lines the command wrote.
      *

@@ -84,7 +84,7 @@ final readonly class ManageBusinessSchemaCommand implements Command
      */
     public function description(): string
     {
-        return 'Inspect, approve, execute, and recover business schema plans.';
+        return 'core.console.business_schema.description';
     }
 
     /**

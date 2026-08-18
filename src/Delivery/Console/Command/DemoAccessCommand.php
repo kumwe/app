@@ -72,7 +72,7 @@ final readonly class DemoAccessCommand implements Command
      */
     public function description(): string
     {
-        return 'Provision demonstration staff and portal sign-ins with generated credentials.';
+        return 'core.console.demo_provision_access.description';
     }
 
     /**
@@ -115,17 +115,19 @@ final readonly class DemoAccessCommand implements Command
             $report = $this->provisioner->provision($context, $manifest);
             $this->writeCredentials($credentialsPath, $report['identities']);
             foreach ($report['identities'] as $identity) {
-                $output->line(sprintf(
-                    '%s %s as %s (%s%s)%s',
-                    $identity['created'] ? 'Provisioned' : 'Confirmed',
-                    $identity['email'],
-                    $identity['role'],
-                    $identity['area'],
-                    $identity['organization'] === null ? '' : ', ' . $identity['organization'],
-                    $identity['password'] === null ? '' : ' password ' . $identity['password'],
-                ));
+                $output->message('core.console.demo_provision_access.identity_line', [
+                    'created' => $identity['created'],
+                    'email' => $identity['email'],
+                    'role' => $identity['role'],
+                    'area' => $identity['area'],
+                    'organization' => $identity['organization'] === null ? '' : ', ' . $identity['organization'],
+                    'has_password' => $identity['password'] !== null,
+                    'password' => $identity['password'] ?? '',
+                ]);
             }
-            $output->line(sprintf('Wrote the demonstration credentials file %s.', $credentialsPath));
+            $output->message('core.console.demo_provision_access.wrote_the_demonstration_credentials_file', [
+                'credentialsPath' => $credentialsPath,
+            ]);
 
             return 0;
         } catch (Throwable $exception) {

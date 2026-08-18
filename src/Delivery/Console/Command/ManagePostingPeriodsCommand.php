@@ -78,7 +78,7 @@ final readonly class ManagePostingPeriodsCommand implements Command
      */
     public function description(): string
     {
-        return 'List, close, and re-open business posting periods.';
+        return 'core.console.business_periods.description';
     }
 
     /**

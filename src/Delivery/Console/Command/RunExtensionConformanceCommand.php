@@ -49,7 +49,7 @@ final readonly class RunExtensionConformanceCommand implements Command
      */
     public function description(): string
     {
-        return 'Run static conformance checks over a Kumwe extension ZIP.';
+        return 'core.console.extension_conformance.description';
     }
 
     /**

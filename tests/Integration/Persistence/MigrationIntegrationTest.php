@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Integration\Persistence;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
@@ -87,6 +88,8 @@ final class MigrationIntegrationTest extends TestCase
         $command = $container->get(MigrateCommand::class);
         self::assertInstanceOf(MigrateCommand::class, $command);
         self::assertSame(0, $command->execute([], new class implements Output {
+            use TranslatesConsoleOutput;
+
             public function line(string $message): void
             {
             }

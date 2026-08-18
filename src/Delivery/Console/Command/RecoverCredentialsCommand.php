@@ -89,7 +89,7 @@ final readonly class RecoverCredentialsCommand implements Command
      */
     public function description(): string
     {
-        return 'Break-glass: reset a password, retire second factors, or end sessions from the host.';
+        return 'core.console.user_recover_credentials.description';
     }
 
     /**

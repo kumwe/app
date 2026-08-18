@@ -56,7 +56,7 @@ final readonly class RecoverAdministratorThemeCommand implements Command
      */
     public function description(): string
     {
-        return 'Atomically restore the protected built-in administrator theme.';
+        return 'core.console.theme_administrator_recover.description';
     }
 
     /**
@@ -84,7 +84,7 @@ final readonly class RecoverAdministratorThemeCommand implements Command
             }
 
             $this->recovery->recover();
-            $output->line('Restored the protected built-in administrator theme.');
+            $output->message('core.console.theme_administrator_recover.restored_the_protected_built_in_administrator');
 
             return 0;
         } catch (Throwable $exception) {

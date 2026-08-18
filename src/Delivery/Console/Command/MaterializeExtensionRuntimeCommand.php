@@ -59,8 +59,7 @@ final readonly class MaterializeExtensionRuntimeCommand implements Command
      */
     public function description(): string
     {
-        return 'Materialize and verify the authoritative extension runtime before process startup. '
-            . 'Pass --repair to discard a diverged local generation first.';
+        return 'core.console.extension_runtime_materialize.description';
     }
 
     /**
@@ -96,10 +95,12 @@ final readonly class MaterializeExtensionRuntimeCommand implements Command
                 // database authority. Materialization refuses that on purpose; --repair is the
                 // explicit operator decision to discard the local copy and re-derive it.
                 $this->runtime->discardLocal();
-                $output->line('Discarded the local extension runtime generation.');
+                $output->message('core.console.extension_runtime_materialize.discarded_local_generation');
             }
             $state = $this->runtime->reconcileAndMaterialize(true);
-            $output->line(sprintf('Materialized trusted extension runtime generation %d.', $state->generation));
+            $output->message('core.console.extension_runtime_materialize.materialized_generation', [
+                'generation' => $state->generation,
+            ]);
 
             return 0;
         } catch (Throwable $exception) {

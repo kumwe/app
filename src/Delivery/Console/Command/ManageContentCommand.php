@@ -60,7 +60,7 @@ final readonly class ManageContentCommand implements Command
      */
     public function description(): string
     {
-        return 'List, read, create, update, transition, trash, or restore content.';
+        return 'core.console.content.description';
     }
 
     /**

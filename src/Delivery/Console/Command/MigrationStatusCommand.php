@@ -56,7 +56,7 @@ final readonly class MigrationStatusCommand implements Command
      */
     public function description(): string
     {
-        return 'Show pending Kumwe database migrations.';
+        return 'core.console.database_status.description';
     }
 
     /**
@@ -85,13 +85,13 @@ final readonly class MigrationStatusCommand implements Command
         ));
 
         if ($pending === []) {
-            $output->line('Database schema is current.');
+            $output->message('core.console.database_status.database_schema_is_current');
 
             return 0;
         }
 
         foreach ($pending as $migration) {
-            $output->line(sprintf('Pending %s', $migration->id()));
+            $output->message('core.console.database_status.pending', ['id' => $migration->id()]);
         }
 
         return 2;
