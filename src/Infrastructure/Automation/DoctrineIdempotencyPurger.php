@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Idempotency;
+namespace Kumwe\CMS\Infrastructure\Automation;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\ArrayParameterType;

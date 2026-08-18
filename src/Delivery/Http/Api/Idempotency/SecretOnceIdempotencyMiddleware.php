@@ -4,22 +4,17 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Delivery\Http\Api\Idempotency;
 
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Doctrine\DBAL\Types\Types;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Idempotency\SecretOnceIdempotencyLedger;
 use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Laminas\Diactoros\Response;
-use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
 
@@ -28,36 +23,28 @@ use Throwable;
  *
  * `POST /api/v1/tokens` and `POST /api/v1/tokens/{tokenId}/rotate` are the only routes whose success
  * body carries a live credential, so they cannot use `PersistentIdempotencyMiddleware`: that middleware
- * stores the response verbatim, which would leave the plaintext token sitting in the idempotency table
- * for anyone who can repeat the key or read the row. This middleware reserves the key the same way, but
- * strips `token` from the body before storing it and marks the stored copy `secret_returned: false`, so
- * a replay proves the operation already happened without reissuing the secret. A caller that loses the
- * original response has lost the credential and must mint another. The lease is short — two minutes,
- * against the persistent middleware's fifteen — because a token mutation is a single quick write and a
- * long lease would strand the key after a crash. Anything other than a 2xx or a 5xx is stored as-is,
- * since a refusal carries no secret to strip; a 5xx is rolled back and its reservation deleted, leaving
- * the key free to retry.
+ * stores the response verbatim, which would leave the plaintext token sitting in the idempotency ledger
+ * for anyone who can repeat the key or read the record. This middleware reserves the key the same way,
+ * but strips `token` from the body before storing it and marks the stored copy `secret_returned: false`,
+ * so a replay proves the operation already happened without reissuing the secret. A caller that loses
+ * the original response has lost the credential and must mint another. Every read and write goes through
+ * the application-owned `SecretOnceIdempotencyLedger`, whose lease is deliberately short — two minutes,
+ * against the persistent ledger's fifteen — because a token mutation is a single quick write and a long
+ * lease would strand the key after a crash. Anything other than a 2xx or a 5xx is stored as-is, since a
+ * refusal carries no secret to strip; a 5xx is rolled back and its reservation deleted, leaving the key
+ * free to retry.
  *
  * @since  2.0.0
  */
 final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterface
 {
     /**
-     * How long a reservation stays owned by the request that took it, as a `DateTimeImmutable` modifier.
+     * Wire the middleware to the ledger and the policy check a reservation depends on.
      *
-     * @var    string
-     * @since  2.0.0
-     */
-    private const LEASE = '+2 minutes';
-
-    /**
-     * Wire the middleware to the store, the clock and the policy check a reservation depends on.
-     *
-     * @param  Connection                     $database          Connection the idempotency table is read and
-     *         written on.
-     * @param  TableNames                     $tables            Resolves the physical `idempotency` table name.
-     * @param  ClockInterface                 $clock             Supplies the instants leases and expiry use.
-     * @param  ProblemDetailsResponseFactory  $problems          Renders the refusals a reused key answers with.
+     * @param  SecretOnceIdempotencyLedger    $ledger            Application-owned ledger the reservation
+     *         lifecycle runs against.
+     * @param  ProblemDetailsResponseFactory  $problems          Renders the refusals a reused key answers
+     *         with.
      * @param  HttpMutationPreauthorizer      $preauthorization  Applies the route's exact policy before any
      *         record is observed or reserved.
      * @param  TransactionManager             $transactions      Commits the minted token and its stored
@@ -66,9 +53,7 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
      * @since  2.0.0
      */
     public function __construct(
-        private Connection $database,
-        private TableNames $tables,
-        private ClockInterface $clock,
+        private SecretOnceIdempotencyLedger $ledger,
         private ProblemDetailsResponseFactory $problems,
         private HttpMutationPreauthorizer $preauthorization,
         private TransactionManager $transactions,
@@ -148,54 +133,44 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
                 $request,
                 $handler,
             ): ResponseInterface {
-                $this->assertLeaseOwner($context, $principal->subject(), $operation, (string) $key, $owner);
+                $subject = $principal->subject();
+                if (
+                    !$this->ledger->confirmLease(
+                        $subject,
+                        $operation,
+                        (string) $key,
+                        $owner,
+                        $context->authorizationFingerprint(),
+                    )
+                ) {
+                    throw new RuntimeException('The token mutation lease is no longer owned by this request.');
+                }
                 $response = $handler->handle($request);
                 if ($response->getStatusCode() >= 500) {
                     throw new SecretOnceResponseRollback($response);
                 }
                 [$storedBody, $headers] = $this->replaySafeResponse($response);
-                $affected = $this->database->executeStatement(sprintf(
-                    "UPDATE %s SET state = 'completed', owner_token = NULL, lease_owner = NULL, "
-                    . 'result_status = ?, result_body = ?, '
-                    . 'result_body_digest = ?, result_headers = ?, completed_at = ?, lease_expires_at = NULL '
-                    . "WHERE subject = ? AND operation = ? AND idempotency_key = ? AND owner_token = ? "
-                    . "AND authorization_fingerprint = ? AND state = 'in_progress' AND lease_expires_at > ?",
-                    $this->tables->quoted('idempotency'),
-                ), [
-                    $response->getStatusCode(),
-                    $storedBody,
-                    hash('sha256', $storedBody),
-                    $headers,
-                    $this->clock->now(),
-                    $principal->subject(),
-                    $operation,
-                    (string) $key,
-                    $owner,
-                    $context->authorizationFingerprint(),
-                    $this->clock->now(),
-                ], [
-                    Types::INTEGER,
-                    Types::TEXT,
-                    Types::STRING,
-                    Types::JSON,
-                    Types::DATETIME_IMMUTABLE,
-                    Types::STRING,
-                    Types::STRING,
-                    Types::STRING,
-                    Types::STRING,
-                    Types::STRING,
-                    Types::DATETIME_IMMUTABLE,
-                ]);
-                if ($affected !== 1) {
+                if (
+                    !$this->ledger->complete(
+                        $subject,
+                        $operation,
+                        (string) $key,
+                        $owner,
+                        $context->authorizationFingerprint(),
+                        $response->getStatusCode(),
+                        $storedBody,
+                        $headers,
+                    )
+                ) {
                     throw new RuntimeException('The token mutation lease was lost before completion.');
                 }
                 return $response;
             });
         } catch (SecretOnceResponseRollback $rollback) {
-            $this->release($principal->subject(), $operation, (string) $key, $owner);
+            $this->ledger->release($principal->subject(), $operation, (string) $key, $owner);
             return $rollback->response;
         } catch (Throwable $exception) {
-            $this->release($principal->subject(), $operation, (string) $key, $owner);
+            $this->ledger->release($principal->subject(), $operation, (string) $key, $owner);
             throw $exception;
         }
     }
@@ -203,13 +178,14 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
     /**
      * Claim the key for this request, or answer the repeat that has already claimed it.
      *
-     * The claim is an insert, so the unique index on subject, operation and key is what arbitrates
-     * between two simultaneous first attempts rather than a read-then-write that could interleave. Only
-     * the loser takes the slower path: it compares the stored request digest and authorization
-     * fingerprint against this request, refusing a key reused for different content with 422 and one
-     * presented under different credentials with 409, then replays a completed result. A record that
-     * failed, expired, or whose lease has run out is taken over by a conditional update, which either
-     * succeeds outright or leaves the caller with the 409 that says another attempt is still running.
+     * The claim is a single ledger reservation, so the store's uniqueness rule on subject, operation and
+     * key is what arbitrates between two simultaneous first attempts rather than a read-then-write that
+     * could interleave. Only the loser takes the slower path: it compares the stored request digest and
+     * authorization fingerprint against this request, refusing a key reused for different content with
+     * 422 and one presented under different credentials with 409, then replays a completed result. A
+     * record that failed, expired, or whose lease has run out is taken over by a conditional ledger
+     * write, which either succeeds outright or leaves the caller with the 409 that says another attempt
+     * is still running.
      *
      * @param   ExecutionContext        $context    Actor and site; its authorization fingerprint is stored
      *          so a later attempt under different credentials cannot replay this one.
@@ -223,8 +199,8 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
      * @return  ?ResponseInterface  Null when the caller now owns the reservation and must run the handler;
      *          otherwise the response to return instead of running it.
      *
-     * @throws  RuntimeException  When the record vanishes between the failed insert and the read, or a
-     *          stored result proves unusable while being replayed.
+     * @throws  RuntimeException  When the record vanishes between the failed reservation and the read, or
+     *          a stored result proves unusable while being replayed.
      * @throws  JsonException  When a stored header map cannot be decoded, or a stripped body cannot be
      *          re-encoded, while a completed result is being replayed.
      *
@@ -239,151 +215,64 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         string $owner,
         ServerRequestInterface $request,
     ): ?ResponseInterface {
-        $now = $this->clock->now();
-        try {
-            $this->database->insert($this->tables->raw('idempotency'), [
-                'id' => Uuid::uuid7()->toString(),
-                'idempotency_key' => $key,
-                'subject' => $principal->subject(),
-                'operation' => $operation,
-                'request_digest' => $digest,
-                'authorization_fingerprint' => $context->authorizationFingerprint(),
-                'state' => 'in_progress',
-                'owner_token' => $owner,
-                'lease_owner' => $owner,
-                'lease_expires_at' => $now->modify(self::LEASE),
-                'attempt' => 1,
-                'created_at' => $now,
-                'expires_at' => $now->modify('+24 hours'),
-            ], [
-                'lease_expires_at' => Types::DATETIME_IMMUTABLE,
-                'created_at' => Types::DATETIME_IMMUTABLE,
-                'expires_at' => Types::DATETIME_IMMUTABLE,
-            ]);
-            return null;
-        } catch (UniqueConstraintViolationException) {
-            $row = $this->record($principal->subject(), $operation, $key);
-            $storedDigest = $row['request_digest'] ?? null;
-            if (!is_string($storedDigest) || !hash_equals($storedDigest, $digest)) {
-                return $this->problems->create(
-                    422,
-                    'Idempotency Key Reused',
-                    'This Idempotency-Key was already used for a different request.',
-                    'urn:kumwe:problem:idempotency-key-reused',
-                    (string) $request->getUri(),
-                );
-            }
-            $storedFingerprint = $row['authorization_fingerprint'] ?? null;
-            if (
-                !is_string($storedFingerprint)
-                || !hash_equals($storedFingerprint, $context->authorizationFingerprint())
-            ) {
-                return $this->problems->create(
-                    409,
-                    'Authorization Context Changed',
-                    'This Idempotency-Key belongs to a different credential or authorization state.',
-                    'urn:kumwe:problem:idempotency-authorization-changed',
-                    (string) $request->getUri(),
-                );
-            }
-            if (($row['state'] ?? null) === 'completed') {
-                return $this->replay($row, $principal->subject(), $operation, $key);
-            }
-            $affected = $this->database->executeStatement(sprintf(
-                "UPDATE %s SET request_digest = ?, authorization_fingerprint = ?, state = 'in_progress', "
-                . 'owner_token = ?, lease_owner = ?, '
-                . 'lease_expires_at = ?, attempt = attempt + 1, result_status = NULL, result_body = NULL, '
-                . 'result_body_digest = NULL, result_headers = NULL, completed_at = NULL, created_at = ?, '
-                . 'expires_at = ? WHERE subject = ? AND operation = ? AND idempotency_key = ? '
-                . "AND (state = 'failed' OR expires_at <= ? "
-                . "OR (state = 'in_progress' AND lease_expires_at <= ?))",
-                $this->tables->quoted('idempotency'),
-            ), [
-                $digest,
-                $context->authorizationFingerprint(),
-                $owner,
-                $owner,
-                $now->modify(self::LEASE),
-                $now,
-                $now->modify('+24 hours'),
+        if (
+            $this->ledger->reserve(
                 $principal->subject(),
                 $operation,
                 $key,
-                $now,
-                $now,
-            ], [
-                Types::STRING,
-                Types::STRING,
-                Types::STRING,
-                Types::STRING,
-                Types::DATETIME_IMMUTABLE,
-                Types::DATETIME_IMMUTABLE,
-                Types::DATETIME_IMMUTABLE,
-                Types::STRING,
-                Types::STRING,
-                Types::STRING,
-                Types::DATETIME_IMMUTABLE,
-                Types::DATETIME_IMMUTABLE,
-            ]);
-            if ($affected === 1) {
-                return null;
-            }
+                $digest,
+                $context->authorizationFingerprint(),
+                $owner,
+            )
+        ) {
+            return null;
+        }
+        $row = $this->record($principal->subject(), $operation, $key);
+        $storedDigest = $row['request_digest'] ?? null;
+        if (!is_string($storedDigest) || !hash_equals($storedDigest, $digest)) {
             return $this->problems->create(
-                409,
-                'Operation In Progress',
-                'An operation with this Idempotency-Key is still in progress.',
-                'urn:kumwe:problem:idempotency-in-progress',
+                422,
+                'Idempotency Key Reused',
+                'This Idempotency-Key was already used for a different request.',
+                'urn:kumwe:problem:idempotency-key-reused',
                 (string) $request->getUri(),
             );
         }
-    }
-
-    /**
-     * Re-prove, under a row lock, that this request still owns the reservation before the handler runs.
-     *
-     * `acquire()` claims the lease outside the transaction, so between the claim and here another
-     * request may have taken the record over once the lease expired. `SELECT … FOR UPDATE` holds the row
-     * for the rest of the transaction, so the ownership just verified stays true until the completion
-     * write commits. The authorization fingerprint is compared again as well, so a lease claimed under
-     * one set of credentials cannot be spent under another.
-     *
-     * @param   ExecutionContext  $context    Actor whose authorization fingerprint must still match the row.
-     * @param   string            $subject    Principal the record is keyed against.
-     * @param   string            $operation  Method and path pair the key is scoped to.
-     * @param   string            $key        The client's `Idempotency-Key`.
-     * @param   string            $owner      Token this request stored when it claimed the lease.
-     *
-     * @return  void
-     *
-     * @throws  RuntimeException  When the record is gone, is no longer `in_progress`, is owned by another
-     *          request, was claimed under a different authorization context, or its lease has expired.
-     *
-     * @since   2.0.0
-     */
-    private function assertLeaseOwner(
-        ExecutionContext $context,
-        string $subject,
-        string $operation,
-        string $key,
-        string $owner,
-    ): void {
-        $row = $this->database->fetchAssociative(sprintf(
-            'SELECT owner_token, authorization_fingerprint, state, lease_expires_at FROM %s '
-            . 'WHERE subject = ? AND operation = ? '
-            . 'AND idempotency_key = ? FOR UPDATE',
-            $this->tables->quoted('idempotency'),
-        ), [$subject, $operation, $key]);
+        $storedFingerprint = $row['authorization_fingerprint'] ?? null;
         if (
-            $row === false
-            || ($row['owner_token'] ?? null) !== $owner
-            || ($row['state'] ?? null) !== 'in_progress'
-            || !is_string($row['authorization_fingerprint'] ?? null)
-            || !hash_equals($row['authorization_fingerprint'], $context->authorizationFingerprint())
-            || !is_string($row['lease_expires_at'] ?? null)
-            || new \DateTimeImmutable($row['lease_expires_at']) <= $this->clock->now()
+            !is_string($storedFingerprint)
+            || !hash_equals($storedFingerprint, $context->authorizationFingerprint())
         ) {
-            throw new RuntimeException('The token mutation lease is no longer owned by this request.');
+            return $this->problems->create(
+                409,
+                'Authorization Context Changed',
+                'This Idempotency-Key belongs to a different credential or authorization state.',
+                'urn:kumwe:problem:idempotency-authorization-changed',
+                (string) $request->getUri(),
+            );
         }
+        if (($row['state'] ?? null) === 'completed') {
+            return $this->replay($row, $principal->subject(), $operation, $key);
+        }
+        if (
+            $this->ledger->takeOver(
+                $principal->subject(),
+                $operation,
+                $key,
+                $digest,
+                $context->authorizationFingerprint(),
+                $owner,
+            )
+        ) {
+            return null;
+        }
+        return $this->problems->create(
+            409,
+            'Operation In Progress',
+            'An operation with this Idempotency-Key is still in progress.',
+            'urn:kumwe:problem:idempotency-in-progress',
+            (string) $request->getUri(),
+        );
     }
 
     /**
@@ -437,7 +326,7 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
     /**
      * Rebuild the stored result for a repeat of a key that has already completed.
      *
-     * The body's digest is verified before anything is sent, so a row altered in the database is refused
+     * The body's digest is verified before anything is sent, so a record altered in the store is refused
      * rather than replayed. A stored body still holding `token` is stripped here and written back, which
      * is the second line of defence behind `replaySafeResponse()`: a record stored before that stripping
      * applied is made safe on its first replay instead of handing the secret out again. The rebuilt
@@ -469,11 +358,7 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
             unset($decoded['token']);
             $decoded['secret_returned'] = false;
             $body = json_encode($decoded, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-            $this->database->executeStatement(sprintf(
-                'UPDATE %s SET result_body = ?, result_body_digest = ? '
-                . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?',
-                $this->tables->quoted('idempotency'),
-            ), [$body, hash('sha256', $body), $subject, $operation, $key]);
+            $this->ledger->rewriteStoredResult($subject, $operation, $key, $body);
         }
         $headers = $row['result_headers'] ?? [];
         if (is_string($headers)) {
@@ -495,18 +380,18 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
     }
 
     /**
-     * Read the record a losing insert collided with.
+     * Read the record a losing reservation collided with.
      *
-     * Reached only after the unique index refused the claim, so the row is expected to exist; its
-     * absence means a purge or a competing delete landed in between, which is a fault rather than a
-     * client mistake. The projection is limited to the columns the comparison and the replay need, so
-     * the owner token is not read here — ownership is settled under a lock in `assertLeaseOwner()`.
+     * Reached only after the ledger refused the claim, so the record is expected to exist; its absence
+     * means a purge or a competing delete landed in between, which is a fault rather than a client
+     * mistake.
      *
      * @param   string  $subject    Principal the record is keyed against.
      * @param   string  $operation  Method and path pair the key is scoped to.
      * @param   string  $key        The client's `Idempotency-Key`.
      *
-     * @return  array<string, mixed>  The stored row, keyed by column name, exactly as the driver typed it.
+     * @return  array<string, mixed>  The stored record, keyed by column name, exactly as the ledger
+     *          returned it.
      *
      * @throws  RuntimeException  When no record carries that subject, operation and key.
      *
@@ -514,43 +399,11 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
      */
     private function record(string $subject, string $operation, string $key): array
     {
-        $row = $this->database->fetchAssociative(sprintf(
-            'SELECT request_digest, authorization_fingerprint, state, result_status, result_body, '
-            . 'result_body_digest, result_headers, '
-            . 'expires_at, lease_expires_at '
-            . 'FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ?',
-            $this->tables->quoted('idempotency'),
-        ), [$subject, $operation, $key]);
-        if ($row === false) {
+        $row = $this->ledger->find($subject, $operation, $key);
+        if ($row === null) {
             throw new RuntimeException('The token idempotency record disappeared during acquisition.');
         }
         return $row;
-    }
-
-    /**
-     * Give up a reservation this request still holds, after the operation failed.
-     *
-     * The row is deleted rather than marked failed, so the key is completely free for another attempt —
-     * a token mutation that did not commit leaves nothing worth replaying. The owner token and the
-     * `in_progress` state are both in the predicate, so a record another request has since taken over,
-     * or one that already completed, is left untouched.
-     *
-     * @param   string  $subject    Principal the record is keyed against.
-     * @param   string  $operation  Method and path pair the key is scoped to.
-     * @param   string  $key        The client's `Idempotency-Key`.
-     * @param   string  $owner      Token this request stored when it claimed the lease.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    private function release(string $subject, string $operation, string $key, string $owner): void
-    {
-        $this->database->executeStatement(sprintf(
-            "DELETE FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ? "
-            . "AND owner_token = ? AND state = 'in_progress'",
-            $this->tables->quoted('idempotency'),
-        ), [$subject, $operation, $key, $owner]);
     }
 
     /**
@@ -580,13 +433,13 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
     }
 
     /**
-     * Read a stored HTTP status back as an integer, whatever spelling the driver returned it in.
+     * Read a stored HTTP status back as an integer, whatever spelling the ledger returned it in.
      *
-     * Drivers disagree on whether an integer column arrives as an int or a decimal string, so both are
+     * Stores disagree on whether an integer column arrives as an int or a decimal string, so both are
      * accepted. Anything else is corrupt storage rather than a client mistake, and is refused instead of
      * being cast into a status that would be replayed as though it were the stored one.
      *
-     * @param   mixed  $value  Value of the `result_status` column as the driver returned it.
+     * @param   mixed  $value  Value of the `result_status` column as the ledger returned it.
      *
      * @return  int  The stored status code.
      *

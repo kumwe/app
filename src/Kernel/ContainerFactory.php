@@ -34,6 +34,8 @@ use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\JitterSource;
 use Kumwe\CMS\Application\Automation\RetryPolicy;
 use Kumwe\CMS\Application\Automation\IdempotencyPurger;
+use Kumwe\CMS\Application\Idempotency\IdempotencyLedger;
+use Kumwe\CMS\Application\Idempotency\SecretOnceIdempotencyLedger;
 use Kumwe\CMS\Application\Automation\Scheduler;
 use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
@@ -421,7 +423,6 @@ use Kumwe\CMS\Delivery\Console\ConsoleApplication;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Delivery\Console\StreamOutput;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\DoctrineIdempotencyPurger;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\SecretOnceIdempotencyMiddleware;
@@ -513,7 +514,10 @@ use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
 use Kumwe\CMS\Infrastructure\Observability\PrometheusExposition;
 use Kumwe\CMS\Infrastructure\Observability\RedisMetricRecorder;
 use Kumwe\CMS\Infrastructure\Observability\RuntimeMetricCollector;
+use Kumwe\CMS\Infrastructure\Automation\DoctrineIdempotencyPurger;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineConnectionFactory;
+use Kumwe\CMS\Infrastructure\Persistence\DoctrineIdempotencyLedger;
+use Kumwe\CMS\Infrastructure\Persistence\DoctrineSecretOnceIdempotencyLedger;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationPlan;
@@ -3110,11 +3114,24 @@ final class ContainerFactory
                 self::service($container, ProblemDetailsResponseFactory::class),
             );
         }, true);
+        $container->share(IdempotencyLedger::class, static fn (
+            Container $container,
+        ): IdempotencyLedger => new DoctrineIdempotencyLedger(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(SecretOnceIdempotencyLedger::class, static fn (
+            Container $container,
+        ): SecretOnceIdempotencyLedger => new DoctrineSecretOnceIdempotencyLedger(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(PersistentIdempotencyMiddleware::class, static fn (
             Container $container,
         ): PersistentIdempotencyMiddleware => new PersistentIdempotencyMiddleware(
-            self::service($container, Connection::class),
-            self::service($container, TableNames::class),
+            self::service($container, IdempotencyLedger::class),
             self::service($container, ClockInterface::class),
             self::service($container, ProblemDetailsResponseFactory::class),
             self::service($container, TransactionManager::class),
@@ -3130,9 +3147,7 @@ final class ContainerFactory
         $container->share(SecretOnceIdempotencyMiddleware::class, static fn (
             Container $container,
         ): SecretOnceIdempotencyMiddleware => new SecretOnceIdempotencyMiddleware(
-            self::service($container, Connection::class),
-            self::service($container, TableNames::class),
-            self::service($container, ClockInterface::class),
+            self::service($container, SecretOnceIdempotencyLedger::class),
             self::service($container, ProblemDetailsResponseFactory::class),
             new HttpMutationPreauthorizer(
                 self::service($container, AuthorizationGateway::class),

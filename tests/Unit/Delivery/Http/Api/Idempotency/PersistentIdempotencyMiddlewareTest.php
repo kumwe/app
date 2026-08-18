@@ -20,6 +20,7 @@ use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
+use Kumwe\CMS\Infrastructure\Persistence\DoctrineIdempotencyLedger;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\Response;
@@ -33,6 +34,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
 
 #[CoversClass(PersistentIdempotencyMiddleware::class)]
+#[CoversClass(DoctrineIdempotencyLedger::class)]
 final class PersistentIdempotencyMiddlewareTest extends TestCase
 {
     private const SUBJECT = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';
@@ -100,8 +102,7 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
             }
         };
         return new PersistentIdempotencyMiddleware(
-            $database,
-            new TableNames($database, 'kumwe_'),
+            new DoctrineIdempotencyLedger($database, new TableNames($database, 'kumwe_'), $clock),
             $clock,
             new ProblemDetailsResponseFactory(),
             new class implements TransactionManager {

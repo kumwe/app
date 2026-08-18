@@ -8,12 +8,13 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\DoctrineIdempotencyPurger;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\ServerFailureResponse;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Infrastructure\Automation\DoctrineIdempotencyPurger;
+use Kumwe\CMS\Infrastructure\Persistence\DoctrineIdempotencyLedger;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
@@ -30,6 +31,7 @@ use RuntimeException;
 
 #[CoversClass(PersistentIdempotencyMiddleware::class)]
 #[CoversClass(DoctrineIdempotencyPurger::class)]
+#[CoversClass(DoctrineIdempotencyLedger::class)]
 #[CoversClass(ServerFailureResponse::class)]
 final class IdempotencyRecoveryIntegrationTest extends TestCase
 {
