@@ -1,0 +1,128 @@
+{
+  "schema": 5,
+  "name": "kumwe/contract-manifest-five",
+  "type": "component",
+  "version": "1.0.0",
+  "provider": "KumweContract\\ManifestFive\\Provider",
+  "autoload": {
+    "psr-4": {
+      "KumweContract\\ManifestFive\\": "src/"
+    }
+  },
+  "requires": {
+    "kumwe": "^2.0.0",
+    "php": "^8.5.0"
+  },
+  "contributions": {
+    "version": 3,
+    "composition": {
+      "blocks": [
+        {
+          "block_id": "kumwe.contract-manifest-five.callout",
+          "properties": {
+            "body": {
+              "type": "text",
+              "required": false,
+              "maximum_length": 4000
+            },
+            "columns": {
+              "type": "integer",
+              "required": false,
+              "maximum": 4,
+              "minimum": 1
+            },
+            "emphasis": {
+              "type": "choice",
+              "required": true,
+              "values": [
+                "muted",
+                "standard",
+                "strong"
+              ]
+            },
+            "heading": {
+              "type": "string",
+              "required": true,
+              "maximum_length": 120
+            },
+            "illustration": {
+              "type": "reference",
+              "required": false,
+              "kind": "media"
+            },
+            "show_icon": {
+              "type": "boolean",
+              "required": false
+            }
+          },
+          "slots": [
+            "aside",
+            "body"
+          ],
+          "renderer": "kumwe.contract-manifest-five.callout-renderer",
+          "version": 2
+        }
+      ],
+      "patterns": [
+        {
+          "pattern_id": "kumwe.contract-manifest-five.callout-pair",
+          "blocks": [
+            "kumwe.contract-manifest-five.callout",
+            "kumwe.contract-manifest-five.callout"
+          ],
+          "version": 1
+        }
+      ],
+      "field_controls": [
+        {
+          "control_id": "kumwe.contract-manifest-five.emphasis-picker",
+          "edits": "choice",
+          "version": 1
+        }
+      ],
+      "inspectors": [
+        {
+          "inspector_id": "kumwe.contract-manifest-five.callout-inspector",
+          "block": "kumwe.contract-manifest-five.callout",
+          "version": 1
+        }
+      ],
+      "design_vocabularies": [
+        {
+          "vocabulary_id": "kumwe.contract-manifest-five.vocabulary",
+          "tokens": [
+            "accent",
+            "surface"
+          ],
+          "recipes": [
+            "callout-card"
+          ],
+          "size_roles": [
+            "gutter",
+            "measure"
+          ],
+          "version": 1
+        }
+      ],
+      "migrations": [
+        {
+          "migration_id": "kumwe.contract-manifest-five.callout-1-2",
+          "block": "kumwe.contract-manifest-five.callout",
+          "from_version": 1,
+          "to_version": 2,
+          "operations": [
+            {
+              "action": "rename",
+              "property": "title",
+              "to": "heading"
+            },
+            {
+              "action": "remove",
+              "property": "legacy_style"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -16,12 +16,12 @@ use ValueError;
  * collection is checked for shape and bounded in size, and every autoload prefix, migration class,
  * capability identifier, and asset path is matched against a grammar before it is stored, so the
  * installer, the runtime loader, and the contribution registrar all read manifest data without
- * re-checking it. Four schema revisions are accepted: schema 1 predates typed shell contributions and
+ * re-checking it. Five schema revisions are accepted: schema 1 predates typed shell contributions and
  * is given an empty contribution set, schema 2 adds closed typed shell/business declarations, and schema
  * 3 adds signed field-presentation and custom business view/action contracts while leaving schema 2's
  * accepted contribution grammar unchanged. Schema 4 adds contribution SPI 2 durable events, automation,
- * projections, reports, and outbound adapters. Strict manifests keep `permissions` identical to their
- * contributed capabilities.
+ * projections, reports, and outbound adapters; schema 5 adds the SPI 3 declarative composition
+ * contributions. Strict manifests keep `permissions` identical to their contributed capabilities.
  *
  * @since  2.0.0
  */
@@ -128,7 +128,7 @@ final readonly class ExtensionManifest
      * @param   array<mixed>               $events                 Event declaration objects, at most 256.
      * @param   array<mixed>               $assets                 Package-relative asset paths, at most 512.
      * @param   ?ManifestContributionSet   $contributions          Strict contributions; null selects the legacy set.
-     * @param   int                        $schemaVersion          Manifest schema revision; 1 through 4 are supported.
+     * @param   int                        $schemaVersion          Manifest schema revision; 1 through 5 are supported.
      * @param   ?TemplateKisCompatibility  $templateCompatibility  Closed KIS compatibility contract for templates.
      *
      * @throws  InvalidArgumentException  When the schema is unsupported or any declared value fails its check.
@@ -154,7 +154,7 @@ final readonly class ExtensionManifest
         private int $schemaVersion = 1,
         ?TemplateKisCompatibility $templateCompatibility = null,
     ) {
-        if (!in_array($schemaVersion, [1, 2, 3, 4], true)) {
+        if (!in_array($schemaVersion, [1, 2, 3, 4, 5], true)) {
             throw new InvalidArgumentException('The extension manifest schema is unsupported.');
         }
         if (
@@ -240,7 +240,7 @@ final readonly class ExtensionManifest
      * — so a hostile document cannot exhaust memory on its way to being rejected. A strict
      * document is additionally closed to unknown keys at every level whose key set is known, which
      * turns a misspelled field into an install failure instead of a silently ignored declaration.
-     * Schemas 2 through 4 also reconcile `permissions` with contributed capabilities: an absent list is
+     * Schemas 2 through 5 also reconcile `permissions` with contributed capabilities: an absent list is
      * filled in from them, and a present one must match them exactly, order included. Historical
      * schema-one templates without a declaration receive the exact KIS 1.0 compatibility point;
      * template manifests using a strict schema must declare their closed compatibility envelope.
@@ -271,8 +271,8 @@ final readonly class ExtensionManifest
         /** @var array<string, mixed> $data */
 
         $schema = $data['schema'] ?? null;
-        if (!in_array($schema, [1, 2, 3, 4], true)) {
-            throw new InvalidArgumentException('The extension manifest schema must be 1, 2, 3, or 4.');
+        if (!in_array($schema, [1, 2, 3, 4, 5], true)) {
+            throw new InvalidArgumentException('The extension manifest schema must be 1, 2, 3, 4, or 5.');
         }
         if ($schema >= 2) {
             self::assertKnownKeys($data, [
@@ -435,7 +435,7 @@ final readonly class ExtensionManifest
     /**
      * Report which manifest revision the package was written against.
      *
-     * @return  int  1 for legacy, 2 for typed contributions, or 3 for presenters and custom contracts.
+     * @return  int  1 for legacy through 5 for composition contributions, as `fromJson()` accepted it.
      *
      * @since   2.0.0
      */

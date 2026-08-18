@@ -294,6 +294,54 @@ final readonly class ExtensionContributionRegistrySet
     private OwnedRuntimeContributionRegistry $contentTranslationGroups;
 
     /**
+     * Owner-bound runtime registry for composition blocks.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Declared placeable blocks, inert until Gate B.
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $compositionBlocks;
+
+    /**
+     * Owner-bound runtime registry for composition patterns.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Declared reusable structures, inert until Gate B.
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $compositionPatterns;
+
+    /**
+     * Owner-bound runtime registry for composition field controls.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Declared editing controls, inert until Gate B.
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $compositionFieldControls;
+
+    /**
+     * Owner-bound runtime registry for composition inspectors.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Declared inspector panels, inert until Gate B.
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $compositionInspectors;
+
+    /**
+     * Owner-bound runtime registry for composition design vocabularies.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Declared tokens, recipes and size roles, inert until Gate B.
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $compositionDesignVocabularies;
+
+    /**
+     * Owner-bound runtime registry for composition migrations.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Declared document migrations, inert until Gate B.
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $compositionMigrations;
+
+    /**
      * Every contribution kind, keyed by its dotted inventory path.
      *
      * Inventory and lifecycle removal both derive from this map, so a new kind becomes
@@ -386,6 +434,14 @@ final readonly class ExtensionContributionRegistrySet
             UnitConversionProvider::class,
         );
         $this->contentTranslationGroups = new OwnedRuntimeContributionRegistry('content translation group');
+        $this->compositionBlocks = new OwnedRuntimeContributionRegistry('composition block');
+        $this->compositionPatterns = new OwnedRuntimeContributionRegistry('composition pattern');
+        $this->compositionFieldControls = new OwnedRuntimeContributionRegistry('composition field control');
+        $this->compositionInspectors = new OwnedRuntimeContributionRegistry('composition inspector');
+        $this->compositionDesignVocabularies = new OwnedRuntimeContributionRegistry(
+            'composition design vocabulary',
+        );
+        $this->compositionMigrations = new OwnedRuntimeContributionRegistry('composition migration');
         $this->surfaces = [
             'capabilities' => $this->capabilities,
             'resource_policies' => $this->resourcePolicies,
@@ -421,6 +477,12 @@ final readonly class ExtensionContributionRegistrySet
             'integration.money_rate_providers' => $this->moneyRateProviders,
             'integration.unit_conversion_providers' => $this->unitConversionProviders,
             'content.translation_groups' => $this->contentTranslationGroups,
+            'composition.blocks' => $this->compositionBlocks,
+            'composition.patterns' => $this->compositionPatterns,
+            'composition.field_controls' => $this->compositionFieldControls,
+            'composition.inspectors' => $this->compositionInspectors,
+            'composition.design_vocabularies' => $this->compositionDesignVocabularies,
+            'composition.migrations' => $this->compositionMigrations,
         ];
         if ($withCore) {
             $registrar = $this->registrar(
@@ -864,6 +926,81 @@ final readonly class ExtensionContributionRegistrySet
     public function contentTranslationGroups(): OwnedRuntimeContributionRegistry
     {
         return $this->contentTranslationGroups;
+    }
+
+    /**
+     * Return the composition blocks carried by this extension contribution registry set.
+     *
+     * Everything here is declarative: the Gate B composition surface is what will consume it, and core
+     * contributes none, so the surface is empty until a package that composes is installed and trusted.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Declared placeable blocks.
+     *
+     * @since   2.0.0
+     */
+    public function compositionBlocks(): OwnedRuntimeContributionRegistry
+    {
+        return $this->compositionBlocks;
+    }
+
+    /**
+     * Return the composition patterns carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Declared reusable structures.
+     *
+     * @since   2.0.0
+     */
+    public function compositionPatterns(): OwnedRuntimeContributionRegistry
+    {
+        return $this->compositionPatterns;
+    }
+
+    /**
+     * Return the composition field controls carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Declared editing controls.
+     *
+     * @since   2.0.0
+     */
+    public function compositionFieldControls(): OwnedRuntimeContributionRegistry
+    {
+        return $this->compositionFieldControls;
+    }
+
+    /**
+     * Return the composition inspectors carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Declared inspector panels.
+     *
+     * @since   2.0.0
+     */
+    public function compositionInspectors(): OwnedRuntimeContributionRegistry
+    {
+        return $this->compositionInspectors;
+    }
+
+    /**
+     * Return the composition design vocabularies carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Declared tokens, recipes and size roles.
+     *
+     * @since   2.0.0
+     */
+    public function compositionDesignVocabularies(): OwnedRuntimeContributionRegistry
+    {
+        return $this->compositionDesignVocabularies;
+    }
+
+    /**
+     * Return the composition migrations carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Declared document migrations.
+     *
+     * @since   2.0.0
+     */
+    public function compositionMigrations(): OwnedRuntimeContributionRegistry
+    {
+        return $this->compositionMigrations;
     }
 
     /**

@@ -1,0 +1,43 @@
+{
+  "format": "kumwe-composition-contribution-registrar-v1",
+  "interfaces": {
+    "Kumwe\\CMS\\Extension\\Contribution\\CompositionContributionRegistrar": [
+      "compositionBlock(Kumwe\\CMS\\Extension\\Contribution\\CompositionBlockDeclaration $declaration): void",
+      "compositionPattern(Kumwe\\CMS\\Extension\\Contribution\\CompositionPatternDeclaration $declaration): void",
+      "compositionFieldControl(Kumwe\\CMS\\Extension\\Contribution\\CompositionFieldControlDeclaration $declaration): void",
+      "compositionInspector(Kumwe\\CMS\\Extension\\Contribution\\CompositionInspectorDeclaration $declaration): void",
+      "compositionDesignVocabulary(Kumwe\\CMS\\Extension\\Contribution\\CompositionDesignVocabularyDeclaration $declaration): void",
+      "compositionMigration(Kumwe\\CMS\\Extension\\Contribution\\CompositionMigrationDeclaration $declaration): void"
+    ]
+  },
+  "enums": {
+    "Kumwe\\CMS\\Extension\\Contribution\\CompositionPropertyType": [
+      "string",
+      "text",
+      "integer",
+      "number",
+      "boolean",
+      "choice",
+      "reference"
+    ]
+  },
+  "manifest_section": "contributions.composition",
+  "section_keys": [
+    "blocks",
+    "patterns",
+    "field_controls",
+    "inspectors",
+    "design_vocabularies",
+    "migrations"
+  ],
+  "declaration_members": {
+    "blocks": ["block_id", "properties", "slots", "renderer", "version"],
+    "patterns": ["pattern_id", "blocks", "version"],
+    "field_controls": ["control_id", "edits", "version"],
+    "inspectors": ["inspector_id", "block", "version"],
+    "design_vocabularies": ["vocabulary_id", "tokens", "recipes", "size_roles", "version"],
+    "migrations": ["migration_id", "block", "from_version", "to_version", "operations"]
+  },
+  "migration_actions": ["clear", "remove", "rename"],
+  "reference_kinds": ["business_record", "content", "media"]
+}

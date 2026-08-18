@@ -132,7 +132,8 @@ Schema 2 is required for application-shell contributions. A minimal graphical co
 
 Identifiers use `vendor/name`; compatibility and dependency constraints use semantic versions. The manifest is installation input and part of the extension's compatibility contract. Do not infer registration by scanning PHP files.
 
-Schema-2, schema-3, and schema-4 manifests reject unknown root, requirement, autoload, dependency, and contribution keys.
+Schema-2, schema-3, schema-4, and schema-5 manifests reject unknown root, requirement, autoload, dependency, and
+contribution keys.
 Every contribution identifier must begin with the extension namespace (`acme/announcements` becomes
 `acme.announcements`). Graphical workspaces, navigation entries, routes, views, templates, and KIS surfaces
 share an additive 191-character lowercase grammar that starts and ends alphanumerically and otherwise admits
@@ -148,7 +149,11 @@ and custom business handlers. Schema 4 retains those shapes and requires contrib
 adapters. See [Business integrations and extension SDK](business-integrations.md). Schema 4 also admits the
 optional `content` section, whose `translation_groups` list records an admission-time language inventory and
 fallback claim. It does not yet associate contributed runtime content items with those declarations; see
-[Content translation](content-translation.md).
+[Content translation](content-translation.md). Schema 5 retains everything schema 4 accepts, requires contribution
+SPI 3, and admits the closed `composition` section — `blocks`, `patterns`, `field_controls`, `inspectors`,
+`design_vocabularies`, and `migrations` — the declarative Gate A half of the visual composition contract. Those
+declarations are validated at admission and at install against the published composition schema profile and are
+inert until the Gate B composition surface consumes them.
 
 ### Business-definition contributions
 

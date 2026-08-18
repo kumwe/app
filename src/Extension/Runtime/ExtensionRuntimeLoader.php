@@ -128,7 +128,7 @@ final readonly class ExtensionRuntimeLoader
                 || !is_array($themeSites)
                 || !array_is_list($themeSites)
                 || !is_int($manifestSchema)
-                || !in_array($manifestSchema, [1, 2, 3, 4], true)
+                || !in_array($manifestSchema, [1, 2, 3, 4, 5], true)
                 || ($manifestSchema >= 2 && !is_array($declaredContributions))
             ) {
                 throw new RuntimeException('A compiled extension entry is incomplete.');
