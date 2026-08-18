@@ -20,9 +20,10 @@ A translated item is a **translation group**: one logical item, one content entr
   publishes, each named in its own language.
 - **Business definition labels carry locales too** — `EntityTypeDefinition`'s singular and plural labels
   and `FieldDefinition`'s label, description and help text.
-- **Extensions can declare translation-group inventory metadata** through
-  `contributions.content.translation_groups`. The declaration is admitted and inventoried today; it does
-  not yet associate contributed runtime content entries with the declared group.
+- **Extensions declare translation sets and associate their content with them.** A package declares its
+  sets through `contributions.content.translation_groups`, and at runtime places each of its stored
+  entries into a declared set through the generation-one item-association contract, which enforces the
+  declaration's locales and fallback at the moment of storage.
 
 Nothing above is optional or configured on. A site that never translates anything is completely
 unaffected: no alternates, no selector, no extra columns in use, and the same bytes in every stored
@@ -196,16 +197,15 @@ The declaration sits with the contract rather than in `Content\Domain` because i
 inventory metadata: nothing in the content model reads it, and what it describes is a promise a
 *package* makes when its contribution set is admitted.
 
-That boundary is important. The current registrar validates and inventories the declaration, but no
-runtime item identifier is carried by it and no synchronizer attaches contributed `content_entries` to
-the declared group. An admitted declaration therefore does **not** prove that the package's runtime
-content uses the locales or fallback it names. Runtime association needs an additive contract of its own;
-the existing frozen declaration must not be reinterpreted after release.
+That boundary is important. The registrar validates and inventories the declaration, and no runtime
+item identifier is carried by it: content entries only come into existence after install, so the
+declaration cannot name them. Attaching a stored entry to a declared set is therefore its own
+**additive, versioned contract** — the frozen declaration is never reinterpreted after release.
 
 The locale list is a **closed declaration**, not a hint: an operator can read which languages a package
 claims before installing it, and provider registration cannot widen the manifest declaration. The
-declared fallback must be one of the declared locales. These are admission guarantees; enforcement
-against individual contributed items belongs to the future association contract described above.
+declared fallback must be one of the declared locales. These admission guarantees are enforced against
+individual contributed items by the association contract below.
 
 The registrar is a separate one-method interface, so a package that publishes in one language is source
 compatible and untouched. Its signature, the manifest section it is read from and the members a
@@ -214,6 +214,43 @@ declaration carries are pinned in
 
 A manifest that declares no content set exports no `content` section at all, so an already-published
 package's bytes are the bytes it was admitted against.
+
+### Associating a stored entry with a declared set
+
+The runtime half of the contract is `TranslationSetItemAssociation`, generation one. A package
+constructs it with its own identifier and one of its declared sets, and hands it to the same
+`ContentService` every host-service consumer stores content through:
+
+```php
+use Kumwe\CMS\Extension\Contribution\TranslationSetItemAssociation;
+
+$association = new TranslationSetItemAssociation('acme/blog', 'acme.blog.articles');
+$content->translateContributed($context, $entryId, $version, LocaleTag::fromString('de'), $association);
+```
+
+Core resolves the association against the **active** contribution registry before anything is stored,
+and the resolved declaration — never the caller — supplies both the runtime group and the fallback:
+
+- The group is derived, not allocated: one name-based UUID per generation, site, owner and set. The
+  same association always resolves to the same group, across requests, restarts and reinstalls, which
+  is what makes each entry's stored `translation_group_id` a durable link back to the declaring
+  package without a second storage surface.
+- The declared fallback is restated on every attachment, so a group whose stored declaration ever
+  contradicted the manifest refuses the write instead of drifting.
+- A locale the declaration does not carry is refused. A set the claimed owner has not actively
+  declared is refused — including after the package is disabled, because resolution consults the live
+  registry rather than a copy. Another package's set cannot even be spelled: the association requires
+  the set identifier to sit inside its owner's namespace.
+- The attachment commits through exactly the transaction core content uses, and its audit event names
+  the owner and set beside the entry, so the association is reconstructable from the trail.
+
+Delivery needs no second path: the derived group is an ordinary translation group, so negotiation,
+fallback, `hreflang` and the language selector treat extension-contributed variants exactly as they
+treat core content — and stored variants keep rendering after the contributing package is disabled,
+because content is content. The association class, its exported members, the derivation (down to a
+recorded byte-for-byte example) and the one `ContentService` method it travels through are pinned in
+`tests/Fixtures/ExtensionApi/content-translation-association-v1.json`; a future generation is added
+beside generation one, never edited into it.
 
 ## The checks
 
@@ -224,11 +261,14 @@ package's bytes are the bytes it was admitted against.
 | `tests/Unit/Content/Application/ExtensionContentTranslationTest.php` | Manifest/provider admission agrees and cannot widen the inventoried language declaration |
 | `tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php` | Alternates list exactly the published locales, named in their own language |
 | `tests/Unit/Extension/Development/ContentTranslationRegistrarFixtureTest.php` | The additive contract's bytes are the released ones |
+| `tests/Unit/Extension/Development/ContentTranslationAssociationFixtureTest.php` | The association contract's bytes, members and group derivation are the released ones |
+| `tests/Unit/Extension/Contribution/TranslationSetItemAssociationTest.php` | The association claim is closed over owner, namespace and generation, and its derivation is a stable function |
+| `tests/Unit/Content/Application/ContributedContentTranslationTest.php` | The resolved declaration decides group and fallback, the refusals leave the store untouched, and the audit trail names the set |
 | `tests/Integration/Content/MultilingualContentIntegrationTest.php` | All of it on a real database, including both uniqueness constraints and the rendered public page |
+| `tests/Integration/Extension/ContributedContentTranslationIntegrationTest.php` | The signed fixture: a package installs through the trust path, stores two variants through the public application path, renders both through real negotiation, and every promised refusal refuses |
 
 ## What is not here
 
 Translating the *content itself* is editorial work, not platform work: Kumwe stores and serves the
-languages an operator writes, and integrates with no translation service. Associating extension-owned
-runtime items with admitted translation declarations is also not implemented by the current contract.
-Per-locale visual qualification of the public surface is separate work.
+languages an operator writes, and integrates with no translation service. Per-locale visual
+qualification of the public surface is separate work.

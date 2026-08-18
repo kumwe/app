@@ -1,0 +1,22 @@
+{
+  "format": "kumwe-content-translation-association-v1",
+  "generation": 1,
+  "association_class": "Kumwe\\CMS\\Extension\\Contribution\\TranslationSetItemAssociation",
+  "association_members": ["generation", "owner", "translation_set"],
+  "group_derivation": {
+    "algorithm": "uuid5",
+    "namespace": "018f22e2-7c8b-7ab0-8f3a-88e8026bc101",
+    "name": "{generation}|{site}|{owner}|{translation_set}",
+    "example": {
+      "generation": 1,
+      "site": "default",
+      "owner": "acme/blog",
+      "translation_set": "acme.blog.articles",
+      "group_id": "8b2faf5a-b1ee-5b5b-ab9e-296954856595"
+    }
+  },
+  "application_path": {
+    "service": "Kumwe\\CMS\\Content\\Application\\ContentService",
+    "method": "translateContributed(Kumwe\\CMS\\Application\\Authorization\\ExecutionContext $context, string $id, int $expectedVersion, Kumwe\\CMS\\Localization\\Domain\\LocaleTag $locale, Kumwe\\CMS\\Extension\\Contribution\\TranslationSetItemAssociation $association): Kumwe\\CMS\\Content\\Application\\ContentRecord"
+  }
+}
