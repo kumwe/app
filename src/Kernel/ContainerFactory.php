@@ -828,6 +828,7 @@ final class ContainerFactory
         $this->registerObservability($container, $configuration, $root, $console);
         $this->registerLogging($container, $configuration);
         $this->registerPersistence($container, $configuration, $root, $kernelProof, $loadRuntime);
+        $this->registerLocalization($container, $configuration, $root);
         $this->registerExtensions($container, $configuration, $root, $kernelProof, $loadRuntime);
         $routeCacheFile = self::routeCacheFile(
             $root,
@@ -1777,53 +1778,27 @@ final class ContainerFactory
     }
 
     /**
-     * Register the presentation, routing and PSR-15 runner services, then share the application.
+     * Register the interface-translation services every surface resolves its wording through.
      *
-     * Twig environments are built through `IsolatedTwigEnvironmentFactory` so a site template and an
-     * administrator template can never read each other's files. The shared `Application` is
-     * registered last because its factory pipes the middleware and declares every route, and so must
-     * see the middleware and handlers this method registers on the way.
+     * This runs before the extension registrar and the HTTP registrar, because both reach for a
+     * translator during composition: a contributed automation form is compiled while extensions are
+     * registered, and the three Twig environments and the console output are built later. ADR 0002
+     * fixes the shape: XLIFF authored, compiled to plain PHP, formatted by ICU, resolved through
+     * core, extension, site and organization.
      *
-     * @param   Container                 $container       Container being composed.
-     * @param   ApplicationConfiguration  $configuration   Boot configuration for base URL, site and caching.
-     * @param   string                    $root            Absolute path of the repository root.
-     * @param   string                    $routeCacheFile  Kernel-specific FastRoute cache path.
-     * @param   bool                      $portalEnabled   Whether to register the ordinary-user portal runtime.
+     * @param   Container                 $container      Container being composed.
+     * @param   ApplicationConfiguration  $configuration  Resolved application configuration.
+     * @param   string                    $root           Absolute path of the repository root.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    private function registerHttp(
+    private function registerLocalization(
         Container $container,
         ApplicationConfiguration $configuration,
         string $root,
-        string $routeCacheFile,
-        bool $portalEnabled,
     ): void {
-        $container->share(
-            ViteAssetManifest::class,
-            new ViteAssetManifest($root . '/public/assets/build/.vite/manifest.json'),
-            true,
-        );
-        $container->share(ContentFormPresenter::class, new ContentFormPresenter(), true);
-        $container->share(ContentFormDataMapper::class, new ContentFormDataMapper(), true);
-        $container->share(ContentModelFormMapper::class, new ContentModelFormMapper(), true);
-        $container->share(ContentModelFormPresenter::class, new ContentModelFormPresenter(), true);
-        $container->share(SitePresentationFormMapper::class, static fn (
-            Container $container,
-        ): SitePresentationFormMapper => new SitePresentationFormMapper(
-            self::service($container, Translator::class),
-        ), true);
-        $container->share(RichTextFormatter::class, new RichTextFormatter(), true);
-        $container->share(ContentPresenter::class, static fn (Container $container): ContentPresenter =>
-            new ContentPresenter(self::service($container, RichTextFormatter::class)), true);
-        $container->share(ResponseFactoryInterface::class, new ResponseFactory(), true);
-        $container->share(StreamFactoryInterface::class, new StreamFactory(), true);
-        // Interface translation. Registered ahead of the Twig environments because every one of them
-        // receives the same translation extension, and ahead of the pipeline because the locale is
-        // negotiated before anything renders. ADR 0002 fixes the shape: XLIFF authored, compiled to
-        // plain PHP, formatted by ICU, resolved through core, extension, site and organization.
         $container->share(SupportedLocales::class, new SupportedLocales(), true);
         $container->share(MessagePatternFormatter::class, new IntlMessagePatternFormatter(), true);
         $container->alias(MessagePatternValidator::class, MessagePatternFormatter::class);
@@ -1892,6 +1867,52 @@ final class ContainerFactory
         ): TranslationScopeMiddleware => new TranslationScopeMiddleware(
             self::service($container, ActiveLocale::class),
         ), true);
+    }
+
+    /**
+     * Register the presentation, routing and PSR-15 runner services, then share the application.
+     *
+     * Twig environments are built through `IsolatedTwigEnvironmentFactory` so a site template and an
+     * administrator template can never read each other's files. The shared `Application` is
+     * registered last because its factory pipes the middleware and declares every route, and so must
+     * see the middleware and handlers this method registers on the way.
+     *
+     * @param   Container                 $container       Container being composed.
+     * @param   ApplicationConfiguration  $configuration   Boot configuration for base URL, site and caching.
+     * @param   string                    $root            Absolute path of the repository root.
+     * @param   string                    $routeCacheFile  Kernel-specific FastRoute cache path.
+     * @param   bool                      $portalEnabled   Whether to register the ordinary-user portal runtime.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function registerHttp(
+        Container $container,
+        ApplicationConfiguration $configuration,
+        string $root,
+        string $routeCacheFile,
+        bool $portalEnabled,
+    ): void {
+        $container->share(
+            ViteAssetManifest::class,
+            new ViteAssetManifest($root . '/public/assets/build/.vite/manifest.json'),
+            true,
+        );
+        $container->share(ContentFormPresenter::class, new ContentFormPresenter(), true);
+        $container->share(ContentFormDataMapper::class, new ContentFormDataMapper(), true);
+        $container->share(ContentModelFormMapper::class, new ContentModelFormMapper(), true);
+        $container->share(ContentModelFormPresenter::class, new ContentModelFormPresenter(), true);
+        $container->share(SitePresentationFormMapper::class, static fn (
+            Container $container,
+        ): SitePresentationFormMapper => new SitePresentationFormMapper(
+            self::service($container, Translator::class),
+        ), true);
+        $container->share(RichTextFormatter::class, new RichTextFormatter(), true);
+        $container->share(ContentPresenter::class, static fn (Container $container): ContentPresenter =>
+            new ContentPresenter(self::service($container, RichTextFormatter::class)), true);
+        $container->share(ResponseFactoryInterface::class, new ResponseFactory(), true);
+        $container->share(StreamFactoryInterface::class, new StreamFactory(), true);
         $container->share(IsolatedTwigEnvironmentFactory::class, static fn (
             Container $container,
         ): IsolatedTwigEnvironmentFactory => new IsolatedTwigEnvironmentFactory(

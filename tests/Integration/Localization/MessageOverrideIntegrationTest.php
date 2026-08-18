@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Integration\Localization;
 
+use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use DateTimeZone;
 use Joomla\DI\Container;
@@ -179,6 +180,7 @@ final class MessageOverrideIntegrationTest extends TestCase
             $authorization,
             $transactions,
             $patterns,
+            InterfaceTranslation::translator(),
             $audit,
             $clock,
         );
@@ -300,6 +302,7 @@ final class MessageOverrideIntegrationTest extends TestCase
             $authorization,
             $transactions,
             $patterns,
+            InterfaceTranslation::translator(),
             new class implements AuditRecorder {
                 /**
                  * Simulate the durable audit sink refusing the mutation.
