@@ -270,8 +270,11 @@ The browser matrix has a **language axis** as well as a device axis: `desktop-ch
 and `playwright.config.ts` files a baseline under the project name. That separation is the point — a
 right-to-left page compared against a left-to-right baseline is either a false failure or a green run
 that checked nothing, so each language compares against its own. The source-language projects keep
-their original names, because their committed baselines are filed under those names. What the axis
-still owes is the screenshots themselves, tracked as `V2-LNG-009`.
+their original names, because their committed baselines are filed under those names. Each of the four
+projects carries its committed baselines under `tests/Browser/screenshots/`, and the journeys hold
+every surface to the same acceptance as any other locale: the mirrored render matches its committed
+baseline, the document lays out with zero horizontal overflow, and every critical control on the
+surface stays visible and keyboard-reachable after the mirroring.
 
 ---
 
