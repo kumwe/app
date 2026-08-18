@@ -439,34 +439,23 @@ final readonly class GeneratedBusinessBrowserController
             'A generated custom view schema is unavailable.',
         );
 
+        $wording = $this->translator;
         try {
-            $request = BusinessCustomViewRequest::fromQuery(
-                $this->translator,
-                $query,
-                $viewMetadata,
-                $fields,
-                $schema,
-            );
+            $request = BusinessCustomViewRequest::fromQuery($wording, $query, $viewMetadata, $fields, $schema);
         } catch (InvalidArgumentException $exception) {
             $retainedQuery = $query;
             unset($retainedQuery['run']);
             $retainedQuery['configure'] = '1';
             try {
                 $retained = BusinessCustomViewRequest::fromQuery(
-                    $this->translator,
+                    $wording,
                     $retainedQuery,
                     $viewMetadata,
                     $fields,
                     $schema,
                 );
             } catch (InvalidArgumentException) {
-                $retained = BusinessCustomViewRequest::fromQuery(
-                    $this->translator,
-                    [],
-                    $viewMetadata,
-                    $fields,
-                    $schema,
-                );
+                $retained = BusinessCustomViewRequest::fromQuery($wording, [], $viewMetadata, $fields, $schema);
             }
 
             return $this->customViewError($metadata, $record, $retained, $exception->getMessage());

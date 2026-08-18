@@ -211,6 +211,38 @@ final class BusinessCustomViewRequestTest extends TestCase
         self::assertSame(['required_null' => null, 'optional_null' => null], $submitted->value);
     }
 
+
+    /**
+     * A declared constant and an enumeration present their choices in catalogue wording.
+     *
+     * A structured declared value has no scalar text of its own, so the form has to name it; a null,
+     * a true and a false have wording rather than PHP's own spelling. Both come from the catalogue
+     * now, which is why the labels are asserted as the sentences an operator reads.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDeclaredConstantsAndEnumerationsCarryCatalogueLabels(): void
+    {
+        $schema = [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'properties' => [
+                'mode' => ['type' => ['string', 'null'], 'enum' => ['fast', true, false, null, ['nested' => 'value']]],
+                'fixed' => ['type' => 'string', 'const' => 'always'],
+            ],
+            'required' => ['mode', 'fixed'],
+        ];
+
+        $form = BusinessSchemaForm::fromInput($schema, InterfaceTranslation::translator(), 'input');
+
+        $labels = array_column($form->fields[0]['options'], 'label');
+        self::assertSame(['fast', 'Yes', 'No', 'Not set', 'Declared choice 5'], $labels);
+        self::assertSame('const', $form->fields[1]['kind']);
+        self::assertSame('always', $form->fields[1]['display']);
+    }
+
     /**
      * Build policy-visible view metadata for native-control tests.
      *

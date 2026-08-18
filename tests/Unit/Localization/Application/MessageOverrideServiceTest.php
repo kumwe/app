@@ -697,4 +697,108 @@ final class MessageOverrideServiceTest extends TestCase
             }
         };
     }
+
+    /**
+     * A replacement longer than the stored ceiling is refused before it reaches the store.
+     *
+     * The ceiling exists because the whole override map is read once per unit of work on the render
+     * path; a pattern nobody bounded would make every page pay for one operator's paste.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAReplacementBeyondTheStoredCeilingIsRefused(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('limited to 4000 bytes');
+        $service->override(
+            $this->actor(),
+            MessageCatalogueLayer::Site,
+            'en-GB',
+            self::CLIENT,
+            str_repeat('a', MessageOverrideService::MAXIMUM_PATTERN_BYTES + 1),
+        );
+    }
+
+    /**
+     * A locale tag that is not even well formed is refused as an uncarried locale, not as a crash.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMalformedLocaleTagIsRefusedAsAnUncarriedLocale(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('does not carry that locale');
+        $service->override($this->actor(), MessageCatalogueLayer::Site, 'not a locale', self::CLIENT, 'Patient');
+    }
+
+    /**
+     * Inline markup that closes the wrong element is refused, both ways round.
+     *
+     * Balance has to be proven rather than assumed: a mismatched close and a tag left open are two
+     * different ways to store markup that would break the page it is rendered into.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdministeredWordingRefusesMarkupThatDoesNotBalance(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+
+        foreach (['<em>Patient</strong>', '<em>Patient', 'Patient</em>'] as $pattern) {
+            try {
+                $service->override($this->actor(), MessageCatalogueLayer::Site, 'en-GB', self::CLIENT, $pattern);
+                self::fail('The service stored unbalanced markup: ' . $pattern);
+            } catch (InvalidArgumentException $refused) {
+                self::assertStringContainsString('unbalanced inline markup', $refused->getMessage());
+            }
+        }
+    }
+
+    /**
+     * A scope that already carries its whole quota refuses one more identifier.
+     *
+     * The quota is read inside the same transaction as the write, so this also pins that the refusal
+     * happens after the durable lock rather than on a stale count.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAScopeAtItsQuotaRefusesAFurtherIdentifier(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+        $at = $this->clock()->now();
+        for ($index = 0; $index < MessageOverrideService::MAXIMUM_PER_SCOPE; $index++) {
+            $store->put(new MessageOverrideRecord(
+                MessageCatalogueLayer::Site,
+                'default',
+                null,
+                'en-GB',
+                sprintf('core.business.client.label_%d', $index),
+                'Patient',
+                $at,
+            ));
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('maximum of 500 overrides');
+        $service->override($this->actor(), MessageCatalogueLayer::Site, 'en-GB', self::CLIENT, 'Patient');
+    }
 }

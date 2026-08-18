@@ -15581,7 +15581,7 @@
         <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
       </notes>
       <segment>
-        <source>Exported {is_array} content entries and {is_array2} menus as profile {profile}.</source>
+        <source>Exported {entries} content entries and {menus} menus as profile {profile}.</source>
       </segment>
     </unit>
     <unit id="core.console.demo_export_profile.catalog_re_validation_checksum">
@@ -15589,7 +15589,7 @@
         <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
       </notes>
       <segment>
-        <source>Catalog re-validation checksum {verified}.</source>
+        <source>Catalog re-validation checksum {checksum}.</source>
       </segment>
     </unit>
     <unit id="core.console.demo_export_profile.copy_resources_demo_over_an_installation">
@@ -15613,7 +15613,7 @@
         <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
       </notes>
       <segment>
-        <source>Exported {count} business definitions, {count2} records, {count3} relations, {count4} actions, and {count5} archives.</source>
+        <source>Exported {definitions} business definitions, {records} records, {relations} relations, {actions} actions, and {archives} archives.</source>
       </segment>
     </unit>
     <unit id="core.console.demo_export_profile.business_catalog_re_validation_checksum">
@@ -15621,7 +15621,7 @@
         <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
       </notes>
       <segment>
-        <source>Business catalog re-validation checksum {verified}.</source>
+        <source>Business catalog re-validation checksum {checksum}.</source>
       </segment>
     </unit>
     <unit id="core.console.demo_export_profile.exported_the_demonstration_access_cast_with">
@@ -15629,7 +15629,7 @@
         <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
       </notes>
       <segment>
-        <source>Exported the demonstration access cast with {count} roles, {count2} staff, and {count3} organizations.</source>
+        <source>Exported the demonstration access cast with {roles} roles, {staff} staff, and {organizations} organizations.</source>
       </segment>
     </unit>
     <unit id="core.console.demo_export_profile.access_catalog_re_validation_checksum">
@@ -15637,7 +15637,7 @@
         <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
       </notes>
       <segment>
-        <source>Access catalog re-validation checksum {access}.</source>
+        <source>Access catalog re-validation checksum {checksum}.</source>
       </segment>
     </unit>
     <unit id="core.console.demo_export_profile.no_example_identities_qualified_access_json">
@@ -15653,7 +15653,7 @@
         <note category="context">Console output line on src/Delivery/Console/Command/DemoExportCommand.php.</note>
       </notes>
       <segment>
-        <source>Withheld {business} identities outside the reserved .example zone.</source>
+        <source>Withheld {identities} identities outside the reserved .example zone.</source>
       </segment>
     </unit>
     <unit id="core.console.demo_install.description">

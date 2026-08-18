@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Portal\Http;
 
+use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
@@ -101,13 +103,161 @@ final class PortalSecurityHandlerTest extends TestCase
         self::assertSame('portal.step_up.challenge', $provider->lastIntent?->purpose);
     }
 
+
+    /**
+     * The landing page renders the verification confirmation from the catalogue after a step-up.
+     *
+     * The redirect after a successful verification carries only a flag, so the sentence a member
+     * reads on arrival has to come from the catalogue rather than from the query string.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheLandingPageConfirmsVerificationInCatalogueWording(): void
+    {
+        $handler = new PortalSecurityHandler(
+            new CapturingStepUpProvider(),
+            $this->renderer(),
+            InterfaceTranslation::translator(),
+            true,
+            3600,
+        );
+        $request = (new ServerRequest([], [], new Uri('https://example.test/portal/security?verified=1'), 'GET'))
+            ->withAttribute(PortalSession::REQUEST_ATTRIBUTE, $this->session())
+            ->withQueryParams(['verified' => '1']);
+
+        $response = $handler->handle($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('Identity verification succeeded.', (string) $response->getBody());
+    }
+
+    /**
+     * The landing page shows no notice when the member simply navigated to it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheLandingPageShowsNoNoticeWithoutAVerification(): void
+    {
+        $handler = new PortalSecurityHandler(
+            new CapturingStepUpProvider(),
+            $this->renderer(),
+            InterfaceTranslation::translator(),
+            true,
+            3600,
+        );
+        $request = (new ServerRequest([], [], new Uri('https://example.test/portal/security'), 'GET'))
+            ->withAttribute(PortalSession::REQUEST_ATTRIBUTE, $this->session());
+
+        $response = $handler->handle($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringNotContainsString('Identity verification succeeded.', (string) $response->getBody());
+    }
+
+    /**
+     * A security path naming no supported operation answers 404 with catalogue wording.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnsupportedSecurityPathIsAnsweredWithCatalogueWording(): void
+    {
+        $handler = new PortalSecurityHandler(
+            new CapturingStepUpProvider(),
+            $this->renderer(),
+            InterfaceTranslation::translator(),
+            true,
+            3600,
+        );
+        $request = (new ServerRequest([], [], new Uri('https://example.test/portal/security/unknown'), 'POST'))
+            ->withAttribute(PortalSession::REQUEST_ATTRIBUTE, $this->session())
+            ->withParsedBody([]);
+
+        $response = $handler->handle($request);
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertStringContainsString(
+            'The requested security operation is unavailable.',
+            (string) $response->getBody(),
+        );
+    }
+
+    /**
+     * A refused verification code answers 403 with the shared step-up wording.
+     *
+     * The same sentence is used wherever a code is refused, so a member meets one explanation rather
+     * than a different phrasing per surface.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARefusedCodeIsReportedWithTheSharedStepUpWording(): void
+    {
+        $handler = new PortalSecurityHandler(
+            new RejectingStepUpProvider(),
+            $this->renderer(),
+            InterfaceTranslation::translator(),
+            true,
+            3600,
+        );
+        $request = (new ServerRequest([], [], new Uri('https://example.test/portal/security/challenge'), 'POST'))
+            ->withAttribute(PortalSession::REQUEST_ATTRIBUTE, $this->session())
+            ->withAttribute(TrustedProxyMiddleware::ATTRIBUTE_CLIENT_ADDRESS, '192.0.2.5')
+            ->withParsedBody(['code' => '000000']);
+
+        $response = $handler->handle($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertStringContainsString(
+            'The verification code is invalid, expired, or already used.',
+            (string) $response->getBody(),
+        );
+    }
+
+    /**
+     * A throttled address is told to try again later, at 429 and with a Retry-After.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAThrottledAddressIsToldToTryAgainLater(): void
+    {
+        $handler = new PortalSecurityHandler(
+            new ThrottlingStepUpProvider(),
+            $this->renderer(),
+            InterfaceTranslation::translator(),
+            true,
+            3600,
+        );
+        $request = (new ServerRequest([], [], new Uri('https://example.test/portal/security/recovery'), 'POST'))
+            ->withAttribute(PortalSession::REQUEST_ATTRIBUTE, $this->session())
+            ->withAttribute(TrustedProxyMiddleware::ATTRIBUTE_CLIENT_ADDRESS, '192.0.2.5')
+            ->withParsedBody(['recovery_code' => 'aaaa-bbbb']);
+
+        $response = $handler->handle($request);
+
+        self::assertSame(429, $response->getStatusCode());
+        self::assertSame('900', $response->getHeaderLine('Retry-After'));
+        self::assertStringContainsString(
+            'Too many unsuccessful authentication attempts.',
+            (string) $response->getBody(),
+        );
+    }
+
     private function renderer(): PortalRenderer
     {
         $workspaces = new PortalWorkspaceRegistry();
         $capabilities = new CapabilityDefinitionRegistry();
         return new PortalRenderer(
             new Environment(new ArrayLoader([
-                'portal/security.twig' => '{{ portal_session.id }} {{ notice }} '
+                'portal/security.twig' => '{{ portal_session.id }} {{ notice }} {{ error }} '
                     . '{% for code in recovery_codes %}{{ code }} {% endfor %}',
             ]), ['strict_variables' => true]),
             new PortalNavigationRegistry($workspaces, $capabilities, new AuthorizationPolicyRegistry()),
@@ -201,5 +351,151 @@ final class CapturingStepUpProvider implements StepUpProvider
                 $now->modify('+59 minutes'),
             ),
         );
+    }
+}
+
+/** Refuses every code, so the shared step-up refusal wording can be pinned. */
+final class RejectingStepUpProvider implements StepUpProvider
+{
+    /**
+     * Never reached; enrollment is not exercised through this double.
+     *
+     * @param   string  $subjectId     Subject enrolling.
+     * @param   string  $issuer        Issuer shown in the authenticator.
+     * @param   string  $accountLabel  Account label shown in the authenticator.
+     *
+     * @return  StepUpEnrollmentSetup  Never returned.
+     *
+     * @since   2.0.0
+     */
+    public function beginEnrollment(string $subjectId, string $issuer, string $accountLabel): StepUpEnrollmentSetup
+    {
+        throw new StepUpRejected();
+    }
+
+    /**
+     * Refuse the confirmation code.
+     *
+     * @param   StepUpIntent  $intent        Bound intent.
+     * @param   string        $enrollmentId  Enrollment being confirmed.
+     * @param   string        $code          Submitted code.
+     * @param   string        $source        Trusted source address.
+     *
+     * @return  StepUpEnrollmentCompletion  Never returned.
+     *
+     * @since   2.0.0
+     */
+    public function confirmEnrollment(
+        StepUpIntent $intent,
+        string $enrollmentId,
+        string $code,
+        string $source,
+    ): StepUpEnrollmentCompletion {
+        throw new StepUpRejected();
+    }
+
+    /**
+     * Refuse the challenge code.
+     *
+     * @param   StepUpIntent  $intent  Bound intent.
+     * @param   string        $code    Submitted code.
+     * @param   string        $source  Trusted source address.
+     *
+     * @return  StepUpVerification  Never returned.
+     *
+     * @since   2.0.0
+     */
+    public function challenge(StepUpIntent $intent, string $code, string $source): StepUpVerification
+    {
+        throw new StepUpRejected();
+    }
+
+    /**
+     * Refuse the recovery code.
+     *
+     * @param   StepUpIntent  $intent        Bound intent.
+     * @param   string        $recoveryCode  Submitted recovery code.
+     * @param   string        $source        Trusted source address.
+     *
+     * @return  StepUpVerification  Never returned.
+     *
+     * @since   2.0.0
+     */
+    public function recover(StepUpIntent $intent, string $recoveryCode, string $source): StepUpVerification
+    {
+        throw new StepUpRejected();
+    }
+}
+
+/** Throttles every attempt, so the shared authentication-throttle wording can be pinned. */
+final class ThrottlingStepUpProvider implements StepUpProvider
+{
+    /**
+     * Never reached; enrollment is not exercised through this double.
+     *
+     * @param   string  $subjectId     Subject enrolling.
+     * @param   string  $issuer        Issuer shown in the authenticator.
+     * @param   string  $accountLabel  Account label shown in the authenticator.
+     *
+     * @return  StepUpEnrollmentSetup  Never returned.
+     *
+     * @since   2.0.0
+     */
+    public function beginEnrollment(string $subjectId, string $issuer, string $accountLabel): StepUpEnrollmentSetup
+    {
+        throw new AuthenticationThrottled();
+    }
+
+    /**
+     * Throttle the confirmation.
+     *
+     * @param   StepUpIntent  $intent        Bound intent.
+     * @param   string        $enrollmentId  Enrollment being confirmed.
+     * @param   string        $code          Submitted code.
+     * @param   string        $source        Trusted source address.
+     *
+     * @return  StepUpEnrollmentCompletion  Never returned.
+     *
+     * @since   2.0.0
+     */
+    public function confirmEnrollment(
+        StepUpIntent $intent,
+        string $enrollmentId,
+        string $code,
+        string $source,
+    ): StepUpEnrollmentCompletion {
+        throw new AuthenticationThrottled();
+    }
+
+    /**
+     * Throttle the challenge.
+     *
+     * @param   StepUpIntent  $intent  Bound intent.
+     * @param   string        $code    Submitted code.
+     * @param   string        $source  Trusted source address.
+     *
+     * @return  StepUpVerification  Never returned.
+     *
+     * @since   2.0.0
+     */
+    public function challenge(StepUpIntent $intent, string $code, string $source): StepUpVerification
+    {
+        throw new AuthenticationThrottled();
+    }
+
+    /**
+     * Throttle the recovery attempt.
+     *
+     * @param   StepUpIntent  $intent        Bound intent.
+     * @param   string        $recoveryCode  Submitted recovery code.
+     * @param   string        $source        Trusted source address.
+     *
+     * @return  StepUpVerification  Never returned.
+     *
+     * @since   2.0.0
+     */
+    public function recover(StepUpIntent $intent, string $recoveryCode, string $source): StepUpVerification
+    {
+        throw new AuthenticationThrottled();
     }
 }

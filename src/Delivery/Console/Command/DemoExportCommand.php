@@ -125,17 +125,18 @@ final readonly class DemoExportCommand implements Command
             $content = $manifest['content'];
             $menus = $manifest['menus'];
             $output->message('core.console.demo_export_profile.exported_content_entries_and_menus_as', [
-                'is_array' => is_array($content) ? count($content) : 0,
-                'is_array2' => is_array($menus) ? count($menus) : 0,
+                'entries' => is_array($content) ? count($content) : 0,
+                'menus' => is_array($menus) ? count($menus) : 0,
                 'profile' => $profile,
             ]);
             $this->reportBusiness($output, $catalog, $profile, $business, $exportsBusiness);
             foreach ($checksums as $relative => $checksum) {
                 $output->line(sprintf('%s %s', $checksum, $relative));
             }
-            $output->message('core.console.demo_export_profile.catalog_re_validation_checksum', [
-                'verified' => $verified['checksum'],
-            ]);
+            $output->message(
+                'core.console.demo_export_profile.catalog_re_validation_checksum',
+                ['checksum' => $verified['checksum']],
+            );
             $output->message('core.console.demo_export_profile.copy_resources_demo_over_an_installation', [
                 'directory' => $directory,
             ]);
@@ -185,31 +186,34 @@ final readonly class DemoExportCommand implements Command
         $expected = $business['records']['expected'] ?? null;
         $counts = is_array($expected) ? $expected : [];
         $output->message('core.console.demo_export_profile.exported_business_definitions_records_relations', [
-            'count' => count($business['definitions']),
-            'count2' => $this->count($counts, 'record_count'),
-            'count3' => $this->count($counts, 'relation_count'),
-            'count4' => $this->count($counts, 'action_count'),
-            'count5' => $this->count($counts, 'archive_count'),
+            'definitions' => count($business['definitions']),
+            'records' => $this->count($counts, 'record_count'),
+            'relations' => $this->count($counts, 'relation_count'),
+            'actions' => $this->count($counts, 'action_count'),
+            'archives' => $this->count($counts, 'archive_count'),
         ]);
-        $output->message('core.console.demo_export_profile.business_catalog_re_validation_checksum', [
-            'verified' => $verified['checksum'],
-        ]);
+        $output->message(
+            'core.console.demo_export_profile.business_catalog_re_validation_checksum',
+            ['checksum' => $verified['checksum']],
+        );
         if ($business['access'] !== []) {
             $access = $catalog->access($profile);
             $output->message('core.console.demo_export_profile.exported_the_demonstration_access_cast_with', [
-                'count' => $this->count($business['access'], 'roles'),
-                'count2' => $this->count($business['access'], 'staff'),
-                'count3' => $this->count($business['access'], 'organizations'),
+                'roles' => $this->count($business['access'], 'roles'),
+                'staff' => $this->count($business['access'], 'staff'),
+                'organizations' => $this->count($business['access'], 'organizations'),
             ]);
-            $output->message('core.console.demo_export_profile.access_catalog_re_validation_checksum', [
-                'access' => $access['checksum'],
-            ]);
+            $output->message(
+                'core.console.demo_export_profile.access_catalog_re_validation_checksum',
+                ['checksum' => $access['checksum']],
+            );
         } else {
             $output->message('core.console.demo_export_profile.no_example_identities_qualified_access_json');
         }
-        $output->message('core.console.demo_export_profile.withheld_identities_outside_the_reserved_example', [
-            'business' => $business['withheld_identities'],
-        ]);
+        $output->message(
+            'core.console.demo_export_profile.withheld_identities_outside_the_reserved_example',
+            ['identities' => $business['withheld_identities']],
+        );
     }
 
     /**
