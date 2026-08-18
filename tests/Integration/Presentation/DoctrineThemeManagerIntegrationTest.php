@@ -697,8 +697,12 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
     /** @return array{Connection, TableNames} */
     private function database(): array
     {
-        $driver = getenv('DB_DRIVER');
-        if (!is_string($driver) || !in_array($driver, ['mariadb', 'mysql', 'pgsql'], true)) {
+        // The driver is read through the Environment boundary rather than with raw getenv(): when the
+        // deployment configures through `.env` the raw read answered false, which silently rebuilt this
+        // matrix test on in-memory SQLite while the rest of the suite ran on the configured server.
+        $environment = Environment::fromGlobals();
+        $driver = strtolower($environment->string('DB_DRIVER', ''));
+        if (!in_array($driver, ['mariadb', 'mysql', 'pgsql'], true)) {
             $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
 
             return [$database, new TableNames($database, 'kumwe_')];
@@ -708,7 +712,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             return [self::$matrixDatabase, self::$matrixTables];
         }
 
-        $configuration = (new ConfigurationFactory())->create(Environment::fromGlobals());
+        $configuration = (new ConfigurationFactory())->create($environment);
         self::$matrixDatabase = (new DoctrineConnectionFactory($configuration->database))->create();
         self::$matrixTables = new TableNames(self::$matrixDatabase, $configuration->database->tablePrefix);
         return [self::$matrixDatabase, self::$matrixTables];

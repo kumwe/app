@@ -7,7 +7,9 @@ namespace Kumwe\CMS\Tests\Integration\Infrastructure;
 use Kumwe\CMS\Infrastructure\Redis\RedisConnectionFactory;
 use Kumwe\CMS\Infrastructure\Redis\RedisLease;
 use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
+use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Kernel\Configuration\RedisConfiguration;
+use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Redis;
@@ -22,17 +24,18 @@ final class RedisLeaseIntegrationTest extends TestCase
 
     protected function setUp(): void
     {
-        $host = getenv('REDIS_HOST');
-        $port = getenv('REDIS_PORT');
-        $database = getenv('REDIS_DATABASE');
-        $namespace = getenv('REDIS_NAMESPACE');
-        $password = getenv('REDIS_PASSWORD');
+        // The deployment's own Redis settings, read through the one boundary allowed to read them.
+        // Raw getenv() reads nothing when configuration arrives through `.env`, so every local
+        // installation fell back to one shared namespace and could meet another's keys; this is the
+        // same ApplicationConfiguration the booted container shares. The drill suffix keeps this
+        // class's keys out of the namespace the rest of the deployment is using.
+        $upstream = (new ConfigurationFactory())->create(Environment::fromGlobals())->redis;
         $configuration = new RedisConfiguration(
-            is_string($host) && $host !== '' ? $host : '127.0.0.1',
-            is_string($port) && ctype_digit($port) ? (int) $port : 6379,
-            is_string($password) && $password !== '' ? $password : null,
-            is_string($database) && ctype_digit($database) ? (int) $database : 0,
-            is_string($namespace) && $namespace !== '' ? $namespace : 'kumwe.test',
+            $upstream->host,
+            $upstream->port,
+            $upstream->password,
+            $upstream->database,
+            $upstream->namespace . '.lease-drill',
         );
         $this->redis = (new RedisConnectionFactory($configuration))->create();
         $this->runtime = new RedisRuntime($this->redis);

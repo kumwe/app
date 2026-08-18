@@ -11,6 +11,8 @@ use Joomla\DI\Container;
 use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Infrastructure\Automation\DoctrineJobQueue;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\CMS\Kernel\Configuration\DatabaseConfiguration;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -71,7 +73,7 @@ final class DatabaseLossRecoveryIntegrationTest extends TestCase
 
         try {
             $jobId = $this->enqueue($container, $queueName, 'database-gone');
-            $relay = $this->startRelay($relayPort, $victimRoom);
+            $relay = $this->startRelay($relayPort, $victimRoom, $this->upstream($container));
 
             $victim = $this->spawnWorker($queueName, $victimRoom, $relayPort);
             self::assertTrue(
@@ -104,7 +106,7 @@ final class DatabaseLossRecoveryIntegrationTest extends TestCase
             self::assertSame(0, $this->failedJobRows($container, $jobId), 'No attempt record may be invented.');
 
             // The supervisor's replacement: the same worker, started again once the path is back.
-            $relay = $this->startRelay($relayPort, $successorRoom);
+            $relay = $this->startRelay($relayPort, $successorRoom, $this->upstream($container));
             file_put_contents($successorRoom . '/resume', 'go');
             $this->sleepUntil($goneAt + self::LEASE_SECONDS + 1.5);
             $successor = $this->spawnWorker($queueName, $successorRoom, $relayPort);
@@ -227,11 +229,39 @@ final class DatabaseLossRecoveryIntegrationTest extends TestCase
     }
 
     /**
+     * Read the deployment's database settings from the booted container rather than from raw process env.
+     *
+     * The suite's configuration arrives through `Environment::fromGlobals()`, which reads `.env` without
+     * exporting it, so `getenv()` here can disagree with what the container actually connected to — and a
+     * relay pointed at a fallback endpoint would sever a connection nothing is using. The container's own
+     * configuration is the one truth about where the database is.
+     *
+     * @param   Container  $container  Booted integration container.
+     *
+     * @return  DatabaseConfiguration  The deployment's database settings.
+     *
+     * @since   2.0.0
+     */
+    private function upstream(Container $container): DatabaseConfiguration
+    {
+        $configuration = $container->get(ApplicationConfiguration::class);
+        if (!$configuration instanceof ApplicationConfiguration) {
+            throw new RuntimeException('The integration application configuration is unavailable.');
+        }
+
+        return $configuration->database;
+    }
+
+    /**
      * Put a killable relay on the network path to the database and wait until it is listening.
+     *
+     * @param   int                    $port      Local port the relay should listen on.
+     * @param   string                 $room      Scratch directory the relay reports into.
+     * @param   DatabaseConfiguration  $upstream  The deployment's database settings the relay forwards to.
      *
      * @return  array{process: resource, pid: int}
      */
-    private function startRelay(int $port, string $room): array
+    private function startRelay(int $port, string $room, DatabaseConfiguration $upstream): array
     {
         $ready = $room . '/relay-ready-' . bin2hex(random_bytes(4));
         $descriptors = [
@@ -244,8 +274,8 @@ final class DatabaseLossRecoveryIntegrationTest extends TestCase
                 PHP_BINARY,
                 dirname(__DIR__, 2) . '/Support/tcp-outage-relay.php',
                 (string) $port,
-                (string) (getenv('DB_HOST') ?: '127.0.0.1'),
-                (string) (getenv('DB_PORT') ?: '3306'),
+                $upstream->host,
+                (string) $upstream->port,
                 $ready,
             ],
             $descriptors,
@@ -265,6 +295,10 @@ final class DatabaseLossRecoveryIntegrationTest extends TestCase
      */
     private function spawnWorker(string $queueName, string $room, ?int $relayPort): array
     {
+        // The whole parent environment is forwarded verbatim so a deployment that configures by real
+        // process variables keeps working in the child; nothing is read out of it in this process, and
+        // the relay override below is the only connection setting the drill decides. The architecture
+        // suite allowlists exactly this zero-argument forwarding read, with this reason.
         $environment = getenv();
         if ($relayPort !== null) {
             $environment['DB_HOST'] = '127.0.0.1';
