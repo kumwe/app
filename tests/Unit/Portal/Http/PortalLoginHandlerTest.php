@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Portal\Http;
 
+use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
@@ -90,6 +91,28 @@ final class PortalLoginHandlerTest extends TestCase
 
         self::assertSame(401, $malformedHint->getStatusCode());
         self::assertSame((string) $invalidCredentials->getBody(), (string) $malformedHint->getBody());
+    }
+
+
+    /**
+     * A throttled address is refused at 429 with the shared authentication-throttle wording.
+     *
+     * The throttle refusal is deliberately the same sentence the administrator sign-in shows, and it
+     * must not leak whether the address, the account or the password was the reason.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAThrottledSignInIsRefusedWithTheSharedWording(): void
+    {
+        $response = $this->handler(new ThrottlingPortalAuthenticator())->handle($this->request('member@example.test'));
+
+        self::assertSame(429, $response->getStatusCode());
+        self::assertSame('900', $response->getHeaderLine('Retry-After'));
+        $body = (string) $response->getBody();
+        self::assertStringContainsString('Too many unsuccessful authentication attempts.', $body);
+        self::assertStringContainsString('member@example.test', $body);
     }
 
     private function handler(PortalAuthenticator $authenticator, bool $secure = false): PortalLoginHandler
@@ -197,5 +220,25 @@ final readonly class UnusedPortalSessionStore implements PortalSessionStore
     public function purgeExpired(): int
     {
         return 0;
+    }
+}
+
+/** Throttles every attempt, so the portal's throttle refusal can be pinned. */
+final readonly class ThrottlingPortalAuthenticator implements PortalAuthenticator
+{
+    /**
+     * Refuse every attempt as throttled.
+     *
+     * @param   string  $email     Submitted address.
+     * @param   string  $password  Submitted password.
+     * @param   string  $source    Trusted source address.
+     *
+     * @return  ?PortalPasswordIdentity  Never returned.
+     *
+     * @since   2.0.0
+     */
+    public function authenticate(string $email, string $password, string $source): ?PortalPasswordIdentity
+    {
+        throw new AuthenticationThrottled();
     }
 }
