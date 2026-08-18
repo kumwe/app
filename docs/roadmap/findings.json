@@ -1193,6 +1193,24 @@
       "acceptance_test": "No integration test reads raw getenv() for connection or namespace configuration; each resolves it from the container's configuration, proven by a grep-shaped architecture check.",
       "owner": "UNASSIGNED",
       "closure_sha": null
+    },
+    {
+      "id": "V2-REL-002",
+      "title": "The verification pipeline fetches toolchain from public infrastructure at run time",
+      "severity": "high",
+      "state": "accepted_for_implementation",
+      "phase": "2",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "symbol": "toolchain provisioning",
+          "note": "One review day lost four lanes to runtime provisioning and none to code: a rate-limited archive host mid composer install, a registry gateway error resolving a build image, a stalled OS mirror that held a browser lane silent for forty-four minutes, and the recovery-client apt install consumed by a job budget. Each got a tactical repair - download caches, digest pins with bounded retries, the Chromium apt step removed outright because the runner image provably ships the libraries - but the architecture still lets public mirrors decide whether verification finishes. The database lane still apt-installs its recovery client and signing tool at run time, and the nightly browser lane still apt-installs WebKit dependencies."
+        }
+      ],
+      "acceptance_test": "A verification run performs no unpinned network fetch: every tool it executes arrives from a digest-pinned image, a lockfile-keyed cache, or the runner image itself, enumerated in the quality contract so a new workflow step that fetches at run time fails review by construction. A cold cache may download; only through a pinned, bounded, announced path.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
     }
   ]
 }
