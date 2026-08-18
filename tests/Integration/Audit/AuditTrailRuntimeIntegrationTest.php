@@ -25,6 +25,7 @@ use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditTrailExporter;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditTrailVerifier;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\IndexNameIsolationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\AuditTamperHarness;
@@ -66,7 +67,13 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
         foreach (['position', 'digest', 'previous_digest'] as $column) {
             self::assertTrue($events->hasColumn($column), sprintf('Column %s is missing.', $column));
         }
-        self::assertTrue($events->hasIndex($this->tables->raw('uniq_audit_event_position')));
+        // The installed schema carries the position index under its installation-unique name: the
+        // index-name isolation at the end of the plan renames every non-digest-suffixed name, the
+        // prefixed spelling included, because a prefix alone is no proof against a collision.
+        self::assertTrue($events->hasIndex(IndexNameIsolationMigration::isolatedName(
+            $this->tables->raw('audit_events'),
+            $this->tables->raw('uniq_audit_event_position'),
+        )));
         self::assertTrue($schema->tablesExist([$this->tables->raw('audit_anchors')]));
         // Append-only enforcement is a property of the server's privileges, not of the migration, so
         // what must hold everywhere is that the trail reports the posture it is actually in. Whether

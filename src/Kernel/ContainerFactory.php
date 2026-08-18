@@ -544,6 +544,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineNonTransactionalMigrationRecovery;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\IndexNameIsolationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
@@ -1720,6 +1721,7 @@ final class ContainerFactory
                     new ConstraintNameIsolationPortabilityMigration(self::service($container, TableNames::class)),
                     new PeriodPostingLockMigration(self::service($container, TableNames::class)),
                     new NumberSequenceIdentityMigration(self::service($container, TableNames::class)),
+                    new IndexNameIsolationMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
