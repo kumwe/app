@@ -191,31 +191,6 @@
       "closure_sha": null
     },
     {
-      "id": "V2-QA-001",
-      "title": "Behavioural tests still attribute nothing, and the branch ratchet is not measurable",
-      "severity": "high",
-      "state": "in_progress",
-      "phase": "2",
-      "gate": "A",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "docs/quality/coverage-contract.json",
-          "symbol": "attribution.pending, attribution.pending_directories",
-          "note": "Forty-three test classes still carry #[CoversNothing] while exercising real behaviour: thirty-nine under tests/Integration plus four named individually. Each is recorded with an owner, this finding and an expiry of 2027-06-30, and composer coverage:attribution fails when a new one appears or when a recorded one no longer needs the exemption."
-        },
-        {
-          "file": "docs/quality/coverage-contract.json",
-          "symbol": "ratchets",
-          "note": "The changed-line floor is enforced and the global-decrease ratchet is armed at the measured 55.44% MariaDB baseline. The branch floor cannot be measured while the canonical leg is instrumented with pcov, which reports executed lines and no branches."
-        }
-      ],
-      "acceptance_test": "Every behavioural test names the classes it exercises, so the pending list and the pending directory are both empty and only the reasoned allowlist remains. The measured MariaDB baseline is committed so the global-decrease ratchet is armed. The branch floor is either measurable on the canonical leg or replaced by a rule that is.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "progress": "Delivered: the canonical measurement moved to MariaDB, docs/quality/coverage-contract.json records the measured 55.44% baseline, composer coverage:attribution holds #[CoversNothing] to a reasoned allowlist and a shrinking pending list, and composer coverage:ratchet enforces both the 90% changed-line floor and the global-decrease rule. What remains is the attribution work itself and a measurable branch rule."
-    },
-    {
       "id": "V2-QA-004",
       "title": "The integration suite is not idempotent against a reused database, and six tests prove it",
       "severity": "medium",
@@ -502,130 +477,6 @@
       "forward_reference": "V2-POS-002"
     },
     {
-      "id": "V2-LNG-001",
-      "title": "User-facing text on the record surfaces, in the console and in the error paths is still hardcoded English",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "tools/translation-extraction.json",
-          "symbol": "the pending_extraction register",
-          "note": "48 of the 76 templates still carry their text inline and are listed there, each with the reason it is not extracted yet. Five of them are held because another branch is changing them. The other 28 are extracted and enforced; the administered wording screen was authored extracted and never entered the register."
-        },
-        {
-          "file": "src/Delivery/Console/Command/",
-          "symbol": "47 commands",
-          "note": "Console output text is still inline in the command classes, and so is the summary line bin/kumwe list prints beside each command name. Nothing binds the translator to the console, and the hardcoded-string gate does not scan it. src/BusinessReporting/Delivery/Console/ReportCommand.php is a 48th command outside this directory and is in the same state."
-        },
-        {
-          "file": "src/",
-          "symbol": "error message construction",
-          "note": "The user-facing error paths still carry their text inline. Separating them from the developer exceptions, the log lines and the stable machine error codes is part of the work; docs/interface-translation.md states the categories the gate must treat as not translatable."
-        }
-      ],
-      "acceptance_test": "Every user-facing string on a translatable surface is looked up rather than written inline: the 48 remaining templates, the 48 console commands, and the user-facing error paths of src/. The translator is bound into the console the way it is already bound into the three Twig environments — once, into the surface every command already receives, rather than through 48 constructors. Text that exists for a developer or a machine — a stable machine error code, an audit action name, a log line, a developer exception — is NOT translated, and the allowlist that says so names its reason per category: a translated error code is a broken contract.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-C",
-      "product_owner_decision": "Decision D11 — the interface is multilingual. Recorded in docs/roadmap/decisions/0002-interface-translation-architecture.md.",
-      "enforcing_check": "V2-LNG-007's gate passing with an empty pending_extraction register and with console output and the error paths inside its scope. Extraction is finished when the check passes, not when someone judges it finished."
-    },
-    {
-      "id": "V2-LNG-007",
-      "title": "The hardcoded-string gate covers templates but not console output or the user-facing error paths",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "tools/verify-translated-strings.php",
-          "symbol": "the template scanner",
-          "note": "It scans templates/, refuses user-facing text nodes and translatable attributes, refuses prose in Twig expressions, and proves both directions of the catalogue contract. It does not look at src/ at all, so console output and error messages are outside it."
-        },
-        {
-          "file": "src/Delivery/Console/Command/",
-          "symbol": "47 commands",
-          "note": "Console output is a translatable surface; exit codes and stable JSON field names are not. Distinguishing them mechanically is the work that remains, and it has to reach the 48th command under src/BusinessReporting/Delivery/Console/ as well as the 47 in this directory."
-        }
-      ],
-      "acceptance_test": "The gate additionally scans console output and the user-facing error paths of src/, with an explicit allowlist for the categories deliberately not translatable — machine error codes, audit action names, log messages, developer exceptions — and every allowlist entry naming its reason. The template half already does this and is proven in both directions; the same proof is required of the new scope.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-E",
-      "product_owner_decision": "Decision D11 — enforcement is part of the decision, not an optional follow-up.",
-      "enforcing_check": "A test asserting the widened gate passes on the committed tree, and a test asserting it fails with a useful message on a fixture that reintroduces a hardcoded console string — the shape tests/Architecture/InterfaceTranslationGateTest.php already uses for templates."
-    },
-    {
-      "id": "V2-LNG-008",
-      "title": "en-GB extraction is proven on the public and chrome surfaces but not on the record surfaces, the console or the error paths",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "resources/localization/messages/en-GB.xlf",
-          "symbol": "the source catalogue",
-          "note": "117 messages across 28 templates: the whole public site surface, the eleven shared interface-standard partials, the chrome, login and access-denied surfaces of the administrator and the portal, and the administered wording screen, which was authored extracted rather than extracted afterwards. Extraction is proven to work; what remains is volume."
-        },
-        {
-          "file": "tools/translation-extraction.json",
-          "symbol": "the pending_extraction register",
-          "note": "The 48 templates still to extract, each with its reason. Five are held open because another branch is changing them: templates/administrator/business-detail.twig, business-form.twig and content-form.twig, and templates/portal/business-detail.twig and business-form.twig. They are extracted once that change has landed."
-        },
-        {
-          "file": "src/Delivery/Console/Command/",
-          "symbol": "47 commands",
-          "note": "Console output is a translatable surface; exit codes and stable JSON field names are not."
-        }
-      ],
-      "acceptance_test": "en-GB is extracted in full: the 48 remaining templates, the 48 console commands and the user-facing error paths of src/ each have an identifier and a catalogue entry, and the pending_extraction register is empty. Only user-facing text moves; a developer exception, a log line, a stable machine error code and an audit action name are not user-facing text.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-C",
-      "product_owner_decision": "Decision D11 — en-GB extracted at Gate A to prove extraction works at scale; the other eight catalogues are Gate B.",
-      "enforcing_check": "V2-LNG-007's gate passing on a clean tree. Extraction is complete when the check passes, which makes completion an observable fact rather than a judgement.",
-      "cross_reference": [
-        "V2-LNG-007"
-      ]
-    },
-    {
-      "id": "V2-LNG-009",
-      "title": "Right-to-left has a locale axis on the browser matrix but no visual-regression baselines behind it",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "playwright.config.ts",
-          "symbol": "the right-to-left projects",
-          "note": "The matrix now carries a language axis beside its device axis: desktop-chromium-he, desktop-chromium-ar, mobile-chromium-he and mobile-chromium-ar run tests/Browser/right-to-left.spec.ts, and snapshotPathTemplate files a baseline under the project name, so he and ar have a directory of their own. The source-language projects keep their names so their committed baselines stay attached to them."
-        },
-        {
-          "file": "tests/Browser/screenshots/",
-          "symbol": "the committed baselines",
-          "note": "There are baselines for desktop-chromium and mobile-chromium and none for the four right-to-left projects. Producing them needs a running stack and a browser, which is the P2-E matrix, so the axis is in place and empty."
-        }
-      ],
-      "acceptance_test": "The four right-to-left projects carry their own committed screenshot baselines and the P2-E matrix runs he and ar against them, with the same zero-horizontal-overflow and zero-inaccessible-critical-control acceptance as every other locale. The axis itself and the per-project baseline path are built; what is owed is the screenshots and the matrix leg that compares them.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-F",
-      "product_owner_decision": "Decision D11 — Hebrew and Arabic are both in scope and are done together.",
-      "enforcing_check": "The per-locale visual baselines on the P2-E matrix. The stylesheet half of this finding has shipped: composer assets:direction fails the build on a new physical inline-axis declaration in assets/, with an allowlist that ships empty, and tests/Architecture/InterfaceTranslationGateTest.php proves it in both directions.",
-      "cross_reference": [
-        "V2-DB-001"
-      ]
-    },
-    {
       "id": "V2-LNG-010",
       "title": "The eight non-source catalogues and per-locale qualification are unbuilt",
       "severity": "medium",
@@ -863,67 +714,6 @@
       "owner": "UNASSIGNED",
       "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
       "forward_reference": "V2-DR-003 changes the artifact this section documents; the reference schedule and the off-host step must be restated for the reshaped payload and the reference transport."
-    },
-    {
-      "id": "V2-LNG-012",
-      "title": "An extension translation-group declaration has no contract that associates contributed content items with it",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Extension/Contribution/OwnedExtensionContributionRegistrar.php",
-          "symbol": "contentTranslationGroup",
-          "note": "The registrar records the package-owned declaration in the contribution registry. No runtime content service consumes that declaration or binds one of the extension's items to it."
-        },
-        {
-          "file": "src/Content/Application/ContentService.php",
-          "symbol": "translate",
-          "note": "Runtime content variants join a UUID translation group supplied for one stored entry. The command carries neither an extension owner nor the declared contribution identifier, so the registry declaration cannot govern the association, its locale set or its fallback."
-        },
-        {
-          "file": "docs/content-translation.md",
-          "symbol": "Extension-contributed content",
-          "note": "The current documentation now limits the declaration to admission and inventory metadata. A runtime item-association contract is deliberately not invented inside a defect repair because existing extension generations are frozen compatibility promises."
-        }
-      ],
-      "acceptance_test": "An additive, versioned extension contract links a package owner and declared translation-set identifier to each contributed content item without changing a frozen generation. Core resolves that association before storage and delivery, enforces the declaration's locale and fallback bounds, and refuses an undeclared locale or another owner's set. A signed compatibility fixture installs a provider, stores two variants through the public application path, renders both through real locale negotiation, and proves the refusals.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "cross_reference": "Decision D12 requires locale variants on extension-contributed content. The core content translation group is delivered; this finding is the missing extension-item bridge, not a request for a second translation model."
-    },
-    {
-      "id": "V2-STU-001",
-      "title": "The extension contract declares no composition contributions, so an extension built after Gate A would have to change when the composition surface arrives",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "S",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "docs/extension-contract/generations.json",
-          "symbol": "the contribution surfaces list",
-          "note": "Twenty-eight contribution surfaces are frozen and none of them is a composition contribution. An extension has no declared way to contribute a block, a pattern, an inspector, design vocabulary or a composition migration."
-        },
-        {
-          "file": "docs/extension-contract/classification.json",
-          "symbol": "the public type classification",
-          "note": "One hundred and one types are classified public across four manifest generations and two contribution generations. A composition contribution needs its own classified declaration types or extension authors have nothing stable to build against."
-        },
-        {
-          "file": "docs/roadmap/studio-integration.md",
-          "symbol": "the contribution mapping",
-          "note": "Studio models contributions as blocks, patterns, field controls, inspectors, renderers, design tokens, recipes and migrations, and its authoring surface validates a declaration against the same rules its runtime enforces. The declaration contract is what an extension author needs frozen; the runtime that consumes it is Gate B."
-        }
-      ],
-      "acceptance_test": "The extension contract carries composition contributions as declared, classified and frozen surfaces: an extension declares a block with its bounded property schema, slots and renderer binding, a pattern, an inspector or field control, design vocabulary including size roles, and a composition migration, in one additive contribution generation with its manifest generation. The declarations are validated at admission and at install against the published composition schemas, so a malformed or unbounded declaration is refused before the runtime exists to consume it. A signed compatibility fixture declaring every composition contribution kind installs, activates, upgrades, disables, reactivates and uninstalls according to its declared contract, and `composer extension:contract` fails when a classified composition type changes shape. An extension built against this generation needs no manifest, declaration or classification change when the composition surface ships at Gate B.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "S-A",
-      "product_owner_decision": "Decision D16. The declaration contract is Gate A because Gate A is the promise that contracts do not move under an extension author; the runtime that consumes the declarations is Gate B."
     },
     {
       "id": "V2-STU-002",
@@ -1177,24 +967,6 @@
       "closure_sha": null
     },
     {
-      "id": "V2-QA-009",
-      "title": "Several integration tests read raw getenv and fall back to shared defaults when configuration arrives via .env",
-      "severity": "low",
-      "state": "open",
-      "phase": "2",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "tests/Integration/Infrastructure/RedisLeaseIntegrationTest.php",
-          "symbol": "getenv fallbacks",
-          "note": "RedisLeaseIntegrationTest, DatabaseLossRecoveryIntegrationTest, CredentialLifecycleIntegrationTest and DoctrineThemeManagerIntegrationTest read raw getenv(), which sees nothing under .env loading, so their fallbacks (a shared Redis namespace among them) let unrelated local installations meet each other's residue. RedisOutageIntegrationTest was moved to the container's ApplicationConfiguration; the same sweep is owed to the rest."
-        }
-      ],
-      "acceptance_test": "No integration test reads raw getenv() for connection or namespace configuration; each resolves it from the container's configuration, proven by a grep-shaped architecture check.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
       "id": "V2-REL-002",
       "title": "The verification pipeline fetches toolchain from public infrastructure at run time",
       "severity": "high",
@@ -1347,6 +1119,61 @@
         }
       ],
       "acceptance_test": "tools/verify-docblocks.php covers tests/ as well as src/, introduced the way this repository introduces every gate against pre-existing debt: a recorded baseline of the undocumented methods that only ever shrinks, with a stale entry failing the build. A newly written test method without a block fails immediately; the recorded ones are burned down in their own change rather than inside a delivery wave.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
+      "id": "V2-LNG-013",
+      "title": "Two vite stylesheet inputs sit outside the direction gate and pin physical sides in right-to-left",
+      "severity": "medium",
+      "state": "reproduced",
+      "phase": "L",
+      "gate": "A",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "public/assets/portal.css",
+          "symbol": "physical inline-axis declarations",
+          "note": "portal.css and administrator.css are vite build inputs but live outside composer assets:direction's assets/ scan root, so their physical declarations were never checked. Visibly: .portal-brand { margin-right: auto } pins the portal brand to the left under right-to-left, captured honestly in the committed portal-login baselines; also border-right on .portal-navigation, border-left on alerts and notices, and margin-left in the administrator styles."
+        }
+      ],
+      "acceptance_test": "composer assets:direction scans every stylesheet the build consumes, not one directory; the physical declarations become logical properties, and the right-to-left baselines are re-recorded showing the brand and the borders on the correct side.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
+      "id": "V2-QA-011",
+      "title": "KernelTest reads raw configuration and defaults to a PostgreSQL that need not exist",
+      "severity": "low",
+      "state": "reproduced",
+      "phase": "2",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "tests/Functional/Http/KernelTest.php",
+          "symbol": "environment()",
+          "note": "The same defect class the integration sweep closed, one directory over: raw getenv() with shared fallbacks defaulting to PostgreSQL at 127.0.0.1:5432, so under .env configuration three of its tests error on any host without PostgreSQL. The new IntegrationConfigurationBoundaryTest covers tests/Integration only, which is why this survived."
+        }
+      ],
+      "acceptance_test": "KernelTest resolves configuration through the Environment boundary like the integration suite now does, and the boundary check extends to tests/Functional so the pattern cannot return there either.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
+    },
+    {
+      "id": "V2-DOC-003",
+      "title": "A frozen manifest generation's recorded key lists omit two surfaces its parser accepts",
+      "severity": "low",
+      "state": "reproduced",
+      "phase": "2",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "docs/extension-contract/generations.json",
+          "symbol": "manifest-4",
+          "note": "Its frozen entry omits content from contribution_keys and unit_converters from integration_keys, though schema-4 parsing accepts both: surfaces added after the generation was frozen were never recorded against it. The record and the parser disagree about what a manifest-4 package may declare, which is the one thing a frozen generation exists to settle."
+        }
+      ],
+      "acceptance_test": "Every generation's recorded key lists match what its parser accepts, proven by a check that derives the lists from the parser rather than trusting the record, so a surface added after a freeze cannot go unrecorded again.",
       "owner": "UNASSIGNED",
       "closure_sha": null
     }

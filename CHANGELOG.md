@@ -23,6 +23,40 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **Every user-facing string is looked up, and a gate keeps it that way.** The forty-eight remaining
+  templates, all forty-eight console commands and the user-facing error paths of `src/` now resolve their
+  wording from the message catalogue, which grew from 117 messages to 2,099 with the pending-extraction
+  register empty. The translator binds into the console once, through the output surface every command
+  already receives, rather than through forty-eight constructors. `composer translation:strings` now scans
+  console output and error paths beside the templates — 79 templates enforced, 1,355 source files checked,
+  18 exemptions each naming its category and reason — so a stable machine error code, an audit action name,
+  a log line and a developer exception stay inline by rule rather than by luck. Closes `V2-LNG-001`,
+  `V2-LNG-007` and `V2-LNG-008`. (#92)
+- **The composition contribution contract is frozen before the surface that consumes it exists.** An
+  extension declares a block with its bounded property schema, slots and renderer binding, a pattern, an
+  inspector or field control, design vocabulary including size roles, and a composition migration — nine
+  public types in one additive generation (`manifest-5`, SPI 3) beside the four frozen manifest generations,
+  which do not move. Declarations are validated at admission and at install: an unbounded property schema, a
+  renderer naming another namespace, a pattern referencing an undeclared block, a migration targeting a
+  revision a block never reached are all refused before any runtime exists. A signed compatibility fixture
+  declaring every kind installs, activates, upgrades, disables, reactivates and uninstalls to its declared
+  contract. Extension authors get their stable surface now; the Gate B runtime consumes it later. Closes
+  `V2-STU-001` and meets Gate A criterion 13. (#92)
+- **Extension-contributed content items bind to their declared translation sets.** An additive,
+  generation-one association links a package owner and declared set to each contributed item, closed at both
+  ends: the owner must be a real package and the set identifier must sit inside that owner's namespace, so
+  another package's set cannot be spelled, let alone claimed. The runtime group is derived rather than
+  allocated — one name-based UUID per generation, site, owner and set — so the association needs no second
+  storage surface and resolves identically across restarts and reinstalls. Core resolves it before storage,
+  enforces the declaration's locale and fallback bounds, and refuses an undeclared locale, an inactive set
+  or a foreign owner. A signed fixture installs a provider, stores two variants through the public
+  application path, renders both through real locale negotiation, and proves every refusal. Closes
+  `V2-LNG-012`. (#92)
+- **Right-to-left has the visual baselines its axis was built for.** Twelve committed screenshots across the
+  four `he` and `ar` projects, each surface additionally asserted for zero horizontal overflow and for every
+  critical control being visible and keyboard-focusable. Closes `V2-LNG-009`. (#92)
+
+
 - **An approved document can no longer be edited — it is corrected by a linked reversal.** A workflow
   binding may declare `immutable_states`; entering one closes the record, and every mutation of its fields
   and owned lines refuses on every surface with the stable error `business_record.immutable` and its own
@@ -1003,6 +1037,25 @@ development programme, from the architecture decision that opened it to the curr
   and export payloads are unchanged. (`72cc3e6`)
 
 ### Fixed
+
+- **Every behavioural test now names what it exercises.** The forty-three classes that carried
+  `#[CoversNothing]` while driving real behaviour gained 124 honest attributions across 67 classes, emptying
+  the pending list so only the reasoned allowlist remains. Global line coverage rose from 55.44% to 64.51%
+  without a single new test — the measurement had simply been lying by omission. The `changed-branch-floor`,
+  declared but unenforceable because the canonical leg reports lines and not branches, is replaced by an
+  enforced `changed-refusal-floor`: at least 80% of the refusal lines a change adds must have executed, which
+  is line-level proof that the refusing branch ran. Closes `V2-QA-001`. (#92)
+- **The last three layering leaks are closed and enforced.** The idempotency middlewares ask an application
+  port instead of writing the store from the HTTP layer, business-surface application code hands a rendering
+  contract to a presenter instead of rendering, and Twig theme validation sits behind an application port
+  instead of being imported inward. Recorded dependency exemptions fall from 115 to 99, and three boundary
+  tests make each seam a build failure rather than a review hope. Completes `P3-C` and Gate A criterion 6. (#92)
+- **Integration tests read configuration where the container reads it.** Four suites that called raw
+  `getenv()` — invisible under `.env` configuration — resolved their fallbacks to shared defaults, letting
+  unrelated local installations meet each other's residue in one Redis namespace. They now resolve through
+  `ApplicationConfiguration` and `Environment`, and a new boundary test refuses a named raw read, so the
+  pattern cannot return. Closes `V2-QA-009`. (#92)
+
 
 - **Every non-primary index name a second prefixed installation could collide with is isolated on
   PostgreSQL.** Index names there are schema-global, and the shipped self-checksumming migrations create
