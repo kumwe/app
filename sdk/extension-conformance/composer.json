@@ -6,7 +6,7 @@
   "require": {
     "php": "^8.5",
     "ext-zip": "*",
-    "kumwe/cms": "^2.0"
+    "kumwe/app": "^2.0"
   },
   "autoload": {
     "psr-4": {

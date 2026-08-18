@@ -128,14 +128,14 @@ jobs:
         env:
           COMPOSER_NO_INTERACTION: '1'
           COMPOSER_ACCEPTANCE_REPOSITORY: >-
-            {"type":"path","url":"build/distribution/package","options":{"symlink":false,"versions":{"kumwe/cms":"2.0.0"}}}
+            {"type":"path","url":"build/distribution/package","options":{"symlink":false,"versions":{"kumwe/app":"2.0.0"}}}
         run: |
           composer create-project \
             --no-ansi \
             --no-interaction \
             --no-progress \
             --repository="$COMPOSER_ACCEPTANCE_REPOSITORY" \
-            kumwe/cms \
+            kumwe/app \
             "$RUNNER_TEMP/kumwe-composer" \
             '2.0.0'
           test -f "$RUNNER_TEMP/kumwe-composer/vendor/autoload.php"

@@ -43,7 +43,7 @@ Repeat for the web image. Compare both digests with release provenance subjects 
 
 ## Composer releases
 
-Before `composer create-project`, verify that the selected `kumwe/cms` version resolves to the same protected Git tag and locked dependency set as the GitHub release. Use `composer audit --locked --abandoned=fail` after installation, preserve `composer.lock`, and do not accept an unexpected source branch or development constraint in production.
+Before `composer create-project`, verify that the selected `kumwe/app` version resolves to the same protected Git tag and locked dependency set as the GitHub release. Use `composer audit --locked --abandoned=fail` after installation, preserve `composer.lock`, and do not accept an unexpected source branch or development constraint in production.
 
 ## Business-security acceptance
 
