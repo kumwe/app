@@ -89,6 +89,8 @@ final readonly class CustomBusinessActionExecutor
      * @throws  BusinessRecordIdempotencyConflict  When a key is reused, unfinished, expired, or corrupt.
      * @throws  BusinessRecordTemporarilyUnavailable  When runtime is untrusted or three transient attempts fail.
      * @throws  BusinessRecordDefinitionUnavailable  When the exact custom contract is inactive.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When the
+     *          record's declared posting date falls inside a closed posting period.
      *
      * @since   2.0.0
      */

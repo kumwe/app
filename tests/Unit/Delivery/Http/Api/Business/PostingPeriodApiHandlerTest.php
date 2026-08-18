@@ -68,6 +68,14 @@ final class PostingPeriodApiHandlerTest extends TestCase
             'key' => '2026-08',
         ])));
         self::assertSame('open', $reopened['status']);
+
+        $scoped = $this->document($handler->handle($this->post($principal, 'close', [
+            'key' => 'acme-2026-08',
+            'starts_at' => '2026-08-01',
+            'ends_at' => '2026-09-01',
+            'organization' => 'acme',
+        ])));
+        self::assertSame('acme', $scoped['organization']);
     }
 
     /**

@@ -158,6 +158,56 @@ final class PostingPeriodLockTest extends TestCase
     }
 
     /**
+     * A zoned posting declaration is judged at its absolute instant, and a dateless value at nothing.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAZonedPostingDateIsJudgedAtItsInstant(): void
+    {
+        $lock = new PostingPeriodLock($this->repository($this->closedAugust()), $this->codec());
+        $document = NeutralBusinessFixture::document();
+        foreach ($document['fields'] as &$field) {
+            if (is_array($field) && ($field['handle'] ?? null) === 'scheduled_for') {
+                $field['configuration'] = ['posting_date' => true];
+            }
+        }
+        unset($field);
+        $definition = EntityTypeDefinition::fromArray($document);
+
+        try {
+            $lock->assertMutationOpen($definition, $this->scope(), null, [
+                'scheduled_for' => [
+                    'instant' => '2026-08-15T10:00:00Z',
+                    'timezone' => 'Africa/Windhoek',
+                ],
+            ], true);
+            self::fail('A zoned posting date inside the closed period must refuse.');
+        } catch (BusinessRecordPostingPeriodClosed $refused) {
+            self::assertSame('2026-08', $refused->periodKey);
+        }
+
+        // A stored value of a shape the posting types never produce carries no instant to judge.
+        $record = new BusinessRecord(
+            $definition->id,
+            1,
+            Uuid::uuid7()->toString(),
+            Uuid::uuid7()->toString(),
+            $this->scope(),
+            1,
+            null,
+            ['scheduled_for' => 'not-a-value'],
+            'actor-1',
+            new DateTimeImmutable('2026-08-08T10:00:00Z'),
+            'actor-1',
+            new DateTimeImmutable('2026-08-08T10:00:00Z'),
+        );
+        $lock->assertMutationOpen($definition, $this->scope(), $record);
+        self::assertTrue(true);
+    }
+
+    /**
      * A malformed submitted value is left for the validation path rather than refused here.
      *
      * @return  void
