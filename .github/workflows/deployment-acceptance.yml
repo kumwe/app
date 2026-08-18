@@ -84,6 +84,12 @@ jobs:
             echo 'KUMWE_INSTANCE_ID=distribution-instance'
           } >> "$GITHUB_ENV"
 
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
       - name: Build release ZIP with production dependencies
         shell: bash
         run: |

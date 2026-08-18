@@ -169,6 +169,12 @@ jobs:
         with:
           node-version: '22.12.0'
 
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
       - name: Install locked application dependencies
         run: |
           composer install --no-interaction --prefer-dist
@@ -236,6 +242,12 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
       - name: Install and validate locked dependencies
         run: |
           composer validate --strict
@@ -412,6 +424,12 @@ jobs:
         shell: bash
         run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
 
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
       - name: Install locked dependencies
         run: composer install --no-interaction --prefer-dist
 

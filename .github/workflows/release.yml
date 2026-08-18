@@ -132,6 +132,12 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
       - name: Generate ephemeral application secret
         shell: bash
         run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
@@ -140,6 +146,12 @@ jobs:
       # so a release could pass while a gate a contributor runs on every change had never been executed
       # against the tag. It now executes the release lane of docs/quality/contract.json, which is the same
       # definition composer qa and this repository's other workflows are held to.
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
       - name: Verify source and locked dependencies
         run: |
           composer validate --strict
@@ -181,6 +193,12 @@ jobs:
           tags: ${{ steps.release.outputs.web_tags }}
           build-args: KUMWE_RELEASE=${{ steps.release.outputs.version }}
 
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
       - name: Build release archive
         shell: bash
         run: |
