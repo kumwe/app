@@ -93,6 +93,28 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
         });
     }
 
+    public function testServerFailureWithALostReservationRaisesTheOwnershipLoss(): void
+    {
+        $database = $this->database();
+        $database->expects(self::once())->method('insert');
+        $database->expects(self::once())->method('executeStatement')->willReturnCallback(
+            static function (string $sql): int {
+                self::assertStringContainsString('DELETE FROM', $sql);
+                return 0;
+            },
+        );
+        $middleware = $this->middleware($database);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('no longer owns');
+        $middleware->process($this->request(), new class implements RequestHandlerInterface {
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                return new Response(status: 503);
+            }
+        });
+    }
+
     private function middleware(Connection $database): PersistentIdempotencyMiddleware
     {
         $clock = new class implements ClockInterface {
