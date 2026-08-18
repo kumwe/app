@@ -40,6 +40,14 @@ final class BusinessWorkspaceParityVerifier
     private array $contents = [];
 
     /**
+     * Compiled en-GB message patterns keyed by identifier, loaded on first template read.
+     *
+     * @var    ?array<string, string>
+     * @since  2.0.0
+     */
+    private ?array $catalogue = null;
+
+    /**
      * Create a verifier rooted at one checkout.
      *
      * @param  string  $root      Absolute repository root.
@@ -456,8 +464,9 @@ final class BusinessWorkspaceParityVerifier
             $violations[] = sprintf('%s.%s.%s has no template markers.', $surfaceId, $section, $id);
             return;
         }
+        $haystack = $template . "\n" . $this->resolveWording($template);
         foreach ($markers as $marker) {
-            if (!is_string($marker) || !str_contains($template, $marker)) {
+            if (!is_string($marker) || !str_contains($haystack, $marker)) {
                 $violations[] = sprintf(
                     '%s.%s.%s lost template marker %s.',
                     $surfaceId,
@@ -642,6 +651,119 @@ final class BusinessWorkspaceParityVerifier
         $this->contents[$path] = $contents;
 
         return $contents;
+    }
+
+    /**
+     * Inline catalogue wording back into a template source so literal markers stay verifiable.
+     *
+     * Interface extraction moved the surfaces' sentences into the message catalogue, so a template
+     * now carries `t('…')` references where the manifest records the words themselves. Resolving each
+     * reference against the compiled en-GB catalogue keeps the manifest binding what it always bound:
+     * the wording the surface presents.
+     *
+     * @param   string  $source  Template source as checked in.
+     *
+     * @return  string  The source with every `t()`/`t_html()` call replaced by its quoted pattern.
+     *
+     * @since   2.0.0
+     */
+    private function resolveWording(string $source): string
+    {
+        $catalogue = $this->catalogue();
+        $replacements = [];
+        $offset = 0;
+        while (
+            preg_match('/\bt(?:_html)?\(\s*\'([^\']+)\'/', $source, $match, PREG_OFFSET_CAPTURE, $offset) === 1
+        ) {
+            $start = (int) $match[0][1];
+            $identifier = $match[1][0];
+            $open = strpos($source, '(', $start);
+            $close = $this->matchingParenthesis($source, $open === false ? $start : $open);
+            $offset = $close + 1;
+            if (!isset($catalogue[$identifier])) {
+                continue;
+            }
+            $replacements[] = [$start, $close, "'" . $catalogue[$identifier] . "'"];
+        }
+        foreach (array_reverse($replacements) as [$start, $close, $replacement]) {
+            $source = substr($source, 0, $start) . $replacement . substr($source, $close + 1);
+        }
+
+        return $source;
+    }
+
+    /**
+     * Find the offset of the parenthesis closing the one at `$open`, skipping string literals.
+     *
+     * @param   string  $source  Text being scanned.
+     * @param   int     $open    Offset of the opening parenthesis.
+     *
+     * @return  int  Offset of the matching closing parenthesis, or `$open` when unbalanced.
+     *
+     * @since   2.0.0
+     */
+    private function matchingParenthesis(string $source, int $open): int
+    {
+        $depth = 0;
+        $quote = null;
+        $length = strlen($source);
+        for ($i = $open; $i < $length; $i++) {
+            $character = $source[$i];
+            if ($quote !== null) {
+                if ($character === '\\') {
+                    $i++;
+                    continue;
+                }
+                if ($character === $quote) {
+                    $quote = null;
+                }
+                continue;
+            }
+            if ($character === "'" || $character === '"') {
+                $quote = $character;
+                continue;
+            }
+            if ($character === '(') {
+                $depth++;
+                continue;
+            }
+            if ($character === ')') {
+                $depth--;
+                if ($depth === 0) {
+                    return $i;
+                }
+            }
+        }
+
+        return $open;
+    }
+
+    /**
+     * The compiled en-GB message catalogue, read once from the published artifact.
+     *
+     * @return  array<string, string>  ICU patterns keyed by message identifier; empty when the
+     *          compiled catalogue is absent, which leaves templates unresolved rather than failing.
+     *
+     * @since   2.0.0
+     */
+    private function catalogue(): array
+    {
+        if ($this->catalogue !== null) {
+            return $this->catalogue;
+        }
+        $catalogue = [];
+        $compiled = $this->root . '/resources/localization/compiled/en-GB.php';
+        if (is_file($compiled)) {
+            /** @var mixed $loaded */
+            $loaded = require $compiled;
+            foreach (is_array($loaded) ? $loaded : [] as $identifier => $pattern) {
+                if (is_string($identifier) && is_string($pattern)) {
+                    $catalogue[$identifier] = $pattern;
+                }
+            }
+        }
+
+        return $this->catalogue = $catalogue;
     }
 }
 

@@ -9,21 +9,21 @@
     {% if field.kind == 'object' %}
         <fieldset class="portal-business-schema-group kis-business-schema-group">
             <legend>{{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}</legend>
-            {% if not field.required %}<label class="portal-business-checkbox" for="{{ input_id }}-present"><input id="{{ input_id }}-present" type="checkbox" name="{{ field.presence_name }}" value="1"{% if field.included %} checked{% endif %}><span>Include {{ field.label|lower }}</span></label>{% endif %}
+            {% if not field.required %}<label class="portal-business-checkbox" for="{{ input_id }}-present"><input id="{{ input_id }}-present" type="checkbox" name="{{ field.presence_name }}" value="1"{% if field.included %} checked{% endif %}><span>{{ t('core.administrator.business_schema_fields.include', {label: (field.label|lower)}) }}</span></label>{% endif %}
             {% if field.description %}<p class="portal-field-help">{{ field.description }}</p>{% endif %}
             {{ _self.fields(field.children) }}
         </fieldset>
     {% elseif field.kind == 'array' %}
         <fieldset class="portal-business-schema-group portal-business-schema-array kis-business-schema-group">
             <legend>{{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}</legend>
-            {% if not field.required %}<label class="portal-business-checkbox" for="{{ input_id }}-present"><input id="{{ input_id }}-present" type="checkbox" name="{{ field.presence_name }}" value="1"{% if field.included %} checked{% endif %}><span>Include {{ field.label|lower }}</span></label>{% endif %}
+            {% if not field.required %}<label class="portal-business-checkbox" for="{{ input_id }}-present"><input id="{{ input_id }}-present" type="checkbox" name="{{ field.presence_name }}" value="1"{% if field.included %} checked{% endif %}><span>{{ t('core.administrator.business_schema_fields.include', {label: (field.label|lower)}) }}</span></label>{% endif %}
             {% if field.description %}<p class="portal-field-help">{{ field.description }}</p>{% endif %}
-            <label for="{{ input_id }}-count">Number of rows<input id="{{ input_id }}-count" type="number" name="{{ field.count_name }}" value="{{ field.count }}" min="{{ field.min_items }}" max="{{ field.max_items }}" step="1"></label>
+            <label for="{{ input_id }}-count">{{ t('core.administrator.business_schema_fields.number_of_rows') }}<input id="{{ input_id }}-count" type="number" name="{{ field.count_name }}" value="{{ field.count }}" min="{{ field.min_items }}" max="{{ field.max_items }}" step="1"></label>
             <div class="portal-business-schema-array-items kis-business-schema-array-items">{% for item in field.items %}<div class="portal-business-schema-array-item kis-business-schema-array-item">{{ _self.field(item) }}</div>{% endfor %}</div>
         </fieldset>
     {% elseif field.kind == 'const' %}
         <div class="portal-business-schema-field kis-business-schema-field">
-            {% if not field.required %}<label class="portal-business-checkbox" for="{{ input_id }}-present"><input id="{{ input_id }}-present" type="checkbox" name="{{ field.presence_name }}" value="1"{% if field.included %} checked{% endif %}><span>Include {{ field.label|lower }}</span></label>{% endif %}
+            {% if not field.required %}<label class="portal-business-checkbox" for="{{ input_id }}-present"><input id="{{ input_id }}-present" type="checkbox" name="{{ field.presence_name }}" value="1"{% if field.included %} checked{% endif %}><span>{{ t('core.administrator.business_schema_fields.include', {label: (field.label|lower)}) }}</span></label>{% endif %}
             <span class="portal-business-field-label">{{ field.label }}</span><output>{{ field.display }}</output>
         </div>
     {% else %}
@@ -31,7 +31,7 @@
             <label for="{{ input_id }}">{{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}</label>
             {% if field.kind == 'select' %}
                 <select id="{{ input_id }}" name="{{ field.name }}"{% if field.required and not field.nullable %} required{% endif %}>
-                    {% if not field.required or field.nullable or field.input_value is empty %}<option value="">{{ field.nullable ? 'Not set' : 'Choose an option' }}</option>{% endif %}
+                    {% if not field.required or field.nullable or field.input_value is empty %}<option value="">{{ field.nullable ? t('core.administrator.business_fields.not_set') : t('core.administrator.business_schema_fields.choose_an_option') }}</option>{% endif %}
                     {% for option in field.options %}<option value="{{ option.value }}"{% if field.input_value is same as(option.value) %} selected{% endif %}>{{ option.label }}</option>{% endfor %}
                 </select>
             {% else %}

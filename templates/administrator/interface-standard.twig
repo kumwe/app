@@ -1,19 +1,19 @@
 {% extends "layout.twig" %}
-{% block title %}Kumwe Interface Standard · Kumwe{% endblock %}
-{% block context_title %}Interface standard{% endblock %}
+{% block title %}{{ t('core.administrator.interface_standard.kumwe_interface_standard_kumwe') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.interface_standard.interface_standard') }}{% endblock %}
 {% block content %}
   {% embed '@kis/page-header.twig' with {
-    eyebrow: 'KIS 1.0 reference',
-    title: 'Kumwe Interface Standard',
-    purpose: 'Production components, interaction patterns and states used by core and extension surfaces.'
+    eyebrow: t('core.administrator.interface_standard.kis_1_reference'),
+    title: t('core.administrator.interface_standard.kumwe_interface_standard'),
+    purpose: t('core.administrator.interface_standard.production_components_interaction_patterns_and_s')
   } only %}
     {% block actions %}
-      <div class="page-actions"><a class="button" href="/administrator">Return to dashboard</a></div>
+      <div class="page-actions"><a class="button" href="/administrator">{{ t('core.administrator.interface_standard.return_to_dashboard') }}</a></div>
     {% endblock %}
   {% endembed %}
 
   <div class="notice" role="status">
-    <span><strong>Reference implementation.</strong> These examples render through the same Twig, tokens and Lit controllers as operational workspaces.</span>
+    <span><strong>{{ t('core.administrator.interface_standard.reference_implementation') }}</strong> {{ t('core.administrator.interface_standard.these_examples_render_through_the_same') }}</span>
   </div>
 
   <kumwe-tabs
@@ -22,7 +22,7 @@
   >
     {% include '@kis/tabs.twig' with {
       id: 'kis-gallery',
-      label: 'Interface-standard examples',
+      label: t('core.administrator.interface_standard.interface_standard_examples'),
       tabs: gallery_tabs,
       active: active_tab
     } only %}
@@ -35,16 +35,16 @@
     } only %}
       {% block content %}
         <div class="metric-grid">
-          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">1</strong><span class="metric-label">Current KIS version</span></span></article>
-          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">4</strong><span class="metric-label">Contract layers</span></span></article>
-          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">0</strong><span class="metric-label">Allowed policy shortcuts</span></span></article>
-          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">AA</strong><span class="metric-label">WCAG target</span></span></article>
+          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">1</strong><span class="metric-label">{{ t('core.administrator.interface_standard.current_kis_version') }}</span></span></article>
+          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">4</strong><span class="metric-label">{{ t('core.administrator.interface_standard.contract_layers') }}</span></span></article>
+          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">0</strong><span class="metric-label">{{ t('core.administrator.interface_standard.allowed_policy_shortcuts') }}</span></span></article>
+          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">AA</strong><span class="metric-label">{{ t('core.administrator.interface_standard.wcag_target') }}</span></span></article>
         </div>
         <section class="panel stack">
-          <h2>Technical values remain secondary</h2>
-          <p>Stable identifiers wrap safely and provide an explicit copy control.</p>
+          <h2>{{ t('core.administrator.interface_standard.technical_values_remain_secondary') }}</h2>
+          <p>{{ t('core.administrator.interface_standard.stable_identifiers_wrap_safely_and_provide') }}</p>
           {% include '@kis/technical-value.twig' with {
-            label: 'Example definition handle',
+            label: t('core.administrator.interface_standard.example_definition_handle'),
             value: 'site.default.long_operational_definition_handle_that_remains_inside_its_container',
             copy: true
           } only %}
@@ -56,9 +56,9 @@
         >
           <header class="kis-dashboard-section-heading">
             <div>
-              <p class="eyebrow">Semantic dashboard composition</p>
-              <h2 id="kis-dashboard-gallery-title">Protected widget and preference components</h2>
-              <p>Summary, activity, context and filtered workflow models share one bounded KIS contract.</p>
+              <p class="eyebrow">{{ t('core.administrator.interface_standard.semantic_dashboard_composition') }}</p>
+              <h2 id="kis-dashboard-gallery-title">{{ t('core.administrator.interface_standard.protected_widget_and_preference_components') }}</h2>
+              <p>{{ t('core.administrator.interface_standard.summary_activity_context_and_filtered_workflow') }}</p>
             </div>
           </header>
           <div class="kis-dashboard-widget-grid">
@@ -71,7 +71,7 @@
           </div>
           <div id="dashboard-gallery-preferences" class="stack">
             <p id="dashboard-gallery-read-only-help" class="notice info" role="note">
-              Preference and browser controls are representative and disabled in this read-only gallery.
+              {{ t('core.administrator.interface_standard.preference_and_browser_controls_are_representati') }}
             </p>
             <fieldset
               class="panel stack"
@@ -79,7 +79,7 @@
               aria-describedby="dashboard-gallery-read-only-help"
               disabled
             >
-              <legend>Read-only dashboard preference reference</legend>
+              <legend>{{ t('core.administrator.interface_standard.read_only_dashboard_preference_reference') }}</legend>
               {% include '@kis/dashboard-preferences.twig' with {
                 dashboard: dashboard_gallery,
                 csrf: csrf
@@ -94,36 +94,36 @@
       {% block content %}
         <div class="stack">
           {% embed '@kis/resource-toolbar.twig' with {
-            label: 'Example resource discovery',
-            title: 'Inspection catalog',
-            summary: '3 representative resources'
+            label: t('core.administrator.interface_standard.example_resource_discovery'),
+            title: t('core.administrator.interface_standard.inspection_catalog'),
+            summary: t('core.administrator.interface_standard.3_representative_resources')
           } only %}
             {% block filters %}
-              <label>Search<input type="search" value="Windhoek" aria-label="Search inspection catalog"></label>
-              <label>Status<select aria-label="Inspection status"><option>All active states</option><option>Draft</option><option>Approved</option></select></label>
+              <label>{{ t('core.administrator.business_choices.search') }}<input type="search" value="Windhoek" aria-label="{{ t('core.administrator.interface_standard.search_inspection_catalog') }}"></label>
+              <label>{{ t('core.administrator.access_control.status') }}<select aria-label="{{ t('core.administrator.interface_standard.inspection_status') }}"><option>{{ t('core.administrator.interface_standard.all_active_states') }}</option><option>{{ t('core.administrator.interface_standard.draft') }}</option><option>{{ t('core.administrator.interface_standard.approved') }}</option></select></label>
             {% endblock %}
-            {% block actions %}<button class="primary" type="button">Create inspection</button>{% endblock %}
+            {% block actions %}<button class="primary" type="button">{{ t('core.administrator.interface_standard.create_inspection') }}</button>{% endblock %}
           {% endembed %}
 
           {% embed '@kis/master-detail.twig' with {
             id: 'kis-gallery-resources',
-            catalog_label: 'Example resources',
-            catalog_toggle_label: 'Browse example resources'
+            catalog_label: t('core.administrator.interface_standard.example_resources'),
+            catalog_toggle_label: t('core.administrator.interface_standard.browse_example_resources')
           } only %}
             {% block catalog %}
               <div class="panel stack">
-                <div class="section-heading"><h2>Resources</h2><span class="count-badge">3</span></div>
-                <a class="definition-catalog-item active" href="#kis-gallery-resource-detail" aria-current="true"><strong>INS-001</strong><span>Ready for review</span></a>
-                <a class="definition-catalog-item" href="#kis-gallery-resource-detail"><strong>INS-002</strong><span>Draft</span></a>
-                <a class="definition-catalog-item" href="#kis-gallery-resource-detail"><strong>INS-003</strong><span>Approved</span></a>
+                <div class="section-heading"><h2>{{ t('core.administrator.interface_standard.resources') }}</h2><span class="count-badge">3</span></div>
+                <a class="definition-catalog-item active" href="#kis-gallery-resource-detail" aria-current="true"><strong>INS-001</strong><span>{{ t('core.administrator.interface_standard.ready_for_review') }}</span></a>
+                <a class="definition-catalog-item" href="#kis-gallery-resource-detail"><strong>INS-002</strong><span>{{ t('core.administrator.interface_standard.draft') }}</span></a>
+                <a class="definition-catalog-item" href="#kis-gallery-resource-detail"><strong>INS-003</strong><span>{{ t('core.administrator.interface_standard.approved') }}</span></a>
               </div>
             {% endblock %}
             {% block detail %}
               <section id="kis-gallery-resource-detail" class="panel stack">
-                <p class="eyebrow">Selected resource</p>
-                <h2>INS-001 · Windhoek facility inspection</h2>
-                <p>The selected context remains visible while focused tasks change.</p>
-                <dl class="definition-metadata"><div><dt>Status</dt><dd>Ready for review</dd></div><div><dt>Owner</dt><dd>Operations</dd></div></dl>
+                <p class="eyebrow">{{ t('core.administrator.interface_standard.selected_resource') }}</p>
+                <h2>{{ t('core.administrator.interface_standard.ins_001_windhoek_facility_inspection') }}</h2>
+                <p>{{ t('core.administrator.interface_standard.the_selected_context_remains_visible_while') }}</p>
+                <dl class="definition-metadata"><div><dt>{{ t('core.administrator.access_control.status') }}</dt><dd>{{ t('core.administrator.interface_standard.ready_for_review') }}</dd></div><div><dt>{{ t('core.administrator.business_schema_plans.owner') }}</dt><dd>{{ t('core.administrator.interface_standard.operations') }}</dd></div></dl>
               </section>
             {% endblock %}
           {% endembed %}
@@ -136,25 +136,25 @@
         <div class="stack">
           {% include '@kis/validation-summary.twig' with {
             id: 'kis-gallery-form',
-            title: 'Review two example fields',
+            title: t('core.administrator.interface_standard.review_two_example_fields'),
             errors: [
-              {target: 'kis-example-reference', message: 'Enter a stable inspection reference.'},
-              {target: 'kis-example-date', message: 'Choose the inspection date.'}
+              {target: 'kis-example-reference', message: t('core.administrator.interface_standard.enter_a_stable_inspection_reference')},
+              {target: 'kis-example-date', message: t('core.administrator.interface_standard.choose_the_inspection_date')}
             ]
           } only %}
           {% embed '@kis/drawer.twig' with {
             id: 'kis-gallery-drawer',
-            open_label: 'Open focused editor',
-            title: 'Create inspection',
-            purpose: 'A bounded task retains the collection context.',
+            open_label: t('core.administrator.interface_standard.open_focused_editor'),
+            title: t('core.administrator.interface_standard.create_inspection'),
+            purpose: t('core.administrator.interface_standard.a_bounded_task_retains_the_collection'),
             primary: true
           } only %}
             {% block content %}
               <form class="stack" action="/administrator/interface-standard?tab=forms" method="get">
                 <input type="hidden" name="tab" value="forms">
-                <label>Reference<input id="kis-example-reference" name="reference" value="INS-004" required></label>
-                <label>Inspection date<input id="kis-example-date" type="date" name="date" value="2026-08-11" required></label>
-                <div class="page-actions"><button class="primary" type="submit">Review inspection</button></div>
+                <label>{{ t('core.administrator.interface_standard.reference') }}<input id="kis-example-reference" name="reference" value="INS-004" required></label>
+                <label>{{ t('core.administrator.interface_standard.inspection_date') }}<input id="kis-example-date" type="date" name="date" value="2026-08-11" required></label>
+                <div class="page-actions"><button class="primary" type="submit">{{ t('core.administrator.interface_standard.review_inspection') }}</button></div>
               </form>
             {% endblock %}
           {% endembed %}
@@ -166,40 +166,40 @@
       {% block content %}
         <div class="admin-grid">
           <section class="panel stack">
-            <p class="eyebrow">Review boundary</p>
-            <h2>Publish immutable definition</h2>
-            <p>Target, version, scope, impact and recovery consequence appear before confirmation.</p>
-            <dl class="definition-metadata"><div><dt>Target</dt><dd>site.default.inspection</dd></div><div><dt>Version</dt><dd>4</dd></div><div><dt>Impact</dt><dd>Additive schema plan required</dd></div></dl>
-            <button class="primary" type="button">Publish version 4</button>
+            <p class="eyebrow">{{ t('core.administrator.interface_standard.review_boundary') }}</p>
+            <h2>{{ t('core.administrator.interface_standard.publish_immutable_definition') }}</h2>
+            <p>{{ t('core.administrator.interface_standard.target_version_scope_impact_and_recovery') }}</p>
+            <dl class="definition-metadata"><div><dt>{{ t('core.administrator.access_control.target') }}</dt><dd>site.default.inspection</dd></div><div><dt>{{ t('core.administrator.business_status.version') }}</dt><dd>4</dd></div><div><dt>{{ t('core.administrator.business_security.impact') }}</dt><dd>{{ t('core.administrator.interface_standard.additive_schema_plan_required') }}</dd></div></dl>
+            <button class="primary" type="button">{{ t('core.administrator.interface_standard.publish_version_4') }}</button>
           </section>
           <section class="panel stack schema-purge-control">
-            <p class="eyebrow">Danger zone</p>
-            <h2>Purge remains separate</h2>
-            <p>Destructive work never competes visually with the ordinary primary task.</p>
-            <button class="danger" type="button">Review purge consequences</button>
+            <p class="eyebrow">{{ t('core.administrator.access_control.danger_zone') }}</p>
+            <h2>{{ t('core.administrator.interface_standard.purge_remains_separate') }}</h2>
+            <p>{{ t('core.administrator.interface_standard.destructive_work_never_competes_visually_with') }}</p>
+            <button class="danger" type="button">{{ t('core.administrator.interface_standard.review_purge_consequences') }}</button>
           </section>
         </div>
         <section class="panel stack kis-state-reference" aria-labelledby="kis-state-reference-title">
           <div>
-            <p class="eyebrow">Required reference matrix</p>
-            <h2 id="kis-state-reference-title">Representative operating states</h2>
-            <p>Every surface selects the states it supports and qualifies each one before release.</p>
+            <p class="eyebrow">{{ t('core.administrator.interface_standard.required_reference_matrix') }}</p>
+            <h2 id="kis-state-reference-title">{{ t('core.administrator.interface_standard.representative_operating_states') }}</h2>
+            <p>{{ t('core.administrator.interface_standard.every_surface_selects_the_states_it') }}</p>
           </div>
           <div class="kis-state-matrix">
             {% for state in [
-              {id: 'empty', label: 'Empty', message: 'No resources exist yet.'},
-              {id: 'sparse', label: 'Sparse', message: 'One bounded resource remains legible.'},
-              {id: 'representative', label: 'Representative', message: 'Typical data proves the ordinary task.'},
-              {id: 'dense', label: 'Dense', message: 'High information density preserves hierarchy.'},
-              {id: 'extreme', label: 'Extreme', message: 'Long identifiers wrap without escape.'},
-              {id: 'error', label: 'Error', message: 'Validation and service failures retain a recovery path.'},
-              {id: 'permission-reduced', label: 'Permission reduced', message: 'Unavailable actions are absent.'},
-              {id: 'unchanged', label: 'Unchanged', message: 'The durable version and form values still agree.'},
-              {id: 'unsaved', label: 'Unsaved', message: 'Local changes are explicit before navigation.'},
-              {id: 'saving', label: 'Saving', message: 'Work is pending without blocking context.'},
-              {id: 'saved', label: 'Saved', message: 'Durable completion is announced.'},
-              {id: 'conflict', label: 'Conflict', message: 'Concurrent change requires resolution.'},
-              {id: 'failed', label: 'Failed', message: 'Failure retains input and recovery action.'}
+              {id: 'empty', label: 'Empty', message: t('core.administrator.interface_standard.no_resources_exist_yet')},
+              {id: 'sparse', label: 'Sparse', message: t('core.administrator.interface_standard.one_bounded_resource_remains_legible')},
+              {id: 'representative', label: 'Representative', message: t('core.administrator.interface_standard.typical_data_proves_the_ordinary_task')},
+              {id: 'dense', label: 'Dense', message: t('core.administrator.interface_standard.high_information_density_preserves_hierarchy')},
+              {id: 'extreme', label: 'Extreme', message: t('core.administrator.interface_standard.long_identifiers_wrap_without_escape')},
+              {id: 'error', label: 'Error', message: t('core.administrator.interface_standard.validation_and_service_failures_retain_a')},
+              {id: 'permission-reduced', label: t('core.administrator.interface_standard.permission_reduced'), message: t('core.administrator.interface_standard.unavailable_actions_are_absent')},
+              {id: 'unchanged', label: 'Unchanged', message: t('core.administrator.interface_standard.the_durable_version_and_form_values')},
+              {id: 'unsaved', label: 'Unsaved', message: t('core.administrator.interface_standard.local_changes_are_explicit_before_navigation')},
+              {id: 'saving', label: 'Saving', message: t('core.administrator.interface_standard.work_is_pending_without_blocking_context')},
+              {id: 'saved', label: 'Saved', message: t('core.administrator.interface_standard.durable_completion_is_announced')},
+              {id: 'conflict', label: 'Conflict', message: t('core.administrator.interface_standard.concurrent_change_requires_resolution')},
+              {id: 'failed', label: 'Failed', message: t('core.administrator.interface_standard.failure_retains_input_and_recovery_action')}
             ] %}
               <article class="kis-state-card" data-kis-state="{{ state.id }}">
                 <strong>{{ state.label }}</strong><span>{{ state.message }}</span>
@@ -210,26 +210,26 @@
         <div class="admin-grid">
           <section class="panel stack" aria-labelledby="kis-empty-reference-title">
             <div>
-              <p class="eyebrow">Empty-state primitive</p>
-              <h2 id="kis-empty-reference-title">Absence explains the next safe task</h2>
+              <p class="eyebrow">{{ t('core.administrator.interface_standard.empty_state_primitive') }}</p>
+              <h2 id="kis-empty-reference-title">{{ t('core.administrator.interface_standard.absence_explains_the_next_safe_task') }}</h2>
             </div>
             {% embed '@kis/empty-state.twig' with {
-              title: 'No inspections match this view',
-              message: 'Clear the current filters or create an inspection when policy allows it.'
+              title: t('core.administrator.interface_standard.no_inspections_match_this_view'),
+              message: t('core.administrator.interface_standard.clear_the_current_filters_or_create')
             } only %}
-              {% block action %}<a class="button" href="?tab=collections#kis-gallery-panel-collections">Return to the catalog</a>{% endblock %}
+              {% block action %}<a class="button" href="?tab=collections#kis-gallery-panel-collections">{{ t('core.administrator.interface_standard.return_to_the_catalog') }}</a>{% endblock %}
             {% endembed %}
           </section>
           <section class="panel stack" data-kis-conflict-reference aria-labelledby="kis-conflict-reference-title">
             <div>
-              <p class="eyebrow">Optimistic conflict</p>
-              <h2 id="kis-conflict-reference-title">Another actor saved a newer version</h2>
-              <p>Keep the submitted values visible while the actor chooses an explicit recovery path.</p>
+              <p class="eyebrow">{{ t('core.administrator.interface_standard.optimistic_conflict') }}</p>
+              <h2 id="kis-conflict-reference-title">{{ t('core.administrator.business_detail.another_actor_saved_a_newer_version') }}</h2>
+              <p>{{ t('core.administrator.interface_standard.keep_the_submitted_values_visible_while') }}</p>
             </div>
             <div class="page-actions">
-              <button class="primary" type="button">Compare changes</button>
-              <button type="button">Reload version 8</button>
-              <button type="button">Reapply my changes</button>
+              <button class="primary" type="button">{{ t('core.administrator.interface_standard.compare_changes') }}</button>
+              <button type="button">{{ t('core.administrator.interface_standard.reload_version_8') }}</button>
+              <button type="button">{{ t('core.administrator.interface_standard.reapply_my_changes') }}</button>
             </div>
           </section>
         </div>

@@ -2,10 +2,10 @@
 {% import "_business-schema-fields.twig" as schema_fields %}
 
 {% set operation_labels = {
-  'archive': 'Archive record',
-  'delete': 'Delete record',
-  'restore': 'Restore record',
-  'action': 'Confirm business action'
+  'archive': t('core.administrator.business_confirm.archive_record'),
+  'delete': t('core.administrator.business_confirm.delete_record'),
+  'restore': t('core.administrator.business_confirm.restore_record'),
+  'action': t('core.administrator.business_confirm.confirm_business_action')
 } %}
 {% set selected_actions = definition.actions|filter(action => action.handle == action_handle) %}
 {% set operation_label = confirmation == 'action' and selected_actions is not empty
@@ -19,48 +19,48 @@
   or (confirmation == 'action' and available_operations.action is defined and selected_actions is not empty)
 %}
 
-{% block title %}{{ operation_label }} · Kumwe{% endblock %}
+{% block title %}{{ t('core.administrator.business_bulk_confirm.kumwe', {operation_label: operation_label}) }}{% endblock %}
 {% block context_title %}{{ operation_label }}{% endblock %}
-{% block context_subtitle %}Review before applying this operation{% endblock %}
+{% block context_subtitle %}{{ t('core.administrator.business_confirm.review_before_applying_this_operation') }}{% endblock %}
 
 {% block content %}
   <kumwe-business-confirmation data-kis-business data-kis-component="generated-operation-confirmation" data-kis-surface="core.administrator.generated-record">
     <header class="page-heading">
       <div>
-        <p class="eyebrow">Confirmation required</p>
+        <p class="eyebrow">{{ t('core.administrator.business_confirm.confirmation_required') }}</p>
         <h1 id="business-confirm-title">{{ operation_label }}</h1>
-        <p>Review the exact record and version before continuing.</p>
+        <p>{{ t('core.administrator.business_confirm.review_the_exact_record_and_version') }}</p>
       </div>
     </header>
 
     <section class="panel panel-body stack business-confirmation kis-business-confirmation{% if confirmation in ['delete', 'action'] %} danger{% endif %}"{% if confirmation in ['delete', 'action'] %} data-danger{% endif %} aria-labelledby="business-confirm-title">
-      {% if error_summary is defined and error_summary %}<div class="notice error" role="alert"><h2>Action could not be completed</h2><p>{{ error_summary }}</p></div>{% endif %}
+      {% if error_summary is defined and error_summary %}<div class="notice error" role="alert"><h2>{{ t('core.administrator.business_confirm.action_could_not_be_completed') }}</h2><p>{{ error_summary }}</p></div>{% endif %}
       {% if approval_requested|default(false) and approval_request_id|default(null) %}
         <div class="notice success" role="status">
           <div>
-            <strong>Approval requested.</strong>
-            Request <code>{{ approval_request_id }}</code> must be approved before execution.
-            <a href="/administrator/business-security#approval-heading">Open the approval inbox</a>.
+            <strong>{{ t('core.administrator.business_confirm.approval_requested') }}</strong>
+            {{ t_html('core.administrator.business_confirm.request_must_be_approved', {id: approval_request_id}) }}
+            <a href="/administrator/business-security#approval-heading">{{ t('core.administrator.business_confirm.open_the_approval_inbox') }}</a>.
           </div>
         </div>
       {% endif %}
       <dl class="business-record-metadata">
-        <div><dt>Record type</dt><dd>{{ definition.singular_label }}</dd></div>
-        <div><dt>Record ID</dt><dd><code>{{ record.record_id }}</code></dd></div>
-        <div><dt>Expected version</dt><dd>{{ record.version }}</dd></div>
-        {% if confirmation == 'action' %}<div><dt>Action</dt><dd><code>{{ action_handle }}</code></dd></div>{% endif %}
+        <div><dt>{{ t('core.administrator.business_confirm.record_type') }}</dt><dd>{{ definition.singular_label }}</dd></div>
+        <div><dt>{{ t('core.administrator.business_confirm.record_id') }}</dt><dd><code>{{ record.record_id }}</code></dd></div>
+        <div><dt>{{ t('core.administrator.business_bulk_confirm.expected_version') }}</dt><dd>{{ record.version }}</dd></div>
+        {% if confirmation == 'action' %}<div><dt>{{ t('core.administrator.access_control.action') }}</dt><dd><code>{{ action_handle }}</code></dd></div>{% endif %}
       </dl>
 
       {% if operation_allowed %}
         <p>
           {% if confirmation == 'delete' %}
-            Deleting may remove this record from ordinary operational views.
+            {{ t('core.administrator.business_confirm.deleting_may_remove_this_record_from') }}
           {% elseif confirmation == 'archive' %}
-            Archiving removes this record from active lists until it is restored.
+            {{ t('core.administrator.business_confirm.archiving_removes_this_record_from_active') }}
           {% elseif confirmation == 'restore' %}
-            Restoring returns this record to the active lifecycle.
+            {{ t('core.administrator.business_confirm.restoring_returns_this_record_to_the') }}
           {% else %}
-            This action may change workflow state or other protected business data.
+            {{ t('core.administrator.business_confirm.this_action_may_change_workflow_state') }}
           {% endif %}
         </p>
         <form method="post" class="stack" data-business-confirm-form>
@@ -74,7 +74,7 @@
             {% if approval_request %}<input type="hidden" name="approval" value="1">{% endif %}
             {{ schema_fields.fields(action_fields) }}
             {% if action_high_impact and not approval_request %}
-              <label for="business-approval-request-id">Approved request ID
+              <label for="business-approval-request-id">{{ t('core.administrator.business_confirm.approved_request_id') }}
                 <input
                   id="business-approval-request-id"
                   type="text"
@@ -85,13 +85,12 @@
                   autocomplete="off"
                   required
                 >
-                <small>Use the exact approved request bound to this record, version, action, and input.</small>
+                <small>{{ t('core.administrator.business_confirm.use_the_exact_approved_request_bound') }}</small>
               </label>
               <fieldset class="stack business-step-up">
-                <legend>Fresh requester verification</legend>
+                <legend>{{ t('core.administrator.business_confirm.fresh_requester_verification') }}</legend>
                 <p>
-                  Confirm your identity again. The one-time proof is bound to this action and the
-                  newly rotated administrator session.
+                  {{ t('core.administrator.business_confirm.confirm_your_identity_again_the_one') }}
                 </p>
                 <label class="check" for="business-verification-totp">
                   <input
@@ -101,7 +100,7 @@
                     value="totp"
                     checked
                   >
-                  <span>Authenticator code</span>
+                  <span>{{ t('core.administrator.access_control.authenticator_code') }}</span>
                 </label>
                 <label class="check" for="business-verification-recovery">
                   <input
@@ -110,9 +109,9 @@
                     name="verification_method"
                     value="recovery"
                   >
-                  <span>Recovery code</span>
+                  <span>{{ t('core.administrator.access_control.recovery_code') }}</span>
                 </label>
-                <label for="business-verification">Verification code
+                <label for="business-verification">{{ t('core.administrator.business_confirm.verification_code') }}
                   <input
                     id="business-verification"
                     type="text"
@@ -128,7 +127,7 @@
           {% endif %}
           <label class="check business-confirm-check">
             <input type="checkbox" required data-business-confirm-check>
-            <span>I have reviewed record {{ record.record_id }} at version {{ record.version }}.</span>
+            <span>{{ t('core.administrator.business_confirm.i_have_reviewed_record_at_version', {record_id: record.record_id, version: record.version}) }}</span>
           </label>
           <div class="page-actions">
             <button
@@ -139,14 +138,14 @@
               {{ operation_label }}
             </button>
             {% if confirmation == 'action' and action_fields is not empty %}
-              <button type="submit" name="operation" value="action_prepare" formnovalidate>Update rows</button>
+              <button type="submit" name="operation" value="action_prepare" formnovalidate>{{ t('core.administrator.business_confirm.update_rows') }}</button>
             {% endif %}
-            <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}">Cancel</a>
+            <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}">{{ t('core.administrator.access_control.cancel') }}</a>
           </div>
         </form>
       {% else %}
-        <div class="notice warning" role="alert">This operation is no longer available. Return to the record to refresh its controls.</div>
-        <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}">Return to record</a>
+        <div class="notice warning" role="alert">{{ t('core.administrator.business_confirm.this_operation_is_no_longer_available') }}</div>
+        <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}">{{ t('core.administrator.business_confirm.return_to_record') }}</a>
       {% endif %}
     </section>
   </kumwe-business-confirmation>

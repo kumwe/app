@@ -1,65 +1,65 @@
 {% extends "layout.twig" %}
-{% block title %}Content · Kumwe{% endblock %}
-{% block context_title %}Content{% endblock %}
+{% block title %}{{ t('core.administrator.content_list.content_kumwe') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.content_list.content') }}{% endblock %}
 {% block content %}
   <div class="kis-phase-five" data-kis-surface="core.administrator.content-collection">
     {% embed '@kis/page-header.twig' with {
       eyebrow: 'Publishing',
       title: 'Content',
-      purpose: 'Find, review and publish every item on this site.',
+      purpose: t('core.administrator.content_list.find_review_and_publish_every_item'),
       capabilities: capabilities
     } only %}
-      {% block actions %}<div class="page-actions">{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new"><svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>Create content</a>{% endif %}</div>{% endblock %}
+      {% block actions %}<div class="page-actions">{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new">{{ t('core.administrator.content_list.svg_aria_hidden_true_use_href') }}</a>{% endif %}</div>{% endblock %}
     {% endembed %}
 
     <section class="panel">
       <form action="/administrator/content" method="get" role="search">
         {% embed '@kis/resource-toolbar.twig' with {
-          label: 'Discover content',
-          title: 'Content library',
-          summary: entries|length ~ ' item' ~ (entries|length == 1 ? '' : 's') ~ ' on this page',
+          label: t('core.administrator.content_list.discover_content'),
+          title: t('core.administrator.content_list.content_library'),
+          summary: t('core.administrator.content_list.items_on_this_page', {count: entries|length}),
           filters: filters,
           content_types: content_types
         } only %}
           {% block filters %}
-            <label class="search-field">Search<input type="search" name="q" value="{{ filters.q }}" placeholder="Title or URL slug"></label>
-            <label>Status<select name="status"><option value="">All statuses</option>{% for status in ['draft','review','published','archived'] %}<option value="{{ status }}"{% if filters.status == status %} selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></label>
-            <label>Content type<select name="type"><option value="">All types</option>{% for type in content_types %}<option value="{{ type.id }}"{% if filters.type == type.id %} selected{% endif %}>{{ type.name }}</option>{% endfor %}</select></label>
-            <label>Visibility<select name="scope"><option value="active"{% if filters.scope == 'active' %} selected{% endif %}>Active</option><option value="trashed"{% if filters.scope == 'trashed' %} selected{% endif %}>Trashed</option><option value="all"{% if filters.scope == 'all' %} selected{% endif %}>All</option></select></label>
-            <label>Sort<select name="sort"><option value="updated_desc"{% if filters.sort == 'updated_desc' %} selected{% endif %}>Recently updated</option><option value="updated_asc"{% if filters.sort == 'updated_asc' %} selected{% endif %}>Oldest updated</option><option value="title_asc"{% if filters.sort == 'title_asc' %} selected{% endif %}>Title A–Z</option><option value="title_desc"{% if filters.sort == 'title_desc' %} selected{% endif %}>Title Z–A</option></select></label>
+            <label class="search-field">{{ t('core.administrator.business_choices.search') }}<input type="search" name="q" value="{{ filters.q }}" placeholder="{{ t('core.administrator.content_list.title_or_url_slug') }}"></label>
+            <label>{{ t('core.administrator.access_control.status') }}<select name="status"><option value="">{{ t('core.administrator.content_list.all_statuses') }}</option>{% for status in ['draft','review','published','archived'] %}<option value="{{ status }}"{% if filters.status == status %} selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></label>
+            <label>{{ t('core.administrator.access_control.content_type') }}<select name="type"><option value="">{{ t('core.administrator.content_list.all_types') }}</option>{% for type in content_types %}<option value="{{ type.id }}"{% if filters.type == type.id %} selected{% endif %}>{{ type.name }}</option>{% endfor %}</select></label>
+            <label>{{ t('core.administrator.content_list.visibility') }}<select name="scope"><option value="active"{% if filters.scope == 'active' %} selected{% endif %}>{{ t('core.administrator.content_list.active') }}</option><option value="trashed"{% if filters.scope == 'trashed' %} selected{% endif %}>{{ t('core.administrator.content_list.trashed') }}</option><option value="all"{% if filters.scope == 'all' %} selected{% endif %}>{{ t('core.administrator.content_list.all') }}</option></select></label>
+            <label>{{ t('core.administrator.content_list.sort') }}<select name="sort"><option value="updated_desc"{% if filters.sort == 'updated_desc' %} selected{% endif %}>{{ t('core.administrator.content_list.recently_updated') }}</option><option value="updated_asc"{% if filters.sort == 'updated_asc' %} selected{% endif %}>{{ t('core.administrator.content_list.oldest_updated') }}</option><option value="title_asc"{% if filters.sort == 'title_asc' %} selected{% endif %}>{{ t('core.administrator.content_list.title_a_z') }}</option><option value="title_desc"{% if filters.sort == 'title_desc' %} selected{% endif %}>{{ t('core.administrator.content_list.title_z_a') }}</option></select></label>
           {% endblock %}
           {% block actions %}
-            <input type="hidden" name="per_page" value="{{ filters.per_page }}"><button class="toolbar-submit" type="submit">Apply filters</button>
-            {% if filters.q or filters.status or filters.type or filters.scope != 'active' or filters.sort != 'updated_desc' %}<a class="button" href="/administrator/content">Clear filters</a>{% endif %}
+            <input type="hidden" name="per_page" value="{{ filters.per_page }}"><button class="toolbar-submit" type="submit">{{ t('core.administrator.content_list.apply_filters') }}</button>
+            {% if filters.q or filters.status or filters.type or filters.scope != 'active' or filters.sort != 'updated_desc' %}<a class="button" href="/administrator/content">{{ t('core.administrator.content_list.clear_filters') }}</a>{% endif %}
           {% endblock %}
         {% endembed %}
       </form>
 
     {% if entries is empty %}
       {% embed '@kis/empty-state.twig' with {
-        title: 'No matching content',
-        message: 'Adjust the filters or create a new content item.',
+        title: t('core.administrator.content_list.no_matching_content'),
+        message: t('core.administrator.content_list.adjust_the_filters_or_create_a'),
         capabilities: capabilities
       } only %}
-        {% block action %}{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new">Create content</a>{% endif %}{% endblock %}
+        {% block action %}{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new">{{ t('core.administrator.content_form.create_content') }}</a>{% endif %}{% endblock %}
       {% endembed %}
     {% else %}
-      <div class="table-wrap" tabindex="0" role="region" aria-label="Content results; scroll horizontally for more columns"><table><thead><tr><th scope="col">Content</th><th scope="col">Status</th><th scope="col">Address</th><th scope="col">Updated</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="{{ t('core.administrator.content_list.content_results_scroll_horizontally_for_more') }}"><table><thead><tr><th scope="col">{{ t('core.administrator.content_list.content') }}</th><th scope="col">{{ t('core.administrator.access_control.status') }}</th><th scope="col">{{ t('core.administrator.content_list.address') }}</th><th scope="col">{{ t('core.administrator.business_detail.updated') }}</th><th scope="col"><span class="sr-only">{{ t('core.administrator.automation.actions') }}</span></th></tr></thead><tbody>
         {% for entry in entries %}<tr class="{{ entry.deleted_at ? 'muted' : '' }}">
-          <td><span class="content-title"><strong>{{ entry.title }}</strong><span>Version {{ entry.version }}{% if entry.deleted_at %} · Trashed{% endif %}</span></span></td>
+          <td><span class="content-title"><strong>{{ entry.title }}</strong><span>{{ t('core.administrator.business_definitions.version', {version: entry.version}) }}{% if entry.deleted_at %} {{ t('core.administrator.content_list.trashed_2') }}{% endif %}</span></span></td>
           <td><span class="status status-{{ entry.deleted_at ? 'trashed' : entry.status }}">{{ entry.deleted_at ? 'Trashed' : entry.status|replace({'_': ' '})|title }}</span></td>
-          <td>{% if entry.public_url %}<a href="{{ entry.public_url }}" target="_blank" rel="noopener">{{ entry.public_url }}</a>{% else %}<span class="text-muted">/{{ entry.slug }} · not public</span>{% endif %}</td>
+          <td>{% if entry.public_url %}<a href="{{ entry.public_url }}" target="_blank" rel="noopener">{{ entry.public_url }}</a>{% else %}<span class="text-muted">{{ t('core.administrator.content_list.not_public', {slug: entry.slug}) }}</span>{% endif %}</td>
           <td class="nowrap"><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('M j, Y H:i') }}</time></td>
           <td class="actions">
             {% if not entry.deleted_at %}
-              {% if capabilities['content.update'] is defined %}<a href="/administrator/content/{{ entry.id }}/edit" aria-label="Edit {{ entry.title }}">Edit</a>{% endif %}
-              {% if capabilities['content.delete'] is defined %}<form action="/administrator/content/{{ entry.id }}/trash" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><button class="link-button danger" type="submit" data-confirm="Move ‘{{ entry.title }}’ to trash?">Trash</button></form>{% endif %}
-            {% elseif capabilities['content.restore'] is defined %}<form action="/administrator/content/{{ entry.id }}/restore" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><button class="link-button" type="submit">Restore</button></form>{% endif %}
+              {% if capabilities['content.update'] is defined %}<a href="/administrator/content/{{ entry.id }}/edit" aria-label="{{ t('core.administrator.content_list.edit', {title: entry.title}) }}">{{ t('core.administrator.business_detail.edit') }}</a>{% endif %}
+              {% if capabilities['content.delete'] is defined %}<form action="/administrator/content/{{ entry.id }}/trash" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><button class="link-button danger" type="submit" data-confirm="Move ‘{{ entry.title }}’ to trash?">{{ t('core.administrator.content_list.trash') }}</button></form>{% endif %}
+            {% elseif capabilities['content.restore'] is defined %}<form action="/administrator/content/{{ entry.id }}/restore" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><button class="link-button" type="submit">{{ t('core.administrator.content_list.restore') }}</button></form>{% endif %}
           </td>
         </tr>{% endfor %}
       </tbody></table></div>
     {% endif %}
-      <footer class="pagination"><span>Page {{ filters.page }} · showing up to {{ filters.per_page }} items</span><nav class="pagination-actions" aria-label="Content pages">{% if has_previous %}<a class="button" href="{{ previous_url }}" rel="prev">Previous</a>{% endif %}{% if has_next %}<a class="button" href="{{ next_url }}" rel="next">Next</a>{% endif %}</nav></footer>
+      <footer class="pagination"><span>{{ t('core.administrator.content_list.page_showing_up_to_items', {page: filters.page, per_page: filters.per_page}) }}</span><nav class="pagination-actions" aria-label="{{ t('core.administrator.content_list.content_pages') }}">{% if has_previous %}<a class="button" href="{{ previous_url }}" rel="prev">{{ t('core.administrator.content_list.previous') }}</a>{% endif %}{% if has_next %}<a class="button" href="{{ next_url }}" rel="next">{{ t('core.administrator.content_list.next') }}</a>{% endif %}</nav></footer>
     </section>
   </div>
 {% endblock %}

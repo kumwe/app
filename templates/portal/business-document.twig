@@ -2,7 +2,7 @@
 {% set record_path = business_base_path ~ '/' ~ (definition.handle|url_encode)
     ~ '/' ~ (record.record_id|url_encode) %}
 
-{% block title %}{{ document.title }} · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.business_document.kumwe_portal', {title: document.title}) }}{% endblock %}
 
 {% block content %}
 <div data-kis-business data-kis-component="generated-document" data-kis-surface="core.portal.generated-record" data-record-task="{{ record_task }}">
@@ -11,15 +11,15 @@
         <p class="eyebrow">{{ definition.plural_label }}</p>
         <h1>{{ document.title }}</h1>
     </div>
-    <nav class="portal-actions" aria-label="Record actions">
-        <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">Back to list</a>
-        {% if available_operations.update is defined and record.deleted_at is null %}<a class="portal-button" href="{{ record_path }}?edit=1">Edit</a>{% endif %}
+    <nav class="portal-actions" aria-label="{{ t('core.portal.business_detail.record_actions') }}">
+        <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">{{ t('core.administrator.business_detail.back_to_list') }}</a>
+        {% if available_operations.update is defined and record.deleted_at is null %}<a class="portal-button" href="{{ record_path }}?edit=1">{{ t('core.administrator.business_detail.edit') }}</a>{% endif %}
     </nav>
 </header>
 
 {% if completed_operation_id %}
     <div class="portal-notice kis-business-document-chrome" role="status">
-        The operation completed.{% if available_operations.status is defined %} <a href="{{ business_base_path }}/operations/{{ completed_operation_id|url_encode }}">View operation status</a>.{% endif %}
+        {{ t('core.administrator.business_detail.the_operation_completed') }}{% if available_operations.status is defined %} <a href="{{ business_base_path }}/operations/{{ completed_operation_id|url_encode }}">{{ t('core.administrator.business_detail.view_operation_status') }}</a>.{% endif %}
     </div>
 {% endif %}
 
@@ -32,7 +32,7 @@
     {% set record_tasks = record_tasks|merge([{id: 'history', label: 'History', href: record_path ~ '?task=history'}]) %}
 {% endif %}
 <div class="kis-business-record-tabs kis-business-document-chrome">
-    {% include '@kis/task-navigation.twig' with {label: 'Record tasks', tasks: record_tasks, active: record_task} only %}
+    {% include '@kis/task-navigation.twig' with {label: t('core.administrator.business_detail.record_tasks'), tasks: record_tasks, active: record_task} only %}
 </div>
 
 <article class="portal-business-panel kis-business-document" aria-label="{{ document.title }}">
@@ -52,7 +52,7 @@
                 <section class="kis-business-document-party" aria-label="{{ party.label }}">
                     <h2>{{ party.label }}</h2>
                     {% if party.records is empty %}
-                        <p class="kis-business-document-empty">Not specified</p>
+                        <p class="kis-business-document-empty">{{ t('core.administrator.business_document.not_specified') }}</p>
                     {% else %}
                         {% for related in party.records %}
                             <ul class="kis-business-document-party-lines">
@@ -83,7 +83,7 @@
                 <caption class="sr-only">{{ document.lines.label }}</caption>
                 <thead>
                     <tr>
-                        <th scope="col" class="kis-business-document-line-number"><span aria-hidden="true">#</span><span class="sr-only">Line</span></th>
+                        <th scope="col" class="kis-business-document-line-number"><span aria-hidden="true">#</span><span class="sr-only">{{ t('core.administrator.business_document.line') }}</span></th>
                         {% for column in document.lines.columns %}<th scope="col">{{ column.label }}</th>{% endfor %}
                     </tr>
                 </thead>
@@ -94,7 +94,7 @@
                             {% for cell in row.cells|default([]) %}<td{% if cell.provenance %} data-converted="true" title="{{ cell.display }}"{% endif %}>{{ cell.display }}</td>{% endfor %}
                         </tr>
                     {% else %}
-                        <tr><td colspan="{{ document.lines.columns|length + 1 }}">No lines recorded.</td></tr>
+                        <tr><td colspan="{{ document.lines.columns|length + 1 }}">{{ t('core.administrator.business_document.no_lines_recorded') }}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -102,7 +102,7 @@
     {% endif %}
 
     {% if document.totals is not empty %}
-        <section class="kis-business-document-totals" aria-label="Totals">
+        <section class="kis-business-document-totals" aria-label="{{ t('core.administrator.business_document.totals') }}">
             <dl>
                 {% for total in document.totals %}
                     <div{% if loop.last %} class="kis-business-document-grand-total"{% endif %}>

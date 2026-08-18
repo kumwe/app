@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Architecture;
 
+use Kumwe\CMS\Tests\Support\ResolvedWording;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -108,6 +109,9 @@ final class ExtensionTrustPostureTest extends TestCase
     {
         $source = file_get_contents(dirname(__DIR__, 2) . '/' . $path);
         self::assertIsString($source, $path);
+        if (str_ends_with($path, '.twig')) {
+            $source = ResolvedWording::withResolved($source);
+        }
 
         return preg_replace('/\s+/', ' ', $source) ?? $source;
     }

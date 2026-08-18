@@ -1,32 +1,32 @@
 {% extends 'portal/layout.twig' %}
 
-{% block title %}Approvals · Kumwe Portal{% endblock %}
+{% block title %}{{ t('core.portal.approvals.approvals_kumwe_portal') }}{% endblock %}
 
 {% block content %}
 <div data-kis-surface="core.portal.approvals" data-kis-component="collection-workspace">
     {% include '@kis/page-header.twig' with {
-        eyebrow: 'Maker-checker workflow',
-        title: 'Approval inbox',
-        purpose: 'Review only the requests available in your current organization and workspace.'
+        eyebrow: t('core.portal.approvals.maker_checker_workflow'),
+        title: t('core.portal.approval_not_found.approval_inbox'),
+        purpose: t('core.portal.approvals.review_only_the_requests_available_in')
     } only %}
     {% if notice %}<div class="portal-notice" role="status">{{ notice }}</div>{% endif %}
 
     {% if approvals is empty %}
         {% include '@kis/empty-state.twig' with {
-            title: 'No approval requests are available',
-            message: 'There is nothing to review in this workspace. New requests appear here only when policy permits you to decide them.'
+            title: t('core.portal.approvals.no_approval_requests_are_available'),
+            message: t('core.portal.approvals.there_is_nothing_to_review_in')
         } only %}
     {% else %}
-    <div class="portal-table-wrap" tabindex="0" role="region" aria-label="Approval requests">
+    <div class="portal-table-wrap" tabindex="0" role="region" aria-label="{{ t('core.administrator.business_security.approval_requests') }}">
         <table class="portal-table">
-            <thead><tr><th scope="col">Request</th><th scope="col">Action</th><th scope="col">Resource</th><th scope="col">Progress</th><th scope="col">Expires</th></tr></thead>
+            <thead><tr><th scope="col">{{ t('core.administrator.business_confirm.request') }}</th><th scope="col">{{ t('core.administrator.access_control.action') }}</th><th scope="col">{{ t('core.administrator.business_security.resource') }}</th><th scope="col">{{ t('core.portal.approvals.progress') }}</th><th scope="col">{{ t('core.administrator.access_control.expires') }}</th></tr></thead>
             <tbody>
             {% for approval in approvals %}
                 <tr>
                     <th scope="row"><a href="/portal/approvals/{{ approval.id }}?view=review">{{ approval.id }}</a><br><small>{{ approval.status }}</small></th>
                     <td><code>{{ approval.action }}</code></td>
-                    <td>{{ approval.resourceType }}, version {{ approval.resourceVersion }}</td>
-                    <td>{{ approval.approvalCount }} of {{ approval.requiredQuorum }}</td>
+                    <td>{{ t('core.portal.approval_detail.version', {resourceType: approval.resourceType, resourceVersion: approval.resourceVersion}) }}</td>
+                    <td>{{ t('core.portal.approval_detail.of', {approvalCount: approval.approvalCount, requiredQuorum: approval.requiredQuorum}) }}</td>
                     <td><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></td>
                 </tr>
             {% endfor %}
