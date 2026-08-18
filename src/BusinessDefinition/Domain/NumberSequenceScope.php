@@ -16,6 +16,13 @@ use InvalidArgumentException;
  * resolved scope rather than from caller input, which is what keeps one tenant from allocating into
  * another's counter.
  *
+ * The key this enum composes is one coordinate of five: a counter row in `business_number_sequences` is
+ * the tuple of site, definition, field handle, scope key and period key. The definition with its field
+ * handle is the document type, so every allocated-number field of every entity type draws from counters
+ * exclusively its own, and the site is the legal entity — the ownership boundary ADR 0001 rules a
+ * business's books may never share. Those coordinates come from the declaring field and the record's
+ * resolved scope; what is declared here is only how far the run subdivides within them.
+ *
  * @since  2.0.0
  */
 enum NumberSequenceScope: string

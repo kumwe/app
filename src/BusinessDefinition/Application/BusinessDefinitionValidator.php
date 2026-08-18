@@ -14,8 +14,10 @@ use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
 use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
+use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceScope;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -104,7 +106,7 @@ final readonly class BusinessDefinitionValidator
                     ));
                 }
                 $this->validateFieldConfiguration($field->handle, $field->configuration);
-                $this->validateFieldRules($field);
+                $this->validateFieldRules($field, $definition->scope);
                 if (in_array($field->type, ['core.entity_reference', 'core.ordered_lines'], true)) {
                     $target = $field->configuration['target'] ?? null;
                     if (!is_string($target)) {
@@ -379,6 +381,7 @@ final readonly class BusinessDefinitionValidator
      * actually produces at runtime.
      *
      * @param   FieldDefinition  $field  Field to check, whose type the caller has already resolved.
+     * @param   ScopeMode        $scope  Tenancy dimensions the owning entity's records actually carry.
      *
      * @return  void
      *
@@ -390,7 +393,7 @@ final readonly class BusinessDefinitionValidator
      *
      * @since   2.0.0
      */
-    private function validateFieldRules(FieldDefinition $field): void
+    private function validateFieldRules(FieldDefinition $field, ScopeMode $scope): void
     {
         $this->validatePortableLength($field);
         $this->validatePortableSort($field);
@@ -426,7 +429,7 @@ final readonly class BusinessDefinitionValidator
             );
         }
         if ($field->type === 'core.sequence') {
-            $this->validateSequence($field);
+            $this->validateSequence($field, $scope);
         }
         if ($field->type === 'core.enum') {
             $options = $field->configuration['options'] ?? null;
@@ -559,25 +562,43 @@ final readonly class BusinessDefinitionValidator
      * the same number on two records, the index refuses the write instead of leaving two invoices sharing
      * a number.
      *
+     * The declared scope must also be one the entity's own tenancy can compose a counter key from. A
+     * per-organization run keys its counter on the record's resolved organization, so a definition whose
+     * scope mode carries no organization dimension has nothing to key it on; accepting that declaration
+     * here would defer the failure to the first create, which is the exact deferral this method exists to
+     * prevent.
+     *
      * @param   FieldDefinition  $field  Field declaring `core.sequence`.
+     * @param   ScopeMode        $scope  Tenancy dimensions the owning entity's records actually carry.
      *
      * @return  void
      *
-     * @throws  InvalidBusinessDefinition  When the format is unusable, the field is open to callers, or it
-     *          is optional, nullable, non-unique or narrower than the numbers it would render.
+     * @throws  InvalidBusinessDefinition  When the format is unusable, the declared scope names a tenancy
+     *          dimension the entity's scope mode does not carry, the field is open to callers, or it is
+     *          optional, nullable, non-unique or narrower than the numbers it would render.
      *
      * @since   2.0.0
      */
-    private function validateSequence(FieldDefinition $field): void
+    private function validateSequence(FieldDefinition $field, ScopeMode $scope): void
     {
         try {
-            NumberSequenceFormat::fromConfiguration($field->configuration);
+            $format = NumberSequenceFormat::fromConfiguration($field->configuration);
         } catch (InvalidArgumentException $exception) {
             throw new InvalidBusinessDefinition(sprintf(
                 'Business field %s declares an unusable number sequence: %s',
                 $field->handle,
                 $exception->getMessage(),
             ), 0, $exception);
+        }
+        if (
+            $format->scope === NumberSequenceScope::Organization
+            && !in_array($scope, [ScopeMode::Organization, ScopeMode::SiteOrganization], true)
+        ) {
+            throw new InvalidBusinessDefinition(sprintf(
+                'Business field %s declares a per-organization number sequence, '
+                . 'but its entity scope mode carries no organization dimension to key the counter on.',
+                $field->handle,
+            ));
         }
         if (!$field->serverOnly || !$field->readOnly || !$field->immutableAfterCreate || $field->default !== null) {
             throw new InvalidBusinessDefinition(
