@@ -39,13 +39,13 @@ distribution tag. Versions verified at the time of writing; confirm the current 
 
 | Package | Version | What it carries |
 |---|---|---|
-| `@kumwe/studio-protocol` | `0.1.0-alpha.2` | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
-| `@kumwe/studio-core` | `0.1.0-alpha.3` | The deterministic command engine, session, contribution runtime, migrations, URL policy |
-| `@kumwe/studio-preview` | `0.1.0-alpha.2` | Both ends of the origin-pinned preview channel: client, host responder, geometry |
-| `@kumwe/studio-media` | `0.1.0-alpha.3` | Upload orchestration over the canonical media session state machine |
-| `@kumwe/studio-rich-text` | `0.1.0-alpha.2` | The bounded rich-text grammar, parser and renderer projection |
-| `@kumwe/studio` | `0.1.0-alpha.3` | The authoring shell as a web component, keyboard-complete and catalog-localized |
-| `@kumwe/studio-testkit` | `0.1.0-alpha.3` | The canonical fixture corpus and a deterministic in-memory reference host |
+| `@kumwe/studio-protocol` | `0.1.0-alpha.3` | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
+| `@kumwe/studio-core` | `0.1.0-alpha.5` | The deterministic command engine, session, contribution runtime, migrations, URL policy |
+| `@kumwe/studio-preview` | `0.1.0-alpha.3` | Both ends of the origin-pinned preview channel: client, host responder, geometry |
+| `@kumwe/studio-media` | `0.1.0-alpha.4` | Upload orchestration over the canonical media session state machine |
+| `@kumwe/studio-rich-text` | `0.1.0-alpha.3` | The bounded rich-text grammar, parser and renderer projection |
+| `@kumwe/studio` | `0.1.0-alpha.5` | The authoring shell as a web component, keyboard-complete and catalog-localized |
+| `@kumwe/studio-testkit` | `0.1.0-alpha.5` | The canonical fixture corpus and a deterministic in-memory reference host |
 
 The host adapter's server side needs none of these at runtime — the protocol is JSON over the wire.
 The packages matter in two places: the administrator build consumes `@kumwe/studio` (and transitively
