@@ -71,7 +71,7 @@ final readonly class IntegrationWorkCommand implements Command
      */
     public function description(): string
     {
-        return 'Dispatch durable integration events and process work under the trusted runtime generation.';
+        return 'core.console.integration_work.description';
     }
 
     /**
@@ -150,7 +150,9 @@ final readonly class IntegrationWorkCommand implements Command
                 }
             } while (!$once && !$draining);
 
-            $output->line(sprintf('Integration worker processed %d item batch(es).', $handled));
+            $output->message('core.console.integration_work.integration_worker_processed_item_batch_es', [
+                'handled' => $handled,
+            ]);
             return 0;
         } catch (Throwable $exception) {
             $output->error($exception->getMessage());

@@ -67,7 +67,7 @@ final readonly class ManageAccessCommand implements Command
      */
     public function description(): string
     {
-        return 'List and manage users, roles, and capability grants.';
+        return 'core.console.access.description';
     }
 
     /**

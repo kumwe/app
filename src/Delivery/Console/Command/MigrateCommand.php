@@ -67,7 +67,7 @@ final readonly class MigrateCommand implements Command
      */
     public function description(): string
     {
-        return 'Apply pending forward-only Kumwe 2.x migrations.';
+        return 'core.console.database_migrate.description';
     }
 
     /**
@@ -96,17 +96,19 @@ final readonly class MigrateCommand implements Command
         ));
 
         if (!$result->changed()) {
-            $output->line('Database schema is current; reconciling the extension runtime publication.');
+            $output->message('core.console.database_migrate.database_schema_is_current_reconciling_the');
         } else {
             foreach ($result->applied as $migration) {
-                $output->line(sprintf('Applied %s', $migration));
+                $output->message('core.console.database_migrate.applied', ['migration' => $migration]);
             }
         }
         foreach ($this->profiles->reconcile() as $line) {
             $output->line($line);
         }
         $state = $this->extensions->reconcileAndMaterialize(true);
-        $output->line(sprintf('Materialized extension runtime generation %d', $state->generation));
+        $output->message('core.console.database_migrate.materialized_extension_runtime_generation', [
+            'generation' => $state->generation,
+        ]);
 
         return 0;
     }

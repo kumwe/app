@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Extension\Development;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use ArrayObject;
 use FilesystemIterator;
 use InvalidArgumentException;
@@ -372,6 +373,8 @@ final class ExtensionDevelopmentSdkTest extends TestCase
     public function testDevelopmentCommandsExecuteCompleteWorkflow(): void
     {
         $output = new class implements Output {
+            use TranslatesConsoleOutput;
+
             /** @var list<string> */
             public array $lines = [];
 

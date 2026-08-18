@@ -59,7 +59,7 @@ final readonly class ManageNavigationCommand implements Command
      */
     public function description(): string
     {
-        return 'List and manage menus and menu items.';
+        return 'core.console.navigation.description';
     }
 
     /**

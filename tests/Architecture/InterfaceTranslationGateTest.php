@@ -245,7 +245,7 @@ final class InterfaceTranslationGateTest extends TestCase
     private function treeCopy(): string
     {
         $tree = sys_get_temp_dir() . '/kumwe-translation-gate-' . bin2hex(random_bytes(6));
-        foreach (['templates', 'assets', 'resources/localization', 'tools'] as $directory) {
+        foreach (['templates', 'assets', 'resources/localization', 'tools', 'src'] as $directory) {
             $this->copyTree($this->root . '/' . $directory, $tree . '/' . $directory);
         }
         register_shutdown_function(function () use ($tree): void {

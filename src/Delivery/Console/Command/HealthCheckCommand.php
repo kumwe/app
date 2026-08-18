@@ -57,7 +57,7 @@ final readonly class HealthCheckCommand implements Command
      */
     public function description(): string
     {
-        return 'Check whether Kumwe is ready to serve traffic.';
+        return 'core.console.app_health.description';
     }
 
     /**
@@ -78,12 +78,12 @@ final readonly class HealthCheckCommand implements Command
     public function execute(array $arguments, Output $output): int
     {
         if ($this->probe->ready()) {
-            $output->line('Kumwe is ready.');
+            $output->message('core.console.app_health.kumwe_is_ready');
 
             return 0;
         }
 
-        $output->error('Kumwe is not ready.');
+        $output->failure('core.console.app_health.kumwe_is_not_ready');
 
         return 1;
     }

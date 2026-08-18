@@ -67,7 +67,7 @@ final readonly class VerifyAuditTrailCommand implements Command
      */
     public function description(): string
     {
-        return 'Verify the audit trail digest chain and its anchors.';
+        return 'core.console.audit_verify.description';
     }
 
     /**

@@ -58,7 +58,7 @@ final readonly class ManageContentModelsCommand implements Command
      */
     public function description(): string
     {
-        return 'List, read, create, or publish versioned content types and workflows.';
+        return 'core.console.content_model.description';
     }
 
     /**

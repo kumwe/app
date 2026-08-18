@@ -96,7 +96,7 @@ final readonly class DemoInstallCommand implements Command
      */
     public function description(): string
     {
-        return 'Provision the demonstration sign-ins and install the example extensions in one step.';
+        return 'core.console.demo_install.description';
     }
 
     /**
@@ -135,23 +135,20 @@ final readonly class DemoInstallCommand implements Command
             $credentialsWritten = false;
             $profile = $this->configuration->businessProfile;
             if ($profile === 'none') {
-                $output->line(
-                    'No business demonstration dataset is selected; '
-                    . 'skipping the demonstration cast and its credentials file.',
-                );
+                $output->message('core.console.demo_install.no_business_demonstration_dataset');
             } else {
                 $manifest = $this->catalog->access($profile)['manifest'];
                 $report = $this->provisioner->provision($context, $manifest);
                 foreach ($report['identities'] as $identity) {
-                    $output->line(sprintf(
-                        '%s %s as %s (%s%s)%s',
-                        $identity['created'] ? 'Provisioned' : 'Confirmed',
-                        $identity['email'],
-                        $identity['role'],
-                        $identity['area'],
-                        $identity['organization'] === null ? '' : ', ' . $identity['organization'],
-                        $identity['password'] === null ? '' : ' password ' . $identity['password'],
-                    ));
+                    $output->message('core.console.demo_install.identity_line', [
+                        'created' => $identity['created'],
+                        'email' => $identity['email'],
+                        'role' => $identity['role'],
+                        'area' => $identity['area'],
+                        'organization' => $identity['organization'] === null ? '' : ', ' . $identity['organization'],
+                        'has_password' => $identity['password'] !== null,
+                        'password' => $identity['password'] ?? '',
+                    ]);
                 }
                 foreach ($report['identities'] as $identity) {
                     if ($identity['password'] !== null) {
@@ -164,20 +161,24 @@ final readonly class DemoInstallCommand implements Command
 
             foreach ($selection as $example) {
                 $result = $this->installer->install($context, $example);
-                $verb = $result['installed'] ? 'Installed' : ($result['activated'] ? 'Reactivated' : 'Confirmed');
-                $note = $result['installed'] && !$result['activated'] ? '; selectable, not activated' : '';
-                $output->line(sprintf('%s %s (%s%s).', $verb, $result['identifier'], $example, $note));
+                $output->message('core.console.demo_install.example_outcome', [
+                    'installed' => $result['installed'],
+                    'activated' => $result['activated'],
+                    'selectable' => $result['installed'] && !$result['activated'],
+                    'identifier' => $result['identifier'],
+                    'example' => $example,
+                ]);
             }
 
             if ($credentialsWritten) {
-                $output->line(sprintf('Wrote the demonstration credentials file %s.', $credentialsPath));
+                $output->message('core.console.demo_install.wrote_the_demonstration_credentials_file', [
+                    'credentialsPath' => $credentialsPath,
+                ]);
             } elseif ($profile !== 'none') {
-                $output->line('No new credentials were generated; existing sign-ins remain valid.');
+                $output->message('core.console.demo_install.no_new_credentials_were_generated_existing');
             }
-            $output->line('Staff sign in at /administrator; portal organization members sign in at /portal.');
-            $output->line(
-                'The selected site content and business dataset were already installed by database:migrate.',
-            );
+            $output->message('core.console.demo_install.staff_sign_in_at_administrator_portal');
+            $output->message('core.console.demo_install.dataset_installed_by_migrate');
 
             return 0;
         } catch (Throwable $exception) {

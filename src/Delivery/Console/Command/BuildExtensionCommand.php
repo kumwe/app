@@ -49,7 +49,7 @@ final readonly class BuildExtensionCommand implements Command
      */
     public function description(): string
     {
-        return 'Build and verify a deterministic Kumwe extension ZIP.';
+        return 'core.console.extension_build.description';
     }
 
     /**

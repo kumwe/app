@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
@@ -98,6 +99,8 @@ final class ThemeCommandTest extends TestCase
 
 final class ThemeCommandOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /** @var list<string> */
     public array $lines = [];
 

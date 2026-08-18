@@ -73,7 +73,7 @@ final readonly class McpServeCommand implements Command
      */
     public function description(): string
     {
-        return 'Serve capability-protected Kumwe MCP over standard input and output.';
+        return 'core.console.mcp_serve.description';
     }
 
     /**
@@ -110,10 +110,9 @@ final readonly class McpServeCommand implements Command
             $site = SiteContext::fromString(CommandInput::required($options, 'site'));
             $file = CommandInput::required($options, 'token-file');
         } catch (InvalidArgumentException $exception) {
-            $output->error(sprintf(
-                '%s Usage: mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token',
-                $exception->getMessage(),
-            ));
+            $output->failure('core.console.mcp_serve.usage_mcp_serve_site_site_token', [
+                'reason' => $exception->getMessage(),
+            ]);
 
             return 64;
         }
@@ -121,17 +120,14 @@ final readonly class McpServeCommand implements Command
         try {
             $token = CommandInput::secretFile($file);
         } catch (InvalidArgumentException) {
-            $output->error(
-                'The MCP token file must be absolute, readable, non-symlinked, non-empty, '
-                . 'and mode 0600 or stricter.',
-            );
+            $output->failure('core.console.mcp_serve.token_file_requirements');
 
             return 65;
         }
 
         $siteIdentifier = $site->identifier();
         if ($this->tokens->verify($token, 'kumwe-mcp', 'mcp', $siteIdentifier) === null) {
-            $output->error('The MCP access token is invalid, expired, or revoked.');
+            $output->failure('core.console.mcp_serve.the_mcp_access_token_is_invalid');
 
             return 77;
         }

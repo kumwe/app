@@ -56,7 +56,7 @@ final readonly class ManageSettingsCommand implements Command
      */
     public function description(): string
     {
-        return 'Read or update site configuration.';
+        return 'core.console.settings.description';
     }
 
     /**

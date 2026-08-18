@@ -62,7 +62,7 @@ final readonly class ReportCommand implements Command
      */
     public function description(): string
     {
-        return 'Run permission-aware reports and request, inspect, or download verified CSV exports.';
+        return 'core.console.business_report.description';
     }
 
     /**

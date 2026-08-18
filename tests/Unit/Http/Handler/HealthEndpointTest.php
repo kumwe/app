@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Http\Handler;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Kumwe\CMS\Delivery\Console\Command\HealthCheckCommand;
@@ -188,6 +189,8 @@ final readonly class HealthReadinessMigration implements Migration
 
 final class RecordingOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /** @var list<string> */
     public array $lines = [];
 

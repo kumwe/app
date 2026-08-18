@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use DateTimeImmutable;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
@@ -289,6 +290,8 @@ final class ManagePostingPeriodsCommandTest extends TestCase
  */
 final class CollectingPostingPeriodOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /**
      * Result lines printed so far.
      *

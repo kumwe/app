@@ -13,6 +13,8 @@ use Kumwe\CMS\Delivery\Console\Output;
  */
 final class GeneratedBusinessParityOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /**
      * Success lines captured from standard output.
      *

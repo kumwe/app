@@ -58,7 +58,7 @@ final readonly class ExportAuditTrailCommand implements Command
      */
     public function description(): string
     {
-        return 'Export the audit trail as a protected, checksummed archive.';
+        return 'core.console.audit_export.description';
     }
 
     /**

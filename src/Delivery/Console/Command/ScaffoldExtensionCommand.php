@@ -50,7 +50,7 @@ final readonly class ScaffoldExtensionCommand implements Command
      */
     public function description(): string
     {
-        return 'Create a complete Kumwe component extension source tree.';
+        return 'core.console.extension_scaffold.description';
     }
 
     /**

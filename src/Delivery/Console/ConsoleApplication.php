@@ -75,7 +75,7 @@ final class ConsoleApplication
         }
 
         if (!isset($this->commands[$name])) {
-            $this->output->error(sprintf('Unknown Kumwe command: %s', $name));
+            $this->output->failure('core.console.application.unknown_command', ['name' => $name]);
 
             return 64;
         }
@@ -87,7 +87,9 @@ final class ConsoleApplication
      * Print the product banner and every registered command beside its description.
      *
      * Names are padded to a fixed column so the descriptions line up in a terminal; a name longer than
-     * that column pushes its own description right rather than being truncated.
+     * that column pushes its own description right rather than being truncated. Each description is a
+     * message identifier the summary line resolves through the output's translator here, so the listing
+     * renders in catalogue wording without any command carrying a translator of its own.
      *
      * @return  void
      *
@@ -95,11 +97,15 @@ final class ConsoleApplication
      */
     private function renderCommandList(): void
     {
-        $this->output->line('Kumwe CMS 2.0');
-        $this->output->line('Available commands:');
+        $this->output->message('core.console.application.banner');
+        $this->output->message('core.console.application.available_commands');
 
         foreach ($this->commands as $command) {
-            $this->output->line(sprintf('  %-20s %s', $command->name(), $command->description()));
+            $this->output->line(sprintf(
+                '  %-20s %s',
+                $command->name(),
+                $this->output->text($command->description()),
+            ));
         }
     }
 }

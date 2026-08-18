@@ -60,7 +60,7 @@ final readonly class DisableExtensionCommand implements Command
      */
     public function description(): string
     {
-        return 'Disable an extension and remove it from the runtime map.';
+        return 'core.console.extension_disable.description';
     }
 
     /**
@@ -91,7 +91,9 @@ final readonly class DisableExtensionCommand implements Command
                 throw new \RuntimeException('The extension manager returned an invalid identifier.');
             }
 
-            $output->line(sprintf('Disabled %s.', $installedIdentifier));
+            $output->message('core.console.extension_disable.disabled', [
+                'installedIdentifier' => $installedIdentifier,
+            ]);
 
             return 0;
         } catch (Throwable $exception) {

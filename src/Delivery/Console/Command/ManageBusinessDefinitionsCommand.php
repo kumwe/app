@@ -73,7 +73,7 @@ final readonly class ManageBusinessDefinitionsCommand implements Command
      */
     public function description(): string
     {
-        return 'List, inspect, draft, validate, publish, and retire business entity definitions.';
+        return 'core.console.business_definition.description';
     }
 
     /**

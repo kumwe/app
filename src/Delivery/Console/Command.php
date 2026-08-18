@@ -28,9 +28,12 @@ interface Command
     public function name(): string;
 
     /**
-     * Describe what the command does, for the console's command listing.
+     * Name the catalogue message describing what the command does, for the console's command listing.
      *
-     * @return  string  Single line short enough to sit beside the command name in a terminal.
+     * The listing resolves this identifier through the console output's translator, so the summary
+     * line renders in catalogue wording while the identifier itself stays stable across languages.
+     *
+     * @return  string  Stable message identifier of the single-line summary the listing prints.
      *
      * @since   2.0.0
      */

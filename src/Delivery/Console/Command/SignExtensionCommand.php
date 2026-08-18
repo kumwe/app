@@ -49,7 +49,7 @@ final readonly class SignExtensionCommand implements Command
      */
     public function description(): string
     {
-        return 'Sign a verified extension ZIP with a protected Ed25519 key.';
+        return 'core.console.extension_sign.description';
     }
 
     /**

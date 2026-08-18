@@ -59,7 +59,7 @@ final readonly class UninstallExtensionCommand implements Command
      */
     public function description(): string
     {
-        return 'Remove an extension registry entry and its active files.';
+        return 'core.console.extension_uninstall.description';
     }
 
     /**
@@ -85,7 +85,7 @@ final readonly class UninstallExtensionCommand implements Command
             $options = CommandInput::options(array_slice($arguments, 1));
             $context = $this->authorization->require($options, 'extensions.manage');
             $this->extensions->uninstall($identifier, $context);
-            $output->line(sprintf('Uninstalled %s.', $identifier));
+            $output->message('core.console.extension_uninstall.uninstalled', ['identifier' => $identifier]);
 
             return 0;
         } catch (Throwable $exception) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Integration\Identity;
 
+use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
 use Doctrine\DBAL\Connection;
 use Joomla\DI\Container;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
@@ -183,6 +184,8 @@ final class AdministratorProvisioningIntegrationTest extends TestCase
 
 final class AdministratorProvisioningOutput implements Output
 {
+    use TranslatesConsoleOutput;
+
     /** @var list<string> */
     public array $lines = [];
 

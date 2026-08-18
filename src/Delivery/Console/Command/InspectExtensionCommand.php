@@ -49,7 +49,7 @@ final readonly class InspectExtensionCommand implements Command
      */
     public function description(): string
     {
-        return 'Inspect a Kumwe extension ZIP without executing package code.';
+        return 'core.console.extension_inspect.description';
     }
 
     /**

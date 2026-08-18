@@ -337,6 +337,48 @@ function referenced_identifiers(string $source): array
     return $matched === false ? [] : $matches[1];
 }
 
+/**
+ * Collect every message identifier a PHP source references through the translation surfaces.
+ *
+ * Three shapes count as a reference: a call on the translator port (`translate`, `has`), a call on
+ * the console output surface (`message`, `failure`, `text`), and the literal a console command's
+ * `description()` returns, which the command listing resolves. Only literals satisfying the frozen
+ * three-segment identifier grammar count, so a stable machine code such as
+ * `business_record.not_found` is never mistaken for a catalogue reference.
+ *
+ * @param  string  $source  PHP source.
+ *
+ * @return list<string> Identifiers in the order they appear.
+ *
+ * @since  2.0.0
+ */
+function php_referenced_identifiers(string $source): array
+{
+    $identifiers = [];
+    $matched = preg_match_all(
+        '/->(?:translate|has|message|failure|text)\(\s*\'([a-z0-9_.-]+)\'/',
+        $source,
+        $matches,
+    );
+    foreach ($matched === false ? [] : $matches[1] as $candidate) {
+        $identifiers[] = $candidate;
+    }
+    $matched = preg_match_all(
+        '/function description\(\): string\s*\{\s*return \'([a-z0-9_.-]+)\';/s',
+        $source,
+        $matches,
+    );
+    foreach ($matched === false ? [] : $matches[1] as $candidate) {
+        $identifiers[] = $candidate;
+    }
+
+    return array_values(array_filter(
+        $identifiers,
+        static fn (string $identifier): bool =>
+            preg_match('/^[a-z0-9][a-z0-9_-]*(?:\.[a-z0-9][a-z0-9_-]*){2,}$/D', $identifier) === 1,
+    ));
+}
+
 $root = dirname(__DIR__);
 $arguments = array_slice($argv, 1);
 $asJson = $arguments === ['--json'];
@@ -393,6 +435,28 @@ foreach ($templates as $relative) {
     }
     foreach ($found as $violation) {
         $violations[] = $violation;
+    }
+}
+
+$sources = [];
+$iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
+    $root . '/src',
+    FilesystemIterator::SKIP_DOTS,
+));
+foreach ($iterator as $file) {
+    if ($file instanceof SplFileInfo && $file->isFile() && $file->getExtension() === 'php') {
+        $sources[] = substr($file->getPathname(), strlen($root) + 1);
+    }
+}
+sort($sources, SORT_STRING);
+foreach ($sources as $relative) {
+    $source = file_get_contents($root . '/' . $relative);
+    if (!is_string($source)) {
+        fwrite(STDERR, sprintf("The source file %s cannot be read.\n", $relative));
+        exit(66);
+    }
+    foreach (php_referenced_identifiers($source) as $identifier) {
+        $referenced[$identifier] = true;
     }
 }
 
