@@ -326,7 +326,11 @@ jobs:
   database:
     name: PHP 8.5 / ${{ matrix.database.name }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    # The MariaDB leg alone carries coverage collection, the idempotency proof against a reused
+    # database and the backup drill on top of the suite, and it crossed twenty-five minutes when the
+    # suite reached twenty-eight hundred tests; the budget still bounds a hang well before the
+    # runner's own ceiling.
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
