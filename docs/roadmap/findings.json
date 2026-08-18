@@ -1326,6 +1326,29 @@
       "owner": "UNASSIGNED",
       "closure_sha": null,
       "product_owner_decision": "The core is called app — Kumwe core app; the repository is renamed kumwe/cms to kumwe/app and every cross-repository reference follows it. The wire identity value is changed deliberately and in coordination with the SDK's pinned discovery contract, never silently."
+    },
+    {
+      "id": "V2-QA-010",
+      "title": "The standard asks every test method for a documentation block and no gate has ever checked",
+      "severity": "medium",
+      "state": "reproduced",
+      "phase": "2",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "docs/coding-standard.md",
+          "symbol": "section 7, Tests",
+          "note": "States plainly that test classes and test methods carry documentation blocks under the same rules as src/, and that a test block says what behaviour is pinned - the part a future reader needs."
+        },
+        {
+          "file": "composer.json",
+          "symbol": "docs:api",
+          "note": "Runs tools/verify-docblocks.php against src/ only. The rule for tests/ has therefore been written and unenforced since it was set down, and 1,193 of 2,586 test methods carry no block - forty-six percent. Each new test written beside an undocumented neighbour inherits the habit, which is how the drift compounds."
+        }
+      ],
+      "acceptance_test": "tools/verify-docblocks.php covers tests/ as well as src/, introduced the way this repository introduces every gate against pre-existing debt: a recorded baseline of the undocumented methods that only ever shrinks, with a stale entry failing the build. A newly written test method without a block fails immediately; the recorded ones are burned down in their own change rather than inside a delivery wave.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
     }
   ]
 }
