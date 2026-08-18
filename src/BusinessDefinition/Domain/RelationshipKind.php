@@ -61,4 +61,19 @@ enum RelationshipKind: string
      * @since  2.0.0
      */
     case OwnedLineCollection = 'owned_line_collection';
+
+    /**
+     * A typed link from a correcting record to the record of the same definition that it reverses.
+     *
+     * This is how an immutable document is corrected: the original is never rewritten, a new record of
+     * the same definition carries this link back to it, and both remain readable. Storage is exactly a
+     * `ManyToOne` column on the correcting record's own table, its inverse — "what corrected this" — is
+     * a `OneToMany` on the same definition, and deletion of the reversed record must be restricted so
+     * the pair can never be silently unpaired. The kind is core vocabulary so every installation can ask
+     * "what did this correct, and what corrected this" as a declared relationship rather than through a
+     * per-vertical field name.
+     *
+     * @since  2.0.0
+     */
+    case Reversal = 'reversal';
 }

@@ -44,6 +44,7 @@ use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordImmutable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
@@ -763,6 +764,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     generation: $generation,
                 );
                 $this->expected($record, $command->expectedVersion);
+                $this->assertRecordMutable($resolved, $record);
                 $this->assertFieldInput($access, FieldAccessUsage::Update, array_keys($command->values));
                 try {
                     $values = $this->rules->update(
@@ -1282,6 +1284,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     generation: $generation,
                 );
                 $this->expected($source, $command->expectedVersion);
+                $this->assertRecordMutable($resolved, $source);
                 $relationship = $this->relationship($resolved->definition, $command->relationship);
                 $relatedAccess = $access->related($relationship->handle)
                     ?? throw new BusinessRecordNotFound();
@@ -1395,6 +1398,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $lineDefinition,
                     $lineValues,
                 );
+                if ($write->target !== null && $targetResolved !== null) {
+                    $this->assertRecordMutable($targetResolved, $write->target);
+                }
                 $updated = $write->source;
                 $this->assertAggregateInvariants($command->context, $resolved, $updated);
                 $this->recordMutation(
@@ -1489,6 +1495,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     generation: $generation,
                 );
                 $this->expected($source, $command->expectedVersion);
+                $this->assertRecordMutable($resolved, $source);
                 $relationship = $this->relationship($resolved->definition, $command->relationship);
                 $relatedAccess = $access->related($relationship->handle)
                     ?? throw new BusinessRecordNotFound();
@@ -1557,6 +1564,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $targetResolved,
                     $target,
                 );
+                if ($write->target !== null && $targetResolved !== null) {
+                    $this->assertRecordMutable($targetResolved, $write->target);
+                }
                 $updated = $write->source;
                 $this->assertAggregateInvariants($command->context, $resolved, $updated);
                 $this->recordMutation(
@@ -1643,6 +1653,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     generation: $generation,
                 );
                 $this->expected($source, $command->expectedVersion);
+                $this->assertRecordMutable($resolved, $source);
                 $relationship = $this->relationship($resolved->definition, $command->relationship);
                 $relatedAccess = $access->related($relationship->handle)
                     ?? throw new BusinessRecordNotFound();
@@ -1770,6 +1781,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create or
      *          update business records, or may not relate them.
+     * @throws  BusinessRecordImmutable  When an amendment reaches a document the definition's workflow
+     *          closes in its current state; a closed document is corrected by a linked reversal.
      * @throws  BusinessRecordValidationFailed  When a header field rule, a line field rule or a record
      *          invariant — including one that reduces the whole collection — is breached.
      * @throws  BusinessRelationshipRejected  When the named relationship is not an owned-line collection,
@@ -2039,6 +2052,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 generation: $generation,
             );
             $this->expected($header, (int) $command->expectedVersion);
+            $this->assertRecordMutable($resolved, $header);
         }
         $relationship = $this->relationship($resolved->definition, $command->relationship);
         if ($relationship->kind !== RelationshipKind::OwnedLineCollection) {
@@ -2719,6 +2733,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $generation,
                 );
                 $this->expected($record, $expectedVersion);
+                if ($operation !== 'delete') {
+                    $this->assertRecordMutable($resolved, $record);
+                }
                 if ($operation === 'archive') {
                     $updated = $record->archived($context->actorId(), $now);
                     $this->writes->update($resolved, $updated, $expectedVersion);
@@ -2769,6 +2786,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @throws  BusinessRelationshipRejected  When a matching relationship cascades on delete, or more than
      *          `INBOUND_DELETE_LIMIT` records hold a set-null reference to this one.
+     * @throws  BusinessRecordImmutable  When a record holding a set-null reference to the one being
+     *          deleted is closed by its workflow state, because clearing the reference would rewrite a
+     *          closed document's own fields.
      * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When a
      *          referencing definition or the version one of its rows was written under cannot be resolved.
      * @throws  BusinessRecordSchemaUnavailable  When an active installation disagrees with the definition
@@ -2841,6 +2861,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $source->definitionVersion,
                     );
                     $generation->assertMatches($sourceResolved);
+                    $this->assertRecordMutable($sourceResolved, $source);
                     $write = $this->writes->unrelate(
                         $sourceResolved,
                         $source,
@@ -3701,6 +3722,34 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     {
         if ($record->version !== $expectedVersion) {
             throw new BusinessRecordVersionConflict($expectedVersion, $record->version);
+        }
+    }
+
+    /**
+     * Refuse every content mutation of a record whose definition closes it in its current workflow state.
+     *
+     * This is the whole document-immutability rule at its single seam: each path that would rewrite the
+     * record's own row or its owned lines — update, archive, restore, relate, unrelate, reorder, the
+     * document amend, and the set-null sweep a hard delete of another record runs — passes the record it
+     * loaded through here before anything is written. The record is judged against the definition version
+     * it was written under, exactly as the rest of the operation is. Two things deliberately do not pass
+     * through: workflow transitions, because immutability freezes content and not the state machine, and
+     * the record's own audited delete lifecycle, which the decision record leaves unchanged.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Pinned definition whose workflow binding declares the
+     *          immutable states, when it declares any.
+     * @param   BusinessRecord              $record    Record about to be mutated, as it was loaded.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordImmutable  When the binding names the record's current state immutable.
+     *
+     * @since   2.0.0
+     */
+    private function assertRecordMutable(ResolvedBusinessDefinition $resolved, BusinessRecord $record): void
+    {
+        if ($resolved->definition->workflow?->immutableIn($record->workflowState) === true) {
+            throw new BusinessRecordImmutable((string) $record->workflowState);
         }
     }
 
