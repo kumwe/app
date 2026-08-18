@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Authorization;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\OwnershipScopeLevel;
 use Kumwe\CMS\Application\Authorization\ResourceOwnershipReferences;
@@ -59,13 +60,16 @@ final readonly class DoctrineGrantScopeOwnershipReferences implements ResourceOw
         }
 
         $placeholders = implode(', ', array_fill(0, count($sites), '?'));
+        $postgres = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform;
+        $roleId = $postgres ? 'CAST(g.role_id AS VARCHAR)' : 'g.role_id';
         $rows = $this->database->fetchFirstColumn(sprintf(
             'SELECT DISTINCT o.site_identifier FROM %s g INNER JOIN %s o '
-            . "ON o.resource_type = 'role' AND o.resource_id = g.role_id "
+            . "ON o.resource_type = 'role' AND o.resource_id = %s "
             . 'WHERE g.scope_type = ? AND g.scope_identifier = ? AND o.scope_level = ? '
             . 'AND o.site_identifier IN (%s) ORDER BY o.site_identifier',
             $this->tables->quoted('role_capability_grants'),
             $this->tables->quoted('resource_site_ownership'),
+            $roleId,
             $placeholders,
         ), [
             $resource->type(),
