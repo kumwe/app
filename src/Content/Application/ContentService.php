@@ -20,6 +20,9 @@ use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Content\Domain\ExpectedVersion;
 use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
 use Kumwe\CMS\Content\Domain\PublicationWindow;
+use Kumwe\CMS\Extension\Contribution\OwnedRuntimeContributionRegistry;
+use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
+use Kumwe\CMS\Extension\Contribution\TranslationSetItemAssociation;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Localization\Domain\LocaleTag;
 use Kumwe\CMS\Workflow\Domain\Workflow;
@@ -76,17 +79,19 @@ final readonly class ContentService
      * there are no published content types or workflows to consult, so entries fall back to the
      * built-in page type and the injected `Workflow`, and no schema validation is performed.
      *
-     * @param  ContentRepository            $repository     Store holding entries and their revision trail.
-     * @param  AuditRecorder                $audit          Sink each mutation's audit event is written to.
-     * @param  TransactionManager           $transactions   Boundary committing row, revision and audit as one.
-     * @param  ClockInterface               $clock          Source of every timestamp stamped on stored data.
-     * @param  Workflow                     $workflow       Built-in lifecycle used when no definition applies.
-     * @param  AuthorizationGateway         $authorization  Decides whether the actor may read or change an entry.
-     * @param  ResourceSiteOwnershipWriter  $ownership      Records which site owns a newly created entry.
-     * @param  ?ContentModelRepository      $models         Published types and workflows, or null to skip them.
-     * @param  ?JsonSchemaValidator         $schemas        Body validator; one is built per call when null.
-     * @param  ?TranslationGroupRepository  $translations   Store recording which logical item a locale belongs
+     * @param ContentRepository $repository Store holding entries and their revision trail.
+     * @param AuditRecorder $audit Sink each mutation's audit event is written to.
+     * @param TransactionManager $transactions Boundary committing row, revision and audit as one.
+     * @param ClockInterface $clock Source of every timestamp stamped on stored data.
+     * @param Workflow $workflow Built-in lifecycle used when no definition applies.
+     * @param AuthorizationGateway $authorization Decides whether the actor may read or change an entry.
+     * @param ResourceSiteOwnershipWriter $ownership Records which site owns a newly created entry.
+     * @param ?ContentModelRepository $models Published types and workflows, or null to skip them.
+     * @param ?JsonSchemaValidator $schemas Body validator; one is built per call when null.
+     * @param ?TranslationGroupRepository $translations Store recording which logical item a locale belongs
      *         to and the fallback it declares; null leaves `translate()` unavailable.
+     * @param  ?OwnedRuntimeContributionRegistry  $contributedTranslationSets  Active extension-declared
+     *         translation sets; null leaves `translateContributed()` unavailable.
      *
      * @since  2.0.0
      */
@@ -101,6 +106,7 @@ final readonly class ContentService
         private ?ContentModelRepository $models = null,
         private ?JsonSchemaValidator $schemas = null,
         private ?TranslationGroupRepository $translations = null,
+        private ?OwnedRuntimeContributionRegistry $contributedTranslationSets = null,
     ) {
     }
 
@@ -486,6 +492,123 @@ final readonly class ContentService
         string $translationGroupId,
         ?LocaleTag $fallback = null,
     ): ContentRecord {
+        return $this->attachToGroup($context, $id, $expectedVersion, $locale, $translationGroupId, $fallback);
+    }
+
+    /**
+     * Place an extension-contributed entry into the translation set its package declared at admission.
+     *
+     * This is the runtime half of the extension content-translation contract. The signed declaration
+     * says which sets a package publishes and in which languages; this call is where one stored entry
+     * actually joins such a set, and core resolves the association against the active contribution
+     * registry before anything is written. An association naming a set its claimed owner has not
+     * actively declared is refused, as is a locale the declaration does not carry — the declaration's
+     * locale list is a closed claim, and storage is where that claim is enforced against real items.
+     *
+     * The runtime group and the fallback are both taken from the resolved declaration rather than from
+     * the caller: the group is the association's deterministic generation-one derivation, and the
+     * fallback is the declared one, restated on every call so a group whose stored declaration ever
+     * disagreed with the manifest would refuse the attachment instead of drifting quietly. The audit
+     * event carries the owner and set beside the entry, so the association itself is reconstructable
+     * from the trail.
+     *
+     * @param   ExecutionContext               $context          Actor and site the change is performed for.
+     * @param   string                         $id               UUID of the content entry to place.
+     * @param   int                            $expectedVersion  Version the editor loaded and believes it
+     *          is changing.
+     * @param   LocaleTag                      $locale           Language this entry is declared to be
+     *          written in; must be one the set declares.
+     * @param   TranslationSetItemAssociation  $association      Owner-bound claim naming the declared set.
+     *
+     * @return  ContentRecord  The stored record, one version higher, carrying its locale and group.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  ContentNotFound  When no entry matches within reach of the context.
+     * @throws  InvalidArgumentException  When the set is not an active declaration of the association's
+     *          owner, or the locale is not one the declaration carries.
+     * @throws  \LogicException  When no contribution registry or translation-group store is wired.
+     * @throws  \Kumwe\CMS\Content\Domain\InvalidTranslationGroup  When the declared fallback contradicts
+     *          the group's stored declaration.
+     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     *
+     * @since   2.0.0
+     */
+    public function translateContributed(
+        ExecutionContext $context,
+        string $id,
+        int $expectedVersion,
+        LocaleTag $locale,
+        TranslationSetItemAssociation $association,
+    ): ContentRecord {
+        $this->authorize($context, 'content.update', $id);
+        $sets = $this->contributedTranslationSets
+            ?? throw new LogicException('Contributed content translation requires the contribution registry.');
+        $declaration = $sets->definition($association->owner, $association->translationSet);
+        if (!$declaration instanceof TranslationGroupDeclaration) {
+            throw new InvalidArgumentException(sprintf(
+                'Translation set %s is not an active declaration of %s.',
+                $association->translationSet,
+                $association->owner->identifier(),
+            ));
+        }
+        if (!$declaration->publishes($locale)) {
+            throw new InvalidArgumentException(sprintf(
+                'Translation set %s does not declare locale %s.',
+                $association->translationSet,
+                $locale->toString(),
+            ));
+        }
+
+        return $this->attachToGroup(
+            $context,
+            $id,
+            $expectedVersion,
+            $locale,
+            $association->groupIdForSite($context->site()->identifier()),
+            LocaleTag::fromString($declaration->fallbackLocale),
+            [
+                'owner' => $association->owner->identifier(),
+                'translation_set' => $association->translationSet,
+            ],
+        );
+    }
+
+    /**
+     * Attach one entry to a translation group, committing declaration, row, revision and audit as one.
+     *
+     * The shared tail of `translate()` and `translateContributed()`: by the time this runs, the caller
+     * has decided which group the entry joins and which fallback governs it, and what remains is the
+     * one transaction both paths must agree on exactly — a contributed attachment that committed
+     * differently from a core one would be a second translation model.
+     *
+     * @param   ExecutionContext      $context             Actor and site the change is performed for.
+     * @param   string                $id                  UUID of the content entry to place.
+     * @param   int                   $expectedVersion     Version the editor loaded and believes it is
+     *          changing.
+     * @param   LocaleTag             $locale              Language this entry is declared to be written in.
+     * @param   string                $translationGroupId  UUID of the logical item across locales.
+     * @param   ?LocaleTag            $fallback            Fallback to verify or record; null leaves an
+     *          existing declaration alone.
+     * @param   array<string, mixed>  $metadata            Extra audit facts merged in beside the version.
+     *
+     * @return  ContentRecord  The stored record, one version higher, carrying its locale and group.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  ContentNotFound  When no entry matches within reach of the context.
+     * @throws  \LogicException  When no translation-group store is wired.
+     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     *
+     * @since   2.0.0
+     */
+    private function attachToGroup(
+        ExecutionContext $context,
+        string $id,
+        int $expectedVersion,
+        LocaleTag $locale,
+        string $translationGroupId,
+        ?LocaleTag $fallback,
+        array $metadata = [],
+    ): ContentRecord {
         $this->authorize($context, 'content.update', $id);
         $translations = $this->translations
             ?? throw new LogicException('Content translation requires a translation group store.');
@@ -504,12 +627,13 @@ final readonly class ContentService
             $locale,
             $fallback,
             $now,
+            $metadata,
         ): ContentRecord {
             $translations->declareGroup($context->site(), $translationGroupId, $locale, $fallback);
             $translations->guardAttachment($context->site(), $translationGroupId, $updated->entry->id());
             $this->repository->update($updated, $expectedVersion);
             $this->captureRevision($updated->entry, $now);
-            $this->recordAudit($context->actorId(), 'content.translate', $updated->entry, $now);
+            $this->recordAudit($context->actorId(), 'content.translate', $updated->entry, $now, $metadata);
 
             return $updated;
         });

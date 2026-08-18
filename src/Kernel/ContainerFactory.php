@@ -1537,6 +1537,7 @@ final class ContainerFactory
                 self::service($container, ContentModelRepository::class),
                 self::service($container, JsonSchemaValidator::class),
                 self::service($container, TranslationGroupRepository::class),
+                self::service($container, ExtensionContributionRegistrySet::class)->contentTranslationGroups(),
             ), true);
         $container->share(MediaStorage::class, new FilesystemMediaStorage(
             $root . '/storage/media',
