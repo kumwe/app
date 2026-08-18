@@ -22,6 +22,7 @@ use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Infrastructure\Persistence\DoctrineIdempotencyLedger;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -36,6 +37,7 @@ use ReflectionClass;
 use RuntimeException;
 
 #[CoversClass(PersistentIdempotencyMiddleware::class)]
+#[CoversClass(DoctrineIdempotencyLedger::class)]
 #[CoversClass(HttpMutationPreauthorizer::class)]
 final class PersistentIdempotencyAuthorizationTest extends TestCase
 {
@@ -85,8 +87,7 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
         $handler->expects(self::never())->method('handle');
 
         $response = (new PersistentIdempotencyMiddleware(
-            $database,
-            new TableNames($database, 'kumwe_'),
+            new DoctrineIdempotencyLedger($database, new TableNames($database, 'kumwe_'), $this->clock()),
             $this->clock(),
             new ProblemDetailsResponseFactory(),
             $this->transactions(),
@@ -125,8 +126,7 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
 
         $this->expectException(AuthorizationDenied::class);
         (new PersistentIdempotencyMiddleware(
-            $database,
-            new TableNames($database, 'kumwe_'),
+            new DoctrineIdempotencyLedger($database, new TableNames($database, 'kumwe_'), $this->clock()),
             $this->clock(),
             new ProblemDetailsResponseFactory(),
             $this->transactions(),
@@ -161,8 +161,7 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
 
         $this->expectException(AuthorizationDenied::class);
         (new PersistentIdempotencyMiddleware(
-            $database,
-            new TableNames($database, 'kumwe_'),
+            new DoctrineIdempotencyLedger($database, new TableNames($database, 'kumwe_'), $this->clock()),
             $this->clock(),
             new ProblemDetailsResponseFactory(),
             $this->transactions(),
@@ -208,8 +207,7 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('mutation failed');
         (new PersistentIdempotencyMiddleware(
-            $database,
-            new TableNames($database, 'kumwe_'),
+            new DoctrineIdempotencyLedger($database, new TableNames($database, 'kumwe_'), $this->clock()),
             $this->clock(),
             new ProblemDetailsResponseFactory(),
             $this->transactions(),
@@ -261,8 +259,7 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
 
         $this->expectException(AuthorizationDenied::class);
         (new PersistentIdempotencyMiddleware(
-            $database,
-            new TableNames($database, 'kumwe_'),
+            new DoctrineIdempotencyLedger($database, new TableNames($database, 'kumwe_'), $this->clock()),
             $this->clock(),
             new ProblemDetailsResponseFactory(),
             $this->transactions(),

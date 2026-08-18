@@ -345,36 +345,6 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Http\\Api\\Idempotency\\DoctrineIdempotencyPurger",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
-      "from": "Kumwe\\CMS\\Delivery\\Http\\Api\\Idempotency\\PersistentIdempotencyMiddleware",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
-      "from": "Kumwe\\CMS\\Delivery\\Http\\Api\\Idempotency\\SecretOnceIdempotencyMiddleware",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
       "from": "Kumwe\\CMS\\Delivery\\Http\\Mcp\\McpHttpHandler",
       "to": "Kumwe\\CMS\\Infrastructure\\Mcp\\KumweMcpHandlers",
       "from_layer": "delivery",

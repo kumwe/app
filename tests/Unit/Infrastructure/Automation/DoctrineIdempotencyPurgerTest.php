@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Idempotency;
+namespace Kumwe\CMS\Tests\Unit\Infrastructure\Automation;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\DoctrineIdempotencyPurger;
+use Kumwe\CMS\Infrastructure\Automation\DoctrineIdempotencyPurger;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

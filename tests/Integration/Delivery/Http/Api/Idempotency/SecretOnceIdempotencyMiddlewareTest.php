@@ -12,6 +12,7 @@ use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\SecretOnceIdempotencyMiddleware;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Infrastructure\Persistence\DoctrineSecretOnceIdempotencyLedger;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
@@ -26,6 +27,7 @@ use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 #[CoversClass(SecretOnceIdempotencyMiddleware::class)]
+#[CoversClass(DoctrineSecretOnceIdempotencyLedger::class)]
 final class SecretOnceIdempotencyMiddlewareTest extends TestCase
 {
     public function testTokenSecretIsReturnedOnceAndNeverStoredInIdempotencyState(): void

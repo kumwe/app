@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Delivery\Http\Api\Idempotency;
 
 use DateTimeImmutable;
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Doctrine\DBAL\Types\Types;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Idempotency\IdempotencyLedger;
 use Kumwe\CMS\Application\Persistence\TransactionManager;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Laminas\Diactoros\Response;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -30,51 +27,28 @@ use Throwable;
  * This is the general-purpose half of the idempotency pair: the mutating API routes mount it behind
  * `RequireIdempotencyKeyMiddleware`. It stores the handler's response verbatim, which is precisely why
  * token issuance and rotation use `SecretOnceIdempotencyMiddleware` instead — those bodies carry a live
- * credential. A record is keyed by subject, operation and key, and the unique index over those three is
- * what arbitrates the reservation, so two simultaneous first attempts cannot both reach the handler.
- * What a caller is promised: a completed operation is replayed with `Idempotency-Replayed: true` rather
- * than repeated, a key reused for different content is refused with 422, a key presented under
- * different credentials with 409, and an attempt still in flight with 409. Exact authorization runs
- * before the ledger is read at all, so a replay can never be used to probe for a mutation the caller
- * may not perform. The handler's writes and the record that marks the key spent commit in one
- * transaction, so a stored replay always corresponds to an effect that actually landed; a 5xx or a
- * thrown fault deletes the reservation instead, leaving the key free for another attempt.
+ * credential. A record is keyed by subject, operation and key, and the application-owned
+ * `IdempotencyLedger` arbitrates the reservation on that identity, so two simultaneous first attempts
+ * cannot both reach the handler; this middleware never touches the store behind that port. What a caller
+ * is promised: a completed operation is replayed with `Idempotency-Replayed: true` rather than repeated,
+ * a key reused for different content is refused with 422, a key presented under different credentials
+ * with 409, and an attempt still in flight with 409. Exact authorization runs before the ledger is read
+ * at all, so a replay can never be used to probe for a mutation the caller may not perform. The
+ * handler's writes and the record that marks the key spent commit in one transaction, so a stored replay
+ * always corresponds to an effect that actually landed; a 5xx or a thrown fault deletes the reservation
+ * instead, leaving the key free for another attempt.
  *
  * @since  2.0.0
  */
 final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterface
 {
     /**
-     * How long a reservation stays owned by the request that took it, in seconds.
-     *
-     * The window is generous because the mutations behind it can be slow. A request that died mid-flight
-     * blocks its key for at most this long, after which another attempt may take the record over.
-     *
-     * @var    int
-     * @since  2.0.0
-     */
-    private const int PROCESSING_LEASE_SECONDS = 900;
-
-    /**
-     * How long a record stays replayable after it is written, in seconds.
-     *
-     * Once the window closes the record no longer answers a repeat: the key may be claimed afresh by the
-     * next request that presents it, and `DoctrineIdempotencyPurger` is free to delete the row.
-     *
-     * @var    int
-     * @since  2.0.0
-     */
-    private const int RETENTION_SECONDS = 86_400;
-
-    /**
      * Wire the middleware to the ledger, the clock and the policy check a reservation depends on.
      *
-     * @param  Connection                     $database          Connection the idempotency ledger is read
-     *         and written on.
-     * @param  TableNames                     $tables            Resolves the physical `idempotency` table
-     *         name.
-     * @param  ClockInterface                 $clock             Supplies the instants leases, retention and
-     *         expiry are measured from.
+     * @param  IdempotencyLedger              $ledger            Application-owned ledger the reservation
+     *         lifecycle runs against.
+     * @param  ClockInterface                 $clock             Supplies the instant stored expiry and lock
+     *         lapse are judged against.
      * @param  ProblemDetailsResponseFactory  $problems          Renders the refusals a reused or contested
      *         key is answered with.
      * @param  TransactionManager             $transactions      Commits the mutation and the record marking
@@ -85,8 +59,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
      * @since  2.0.0
      */
     public function __construct(
-        private Connection $database,
-        private TableNames $tables,
+        private IdempotencyLedger $ledger,
         private ClockInterface $clock,
         private ProblemDetailsResponseFactory $problems,
         private TransactionManager $transactions,
@@ -98,8 +71,8 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
      * Reserve the key, run the mutation at most once, and keep its response for later repeats.
      *
      * The order of the steps is the security property. Authorization is applied first, before a single
-     * ledger row is read, so a caller cannot learn from a replay or a 409 that an operation it may not
-     * perform is already under way. The reservation is then an insert, so the unique index decides
+     * ledger record is read, so a caller cannot learn from a replay or a 409 that an operation it may not
+     * perform is already under way. The reservation is then a single ledger claim, so the store decides
      * between simultaneous first attempts rather than a read-then-write that could interleave; only the
      * loser walks the slower replay-or-takeover path, and when that path yields a response the handler is
      * never called. The handler and the write that marks the record `completed` share one transaction, so
@@ -167,35 +140,8 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         $keyValue = (string) $key;
         $digest = $this->requestDigest($request);
         $ownerToken = Uuid::uuid7()->toString();
-        $now = $this->clock->now();
 
-        try {
-            $this->database->insert($this->tables->raw('idempotency'), [
-                'id' => Uuid::uuid7()->toString(),
-                'idempotency_key' => $keyValue,
-                'subject' => $subject,
-                'operation' => $operation,
-                'request_digest' => $digest,
-                'authorization_fingerprint' => $authorizationFingerprint,
-                'state' => 'in_progress',
-                'owner_token' => $ownerToken,
-                'locked_until' => $now->modify('+' . self::PROCESSING_LEASE_SECONDS . ' seconds'),
-                'lease_owner' => $ownerToken,
-                'lease_expires_at' => $now->modify('+' . self::PROCESSING_LEASE_SECONDS . ' seconds'),
-                'result_status' => null,
-                'result_body' => null,
-                'result_headers' => null,
-                'result_body_digest' => null,
-                'created_at' => $now,
-                'completed_at' => null,
-                'expires_at' => $now->modify('+' . self::RETENTION_SECONDS . ' seconds'),
-            ], [
-                'locked_until' => Types::DATETIME_IMMUTABLE,
-                'lease_expires_at' => Types::DATETIME_IMMUTABLE,
-                'created_at' => Types::DATETIME_IMMUTABLE,
-                'expires_at' => Types::DATETIME_IMMUTABLE,
-            ]);
-        } catch (UniqueConstraintViolationException) {
+        if (!$this->ledger->reserve($subject, $operation, $keyValue, $digest, $authorizationFingerprint, $ownerToken)) {
             $result = $this->replayOrAcquire(
                 $subject,
                 $operation,
@@ -238,15 +184,15 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
     /**
      * Answer the repeat that lost the reservation, or take the record over when it is nobody's any more.
      *
-     * Reached only after the unique index refused the insert, so a record for this subject, operation and
+     * Reached only after the ledger refused the reservation, so a record for this subject, operation and
      * key certainly existed a moment ago. Expiry is judged before anything else: a record past its
      * retention window is dead, so it is taken over without comparing it to this request at all, and
-     * losing that takeover re-reads the row — the one path that loops, three times over before the caller
-     * is told to retry the request itself. A live record is instead held to both fingerprints before its
-     * state is revealed — a key reused for different content is refused with 422, one presented under a
-     * different credential with 409 — and only then is a completed result replayed. A failed record, or an
-     * in-progress one whose lease has lapsed, is claimed by a conditional update, and losing that claim
-     * falls through to the 409 that reports an attempt still in flight.
+     * losing that takeover re-reads the record — the one path that loops, three times over before the
+     * caller is told to retry the request itself. A live record is instead held to both fingerprints
+     * before its state is revealed — a key reused for different content is refused with 422, one
+     * presented under a different credential with 409 — and only then is a completed result replayed. A
+     * failed record, or an in-progress one whose lease has lapsed, is claimed by a conditional ledger
+     * takeover, and losing that claim falls through to the 409 that reports an attempt still in flight.
      *
      * @param   string                  $subject                   Principal the record is keyed against.
      * @param   string                  $operation                 Method and path pair the key is scoped to.
@@ -278,22 +224,16 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         ServerRequestInterface $request,
     ): ?ResponseInterface {
         for ($attempt = 0; $attempt < 3; $attempt++) {
-            $row = $this->database->fetchAssociative(sprintf(
-                'SELECT id, request_digest, authorization_fingerprint, state, owner_token, locked_until, '
-                . 'result_status, result_body, result_body_digest, result_headers, expires_at FROM %s '
-                . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?',
-                $this->tables->quoted('idempotency'),
-            ), [$subject, $operation, $key]);
-            if ($row === false) {
+            $row = $this->ledger->find($subject, $operation, $key);
+            if ($row === null) {
                 throw new RuntimeException('The idempotency record could not be loaded.');
             }
 
-            /** @var array<string, mixed> $row */
             $now = $this->clock->now();
             $id = $this->requiredString($row, 'id');
             $expiresAt = new DateTimeImmutable($this->requiredString($row, 'expires_at'));
             if ($expiresAt <= $now) {
-                if ($this->acquireExpired($id, $digest, $authorizationFingerprint, $ownerToken, $now)) {
+                if ($this->ledger->takeOverExpired($id, $digest, $authorizationFingerprint, $ownerToken)) {
                     return null;
                 }
                 continue;
@@ -329,12 +269,11 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
                 return $this->replay($row);
             }
             if (
-                $state === 'failed' && $this->acquireFailed(
+                $state === 'failed' && $this->ledger->takeOverFailed(
                     $id,
                     $digest,
                     $authorizationFingerprint,
                     $ownerToken,
-                    $now,
                 )
             ) {
                 return null;
@@ -344,7 +283,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             if (
                 $state === 'in_progress'
                 && (!is_string($lockedUntil) || new DateTimeImmutable($lockedUntil) <= $now)
-                && $this->acquireStale($id, $authorizationFingerprint, $ownerToken, $now)
+                && $this->ledger->takeOverStale($id, $authorizationFingerprint, $ownerToken)
             ) {
                 return null;
             }
@@ -370,12 +309,12 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
     /**
      * Rebuild the stored response for a repeat of a key whose operation already completed.
      *
-     * The body is checked against its stored digest before any of it is sent, so a row edited in the
-     * database is refused rather than replayed as though the service had produced it. The rebuilt response
+     * The body is checked against its stored digest before any of it is sent, so a record edited in the
+     * store is refused rather than replayed as though the service had produced it. The rebuilt response
      * carries `Idempotency-Replayed: true` on top of the stored headers, which is how a client tells a
      * replay from a fresh run.
      *
-     * @param   array<string, mixed>  $row  Stored record, keyed by column name as the driver returned it.
+     * @param   array<string, mixed>  $row  Stored record, keyed by column name as the ledger returned it.
      *
      * @return  ResponseInterface  The stored status, headers and body, plus the replay marker.
      *
@@ -402,208 +341,13 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
     }
 
     /**
-     * Claim a record whose retention window has already closed.
-     *
-     * The expiry test is repeated inside the update rather than trusted from the read, so a record another
-     * request revived in between is left alone and this one loses the race cleanly. The stored digest is
-     * overwritten, because an expired record no longer speaks for any particular request: its key is free
-     * for whatever content the new claimant carries.
-     *
-     * @param   string             $id                        Identifier of the record being taken over.
-     * @param   string             $digest                    Digest of this request, replacing the expired
-     *          record's own.
-     * @param   string             $authorizationFingerprint  Credential and site fingerprint stored with
-     *          the new reservation.
-     * @param   string             $ownerToken                Token proving the new reservation is this
-     *          request's.
-     * @param   DateTimeImmutable  $now                       Instant expiry is judged against and the new
-     *          lease is dated from.
-     *
-     * @return  bool  True when this request now owns the record; false when it was revived concurrently.
-     *
-     * @since   2.0.0
-     */
-    private function acquireExpired(
-        string $id,
-        string $digest,
-        string $authorizationFingerprint,
-        string $ownerToken,
-        DateTimeImmutable $now,
-    ): bool {
-        return $this->reset(
-            $id,
-            $digest,
-            $authorizationFingerprint,
-            $ownerToken,
-            $now,
-            'expires_at <= ?',
-            [$now],
-            [Types::DATETIME_IMMUTABLE],
-        );
-    }
-
-    /**
-     * Claim a record left behind by an attempt that ended in failure.
-     *
-     * Reached only once the stored digest and fingerprint have matched, so the digest written back is the
-     * one already there and the retry is genuinely a retry of the same request. The `failed` state is
-     * re-tested inside the update, so a record another retry has already picked up is not stolen from it.
-     *
-     * @param   string             $id                        Identifier of the record being retried.
-     * @param   string             $digest                    Digest of this request, equal to the one the
-     *          failed attempt stored.
-     * @param   string             $authorizationFingerprint  Credential and site fingerprint stored with
-     *          the new reservation.
-     * @param   string             $ownerToken                Token proving the new reservation is this
-     *          request's.
-     * @param   DateTimeImmutable  $now                       Instant the new lease and retention window
-     *          are dated from.
-     *
-     * @return  bool  True when this request now owns the record; false when another retry claimed it first.
-     *
-     * @since   2.0.0
-     */
-    private function acquireFailed(
-        string $id,
-        string $digest,
-        string $authorizationFingerprint,
-        string $ownerToken,
-        DateTimeImmutable $now,
-    ): bool {
-        return $this->reset(
-            $id,
-            $digest,
-            $authorizationFingerprint,
-            $ownerToken,
-            $now,
-            "state = 'failed'",
-            [],
-            [],
-        );
-    }
-
-    /**
-     * Claim an in-progress record whose processing lease has run out.
-     *
-     * This is the recovery path for a request that died mid-flight: after `PROCESSING_LEASE_SECONDS` its
-     * hold is no longer honoured and the next attempt may proceed. No digest is passed, because the caller
-     * has already proved this request's digest equals the stored one, so there is nothing to rewrite. The
-     * lease test is repeated inside the update, so only one of several waiting attempts wins.
-     *
-     * @param   string             $id                        Identifier of the record being taken over.
-     * @param   string             $authorizationFingerprint  Credential and site fingerprint stored with
-     *          the new reservation.
-     * @param   string             $ownerToken                Token proving the new reservation is this
-     *          request's.
-     * @param   DateTimeImmutable  $now                       Instant the lapsed lease is judged against
-     *          and the new one is dated from.
-     *
-     * @return  bool  True when this request now owns the record; false when the lease was still held or
-     *          another attempt claimed it first.
-     *
-     * @since   2.0.0
-     */
-    private function acquireStale(
-        string $id,
-        string $authorizationFingerprint,
-        string $ownerToken,
-        DateTimeImmutable $now,
-    ): bool {
-        return $this->reset(
-            $id,
-            null,
-            $authorizationFingerprint,
-            $ownerToken,
-            $now,
-            "state = 'in_progress' AND (locked_until IS NULL OR locked_until <= ?)",
-            [$now],
-            [Types::DATETIME_IMMUTABLE],
-        );
-    }
-
-    /**
-     * Re-arm a record as this request's reservation, but only while the caller's condition still holds.
-     *
-     * The single writer behind all three takeover paths. Its point is that the condition is carried into
-     * the statement instead of being checked beforehand: the row is re-tested and claimed together, so the
-     * affected-row count is a truthful answer to "did I win", and two claimants cannot both walk away
-     * believing they own the record. Everything the previous attempt left is wiped — result columns
-     * cleared, creation, lease and expiry re-dated from now — so the record is indistinguishable from a
-     * reservation taken by a first attempt.
-     *
-     * @param   string             $id                        Identifier of the record to claim.
-     * @param   ?string            $digest                    New request digest, or null to leave the
-     *          stored one untouched.
-     * @param   string             $authorizationFingerprint  Credential and site fingerprint stored with
-     *          the new reservation.
-     * @param   string             $ownerToken                Token written to both the owner and lease
-     *          columns to mark this request as holder.
-     * @param   DateTimeImmutable  $now                       Instant the new lease and retention window
-     *          are measured from.
-     * @param   string             $condition                 SQL predicate ANDed with the identifier
-     *          match, naming the state that makes this takeover legal.
-     * @param   list<mixed>        $conditionValues           Values bound to the condition's placeholders,
-     *          in the order they appear.
-     * @param   list<string>       $conditionTypes            DBAL types for those values, positionally.
-     *
-     * @return  bool  True when exactly one row was claimed, which is the caller's proof of ownership.
-     *
-     * @since   2.0.0
-     */
-    private function reset(
-        string $id,
-        ?string $digest,
-        string $authorizationFingerprint,
-        string $ownerToken,
-        DateTimeImmutable $now,
-        string $condition,
-        array $conditionValues,
-        array $conditionTypes,
-    ): bool {
-        $digestAssignment = $digest === null ? '' : 'request_digest = ?, ';
-        $values = $digest === null ? [] : [$digest];
-        $types = $digest === null ? [] : [Types::STRING];
-        $values = array_merge($values, [
-            $authorizationFingerprint,
-            $ownerToken,
-            $ownerToken,
-            $now,
-            $now->modify('+' . self::PROCESSING_LEASE_SECONDS . ' seconds'),
-            $now->modify('+' . self::PROCESSING_LEASE_SECONDS . ' seconds'),
-            $now->modify('+' . self::RETENTION_SECONDS . ' seconds'),
-            $id,
-        ], $conditionValues);
-        $types = array_merge($types, [
-            Types::STRING,
-            Types::STRING,
-            Types::STRING,
-            Types::DATETIME_IMMUTABLE,
-            Types::DATETIME_IMMUTABLE,
-            Types::DATETIME_IMMUTABLE,
-            Types::DATETIME_IMMUTABLE,
-            Types::GUID,
-        ], $conditionTypes);
-        $affected = $this->database->executeStatement(sprintf(
-            "UPDATE %s SET %sauthorization_fingerprint = ?, state = 'in_progress', owner_token = ?, "
-            . 'lease_owner = ?, created_at = ?, locked_until = ?, lease_expires_at = ?, expires_at = ?, '
-            . 'result_status = NULL, result_body = NULL, result_body_digest = NULL, '
-            . 'result_headers = NULL, completed_at = NULL WHERE id = ? AND %s',
-            $this->tables->quoted('idempotency'),
-            $digestAssignment,
-            $condition,
-        ), $values, $types);
-        return (string) $affected === '1';
-    }
-
-    /**
      * Settle the record as completed and store the response future repeats will be answered with.
      *
      * Runs inside the transaction that wraps the handler, so the mutation and the record marking its key
-     * spent become durable together. The predicate re-states the whole claim — same owner token, still
-     * `in_progress`, lease not yet lapsed — and `assertOwner()` turns a lost race into a thrown failure
-     * rather than a silent no-op, which rolls the mutation back instead of leaving an effect no replay
-     * describes. Only the four headers a replay must reproduce are kept; the rest are regenerated when the
-     * stored response is rebuilt.
+     * spent become durable together. The ledger re-states the whole claim in its conditional write, and a
+     * refused completion is raised here as a thrown failure rather than a silent no-op, which rolls the
+     * mutation back instead of leaving an effect no replay describes. Only the four headers a replay must
+     * reproduce are kept; the rest are regenerated when the stored response is rebuilt.
      *
      * @param   string             $subject     Principal the record is keyed against.
      * @param   string             $operation   Method and path pair the key is scoped to.
@@ -632,32 +376,29 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
                 $headers[$name] = $response->getHeaderLine($name);
             }
         }
-        $now = $this->clock->now();
-        $affected = $this->database->executeStatement(sprintf(
-            "UPDATE %s SET state = 'completed', owner_token = NULL, locked_until = NULL, "
-            . 'lease_owner = NULL, lease_expires_at = NULL, result_status = ?, result_body = ?, '
-            . 'result_body_digest = ?, result_headers = ?, completed_at = ? '
-            . 'WHERE subject = ? AND operation = ? AND idempotency_key = ? AND state = '
-            . "'in_progress' AND owner_token = ? AND locked_until > ?",
-            $this->tables->quoted('idempotency'),
-        ), [
-            $response->getStatusCode(), $body, hash('sha256', $body), $headers, $now,
-            $subject, $operation, $key, $ownerToken, $now,
-        ], [
-            Types::INTEGER, Types::TEXT, Types::STRING, Types::JSON, Types::DATETIME_IMMUTABLE,
-            Types::STRING, Types::STRING, Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE,
-        ]);
-        $this->assertOwner($affected);
+        if (
+            !$this->ledger->complete(
+                $subject,
+                $operation,
+                $key,
+                $ownerToken,
+                $response->getStatusCode(),
+                $body,
+                $headers,
+            )
+        ) {
+            throw new RuntimeException('The request no longer owns the active idempotency lease.');
+        }
     }
 
     /**
      * Give the key back after an attempt that did not settle.
      *
-     * The row is deleted rather than marked failed, so the next request presenting the key starts from
-     * nothing: an operation whose transaction rolled back left no effect worth replaying. Owner token and
-     * `in_progress` state are both in the predicate, so a record another attempt has since taken over, or
-     * one that already completed, is untouched. Ownership is only asserted on the path that still returns
-     * a response — while unwinding from a fault the delete is best-effort, because a lost lease must not
+     * The record is deleted rather than marked failed, so the next request presenting the key starts from
+     * nothing: an operation whose transaction rolled back left no effect worth replaying. The ledger
+     * deletes only a record this request still owns, so one another attempt has since taken over, or one
+     * that already completed, is untouched. Ownership is only asserted on the path that still returns a
+     * response — while unwinding from a fault the delete is best-effort, because a lost lease must not
      * replace the exception the caller is about to see.
      *
      * @param   string  $subject      Principal the record is keyed against.
@@ -681,13 +422,9 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         string $ownerToken,
         bool $assertOwner,
     ): void {
-        $affected = $this->database->executeStatement(sprintf(
-            'DELETE FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ? '
-            . "AND state = 'in_progress' AND owner_token = ?",
-            $this->tables->quoted('idempotency'),
-        ), [$subject, $operation, $key, $ownerToken]);
-        if ($assertOwner) {
-            $this->assertOwner($affected);
+        $released = $this->ledger->release($subject, $operation, $key, $ownerToken);
+        if ($assertOwner && !$released) {
+            throw new RuntimeException('The request no longer owns the active idempotency lease.');
         }
     }
 
@@ -718,37 +455,13 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
     }
 
     /**
-     * Insist that a ledger write landed on exactly the one row this request owns.
+     * Read a stored JSON column back as an object, whatever form the ledger handed it over in.
      *
-     * Drivers disagree on whether an affected-row count comes back as an int or a decimal string, so the
-     * comparison is made as text. Anything but one row means the reservation moved on while the mutation
-     * was running, and failing is the only safe answer: raised from `complete()` it unwinds the mutation
-     * with the transaction, and raised from `release()` after a 5xx it replaces the handler's response,
-     * because a record this request no longer owns was not this request's to clear.
-     *
-     * @param   int|string  $affected  Rows the completion or release statement reported changing.
-     *
-     * @return  void
-     *
-     * @throws  RuntimeException  When the statement did not change exactly one row.
-     *
-     * @since   2.0.0
-     */
-    private function assertOwner(int|string $affected): void
-    {
-        if ((string) $affected !== '1') {
-            throw new RuntimeException('The request no longer owns the active idempotency lease.');
-        }
-    }
-
-    /**
-     * Read a stored JSON column back as an object, whatever form the driver handed it over in.
-     *
-     * Drivers differ on JSON columns — some decode them, some return the text — so both are accepted and
+     * Stores differ on JSON columns — some decode them, some return the text — so both are accepted and
      * only text is parsed. A JSON list is refused rather than tolerated, because the one column this backs
      * is the stored header map, and accepting a list would rebuild a replay with numeric header names.
      *
-     * @param   mixed  $stored  Value of a JSON column as the driver returned it: already decoded, or text.
+     * @param   mixed  $stored  Value of a JSON column as the ledger returned it: already decoded, or text.
      *
      * @return  array<string, mixed>  The decoded object, keyed by member name.
      *
@@ -774,9 +487,9 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
      * Read the stored header map back in a form that can be set on a response.
      *
      * Every entry is proved to be a non-empty name against a string value before any of them is applied,
-     * so a corrupt row is refused outright instead of half-populating a replayed response.
+     * so a corrupt record is refused outright instead of half-populating a replayed response.
      *
-     * @param   mixed  $stored  Value of the `result_headers` column as the driver returned it.
+     * @param   mixed  $stored  Value of the `result_headers` column as the ledger returned it.
      *
      * @return  array<non-empty-string, string>  Header names to their single stored line.
      *
@@ -847,9 +560,9 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
     }
 
     /**
-     * Read a stored numeric column back as an integer, whatever spelling the driver used.
+     * Read a stored numeric column back as an integer, whatever spelling the ledger used.
      *
-     * A `SMALLINT` arrives as an int from one driver and as a decimal string from another, so both are
+     * A stored status arrives as an int from one store and as a decimal string from another, so both are
      * accepted. Anything else is corrupt storage rather than a client mistake, and is refused instead of
      * being cast into a status code that would then be replayed as though it had been served.
      *
