@@ -93,6 +93,11 @@ final class AssetInspectionCustomViewIntegrationTest extends TestCase
         $container = TestKernelFactory::create(Environment::fromGlobals());
         $administrator = TestKernelFactory::administratorContext($container);
         $definitionId = Uuid::uuid7()->toString();
+        // The marker keys every identity this test mints to this run. Idempotency keys live in the
+        // installation-global mutation ledger, so a fixed key would meet the entry a previous suite run
+        // recorded for a definition that no longer exists and be refused as a conflicting replay. It is
+        // cut from the UUID's random tail, because the head is a timestamp two close runs can share.
+        $marker = substr(str_replace('-', '', $definitionId), -10);
         $suffix = 'inspection' . substr(str_replace('-', '', $definitionId), 0, 10);
         $document = NeutralBusinessFixture::document($suffix, $definitionId);
         $document['fields'][] = [
@@ -140,7 +145,7 @@ final class AssetInspectionCustomViewIntegrationTest extends TestCase
                     'risk_score' => 70 + $row,
                     'internal_note' => 'restricted inspection note ' . $row,
                 ],
-                NeutralBusinessFixture::idempotencyKey('inspection-summary-visible-' . $row),
+                NeutralBusinessFixture::idempotencyKey('inspection-summary-visible-' . $row . '-' . $marker),
             ));
         }
         $records->create(new CreateRecordCommand(
@@ -152,7 +157,7 @@ final class AssetInspectionCustomViewIntegrationTest extends TestCase
                 'risk_score' => 69,
                 'internal_note' => 'denied restricted inspection note',
             ],
-            NeutralBusinessFixture::idempotencyKey('inspection-summary-denied'),
+            NeutralBusinessFixture::idempotencyKey('inspection-summary-denied-' . $marker),
         ));
 
         NeutralBusinessFixture::removeRecordAccess($container, $definition->id);

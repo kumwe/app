@@ -113,13 +113,13 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
      */
     public function testArchiveAndDeleteRedirectToLifecycleReadableDestinations(): void
     {
-        [$context, $definition, $records, $browser] = $this->runtime('redirects');
+        [$context, $definition, $records, $browser, $suffix] = $this->runtime('redirects');
         $recordId = Uuid::uuid7()->toString();
         $records->create(new CreateRecordCommand(
             $context,
             $definition,
             NeutralBusinessFixture::recordValues('Browser lifecycle redirect'),
-            NeutralBusinessFixture::idempotencyKey('browser-redirect-create'),
+            NeutralBusinessFixture::idempotencyKey('browser-redirect-create-' . $suffix),
             recordId: $recordId,
         ));
 
@@ -133,14 +133,14 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             [],
             [
                 'operation' => 'archive',
-                'operation_id' => 'browser:redirect-archive',
+                'operation_id' => 'browser:redirect-archive-' . $suffix,
                 'expected_version' => '1',
                 'confirmed' => '1',
             ],
         );
         self::assertSame(
             '/administrator/business/' . $definition . '/' . $recordId
-                . '?archived=1&saved=1&completed_operation=browser%3Aredirect-archive',
+                . '?archived=1&saved=1&completed_operation=browser%3Aredirect-archive-' . $suffix,
             $archive->redirect,
         );
         $archived = $browser->dispatch(
@@ -167,7 +167,7 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             [],
         );
         self::assertSame('actions', $actions->data['record_task']);
-        $status = $browser->operationStatus($context, 'browser:redirect-archive');
+        $status = $browser->operationStatus($context, 'browser:redirect-archive-' . $suffix);
         self::assertSame(200, $status->status);
         self::assertSame($definition, $status->data['operation_status']['definition_reference']);
 
@@ -181,7 +181,7 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             [],
             [
                 'operation' => 'restore',
-                'operation_id' => 'browser:redirect-restore',
+                'operation_id' => 'browser:redirect-restore-' . $suffix,
                 'expected_version' => '2',
                 'confirmed' => '1',
             ],
@@ -201,14 +201,14 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             [],
             [
                 'operation' => 'delete',
-                'operation_id' => 'browser:redirect-delete',
+                'operation_id' => 'browser:redirect-delete-' . $suffix,
                 'expected_version' => '3',
                 'confirmed' => '1',
             ],
         );
         self::assertSame(
             '/administrator/business/' . $definition
-                . '?saved=1&completed_operation=browser%3Aredirect-delete',
+                . '?saved=1&completed_operation=browser%3Aredirect-delete-' . $suffix,
             $delete->redirect,
         );
         self::assertSame('business-list', $browser->dispatch(
@@ -218,7 +218,7 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             'GET',
             $definition,
             null,
-            ['saved' => '1', 'completed_operation' => 'browser:redirect-delete'],
+            ['saved' => '1', 'completed_operation' => 'browser:redirect-delete-' . $suffix],
             [],
         )->template);
     }
@@ -232,13 +232,13 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
      */
     public function testGraphicalQueryControlsSurviveOpaqueCursorPagination(): void
     {
-        [$context, $definition, $records, $browser] = $this->runtime('query');
+        [$context, $definition, $records, $browser, $suffix] = $this->runtime('query');
         foreach (['Browser query alpha', 'Browser query beta', 'Browser query gamma'] as $index => $name) {
             $records->create(new CreateRecordCommand(
                 $context,
                 $definition,
                 NeutralBusinessFixture::recordValues($name),
-                NeutralBusinessFixture::idempotencyKey('browser-query-create-' . $index),
+                NeutralBusinessFixture::idempotencyKey('browser-query-create-' . $index . '-' . $suffix),
                 recordId: Uuid::uuid7()->toString(),
             ));
         }
@@ -309,13 +309,13 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
      */
     public function testWorkflowActionConfirmationExecutesWithoutJavascript(): void
     {
-        [$context, $definition, $records, $browser] = $this->runtime('action');
+        [$context, $definition, $records, $browser, $suffix] = $this->runtime('action');
         $recordId = Uuid::uuid7()->toString();
         $records->create(new CreateRecordCommand(
             $context,
             $definition,
             NeutralBusinessFixture::recordValues('Browser action'),
-            NeutralBusinessFixture::idempotencyKey('browser-action-create'),
+            NeutralBusinessFixture::idempotencyKey('browser-action-create-' . $suffix),
             recordId: $recordId,
         ));
 
@@ -343,7 +343,7 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             [],
             [
                 'operation' => 'action',
-                'operation_id' => 'browser:workflow-action',
+                'operation_id' => 'browser:workflow-action-' . $suffix,
                 'expected_version' => '1',
                 'confirmed' => '1',
                 'action' => 'approve',
@@ -1244,10 +1244,15 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
     /**
      * Install one isolated administrator-exposed definition and return its generated runtime.
      *
+     * The suffix is part of the runtime on purpose: idempotency keys and operation identifiers live in
+     * the installation-global mutation ledger, so a caller that reuses a fixed one meets the entry a
+     * previous suite run recorded for a definition that no longer matches, and the replay is refused as
+     * a conflict. Every identity a test mints must therefore carry this run-unique suffix.
+     *
      * @param   string  $label  Short uniqueness label.
      *
      * @return  array{\Kumwe\CMS\Application\Authorization\ExecutionContext, string,
-     *          BusinessRecordService, GeneratedBusinessBrowserController}
+     *          BusinessRecordService, GeneratedBusinessBrowserController, string}
      *
      * @since   2.0.0
      */
@@ -1263,6 +1268,6 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessRecordService::class, $records);
         self::assertInstanceOf(GeneratedBusinessBrowserController::class, $browser);
 
-        return [$context, $definition->handle, $records, $browser];
+        return [$context, $definition->handle, $records, $browser, $suffix];
     }
 }

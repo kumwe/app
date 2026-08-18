@@ -549,7 +549,7 @@
     {
       "id": "integration-idempotency",
       "title": "The integration suite against a reused database, judged against a shrinking baseline",
-      "purpose": "Run the integration suite a second time against the database the first run left behind and fail on any test that is not in the pass-aware record in docs/quality/idempotency-baseline.json. The suite is not idempotent today; the baseline is that finding's reproduction, and it only ever shrinks. Reverse class order remains an explicitly pending measurement available through --pass=reverse, not a property this per-change lane claims to enforce.",
+      "purpose": "Run the integration suite a second time against the database the first run left behind and fail on any test that is not in the pass-aware record in docs/quality/idempotency-baseline.json. The suite was not idempotent when V2-QA-004 was recorded; the baseline was that finding's reproduction, it only ever shrinks, and it is empty now that every recorded test rolls its installation-global state back or mints per-run identities. Reverse class order remains an explicitly pending measurement available through --pass=reverse, not a property this per-change lane claims to enforce.",
       "owner": "quality-engineering",
       "runner": "composer",
       "command": "composer test:idempotency -- --engine=ID",

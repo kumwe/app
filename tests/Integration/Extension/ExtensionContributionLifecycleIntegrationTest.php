@@ -53,7 +53,9 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
         self::assertInstanceOf(Connection::class, $database);
         self::assertInstanceOf(TableNames::class, $tables);
         $context = TestKernelFactory::administratorContext($container);
-        $marker = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 8));
+        // The tail of a UUIDv7 is its random half; the head is a timestamp whose first eight hex
+        // characters only move every 65 seconds, which two suite runs on one database can share.
+        $marker = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -8));
         $identifier = 'integration/contributions-' . $marker;
         $namespace = str_replace('/', '.', $identifier);
         $capability = $namespace . '.manage';
@@ -319,6 +321,23 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
         throw new RuntimeException('The installed contribution fixture is unavailable.');
     }
 
+    /**
+     * Package the announcements example under a wholly per-run identity.
+     *
+     * The identifier, the namespaced handles, and the two business-definition UUIDs are all rewritten,
+     * because uninstalling an extension deliberately preserves its published definitions — the data
+     * preservation this test itself asserts. A repeat of the package under the example's fixed
+     * definition UUIDs would therefore meet the previous run's published revision and be refused as a
+     * stale draft, so each run has to admit definitions it alone identifies.
+     *
+     * @param   string  $identifier  Per-run `vendor/name` identifier the package is rewritten to.
+     *
+     * @return  string  Absolute path of the packaged archive.
+     *
+     * @throws  RuntimeException  When the fixture archive cannot be assembled.
+     *
+     * @since   2.0.0
+     */
     private function examplePackage(string $identifier): string
     {
         $archive = tempnam(sys_get_temp_dir(), 'kumwe-contribution-extension-');
@@ -331,6 +350,8 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
         }
         $root = dirname(__DIR__, 3) . '/examples/extensions/announcements';
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
+        // Minted once so every packaged file agrees on which definition carries which identity.
+        $definitionIds = [Uuid::uuid7()->toString(), Uuid::uuid7()->toString()];
         try {
             foreach ($iterator as $file) {
                 if (!$file instanceof SplFileInfo || !$file->isFile()) {
@@ -341,8 +362,18 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
                     throw new RuntimeException('An announcements fixture file cannot be read.');
                 }
                 $contents = str_replace(
-                    ['kumwe/announcements-example', 'kumwe.announcements-example'],
-                    [$identifier, str_replace('/', '.', $identifier)],
+                    [
+                        'kumwe/announcements-example',
+                        'kumwe.announcements-example',
+                        '01912f8a-8c4b-7eb1-8f7d-c256efd39801',
+                        '01912f8a-8c4b-7eb1-8f7d-c256efd39802',
+                    ],
+                    [
+                        $identifier,
+                        str_replace('/', '.', $identifier),
+                        $definitionIds[0],
+                        $definitionIds[1],
+                    ],
                     $contents,
                 );
                 $relative = substr($file->getPathname(), strlen($root) + 1);
