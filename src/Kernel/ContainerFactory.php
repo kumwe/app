@@ -550,6 +550,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\NumberSequenceIdentityMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipPortabilityMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
@@ -1709,6 +1710,7 @@ final class ContainerFactory
                     new MultilingualContentMigration(self::service($container, TableNames::class)),
                     new TranslationGroupSiteOwnershipMigration(self::service($container, TableNames::class)),
                     new ConstraintNameIsolationPortabilityMigration(self::service($container, TableNames::class)),
+                    new NumberSequenceIdentityMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
