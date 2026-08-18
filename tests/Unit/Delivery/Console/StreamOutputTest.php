@@ -9,14 +9,24 @@ use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Pins the console sink's two halves: verbatim machine output, and catalogue-resolved wording.
+ *
+ * StreamOutput is where the translator enters the console — once, into the surface every command
+ * already receives — so these tests hold the boundary between text that is looked up and output
+ * that must reach a pipe unchanged.
+ *
+ * @since  2.0.0
+ */
 #[CoversClass(StreamOutput::class)]
 final class StreamOutputTest extends TestCase
 {
     /**
-     * Proves raw lines reach standard output and standard error byte for byte.
+     * Machine output stays byte-for-byte on its own stream.
      *
-     * Machine-readable output is not translatable text: a JSON document and a diagnostic line must arrive
-     *      * exactly as written, on the stream that names them, with no catalogue lookup and no rewriting.
+     * line() and error() are what a command uses for a JSON envelope, an identifier or a secret
+     * printed once. None of that is wording, so none of it passes through the catalogue and none of
+     * it may gain a prefix, a colour or a rewrite on the way out.
      *
      * @return  void
      *
@@ -34,11 +44,10 @@ final class StreamOutputTest extends TestCase
     }
 
     /**
-     * Proves catalogue-bound messages resolve through the translator onto the right stream.
+     * Wording resolves through the catalogue and keeps result and failure on separate streams.
      *
-     * This is the console half of the binding the Twig environments already have: a command names a message
-     *      * identifier and the surface resolves it once, so wording lives in the catalogue rather than in
-     *      * forty-eight command classes.
+     * This is the console's half of the translation contract: a command names a message and the sink
+     * resolves it, so an operator piping results still sees the failure text.
      *
      * @return  void
      *
@@ -56,11 +65,10 @@ final class StreamOutputTest extends TestCase
     }
 
     /**
-     * Proves numeric placeholders are substituted verbatim rather than locale-grouped.
+     * A number reaches the terminal exactly as the console has always printed it.
      *
-     * Console output is frequently piped into another program, so a count must not acquire thousands
-     *      * separators on its way to the stream: the number a caller supplies is the number the reader and the
-     *      * next process both see.
+     * ICU groups digits by locale, which would turn a greppable identifier or count into something a
+     * script cannot match on. Numeric parameters are therefore substituted as their own digits.
      *
      * @return  void
      *

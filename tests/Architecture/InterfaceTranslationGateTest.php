@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Architecture;
 
+use JsonException;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -146,6 +147,218 @@ final class InterfaceTranslationGateTest extends TestCase
             self::assertStringContainsString('V2-LNG-008', $entry['reason'], $entry['path']);
             self::assertFileExists($this->root . '/' . $entry['path']);
         }
+    }
+
+    /**
+     * Every deliberately untranslatable source names a declared category, and every category a reason.
+     *
+     * This is the half of the widened gate a reader has to be able to audit: an exemption that does
+     * not say which category it belongs to, or a category that does not say why it is not translated,
+     * is indistinguishable from an oversight.
+     *
+     * @return  void
+     *
+     * @throws  JsonException  When the register is not valid JSON.
+     *
+     * @since   2.0.0
+     */
+    public function testEveryUntranslatableSourceNamesADeclaredCategoryAndItsReason(): void
+    {
+        $encoded = file_get_contents($this->root . '/tools/translation-extraction.json');
+        self::assertIsString($encoded);
+        /** @var array{untranslatable_categories: list<array{category: string, reason: string}>,
+         *      untranslatable_sources: list<array{path: string, category: string, reason: string}>,
+         *      user_facing_keys: list<string>} $register */
+        $register = json_decode($encoded, true, 16, JSON_THROW_ON_ERROR);
+
+        self::assertNotSame([], $register['user_facing_keys']);
+        self::assertNotSame([], $register['untranslatable_categories']);
+        $categories = [];
+        foreach ($register['untranslatable_categories'] as $entry) {
+            self::assertGreaterThan(40, strlen($entry['reason']), $entry['category']);
+            $categories[$entry['category']] = true;
+        }
+        self::assertNotSame([], $register['untranslatable_sources']);
+        foreach ($register['untranslatable_sources'] as $entry) {
+            self::assertArrayHasKey($entry['category'], $categories, $entry['path']);
+            self::assertGreaterThan(20, strlen($entry['reason']), $entry['path']);
+            self::assertFileExists($this->root . '/' . $entry['path']);
+        }
+    }
+
+    /**
+     * A console command that writes wording inline instead of looking it up fails the gate.
+     *
+     * Console output is a translatable surface, so a `line()` carrying a sentence is exactly what the
+     * widened scanner exists to catch; the failure has to name the file and the sentence.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheGateFailsWhenAConsoleCommandWritesWordingInline(): void
+    {
+        $tree = $this->treeCopy();
+        $command = $tree . '/src/Delivery/Console/Command/HealthCheckCommand.php';
+        $contents = file_get_contents($command);
+        self::assertIsString($contents);
+        file_put_contents($command, str_replace(
+            "\$output->message('core.console.app_health.kumwe_is_ready');",
+            "\$output->line('Kumwe is ready to serve traffic.');",
+            $contents,
+        ));
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(1, $status, $output);
+        self::assertStringContainsString('HealthCheckCommand.php', $output);
+        self::assertStringContainsString('Kumwe is ready to serve traffic.', $output);
+        self::assertStringContainsString('message()', $output);
+    }
+
+    /**
+     * A log line keeps its wording: the console rule reads the sink, not the method name.
+     *
+     * `error()` is both a console failure line and a PSR-3 log level. Refusing the second would make
+     * the gate demand that log lines be translated, which the standard forbids, so this pins the
+     * distinction the scanner draws.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheGateLeavesALoggerCallAlone(): void
+    {
+        $tree = $this->treeCopy();
+        $middleware = $tree . '/src/Http/Middleware/ProblemDetailsMiddleware.php';
+        $contents = file_get_contents($middleware);
+        self::assertIsString($contents);
+        file_put_contents($middleware, str_replace(
+            "\$this->logger->error('Unhandled request exception.'",
+            "\$this->logger->error('Unhandled request exception happened.'",
+            $contents,
+        ));
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(0, $status, $output);
+    }
+
+    /**
+     * A user-facing error path that hardcodes its sentence fails the gate.
+     *
+     * The rendered-text half of the widened scanner is what keeps a new refusal from reaching an
+     * operator as English regardless of the language the request resolved to.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheGateFailsWhenAnErrorPathHardcodesItsSentence(): void
+    {
+        $tree = $this->treeCopy();
+        $handler = $tree . '/src/Administrator/Http/Handler/AdministratorLoginHandler.php';
+        $contents = file_get_contents($handler);
+        self::assertIsString($contents);
+        file_put_contents($handler, str_replace(
+            "'error' => \$this->translator->translate('core.administrator.login.invalid_credentials'),",
+            "'error' => 'That email address and password do not match.',",
+            $contents,
+        ));
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(1, $status, $output);
+        self::assertStringContainsString('AdministratorLoginHandler.php', $output);
+        self::assertStringContainsString('That email address and password do not match.', $output);
+    }
+
+    /**
+     * An exemption the tree no longer carries fails, exactly as a stale template entry does.
+     *
+     * An allowlist that outlives the file it excuses is how a gate quietly stops covering something,
+     * so the register is held to the same freshness rule on both halves.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheGateRefusesAnExemptionForASourceThatNoLongerExists(): void
+    {
+        $tree = $this->treeCopy();
+        $register = $tree . '/tools/translation-extraction.json';
+        $contents = file_get_contents($register);
+        self::assertIsString($contents);
+        /** @var array{untranslatable_sources: list<array{path: string, category: string, reason: string}>} $decoded */
+        $decoded = json_decode($contents, true, 16, JSON_THROW_ON_ERROR);
+        $decoded['untranslatable_sources'][] = [
+            'path' => 'src/Delivery/Console/Command/RetiredCommand.php',
+            'category' => $decoded['untranslatable_sources'][0]['category'],
+            'reason' => 'Recorded by this fixture to prove a stale exemption is refused.',
+        ];
+        file_put_contents($register, json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(1, $status, $output);
+        self::assertStringContainsString('RetiredCommand.php', $output);
+        self::assertStringContainsString('no longer exists', $output);
+    }
+
+    /**
+     * An exemption claiming a category the register never declared is refused before scanning.
+     *
+     * The category is what carries the reason a whole class of text is not translated, so an entry
+     * inventing one would be an exemption with no stated justification behind it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheGateRefusesAnExemptionWithAnUndeclaredCategory(): void
+    {
+        $tree = $this->treeCopy();
+        $register = $tree . '/tools/translation-extraction.json';
+        $contents = file_get_contents($register);
+        self::assertIsString($contents);
+        /** @var array{untranslatable_sources: list<array{path: string, category: string, reason: string}>} $decoded */
+        $decoded = json_decode($contents, true, 16, JSON_THROW_ON_ERROR);
+        $decoded['untranslatable_sources'][0]['category'] = 'because_i_said_so';
+        file_put_contents($register, json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(65, $status, $output);
+        self::assertStringContainsString('because_i_said_so', $output);
+    }
+
+    /**
+     * A console identifier the catalogue does not carry fails, the way a template's does.
+     *
+     * The console half of the catalogue contract has to be proven in the same direction as the
+     * template half, or a command could look up wording that resolves to its own identifier.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheGateRefusesAConsoleIdentifierTheCatalogueDoesNotCarry(): void
+    {
+        $tree = $this->treeCopy();
+        $command = $tree . '/src/Delivery/Console/Command/HealthCheckCommand.php';
+        $contents = file_get_contents($command);
+        self::assertIsString($contents);
+        file_put_contents($command, str_replace(
+            "core.console.app_health.kumwe_is_ready",
+            "core.console.app_health.invented_message",
+            $contents,
+        ));
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(1, $status, $output);
+        self::assertStringContainsString('core.console.app_health.invented_message', $output);
+        self::assertStringContainsString('the source catalogue does not carry', $output);
     }
 
     public function testTheStylesheetDirectionGatePassesOnTheCommittedTree(): void

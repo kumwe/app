@@ -111,8 +111,8 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
      * Proves an expired record is taken over rather than replayed, and the mutation runs afresh.
      *
      * A retention window that has passed means the recorded result is no longer a promise anyone may be
-     *      * given. The retry therefore executes the handler again instead of returning stale content, and the
-     *      * record it leaves behind is the new attempt's, not a resurrection of the old one.
+     * given. The retry therefore executes the handler again instead of returning stale content, and the
+     * record it leaves behind is the new attempt's, not a resurrection of the old one.
      *
      * @return  void
      *
@@ -180,8 +180,8 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
      * Proves a failed record is reclaimed by a retry of the same request rather than blocking it forever.
      *
      * A failure leaves ownership behind that nothing else will clear. The identical request must be able to
-     *      * take that ownership back and run, because the alternative is a key that is permanently unusable
-     *      * after one server-side fault.
+     * take that ownership back and run, because the alternative is a key that is permanently unusable
+     * after one server-side fault.
      *
      * @return  void
      *

@@ -33,11 +33,11 @@ final class ConsoleApplicationTest extends TestCase
     }
 
     /**
-     * Proves the command listing resolves every description through the message catalogue.
+     * The command listing renders catalogue wording, not the identifier a description returns.
      *
-     * The summary beside each command name is user-facing text on a translatable surface, so it is looked up
-     *      * rather than written inline. Pinning it here keeps a future command from reintroducing an English
-     *      * literal that no catalogue could ever translate.
+     * description() returns a message identifier so the summary line can be translated without
+     * any command carrying a translator; this pins that the dispatcher, and only the dispatcher,
+     * resolves it, and that the banner and heading come from the catalogue too.
      *
      * @return  void
      *

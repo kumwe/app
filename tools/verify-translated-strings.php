@@ -58,7 +58,10 @@ final class TranslationViolation
  *     translatable_attributes: list<string>,
  *     ignored_elements: list<string>,
  *     allowed_literals: list<array{value: string, reason: string}>,
- *     pending_extraction: list<array{path: string, reason: string}>
+ *     pending_extraction: list<array{path: string, reason: string}>,
+ *     user_facing_keys: list<string>,
+ *     untranslatable_categories: list<array{category: string, reason: string}>,
+ *     untranslatable_sources: list<array{path: string, category: string, reason: string}>
  * } The register, validated.
  *
  * @since  2.0.0
@@ -76,7 +79,16 @@ function translation_register(string $path): array
         fwrite(STDERR, sprintf("The extraction register %s is not a JSON object.\n", $path));
         exit(65);
     }
-    foreach (['translatable_attributes', 'ignored_elements', 'allowed_literals', 'pending_extraction'] as $key) {
+    $required = [
+        'translatable_attributes',
+        'ignored_elements',
+        'allowed_literals',
+        'pending_extraction',
+        'user_facing_keys',
+        'untranslatable_categories',
+        'untranslatable_sources',
+    ];
+    foreach ($required as $key) {
         if (!isset($decoded[$key]) || !is_array($decoded[$key])) {
             fwrite(STDERR, sprintf("The extraction register is missing the %s list.\n", $key));
             exit(65);
@@ -94,13 +106,42 @@ function translation_register(string $path): array
             exit(65);
         }
     }
+    $categories = [];
+    foreach ($decoded['untranslatable_categories'] as $entry) {
+        if (!is_array($entry) || !isset($entry['category'], $entry['reason']) || $entry['reason'] === '') {
+            fwrite(STDERR, "Every untranslatable category must name the reason it is not translated.\n");
+            exit(65);
+        }
+        $categories[$entry['category']] = true;
+    }
+    foreach ($decoded['untranslatable_sources'] as $entry) {
+        if (
+            !is_array($entry)
+            || !isset($entry['path'], $entry['category'], $entry['reason'])
+            || $entry['reason'] === ''
+        ) {
+            fwrite(STDERR, "Every untranslatable source must name its category and the reason for it.\n");
+            exit(65);
+        }
+        if (!isset($categories[$entry['category']])) {
+            fwrite(STDERR, sprintf(
+                "The untranslatable source %s claims the category %s, which the register does not declare.\n",
+                (string) $entry['path'],
+                (string) $entry['category'],
+            ));
+            exit(65);
+        }
+    }
 
     /**
      * @var array{
      *     translatable_attributes: list<string>,
      *     ignored_elements: list<string>,
      *     allowed_literals: list<array{value: string, reason: string}>,
-     *     pending_extraction: list<array{path: string, reason: string}>
+     *     pending_extraction: list<array{path: string, reason: string}>,
+     *     user_facing_keys: list<string>,
+     *     untranslatable_categories: list<array{category: string, reason: string}>,
+     *     untranslatable_sources: list<array{path: string, category: string, reason: string}>
      * } $decoded
      */
     return $decoded;
@@ -322,6 +363,112 @@ function scan_expressions(string $source, array $allowed): array
 }
 
 /**
+ * Scan one PHP source for user-facing text written inline rather than looked up.
+ *
+ * Two surfaces are covered, and each is recognised by a shape rather than by a guess.
+ *
+ * Console output is text a command hands to the sink the `Command` contract names `$output`. A
+ * command that writes wording writes it through `message()` or `failure()`, which take an
+ * identifier; a prose literal reaching `line()` or `error()` — directly or through `sprintf()` — is
+ * therefore text that never entered the catalogue. Machine output keeps using `line()` and
+ * `error()` deliberately: a JSON envelope, an identifier and a secret printed once are not wording,
+ * and none of them is prose by this scanner's test.
+ *
+ * A user-facing error path is recognised by the key the text is filed under on its way to a
+ * renderer or a response: `error`, `detail`, `summary` and their siblings are read by a person, so
+ * a prose literal sitting under one is wording. Text that exists for a machine or a developer is
+ * exempt by path, and every exemption names its category and the reason that category is not
+ * translatable.
+ *
+ * @param  string               $relative  Repository-relative path, used in reports.
+ * @param  string               $source    PHP source.
+ * @param  list<string>         $keys      Array keys whose string values a person reads.
+ * @param  array<string, true>  $exempt    Repository-relative paths exempt from the rendered-text rule.
+ *
+ * @return list<TranslationViolation> Every refusal in the file, in source order.
+ *
+ * @since  2.0.0
+ */
+function scan_source(string $relative, string $source, array $keys, array $exempt): array
+{
+    $violations = [];
+    $tokens = token_get_all($source);
+    $count = count($tokens);
+    for ($index = 0; $index < $count; $index++) {
+        $token = $tokens[$index];
+        if (!is_array($token) || $token[0] !== T_CONSTANT_ENCAPSED_STRING) {
+            continue;
+        }
+        $value = substr($token[1], 1, -1);
+        if (!str_contains($value, ' ') || !reads_as_prose($value)) {
+            continue;
+        }
+        $preceding = [];
+        for ($back = $index - 1; $back >= 0 && count($preceding) < 8; $back--) {
+            $candidate = $tokens[$back];
+            if (
+                is_array($candidate)
+                && in_array($candidate[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)
+            ) {
+                continue;
+            }
+            $preceding[] = is_array($candidate) ? [$candidate[0], $candidate[1]] : [null, $candidate];
+        }
+        if (writes_console_output($preceding)) {
+            $violations[] = new TranslationViolation($relative, $token[2], 'console', $value);
+            continue;
+        }
+        if (isset($exempt[$relative])) {
+            continue;
+        }
+        if (
+            ($preceding[0][1] ?? '') === '=>'
+            && ($preceding[1][0] ?? null) === T_CONSTANT_ENCAPSED_STRING
+            && in_array(substr($preceding[1][1], 1, -1), $keys, true)
+        ) {
+            $violations[] = new TranslationViolation(
+                $relative,
+                $token[2],
+                'rendered ' . substr($preceding[1][1], 1, -1),
+                $value,
+            );
+        }
+    }
+
+    return $violations;
+}
+
+/**
+ * Decide whether a literal is being handed straight to the console output sink.
+ *
+ * The receiver has to be the `$output` the `Command` contract names, so a PSR-3 logger's `error()`
+ * — which is a log line, and deliberately not translated — is not mistaken for console wording.
+ *
+ * @param  list<array{0: ?int, 1: string}>  $preceding  Significant tokens before the literal, nearest first.
+ *
+ * @return bool True when the literal is the first argument of `$output->line()` or `$output->error()`.
+ *
+ * @since  2.0.0
+ */
+function writes_console_output(array $preceding): bool
+{
+    if (($preceding[0][1] ?? '') !== '(') {
+        return false;
+    }
+    $offset = 1;
+    if (($preceding[$offset][1] ?? '') === 'sprintf' && ($preceding[$offset + 1][1] ?? '') === '(') {
+        $offset += 2;
+    }
+    $method = $preceding[$offset][1] ?? '';
+    $arrow = $preceding[$offset + 1][0] ?? null;
+    $receiver = $preceding[$offset + 2][1] ?? '';
+
+    return in_array($method, ['line', 'error'], true)
+        && $arrow === T_OBJECT_OPERATOR
+        && str_starts_with($receiver, '$output');
+}
+
+/**
  * Collect every message identifier the templates reference through `t` or `t_html`.
  *
  * @param  string  $source  Template source.
@@ -423,6 +570,10 @@ $pending = [];
 foreach ($register['pending_extraction'] as $entry) {
     $pending[$entry['path']] = $entry['reason'];
 }
+$exemptSources = [];
+foreach ($register['untranslatable_sources'] as $entry) {
+    $exemptSources[$entry['path']] = $entry['reason'];
+}
 
 $templates = [];
 $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
@@ -488,11 +639,19 @@ foreach ($sources as $relative) {
     foreach (php_anchored_identifiers($source) as $identifier) {
         $anchored[$identifier] = true;
     }
+    foreach (scan_source($relative, $source, $register['user_facing_keys'], $exemptSources) as $violation) {
+        $violations[] = $violation;
+    }
 }
 
 $stale = [];
 foreach (array_keys($pending) as $path) {
     if (!in_array($path, $templates, true)) {
+        $stale[] = $path;
+    }
+}
+foreach (array_keys($exemptSources) as $path) {
+    if (!in_array($path, $sources, true)) {
         $stale[] = $path;
     }
 }
@@ -518,6 +677,8 @@ sort($orphaned, SORT_STRING);
 if ($asJson) {
     fwrite(STDOUT, json_encode([
         'templates' => count($templates),
+        'sources' => count($sources),
+        'exempt_sources' => count($exemptSources),
         'enforced' => count($templates) - count($pending),
         'pending' => count($pending),
         'messages' => count($catalogue),
@@ -549,8 +710,10 @@ foreach ($violations as $violation) {
 if ($violations !== []) {
     fwrite(STDERR, sprintf(
         "\n%d user-facing string(s) are written inline. Give each one a message identifier, add it to "
-            . "resources/localization/messages/en-GB.xlf, run composer translation:compile, and look it up "
-            . "with t() in the template.\n",
+            . "resources/localization/messages/en-GB.xlf, run composer translation:compile, and look it up: "
+            . "with t() in a template, with the console output's message() or failure(), or through the "
+            . "translator on an error path. Text that exists for a machine or a developer instead earns an "
+            . "untranslatable_sources entry in tools/translation-extraction.json naming its category.\n",
         count($violations),
     ));
 }
@@ -580,9 +743,12 @@ if ($failed) {
 }
 
 fwrite(STDOUT, sprintf(
-    "%d template(s) checked, %d enforced and %d awaiting extraction; %d message(s) resolve.\n",
+    "%d template(s) checked, %d enforced and %d awaiting extraction; %d source file(s) checked, %d exempt "
+        . "by category; %d message(s) resolve.\n",
     count($templates),
     count($templates) - count($pending),
     count($pending),
+    count($sources),
+    count($exemptSources),
     count($catalogue),
 ));
