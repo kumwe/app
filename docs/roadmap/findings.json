@@ -1142,24 +1142,6 @@
       "closure_sha": null
     },
     {
-      "id": "V2-QA-011",
-      "title": "KernelTest reads raw configuration and defaults to a PostgreSQL that need not exist",
-      "severity": "low",
-      "state": "reproduced",
-      "phase": "2",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "tests/Functional/Http/KernelTest.php",
-          "symbol": "environment()",
-          "note": "The same defect class the integration sweep closed, one directory over: raw getenv() with shared fallbacks defaulting to PostgreSQL at 127.0.0.1:5432, so under .env configuration three of its tests error on any host without PostgreSQL. The new IntegrationConfigurationBoundaryTest covers tests/Integration only, which is why this survived."
-        }
-      ],
-      "acceptance_test": "KernelTest resolves configuration through the Environment boundary like the integration suite now does, and the boundary check extends to tests/Functional so the pattern cannot return there either.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
       "id": "V2-DOC-003",
       "title": "A frozen manifest generation's recorded key lists omit two surfaces its parser accepts",
       "severity": "low",
