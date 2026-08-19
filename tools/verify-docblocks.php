@@ -357,6 +357,46 @@ final class DocBlockAuditor
      *
      * @since   2.0.0
      */
+    /**
+     * Find the bracket that closes the attribute opening at the given offset.
+     *
+     * `#[` opens an attribute group and `]` closes it, and either may nest: an argument may be an array
+     * literal, and a group may itself carry a nested attribute. Counting both openings against both
+     * closings is what makes the skip exact rather than a guess at the next `]`.
+     *
+     * @param   list<array{int, string, int}|string>  $tokens  Token stream being walked.
+     * @param   int                                   $start   Offset of the `#[` token itself.
+     * @param   int                                   $count   Total token count, as the walk measured it.
+     *
+     * @return  int  Offset of the closing `]`, or the last token when the stream ends unbalanced.
+     *
+     * @since   2.0.0
+     */
+    private function attributeEnd(array $tokens, int $start, int $count): int
+    {
+        $open = 1;
+        for ($i = $start + 1; $i < $count; $i++) {
+            $token = $tokens[$i];
+            if (is_array($token)) {
+                if ($token[0] === T_ATTRIBUTE) {
+                    $open++;
+                }
+
+                continue;
+            }
+            if ($token === '[') {
+                $open++;
+            } elseif ($token === ']') {
+                $open--;
+                if ($open === 0) {
+                    return $i;
+                }
+            }
+        }
+
+        return $count - 1;
+    }
+
     private function walk(string $file, array $tokens): void
     {
         $depth = 0;
@@ -402,10 +442,19 @@ final class DocBlockAuditor
                 continue;
             }
 
-            // Attributes, modifiers and the tokens of a declared type all sit between the doc block
-            // and the name it documents, so none of them may discard the pending block.
+            // An attribute sits between the doc block and the name it documents, and its arguments may
+            // contain anything an expression may contain — `::class`, strings, arrays, nested attributes.
+            // Stepping through those tokens one at a time would let any of them discard the pending block,
+            // so the whole attribute is skipped in one move, up to the bracket that closes it.
+            if ($id === T_ATTRIBUTE) {
+                $i = $this->attributeEnd($tokens, $i, $count);
+
+                continue;
+            }
+
+            // Modifiers and the tokens of a declared type also sit between the doc block and the name it
+            // documents, so none of them may discard the pending block.
             if (in_array($id, [
-                T_ATTRIBUTE,
                 T_FINAL,
                 T_ABSTRACT,
                 T_READONLY,

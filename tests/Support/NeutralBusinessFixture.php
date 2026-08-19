@@ -354,6 +354,34 @@ final class NeutralBusinessFixture
     }
 
     /**
+     * Version-two draft whose only structural change widens a column every stored value already fits.
+     *
+     * Nothing is dropped, renamed or transformed, so a plan built from this document must be judged a pure
+     * relaxation: rows pinned to version one stay valid under version two and no re-pin is owed.
+     *
+     * @param   string  $suffix        Lowercase handle suffix keeping repeated fixtures apart.
+     * @param   string  $definitionId  Fresh definition UUID this document belongs to.
+     *
+     * @return  array<string, mixed>  Version-two draft whose only change widens one column.
+     *
+     * @since   2.0.0
+     */
+    public static function relaxationDocument(string $suffix, string $definitionId): array
+    {
+        $document = self::document($suffix, $definitionId);
+        foreach ($document['fields'] as &$field) {
+            if (!is_array($field) || ($field['handle'] ?? null) !== 'evolution_code') {
+                continue;
+            }
+            $field['length'] = 400;
+            $field['validators'] = [['rule' => 'max_length', 'value' => 400]];
+        }
+        unset($field);
+
+        return $document;
+    }
+
+    /**
      * Version-two draft for the explicit schema-evolution acceptance contract.
      *
      * @return array<string, mixed>

@@ -33,6 +33,8 @@ use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\GrantScope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -145,6 +147,49 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
             'business.security.membership.role.assign',
             $now,
         )->willReturn('0191574f-f0b8-7bf3-a9aa-91c6b8244e15');
+
+        $service = $this->service($repository, $authorization, $stepUp, $now);
+        $service->assignRole($context, self::MEMBERSHIP, self::ROLE);
+    }
+
+    /**
+     * A role carrying a globally scoped grant is measured against the actor's ceiling like any other.
+     *
+     * Global is the widest scope a grant can hold, so it is the one an assignment must never wave
+     * through: skipping the delegation check here would let an actor hand out authority everywhere by
+     * assigning a role instead of granting a capability directly.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRoleAssignmentMeasuresAGloballyScopedGrantAgainstTheSameCeiling(): void
+    {
+        $now = new DateTimeImmutable('2026-08-09T10:00:00+00:00');
+        $context = $this->multiFactorContext('business.security.membership.role.assign', $now);
+        $repository = $this->createMock(BusinessSecurityAdministrationRepository::class);
+        $repository->expects(self::exactly(2))->method('membershipAuthority')->willReturn([
+            'user_id' => self::TARGET,
+            'organization_id' => self::ORGANIZATION,
+            'organization_identifier' => 'acme',
+        ]);
+        $repository->expects(self::exactly(2))->method('roleGrants')->with(self::ROLE)->willReturn([[
+            'capability' => 'business.record.read',
+            'scope_type' => 'global',
+            'scope_identifier' => null,
+        ]]);
+        $repository->expects(self::once())->method('assignMembershipRole');
+        $authorization = $this->createMock(AuthorizationGateway::class);
+        $authorization->expects(self::exactly(2))->method('assertCanDelegate')->with(
+            $context,
+            self::isInstanceOf(Capability::class),
+            self::callback(static fn (GrantScope $scope): bool => $scope->isGlobal()),
+        );
+        $authorization->expects(self::once())->method('assertAllowed');
+        $stepUp = $this->createMock(StepUpProofConsumer::class);
+        $stepUp->expects(self::once())->method('consume')->willReturn(
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244e16',
+        );
 
         $service = $this->service($repository, $authorization, $stepUp, $now);
         $service->assignRole($context, self::MEMBERSHIP, self::ROLE);
