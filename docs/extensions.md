@@ -226,7 +226,7 @@ Valid schema-1 manifests remain installable and retain their service registratio
 
 ## Provider and runtime contract
 
-Every provider implements `Kumwe\CMS\Extension\Application\ExtensionServiceProvider`, Kumwe's Joomla DI
+Every provider implements `Kumwe\App\Extension\Application\ExtensionServiceProvider`, Kumwe's Joomla DI
 service-provider contract. A schema-2-or-newer contributor also implements `ExtensionContributionProvider`;
 legacy lifecycle hooks remain on `RuntimeExtension`:
 
@@ -237,13 +237,13 @@ declare(strict_types=1);
 
 namespace Acme\Announcements;
 
-use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
-use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
-use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
-use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
+use Kumwe\App\Extension\Contribution\AdministratorNavigationDefinition;
+use Kumwe\App\Extension\Contribution\CapabilityDefinition;
+use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrar;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Runtime\ExtensionRouteRegistrar;
+use Kumwe\App\Extension\Runtime\RuntimeExtension;
 
 final class Provider implements RuntimeExtension, ExtensionContributionProvider
 {
@@ -338,7 +338,7 @@ Lifecycle event arguments include `identifier`, `version`, `actor_id`, and an op
 
 ## Database migrations
 
-Migration classes implement `Kumwe\CMS\Extension\Application\Migration\ExtensionMigration`:
+Migration classes implement `Kumwe\App\Extension\Application\Migration\ExtensionMigration`:
 
 ```php
 <?php
@@ -350,8 +350,8 @@ namespace Acme\Announcements\Migration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Extension\Application\Migration\ExtensionMigration;
-use Kumwe\CMS\Extension\Application\Migration\ExtensionTableNames;
+use Kumwe\App\Extension\Application\Migration\ExtensionMigration;
+use Kumwe\App\Extension\Application\Migration\ExtensionTableNames;
 
 final class Version202608040001CreateAnnouncements implements ExtensionMigration
 {

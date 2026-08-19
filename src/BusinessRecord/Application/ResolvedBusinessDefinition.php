@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
 
 /**
  * A published business definition paired with the physical schema installed for it.

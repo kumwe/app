@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessIntegration;
+namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessInstance;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessStatus;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessTransition;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkItem;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
+use Kumwe\App\BusinessIntegration\Domain\ProcessStatus;
+use Kumwe\App\BusinessIntegration\Domain\ProcessTransition;
+use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
+use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

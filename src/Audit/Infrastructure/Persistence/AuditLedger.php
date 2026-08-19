@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Infrastructure\Persistence;
+namespace Kumwe\App\Audit\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**

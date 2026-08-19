@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Development;
+namespace Kumwe\App\Extension\Development;
 
 /**
  * Adapter a platform test suite implements to exercise a real extension lifecycle environment.

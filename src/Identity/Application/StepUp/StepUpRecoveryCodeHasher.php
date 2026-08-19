@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\StepUp;
+namespace Kumwe\App\Identity\Application\StepUp;
 
 /**
  * One-way keyed digest boundary for high-entropy recovery codes.

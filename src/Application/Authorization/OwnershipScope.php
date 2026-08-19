@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Authorization;
+namespace Kumwe\App\Application\Authorization;
 
 /**
  * The single owner of a resource, held at a site, a declared group of sites, or the installation.

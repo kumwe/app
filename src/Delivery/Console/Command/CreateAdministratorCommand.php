@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 use Throwable;
 
 /**

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\App\Application\Automation\Job;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\BusinessRecord\Application\RecordSecretRotation;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\BusinessRecord\Application\RecordSecretRotation;
 
 /**
  * Queued driver for record-secret re-encryption, so a rotation finishes without an operator watching.
@@ -64,7 +64,7 @@ final readonly class RotateRecordSecretsHandler implements JobHandler
      * @return  void
      *
      * @throws  InvalidArgumentException  When the configured batch size is not a positive integer.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
      *          re-key business-record secrets on its site.
      *
      * @since   2.0.0

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\CronExpression;
+use Kumwe\App\Application\Automation\CronExpression;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

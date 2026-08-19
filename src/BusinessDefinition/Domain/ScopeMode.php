@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Domain;
+namespace Kumwe\App\BusinessDefinition\Domain;
 
 /**
  * Tenancy dimensions the records of one business entity are partitioned by.

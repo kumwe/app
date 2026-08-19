@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application\Approval;
+namespace Kumwe\App\BusinessSecurity\Application\Approval;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Active maker-checker rule selected for a high-impact action.

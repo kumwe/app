@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Infrastructure\Package;
+namespace Kumwe\App\Extension\Infrastructure\Package;
 
 use Generator;
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Application\Package\ArchiveContentReader;
+use Kumwe\App\Extension\Application\Package\ArchiveContentReader;
 use RuntimeException;
 use ZipArchive;
 

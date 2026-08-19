@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Exception;
+namespace Kumwe\App\BusinessRecord\Application\Exception;
 
 /**
  * Raised when a mutation reaches a record whose definition closes it in its current workflow state.

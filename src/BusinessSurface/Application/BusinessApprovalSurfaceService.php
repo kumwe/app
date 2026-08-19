@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryService;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRequestView;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryService;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;
 use Ramsey\Uuid\Uuid;
 
 /**

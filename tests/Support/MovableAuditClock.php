@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
 use DateTimeImmutable;
 use Psr\Clock\ClockInterface;

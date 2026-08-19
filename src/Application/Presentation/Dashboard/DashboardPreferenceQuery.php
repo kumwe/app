@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Presentation\Dashboard;
+namespace Kumwe\App\Application\Presentation\Dashboard;
 
 use InvalidArgumentException;
 

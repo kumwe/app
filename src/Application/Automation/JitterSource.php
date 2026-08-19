@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation;
+namespace Kumwe\App\Application\Automation;
 
 /**
  * Supplier of the random number a retry delay is drawn from.

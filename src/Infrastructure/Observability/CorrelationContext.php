@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Observability;
+namespace Kumwe\App\Infrastructure\Observability;
 
 /**
  * Process-wide holder for the identifiers that stitch one unit of work together across log records.

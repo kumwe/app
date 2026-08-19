@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Observability;
+namespace Kumwe\App\Infrastructure\Observability;
 
 /**
  * The recorder a deployment gets when metrics are switched off, which is the shipped default.

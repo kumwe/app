@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
 /**
  * Fully typed view model one presented business field hands back across the rendering contract.

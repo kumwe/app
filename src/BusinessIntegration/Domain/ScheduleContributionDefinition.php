@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Domain;
+namespace Kumwe\App\BusinessIntegration\Domain;
 
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\CronExpression;
+use Kumwe\App\Application\Automation\CronExpression;
 
 /**
  * Declarative recurring schedule compiled with its owning runtime generation.

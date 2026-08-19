@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Presentation\Preference;
+namespace Kumwe\App\Application\Presentation\Preference;
 
-use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
+use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 use RuntimeException;
 
 /**

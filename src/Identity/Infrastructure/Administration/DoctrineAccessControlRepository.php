@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\Administration;
+namespace Kumwe\App\Identity\Infrastructure\Administration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -10,8 +10,8 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**

@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Application;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodConflict;
-use Kumwe\CMS\BusinessRecord\Application\PostingPeriodRepository;
-use Kumwe\CMS\BusinessRecord\Application\PostingPeriodService;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriod;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\InMemoryPostingPeriodRepository;
-use Kumwe\CMS\Tests\Support\ImmediateTransactionManager;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodConflict;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodRepository;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodService;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\InMemoryPostingPeriodRepository;
+use Kumwe\App\Tests\Support\ImmediateTransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

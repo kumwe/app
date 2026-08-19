@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Domain;
+namespace Kumwe\App\Audit\Domain;
 
 /**
  * Whether database-level append-only enforcement is actually present on the server holding the trail.

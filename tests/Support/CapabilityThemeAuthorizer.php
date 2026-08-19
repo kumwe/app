@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Presentation\Application\ThemeMutationAuthorizer;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 
 /**
  * An in-memory theme authorizer that decides purely from the principal's capabilities.

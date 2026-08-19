@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Workflow\Domain;
+namespace Kumwe\App\Workflow\Domain;
 
 use InvalidArgumentException;
 

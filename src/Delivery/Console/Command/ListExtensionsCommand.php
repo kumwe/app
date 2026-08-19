@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Extension\Application\ExtensionManager;
 
 /**
  * Console command that prints the installed extension set as a fixed-width table.
@@ -79,7 +79,7 @@ final readonly class ListExtensionsCommand implements Command
      *
      * @throws  \InvalidArgumentException  When an argument is not a `--name=value` pair, a required
      *          option is missing, or the token file is not an absolute, non-symlinked, mode-0600 file.
-     * @throws  \Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability  When the verified
+     * @throws  \Kumwe\App\Identity\Application\Authorization\InsufficientCapability  When the verified
      *          token does not carry `extensions.manage`.
      *
      * @since   2.0.0

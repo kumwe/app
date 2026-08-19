@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Content\Application;
+namespace Kumwe\App\Tests\Unit\Content\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Content\Domain\TranslationGroup;
-use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
-use Kumwe\CMS\Extension\Contribution\ContentTranslationRegistrar;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Content\Domain\TranslationGroup;
+use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
+use Kumwe\App\Extension\Contribution\ContentTranslationRegistrar;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Localization\Domain\LocaleTag;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

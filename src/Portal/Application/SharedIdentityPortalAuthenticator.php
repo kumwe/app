@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Application;
+namespace Kumwe\App\Portal\Application;
 
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 
 /**
  * Adapter that reuses the canonical password verifier while returning a portal-neutral identity snapshot.

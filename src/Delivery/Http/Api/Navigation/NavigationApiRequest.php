@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Navigation;
+namespace Kumwe\App\Delivery\Http\Api\Navigation;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
+use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
+use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**

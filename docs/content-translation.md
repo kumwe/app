@@ -180,11 +180,11 @@ Schema 4 lets a package declare the translation-group inventory it expects to co
 
 and register it in the provider through the additive `ContentTranslationRegistrar`, which the owner-bound
 registrar implements alongside every other contribution surface. Both types live in
-`Kumwe\CMS\Extension\Contribution`, beside the rest of the contribution contract:
+`Kumwe\App\Extension\Contribution`, beside the rest of the contribution contract:
 
 ```php
-use Kumwe\CMS\Extension\Contribution\ContentTranslationRegistrar;
-use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
+use Kumwe\App\Extension\Contribution\ContentTranslationRegistrar;
+use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
 
 if ($registrar instanceof ContentTranslationRegistrar) {
     $registrar->contentTranslationGroup(
@@ -222,7 +222,7 @@ constructs it with its own identifier and one of its declared sets, and hands it
 `ContentService` every host-service consumer stores content through:
 
 ```php
-use Kumwe\CMS\Extension\Contribution\TranslationSetItemAssociation;
+use Kumwe\App\Extension\Contribution\TranslationSetItemAssociation;
 
 $association = new TranslationSetItemAssociation('acme/blog', 'acme.blog.articles');
 $content->translateContributed($context, $entryId, $version, LocaleTag::fromString('de'), $association);

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
 
 /**
  * Delivery adapter receiving an outbox event under explicit sensitivity limits.

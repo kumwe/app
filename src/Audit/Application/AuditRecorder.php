@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Application;
+namespace Kumwe\App\Audit\Application;
 
-use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\App\Audit\Domain\AuditEvent;
 
 /**
  * Sink that application use cases hand a finished audit record to.

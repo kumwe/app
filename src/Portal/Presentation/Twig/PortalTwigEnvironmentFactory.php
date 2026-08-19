@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Presentation\Twig;
+namespace Kumwe\App\Portal\Presentation\Twig;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
-use Kumwe\CMS\Presentation\Twig\IsolatedTwigEnvironmentFactory;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
+use Kumwe\App\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
 /**
  * Private immutable byte store for generated export artifacts.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Authorization;
+namespace Kumwe\App\Application\Authorization;
 
 use DateTimeImmutable;
 use InvalidArgumentException;

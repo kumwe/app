@@ -2,37 +2,37 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use ArrayObject;
-use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\CMS\BusinessIntegration\Application\PayloadSchemaValidator;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
-use Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider;
-use Kumwe\CMS\BusinessRecord\Application\UnitConversionProvider;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Portal\Contribution\PortalNavigationRegistry;
-use Kumwe\CMS\Portal\Contribution\PortalRouteRegistry;
-use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
-use Kumwe\CMS\Portal\Contribution\PortalWorkspaceRegistry;
+use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
+use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator;
+use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\App\BusinessRecord\Application\MoneyRateProvider;
+use Kumwe\App\BusinessRecord\Application\UnitConversionProvider;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
+use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
+use Kumwe\App\Portal\Contribution\PortalRouteRegistry;
+use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
+use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
 
 /**
  * The one place every contribution registry in a process is created, wired together, and reached.
@@ -1012,7 +1012,7 @@ final readonly class ExtensionContributionRegistrySet
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled graph or
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled graph or
      *          its presentation coverage is incomplete.
      *
      * @since   2.0.0

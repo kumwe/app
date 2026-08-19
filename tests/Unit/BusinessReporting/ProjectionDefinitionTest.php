@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessReporting;
+namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionFieldDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionSourceDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessReporting\Domain\ProjectionFieldDefinition;
+use Kumwe\App\BusinessReporting\Domain\ProjectionSourceDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

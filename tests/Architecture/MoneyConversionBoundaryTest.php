@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
-use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimalArithmetic;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyConversionRequest;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyConverter;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyExchangeRate;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyRoundingMode;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimalArithmetic;
+use Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest;
+use Kumwe\App\BusinessRecord\Domain\MoneyConverter;
+use Kumwe\App\BusinessRecord\Domain\MoneyExchangeRate;
+use Kumwe\App\BusinessRecord\Domain\MoneyRoundingMode;
+use Kumwe\App\BusinessRecord\Domain\MoneyValue;
+use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversNothing;

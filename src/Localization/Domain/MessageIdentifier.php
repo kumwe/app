@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Domain;
+namespace Kumwe\App\Localization\Domain;
 
 /**
  * The stable, namespaced name a translated message is looked up by, never the message's own text.

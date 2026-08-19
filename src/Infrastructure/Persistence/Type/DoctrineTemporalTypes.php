@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Type;
+namespace Kumwe\App\Infrastructure\Persistence\Type;
 
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;

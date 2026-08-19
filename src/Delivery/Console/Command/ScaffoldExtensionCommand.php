@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Extension\Development\ComponentScaffolder;
-use Kumwe\CMS\Extension\Development\ScaffoldRequest;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Extension\Development\ComponentScaffolder;
+use Kumwe\App\Extension\Development\ScaffoldRequest;
 use Throwable;
 
 /**

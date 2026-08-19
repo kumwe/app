@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Navigation\Application\MenuItemRecord;
-use Kumwe\CMS\Navigation\Application\MenuRecord;
-use Kumwe\CMS\Navigation\Application\NavigationService;
-use Kumwe\CMS\Presentation\Application\SitePresentation;
-use Kumwe\CMS\Presentation\ContentLayoutCatalog;
-use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Navigation\Application\MenuItemRecord;
+use Kumwe\App\Navigation\Application\MenuRecord;
+use Kumwe\App\Navigation\Application\NavigationService;
+use Kumwe\App\Presentation\Application\SitePresentation;
+use Kumwe\App\Presentation\ContentLayoutCatalog;
+use Kumwe\App\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -68,10 +68,10 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
      *
      * @throws  InvalidArgumentException  When a required field is missing, the action is unknown, or a submitted
      *          value is refused.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
-     * @throws  \Kumwe\CMS\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
-     * @throws  \Kumwe\CMS\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When a chosen page target no longer exists.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
+     * @throws  \Kumwe\App\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
+     * @throws  \Kumwe\App\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a chosen page target no longer exists.
      *
      * @since   2.0.0
      */
@@ -152,10 +152,10 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
      *
      * @throws  InvalidArgumentException  When the action is unknown, a required field is missing, or a submitted
      *          value is refused.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
-     * @throws  \Kumwe\CMS\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
-     * @throws  \Kumwe\CMS\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When a chosen page target no longer exists.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
+     * @throws  \Kumwe\App\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
+     * @throws  \Kumwe\App\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a chosen page target no longer exists.
      *
      * @since   2.0.0
      */
@@ -242,9 +242,9 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
      *
      * @throws  InvalidArgumentException  When the list repeats an item, does not cover the menu, or names an item
      *          that is not in it.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
-     * @throws  \Kumwe\CMS\Navigation\Application\NavigationNotFound  When no menu carries that identifier.
-     * @throws  \Kumwe\CMS\Navigation\Application\NavigationVersionConflict  When an item changes between the read
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
+     * @throws  \Kumwe\App\Navigation\Application\NavigationNotFound  When no menu carries that identifier.
+     * @throws  \Kumwe\App\Navigation\Application\NavigationVersionConflict  When an item changes between the read
      *          and its write.
      *
      * @since   2.0.0

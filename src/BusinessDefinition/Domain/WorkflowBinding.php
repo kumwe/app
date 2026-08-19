@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Domain;
+namespace Kumwe\App\BusinessDefinition\Domain;
 
 /**
  * The state machine a business entity's records move through, declared as part of its definition.

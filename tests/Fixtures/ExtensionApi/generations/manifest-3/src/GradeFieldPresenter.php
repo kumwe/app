@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace KumweContract\ManifestThree;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
 
 /**
  * Presents the manifest-3 compatibility grade as markup-free output.

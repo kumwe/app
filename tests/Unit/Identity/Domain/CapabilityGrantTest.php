@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Domain;
+namespace Kumwe\App\Tests\Unit\Identity\Domain;
 
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\CapabilityGrant;
-use Kumwe\CMS\Identity\Domain\EmailAddress;
-use Kumwe\CMS\Identity\Domain\GrantScope;
-use Kumwe\CMS\Identity\Domain\User;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\CapabilityGrant;
+use Kumwe\App\Identity\Domain\EmailAddress;
+use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\App\Identity\Domain\User;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

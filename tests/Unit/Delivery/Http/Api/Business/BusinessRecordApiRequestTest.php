@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Business;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiRequest;
-use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordPreconditionFailed;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
+use Kumwe\App\Delivery\Http\Api\Business\BusinessRecordApiRequest;
+use Kumwe\App\Delivery\Http\Api\Business\BusinessRecordPreconditionFailed;
+use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
+use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
+use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

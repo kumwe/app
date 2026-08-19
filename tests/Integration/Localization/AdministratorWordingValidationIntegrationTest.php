@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Localization;
+namespace Kumwe\App\Tests\Integration\Localization;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Administrator\Http\Handler\AdministratorWordingHandler;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Administrator\Http\Handler\AdministratorWordingHandler;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\App\Application\Automation\Job;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Automation\PermanentFailure;
-use Kumwe\CMS\Extension\Application\Trust\RevocationFeedSynchronizer;
-use Kumwe\CMS\Extension\Application\Trust\RevocationListRefused;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Automation\PermanentFailure;
+use Kumwe\App\Extension\Application\Trust\RevocationFeedSynchronizer;
+use Kumwe\App\Extension\Application\Trust\RevocationListRefused;
 
 /**
  * Queued driver that brings the upstream signing-key revocation list into the local trust store.

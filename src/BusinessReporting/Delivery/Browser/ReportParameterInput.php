@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Delivery\Browser;
+namespace Kumwe\App\BusinessReporting\Delivery\Browser;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessReporting\Domain\ReportParameterDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
 
 /**
  * Maps native server-rendered report controls into the strict domain parameter vocabulary.

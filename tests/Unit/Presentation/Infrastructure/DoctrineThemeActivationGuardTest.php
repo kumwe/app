@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Presentation\Infrastructure;
+namespace Kumwe\App\Tests\Unit\Presentation\Infrastructure;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
-use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired;
-use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeActivationGuard;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Identity\Application\Administration\AuthenticationRateLimiter;
+use Kumwe\App\Identity\Application\Security\PasswordHasher;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Presentation\Application\StepUpAuthenticationRequired;
+use Kumwe\App\Presentation\Infrastructure\DoctrineThemeActivationGuard;
+use Kumwe\App\Extension\Domain\ThemeSurface;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

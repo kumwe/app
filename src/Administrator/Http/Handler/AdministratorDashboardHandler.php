@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
-use Kumwe\CMS\Content\Application\ContentModelService;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormProjection;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\App\Content\Application\ContentModelService;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardComposer;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardPreferenceFormProjection;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWidget;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

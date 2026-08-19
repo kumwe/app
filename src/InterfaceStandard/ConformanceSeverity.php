@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\InterfaceStandard;
+namespace Kumwe\App\InterfaceStandard;
 
 /**
  * Merge significance of one deterministic interface conformance diagnostic.

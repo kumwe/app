@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessDefinition\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessDefinition\Domain;
 
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\WorkflowBinding;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessDefinition\Domain\WorkflowBinding;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
+use Kumwe\App\Infrastructure\Mcp\KumweMcpServerFactory;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use Mcp\Server\Transport\StdioTransport;
 use Psr\Log\LoggerInterface;
 

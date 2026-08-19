@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace @@PHP_NAMESPACE@@\Integration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Validates scheduled digest work and retains only a non-reversible diagnostic digest.

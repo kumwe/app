@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Runtime;
+namespace Kumwe\App\Extension\Runtime;
 
 /**
  * Service surface an extension is given in place of the application container.

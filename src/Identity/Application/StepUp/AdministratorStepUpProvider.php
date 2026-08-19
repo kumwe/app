@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\StepUp;
+namespace Kumwe\App\Identity\Application\StepUp;
 
 /**
  * Administrator-scoped provider instance whose session rotator targets only administrator sessions.

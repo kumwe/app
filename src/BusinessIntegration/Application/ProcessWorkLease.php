@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\OrganizationContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkItem;
+use Kumwe\App\Application\Authorization\OrganizationContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
 use Ramsey\Uuid\Uuid;
 
 /**

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\CMS\BusinessSurface\Application\FieldModelContext;
-use Kumwe\CMS\BusinessSurface\Application\FieldModelPresenter;
-use Kumwe\CMS\BusinessSurface\Application\PresentedField;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
+use Kumwe\App\BusinessSurface\Application\FieldModelContext;
+use Kumwe\App\BusinessSurface\Application\FieldModelPresenter;
+use Kumwe\App\BusinessSurface\Application\PresentedField;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\App\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -48,8 +48,8 @@ final class BusinessSurfaceRenderingSeamTest extends TestCase
         $adapter = new ReflectionClass(RegistryFieldModelPresenter::class);
 
         self::assertTrue($port->isInterface(), 'The rendering boundary must be a contract, not a class.');
-        self::assertStringStartsWith('Kumwe\\CMS\\BusinessSurface\\Application\\', $port->getName());
-        self::assertStringStartsWith('Kumwe\\CMS\\BusinessSurface\\Presentation\\', $adapter->getName());
+        self::assertStringStartsWith('Kumwe\\App\\BusinessSurface\\Application\\', $port->getName());
+        self::assertStringStartsWith('Kumwe\\App\\BusinessSurface\\Presentation\\', $adapter->getName());
         self::assertTrue($adapter->implementsInterface(FieldModelPresenter::class));
         self::assertStringStartsWith(
             dirname(__DIR__, 2) . '/src/BusinessSurface/Application/',
@@ -132,7 +132,7 @@ final class BusinessSurfaceRenderingSeamTest extends TestCase
                     continue;
                 }
                 $name = ltrim($token[1], '\\');
-                if (str_starts_with($name, 'Kumwe\\CMS\\BusinessSurface\\Presentation\\')) {
+                if (str_starts_with($name, 'Kumwe\\App\\BusinessSurface\\Presentation\\')) {
                     $offenders[] = sprintf('%s:%d %s', $file->getFilename(), $token[2], $name);
                 }
             }

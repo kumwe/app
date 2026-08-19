@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Application;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
-use Kumwe\CMS\BusinessRecord\Application\RecordExpressionValues;
-use Kumwe\CMS\BusinessRecord\Application\RecordFieldVisibility;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\Tests\Unit\BusinessDefinition\Domain\EntityTypeDefinitionTest;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
+use Kumwe\App\BusinessRecord\Application\RecordExpressionValues;
+use Kumwe\App\BusinessRecord\Application\RecordFieldVisibility;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\Tests\Unit\BusinessDefinition\Domain\EntityTypeDefinitionTest;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

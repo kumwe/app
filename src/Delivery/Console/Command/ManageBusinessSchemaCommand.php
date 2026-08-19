@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
 use Throwable;
 
 /**
@@ -160,18 +160,18 @@ final readonly class ManageBusinessSchemaCommand implements Command
      * proposed and under which checksum, and after an interrupted execution, to see how far the
      * journal got before deciding between `execute` and `recover`.
      *
-     * @param   \Kumwe\CMS\Application\Authorization\ExecutionContext  $context  Authorized actor and site.
+     * @param   \Kumwe\App\Application\Authorization\ExecutionContext  $context  Authorized actor and site.
      * @param   string                                                 $planId   UUID of the plan to read.
      *
      * @return  array<string, mixed>  The plan row with a `steps` list, in ordinal order, appended.
      *
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When the actor's site
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When the actor's site
      *          holds no plan under that identifier.
      *
      * @since   2.0.0
      */
     private function planWithJournal(
-        \Kumwe\CMS\Application\Authorization\ExecutionContext $context,
+        \Kumwe\App\Application\Authorization\ExecutionContext $context,
         string $planId,
     ): array {
         return [

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Domain;
+namespace Kumwe\App\BusinessRecord\Domain;
 
 /**
  * The decision a declared rounding rule makes about the digits a target scale discards.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Idempotency;
+namespace Kumwe\App\Application\Idempotency;
 
 /**
  * Contract for the durable ledger that lets a replay-protected mutation run at most once per key.

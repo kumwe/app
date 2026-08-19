@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Localization\Application;
+namespace Kumwe\App\Tests\Unit\Localization\Application;
 
-use Kumwe\CMS\Localization\Application\ActiveLocale;
-use Kumwe\CMS\Localization\Application\CatalogueTranslator;
-use Kumwe\CMS\Localization\Application\MessageCatalogueRepository;
-use Kumwe\CMS\Localization\Application\MessageOverrideRepository;
-use Kumwe\CMS\Localization\Application\SupportedLocales;
-use Kumwe\CMS\Localization\Application\TranslationScope;
-use Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Domain\MessageCatalogue;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueChain;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
-use Kumwe\CMS\Localization\Infrastructure\ArrayMessageOverrideRepository;
-use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Localization\Application\CatalogueTranslator;
+use Kumwe\App\Localization\Application\MessageCatalogueRepository;
+use Kumwe\App\Localization\Application\MessageOverrideRepository;
+use Kumwe\App\Localization\Application\SupportedLocales;
+use Kumwe\App\Localization\Application\TranslationScope;
+use Kumwe\App\Localization\Domain\InvalidMessageIdentifier;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\MessageCatalogue;
+use Kumwe\App\Localization\Domain\MessageCatalogueChain;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Localization\Infrastructure\ArrayMessageOverrideRepository;
+use Kumwe\App\Localization\Infrastructure\IntlMessagePatternFormatter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

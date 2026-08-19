@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Domain;
+namespace Kumwe\App\BusinessSchema\Domain;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 /**
  * Signed-off proof that a restore drill succeeded for one site, engine, release, and source schema.
@@ -55,7 +55,7 @@ final readonly class SchemaRecoveryEvidence
      *          drill reference is empty, over 191 bytes, or holds control characters, either checksum is
      *          not a lowercase SHA-256 digest, the verification predates the backup, or the details are
      *          not a string-keyed object.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the details hold a
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the details hold a
      *          value that cannot be canonically encoded, such as a float or an object.
      *
      * @since   2.0.0
@@ -104,7 +104,7 @@ final readonly class SchemaRecoveryEvidence
      *
      * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is absent
      *          or misshapen, a timestamp is unreadable, or a construction rule fails.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored details
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored details
      *          hold a value that cannot be canonically encoded.
      *
      * @since   2.0.0

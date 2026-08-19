@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Content\Application\ContentBrowseQuery;
-use Kumwe\CMS\Content\Application\ContentModelService;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
-use Kumwe\CMS\Site\Application\PublicPageLocator;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Content\Application\ContentBrowseQuery;
+use Kumwe\App\Content\Application\ContentModelService;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Site\Application\PublicPageLocator;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

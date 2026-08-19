@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Shared\Infrastructure\Configuration;
+namespace Kumwe\App\Tests\Unit\Shared\Infrastructure\Configuration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

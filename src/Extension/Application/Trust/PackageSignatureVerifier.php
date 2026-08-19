@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Trust;
+namespace Kumwe\App\Extension\Application\Trust;
 
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Extension\Domain\PackageSignature;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Extension\Domain\PackageSignature;
 
 /**
  * Port answering the purely cryptographic half of the package trust question.

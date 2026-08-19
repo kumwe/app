@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 
 /**
  * Port for every write that moves a business-record row or the storage of its relationships.
@@ -34,13 +34,13 @@ interface BusinessRecordWriteRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict  When the row
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict  When the row
      *          collides with a unique constraint, such as an identity that already exists in this scope.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When a
      *          stored entity reference names a row that does not exist.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          installation does not describe the record table or a column the record needs.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the database refuses the write for a transient reason such as a deadlock.
      *
      * @since   2.0.0
@@ -63,17 +63,17 @@ interface BusinessRecordWriteRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound  When no row with
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound  When no row with
      *          this record's key exists any more.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
      *          stored version differs from $expectedVersion.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict  When the new
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict  When the new
      *          values collide with a unique constraint.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When a
      *          stored entity reference names a row that does not exist.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          installation does not describe the record table or a column the record needs.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the database refuses the write for a transient reason such as a deadlock.
      *
      * @since   2.0.0
@@ -99,15 +99,15 @@ interface BusinessRecordWriteRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound  When no row with
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound  When no row with
      *          this record's key exists any more.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
      *          stored version differs from $expectedVersion.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When
      *          another row still references this one.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          installation does not describe the record table or a column the delete needs.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the database refuses the delete for a transient reason such as a deadlock.
      *
      * @since   2.0.0
@@ -153,20 +153,20 @@ interface BusinessRecordWriteRepository
      * @return  RelationshipWriteResult  The re-versioned source, carrying the target and the inverse
      *          handle as well when the write also moved the target's own row.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected  When the
      *          arguments contradict the relationship, such as a position or line values on a singular
      *          relationship, or an owned line with no pinned line definition.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound  When the source row
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound  When the source row
      *          no longer exists.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
      *          stored source version differs from $expectedVersion.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict  When the link
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict  When the link
      *          already exists, or a created line collides with a unique constraint.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When either
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When either
      *          end of the link names a row that does not exist.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          installation describes no storage for this relationship or its canonical inverse.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the database refuses the write for a transient reason such as a deadlock.
      *
      * @since   2.0.0
@@ -213,15 +213,15 @@ interface BusinessRecordWriteRepository
      *          whenever the link was stored on the target's side, and carries the target record too when
      *          that write moved the target's own row.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected  When the
      *          relationship or its canonical inverse is required, or no such link is stored.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound  When the source row
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound  When the source row
      *          no longer exists.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
      *          stored source version differs from $expectedVersion.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          installation describes no storage for this relationship or its canonical inverse.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the database refuses the write for a transient reason such as a deadlock.
      *
      * @since   2.0.0
@@ -262,17 +262,17 @@ interface BusinessRecordWriteRepository
      *
      * @return  BusinessRecord  The source at its new version, with the collection renumbered from zero.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected  When the
      *          relationship is not an ordered collection, its storage belongs to the inverse side, the
      *          keys are not a permutation of the stored links, or a link changed during the rewrite.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound  When the source row
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound  When the source row
      *          no longer exists.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  When the
      *          stored source version differs from $expectedVersion.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          installation does not describe the collection's storage, or a stored link identity is not
      *          a readable key.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the database refuses the write for a transient reason such as a deadlock.
      *
      * @since   2.0.0
@@ -323,17 +323,17 @@ interface BusinessRecordWriteRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected  When the
      *          relationship is not an owned-line collection, or a line the caller expected to exist did
      *          not move under the version it named.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict  When a line
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict  When a line
      *          collides with a unique constraint, such as two lines claiming one reference identity.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict  When a
      *          line's stored entity reference names a row that does not exist.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          installation describes no line table for this collection, or a column the write names is
      *          not in its blueprint.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the database refuses a statement for a transient reason such as a deadlock.
      *
      * @since   2.0.0

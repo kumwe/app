@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessSchema;
+namespace Kumwe\App\Tests\Integration\BusinessSchema;
 
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\CMS\BusinessSchema\Application\PhysicalSchemaGateway;
-use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;
+use Kumwe\App\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

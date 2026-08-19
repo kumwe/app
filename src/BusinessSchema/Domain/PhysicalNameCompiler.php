@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Domain;
+namespace Kumwe\App\BusinessSchema\Domain;
 
-use Kumwe\CMS\Shared\Domain\DatabaseTablePrefix;
+use Kumwe\App\Shared\Domain\DatabaseTablePrefix;
 use Ramsey\Uuid\Uuid;
 
 /**

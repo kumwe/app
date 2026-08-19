@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Observability;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Observability;
 
-use Kumwe\CMS\Infrastructure\Observability\CorrelationContext;
-use Kumwe\CMS\Infrastructure\Observability\LogContextProcessor;
-use Kumwe\CMS\Infrastructure\Observability\LogRedactionProcessor;
-use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
+use Kumwe\App\Infrastructure\Observability\LogContextProcessor;
+use Kumwe\App\Infrastructure\Observability\LogRedactionProcessor;
+use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
 use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\TestHandler;
 use Monolog\Level;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Application;
+namespace Kumwe\App\Portal\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Portal\Domain\PortalContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Portal\Domain\PortalContext;
 
 /**
  * Live principal and membership snapshot reloaded while a portal session is resolved.

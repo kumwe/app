@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSchema\Infrastructure;
+namespace Kumwe\App\Tests\Unit\BusinessSchema\Infrastructure;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\CMS\BusinessDefinition\Domain\CompatibilityPlan;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalNameCompiler;
-use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalNameCompiler;
+use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;

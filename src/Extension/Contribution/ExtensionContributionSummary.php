@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Domain\ExtensionType;
-use Kumwe\CMS\Portal\Contribution\PortalRouteRegistry;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Domain\ExtensionType;
+use Kumwe\App\Portal\Contribution\PortalRouteRegistry;
 
 /**
  * Projects one installed extension's declared contributions into the map an operator can follow.

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Application;
+namespace Kumwe\App\Content\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Content\Domain\ContentRevision;
+use Kumwe\App\Content\Domain\ContentRevision;
 
 /**
  * Persistence contract for content entries and the revision trail behind them.
@@ -95,7 +95,7 @@ interface ContentRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */
@@ -111,7 +111,7 @@ interface ContentRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Middleware;
+namespace Kumwe\App\Http\Middleware;
 
-use Kumwe\CMS\Infrastructure\Observability\MetricCatalog;
-use Kumwe\CMS\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

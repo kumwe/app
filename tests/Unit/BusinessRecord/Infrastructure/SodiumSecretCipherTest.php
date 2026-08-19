@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Infrastructure;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Infrastructure;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

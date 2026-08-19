@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\InterfaceStandard\SurfaceId;
 
 /**
  * One validated entry in the administrator menu, contributed by core or by an installed extension.

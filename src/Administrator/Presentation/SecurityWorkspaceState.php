@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Presentation;
+namespace Kumwe\App\Administrator\Presentation;
 
 /**
  * Resolves the bounded, URL-addressable concern shown by a security administration workspace.

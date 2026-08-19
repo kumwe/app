@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Infrastructure\Session;
+namespace Kumwe\App\Portal\Infrastructure\Session;
 
 use DateInterval;
 use DateTimeImmutable;
@@ -11,22 +11,22 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpSessionRotator;
-use Kumwe\CMS\Identity\Domain\StepUp\RotatedStepUpSession;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Portal\Application\CreatedPortalSession;
-use Kumwe\CMS\Portal\Application\PortalPasswordIdentity;
-use Kumwe\CMS\Portal\Application\PortalSession;
-use Kumwe\CMS\Portal\Application\PortalSessionIdentity;
-use Kumwe\CMS\Portal\Application\PortalSessionIdentityLoader;
-use Kumwe\CMS\Portal\Application\PortalSessionStore;
-use Kumwe\CMS\Portal\Domain\PortalContext;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\App\Identity\Application\StepUp\StepUpSessionRotator;
+use Kumwe\App\Identity\Domain\StepUp\RotatedStepUpSession;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Portal\Application\CreatedPortalSession;
+use Kumwe\App\Portal\Application\PortalPasswordIdentity;
+use Kumwe\App\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Application\PortalSessionIdentity;
+use Kumwe\App\Portal\Application\PortalSessionIdentityLoader;
+use Kumwe\App\Portal\Application\PortalSessionStore;
+use Kumwe\App\Portal\Domain\PortalContext;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Site\Infrastructure\Persistence;
+namespace Kumwe\App\Site\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Presentation\Application\SitePresentation;
-use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Presentation\Application\SitePresentation;
+use Kumwe\App\Site\Application\SiteSettings;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -125,7 +125,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @return  array<string, mixed>  Every public setting key, defaults included for keys never stored.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      *
      * @since   2.0.0
      */
@@ -148,7 +148,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      * @throws  InvalidArgumentException  When the name or the slug fails validation.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects a read or a write.
      *
@@ -183,7 +183,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      * @throws  InvalidArgumentException  When a value fails validation, the homepage is not a published
      *          content entry of this site, or the primary menu is not a menu this site owns.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects a read or a write.
@@ -246,7 +246,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
      *
      * @since   2.0.0
      */

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation;
+namespace Kumwe\App\Presentation;
 
-use Kumwe\CMS\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentRecord;
 
 /**
  * Builds the escaped, template-ready public representation of a content record.

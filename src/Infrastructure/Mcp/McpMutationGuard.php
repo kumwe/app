@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Mcp;
+namespace Kumwe\App\Infrastructure\Mcp;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -11,10 +11,10 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

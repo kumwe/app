@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Middleware;
+namespace Kumwe\App\Http\Middleware;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Http\Security\TrustedHostMatcher;
+use Kumwe\App\Http\Security\TrustedHostMatcher;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

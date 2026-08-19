@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Extension;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Extension;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\Extension\ExtensionApiHandler;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Delivery\Http\Api\Extension\ExtensionApiHandler;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Extension\Domain\ThemeSurface;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -151,8 +151,8 @@ final class ExtensionApiHandlerTest extends TestCase
 
         $principal = AuthorizationContext::principal($capabilities, self::ACTOR);
         $context = $principal->context(
-            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
-            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            \Kumwe\App\Application\Authorization\SiteContext::default(),
+            \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
             'theme-api-test-request',
         );
 

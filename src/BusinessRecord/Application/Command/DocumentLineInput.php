@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Command;
+namespace Kumwe\App\BusinessRecord\Application\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
+use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 
 /**
  * One submitted line of a document, in the order the caller wants it stored.

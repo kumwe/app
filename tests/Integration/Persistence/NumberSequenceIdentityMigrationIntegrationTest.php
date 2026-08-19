@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Persistence;
+namespace Kumwe\App\Tests\Integration\Persistence;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -10,11 +10,11 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessNumberSequenceMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\NumberSequenceIdentityMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessNumberSequenceMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\NumberSequenceIdentityMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

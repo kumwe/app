@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Authorization;
+namespace Kumwe\App\Application\Authorization;
 
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\GrantScope;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\GrantScope;
 
 /**
  * The one port application code asks before it changes or reveals anything.

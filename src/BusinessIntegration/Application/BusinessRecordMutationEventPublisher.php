@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
+use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Ramsey\Uuid\Uuid;
 
 /**

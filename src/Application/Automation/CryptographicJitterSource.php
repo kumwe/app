@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation;
+namespace Kumwe\App\Application\Automation;
 
 /**
  * Supplies unbiased operating-system randomness for production retry backoff.

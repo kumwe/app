@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\App\Application\Automation\Job;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Audit\Application\AuditAnchorWriter;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Audit\Application\AuditAnchorWriter;
 
 /**
  * Scheduled driver that seals settled audit rows into the chained anchor ledger.
@@ -53,7 +53,7 @@ final readonly class RecordAuditAnchorHandler implements JobHandler
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
      *          manage the audit trail.
      *
      * @since   2.0.0

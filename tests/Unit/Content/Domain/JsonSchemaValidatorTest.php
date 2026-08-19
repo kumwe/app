@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Content\Domain;
+namespace Kumwe\App\Tests\Unit\Content\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Content\Domain\InvalidContentData;
-use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
+use Kumwe\App\Content\Domain\InvalidContentData;
+use Kumwe\App\Content\Domain\JsonSchemaValidator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

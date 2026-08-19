@@ -2,45 +2,45 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
+namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\RelateRecordsCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\UnrelateRecordsCommand;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\OwnedLineFormQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
-use Kumwe\CMS\BusinessRecord\Query\BooleanFilter;
-use Kumwe\CMS\BusinessRecord\Query\BooleanOperator;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonOperator;
-use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessRecord\Query\RelationFilter;
-use Kumwe\CMS\BusinessRecord\Query\RelationQuantifier;
-use Kumwe\CMS\BusinessRecord\Query\SetFilter;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
+use Kumwe\App\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
+use Kumwe\App\BusinessRecord\Application\Command\UnrelateRecordsCommand;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
+use Kumwe\App\BusinessRecord\Application\Query\OwnedLineFormQuery;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
+use Kumwe\App\BusinessRecord\Query\BooleanFilter;
+use Kumwe\App\BusinessRecord\Query\BooleanOperator;
+use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
+use Kumwe\App\BusinessRecord\Query\ComparisonOperator;
+use Kumwe\App\BusinessRecord\Query\RecordProjection;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessRecord\Query\RelationFilter;
+use Kumwe\App\BusinessRecord\Query\RelationQuantifier;
+use Kumwe\App\BusinessRecord\Query\SetFilter;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -842,7 +842,7 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
      */
     private static function browseIncludes(
         BusinessRecordService $records,
-        \Kumwe\CMS\Application\Authorization\ExecutionContext $context,
+        \Kumwe\App\Application\Authorization\ExecutionContext $context,
         string $definition,
         array $includes,
     ): array {

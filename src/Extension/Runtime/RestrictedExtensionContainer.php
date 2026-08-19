@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Runtime;
+namespace Kumwe\App\Extension\Runtime;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use RuntimeException;
 
 /**

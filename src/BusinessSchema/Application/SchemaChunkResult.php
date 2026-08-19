@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 /**
  * Progress report from one bounded pass of a chunked schema rewrite.
@@ -39,7 +39,7 @@ final readonly class SchemaChunkResult
      *
      * @throws  \InvalidArgumentException  When the processed count is negative or above 10,000, or an
      *          unfinished batch carries no cursor to resume from.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the cursor holds a
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the cursor holds a
      *          value the canonical encoder refuses, so the journal could not store it.
      *
      * @since   2.0.0

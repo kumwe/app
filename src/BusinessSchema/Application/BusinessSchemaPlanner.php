@@ -2,34 +2,34 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\Expression;
-use Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalIndexBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaOperation;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaOperationKind;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaRisk;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalIndexBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\App\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\App\BusinessSchema\Domain\SchemaRisk;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -108,7 +108,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      *
      * @return  SchemaPlan  A plan awaiting approval, or the identical plan already on record for it.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not exercise
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not exercise
      *          `business.schema.plan` over the business-schema collection.
      * @throws  BusinessSchemaNotFound  When this site publishes no definition under that identifier, or a
      *          handle the definition references resolves to no published version.
@@ -117,7 +117,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      *          is inserted concurrently.
      * @throws  InvalidBusinessSchema  When the definition crosses site scope, its evolution hints do not
      *          describe this evolution, or a narrowing change would reach rows pinned to an older version.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the derived plan holds
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the derived plan holds
      *          more than 512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -157,12 +157,12 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      *
      * @return  SchemaPlan  A destructive plan awaiting its own approval and recovery evidence.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not exercise
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not exercise
      *          `business.schema.destructive` over the business-schema collection.
      * @throws  BusinessSchemaNotFound  When this site has nothing installed under that identifier, when the
      *          installation belongs to another site, or when the definition is no longer published.
      * @throws  BusinessSchemaConflict  When an identical purge plan is already stored.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
      *          512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -276,7 +276,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      * @throws  BusinessSchemaConflict  When an installed schema belongs to another site, is not older than
      *          the version being published, no longer matches the blueprint recorded for it, or an
      *          identical plan is inserted concurrently.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a derived plan holds
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a derived plan holds
      *          more than 512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -356,7 +356,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      * @throws  BusinessSchemaConflict  When the installed metadata belongs to another site, the installed
      *          version is not older than the published one, the live schema has drifted from that metadata,
      *          or an identical plan is inserted concurrently.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
      *          512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0

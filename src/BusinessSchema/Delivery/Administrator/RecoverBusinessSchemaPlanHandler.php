@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Administrator;
+namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -49,11 +49,11 @@ final readonly class RecoverBusinessSchemaPlanHandler implements RequestHandlerI
      *
      * @throws  \InvalidArgumentException  When the route carries no plan identifier, or the route was mounted
      *          without the authorization middleware that attaches the execution context.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not recover schemas,
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not recover schemas,
      *          or may not run a plan that destroys data.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When no plan with that identifier
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no plan with that identifier
      *          belongs to this site.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict  When the plan was never interrupted,
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When the plan was never interrupted,
      *          is no longer recoverable once the lock is held, or its recovery evidence has gone stale.
      *
      * @since   2.0.0

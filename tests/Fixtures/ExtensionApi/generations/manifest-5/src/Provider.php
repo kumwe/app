@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace KumweContract\ManifestFive;
 
-use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
-use Kumwe\CMS\Extension\Contribution\CompositionContributionRegistrar;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Contribution\CompositionContributionRegistrar;
+use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrar;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
 use LogicException;
 
 /**

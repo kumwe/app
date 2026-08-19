@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Presentation\Preference;
+namespace Kumwe\App\Application\Presentation\Preference;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\OwnedRuntimeContributionRegistry;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceConformanceValidator;
-use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceConformanceValidator;
+use Kumwe\App\InterfaceStandard\SurfaceDefinition;
+use Kumwe\App\InterfaceStandard\SurfaceId;
 
 /**
  * Resolves customization admission from the live owner-bound KIS surface registry.

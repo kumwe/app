@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSecurity\Application;
+namespace Kumwe\App\Tests\Unit\BusinessSecurity\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\StepUpProof;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalBinding;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRepository;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRequest;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalService;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalStatus;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\StepUpProofConsumer;
-use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\StepUpProof;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRepository;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequest;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
+use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
+use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -98,7 +98,7 @@ final class ApprovalServiceTest extends TestCase
         $authorization->method('assertAllowed')->willReturnCallback(
             static function (
                 ExecutionContext $unusedContext,
-                \Kumwe\CMS\Identity\Domain\Capability $capability,
+                \Kumwe\App\Identity\Domain\Capability $capability,
             ) use (&$checked): void {
                 $checked[] = $capability->value();
             },
@@ -197,7 +197,7 @@ final class ApprovalServiceTest extends TestCase
         $authorization->method('assertAllowed')->willReturnCallback(
             static function (
                 ExecutionContext $unusedContext,
-                \Kumwe\CMS\Identity\Domain\Capability $capability,
+                \Kumwe\App\Identity\Domain\Capability $capability,
             ) use (&$checked): void {
                 $checked[] = $capability->value();
             },

@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
-use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
-use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
+use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
+use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

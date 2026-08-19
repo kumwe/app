@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Query;
+namespace Kumwe\App\BusinessRecord\Query;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 /**
  * Complete, self-bounding description of one page of a business-record browse.
@@ -130,7 +130,7 @@ final readonly class RecordQuerySpecification
      *
      * @return  string  Lowercase 64-character SHA-256 over the canonical form of the specification.
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a value the query
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a value the query
      *          carries cannot be canonically encoded, a string that is not valid UTF-8 being the case
      *          the query's own bounds still admit.
      *

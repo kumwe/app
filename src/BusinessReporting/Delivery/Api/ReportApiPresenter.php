@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Delivery\Api;
+namespace Kumwe\App\BusinessReporting\Delivery\Api;
 
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\BusinessReporting\Application\ReportExecutionResult;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportParameterDefinition;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\BusinessReporting\Application\ReportExecutionResult;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
 
 /**
  * Stable omission-safe REST representation of reports and export status.

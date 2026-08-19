@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\Job\PurgeBusinessRecordIdempotencyHandler;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotency;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Automation\Job\PurgeBusinessRecordIdempotencyHandler;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

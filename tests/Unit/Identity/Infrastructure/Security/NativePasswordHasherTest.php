@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Infrastructure\Security;
+namespace Kumwe\App\Tests\Unit\Identity\Infrastructure\Security;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Infrastructure\Security\NativePasswordHasher;
+use Kumwe\App\Identity\Infrastructure\Security\NativePasswordHasher;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

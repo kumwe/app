@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
 
 /**
  * Exclusive upper bound on a page of revision history, spelled in the log's own ordering key.

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifactStatus;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;

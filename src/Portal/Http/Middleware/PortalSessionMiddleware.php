@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Http\Middleware;
+namespace Kumwe\App\Portal\Http\Middleware;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Portal\Application\PortalExecutionContextFactory;
-use Kumwe\CMS\Portal\Application\PortalSession;
-use Kumwe\CMS\Portal\Application\PortalSessionStore;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Http\Middleware\RequestIdMiddleware;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Portal\Application\PortalExecutionContextFactory;
+use Kumwe\App\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Application\PortalSessionStore;
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;

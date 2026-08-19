@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Development;
+namespace Kumwe\App\Extension\Development;
 
 /**
  * Stable, machine-readable result of code-free extension package conformance checks.

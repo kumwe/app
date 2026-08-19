@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Infrastructure\Schema;
+namespace Kumwe\App\BusinessSchema\Infrastructure\Schema;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -16,18 +16,18 @@ use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
-use Kumwe\CMS\BusinessDefinition\Domain\Expression;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict;
-use Kumwe\CMS\BusinessSchema\Application\PhysicalSchemaGateway;
-use Kumwe\CMS\BusinessSchema\Application\SchemaChunkResult;
-use Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalIndexBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaOperation;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
+use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;
+use Kumwe\App\BusinessSchema\Application\SchemaChunkResult;
+use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalIndexBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\App\BusinessSchema\Domain\SchemaOperationKind;
 use Throwable;
 
 /**
@@ -327,7 +327,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
      *          cannot be stored exactly.
      * @throws  BusinessSchemaConflict  When a visited row carries an identity that is neither an integer
      *          nor a string, so it cannot be bound as a parameter.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
      *          cannot be rebuilt, or evaluating it against a row's values fails.
      *
      * @since   2.0.0
@@ -481,7 +481,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
      *          computed value cannot be stored exactly.
      * @throws  BusinessSchemaConflict  When a visited row carries an identity that is neither an integer
      *          nor a string, so it cannot be bound as a parameter.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
      *          cannot be rebuilt, or evaluating it against a row's values fails.
      *
      * @since   2.0.0

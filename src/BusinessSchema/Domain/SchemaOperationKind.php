@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Domain;
+namespace Kumwe\App\BusinessSchema\Domain;
 
 /**
  * Portable vocabulary of semantic changes a schema plan may contain.

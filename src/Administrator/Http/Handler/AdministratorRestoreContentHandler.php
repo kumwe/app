@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Content\Application\ContentService;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -47,9 +47,9 @@ final readonly class AdministratorRestoreContentHandler implements RequestHandle
      * @return  ResponseInterface  A 303 redirect to `/administrator/content`.
      *
      * @throws  \InvalidArgumentException  When the route carries no identifier or `version` is not a positive integer.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.restore` is refused.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When no entry matches within reach of the context.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.restore` is refused.
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the context.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */

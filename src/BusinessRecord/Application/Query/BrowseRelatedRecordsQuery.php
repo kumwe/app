@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Query;
+namespace Kumwe\App\BusinessRecord\Application\Query;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
 
 /**
  * Bounded request for policy-safe relationship or entity-reference choices.

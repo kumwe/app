@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Application;
+namespace Kumwe\App\Portal\Application;
 
-use Kumwe\CMS\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Domain\PortalContext;
 
 /**
  * Dedicated portal browser-session store, intentionally unrelated to administrator session storage.

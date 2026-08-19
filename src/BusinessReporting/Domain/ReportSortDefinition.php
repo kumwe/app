@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Domain;
+namespace Kumwe\App\BusinessReporting\Domain;
 
 /**
  * One ordering key applied to bounded materialized report rows.

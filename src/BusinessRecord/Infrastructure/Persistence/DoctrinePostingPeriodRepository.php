@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\BusinessRecord\Application\PostingPeriodCalendar;
-use Kumwe\CMS\BusinessRecord\Application\PostingPeriodRepository;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriod;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriodStatus;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodCalendar;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodRepository;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriodStatus;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 

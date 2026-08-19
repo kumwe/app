@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthorizationDecision;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

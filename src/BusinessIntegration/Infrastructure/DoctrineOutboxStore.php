@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Infrastructure;
+namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
 use DateInterval;
 use DateTimeImmutable;
@@ -13,14 +13,14 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Automation\CanonicalJson;
-use Kumwe\CMS\Application\Automation\FailureClassification;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\CMS\BusinessIntegration\Application\OutboxLease;
-use Kumwe\CMS\BusinessIntegration\Application\OutboxStore;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Automation\CanonicalJson;
+use Kumwe\App\Application\Automation\FailureClassification;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\App\BusinessIntegration\Application\OutboxLease;
+use Kumwe\App\BusinessIntegration\Application\OutboxStore;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation;
+namespace Kumwe\App\Application\Automation;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Port the scheduling loop drives to turn due recurrences into queued jobs.
@@ -30,7 +30,7 @@ interface Scheduler
      *
      * @return  int  How many schedules this pass dispatched and advanced.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not
      *          dispatch schedules.
      *
      * @since   2.0.0

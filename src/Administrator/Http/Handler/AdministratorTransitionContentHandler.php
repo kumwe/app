@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Content\Application\ContentService;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -50,12 +50,12 @@ final readonly class AdministratorTransitionContentHandler implements RequestHan
      *
      * @throws  \InvalidArgumentException  When the route carries no identifier, or `version` or `status` is
      *          missing or malformed.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the edge's own capability is refused.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When no entry matches within reach of the context.
-     * @throws  \Kumwe\CMS\Content\Application\ContentModelNotFound  When the entry's pinned workflow version is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the edge's own capability is refused.
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the context.
+     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned workflow version is
      *          no longer published.
-     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */

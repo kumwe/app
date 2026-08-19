@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSchema\Infrastructure;
+namespace Kumwe\App\Tests\Unit\BusinessSchema\Infrastructure;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -14,11 +14,11 @@ use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
-use Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableKind;
-use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
+use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableKind;
+use Kumwe\App\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;

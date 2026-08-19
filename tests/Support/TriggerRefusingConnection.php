@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver\PDO\Exception as PdoDriverException;

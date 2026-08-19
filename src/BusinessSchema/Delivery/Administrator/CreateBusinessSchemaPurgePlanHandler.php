@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Administrator;
+namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Application\Security\HighImpactCredentialGuard;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -59,11 +59,11 @@ final readonly class CreateBusinessSchemaPurgePlanHandler implements RequestHand
      *
      * @throws  InvalidArgumentException  When a required field is missing or the confirmation does not
      *          repeat the definition identifier exactly.
-     * @throws  \Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired  When the re-entered
+     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the re-entered
      *          password is absent, wrong, or the context has no human principal behind it.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.destructive`
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.destructive`
      *          is refused.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When the definition is not
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When the definition is not
      *          published, or has no installed schema in this site.
      *
      * @since   2.0.0

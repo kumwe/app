@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Asset;
+namespace Kumwe\App\Presentation\Asset;
 
 use JsonException;
 use RuntimeException;

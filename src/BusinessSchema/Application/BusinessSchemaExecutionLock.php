@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
 /**
  * Serialises business-schema execution and stamps each run with a fence the journal can be trusted by.

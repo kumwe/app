@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\InterfaceStandard;
+namespace Kumwe\App\Tests\Unit\InterfaceStandard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\PresentationPreference;
-use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
-use Kumwe\CMS\InterfaceStandard\PresentationPreferenceValue;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\PresentationPreference;
+use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
+use Kumwe\App\InterfaceStandard\PresentationPreferenceValue;
+use Kumwe\App\InterfaceStandard\SurfaceId;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

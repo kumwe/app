@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
+namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceScope;
-use Kumwe\CMS\BusinessRecord\Application\BusinessNumberSequenceAllocator;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceFormat;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceScope;
+use Kumwe\App\BusinessRecord\Application\BusinessNumberSequenceAllocator;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

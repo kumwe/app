@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Query;
+namespace Kumwe\App\BusinessRecord\Query;
 
 /**
  * Test a `ComparisonFilter` applies between one field and one literal value.

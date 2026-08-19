@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Application;
+namespace Kumwe\App\Audit\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Audit\Domain\AuditVerificationReport;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Audit\Domain\AuditVerificationReport;
 
 /**
  * Port that re-derives the audit trail's tamper evidence and reports the first divergence.
@@ -30,7 +30,7 @@ interface AuditTrailVerifier
      * @return  AuditVerificationReport  Counts of what was re-checked, and the first divergence if any.
      *
      * @throws  \InvalidArgumentException  When the batch size is outside its bounds.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not verify
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not verify
      *          the audit trail.
      *
      * @since   2.0.0

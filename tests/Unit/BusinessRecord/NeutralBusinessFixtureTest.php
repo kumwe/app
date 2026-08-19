@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord;
+namespace Kumwe\App\Tests\Unit\BusinessRecord;
 
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\Expression;
-use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

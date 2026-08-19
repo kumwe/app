@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation;
+namespace Kumwe\App\Application\Automation;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 use Throwable;
 
 /**

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Domain\UserStatus;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Identity\Application\Administration\AccessControlService;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Domain\UserStatus;
 use Throwable;
 
 /**
@@ -191,7 +191,7 @@ final readonly class ManageAccessCommand implements Command
      *
      * @throws  \InvalidArgumentException  When `user` or `role` is missing, or when an actor tries to
      *          take the administrator role off their own account.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not
      *          delegate one of the capabilities the role grants.
      *
      * @since   2.0.0

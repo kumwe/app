@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
 use FilesystemIterator;
 use PHPUnit\Framework\Attributes\CoversNothing;
@@ -251,9 +251,9 @@ final class TruthfulQualityGateTest extends TestCase
         $before = <<<'PHP'
 <?php
 
-namespace Kumwe\CMS\Application\Probe;
+namespace Kumwe\App\Application\Probe;
 
-use Kumwe\CMS\{Infrastructure\Persistence\DoctrineTransactionManager as Adapter, function Shared\helper};
+use Kumwe\App\{Infrastructure\Persistence\DoctrineTransactionManager as Adapter, function Shared\helper};
 
 final class ClassBeforeFunction
 {
@@ -265,9 +265,9 @@ PHP;
         $after = <<<'PHP'
 <?php
 
-namespace Kumwe\CMS\Application\Probe;
+namespace Kumwe\App\Application\Probe;
 
-use Kumwe\CMS\{const Shared\VALUE, Infrastructure\Persistence\DoctrineTransactionManager as Adapter};
+use Kumwe\App\{const Shared\VALUE, Infrastructure\Persistence\DoctrineTransactionManager as Adapter};
 
 final class ClassAfterConstant
 {
@@ -279,9 +279,9 @@ PHP;
         $functionOnly = <<<'PHP'
 <?php
 
-namespace Kumwe\CMS\Application\Probe;
+namespace Kumwe\App\Application\Probe;
 
-use function Kumwe\CMS\Infrastructure\Persistence\{transaction_probe};
+use function Kumwe\App\Infrastructure\Persistence\{transaction_probe};
 
 final class GroupedFunctionOnly
 {
@@ -999,8 +999,8 @@ PHP;
      */
     private function writeRecordedIdempotencyBaseline(): string
     {
-        $browser = 'Kumwe\\CMS\\Tests\\Integration\\BusinessSurface\\GeneratedBusinessBrowserIntegrationTest';
-        $extension = 'Kumwe\\CMS\\Tests\\Integration\\Extension';
+        $browser = 'Kumwe\\App\\Tests\\Integration\\BusinessSurface\\GeneratedBusinessBrowserIntegrationTest';
+        $extension = 'Kumwe\\App\\Tests\\Integration\\Extension';
         $entries = [];
         foreach (
             [
@@ -1011,7 +1011,7 @@ PHP;
                     . '::testSummaryUsesCanonicalBrowsePolicyAndOmitsRestrictedFields',
                 $extension . '\\ExtensionContributionLifecycleIntegrationTest'
                     . '::testSignedContributionLifecycleIsPermissionAwareTrustBoundAndDataPreserving',
-                'Kumwe\\CMS\\Tests\\Integration\\Infrastructure\\RedisOutageIntegrationTest'
+                'Kumwe\\App\\Tests\\Integration\\Infrastructure\\RedisOutageIntegrationTest'
                     . '::testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone',
             ] as $test
         ) {

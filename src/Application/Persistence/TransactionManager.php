@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Persistence;
+namespace Kumwe\App\Application\Persistence;
 
 /**
  * Contract for running work atomically and for deferring side effects until the transaction settles.

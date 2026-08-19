@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Application;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\UnitConversionPipeline;
-use Kumwe\CMS\BusinessRecord\Application\UnitConversionProvider;
-use Kumwe\CMS\BusinessRecord\Application\UnitConversionUnavailable;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimalArithmetic;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityConverter;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityRoundingMode;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
-use Kumwe\CMS\BusinessRecord\Domain\UnitConversionFactor;
-use Kumwe\CMS\Extension\Contribution\UnitConversionProviderDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\UnitConversionRequest;
-use Kumwe\CMS\BusinessRecord\Infrastructure\RuntimeUnitConversionProviderCatalog;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\BusinessRecord\Application\UnitConversionPipeline;
+use Kumwe\App\BusinessRecord\Application\UnitConversionProvider;
+use Kumwe\App\BusinessRecord\Application\UnitConversionUnavailable;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimalArithmetic;
+use Kumwe\App\BusinessRecord\Domain\QuantityConverter;
+use Kumwe\App\BusinessRecord\Domain\QuantityRoundingMode;
+use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\App\BusinessRecord\Domain\UnitConversionFactor;
+use Kumwe\App\Extension\Contribution\UnitConversionProviderDefinition;
+use Kumwe\App\BusinessRecord\Domain\UnitConversionRequest;
+use Kumwe\App\BusinessRecord\Infrastructure\RuntimeUnitConversionProviderCatalog;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence;
+namespace Kumwe\App\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Persistence\TransactionManager;
 
 /**
  * DBAL implementation of `TransactionManager`, making one physical transaction cover each logical nest.

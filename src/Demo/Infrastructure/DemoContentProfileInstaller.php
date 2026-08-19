@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Demo\Infrastructure;
+namespace Kumwe\App\Demo\Infrastructure;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\Content\Application\ContentNotFound;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Demo\Application\DemoProfileLedger;
-use Kumwe\CMS\Navigation\Application\MenuItemRecord;
-use Kumwe\CMS\Navigation\Application\MenuRecord;
-use Kumwe\CMS\Navigation\Application\NavigationService;
-use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\Content\Application\ContentNotFound;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Demo\Application\DemoProfileLedger;
+use Kumwe\App\Navigation\Application\MenuItemRecord;
+use Kumwe\App\Navigation\Application\MenuRecord;
+use Kumwe\App\Navigation\Application\NavigationService;
+use Kumwe\App\Site\Application\SiteSettings;
 use RuntimeException;
 
 /**

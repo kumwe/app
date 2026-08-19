@@ -190,7 +190,7 @@ envelopes still carrying `application-secret-v1` keep opening, and drop it once 
 
 ### KMS and HSM adapter contract
 
-Key acquisition is the port `Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider`. The shipped
+Key acquisition is the port `Kumwe\App\BusinessRecord\Application\SecretKeyProvider`. The shipped
 `KeyRingSecretKeyProvider` is a production-capable default, not a placeholder; an external adapter replaces that
 one class and must guarantee:
 

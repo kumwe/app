@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
 
 /**
  * Resolver that reconciles the published definition catalog against the installed schema rows.

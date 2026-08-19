@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Install;
+namespace Kumwe\App\Extension\Application\Install;
 
 /**
  * Whether an interrupted extension install left its database work applied, as recorded durably.

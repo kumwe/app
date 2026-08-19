@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
-use Kumwe\CMS\Delivery\Console\Command\McpServeCommand;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
-use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
-use Kumwe\CMS\Tests\Support\McpHandlersFixture;
-use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
+use Kumwe\App\Delivery\Console\Command\McpServeCommand;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Infrastructure\Mcp\KumweMcpServerFactory;
+use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Tests\Support\McpHandlersFixture;
+use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;

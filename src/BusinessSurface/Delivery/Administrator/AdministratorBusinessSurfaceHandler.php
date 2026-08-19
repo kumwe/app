@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Delivery\Administrator;
+namespace Kumwe\App\BusinessSurface\Delivery\Administrator;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessActionStepUp;
-use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessStepUpInputRejected;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessBrowserResult;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessConfirmationQuery;
-use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
-use Kumwe\CMS\Localization\Application\Translator;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorSessionMiddleware;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\GeneratedBusinessActionStepUp;
+use Kumwe\App\BusinessSurface\Application\GeneratedBusinessStepUpInputRejected;
+use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessBrowserResult;
+use Kumwe\App\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
+use Kumwe\App\BusinessSurface\Delivery\Browser\GeneratedBusinessConfirmationQuery;
+use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\App\Localization\Application\Translator;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Identity\Application\StepUp\AdministratorStepUpProvider;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\RedirectResponse;

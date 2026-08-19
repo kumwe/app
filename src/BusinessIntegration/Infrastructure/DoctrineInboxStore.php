@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Infrastructure;
+namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
 use DateInterval;
 use DateTimeImmutable;
@@ -12,18 +12,18 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\FailureClassification;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicy;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\CMS\BusinessIntegration\Application\InboxClaimResult;
-use Kumwe\CMS\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\CMS\BusinessIntegration\Application\InboxLease;
-use Kumwe\CMS\BusinessIntegration\Application\InboxStore;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Automation\FailureClassification;
+use Kumwe\App\Application\Automation\QueueRuntimePolicy;
+use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\App\BusinessIntegration\Application\InboxClaimResult;
+use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
+use Kumwe\App\BusinessIntegration\Application\InboxLease;
+use Kumwe\App\BusinessIntegration\Application\InboxStore;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

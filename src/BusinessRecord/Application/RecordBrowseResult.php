@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Query\RecordCursor;
+use Kumwe\App\BusinessRecord\Query\RecordCursor;
 
 /**
  * One page of a business-record browse: the projected rows, where to continue, and any totals asked for.

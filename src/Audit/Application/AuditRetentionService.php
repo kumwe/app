@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Application;
+namespace Kumwe\App\Audit\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Port that enforces a configured audit retention window by archiving and then pruning aged rows.
@@ -30,7 +30,7 @@ interface AuditRetentionService
      *
      * @throws  \InvalidArgumentException  When the window is not a positive number of days.
      * @throws  \RuntimeException  When archiving or the guarded delete cannot complete safely.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          the audit trail.
      *
      * @since   2.0.0

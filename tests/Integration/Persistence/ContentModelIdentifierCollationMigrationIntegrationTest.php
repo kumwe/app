@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Persistence;
+namespace Kumwe\App\Tests\Integration\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

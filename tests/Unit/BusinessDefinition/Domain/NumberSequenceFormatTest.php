@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessDefinition\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessDefinition\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceReset;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceScope;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceFormat;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceReset;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceScope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

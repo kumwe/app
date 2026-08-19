@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Authorization;
+namespace Kumwe\App\Application\Authorization;
 
 /**
  * Authoritative answer to which sites a declared group currently contains.

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Preference;
+namespace Kumwe\App\Presentation\Application\Preference;
 
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\PresentationPreferenceValue;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\PresentationPreferenceValue;
 
 /**
  * Safe effective value plus non-sensitive provenance and fallback diagnostics.

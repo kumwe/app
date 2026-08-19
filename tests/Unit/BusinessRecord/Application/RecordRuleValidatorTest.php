@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Application;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
-use Kumwe\CMS\BusinessRecord\Application\RecordRuleValidator;
-use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
-use Kumwe\CMS\BusinessRecord\Application\ValidationViolation;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\App\BusinessRecord\Application\RecordRuleValidator;
+use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\App\BusinessRecord\Application\ValidationViolation;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

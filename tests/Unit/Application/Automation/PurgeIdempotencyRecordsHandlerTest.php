@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+namespace Kumwe\App\Tests\Unit\Application\Automation;
 
-use Kumwe\CMS\Application\Automation\IdempotencyPurger;
-use Kumwe\CMS\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Automation\IdempotencyPurger;
+use Kumwe\App\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -39,14 +39,14 @@ final class PurgeIdempotencyRecordsHandlerTest extends TestCase
     {
         $purger = new CountingIdempotencyPurger([]);
 
-        $this->expectException(\Kumwe\CMS\Application\Authorization\AuthorizationDenied::class);
+        $this->expectException(\Kumwe\App\Application\Authorization\AuthorizationDenied::class);
         $this->handler($purger)->handle([], AuthorizationContext::system(SystemIdentity::Worker)->context(
             SiteContext::default(),
             'wrong-global-principal',
         ));
     }
 
-    private function context(): \Kumwe\CMS\Application\Authorization\ExecutionContext
+    private function context(): \Kumwe\App\Application\Authorization\ExecutionContext
     {
         return AuthorizationContext::system(SystemIdentity::InstallationMaintenance)->context(
             SiteContext::default(),

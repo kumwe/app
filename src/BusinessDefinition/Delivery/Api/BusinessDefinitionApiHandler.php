@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Delivery\Api;
+namespace Kumwe\App\BusinessDefinition\Delivery\Api;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\Content\ContentApiRequest;
-use Kumwe\CMS\Delivery\Http\Api\Business\BusinessApiResponder;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Delivery\Http\Api\Content\ContentApiRequest;
+use Kumwe\App\Delivery\Http\Api\Business\BusinessApiResponder;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

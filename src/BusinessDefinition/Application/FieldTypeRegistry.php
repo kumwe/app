@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Application;
+namespace Kumwe\App\BusinessDefinition\Application;
 
-use Kumwe\CMS\BusinessDefinition\Domain\BuiltInFieldTypes;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessDefinition\Domain\BuiltInFieldTypes;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
 
 /**
  * Mutable set of the field types the running process may build business definitions from.

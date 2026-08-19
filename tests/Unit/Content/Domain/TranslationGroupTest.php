@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Content\Domain;
+namespace Kumwe\App\Tests\Unit\Content\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Content\Domain\ContentEntry;
-use Kumwe\CMS\Content\Domain\ContentStatus;
-use Kumwe\CMS\Content\Domain\ExpectedVersion;
-use Kumwe\CMS\Content\Domain\InvalidTranslationGroup;
-use Kumwe\CMS\Content\Domain\PublicationWindow;
-use Kumwe\CMS\Content\Domain\TranslationGroup;
-use Kumwe\CMS\Content\Domain\TranslationGroupMember;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Content\Domain\ContentEntry;
+use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\App\Content\Domain\ExpectedVersion;
+use Kumwe\App\Content\Domain\InvalidTranslationGroup;
+use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\App\Content\Domain\TranslationGroup;
+use Kumwe\App\Content\Domain\TranslationGroupMember;
+use Kumwe\App\Localization\Domain\LocaleTag;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\CMS\BusinessRecord\Domain\ClientAssertedInstant;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
+use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

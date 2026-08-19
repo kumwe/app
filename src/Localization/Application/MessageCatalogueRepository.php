@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Application;
+namespace Kumwe\App\Localization\Application;
 
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Domain\MessageCatalogue;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\MessageCatalogue;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
 
 /**
  * Port supplying the two file-shipped layers of the chain: what core ships and what extensions ship.

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Runtime\TrustEnforcingRequestHandler;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Runtime\TrustEnforcingRequestHandler;
 use Mezzio\Application;
 
 /**

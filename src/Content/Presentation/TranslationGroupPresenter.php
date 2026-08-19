@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Presentation;
+namespace Kumwe\App\Content\Presentation;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Application\TranslationGroupRepository;
-use Kumwe\CMS\Content\Domain\TranslationGroup;
-use Kumwe\CMS\Content\Domain\TranslationGroupMember;
-use Kumwe\CMS\Localization\Application\ActiveLocale;
-use Kumwe\CMS\Site\Application\PublicPageLocator;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Content\Application\TranslationGroupRepository;
+use Kumwe\App\Content\Domain\TranslationGroup;
+use Kumwe\App\Content\Domain\TranslationGroupMember;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Site\Application\PublicPageLocator;
 use Locale;
 use Psr\Clock\ClockInterface;
 

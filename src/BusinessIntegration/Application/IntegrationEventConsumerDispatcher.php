@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\CMS\Application\Automation\RetryPolicy;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
 use Psr\Log\LoggerInterface;
 use Throwable;
 

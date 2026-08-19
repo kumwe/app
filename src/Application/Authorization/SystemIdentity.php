@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Authorization;
+namespace Kumwe\App\Application\Authorization;
 
 /**
  * The closed set of unattended actors Kumwe will issue an execution context to.

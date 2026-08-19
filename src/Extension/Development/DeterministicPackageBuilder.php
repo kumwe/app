@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Development;
+namespace Kumwe\App\Extension\Development;
 
 use FilesystemIterator;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Extension\Application\Package\PackageBillOfMaterials;
-use Kumwe\CMS\Extension\Application\Package\PackageProvenance;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Application\Package\PackageBillOfMaterials;
+use Kumwe\App\Extension\Application\Package\PackageProvenance;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;

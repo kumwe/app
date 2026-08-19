@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Shared\Infrastructure\Configuration;
+namespace Kumwe\App\Shared\Infrastructure\Configuration;
 
 use InvalidArgumentException;
 

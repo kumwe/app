@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Navigation;
+namespace Kumwe\App\Delivery\Http\Api\Navigation;
 
-use Kumwe\CMS\Navigation\Application\NavigationService;
+use Kumwe\App\Navigation\Application\NavigationService;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

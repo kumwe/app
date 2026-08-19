@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Delivery-neutral generated-business operations that need definition-specific execution dispatch.

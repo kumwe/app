@@ -2,33 +2,33 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\Administration;
+namespace Kumwe\App\Identity\Infrastructure\Administration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
-use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
-use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
-use Kumwe\CMS\Identity\Application\Administration\AccessTokenQuotaPolicy;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenContext;
-use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
-use Kumwe\CMS\Identity\Domain\EmailAddress;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Application\Administration\AuthenticationRateLimiter;
+use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\App\Identity\Application\Administration\TokenRotationPreauthorizer;
+use Kumwe\App\Identity\Application\Administration\AccessTokenQuotaPolicy;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenContext;
+use Kumwe\App\Identity\Application\Security\PasswordHasher;
+use Kumwe\App\Identity\Domain\EmailAddress;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -138,7 +138,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      * @return  ?AuthenticatedPrincipal  The actor with its scoped grants and security epoch, or null when
      *          the credential names no active account.
      *
-     * @throws  \Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled  When this account
+     * @throws  \Kumwe\App\Identity\Application\Administration\AuthenticationThrottled  When this account
      *          and origin pair has already spent its attempt budget.
      * @throws  InvalidArgumentException  When the address is not syntactically valid, or the stored
      *          security epoch or grant rows do not assemble into a principal.
@@ -197,7 +197,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      *
      * @return  string  UUID of the created user, already assigned the administrator role.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the context does not carry
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context does not carry
      *          the bootstrap capability.
      * @throws  InvalidArgumentException  When the display name is empty or over 191 characters, the
      *          address is malformed or already taken, or the password cannot be hashed.
@@ -575,7 +575,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      * @return  array{token: string, token_id: string}  The plaintext secret under `token`, seen only
      *          here, and the stored row's UUID under `token_id`.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not act for
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not act for
      *          the subject, or may not delegate one of the capabilities.
      * @throws  InvalidArgumentException  When the name, expiry, `rotatedFrom` identifier or capability set
      *          is unusable, the subject does not hold a requested capability, or the quota is full.
@@ -848,7 +848,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      * @return  array{token: string, token_id: string}  The replacement's plaintext secret under `token`
      *          and its new UUID under `token_id`.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          the token, or may no longer delegate the capabilities it carries.
      * @throws  InvalidArgumentException  When the token is absent, already dead, outside the site, the
      *          replacement's name or expiry is unusable, or the subject's quota refuses the replacement.

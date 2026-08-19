@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessInstance;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
+use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

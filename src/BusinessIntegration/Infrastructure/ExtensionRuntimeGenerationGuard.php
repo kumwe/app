@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Infrastructure;
+namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
-use Kumwe\CMS\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use RuntimeException;
 
 /**

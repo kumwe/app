@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Application;
+namespace Kumwe\App\Localization\Application;
 
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Domain\MessageCatalogue;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueChain;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
-use Kumwe\CMS\Localization\Domain\MessageIdentifier;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\MessageCatalogue;
+use Kumwe\App\Localization\Domain\MessageCatalogueChain;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Localization\Domain\MessageIdentifier;
 
 /**
  * Resolves a message through the four-layer override chain and formats it with ICU MessageFormat.
@@ -78,7 +78,7 @@ final class CatalogueTranslator implements Translator
      *
      * @return  string  The formatted message, or the identifier itself when no layer carries it.
      *
-     * @throws  \Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier  When the identifier does not
+     * @throws  \Kumwe\App\Localization\Domain\InvalidMessageIdentifier  When the identifier does not
      *          satisfy the frozen grammar.
      * @throws  MessageFormattingFailed  When the resolved pattern is not valid ICU MessageFormat, or
      *          the supplied parameters cannot satisfy it.
@@ -105,7 +105,7 @@ final class CatalogueTranslator implements Translator
      *
      * @return  bool  True when a pattern exists at this locale or one of its fallbacks.
      *
-     * @throws  \Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier  When the identifier does not
+     * @throws  \Kumwe\App\Localization\Domain\InvalidMessageIdentifier  When the identifier does not
      *          satisfy the frozen grammar.
      *
      * @since   2.0.0

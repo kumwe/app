@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace @@PHP_NAMESPACE@@\Definition;
 
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 
 /**
  * Owns the exact business definitions declared by the signed manifest.

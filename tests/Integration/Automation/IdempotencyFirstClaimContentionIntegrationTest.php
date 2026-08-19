@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Automation;
+namespace Kumwe\App\Tests\Integration\Automation;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Types;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\App\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
+use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

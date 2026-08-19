@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace KumweExample\Announcements\Presentation;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
 
 /**
  * Presents the announcements component's bounded severity field through core-owned widgets.

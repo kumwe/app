@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Domain;
+namespace Kumwe\App\BusinessRecord\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
 
 /**
  * Resolved site and organization coordinates that one business record lives under.

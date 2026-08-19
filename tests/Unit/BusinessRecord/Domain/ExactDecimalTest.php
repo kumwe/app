@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

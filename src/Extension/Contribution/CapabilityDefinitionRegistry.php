@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\CMS\Application\Authorization\CapabilityDefinition as AuthorizationCapabilityDefinition;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\CapabilityDefinition as AuthorizationCapabilityDefinition;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * The capability identifiers the running process recognises, each held by exactly one owner.

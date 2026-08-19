@@ -2,34 +2,34 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessIntegration;
+namespace Kumwe\App\Tests\Integration\BusinessIntegration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Automation\JitterSource;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\Application\Automation\RetryPolicy;
-use Kumwe\CMS\Application\Automation\Worker;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\CMS\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\CMS\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\CMS\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\BusinessIntegration\Infrastructure\DoctrineInboxStore;
-use Kumwe\CMS\Infrastructure\Automation\DoctrineJobQueue;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Automation\JitterSource;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\App\Application\Automation\Worker;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
+use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
+use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -277,8 +277,8 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
 
     private function generation(Container $container): string
     {
-        $state = $container->get(\Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState::class);
-        if (!$state instanceof \Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState) {
+        $state = $container->get(\Kumwe\App\Extension\Runtime\RuntimeMaterializationState::class);
+        if (!$state instanceof \Kumwe\App\Extension\Runtime\RuntimeMaterializationState) {
             throw new RuntimeException('The integration runtime generation is unavailable.');
         }
 

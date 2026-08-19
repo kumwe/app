@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Exception;
+namespace Kumwe\App\BusinessRecord\Application\Exception;
 
 /**
  * Signals that no business record answers the identity a command or query addressed.

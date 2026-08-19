@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Presentation;
+namespace Kumwe\App\Tests\Integration\Presentation;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -10,13 +10,13 @@ use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupRepository;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Infrastructure\Presentation\Persistence\DoctrinePresentationAccessGroupRepository;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Presentation\Persistence\DoctrinePresentationAccessGroupRepository;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

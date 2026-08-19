@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Http\Security;
+namespace Kumwe\App\Tests\Unit\Http\Security;
 
-use Kumwe\CMS\Http\Security\SecurityHeaders;
+use Kumwe\App\Http\Security\SecurityHeaders;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

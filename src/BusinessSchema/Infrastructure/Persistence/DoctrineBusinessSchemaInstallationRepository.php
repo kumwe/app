@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessSchema\Infrastructure\Persistence;
 
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -57,9 +57,9 @@ final readonly class DoctrineBusinessSchemaInstallationRepository implements Bus
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When a stored column is absent, empty, or holds the wrong type.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the row no longer satisfies the
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the row no longer satisfies the
      *          installation invariants, such as a blueprint that disagrees with its recorded checksum.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
      *          cannot be canonically encoded.
      *
      * @since   2.0.0
@@ -133,9 +133,9 @@ final readonly class DoctrineBusinessSchemaInstallationRepository implements Bus
      * @return  SchemaInstallation  The revalidated installation the row describes.
      *
      * @throws  RuntimeException  When a column is absent, empty, wrongly typed, or holds invalid JSON.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the assembled document breaks an
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the assembled document breaks an
      *          installation invariant, or the stored status is not one this build knows.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
      *          cannot be canonically encoded.
      *
      * @since   2.0.0
@@ -260,9 +260,9 @@ final readonly class DoctrineBusinessSchemaInstallationRepository implements Bus
      * @throws  BusinessSchemaConflict  When no transaction is open for the lock to be held in.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the locking read.
      * @throws  RuntimeException  When a stored column is absent, empty, or holds the wrong type.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When a locked row no longer satisfies
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When a locked row no longer satisfies
      *          the installation invariants.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
      *          cannot be canonically encoded.
      *
      * @since   2.0.0

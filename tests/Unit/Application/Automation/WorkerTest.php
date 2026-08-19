@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
-use Kumwe\CMS\Application\Automation\GlobalJobPrincipals;
-use Kumwe\CMS\Application\Automation\JobExecutionClass;
-use Kumwe\CMS\Application\Automation\JobExecutionScope;
-use Kumwe\CMS\Application\Automation\JobLeaseContext;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\Application\Automation\LeaseAwareJobHandler;
-use Kumwe\CMS\Application\Automation\RuntimeDeadline;
-use Kumwe\CMS\Application\Automation\StoredJob;
-use Kumwe\CMS\Application\Automation\Worker;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\OwnershipScope;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\App\Application\Automation\GlobalJobPrincipals;
+use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\App\Application\Automation\JobExecutionScope;
+use Kumwe\App\Application\Automation\JobLeaseContext;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\Application\Automation\LeaseAwareJobHandler;
+use Kumwe\App\Application\Automation\RuntimeDeadline;
+use Kumwe\App\Application\Automation\StoredJob;
+use Kumwe\App\Application\Automation\Worker;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\OwnershipScope;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Throwable;

@@ -1,4 +1,4 @@
-# Kumwe CMS
+# Kumwe App
 
 Kumwe is a modern CMS, built with disciplined engineering and AI acceleration. It is two platforms
 behind one set of rules: a content-management system — managed pages, media, nested menus, and

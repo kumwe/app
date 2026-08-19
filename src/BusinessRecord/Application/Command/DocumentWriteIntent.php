@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Command;
+namespace Kumwe\App\BusinessRecord\Application\Command;
 
 /**
  * Whether a document command brings a document into existence or moves one that already exists.

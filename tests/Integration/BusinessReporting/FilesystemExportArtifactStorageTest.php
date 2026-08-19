@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessReporting;
+namespace Kumwe\App\Tests\Integration\BusinessReporting;
 
-use Kumwe\CMS\BusinessReporting\Infrastructure\FilesystemExportArtifactStorage;
+use Kumwe\App\BusinessReporting\Infrastructure\FilesystemExportArtifactStorage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

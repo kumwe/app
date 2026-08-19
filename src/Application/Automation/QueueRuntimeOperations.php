@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation;
+namespace Kumwe\App\Application\Automation;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Authenticated operator read and retention surface for contributed durable queues.

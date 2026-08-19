@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Business;
+namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionNotFound;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRevisionConflict;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound;
-use Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionNotFound;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRevisionConflict;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound;
+use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 

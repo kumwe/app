@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\OpenApi\Application;
+namespace Kumwe\App\OpenApi\Application;
 
 /**
  * Disposable verified cache for deterministic OpenAPI contracts.

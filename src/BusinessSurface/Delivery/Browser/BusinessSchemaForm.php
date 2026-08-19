@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
-use Kumwe\CMS\Localization\Application\Translator;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\App\Localization\Application\Translator;
 
 /**
  * Builds and decodes a no-JavaScript editor for the closed custom-business schema subset.

@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Infrastructure\Persistence;
+namespace Kumwe\App\Audit\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Audit\Application\AuditTrailVerifier;
-use Kumwe\CMS\Audit\Domain\AuditAnchorDigest;
-use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
-use Kumwe\CMS\Audit\Domain\AuditEventDigest;
-use Kumwe\CMS\Audit\Domain\AuditVerificationFinding;
-use Kumwe\CMS\Audit\Domain\AuditVerificationReport;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Audit\Application\AuditTrailVerifier;
+use Kumwe\App\Audit\Domain\AuditAnchorDigest;
+use Kumwe\App\Audit\Domain\AuditEnforcementState;
+use Kumwe\App\Audit\Domain\AuditEventDigest;
+use Kumwe\App\Audit\Domain\AuditVerificationFinding;
+use Kumwe\App\Audit\Domain\AuditVerificationReport;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 use Throwable;
 
@@ -86,7 +86,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
      *          observed on this server, and the first divergence if any.
      *
      * @throws  InvalidArgumentException  When the batch size is outside its bounds.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not verify
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not verify
      *          the audit trail.
      *
      * @since   2.0.0

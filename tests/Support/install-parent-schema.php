@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineConnectionFactory;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Identity\Infrastructure\Security\NativePasswordHasher;
-use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Infrastructure\Persistence\DoctrineConnectionFactory;
+use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Identity\Infrastructure\Security\NativePasswordHasher;
+use Kumwe\App\Kernel\Configuration\ConfigurationFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 
 require dirname(__DIR__, 2) . '/vendor/autoload.php';
 

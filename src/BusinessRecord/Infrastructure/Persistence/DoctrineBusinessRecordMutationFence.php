@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationGeneration;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationGeneration;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
 
 /**

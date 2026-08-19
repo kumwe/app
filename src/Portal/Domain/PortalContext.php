@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Domain;
+namespace Kumwe\App\Portal\Domain;
 
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\SiteContext;
 
 /**
  * Site and optional membership selected by trusted portal resolution rather than request input.

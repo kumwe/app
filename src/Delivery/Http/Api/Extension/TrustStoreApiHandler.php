@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Extension;
+namespace Kumwe\App\Delivery\Http\Api\Extension;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -64,7 +64,7 @@ final readonly class TrustStoreApiHandler implements RequestHandlerInterface
      * @return  ResponseInterface  The key listing or quarantine result as JSON, an empty 201 or 204 after a
      *          successful mutation, or a 422 problem document explaining the refusal.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          extensions, which this handler passes on rather than rendering itself.
      *
      * @since   2.0.0

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Application;
+namespace Kumwe\App\Localization\Application;
 
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\LocaleTag;
 
 /**
  * Request-scoped holder for the locale and translation scope the unit of work in flight resolved.

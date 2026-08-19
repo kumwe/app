@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Runtime;
+namespace Kumwe\App\Extension\Runtime;
 
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -55,7 +55,7 @@ final readonly class TrustEnforcingRequestHandler implements RequestHandlerInter
      *
      * @return  ResponseInterface  Whatever the wrapped handler produced, passed back unchanged.
      *
-     * @throws  \Kumwe\CMS\Extension\Application\Trust\UntrustedPackage  When the extension is no longer
+     * @throws  \Kumwe\App\Extension\Application\Trust\UntrustedPackage  When the extension is no longer
      *          active, or its release record, signing key, package signature or deployed bytes fail
      *          verification.
      * @throws  \InvalidArgumentException  When the extension identifier, or the package digest or

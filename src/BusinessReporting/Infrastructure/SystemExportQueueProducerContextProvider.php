@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Infrastructure;
+namespace Kumwe\App\BusinessReporting\Infrastructure;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\BusinessReporting\Application\ExportQueueProducerContextProvider;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\BusinessReporting\Application\ExportQueueProducerContextProvider;
 
 /**
  * Issues narrow Worker system contexts for internal export queue production.

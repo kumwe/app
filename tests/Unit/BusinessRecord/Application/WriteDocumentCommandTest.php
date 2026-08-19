@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Application;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\BusinessRecord\Application\Command\DocumentLineInput;
-use Kumwe\CMS\BusinessRecord\Application\Command\DocumentWriteIntent;
-use Kumwe\CMS\BusinessRecord\Application\Command\WriteDocumentCommand;
-use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\BusinessRecord\Application\Command\DocumentLineInput;
+use Kumwe\App\BusinessRecord\Application\Command\DocumentWriteIntent;
+use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
+use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

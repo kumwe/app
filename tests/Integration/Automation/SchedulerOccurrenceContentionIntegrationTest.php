@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Automation;
+namespace Kumwe\App\Tests\Integration\Automation;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -11,14 +11,14 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Automation\JobExecutionClass;
-use Kumwe\CMS\Application\Automation\ScheduleOccurrenceKey;
-use Kumwe\CMS\Application\Automation\Scheduler;
-use Kumwe\CMS\Infrastructure\Automation\DoctrineScheduler;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\App\Application\Automation\ScheduleOccurrenceKey;
+use Kumwe\App\Application\Automation\Scheduler;
+use Kumwe\App\Infrastructure\Automation\DoctrineScheduler;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

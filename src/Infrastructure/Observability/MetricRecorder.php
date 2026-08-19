@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Observability;
+namespace Kumwe\App\Infrastructure\Observability;
 
 /**
  * The write side of metrics: what a hot path is allowed to call, and what it costs.

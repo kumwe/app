@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Administrator\Presentation\SecurityWorkspaceState;
-use Kumwe\CMS\Application\Automation\CanonicalJson;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\StepUpProofConsumer;
-use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
-use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
-use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
-use Kumwe\CMS\Identity\Domain\UserStatus;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorSessionMiddleware;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Presentation\SecurityWorkspaceState;
+use Kumwe\App\Application\Automation\CanonicalJson;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
+use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\App\Identity\Application\Administration\AccessControlService;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
+use Kumwe\App\Identity\Application\StepUp\AdministratorStepUpProvider;
+use Kumwe\App\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
+use Kumwe\App\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\App\Identity\Domain\UserStatus;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Clock\ClockInterface;
@@ -582,7 +582,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
      * Move a successful provider verification onto its exact rotated administrator session.
      *
      * @param ExecutionContext $context Pre-challenge administrator context.
-     * @param   \Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification  $verification  Successful challenge.
+     * @param   \Kumwe\App\Identity\Domain\StepUp\StepUpVerification  $verification  Successful challenge.
      *
      * @return  ExecutionContext  Multi-factor context carrying the newly adapted proof.
      *
@@ -590,7 +590,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
      */
     private function multiFactorContext(
         ExecutionContext $context,
-        \Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification $verification,
+        \Kumwe\App\Identity\Domain\StepUp\StepUpVerification $verification,
     ): ExecutionContext {
         return $context->principal()?->context(
             $context->site(),

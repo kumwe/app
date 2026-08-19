@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Business;
+namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
-use Kumwe\CMS\BusinessSurface\Application\BusinessApprovalSurfaceService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

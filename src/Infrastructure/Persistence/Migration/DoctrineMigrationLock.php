@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -13,8 +13,8 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Operations\ExpiredMigrationLockRecovery;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Operations\ExpiredMigrationLockRecovery;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 use Throwable;
 

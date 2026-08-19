@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Domain;
+namespace Kumwe\App\BusinessSchema\Domain;
 
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 /**
  * Canonical description of one physical table, closed over its own columns, keys, indexes, and options.
@@ -80,7 +80,7 @@ final readonly class PhysicalTableBlueprint
      *          table, an index or foreign key references a column outside the table,
      *          a set-null action lands on a non-nullable column, or the options are
      *          not a string-keyed object.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the options hold a value
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the options hold a value
      *          that cannot be canonically encoded, such as a float or an object.
      *
      * @since   2.0.0
@@ -180,7 +180,7 @@ final readonly class PhysicalTableBlueprint
      * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is missing or
      *          misshapen, the stored kind is not a known one, or any table invariant
      *          fails.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored options hold
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored options hold
      *          a value that cannot be canonically encoded.
      *
      * @since   2.0.0

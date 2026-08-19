@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Mcp;
+namespace Kumwe\App\Delivery\Http\Mcp;
 
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
+use Kumwe\App\Infrastructure\Mcp\KumweMcpServerFactory;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Mcp\Server\Transport\Http\Middleware\CorsMiddleware;
 use Mcp\Server\Transport\Http\Middleware\DnsRebindingProtectionMiddleware;
 use Mcp\Server\Transport\Http\Middleware\ProtocolVersionMiddleware;

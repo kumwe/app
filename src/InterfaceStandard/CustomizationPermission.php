@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\InterfaceStandard;
+namespace Kumwe\App\InterfaceStandard;
 
 /**
  * One whitelisted presentation slot and the layer allowed to customize it.

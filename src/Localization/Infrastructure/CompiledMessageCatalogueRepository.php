@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Infrastructure;
+namespace Kumwe\App\Localization\Infrastructure;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Localization\Application\MessageCatalogueRepository;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Domain\MessageCatalogue;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Localization\Application\MessageCatalogueRepository;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\MessageCatalogue;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
 use RuntimeException;
 
 /**

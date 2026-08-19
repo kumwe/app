@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 
 /**
  * Resolves definition-level read visibility against one complete normalized record value set.

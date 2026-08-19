@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

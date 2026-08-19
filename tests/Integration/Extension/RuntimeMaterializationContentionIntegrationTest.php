@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Extension;
+namespace Kumwe\App\Tests\Integration\Extension;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Extension\Runtime\RuntimeLeaseWriter;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Extension\Runtime\RuntimeLeaseWriter;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Throwable;

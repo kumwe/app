@@ -24,7 +24,7 @@
 # `composer security:secrets` and the "Scan repository for secrets" step of `.github/workflows/security.yml`
 # both run gitleaks from the repository root and pick this file up automatically. Verify any change to it
 # with `composer security:secrets`, which reads history rather than the working tree.
-title = "Kumwe CMS"
+title = "Kumwe App"
 
 [extend]
 useDefault = true

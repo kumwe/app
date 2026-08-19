@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application\Custom;
+namespace Kumwe\App\BusinessSurface\Application\Custom;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\ViewDefinition;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ViewDefinition;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Resolves custom declarations from one installed definition and dispatches their typed handlers.
@@ -230,7 +230,7 @@ final readonly class CustomBusinessSurfaceDispatcher
      * @return  CustomBusinessActionResult  Contract-validated, operation-bound result.
      *
      * @throws  BusinessRecordDefinitionUnavailable  When the declaration or live contract is unavailable.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the action capability is denied.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the action capability is denied.
      * @throws  \InvalidArgumentException  When command input or result data violates the signed contract.
      * @throws  CustomBusinessHandlerFailed  When extension application code raises any throwable.
      *

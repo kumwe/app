@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\OpenApi\Delivery\Http;
+namespace Kumwe\App\Tests\Unit\OpenApi\Delivery\Http;
 
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\OpenApi\Application\CompiledOpenApiContract;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractProvider;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractUnavailable;
-use Kumwe\CMS\OpenApi\Delivery\Http\OpenApiHandler;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\OpenApi\Application\CompiledOpenApiContract;
+use Kumwe\App\OpenApi\Application\OpenApiContractProvider;
+use Kumwe\App\OpenApi\Application\OpenApiContractUnavailable;
+use Kumwe\App\OpenApi\Delivery\Http\OpenApiHandler;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

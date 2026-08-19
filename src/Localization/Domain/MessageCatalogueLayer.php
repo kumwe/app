@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Domain;
+namespace Kumwe\App\Localization\Domain;
 
 /**
  * One step of the override chain a message identifier is resolved through.

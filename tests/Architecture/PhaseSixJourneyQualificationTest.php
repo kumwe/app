@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
 use JsonException;
 use PHPUnit\Framework\Attributes\CoversNothing;

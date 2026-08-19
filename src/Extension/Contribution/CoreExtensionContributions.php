@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\BusinessDefinition\Domain\BuiltInFieldTypes;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\CoreFieldPresenter;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
-use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\BusinessDefinition\Domain\BuiltInFieldTypes;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\App\InterfaceStandard\SurfaceDefinition;
+use Kumwe\App\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\App\Portal\Contribution\PortalWorkspaceDefinition;
 
 /**
  * Everything the CMS contributes to the contribution registries on its own behalf.

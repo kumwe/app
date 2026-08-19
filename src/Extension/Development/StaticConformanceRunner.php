@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Development;
+namespace Kumwe\App\Extension\Development;
 
-use Kumwe\CMS\Extension\Application\Package\PackageBillOfMaterials;
-use Kumwe\CMS\Extension\Application\Package\PackageCodeConformance;
-use Kumwe\CMS\Extension\Application\Package\PackageProvenance;
+use Kumwe\App\Extension\Application\Package\PackageBillOfMaterials;
+use Kumwe\App\Extension\Application\Package\PackageCodeConformance;
+use Kumwe\App\Extension\Application\Package\PackageProvenance;
 use RuntimeException;
 use ZipArchive;
 

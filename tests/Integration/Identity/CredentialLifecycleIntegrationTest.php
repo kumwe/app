@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Identity;
+namespace Kumwe\App\Tests\Integration\Identity;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -10,21 +10,21 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
-use Kumwe\CMS\Identity\Domain\StepUp\TotpCredential;
-use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAccessControlRepository;
-use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorSessionStore;
-use Kumwe\CMS\Identity\Infrastructure\StepUp\DoctrineStepUpCredentialStore;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Identity\Application\Administration\AccessControlService;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\App\Identity\Application\StepUp\StepUpCredentialStore;
+use Kumwe\App\Identity\Domain\StepUp\TotpCredential;
+use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAccessControlRepository;
+use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAdministratorSessionStore;
+use Kumwe\App\Identity\Infrastructure\StepUp\DoctrineStepUpCredentialStore;
+use Kumwe\App\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

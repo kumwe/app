@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessRecord\Domain\MoneyConversionRequest;
+use Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest;
 
 /**
  * The rate providers entitled to answer one conversion, in the order they are consulted.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessSchema\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -11,13 +11,13 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaPlanRepository;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanRepository;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**
@@ -63,9 +63,9 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When a stored row disagrees with its own canonical plan document.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When a stored canonical document is
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When a stored canonical document is
      *          not a valid plan.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored plan cannot be
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored plan cannot be
      *          canonically fingerprinted, as one holding more than 512 operations cannot.
      *
      * @since   2.0.0
@@ -94,9 +94,9 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When the stored row disagrees with its own canonical plan document.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the stored canonical document is
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the stored canonical document is
      *          not a valid plan.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored plan cannot be
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored plan cannot be
      *          canonically fingerprinted, as one holding more than 512 operations cannot.
      *
      * @since   2.0.0
@@ -124,9 +124,9 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When the stored row disagrees with its own canonical plan document.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the stored canonical document is
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the stored canonical document is
      *          not a valid plan.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored plan cannot be
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored plan cannot be
      *          canonically fingerprinted, as one holding more than 512 operations cannot.
      *
      * @since   2.0.0
@@ -190,7 +190,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  BusinessSchemaConflict  When a row with the same plan ID or canonical checksum already exists.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the insert for any other reason.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan cannot be
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan cannot be
      *          canonically fingerprinted, as one holding more than 512 operations cannot.
      *
      * @since   2.0.0
@@ -229,7 +229,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      * @throws  BusinessSchemaConflict  When the revision does not advance by exactly one, the stored plan has
      *          already moved on, or the stored fence is not the expected one.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the fence probe or the update.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan cannot be
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan cannot be
      *          canonically fingerprinted, as one holding more than 512 operations cannot.
      *
      * @since   2.0.0
@@ -291,9 +291,9 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When a journal column is absent, empty, wrongly typed, or holds invalid JSON.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When a stored row breaks a step
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When a stored row breaks a step
      *          invariant, or its kind, risk, or state is not one this build knows.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored cursor or
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored cursor or
      *          outcome cannot be canonically encoded.
      *
      * @since   2.0.0
@@ -486,7 +486,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @return  array<string, mixed>  Column name to value, covering every column of `business_schema_plans`.
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan cannot be
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan cannot be
      *          canonically fingerprinted, as one holding more than 512 operations cannot.
      *
      * @since   2.0.0
@@ -596,9 +596,9 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  RuntimeException  When `canonical_plan` is absent or is not a JSON object, a ledger column
      *          disagrees with the rebuilt plan, or a stored timestamp cannot be read.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the canonical document is not a
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the canonical document is not a
      *          valid plan, or its stored checksum does not match its content.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored plan or a
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored plan or a
      *          stored outcome cannot be canonically encoded.
      *
      * @since   2.0.0
@@ -742,7 +742,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  RuntimeException  When the column is null where a document was expected, holds one where the
      *          plan holds none, is not a JSON object, or encodes to different canonical bytes.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When either document holds a
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When either document holds a
      *          value the canonical encoder refuses, such as a float.
      *
      * @since   2.0.0

@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordException;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
-use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
-use Kumwe\CMS\BusinessSurface\Application\BusinessOperationNotFound;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordException;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
+use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\App\BusinessSurface\Application\BusinessOperationNotFound;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
 use Throwable;
 
 /**
@@ -191,7 +191,7 @@ final readonly class BusinessConsoleFailureMapper
                 $exception->stableCode(),
                 'The business record failed validation.',
                 ['violations' => array_map(
-                    static fn (\Kumwe\CMS\BusinessRecord\Application\ValidationViolation $violation): array =>
+                    static fn (\Kumwe\App\BusinessRecord\Application\ValidationViolation $violation): array =>
                         $violation->toArray(),
                     $exception->violations,
                 )],

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -10,37 +10,37 @@ use DateTimeZone;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordReadRepository;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
-use Kumwe\CMS\BusinessRecord\Application\RecordBrowseResult;
-use Kumwe\CMS\BusinessRecord\Application\RecordCursorCodec;
-use Kumwe\CMS\BusinessRecord\Application\RecordFieldVisibility;
-use Kumwe\CMS\BusinessRecord\Application\RecordRuleValidator;
-use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
-use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Application\StoredOwnedLine;
-use Kumwe\CMS\BusinessRecord\Application\StoredRecordIdentity;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessRecord\Query\CursorPosition;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordReadRepository;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
+use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
+use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
+use Kumwe\App\BusinessRecord\Application\RecordFieldVisibility;
+use Kumwe\App\BusinessRecord\Application\RecordRuleValidator;
+use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\App\BusinessRecord\Application\StoredOwnedLine;
+use Kumwe\App\BusinessRecord\Application\StoredRecordIdentity;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessRecord\Query\CursorPosition;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
 
 /**
  * Reads business records straight off the physical tables an installation generated, over DBAL.
@@ -347,7 +347,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *          version, the installation has no record table or lacks a column this read names, the
      *          requested scope disagrees with the installed scope columns, or a stored column is not its
      *          declared type.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When the
      *          decoded row's virtual formula fields cannot be recomputed.
      * @throws  InvalidArgumentException  When a stored value contradicts the physical type declared for
      *          its column, or the decoded row breaks a `BusinessRecord` invariant.
@@ -417,9 +417,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @throws  BusinessRecordSchemaUnavailable  When a reference field declares no string target, a
      *          stored reference is not a UUID or has no target row in this scope, or the target's
      *          definition or installed schema is unusable.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          a referenced target definition no longer exists on this site.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the shared fence over a target's installation cannot be taken, or that installation moved
      *          since it was resolved.
      * @throws  InvalidArgumentException  When a target's published definition and its installation
@@ -494,18 +494,18 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @return  RecordBrowseResult  Views for this page, a cursor to continue from only when further rows
      *          matched, and any requested aggregates keyed by their alias.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery  When the
      *          specification cannot be compiled, a cursor was raised against a different query, or a
      *          field may not be filtered, sorted, searched or reported on.
      * @throws  BusinessRecordSchemaUnavailable  When the query names something the installed schema does
      *          not carry, a cursor sort column is absent or holds a value its physical type contradicts,
      *          a row's pinned definition is unavailable, or an aggregate produced an inexact value.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          a definition the query or a reference reaches for no longer exists on this site.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the shared fence over a relation or reference target's installation cannot be taken, or
      *          that installation moved since it was resolved.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
      *          decoded row's virtual formula fields cannot be recomputed.
      * @throws  InvalidArgumentException  When a decoded row breaks a `BusinessRecord` invariant, or the
      *          page carries more rows or aggregates than a result may hold.
@@ -652,9 +652,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @throws  BusinessRecordSchemaUnavailable  When a browsed row has no pinned definition, a reference
      *          field declares no string target, a stored reference is not a UUID or has no target row in
      *          this scope, or a target's definition or installed schema is unusable.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          a referenced target definition no longer exists on this site.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the shared fence over a target's installation cannot be taken, or that installation moved
      *          since it was resolved.
      * @throws  InvalidArgumentException  When a row's pinned definition does not fit the installation it
@@ -827,12 +827,12 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @throws  BusinessRecordSchemaUnavailable  When a handle names no relationship, a related row falls
      *          outside the source page, a target's definition or installed schema is unusable, an
      *          include has no canonical inverse to traverse, or a stored column is not its declared type.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          a relationship target definition no longer exists on this site.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the shared fence over a target's installation cannot be taken, or that installation moved
      *          since it was resolved.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When an
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When an
      *          included row's virtual formula fields cannot be recomputed.
      * @throws  InvalidArgumentException  When an included row breaks a `BusinessRecord` invariant, or a
      *          stored value contradicts the physical type declared for its column.
@@ -1271,7 +1271,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @return  RelationshipDefinition  The declared or synthesized relationship.
      *
      * @throws  BusinessRecordSchemaUnavailable  When the definition declares nothing under that handle.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a matching
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a matching
      *          ordered-line field names no usable target entity.
      *
      * @since   2.0.0
@@ -1335,11 +1335,11 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *
      * @throws  BusinessRecordSchemaUnavailable  When the target is absent or disabled, its schema is not
      *          active on this site, or the version it is pinned to is newer than the installed one.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          the target definition no longer exists on this site.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the shared fence cannot be taken, or the installation moved since it was resolved.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
      *          evolution metadata cannot be read for a pinned target version.
      * @throws  InvalidArgumentException  When the site identifier stored on the definition is malformed,
      *          or the resolved definition and installation disagree.
@@ -1374,12 +1374,12 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @throws  BusinessRecordSchemaUnavailable  When no such definition exists on the site, its owner is
      *          inactive, its installation is missing, not active, or registered to another site, the
      *          pinned version runs ahead of the installed one, or that version was never published.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          the fence finds no definition under the handle on this site.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          no transaction is open to hold the shared lock, the platform offers none, the lock cannot
      *          be taken, or the resolved pair differs from the fenced generation.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
      *          evolution metadata is malformed, or the handle is not a namespaced definition handle.
      * @throws  InvalidArgumentException  When the site identifier stored on the definition is malformed,
      *          or the published definition and the installation disagree.
@@ -1610,7 +1610,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *
      * @throws  BusinessRecordSchemaUnavailable  When the installation carries no line table for the
      *          relationship, or the table lacks a column this read names.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
      *          decoded line's virtual computations cannot be rebuilt.
      * @throws  InvalidArgumentException  When a stored line key, identity or version is malformed.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read, or the platform to quote
@@ -1685,7 +1685,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @throws  BusinessRecordSchemaUnavailable  When the row was written under a different definition
      *          version, the table lacks a column the decode names, or a stored control column is not its
      *          declared type.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When the
      *          decoded row's virtual formula fields cannot be recomputed.
      * @throws  InvalidArgumentException  When a stored value contradicts the physical type declared for
      *          its column, the stored scope columns disagree with the definition's scope mode, a

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\HorizonTheme;
 
-use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
 
 /**
  * Registers the Horizon site theme package without adding runtime services.

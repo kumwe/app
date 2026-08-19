@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Http\Security;
+namespace Kumwe\App\Tests\Unit\Http\Security;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Http\Security\TrustedProxyMatcher;
+use Kumwe\App\Http\Security\TrustedProxyMatcher;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

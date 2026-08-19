@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Extension;
+namespace Kumwe\App\Tests\Integration\Extension;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipConflict;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Extension\Infrastructure\DoctrineExtensionManager;
-use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
-use Kumwe\CMS\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
+use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
+use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -169,9 +169,9 @@ declare(strict_types=1);
 
 namespace KumweIntegration\OwnershipLifecycle;
 
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
-use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
-use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Runtime\ExtensionRouteRegistrar;
+use Kumwe\App\Extension\Runtime\RuntimeExtension;
 
 final class Provider implements RuntimeExtension
 {

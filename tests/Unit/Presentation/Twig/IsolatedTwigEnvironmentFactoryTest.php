@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Presentation\Twig;
+namespace Kumwe\App\Tests\Unit\Presentation\Twig;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
-use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
-use Kumwe\CMS\Presentation\Twig\ContractRestrictedLoader;
-use Kumwe\CMS\Presentation\Twig\IsolatedTwigEnvironmentFactory;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Domain\ThemeSurface;
+use Kumwe\App\Presentation\Twig\ContractRestrictedLoader;
+use Kumwe\App\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;

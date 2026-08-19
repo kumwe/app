@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Application;
+namespace Kumwe\App\Content\Application;
 
 /**
  * Raised when a content type or workflow definition the caller named is not published for the site.

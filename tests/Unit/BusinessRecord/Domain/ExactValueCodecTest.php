@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
-use Kumwe\CMS\BusinessRecord\Application\SecretAssociatedData;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
-use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\App\BusinessRecord\Application\SecretAssociatedData;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\MoneyValue;
+use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

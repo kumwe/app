@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Handler;
+namespace Kumwe\App\Http\Handler;
 
-use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\App\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\TextResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\OpenApi\Application;
+namespace Kumwe\App\Tests\Unit\OpenApi\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\CMS\BusinessDefinition\Domain\CompatibilityPlan;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Domain\ExtensionType;
-use Kumwe\CMS\Extension\Domain\SemanticVersion;
-use Kumwe\CMS\Extension\Domain\VersionConstraint;
-use Kumwe\CMS\OpenApi\Application\OpenApiComponentClaimAdmission;
-use Kumwe\CMS\OpenApi\Application\OpenApiExtensionActivationAdmission;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Domain\ExtensionType;
+use Kumwe\App\Extension\Domain\SemanticVersion;
+use Kumwe\App\Extension\Domain\VersionConstraint;
+use Kumwe\App\OpenApi\Application\OpenApiComponentClaimAdmission;
+use Kumwe\App\OpenApi\Application\OpenApiExtensionActivationAdmission;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

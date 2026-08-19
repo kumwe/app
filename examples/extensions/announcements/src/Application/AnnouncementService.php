@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace KumweExample\Announcements\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Site\Application\SiteSettings;
 
 final readonly class AnnouncementService
 {

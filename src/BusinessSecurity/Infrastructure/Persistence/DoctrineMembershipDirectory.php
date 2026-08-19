@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessSecurity\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\OrganizationContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\WorkspaceContext;
-use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\OrganizationContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\WorkspaceContext;
+use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Doctrine membership resolver that checks status, validity and policy generation in SQL.

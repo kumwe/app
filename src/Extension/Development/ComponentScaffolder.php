@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Development;
+namespace Kumwe\App\Extension\Development;
 
 use FilesystemIterator;
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
 use Ramsey\Uuid\Uuid;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;

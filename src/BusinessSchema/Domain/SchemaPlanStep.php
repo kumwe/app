@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Domain;
+namespace Kumwe\App\BusinessSchema\Domain;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 /**
  * Durable journal entry for one operation of a schema plan, rewritten before and after every attempt.
@@ -63,7 +63,7 @@ final readonly class SchemaPlanStep
      *          the error code breaks its grammar, the cursor or outcome is not a string-keyed object,
      *          the cursor holds a value that is not a bool, int, or string, the state and the recorded
      *          evidence disagree, or a completion or update time precedes the start.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the cursor or the
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the cursor or the
      *          outcome holds a value that cannot be canonically encoded, such as a float or an object.
      *
      * @since   2.0.0
@@ -131,7 +131,7 @@ final readonly class SchemaPlanStep
      * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is absent
      *          or misshapen, the stored kind, risk, or state is not one this build knows, or a step
      *          invariant fails.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored cursor or
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored cursor or
      *          outcome cannot be canonically encoded.
      *
      * @since   2.0.0
@@ -310,7 +310,7 @@ final readonly class SchemaPlanStep
      *
      * @throws  InvalidBusinessSchema  When the step is not running, or the cursor is not a string-keyed
      *          object of bool, int, and string values.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the cursor cannot be
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the cursor cannot be
      *          canonically encoded.
      *
      * @since   2.0.0
@@ -383,7 +383,7 @@ final readonly class SchemaPlanStep
      *
      * @throws  InvalidBusinessSchema  When the step is not running, the resulting checksum is not a
      *          lowercase SHA-256 digest, or the outcome is not a string-keyed object.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome cannot
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome cannot
      *          be canonically encoded.
      *
      * @since   2.0.0
@@ -430,7 +430,7 @@ final readonly class SchemaPlanStep
      *
      * @throws  InvalidBusinessSchema  When the step is not running, the error code breaks its grammar,
      *          or the outcome is not a string-keyed object.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome cannot
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome cannot
      *          be canonically encoded.
      *
      * @since   2.0.0

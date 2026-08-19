@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Infrastructure;
+namespace Kumwe\App\Tests\Integration\Infrastructure;
 
-use Kumwe\CMS\Infrastructure\Redis\RedisConnectionFactory;
-use Kumwe\CMS\Infrastructure\Redis\RedisLease;
-use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
-use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
-use Kumwe\CMS\Kernel\Configuration\RedisConfiguration;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Infrastructure\Redis\RedisConnectionFactory;
+use Kumwe\App\Infrastructure\Redis\RedisLease;
+use Kumwe\App\Infrastructure\Redis\RedisRuntime;
+use Kumwe\App\Kernel\Configuration\ConfigurationFactory;
+use Kumwe\App\Kernel\Configuration\RedisConfiguration;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Redis;

@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Presentation\Application\Dashboard;
+namespace Kumwe\App\Tests\Unit\Presentation\Application\Dashboard;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\PresentationPreference;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardView;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowPage;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferencePolicy;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\InMemoryPresentationAccessGroupRepository;
-use Kumwe\CMS\Tests\Support\InMemoryPresentationPreferenceRepository;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\PresentationPreference;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardComposer;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardView;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWidget;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowPage;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\App\Application\Presentation\Preference\PresentationPreferencePolicy;
+use Kumwe\App\Presentation\Application\Preference\PresentationPreferenceResolver;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\InMemoryPresentationAccessGroupRepository;
+use Kumwe\App\Tests\Support\InMemoryPresentationPreferenceRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

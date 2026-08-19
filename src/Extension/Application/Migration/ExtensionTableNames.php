@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Migration;
+namespace Kumwe\App\Extension\Application\Migration;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Compiles the physical names of the tables one extension owns, so a migration never spells one itself.

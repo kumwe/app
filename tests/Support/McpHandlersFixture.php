@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
-use Kumwe\CMS\Application\Automation\AutomationManagementService;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
-use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
-use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
-use Kumwe\CMS\Infrastructure\Mcp\ReportMcpHandlers;
-use Kumwe\CMS\Infrastructure\Time\SystemClock;
-use Kumwe\CMS\Navigation\Application\NavigationService;
-use Kumwe\CMS\Site\Infrastructure\Persistence\DoctrineSiteSettings;
+use Kumwe\App\Application\Automation\AutomationManagementService;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
+use Kumwe\App\Identity\Application\Administration\AccessControlService;
+use Kumwe\App\Infrastructure\Mcp\BusinessMcpHandlers;
+use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
+use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
+use Kumwe\App\Infrastructure\Mcp\McpMutationGuard;
+use Kumwe\App\Infrastructure\Mcp\ReportMcpHandlers;
+use Kumwe\App\Infrastructure\Time\SystemClock;
+use Kumwe\App\Navigation\Application\NavigationService;
+use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
 use ReflectionClass;
 
 final class McpHandlersFixture

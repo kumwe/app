@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSecurity\Policy;
+namespace Kumwe\App\Tests\Unit\BusinessSecurity\Policy;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyBoolean;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyBooleanOperator;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparison;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyEvaluator;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyNullCheck;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySchema;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySet;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBoolean;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBooleanOperator;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyEvaluator;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyNullCheck;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicySet;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

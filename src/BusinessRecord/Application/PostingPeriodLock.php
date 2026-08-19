@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
 
 /**
  * The declarative temporal lock: refuses a mutation whose declared posting date is in a closed period.

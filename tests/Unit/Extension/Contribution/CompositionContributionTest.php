@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Contribution;
+namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\CompositionBlockDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionContributionRegistrar;
-use Kumwe\CMS\Extension\Contribution\CompositionDesignVocabularyDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionFieldControlDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionInspectorDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionMigrationDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionPatternDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionPropertySchema;
-use Kumwe\CMS\Extension\Contribution\CompositionPropertyType;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Contribution\OwnedExtensionContributionRegistrar;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Contribution\CompositionBlockDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionContributionRegistrar;
+use Kumwe\App\Extension\Contribution\CompositionDesignVocabularyDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionFieldControlDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionInspectorDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionMigrationDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionPatternDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionPropertySchema;
+use Kumwe\App\Extension\Contribution\CompositionPropertyType;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Contribution\OwnedExtensionContributionRegistrar;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

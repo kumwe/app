@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\OpenApi\Application\OpenApiContractCompiler;
+use Kumwe\App\OpenApi\Application\OpenApiContractCompiler;
 
 $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';

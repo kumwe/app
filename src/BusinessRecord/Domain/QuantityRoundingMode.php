@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Domain;
+namespace Kumwe\App\BusinessRecord\Domain;
 
 /**
  * The declared rule a unit conversion rounds by when the exact product is wider than the target scale.

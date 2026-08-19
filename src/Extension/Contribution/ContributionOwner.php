@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 
 /**
  * Whoever a contribution belongs to, and the namespace that owner is allowed to claim identifiers in.

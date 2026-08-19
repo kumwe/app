@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application\Custom;
+namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 /**
  * Bounded result returned by an extension-specific business view handler.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Domain;
+namespace Kumwe\App\BusinessDefinition\Domain;
 
 /**
  * Validated expression tree behind every business-definition condition and computed-field formula.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\StepUp;
+namespace Kumwe\App\Identity\Infrastructure\StepUp;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -10,9 +10,9 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
-use Kumwe\CMS\Identity\Domain\StepUp\TotpCredential;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Identity\Application\StepUp\StepUpCredentialStore;
+use Kumwe\App\Identity\Domain\StepUp\TotpCredential;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 use Throwable;
 

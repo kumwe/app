@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Application;
+namespace Kumwe\App\Content\Application;
 
 /**
  * One screen of the administrator content browser: the visible records plus the paging state.

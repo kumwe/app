@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
 
 /**
  * Store of schema plans and of the per-step journal their execution is replayed from.

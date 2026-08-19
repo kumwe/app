@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace @@PHP_NAMESPACE@@\Integration;
 
-use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
 
 /**
  * Builds the exact schema-4 integration contracts declared by the signed manifest.

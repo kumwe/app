@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Idempotency;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Idempotency;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

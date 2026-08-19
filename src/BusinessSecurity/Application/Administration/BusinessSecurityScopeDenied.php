@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application\Administration;
+namespace Kumwe\App\BusinessSecurity\Application\Administration;
 
 /**
  * Refusal raised when a Business Security mutation leaves the authenticated membership boundary.

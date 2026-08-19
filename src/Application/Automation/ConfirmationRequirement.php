@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation;
+namespace Kumwe\App\Application\Automation;
 
 /**
  * How much acknowledgement a caller must supply before a `ChangePlan` may be applied.

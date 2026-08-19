@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Handler;
+namespace Kumwe\App\Tests\Unit\Administrator\Http\Handler;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentEditorHandler;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Administrator\Http\Handler\AdministratorContentEditorHandler;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

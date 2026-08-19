@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Media\Application;
+namespace Kumwe\App\Media\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SiteContext;
 
 /**
  * Optional storage capability for generated media selectors with a hard scan budget.

@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Application\Administration;
+namespace Kumwe\App\Tests\Unit\Identity\Application\Administration;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Automation\CanonicalJson;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired;
-use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
-use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\EmailAddress;
-use Kumwe\CMS\Identity\Domain\UserStatus;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Automation\CanonicalJson;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Security\HighImpactAuthenticationRequired;
+use Kumwe\App\Application\Security\HighImpactCredentialGuard;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
+use Kumwe\App\Identity\Application\Administration\AccessControlService;
+use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
+use Kumwe\App\Identity\Application\Security\PasswordHasher;
+use Kumwe\App\Identity\Application\StepUp\StepUpCredentialStore;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\EmailAddress;
+use Kumwe\App\Identity\Domain\UserStatus;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -322,8 +322,8 @@ final class AccessControlServiceTest extends TestCase
                     'scope_identifier' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb309',
                 ],
             ], self::ACTOR)->context(
-                \Kumwe\CMS\Application\Authorization\SiteContext::default(),
-                \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+                \Kumwe\App\Application\Authorization\SiteContext::default(),
+                \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
                 'delegation-ceiling-test',
             ),
             self::ROLE,
@@ -341,8 +341,8 @@ final class AccessControlServiceTest extends TestCase
             'scope_type' => 'site',
             'scope_identifier' => 'default',
         ]], self::ACTOR)->context(
-            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
-            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            \Kumwe\App\Application\Authorization\SiteContext::default(),
+            \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
             'site-identity-escalation-test',
         );
 
@@ -477,8 +477,8 @@ final class AccessControlServiceTest extends TestCase
             'scope_type' => 'site',
             'scope_identifier' => 'default',
         ]], self::ACTOR)->context(
-            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
-            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            \Kumwe\App\Application\Authorization\SiteContext::default(),
+            \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
             'access-page-test',
         );
 

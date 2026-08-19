@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessFormInputMapper;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessFormInputMapper;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

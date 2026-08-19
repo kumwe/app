@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifactStatus;
 use Throwable;
 
 /**

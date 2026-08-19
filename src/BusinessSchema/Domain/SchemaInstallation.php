@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Domain;
+namespace Kumwe\App\BusinessSchema\Domain;
 
 use DateTimeImmutable;
 
@@ -89,7 +89,7 @@ final readonly class SchemaInstallation
      * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is missing or
      *          misshapen, the stored status is not a known one, the blueprint is
      *          absent or invalid, or any installation invariant fails.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
      *          cannot be canonically encoded.
      *
      * @since   2.0.0

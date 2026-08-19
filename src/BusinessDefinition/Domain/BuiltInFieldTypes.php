@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Domain;
+namespace Kumwe\App\BusinessDefinition\Domain;
 
 /**
  * The field-type catalogue every site can build definitions from without installing an extension.

@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
-use Kumwe\CMS\Application\Authorization\AuthorizationDecisionRecorder;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\DenyByDefaultAuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
-use Kumwe\CMS\Application\Authorization\OrganizationContext;
-use Kumwe\CMS\Application\Authorization\OwnershipScope;
-use Kumwe\CMS\Application\Authorization\ResourceOwnership;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\Application\Authorization\WorkspaceContext;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\AuthorizationDecision;
+use Kumwe\App\Application\Authorization\AuthorizationDecisionRecorder;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\DenyByDefaultAuthorizationGateway;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\MembershipContextValidator;
+use Kumwe\App\Application\Authorization\OrganizationContext;
+use Kumwe\App\Application\Authorization\OwnershipScope;
+use Kumwe\App\Application\Authorization\ResourceOwnership;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Application\Authorization\WorkspaceContext;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Domain\Capability;
 
 final class AuthorizationContext
 {

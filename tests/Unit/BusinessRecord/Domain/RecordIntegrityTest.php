@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionView;
-use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionView;
+use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

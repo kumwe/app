@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Application;
+namespace Kumwe\App\Audit\Application;
 
 /**
  * Last-line redaction applied to audit metadata on its way out of the trail into an archive.

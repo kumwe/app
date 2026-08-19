@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application\Custom;
+namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 use Ramsey\Uuid\Uuid;
 
 /**

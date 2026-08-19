@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Extension\Application\Install\ExtensionInstallReconciler;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Extension\Application\Install\ExtensionInstallReconciler;
 use Throwable;
 
 /**

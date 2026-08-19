@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**
@@ -41,7 +41,7 @@ final readonly class ConstraintNameIsolationCompatibilityMigration implements Re
      * @since  2.0.0
      */
     public const string PUBLISHED_CHECKSUM =
-        '0edbe48d080c481f70ba07e54b4de1d2e8852407d9eec4b11e3fb9a70f348d5a';
+        '5448f0e736dbc8ada6f7a167e2c7ca306550b2975adc2985d5aa90b8301f05ed';
 
     /**
      * Bind the compatibility slot to this installation's physical table names.

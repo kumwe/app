@@ -23,7 +23,7 @@
     "search_indexing_enabled": true,
     "presentation": {
       "logo": "/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg",
-      "footer_text": "Powered by Kumwe CMS",
+      "footer_text": "Powered by Kumwe App",
       "primary_menu": "main",
       "active_scheme": "corporate",
       "button_style": "solid",
@@ -100,7 +100,7 @@
       "canonical_path": "/",
       "data": {
         "logo": "/media/00000000-0000-7000-8000-000000000902/kumwe-wordmark.svg",
-        "eyebrow": "Kumwe CMS 2.0",
+        "eyebrow": "Kumwe App 2.0",
         "heading": "Content systems ready for what comes next.",
         "summary": "A modern publishing foundation for structured content, governed workflows, browser delivery, APIs, automation, and AI-assisted operations.",
         "primary_action": {

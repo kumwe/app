@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Operations;
+namespace Kumwe\App\Application\Operations;
 
 /**
  * Break-glass port for clearing a migration lock row a pre-2.0 deployment left behind.

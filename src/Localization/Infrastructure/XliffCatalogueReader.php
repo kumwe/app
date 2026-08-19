@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Infrastructure;
+namespace Kumwe\App\Localization\Infrastructure;
 
 use DOMDocument;
 use DOMElement;

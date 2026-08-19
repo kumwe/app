@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Domain;
+namespace Kumwe\App\BusinessDefinition\Domain;
 
 /**
  * The complete machine-readable account of what publishing a draft would change, and what that costs.

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Kernel\Configuration;
+namespace Kumwe\App\Kernel\Configuration;
 
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
-use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
+use Kumwe\App\Extension\Application\Package\PackageConformanceMode;
+use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use JsonException;
 use InvalidArgumentException;
 use ValueError;

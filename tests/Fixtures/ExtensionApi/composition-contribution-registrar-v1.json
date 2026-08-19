@@ -1,17 +1,17 @@
 {
   "format": "kumwe-composition-contribution-registrar-v1",
   "interfaces": {
-    "Kumwe\\CMS\\Extension\\Contribution\\CompositionContributionRegistrar": [
-      "compositionBlock(Kumwe\\CMS\\Extension\\Contribution\\CompositionBlockDeclaration $declaration): void",
-      "compositionPattern(Kumwe\\CMS\\Extension\\Contribution\\CompositionPatternDeclaration $declaration): void",
-      "compositionFieldControl(Kumwe\\CMS\\Extension\\Contribution\\CompositionFieldControlDeclaration $declaration): void",
-      "compositionInspector(Kumwe\\CMS\\Extension\\Contribution\\CompositionInspectorDeclaration $declaration): void",
-      "compositionDesignVocabulary(Kumwe\\CMS\\Extension\\Contribution\\CompositionDesignVocabularyDeclaration $declaration): void",
-      "compositionMigration(Kumwe\\CMS\\Extension\\Contribution\\CompositionMigrationDeclaration $declaration): void"
+    "Kumwe\\App\\Extension\\Contribution\\CompositionContributionRegistrar": [
+      "compositionBlock(Kumwe\\App\\Extension\\Contribution\\CompositionBlockDeclaration $declaration): void",
+      "compositionPattern(Kumwe\\App\\Extension\\Contribution\\CompositionPatternDeclaration $declaration): void",
+      "compositionFieldControl(Kumwe\\App\\Extension\\Contribution\\CompositionFieldControlDeclaration $declaration): void",
+      "compositionInspector(Kumwe\\App\\Extension\\Contribution\\CompositionInspectorDeclaration $declaration): void",
+      "compositionDesignVocabulary(Kumwe\\App\\Extension\\Contribution\\CompositionDesignVocabularyDeclaration $declaration): void",
+      "compositionMigration(Kumwe\\App\\Extension\\Contribution\\CompositionMigrationDeclaration $declaration): void"
     ]
   },
   "enums": {
-    "Kumwe\\CMS\\Extension\\Contribution\\CompositionPropertyType": [
+    "Kumwe\\App\\Extension\\Contribution\\CompositionPropertyType": [
       "string",
       "text",
       "integer",

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Middleware;
+namespace Kumwe\App\Http\Middleware;
 
-use Kumwe\CMS\Infrastructure\Observability\CorrelationContext;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

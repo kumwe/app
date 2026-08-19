@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Middleware;
+namespace Kumwe\App\Http\Middleware;
 
-use Kumwe\CMS\Http\Security\SecurityHeaders;
+use Kumwe\App\Http\Security\SecurityHeaders;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

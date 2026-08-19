@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection\Integration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Evaluates the bounded overdue-review window scheduled by the proof component.

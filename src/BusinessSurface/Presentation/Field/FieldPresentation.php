@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Presentation\Field;
+namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue;
 
 /**
  * Escaped-view-model request returned by core or extension field strategies.

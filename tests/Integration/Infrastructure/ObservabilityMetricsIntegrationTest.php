@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Infrastructure;
+namespace Kumwe\App\Tests\Integration\Infrastructure;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Http\Handler\MetricsHandler;
-use Kumwe\CMS\Infrastructure\Observability\MetricCatalog;
-use Kumwe\CMS\Infrastructure\Observability\MetricRecorder;
-use Kumwe\CMS\Infrastructure\Observability\MetricsAccessPolicy;
-use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
-use Kumwe\CMS\Infrastructure\Observability\PrometheusExposition;
-use Kumwe\CMS\Infrastructure\Observability\RedisMetricRecorder;
-use Kumwe\CMS\Infrastructure\Observability\RuntimeMetricCollector;
-use Kumwe\CMS\Infrastructure\Persistence\ReadinessStatus;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
-use Kumwe\CMS\Infrastructure\Time\SystemClock;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Http\Handler\MetricsHandler;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\MetricsAccessPolicy;
+use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Infrastructure\Observability\PrometheusExposition;
+use Kumwe\App\Infrastructure\Observability\RedisMetricRecorder;
+use Kumwe\App\Infrastructure\Observability\RuntimeMetricCollector;
+use Kumwe\App\Infrastructure\Persistence\ReadinessStatus;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Redis\RedisRuntime;
+use Kumwe\App\Infrastructure\Time\SystemClock;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\Application\Automation\RetryPolicy;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\App\Application\Persistence\TransactionManager;
 use LogicException;
 use Psr\Log\LoggerInterface;
 use Throwable;

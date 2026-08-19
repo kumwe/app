@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
 use Psr\Log\AbstractLogger;
 use Psr\Log\LogLevel;

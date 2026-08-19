@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessBrowserQuery;
+use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessBrowserQuery;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Application;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
-use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
+use Kumwe\App\BusinessRecord\Query\RecordProjection;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

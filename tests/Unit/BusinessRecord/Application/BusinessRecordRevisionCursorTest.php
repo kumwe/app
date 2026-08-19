@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Application;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionCursor;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionCursor;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

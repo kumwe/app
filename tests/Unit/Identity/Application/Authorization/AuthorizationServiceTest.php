@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Identity\Application\Authorization;
 
-use Kumwe\CMS\Identity\Application\Authorization\AuthorizationPolicy;
-use Kumwe\CMS\Identity\Application\Authorization\AuthorizationService;
-use Kumwe\CMS\Identity\Domain\AuthorizationDecision;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\EmailAddress;
-use Kumwe\CMS\Identity\Domain\GrantScope;
-use Kumwe\CMS\Identity\Domain\User;
+use Kumwe\App\Identity\Application\Authorization\AuthorizationPolicy;
+use Kumwe\App\Identity\Application\Authorization\AuthorizationService;
+use Kumwe\App\Identity\Domain\AuthorizationDecision;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\EmailAddress;
+use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\App\Identity\Domain\User;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

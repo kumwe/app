@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Application;
+namespace Kumwe\App\Portal\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Portal\Domain\PortalContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Portal\Domain\PortalContext;
 
 /**
  * Deterministic portal context resolver over the canonical live membership directory.

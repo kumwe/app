@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\InterfaceStandard;
+namespace Kumwe\App\InterfaceStandard;
 
 /**
  * Deterministic semantic admission policy for Kumwe Interface Standard 1.0 surfaces.

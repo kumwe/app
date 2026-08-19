@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Content;
+namespace Kumwe\App\Administrator\Content;
 
 /**
  * Rebuilds the administrator model builder rows from a content type schema that is already published.

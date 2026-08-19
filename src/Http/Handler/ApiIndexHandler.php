@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Handler;
+namespace Kumwe\App\Http\Handler;
 
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -34,7 +34,7 @@ final class ApiIndexHandler implements RequestHandlerInterface
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         return new JsonResponse([
-            'product' => 'Kumwe CMS',
+            'product' => 'Kumwe App',
             'api_version' => 'v1',
             'status' => 'available',
         ]);

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationContractValidator;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationContractValidator;
+use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
 use Psr\Clock\ClockInterface;
 
 /**

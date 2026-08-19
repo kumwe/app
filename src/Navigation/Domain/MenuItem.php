@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Navigation\Domain;
+namespace Kumwe\App\Navigation\Domain;
 
 use InvalidArgumentException;
 

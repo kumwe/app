@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Twig;
+namespace Kumwe\App\Presentation\Twig;
 
 use Twig\Environment;
 

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\ChangePlan;
-use Kumwe\CMS\Application\Automation\ConfirmationRequirement;
+use Kumwe\App\Application\Automation\ChangePlan;
+use Kumwe\App\Application\Automation\ConfirmationRequirement;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

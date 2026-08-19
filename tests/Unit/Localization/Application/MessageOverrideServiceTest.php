@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Localization\Application;
+namespace Kumwe\App\Tests\Unit\Localization\Application;
 
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Localization\Application\MessageCatalogueRepository;
-use Kumwe\CMS\Localization\Application\MessageFormattingFailed;
-use Kumwe\CMS\Localization\Application\MessageOverrideRecord;
-use Kumwe\CMS\Localization\Application\MessageOverrideService;
-use Kumwe\CMS\Localization\Application\MessageOverrideStore;
-use Kumwe\CMS\Localization\Application\SupportedLocales;
-use Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Domain\MessageCatalogue;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
-use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\ImmediateTransactionManager;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Localization\Application\MessageCatalogueRepository;
+use Kumwe\App\Localization\Application\MessageFormattingFailed;
+use Kumwe\App\Localization\Application\MessageOverrideRecord;
+use Kumwe\App\Localization\Application\MessageOverrideService;
+use Kumwe\App\Localization\Application\MessageOverrideStore;
+use Kumwe\App\Localization\Application\SupportedLocales;
+use Kumwe\App\Localization\Domain\InvalidMessageIdentifier;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\MessageCatalogue;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Localization\Infrastructure\IntlMessagePatternFormatter;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\ImmediateTransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -478,15 +478,15 @@ final class MessageOverrideServiceTest extends TestCase
     /**
      * A store that keeps overrides in memory and satisfies both faces of the contract.
      *
-     * @return  MessageOverrideStore&\Kumwe\CMS\Localization\Application\MessageOverrideRepository  The store.
+     * @return  MessageOverrideStore&\Kumwe\App\Localization\Application\MessageOverrideRepository  The store.
      *
      * @since   2.0.0
      */
-    private function store(): MessageOverrideStore&\Kumwe\CMS\Localization\Application\MessageOverrideRepository
+    private function store(): MessageOverrideStore&\Kumwe\App\Localization\Application\MessageOverrideRepository
     {
         return new class implements
             MessageOverrideStore,
-            \Kumwe\CMS\Localization\Application\MessageOverrideRepository
+            \Kumwe\App\Localization\Application\MessageOverrideRepository
         {
             /**
              * Stored overrides, keyed by the identity the store enforces uniqueness on.

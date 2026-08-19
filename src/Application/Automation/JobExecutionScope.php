@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation;
+namespace Kumwe\App\Application\Automation;
 
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
 use LogicException;
 
 /**

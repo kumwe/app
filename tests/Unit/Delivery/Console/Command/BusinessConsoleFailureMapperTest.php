@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
-use Kumwe\CMS\BusinessRecord\Application\ValidationViolation;
-use Kumwe\CMS\BusinessSurface\Application\BusinessOperationNotFound;
-use Kumwe\CMS\Delivery\Console\Command\BusinessConsoleFailure;
-use Kumwe\CMS\Delivery\Console\Command\BusinessConsoleFailureMapper;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\App\BusinessRecord\Application\ValidationViolation;
+use Kumwe\App\BusinessSurface\Application\BusinessOperationNotFound;
+use Kumwe\App\Delivery\Console\Command\BusinessConsoleFailure;
+use Kumwe\App\Delivery\Console\Command\BusinessConsoleFailureMapper;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

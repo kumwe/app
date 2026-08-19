@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Demo\Application;
+namespace Kumwe\App\Demo\Application;
 
 /**
  * Application port for immutable profile selection and restart-safe resource provenance.

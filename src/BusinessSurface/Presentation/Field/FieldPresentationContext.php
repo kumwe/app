@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Presentation\Field;
+namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
 /**
  * Closed contexts in which a generated business field can be presented.

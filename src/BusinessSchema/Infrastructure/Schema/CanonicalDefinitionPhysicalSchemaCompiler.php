@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Infrastructure\Schema;
+namespace Kumwe\App\BusinessSchema\Infrastructure\Schema;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeDefinitionResolver;
-use Kumwe\CMS\BusinessDefinition\Domain\ComputationMode;
-use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler;
-use Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalIndexBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalNameCompiler;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableKind;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\App\BusinessDefinition\Domain\ComputationMode;
+use Kumwe\App\BusinessDefinition\Domain\DeleteBehavior;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceFormat;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler;
+use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalIndexBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalNameCompiler;
+use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableKind;
+use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
 
 /**
  * Compiles immutable definition metadata into a portable, canonical physical blueprint.
@@ -89,7 +89,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
      *          version, an ordered-line field declares no string target, a target definition is
      *          unavailable or not published at the pinned version, or a compiled table breaks a
      *          physical-schema rule.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a field names a type
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a field names a type
      *          the resolver cannot produce, or the definition's own canonical document cannot be encoded.
      *
      * @since   2.0.0
@@ -852,7 +852,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
      * @return  PhysicalColumnBlueprint  The single column the resolved storage kind maps to.
      *
      * @throws  InvalidBusinessSchema  When the registered storage kind has no portable Doctrine mapping.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the field type cannot
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the field type cannot
      *          be resolved at all.
      *
      * @since   2.0.0

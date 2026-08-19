@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Domain;
+namespace Kumwe\App\Audit\Domain;
 
 /**
  * Outcome of one full verification walk over the audit trail and its anchor ledger.

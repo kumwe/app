@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Content;
+namespace Kumwe\App\Delivery\Http\Api\Content;
 
 use RuntimeException;
 

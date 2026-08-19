@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\Delivery\Console\ConsoleApplication;
+use Kumwe\App\Delivery\Console\ConsoleApplication;
 
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';

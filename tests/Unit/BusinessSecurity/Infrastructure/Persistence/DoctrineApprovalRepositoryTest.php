@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSecurity\Infrastructure\Persistence;
+namespace Kumwe\App\Tests\Unit\BusinessSecurity\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\OrganizationContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalBinding;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRequest;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRule;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalStatus;
-use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalRepository;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\OrganizationContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequest;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRule;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
+use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalRepository;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

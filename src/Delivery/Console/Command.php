@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console;
+namespace Kumwe\App\Delivery\Console;
 
 /**
  * Contract for one command the `kumwe` console dispatches by name.

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Middleware;
+namespace Kumwe\App\Tests\Unit\Administrator\Http\Middleware;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

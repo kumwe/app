@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Application;
 
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
-use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
+use Kumwe\App\BusinessRecord\Query\RecordProjection;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 
 /**
  * Projects a bounded inspection summary through the canonical record-service policy boundary.

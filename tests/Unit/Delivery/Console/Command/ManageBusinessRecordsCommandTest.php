@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessApprovalSurfaceService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordProjector;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordQueryFactory;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
-use Kumwe\CMS\Delivery\Console\Command\BusinessConsoleFailureMapper;
-use Kumwe\CMS\Delivery\Console\Command\BusinessRecordConsolePresenter;
-use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
-use Kumwe\CMS\Delivery\Console\Command\ManageBusinessRecordsCommand;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\GeneratedBusinessParityOutput;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
+use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordQueryFactory;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\App\Delivery\Console\Command\BusinessConsoleFailureMapper;
+use Kumwe\App\Delivery\Console\Command\BusinessRecordConsolePresenter;
+use Kumwe\App\Delivery\Console\Command\ConsoleAuthorizer;
+use Kumwe\App\Delivery\Console\Command\ManageBusinessRecordsCommand;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\GeneratedBusinessParityOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;

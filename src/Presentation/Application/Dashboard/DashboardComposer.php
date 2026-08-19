@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Dashboard;
+namespace Kumwe\App\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupRepository;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceContext;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolution;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupRepository;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Presentation\Application\Preference\PresentationPreferenceContext;
+use Kumwe\App\Presentation\Application\Preference\PresentationPreferenceResolution;
+use Kumwe\App\Presentation\Application\Preference\PresentationPreferenceResolver;
 use RuntimeException;
 
 /**

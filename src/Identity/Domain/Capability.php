@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Domain;
+namespace Kumwe\App\Identity\Domain;
 
 use InvalidArgumentException;
 use Stringable;

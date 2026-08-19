@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Presentation\Application;
+namespace Kumwe\App\Tests\Unit\Presentation\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
-use Kumwe\CMS\Presentation\Infrastructure\TwigThemePackageValidator;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Domain\TemplateKisCompatibility;
+use Kumwe\App\Presentation\Infrastructure\TwigThemePackageValidator;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

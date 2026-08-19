@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
 /**
  * Verifies that a long-lived dispatcher still runs the exact trusted runtime generation it loaded.

@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Application;
+namespace Kumwe\App\Content\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Content\Domain\ContentEntry;
-use Kumwe\CMS\Content\Domain\ContentRevision;
-use Kumwe\CMS\Content\Domain\ContentStatus;
-use Kumwe\CMS\Content\Domain\ExpectedVersion;
-use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
-use Kumwe\CMS\Content\Domain\PublicationWindow;
-use Kumwe\CMS\Extension\Contribution\OwnedRuntimeContributionRegistry;
-use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
-use Kumwe\CMS\Extension\Contribution\TranslationSetItemAssociation;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Workflow\Domain\Workflow;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Content\Domain\ContentEntry;
+use Kumwe\App\Content\Domain\ContentRevision;
+use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\App\Content\Domain\ExpectedVersion;
+use Kumwe\App\Content\Domain\JsonSchemaValidator;
+use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
+use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
+use Kumwe\App\Extension\Contribution\TranslationSetItemAssociation;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Workflow\Domain\Workflow;
 use LogicException;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -234,7 +234,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, with its site and pinned definition versions.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      *
      * @since   2.0.0
@@ -317,10 +317,10 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record at version one, definition versions pinned.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.create` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.create` is refused.
      * @throws  InvalidArgumentException  When the slug is reserved, or a domain rule rejects the entry.
      * @throws  ContentModelNotFound  When the content type, or the workflow it names, is not published here.
-     * @throws  \Kumwe\CMS\Content\Domain\InvalidContentData  When the body does not satisfy the type's schema.
+     * @throws  \Kumwe\App\Content\Domain\InvalidContentData  When the body does not satisfy the type's schema.
      *
      * @since   2.0.0
      */
@@ -403,12 +403,12 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
      * @throws  InvalidArgumentException  When the slug is reserved, or a domain rule rejects the entry.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  ContentModelNotFound  When the pinned content type version is no longer published.
-     * @throws  \Kumwe\CMS\Content\Domain\InvalidContentData  When the body does not satisfy the pinned schema.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Content\Domain\InvalidContentData  When the body does not satisfy the pinned schema.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */
@@ -477,10 +477,10 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher, carrying its locale and group.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  \LogicException  When no translation-group store is wired.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */
@@ -522,14 +522,14 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher, carrying its locale and group.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  InvalidArgumentException  When the set is not an active declaration of the association's
      *          owner, or the locale is not one the declaration carries.
      * @throws  \LogicException  When no contribution registry or translation-group store is wired.
-     * @throws  \Kumwe\CMS\Content\Domain\InvalidTranslationGroup  When the declared fallback contradicts
+     * @throws  \Kumwe\App\Content\Domain\InvalidTranslationGroup  When the declared fallback contradicts
      *          the group's stored declaration.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */
@@ -593,10 +593,10 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher, carrying its locale and group.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  \LogicException  When no translation-group store is wired.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */
@@ -655,12 +655,12 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher and in the new state.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the edge's capability is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the edge's capability is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  ContentModelNotFound  When the pinned workflow version is no longer published.
      * @throws  \DomainException  When a custom state is named but no persisted workflow is configured.
-     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */
@@ -714,11 +714,11 @@ final readonly class ContentService
      *
      * @return  Capability  The capability the actor would need to make this exact move.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  ContentModelNotFound  When the pinned workflow version is no longer published.
      * @throws  \DomainException  When a custom state is named but no persisted workflow is configured.
-     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
+     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
      *
      * @since   2.0.0
      */
@@ -749,7 +749,7 @@ final readonly class ContentService
      *
      * @throws  ContentModelNotFound  When the pinned workflow version is no longer published.
      * @throws  \DomainException  When a custom state is named but no persisted workflow is configured.
-     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
+     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
      *
      * @since   2.0.0
      */
@@ -801,9 +801,9 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The trashed record, its `deletedAt` now set.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.delete` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.delete` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */
@@ -841,10 +841,10 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The live record, or the unchanged one when it was never trashed.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.restore` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.restore` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
-     * @throws  \Kumwe\CMS\Content\Domain\InvalidTranslationGroup  When restoring a translated entry would
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Content\Domain\InvalidTranslationGroup  When restoring a translated entry would
      *          take its group past the live-member ceiling.
      * @throws  LogicException  When translated content is restored without a translation-group store.
      *
@@ -923,7 +923,7 @@ final readonly class ContentService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor lacks the capability.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks the capability.
      *
      * @since   2.0.0
      */

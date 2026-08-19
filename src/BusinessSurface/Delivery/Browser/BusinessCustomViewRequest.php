@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Localization\Application\Translator;
+use Kumwe\App\Localization\Application\Translator;
 
 /**
  * Maps one native custom-view GET request through policy-filtered metadata and its signed query schema.

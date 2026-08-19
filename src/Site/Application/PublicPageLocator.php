@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Site\Application;
+namespace Kumwe\App\Site\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Navigation\Application\PublicNavigation;
-use Kumwe\CMS\Presentation\Application\SitePresentation;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Navigation\Application\PublicNavigation;
+use Kumwe\App\Presentation\Application\SitePresentation;
 
 /**
  * Two-way map between a public request path and the published content mounted at it.

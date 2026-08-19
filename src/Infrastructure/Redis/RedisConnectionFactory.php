@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Redis;
+namespace Kumwe\App\Infrastructure\Redis;
 
-use Kumwe\CMS\Kernel\Configuration\RedisConfiguration;
+use Kumwe\App\Kernel\Configuration\RedisConfiguration;
 use Redis;
 use RuntimeException;
 

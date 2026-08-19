@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Runtime;
+namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -15,9 +15,9 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Kumwe\CMS\Extension\Runtime\RuntimeIdentity;
-use Kumwe\CMS\Extension\Runtime\RuntimeLeaseWriter;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Extension\Runtime\RuntimeIdentity;
+use Kumwe\App\Extension\Runtime\RuntimeLeaseWriter;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

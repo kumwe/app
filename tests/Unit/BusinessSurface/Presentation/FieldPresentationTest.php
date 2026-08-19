@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Presentation;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Presentation;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

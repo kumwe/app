@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Domain\StepUp;
+namespace Kumwe\App\Identity\Domain\StepUp;
 
 /**
  * Credential kind that satisfied one step-up request.

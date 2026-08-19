@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Domain;
+namespace Kumwe\App\Tests\Unit\Identity\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Domain\AuthorizationDecision;
+use Kumwe\App\Identity\Domain\AuthorizationDecision;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

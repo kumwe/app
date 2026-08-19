@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Delivery\Portal;
 
-use Kumwe\CMS\Portal\Http\PortalRequest;
-use Kumwe\CMS\Portal\Presentation\PortalContributionRenderer;
+use Kumwe\App\Portal\Http\PortalRequest;
+use Kumwe\App\Portal\Presentation\PortalContributionRenderer;
 use KumweExample\AssetInspection\Application\InspectionOverviewService;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;

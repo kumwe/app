@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessIntegration;
+namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventEnvelope;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
+use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventEnvelope;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

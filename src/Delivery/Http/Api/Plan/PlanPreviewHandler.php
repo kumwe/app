@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Plan;
+namespace Kumwe\App\Delivery\Http\Api\Plan;
 
 use JsonException;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

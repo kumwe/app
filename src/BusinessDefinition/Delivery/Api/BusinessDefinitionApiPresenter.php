@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Delivery\Api;
+namespace Kumwe\App\BusinessDefinition\Delivery\Api;
 
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionDraft;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\CMS\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\App\BusinessDefinition\Application\DefinitionDraft;
+use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
 
 /**
  * Renders business-definition application results as stable REST documents.

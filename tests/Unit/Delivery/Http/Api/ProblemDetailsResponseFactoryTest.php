@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

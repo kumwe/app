@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Migration;
+namespace Kumwe\App\Extension\Application\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
 

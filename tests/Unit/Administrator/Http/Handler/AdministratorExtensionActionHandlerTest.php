@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Handler;
+namespace Kumwe\App\Tests\Unit\Administrator\Http\Handler;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Administrator\Http\Handler\AdministratorExtensionActionHandler;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Administrator\Http\Handler\AdministratorExtensionActionHandler;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Extension\Domain\ThemeSurface;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Infrastructure\Trust;
+namespace Kumwe\App\Extension\Infrastructure\Trust;
 
-use Kumwe\CMS\Extension\Application\Trust\RevocationFeedSource;
-use Kumwe\CMS\Extension\Application\Trust\RevocationList;
+use Kumwe\App\Extension\Application\Trust\RevocationFeedSource;
+use Kumwe\App\Extension\Application\Trust\RevocationList;
 use RuntimeException;
 
 /**

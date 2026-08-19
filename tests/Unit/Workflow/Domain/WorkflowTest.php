@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Workflow\Domain;
+namespace Kumwe\App\Tests\Unit\Workflow\Domain;
 
-use Kumwe\CMS\Content\Domain\ContentStatus;
+use Kumwe\App\Content\Domain\ContentStatus;
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition;
-use Kumwe\CMS\Workflow\Domain\Workflow;
-use Kumwe\CMS\Workflow\Domain\WorkflowDefinition;
-use Kumwe\CMS\Workflow\Domain\WorkflowStateDefinition;
-use Kumwe\CMS\Workflow\Domain\WorkflowTransitionDefinition;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Workflow\Domain\InvalidWorkflowTransition;
+use Kumwe\App\Workflow\Domain\Workflow;
+use Kumwe\App\Workflow\Domain\WorkflowDefinition;
+use Kumwe\App\Workflow\Domain\WorkflowStateDefinition;
+use Kumwe\App\Workflow\Domain\WorkflowTransitionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Presentation\Preference;
+namespace Kumwe\App\Application\Presentation\Preference;
 
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\SurfaceId;
 
 /**
  * Live surface-admission boundary for stored presentation preferences.

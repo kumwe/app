@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace @@PHP_NAMESPACE@@\Delivery\Portal;
 
 use @@PHP_NAMESPACE@@\Application\OverviewService;
-use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
-use Kumwe\CMS\Portal\Presentation\PortalContributionRenderer;
+use Kumwe\App\Portal\Contribution\PortalRouteHandlerFactory;
+use Kumwe\App\Portal\Presentation\PortalContributionRenderer;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**

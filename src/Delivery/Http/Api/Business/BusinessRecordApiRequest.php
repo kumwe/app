@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Business;
+namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Automation\IdempotencyKey as ApplicationIdempotencyKey;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey as HttpIdempotencyKey;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
+use Kumwe\App\Application\Automation\IdempotencyKey as ApplicationIdempotencyKey;
+use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
+use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
+use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
+use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey as HttpIdempotencyKey;
+use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
 use JsonException;

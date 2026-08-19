@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Contribution;
+namespace Kumwe\App\Portal\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ContributionSurface;
-use Kumwe\CMS\Extension\Runtime\TrustEnforcingRequestHandler;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Portal\Http\Handler\PortalExtensionRootRedirectHandler;
-use Kumwe\CMS\Portal\Http\Middleware\PortalAuthorizationMiddleware;
-use Kumwe\CMS\Portal\Http\Middleware\PortalCsrfMiddleware;
-use Kumwe\CMS\Portal\Presentation\PortalContributionRenderer;
-use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ContributionSurface;
+use Kumwe\App\Extension\Runtime\TrustEnforcingRequestHandler;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Portal\Http\Handler\PortalExtensionRootRedirectHandler;
+use Kumwe\App\Portal\Http\Middleware\PortalAuthorizationMiddleware;
+use Kumwe\App\Portal\Http\Middleware\PortalCsrfMiddleware;
+use Kumwe\App\Portal\Presentation\PortalContributionRenderer;
+use Kumwe\App\Portal\Presentation\PortalRenderer;
 use LogicException;
 use Mezzio\Application;
 

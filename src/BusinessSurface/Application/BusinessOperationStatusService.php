@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
-use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotencyState;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
+use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

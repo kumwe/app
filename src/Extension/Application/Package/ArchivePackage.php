@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Package;
+namespace Kumwe\App\Extension\Application\Package;
 
 use InvalidArgumentException;
 

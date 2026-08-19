@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordReplayWindow;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

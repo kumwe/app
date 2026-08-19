@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Localization\Infrastructure;
+namespace Kumwe\App\Tests\Unit\Localization\Infrastructure;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Kumwe\CMS\Localization\Application\MessageFormattingFailed;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Infrastructure\IntlExtensionMissing;
-use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
+use Kumwe\App\Localization\Application\MessageFormattingFailed;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Infrastructure\IntlExtensionMissing;
+use Kumwe\App\Localization\Infrastructure\IntlMessagePatternFormatter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

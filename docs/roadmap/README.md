@@ -1,4 +1,4 @@
-# Kumwe CMS consolidated roadmap
+# Kumwe App consolidated roadmap
 
 **Verified against** `7a83c295bce6c23f250384ba787dd5e4595fff0e`
 **Machine-readable companions** [`findings.json`](findings.json), [`capacity-contract.json`](capacity-contract.json)

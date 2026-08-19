@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Trust;
+namespace Kumwe\App\Extension\Application\Trust;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Kernel\Configuration\RevocationFeedConfiguration;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Kernel\Configuration\RevocationFeedConfiguration;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;

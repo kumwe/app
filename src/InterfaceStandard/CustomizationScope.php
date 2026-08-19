@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\InterfaceStandard;
+namespace Kumwe\App\InterfaceStandard;
 
 /**
  * Highest configuration layer allowed to change one whitelisted presentation slot.

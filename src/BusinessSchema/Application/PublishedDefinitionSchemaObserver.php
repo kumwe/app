@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
 
 /**
  * Port the definition publisher notifies so schema plans exist for the versions it just published.

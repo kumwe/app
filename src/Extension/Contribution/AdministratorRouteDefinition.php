@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Validated declaration of one administrator HTTP route a contributor publishes.

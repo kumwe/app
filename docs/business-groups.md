@@ -153,10 +153,10 @@ If a category should never be shared, do nothing: the default is isolation.
 
 | Concern | Where |
 |---|---|
-| The owner and its level | `Kumwe\CMS\Application\Authorization\OwnershipScope` |
+| The owner and its level | `Kumwe\App\Application\Authorization\OwnershipScope` |
 | The declared groups | `SiteGroupRegistry`, `SiteGroupWriter`, `SiteGroupAdministration` |
 | What a category may be owned as | `ResourceOwnershipScopePolicy`, `OwnershipScopeRule` |
 | Proving a pairing is legal | `ResourceOwnership::of()` |
 | The containment decision | `DenyByDefaultAuthorizationGateway` |
 | Widening and narrowing | `ResourceOwnershipScopeService` |
-| Consolidated reads | `Kumwe\CMS\BusinessReporting\Application\ConsolidatedGroupReportScope` |
+| Consolidated reads | `Kumwe\App\BusinessReporting\Application\ConsolidatedGroupReportScope` |

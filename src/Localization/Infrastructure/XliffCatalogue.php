@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Infrastructure;
+namespace Kumwe\App\Localization\Infrastructure;
 
 /**
  * One authored XLIFF document, read into the shape the catalogue compiler works from.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Security;
+namespace Kumwe\App\Http\Security;
 
 /**
  * Client-facing view of a request as reported by a chain of trusted proxies.

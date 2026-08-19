@@ -284,7 +284,7 @@ function collectViolations(string $sourceRoot, array $layers, array $classificat
         $owner = $references['namespace'] === ''
             ? ''
             : $references['namespace'] . '\\' . basename($path, '.php');
-        if ($owner === '' || !str_starts_with($owner, 'Kumwe\\CMS\\')) {
+        if ($owner === '' || !str_starts_with($owner, 'Kumwe\\App\\')) {
             continue;
         }
 
@@ -303,7 +303,7 @@ function collectViolations(string $sourceRoot, array $layers, array $classificat
         }
 
         foreach ($references['targets'] as $target => $line) {
-            if (!str_starts_with($target, 'Kumwe\\CMS\\') || $target === $owner) {
+            if (!str_starts_with($target, 'Kumwe\\App\\') || $target === $owner) {
                 continue;
             }
             $toLayer = layerFor($target, $classification);

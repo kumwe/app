@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Application\Administration;
+namespace Kumwe\App\Tests\Unit\Identity\Application\Administration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Application\Administration\FixedAccessTokenQuotaPolicy;
+use Kumwe\App\Identity\Application\Administration\FixedAccessTokenQuotaPolicy;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

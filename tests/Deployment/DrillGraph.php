@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Deployment;
+namespace Kumwe\App\Tests\Deployment;
 
 /**
  * Resolve the class graph a deployment drill reaches, so nothing in it can be unloadable in the image.
@@ -26,7 +26,7 @@ final readonly class DrillGraph
      * @var    string
      * @since  2.0.0
      */
-    public const string PREFIX = 'Kumwe\\CMS\\Tests\\';
+    public const string PREFIX = 'Kumwe\\App\\Tests\\';
 
     /**
      * Collect every class under the test namespace an entry point reaches, transitively.

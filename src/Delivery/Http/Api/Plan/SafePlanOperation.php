@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Plan;
+namespace Kumwe\App\Delivery\Http\Api\Plan;
 
 /**
  * The closed set of reviews a safe plan may describe.

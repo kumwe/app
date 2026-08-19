@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\OpenApi\Application;
+namespace Kumwe\App\OpenApi\Application;
 
 use Closure;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwnerType;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\CMS\Extension\Application\Package\ExtensionActivationAdmission;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
 
 /**
  * Rejects extension-owned generated OpenAPI component collisions before lifecycle publication.
@@ -93,7 +93,7 @@ final readonly class OpenApiExtensionActivationAdmission implements ExtensionAct
      *
      * @param   SiteContext  $site  Site whose post-activation component namespace is being checked.
      *
-     * @return  array<string, \Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition>  Definitions by handle.
+     * @return  array<string, \Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition>  Definitions by handle.
      *
      * @throws  InvalidArgumentException  When the late repository is invalid or a published head is unavailable.
      * @throws  \LogicException  When activation admission is invoked outside its lifecycle transaction.

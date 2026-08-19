@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Application;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Application;
 
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\AuthorizationDecision;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application\Approval;
+namespace Kumwe\App\BusinessSecurity\Application\Approval;
 
 use DateTimeImmutable;
 use InvalidArgumentException;

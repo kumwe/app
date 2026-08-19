@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Domain;
+namespace Kumwe\App\Localization\Domain;
 
 /**
  * The messages one layer carries for one locale, as an immutable identifier-to-pattern map.

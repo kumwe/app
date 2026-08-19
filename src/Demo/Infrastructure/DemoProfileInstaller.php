@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Demo\Infrastructure;
+namespace Kumwe\App\Demo\Infrastructure;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\Demo\Application\DemoProfileLedger;
-use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
-use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
-use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\Demo\Application\DemoProfileLedger;
+use Kumwe\App\Demo\Application\DemoProfileReconciler;
+use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
+use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
 use RuntimeException;
 use Throwable;
 
@@ -79,13 +79,13 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
     /**
      * Reconcile the selected site-content profile.
      *
-     * @param   \Kumwe\CMS\Application\Authorization\ExecutionContext  $context  Installer context.
+     * @param   \Kumwe\App\Application\Authorization\ExecutionContext  $context  Installer context.
      *
      * @return  list<string>  Content reconciliation diagnostics.
      *
      * @since   2.0.0
      */
-    private function content(\Kumwe\CMS\Application\Authorization\ExecutionContext $context): array
+    private function content(\Kumwe\App\Application\Authorization\ExecutionContext $context): array
     {
         $profile = $this->configuration->siteContentProfile;
         $loaded = $this->catalog->content($profile);
@@ -118,13 +118,13 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
     /**
      * Reconcile the named business demonstration or persist the explicit no-business-data selection.
      *
-     * @param   \Kumwe\CMS\Application\Authorization\ExecutionContext  $context  Installer context.
+     * @param   \Kumwe\App\Application\Authorization\ExecutionContext  $context  Installer context.
      *
      * @return  list<string>  Business reconciliation diagnostics.
      *
      * @since   2.0.0
      */
-    private function business(\Kumwe\CMS\Application\Authorization\ExecutionContext $context): array
+    private function business(\Kumwe\App\Application\Authorization\ExecutionContext $context): array
     {
         $profile = $this->configuration->businessProfile;
         $enabled = $profile !== 'none';

@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Presentation;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Presentation;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\CoreFieldPresenter;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldWidget;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

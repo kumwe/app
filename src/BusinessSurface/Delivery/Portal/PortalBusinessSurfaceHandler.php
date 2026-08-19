@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Delivery\Portal;
+namespace Kumwe\App\BusinessSurface\Delivery\Portal;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessActionStepUp;
-use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessStepUpInputRejected;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessBrowserResult;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessConfirmationQuery;
-use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
-use Kumwe\CMS\Localization\Application\Translator;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpProvider;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
-use Kumwe\CMS\Portal\Application\PortalSession;
-use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
-use Kumwe\CMS\Portal\Http\Middleware\PortalCsrfMiddleware;
-use Kumwe\CMS\Portal\Http\PortalRequest;
-use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\GeneratedBusinessActionStepUp;
+use Kumwe\App\BusinessSurface\Application\GeneratedBusinessStepUpInputRejected;
+use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessBrowserResult;
+use Kumwe\App\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
+use Kumwe\App\BusinessSurface\Delivery\Browser\GeneratedBusinessConfirmationQuery;
+use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\App\Localization\Application\Translator;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Identity\Application\StepUp\StepUpProvider;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\App\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\App\Portal\Http\Middleware\PortalCsrfMiddleware;
+use Kumwe\App\Portal\Http\PortalRequest;
+use Kumwe\App\Portal\Presentation\PortalRenderer;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\RedirectResponse;

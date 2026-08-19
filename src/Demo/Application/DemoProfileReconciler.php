@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Demo\Application;
+namespace Kumwe\App\Demo\Application;
 
 /**
  * Application boundary that converges the persisted installation-profile selections after migration.

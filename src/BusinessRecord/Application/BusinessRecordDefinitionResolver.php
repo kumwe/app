@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Port that pairs a published business definition with the physical schema installed for it.
@@ -34,7 +34,7 @@ interface BusinessRecordDefinitionResolver
      * @return  list<ResolvedBusinessDefinition>  One pair per active installation owned by an active
      *          owner; empty when the site has none.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When an
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When an
      *          active installation disagrees with the catalog version whose checksum it records.
      *
      * @since   2.0.0
@@ -53,10 +53,10 @@ interface BusinessRecordDefinitionResolver
      *
      * @return  ResolvedBusinessDefinition  The installed version paired with its installation row.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          no definition matches, its owner is disabled, or the installed version is unpublished or
      *          rejected.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          schema is not installed and active, or its checksum disagrees with the published version.
      *
      * @since   2.0.0
@@ -76,9 +76,9 @@ interface BusinessRecordDefinitionResolver
      *
      * @return  ResolvedBusinessDefinition  The pinned version paired with the live installation row.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          no definition matches, its owner is disabled, or that version is not published.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          schema is not installed and active, or the pinned version is newer than the installed one.
      *
      * @since   2.0.0
@@ -105,9 +105,9 @@ interface BusinessRecordDefinitionResolver
      * @return  ResolvedBusinessDefinition  The requested version paired with its installation row,
      *          whatever lifecycle status that installation currently carries.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          no definition matches, or the requested version is not published.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When no
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When no
      *          retained installation exists, or the requested version is newer than the installed one.
      *
      * @since   2.0.0

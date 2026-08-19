@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessSurface\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotency;
-use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusRepository;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
+use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Finds a single actor-bound operation scope digest, then delegates integrity proof to the canonical ledger.

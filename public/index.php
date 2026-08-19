@@ -14,8 +14,8 @@
 declare(strict_types=1);
 
 use Mezzio\Application;
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 
 $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';

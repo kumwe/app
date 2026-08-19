@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Infrastructure\Trust;
+namespace Kumwe\App\Extension\Infrastructure\Trust;
 
-use Kumwe\CMS\Extension\Application\Trust\RevocationListVerifier;
+use Kumwe\App\Extension\Application\Trust\RevocationListVerifier;
 use SodiumException;
 
 /**

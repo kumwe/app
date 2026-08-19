@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Time;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Time;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Kumwe\CMS\Infrastructure\Time\SystemClock;
+use Kumwe\App\Infrastructure\Time\SystemClock;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

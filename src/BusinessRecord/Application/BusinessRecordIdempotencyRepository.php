@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotency;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
 
 /**
  * Port for the ledger that makes a typed record command run at most once per idempotency key.
@@ -31,7 +31,7 @@ interface BusinessRecordIdempotencyRepository
      * @return  BusinessRecordIdempotency|null  The stored entry, or null when this key has never been
      *          claimed in this scope.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict  When
      *          the stored row cannot be reconstituted or its result no longer matches its checksum.
      *
      * @since   2.0.0
@@ -49,7 +49,7 @@ interface BusinessRecordIdempotencyRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace  When a
      *          concurrent command already claimed the same scope digest.
      *
      * @since   2.0.0
@@ -69,7 +69,7 @@ interface BusinessRecordIdempotencyRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict  When
      *          the checksum does not describe the result, or the entry is no longer in progress.
      *
      * @since   2.0.0

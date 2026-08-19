@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application;
+namespace Kumwe\App\Presentation\Application;
 
 use InvalidArgumentException;
 
@@ -83,7 +83,7 @@ final readonly class SitePresentation
     {
         return [
             'logo' => '/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg',
-            'footer_text' => 'Powered by Kumwe CMS',
+            'footer_text' => 'Powered by Kumwe App',
             'primary_menu' => 'main',
             'active_scheme' => 'corporate',
             'button_style' => 'solid',

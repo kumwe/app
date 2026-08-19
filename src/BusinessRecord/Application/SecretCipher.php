@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
 
 /**
  * Port through which business-record secret fields are encrypted and decrypted.

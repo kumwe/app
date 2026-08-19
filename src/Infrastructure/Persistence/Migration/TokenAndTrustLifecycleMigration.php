@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -14,15 +14,15 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Extension\Application\Package\ArchiveEntryType;
-use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Extension\Domain\PackageSignature;
-use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
-use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
-use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Extension\Application\Package\ArchiveEntryType;
+use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveReader;
+use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
+use Kumwe\App\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;

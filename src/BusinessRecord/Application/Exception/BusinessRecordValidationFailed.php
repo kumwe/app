@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Exception;
+namespace Kumwe\App\BusinessRecord\Application\Exception;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\ValidationViolation;
+use Kumwe\App\BusinessRecord\Application\ValidationViolation;
 
 /**
  * Raised when caller-supplied values do not satisfy the definition they are being written against.

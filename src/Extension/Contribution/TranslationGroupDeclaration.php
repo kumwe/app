@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Content\Domain\TranslationGroup;
-use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Content\Domain\TranslationGroup;
+use Kumwe\App\Localization\Domain\InvalidLocaleTag;
+use Kumwe\App\Localization\Domain\LocaleTag;
 
 /**
  * What a package declares before any of its content is allowed to carry locale variants.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 /**
  * Declaration by a migration that its whole `up()` may be run again after an interrupted attempt.

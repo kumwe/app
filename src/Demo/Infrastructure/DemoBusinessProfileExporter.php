@@ -2,34 +2,34 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Demo\Infrastructure;
+namespace Kumwe\App\Demo\Infrastructure;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwnerType;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
-use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
-use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
-use Kumwe\CMS\Demo\Application\DemoProfileLedger;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\MoneyValue;
+use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\App\BusinessRecord\Query\RecordProjection;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
+use Kumwe\App\Demo\Application\DemoProfileLedger;
+use Kumwe\App\Identity\Application\Administration\AccessControlService;
+use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
 use RuntimeException;
 
 /**

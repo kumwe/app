@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSchema\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessSchema\Domain;
 
-use Kumwe\CMS\BusinessDefinition\Domain\Expression;
-use Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
+use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

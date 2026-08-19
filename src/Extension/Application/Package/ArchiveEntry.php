@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Package;
+namespace Kumwe\App\Extension\Application\Package;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\PackagePath;
+use Kumwe\App\Extension\Domain\PackagePath;
 
 /**
  * One row of an extension archive's directory: what an entry is, where it sits, and how large it claims

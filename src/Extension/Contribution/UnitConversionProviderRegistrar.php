@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\CMS\BusinessRecord\Application\UnitConversionProvider;
+use Kumwe\App\BusinessRecord\Application\UnitConversionProvider;
 
 /**
  * Additive capability for providers that supply unit-of-measure conversion factors.

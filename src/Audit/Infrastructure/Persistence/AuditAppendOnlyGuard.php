@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Infrastructure\Persistence;
+namespace Kumwe\App\Audit\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
-use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Audit\Domain\AuditEnforcementState;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 use Throwable;
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console;
+namespace Kumwe\App\Delivery\Console;
 
-use Kumwe\CMS\Localization\Application\Translator;
+use Kumwe\App\Localization\Application\Translator;
 
 /**
  * `Output` implementation that writes each line to a pair of already-open stream resources.

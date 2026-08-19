@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Package;
+namespace Kumwe\App\Extension\Application\Package;
 
 /**
  * Port that streams an extension archive's file contents without writing any of them to disk.

@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Functional\Localization;
+namespace Kumwe\App\Tests\Functional\Localization;
 
 use Joomla\DI\Container;
-use Kumwe\CMS\Delivery\Console\Command\DemoExportCommand;
-use Kumwe\CMS\Delivery\Console\Command\MaterializeExtensionRuntimeCommand;
-use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
-use Kumwe\CMS\Delivery\Console\Command\MigrationStatusCommand;
-use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
-use Kumwe\CMS\Delivery\Console\Command\ScheduleRunCommand;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
-use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
+use Kumwe\App\Delivery\Console\Command\DemoExportCommand;
+use Kumwe\App\Delivery\Console\Command\MaterializeExtensionRuntimeCommand;
+use Kumwe\App\Delivery\Console\Command\MigrateCommand;
+use Kumwe\App\Delivery\Console\Command\MigrationStatusCommand;
+use Kumwe\App\Delivery\Console\Command\QueueWorkCommand;
+use Kumwe\App\Delivery\Console\Command\ScheduleRunCommand;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
+use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

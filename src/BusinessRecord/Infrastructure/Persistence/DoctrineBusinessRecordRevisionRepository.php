@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -11,15 +11,15 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionCursor;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionRepository;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionCursor;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionRepository;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use LogicException;
 
 /**

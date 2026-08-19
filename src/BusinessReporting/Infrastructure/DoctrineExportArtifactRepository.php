@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Infrastructure;
+namespace Kumwe\App\BusinessReporting\Infrastructure;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessReporting\Application\ExportArtifactRepository;
-use Kumwe\CMS\BusinessReporting\Application\ExportVersionConflict;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessReporting\Application\ExportArtifactRepository;
+use Kumwe\App\BusinessReporting\Application\ExportVersionConflict;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Workflow\Domain;
+namespace Kumwe\App\Workflow\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * One declared edge of a custom workflow: the state it leaves, the state it enters, and its price.

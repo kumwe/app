@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Localization\Application\Translator;
-use Kumwe\CMS\Media\Application\MediaAsset;
-use Kumwe\CMS\Media\Application\MediaService;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Localization\Application\Translator;
+use Kumwe\App\Media\Application\MediaAsset;
+use Kumwe\App\Media\Application\MediaService;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -64,7 +64,7 @@ final readonly class AdministratorMediaHandler implements RequestHandlerInterfac
      * @return  ResponseInterface  The rendered library, or a 303 back to it after a successful change.
      *
      * @throws  InvalidArgumentException  When the route was mounted without administrator authorization.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read or change media.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read or change media.
      * @throws  \RuntimeException  When the storage cannot write or remove the asset or its metadata.
      *
      * @since   2.0.0
@@ -125,7 +125,7 @@ final readonly class AdministratorMediaHandler implements RequestHandlerInterfac
      * @return  ResponseInterface  The rendered library, marked `no-store` because it carries a CSRF token.
      *
      * @throws  InvalidArgumentException  When the route was mounted without administrator session middleware.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
      *
      * @since   2.0.0
      */

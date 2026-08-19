@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\InterfaceStandard;
+namespace Kumwe\App\InterfaceStandard;
 
 /**
  * Whitelisted presentation choice a conforming surface may expose for customization.

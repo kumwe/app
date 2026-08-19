@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeDefinitionResolver;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\PortalOperation;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessReporting\Domain\ReportColumnDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessDefinition\Domain\PortalOperation;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
 
 /**
  * Derives the record-set CSV export report for one installed business definition.

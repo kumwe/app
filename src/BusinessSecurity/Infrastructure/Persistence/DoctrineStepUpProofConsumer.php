@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessSecurity\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\StepUpProof;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\StepUpProofConsumer;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\StepUpProof;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Doctrine replay fence for persisted, short-lived step-up proofs.

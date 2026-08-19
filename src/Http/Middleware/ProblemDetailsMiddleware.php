@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Middleware;
+namespace Kumwe\App\Http\Middleware;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Security\HighImpactAuthenticationRequired;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Runtime;
+namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 
-use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
+use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

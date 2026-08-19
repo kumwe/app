@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\StepUp;
+namespace Kumwe\App\Identity\Application\StepUp;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Identity\Domain\StepUp\RotatedStepUpSession;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentSetup;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpMethod;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
-use Kumwe\CMS\Identity\Domain\StepUp\TotpCredential;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Identity\Domain\StepUp\RotatedStepUpSession;
+use Kumwe\App\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
+use Kumwe\App\Identity\Domain\StepUp\StepUpEnrollmentSetup;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Identity\Domain\StepUp\StepUpMethod;
+use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\App\Identity\Domain\StepUp\TotpCredential;
 use Psr\Clock\ClockInterface;
 use Throwable;
 

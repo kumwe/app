@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
-use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\App\Delivery\Console\Output;
 
 /**
  * Captures the stable JSON output of one generated-business command invocation.

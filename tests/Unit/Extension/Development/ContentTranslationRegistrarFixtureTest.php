@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Development;
+namespace Kumwe\App\Tests\Unit\Extension\Development;
 
-use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
-use Kumwe\CMS\Extension\Contribution\ContentTranslationRegistrar;
+use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
+use Kumwe\App\Extension\Contribution\ContentTranslationRegistrar;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -60,7 +60,7 @@ final class ContentTranslationRegistrarFixtureTest extends TestCase
             self::assertSame($expected, $actual, sprintf('Public interface %s changed.', $interface));
         }
         self::assertTrue(is_a(
-            \Kumwe\CMS\Extension\Contribution\OwnedExtensionContributionRegistrar::class,
+            \Kumwe\App\Extension\Contribution\OwnedExtensionContributionRegistrar::class,
             ContentTranslationRegistrar::class,
             true,
         ));
@@ -101,7 +101,7 @@ final class ContentTranslationRegistrarFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '9dd71dce3b30e0a7ac203075dddf4eccda224f27b5cbde689a33fe6c00be3e5f',
+            'ce5a5fde1fa32d261dc288fecc3766fbf7c1fd8175dda625d1f9c1ee82809e0e',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);

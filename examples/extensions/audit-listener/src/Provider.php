@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace KumweExample\AuditListener;
 
 use Joomla\Event\EventInterface;
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
-use Kumwe\CMS\Extension\Runtime\ExtensionEventRegistrar;
-use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
-use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Runtime\ExtensionEventRegistrar;
+use Kumwe\App\Extension\Runtime\ExtensionRouteRegistrar;
+use Kumwe\App\Extension\Runtime\RuntimeExtension;
 
 final class Provider implements RuntimeExtension
 {

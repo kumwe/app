@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\OpenApi\Application;
+namespace Kumwe\App\OpenApi\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Psr\Log\LoggerInterface;
 use Throwable;
 

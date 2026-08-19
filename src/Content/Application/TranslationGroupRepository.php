@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Application;
+namespace Kumwe\App\Content\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Domain\TranslationGroup;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Domain\TranslationGroup;
+use Kumwe\App\Localization\Domain\LocaleTag;
 
 /**
  * Persistence contract for the translation group behind one logical item.
@@ -53,7 +53,7 @@ interface TranslationGroupRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Content\Domain\InvalidTranslationGroup  When the group belongs to another site
+     * @throws  \Kumwe\App\Content\Domain\InvalidTranslationGroup  When the group belongs to another site
      *          or an explicit fallback contradicts its stored declaration.
      *
      * @since   2.0.0
@@ -78,7 +78,7 @@ interface TranslationGroupRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Content\Domain\InvalidTranslationGroup  When the group belongs to another site
+     * @throws  \Kumwe\App\Content\Domain\InvalidTranslationGroup  When the group belongs to another site
      *          or already carries the maximum number of other live members.
      * @throws  \RuntimeException  When no declared group can be locked or its member count is unreadable.
      *

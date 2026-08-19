@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\MinimalTemplate;
 
-use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
 
 /**
  * Registers the minimal site template package without adding runtime services.

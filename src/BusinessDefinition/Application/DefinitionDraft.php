@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Application;
+namespace Kumwe\App\BusinessDefinition\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
 
 /**
  * A business definition's work in progress, checked against itself on the way out of storage.

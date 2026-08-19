@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Dashboard;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
-use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
+use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

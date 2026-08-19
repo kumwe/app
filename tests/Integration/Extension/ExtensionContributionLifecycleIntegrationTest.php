@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Extension;
+namespace Kumwe\App\Tests\Integration\Extension;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Extension\Application\Migration\ExtensionTableNames;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
-use Kumwe\CMS\Extension\Infrastructure\DoctrineExtensionManager;
-use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Application\Migration\ExtensionTableNames;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
+use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
+use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use Twig\Loader\FilesystemLoader;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;

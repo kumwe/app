@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Exception;
+namespace Kumwe\App\BusinessRecord\Application\Exception;
 
 /**
  * Raised when a relationship mutation contradicts the shape the definition declares for that relationship.

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Infrastructure\Trust;
+namespace Kumwe\App\Tests\Unit\Extension\Infrastructure\Trust;
 
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Extension\Domain\PackageSignature;
-use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumEd25519Verifier;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\App\Extension\Infrastructure\Trust\SodiumEd25519Verifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

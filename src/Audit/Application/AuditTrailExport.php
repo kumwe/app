@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Application;
+namespace Kumwe\App\Audit\Application;
 
-use Kumwe\CMS\Audit\Domain\StoredAuditArchive;
+use Kumwe\App\Audit\Domain\StoredAuditArchive;
 
 /**
  * Manifest of one completed audit trail export: the archive, the range it covers and what it holds.

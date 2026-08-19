@@ -2,40 +2,40 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
+namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordQueryCompiler;
-use Kumwe\CMS\BusinessRecord\Query\AggregateFunction;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonOperator;
-use Kumwe\CMS\BusinessRecord\Query\RecordAggregate;
-use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
-use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparison;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySchema;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySet;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordQueryCompiler;
+use Kumwe\App\BusinessRecord\Query\AggregateFunction;
+use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
+use Kumwe\App\BusinessRecord\Query\ComparisonOperator;
+use Kumwe\App\BusinessRecord\Query\RecordAggregate;
+use Kumwe\App\BusinessRecord\Query\RecordProjection;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
+use Kumwe\App\BusinessSecurity\Application\FieldDisclosurePlan;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicySet;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -61,7 +61,7 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessRecordDefinitionResolver::class, $resolver);
         self::assertInstanceOf(DoctrineBusinessRecordQueryCompiler::class, $compiler);
         $resolved = $resolver->forCreate($context, $definition->handle);
-        $scope = \Kumwe\CMS\BusinessRecord\Domain\RecordScope::forDefinition(
+        $scope = \Kumwe\App\BusinessRecord\Domain\RecordScope::forDefinition(
             $definition->scope,
             $context->site(),
             null,
@@ -168,7 +168,7 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessRecordDefinitionResolver::class, $resolver);
         self::assertInstanceOf(DoctrineBusinessRecordQueryCompiler::class, $compiler);
         $resolved = $resolver->forCreate($context, $definition->handle);
-        $scope = \Kumwe\CMS\BusinessRecord\Domain\RecordScope::forDefinition(
+        $scope = \Kumwe\App\BusinessRecord\Domain\RecordScope::forDefinition(
             $definition->scope,
             $context->site(),
             null,
@@ -214,7 +214,7 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
         self::assertInstanceOf(Connection::class, $database);
         self::assertInstanceOf(TableNames::class, $tables);
         $resolved = $resolver->forCreate($context, $definition->handle);
-        $scope = \Kumwe\CMS\BusinessRecord\Domain\RecordScope::forDefinition(
+        $scope = \Kumwe\App\BusinessRecord\Domain\RecordScope::forDefinition(
             $definition->scope,
             $context->site(),
             null,
@@ -512,7 +512,7 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessRecordAccessController::class, $accessController);
         self::assertInstanceOf(Connection::class, $database);
         $resolved = $resolver->forCreate($context, $owner->handle);
-        $scope = \Kumwe\CMS\BusinessRecord\Domain\RecordScope::forDefinition(
+        $scope = \Kumwe\App\BusinessRecord\Domain\RecordScope::forDefinition(
             $owner->scope,
             $context->site(),
             null,

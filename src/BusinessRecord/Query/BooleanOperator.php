@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Query;
+namespace Kumwe\App\BusinessRecord\Query;
 
 /**
  * How a `BooleanFilter` combines the filters nested under it.

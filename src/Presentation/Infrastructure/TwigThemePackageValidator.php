@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Infrastructure;
+namespace Kumwe\App\Presentation\Infrastructure;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\ThemePackageValidator;
-use Kumwe\CMS\Extension\Domain\SemanticVersion;
-use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
-use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
-use Kumwe\CMS\Presentation\Application\SitePresentation;
+use Kumwe\App\Application\Presentation\ThemePackageValidator;
+use Kumwe\App\Extension\Domain\SemanticVersion;
+use Kumwe\App\Extension\Domain\TemplateKisCompatibility;
+use Kumwe\App\Extension\Domain\ThemeSurface;
+use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
+use Kumwe\App\Presentation\Application\SitePresentation;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;

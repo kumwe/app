@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Dashboard;
+namespace Kumwe\App\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
 
 /**
  * One bounded workflow-candidate page derived from the live filtered navigation catalogue.

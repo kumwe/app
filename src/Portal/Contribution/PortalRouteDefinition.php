@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Contribution;
+namespace Kumwe\App\Portal\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Extension\Contribution\ContributionDefinition;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Validated portal route declaration with explicit capability and template ownership.

@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Presentation\Dashboard;
+namespace Kumwe\App\Application\Presentation\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupRepository;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceManager;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\PresentationPreference;
-use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupRepository;
+use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceManager;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\PresentationPreference;
+use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Identity\Domain\Capability;
 use RuntimeException;
 
 /**
@@ -239,8 +239,8 @@ final readonly class DashboardPreferenceService
      * @return  void
      *
      * @throws  InvalidArgumentException  When target or the current live catalogue is invalid.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the target.
-     * @throws  \Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceVersionConflict
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the target.
+     * @throws  \Kumwe\App\Application\Presentation\Preference\PresentationPreferenceVersionConflict
      *          When the exact stored row changed after its version was observed.
      *
      * @since   2.0.0

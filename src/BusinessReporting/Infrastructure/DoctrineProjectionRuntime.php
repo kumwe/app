@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Infrastructure;
+namespace Kumwe\App\BusinessReporting\Infrastructure;
 
 use DateTimeInterface;
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionRebuildResult;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionRebuildService;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\App\BusinessReporting\Application\ProjectionRebuildResult;
+use Kumwe\App\BusinessReporting\Application\ProjectionRebuildService;
+use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
 

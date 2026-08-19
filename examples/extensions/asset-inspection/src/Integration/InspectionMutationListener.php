@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Integration;
 
-use Kumwe\CMS\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\App\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
+use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
 
 /**
  * Performs transaction-local validation of inspection mutation metadata without external side effects.

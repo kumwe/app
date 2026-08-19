@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Security;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Security;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
-use Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Application\SecretCipher;
+use Kumwe\App\BusinessRecord\Application\SecretKeyProvider;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
 use RuntimeException;
 
 /**
@@ -50,7 +50,7 @@ final readonly class KeyRingSecretCipher implements SecretCipher
      *
      * @throws  InvalidArgumentException  When the plaintext or the associated data exceeds its bound.
      * @throws  RuntimeException  When libsodium refuses the encryption.
-     * @throws  \Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable  When the provider cannot produce
+     * @throws  \Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable  When the provider cannot produce
      *          its own active key, which stops the write rather than degrading it.
      *
      * @since   2.0.0
@@ -73,7 +73,7 @@ final readonly class KeyRingSecretCipher implements SecretCipher
      *
      * @throws  RuntimeException  When the envelope names an unsupported construction, libsodium refuses
      *          the input, or the ciphertext fails authentication.
-     * @throws  \Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable  When the envelope names a key this
+     * @throws  \Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable  When the envelope names a key this
      *          deployment does not hold, which is a distinct condition from a failed authentication.
      *
      * @since   2.0.0

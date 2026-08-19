@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Automation;
+namespace Kumwe\App\Delivery\Http\Api\Automation;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use DomainException;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Automation\AutomationManagementService;
-use Kumwe\CMS\Application\Automation\AutomationNotFound;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Application\Automation\AutomationManagementService;
+use Kumwe\App\Application\Automation\AutomationNotFound;
+use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
+use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
+use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;

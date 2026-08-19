@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Business;
+namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodConflict;
-use Kumwe\CMS\BusinessRecord\Application\PostingPeriodService;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriod;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\Content\ContentApiRequest;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodConflict;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodService;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Delivery\Http\Api\Content\ContentApiRequest;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

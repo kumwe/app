@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Domain;
+namespace Kumwe\App\BusinessIntegration\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\CanonicalJson;
+use Kumwe\App\Application\Automation\CanonicalJson;
 use Ramsey\Uuid\Uuid;
 
 /**

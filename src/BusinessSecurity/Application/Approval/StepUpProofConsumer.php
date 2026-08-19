@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application\Approval;
+namespace Kumwe\App\BusinessSecurity\Application\Approval;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\StepUpProof;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\StepUpProof;
 
 /**
  * Atomic replay fence for a fresh step-up proof used by a high-impact decision.

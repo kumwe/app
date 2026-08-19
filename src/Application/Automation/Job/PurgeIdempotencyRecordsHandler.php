@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\App\Application\Automation\Job;
 
-use Kumwe\CMS\Application\Automation\IdempotencyPurger;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Automation\IdempotencyPurger;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Scheduled job that drains the expired HTTP idempotency ledger in bounded batches.
@@ -67,7 +67,7 @@ final readonly class PurgeIdempotencyRecordsHandler implements JobHandler
      *
      * @throws  \InvalidArgumentException  When either limit is not an integer, when the batch count is
      *          outside 1 to 100, or when the purger rejects the batch size.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
      *          manage this installation-wide job type.
      *
      * @since   2.0.0

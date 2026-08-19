@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Extension;
+namespace Kumwe\App\Tests\Integration\Extension;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Application\TranslationGroupRepository;
-use Kumwe\CMS\Content\Domain\ContentStatus;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Contribution\OwnedRuntimeContributionRegistry;
-use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
-use Kumwe\CMS\Extension\Contribution\TranslationSetItemAssociation;
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Site\Application\SiteSettings;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Content\Application\TranslationGroupRepository;
+use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
+use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
+use Kumwe\App\Extension\Contribution\TranslationSetItemAssociation;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Site\Application\SiteSettings;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use Joomla\DI\Container;
 use Laminas\Diactoros\ServerRequestFactory;
 use Mezzio\Application;
@@ -388,12 +388,12 @@ final class ContributedContentTranslationIntegrationTest extends TestCase
 
             namespace PROVIDER_NAMESPACE;
 
-            use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
-            use Kumwe\CMS\Extension\Contribution\ContentTranslationRegistrar;
-            use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
-            use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
-            use Kumwe\CMS\Extension\Contribution\TranslationGroupDeclaration;
-            use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+            use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+            use Kumwe\App\Extension\Contribution\ContentTranslationRegistrar;
+            use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
+            use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrar;
+            use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
+            use Kumwe\App\Extension\Runtime\ExtensionContainer;
 
             final class Provider implements ExtensionServiceProvider, ExtensionContributionProvider
             {

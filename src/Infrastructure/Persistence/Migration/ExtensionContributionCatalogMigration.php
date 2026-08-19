@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /** Adds portable ownership metadata for extension-contributed capabilities. */

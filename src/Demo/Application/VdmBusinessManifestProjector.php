@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Demo\Application;
+namespace Kumwe\App\Demo\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SiteContext;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 

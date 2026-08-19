@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Content;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Content;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Http\Api\Content\ContentApiRequest;
+use Kumwe\App\Delivery\Http\Api\Content\ContentApiRequest;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

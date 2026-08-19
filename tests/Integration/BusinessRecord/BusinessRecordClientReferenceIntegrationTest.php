@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
+namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
-use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordIdempotencyRepository;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordIdempotencyRepository;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

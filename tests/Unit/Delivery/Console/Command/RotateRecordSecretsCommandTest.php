@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\RecordSecretRotation;
-use Kumwe\CMS\BusinessRecord\Application\RecordSecretRotationReport;
-use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
-use Kumwe\CMS\Delivery\Console\Command\RotateRecordSecretsCommand;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\RecordSecretRotation;
+use Kumwe\App\BusinessRecord\Application\RecordSecretRotationReport;
+use Kumwe\App\Delivery\Console\Command\ConsoleAuthorizer;
+use Kumwe\App\Delivery\Console\Command\RotateRecordSecretsCommand;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

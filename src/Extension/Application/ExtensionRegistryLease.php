@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application;
+namespace Kumwe\App\Extension\Application;
 
 /**
  * Handle on the exclusive claim one extension lifecycle operation holds over the registry.

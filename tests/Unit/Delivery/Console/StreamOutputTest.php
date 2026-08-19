@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console;
+namespace Kumwe\App\Tests\Unit\Delivery\Console;
 
-use Kumwe\CMS\Delivery\Console\StreamOutput;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Delivery\Console\StreamOutput;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

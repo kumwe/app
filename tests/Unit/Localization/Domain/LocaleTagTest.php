@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Localization\Domain;
+namespace Kumwe\App\Tests\Unit\Localization\Domain;
 
-use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Domain\TextDirection;
+use Kumwe\App\Localization\Domain\InvalidLocaleTag;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\TextDirection;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

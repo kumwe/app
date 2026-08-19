@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace @@PHP_NAMESPACE@@\Delivery\Administrator;
 
 use @@PHP_NAMESPACE@@\Application\OverviewService;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

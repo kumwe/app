@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -10,9 +10,9 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\BusinessDefinition\Domain\BuiltInFieldTypes;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\BusinessDefinition\Domain\BuiltInFieldTypes;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 

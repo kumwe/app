@@ -20,7 +20,7 @@ Both run inside `composer qa`, and both are required to pass before a change is 
   older runtimes.
 - Every PHP file starts with `<?php`, a blank line, the file-level documentation block where one
   applies, and `declare(strict_types=1);`.
-- One class-like declaration per file, named after the file, autoloaded PSR-4 from `Kumwe\CMS\`.
+- One class-like declaration per file, named after the file, autoloaded PSR-4 from `Kumwe\App\`.
 - Layout follows [PSR-12](https://www.php-fig.org/psr/psr-12/): four-space indentation, no tabs, LF
   line endings, one trailing newline, no trailing whitespace.
 - Lines stay at or below **120 characters**. This is a hard limit for documentation blocks too; wrap

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\StepUp;
+namespace Kumwe\App\Identity\Application\StepUp;
 
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
 
 /**
  * Durable replay-fence port for fresh step-up proofs.

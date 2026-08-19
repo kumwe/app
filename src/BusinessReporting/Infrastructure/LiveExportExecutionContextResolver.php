@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Infrastructure;
+namespace Kumwe\App\BusinessReporting\Infrastructure;
 
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessReporting\Application\ExportExecutionContextResolver;
-use Kumwe\CMS\BusinessReporting\Application\ExportGenerationRejected;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\CMS\Portal\Application\PortalPrincipalLoader;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessReporting\Application\ExportExecutionContextResolver;
+use Kumwe\App\BusinessReporting\Application\ExportGenerationRejected;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\App\Portal\Application\PortalPrincipalLoader;
 
 /**
  * Rehydrates current identity state under the original human export request's exact grant ceiling.

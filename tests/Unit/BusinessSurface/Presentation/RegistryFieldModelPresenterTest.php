@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Presentation;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Presentation;
 
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessSurface\Application\FieldModelContext;
-use Kumwe\CMS\BusinessSurface\Application\PresentedField;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRequest;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldWidget;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessSurface\Application\FieldModelContext;
+use Kumwe\App\BusinessSurface\Application\PresentedField;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\App\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

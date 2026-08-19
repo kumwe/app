@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Application;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\MoneyConversionPipeline;
-use Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider;
-use Kumwe\CMS\BusinessRecord\Application\MoneyRateUnavailable;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimalArithmetic;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyConversionRequest;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyConverter;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyExchangeRate;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyRateProviderDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyRoundingMode;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
-use Kumwe\CMS\BusinessRecord\Infrastructure\RuntimeMoneyRateProviderCatalog;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\BusinessRecord\Application\MoneyConversionPipeline;
+use Kumwe\App\BusinessRecord\Application\MoneyRateProvider;
+use Kumwe\App\BusinessRecord\Application\MoneyRateUnavailable;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimalArithmetic;
+use Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest;
+use Kumwe\App\BusinessRecord\Domain\MoneyConverter;
+use Kumwe\App\BusinessRecord\Domain\MoneyExchangeRate;
+use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
+use Kumwe\App\BusinessRecord\Domain\MoneyRoundingMode;
+use Kumwe\App\BusinessRecord\Domain\MoneyValue;
+use Kumwe\App\BusinessRecord\Infrastructure\RuntimeMoneyRateProviderCatalog;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\CMS\Application\Automation\Worker;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\App\Application\Automation\Worker;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Throwable;
 
 /**

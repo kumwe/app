@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Handler;
+namespace Kumwe\App\Http\Handler;
 
-use Kumwe\CMS\Infrastructure\Observability\MetricCatalog;
-use Kumwe\CMS\Infrastructure\Observability\MetricCollector;
-use Kumwe\CMS\Infrastructure\Observability\MetricRecorder;
-use Kumwe\CMS\Infrastructure\Observability\MetricsAccessPolicy;
-use Kumwe\CMS\Infrastructure\Observability\PrometheusExposition;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricCollector;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\MetricsAccessPolicy;
+use Kumwe\App\Infrastructure\Observability\PrometheusExposition;
 use Laminas\Diactoros\Response\TextResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Automation;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Automation;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Automation\AutomationManagementService;
-use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
-use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Delivery\Http\Api\Automation\AutomationApiHandler;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Automation\AutomationManagementService;
+use Kumwe\App\Application\Automation\Job\ScheduleRepository;
+use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Delivery\Http\Api\Automation\AutomationApiHandler;
+use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
+use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AutomationApiHandler::class)]
 final class AutomationApiHandlerTest extends TestCase
@@ -122,7 +122,7 @@ final class AutomationApiHandlerTest extends TestCase
             $this->createStub(AuditRecorder::class),
             $clock,
             AuthorizationContext::gateway(),
-            new \Kumwe\CMS\Application\Automation\JobExecutionScope(),
+            new \Kumwe\App\Application\Automation\JobExecutionScope(),
         );
 
         return new AutomationApiHandler($automation, new ProblemDetailsResponseFactory());

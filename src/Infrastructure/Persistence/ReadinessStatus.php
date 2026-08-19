@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence;
+namespace Kumwe\App\Infrastructure\Persistence;
 
 /**
  * Contract for the single yes-or-no verdict on whether this process is fit to serve requests.

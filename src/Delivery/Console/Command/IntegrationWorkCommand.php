@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\RuntimeDeadline;
-use Kumwe\CMS\BusinessIntegration\Application\OutboxDispatcher;
-use Kumwe\CMS\BusinessIntegration\Application\ProcessWorkDispatcher;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Application\Automation\RuntimeDeadline;
+use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
+use Kumwe\App\BusinessIntegration\Application\ProcessWorkDispatcher;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use RuntimeException;
 use Throwable;
 

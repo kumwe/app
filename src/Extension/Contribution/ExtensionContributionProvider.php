@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
 
 /**
  * Contract a strict schema-2-or-newer extension implements to hand declared contributions to the CMS.

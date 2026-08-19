@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace @@PHP_NAMESPACE@@\Integration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\App\BusinessReporting\Application\ProjectionEvent;
+use Kumwe\App\BusinessReporting\Application\ProjectionWriter;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
 
 /**
  * Deterministically derives one item reporting row from each declared event.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Application;
+namespace Kumwe\App\Audit\Application;
 
 /**
  * Outcome of one retention pass: what was archived and pruned, or why nothing was.

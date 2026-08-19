@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Domain;
+namespace Kumwe\App\BusinessReporting\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessDefinition\Domain\Expression;
-use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\App\Extension\Contribution\ContributionDefinition;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Immutable, bounded and manifest-comparable business report definition.

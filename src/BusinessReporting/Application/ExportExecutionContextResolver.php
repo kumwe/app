@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
 
 /**
  * Rehydrates current authority for the original accountable export actor.

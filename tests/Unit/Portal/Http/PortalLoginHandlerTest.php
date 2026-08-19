@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Portal\Http;
+namespace Kumwe\App\Tests\Unit\Portal\Http;
 
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Portal\Application\CreatedPortalSession;
-use Kumwe\CMS\Portal\Application\PortalAuthenticator;
-use Kumwe\CMS\Portal\Application\PortalContextResolver;
-use Kumwe\CMS\Portal\Application\PortalPasswordIdentity;
-use Kumwe\CMS\Portal\Application\PortalSession;
-use Kumwe\CMS\Portal\Application\PortalSessionStore;
-use Kumwe\CMS\Portal\Contribution\PortalNavigationRegistry;
-use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
-use Kumwe\CMS\Portal\Contribution\PortalWorkspaceRegistry;
-use Kumwe\CMS\Portal\Domain\PortalContext;
-use Kumwe\CMS\Portal\Http\Handler\PortalLoginHandler;
-use Kumwe\CMS\Portal\Presentation\PortalNavigationVisibility;
-use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Portal\Application\CreatedPortalSession;
+use Kumwe\App\Portal\Application\PortalAuthenticator;
+use Kumwe\App\Portal\Application\PortalContextResolver;
+use Kumwe\App\Portal\Application\PortalPasswordIdentity;
+use Kumwe\App\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Application\PortalSessionStore;
+use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
+use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
+use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
+use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Http\Handler\PortalLoginHandler;
+use Kumwe\App\Portal\Presentation\PortalNavigationVisibility;
+use Kumwe\App\Portal\Presentation\PortalRenderer;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\Uri;
 use PHPUnit\Framework\Attributes\CoversClass;

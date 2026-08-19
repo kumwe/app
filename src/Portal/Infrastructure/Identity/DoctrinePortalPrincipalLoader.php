@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Infrastructure\Identity;
+namespace Kumwe\App\Portal\Infrastructure\Identity;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Portal\Application\PortalPasswordIdentity;
-use Kumwe\CMS\Portal\Application\PortalPrincipalLoader;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Portal\Application\PortalPasswordIdentity;
+use Kumwe\App\Portal\Application\PortalPrincipalLoader;
 
 /**
  * DBAL loader that rebuilds portal principals from current active users, roles, grants, and epochs.

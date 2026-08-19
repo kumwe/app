@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Http\Middleware;
+namespace Kumwe\App\Portal\Http\Middleware;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Portal\Application\PortalSession;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Portal\Application\PortalSession;
 use Laminas\Diactoros\Response\JsonResponse;
 use LogicException;
 use Mezzio\Router\Route;

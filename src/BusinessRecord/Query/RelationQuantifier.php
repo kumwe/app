@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Query;
+namespace Kumwe\App\BusinessRecord\Query;
 
 /**
  * How many of a record's related records must satisfy the filter nested inside a `RelationFilter`.

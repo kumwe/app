@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationCompatibilityMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationCompatibilityMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -138,7 +138,7 @@ final class ForeignKeyConstraintNamingTest extends TestCase
     {
         /** @var array<string, string> $inventory */
         $inventory = (new ReflectionClass(
-            \Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigrationTest::class,
+            \Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigrationTest::class,
         ))->getConstant('SHIPPED_LITERALS');
 
         return $inventory;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation;
+namespace Kumwe\App\Presentation;
 
 /**
  * Renders the restricted markup editors may store in a content body into HTML that is safe to print raw.

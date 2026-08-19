@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Presentation;
+namespace Kumwe\App\Administrator\Presentation;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Localization\Application\Translator;
-use Kumwe\CMS\Presentation\Application\SitePresentation;
+use Kumwe\App\Localization\Application\Translator;
+use Kumwe\App\Presentation\Application\SitePresentation;
 
 /**
  * Maps the graphical site-settings controls to the shared presentation contract.

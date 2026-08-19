@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Extension\Application\Trust\RevocationFeedState;
-use Kumwe\CMS\Extension\Application\Trust\RevocationFeedSynchronizer;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Application\Trust\RevocationFeedState;
+use Kumwe\App\Extension\Application\Trust\RevocationFeedSynchronizer;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Psr\Clock\ClockInterface;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;

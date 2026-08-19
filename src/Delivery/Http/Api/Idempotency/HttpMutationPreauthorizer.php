@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Idempotency;
+namespace Kumwe\App\Delivery\Http\Api\Idempotency;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinitionGuard;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Application\ContentModelRepository;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
-use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
-use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\GrantScope;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinitionGuard;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Content\Application\ContentModelRepository;
+use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
+use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\App\Identity\Application\Administration\TokenRotationPreauthorizer;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\GrantScope;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
@@ -83,13 +83,13 @@ final readonly class HttpMutationPreauthorizer
      * @throws  InvalidArgumentException  When the route carries no policy, the method and path are not a
      *          supported content mutation, a report or other path segment is not a usable resource identifier,
      *          the body is not a JSON object, a required body field is missing or blank, or a named grant is gone.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not perform the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not perform the
      *          mutation, or may not delegate a capability the request would hand on.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When a transition names an entry the context
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a transition names an entry the context
      *          cannot reach.
-     * @throws  \Kumwe\CMS\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
+     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
      *          is no longer published.
-     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
+     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
      *          the requested status.
      *
      * @since   2.0.0
@@ -336,13 +336,13 @@ final readonly class HttpMutationPreauthorizer
      *
      * @throws  InvalidArgumentException  When the body is not a JSON object or carries no non-empty
      *          `status`.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read the
      *          entry.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When no entry matches within reach of the
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the
      *          context.
-     * @throws  \Kumwe\CMS\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
+     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
      *          is no longer published.
-     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
+     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
      *          the requested status.
      *
      * @since   2.0.0
@@ -369,7 +369,7 @@ final readonly class HttpMutationPreauthorizer
      * @return  void
      *
      * @throws  InvalidArgumentException  When the action is not a well-formed capability code.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor that
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor that
      *          action on that resource.
      *
      * @since   2.0.0

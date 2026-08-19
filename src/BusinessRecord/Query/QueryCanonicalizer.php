@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Query;
+namespace Kumwe\App\BusinessRecord\Query;
 
-use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 
 /**
  * Reduces a query literal to the stable form a specification digest and a cursor payload are built on.

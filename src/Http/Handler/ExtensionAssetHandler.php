@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Handler;
+namespace Kumwe\App\Http\Handler;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Psr\Clock\ClockInterface;

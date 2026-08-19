@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
-use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
-use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\App\Delivery\Console\Command\ConsoleAuthorizer;
+use Kumwe\App\Delivery\Console\Command\CreateAccessTokenCommand;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

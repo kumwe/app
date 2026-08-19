@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Administration;
+namespace Kumwe\App\Identity\Application\Administration;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 
 /**
  * The signed-in administrator behind one request, as resolved from the session cookie.

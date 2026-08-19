@@ -2,7 +2,7 @@
   "format": "kumwe-extension-contract-classification-v1",
   "authority": "docs/extension-contract/README.md",
   "generations": "docs/extension-contract/generations.json",
-  "note": "Which types an extension may build against, as data rather than as prose. Everything under `Kumwe\\CMS\\` is internal unless it is listed here, so the absence of a type from this file is itself the answer: core may decompose it freely and a package that reaches for it will break. A type listed here is public — it is part of a promised generation, and it changes only by a generation gaining a successor. `pinned_by` names the compatibility fixture whose committed bytes hold the type's exact member signatures; where it is null the type is public and governed by its generation, but its members are not byte-pinned at this release.",
+  "note": "Which types an extension may build against, as data rather than as prose. Everything under `Kumwe\\App\\` is internal unless it is listed here, so the absence of a type from this file is itself the answer: core may decompose it freely and a package that reaches for it will break. A type listed here is public — it is part of a promised generation, and it changes only by a generation gaining a successor. `pinned_by` names the compatibility fixture whose committed bytes hold the type's exact member signatures; where it is null the type is public and governed by its generation, but its members are not byte-pinned at this release.",
   "default_visibility": "internal",
   "visibilities": {
     "public": "Part of a promised generation. An extension may depend on it.",
@@ -17,32 +17,32 @@
   },
   "namespaces": [
     {
-      "prefix": "Kumwe\\CMS\\Extension\\Infrastructure\\",
+      "prefix": "Kumwe\\App\\Extension\\Infrastructure\\",
       "visibility": "internal",
       "reason": "Adapters. Doctrine, Redis and sodium bindings behind the application contracts."
     },
     {
-      "prefix": "Kumwe\\CMS\\Extension\\Application\\Install\\",
+      "prefix": "Kumwe\\App\\Extension\\Application\\Install\\",
       "visibility": "internal",
       "reason": "The install plan and its states belong to the platform; a package never drives them."
     },
     {
-      "prefix": "Kumwe\\CMS\\Extension\\Application\\Package\\",
+      "prefix": "Kumwe\\App\\Extension\\Application\\Package\\",
       "visibility": "internal",
       "reason": "Admission, safety and attestation of a package are done to it, not by it."
     },
     {
-      "prefix": "Kumwe\\CMS\\Extension\\Application\\Trust\\",
+      "prefix": "Kumwe\\App\\Extension\\Application\\Trust\\",
       "visibility": "internal",
       "reason": "The trust store and its policy are operator surfaces, reached through the console."
     },
     {
-      "prefix": "Kumwe\\CMS\\Kernel\\",
+      "prefix": "Kumwe\\App\\Kernel\\",
       "visibility": "internal",
       "reason": "The composition root. What it exposes to a package is the allowlist in generations.json."
     },
     {
-      "prefix": "Kumwe\\CMS\\Infrastructure\\",
+      "prefix": "Kumwe\\App\\Infrastructure\\",
       "visibility": "internal",
       "reason": "Persistence, migration and driver code. A package uses its own migrations instead."
     }
@@ -61,7 +61,7 @@
   ],
   "types": [
     {
-      "type": "Kumwe\\CMS\\Administrator\\Http\\AdministratorRequest",
+      "type": "Kumwe\\App\\Administrator\\Http\\AdministratorRequest",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -71,7 +71,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Administrator\\Presentation\\AdministratorRenderer",
+      "type": "Kumwe\\App\\Administrator\\Presentation\\AdministratorRenderer",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -81,7 +81,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Application\\Authorization\\ExecutionContext",
+      "type": "Kumwe\\App\\Application\\Authorization\\ExecutionContext",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -91,7 +91,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Application\\Authorization\\ResourcePolicyTarget",
+      "type": "Kumwe\\App\\Application\\Authorization\\ResourcePolicyTarget",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -101,7 +101,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Application\\Automation\\JobHandler",
+      "type": "Kumwe\\App\\Application\\Automation\\JobHandler",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -111,7 +111,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessDefinition\\Domain\\CanonicalDefinitionJson",
+      "type": "Kumwe\\App\\BusinessDefinition\\Domain\\CanonicalDefinitionJson",
       "kind": "class",
       "visibility": "public",
       "role": "call",
@@ -121,7 +121,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessDefinition\\Domain\\EntityTypeDefinition",
+      "type": "Kumwe\\App\\BusinessDefinition\\Domain\\EntityTypeDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -131,7 +131,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessDefinition\\Domain\\FieldTypeDefinition",
+      "type": "Kumwe\\App\\BusinessDefinition\\Domain\\FieldTypeDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -141,7 +141,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Application\\DomainEventHandler",
+      "type": "Kumwe\\App\\BusinessIntegration\\Application\\DomainEventHandler",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -151,7 +151,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationEventHandler",
+      "type": "Kumwe\\App\\BusinessIntegration\\Application\\IntegrationEventHandler",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -161,7 +161,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationEventTransport",
+      "type": "Kumwe\\App\\BusinessIntegration\\Application\\IntegrationEventTransport",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -171,7 +171,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\ConsumerIdempotency",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\ConsumerIdempotency",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -181,7 +181,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\DomainEvent",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\DomainEvent",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -191,7 +191,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\DomainListenerDefinition",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\DomainListenerDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -201,7 +201,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventConsumerDefinition",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\EventConsumerDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -211,7 +211,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventEnvelope",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\EventEnvelope",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -221,7 +221,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventSchemaDefinition",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\EventSchemaDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -231,7 +231,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventSensitivity",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\EventSensitivity",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -241,7 +241,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\IntegrationContract",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\IntegrationContract",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -251,7 +251,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\IntegrationEvent",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\IntegrationEvent",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -261,7 +261,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\JobContributionDefinition",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\JobContributionDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -271,7 +271,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\QueueContributionDefinition",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\QueueContributionDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -281,7 +281,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\ScheduleContributionDefinition",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\ScheduleContributionDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -291,7 +291,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessIntegration\\Domain\\WebhookContributionDefinition",
+      "type": "Kumwe\\App\\BusinessIntegration\\Domain\\WebhookContributionDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -301,7 +301,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Application\\BusinessRecordService",
+      "type": "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordService",
       "kind": "class",
       "visibility": "public",
       "role": "resolve",
@@ -311,7 +311,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Application\\MoneyRateProvider",
+      "type": "Kumwe\\App\\BusinessRecord\\Application\\MoneyRateProvider",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -321,7 +321,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Application\\Query\\BrowseRecordsQuery",
+      "type": "Kumwe\\App\\BusinessRecord\\Application\\Query\\BrowseRecordsQuery",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -331,7 +331,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Application\\UnitConversionProvider",
+      "type": "Kumwe\\App\\BusinessRecord\\Application\\UnitConversionProvider",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -341,7 +341,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyConversionRequest",
+      "type": "Kumwe\\App\\BusinessRecord\\Domain\\MoneyConversionRequest",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -351,7 +351,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyExchangeRate",
+      "type": "Kumwe\\App\\BusinessRecord\\Domain\\MoneyExchangeRate",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -361,7 +361,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyRateProviderDefinition",
+      "type": "Kumwe\\App\\BusinessRecord\\Domain\\MoneyRateProviderDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -371,7 +371,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyRoundingMode",
+      "type": "Kumwe\\App\\BusinessRecord\\Domain\\MoneyRoundingMode",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -381,7 +381,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\QuantityRoundingMode",
+      "type": "Kumwe\\App\\BusinessRecord\\Domain\\QuantityRoundingMode",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -391,7 +391,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\UnitConversionFactor",
+      "type": "Kumwe\\App\\BusinessRecord\\Domain\\UnitConversionFactor",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -401,7 +401,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Domain\\UnitConversionRequest",
+      "type": "Kumwe\\App\\BusinessRecord\\Domain\\UnitConversionRequest",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -411,7 +411,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Query\\RecordProjection",
+      "type": "Kumwe\\App\\BusinessRecord\\Query\\RecordProjection",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -421,7 +421,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessRecord\\Query\\RecordQuerySpecification",
+      "type": "Kumwe\\App\\BusinessRecord\\Query\\RecordQuerySpecification",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -431,7 +431,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionBuilder",
+      "type": "Kumwe\\App\\BusinessReporting\\Application\\ProjectionBuilder",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -441,7 +441,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionEvent",
+      "type": "Kumwe\\App\\BusinessReporting\\Application\\ProjectionEvent",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -451,7 +451,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionWriter",
+      "type": "Kumwe\\App\\BusinessReporting\\Application\\ProjectionWriter",
       "kind": "interface",
       "visibility": "public",
       "role": "call",
@@ -461,7 +461,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\BusinessReporting\\Domain\\ProjectionDefinition",
+      "type": "Kumwe\\App\\BusinessReporting\\Domain\\ProjectionDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -471,7 +471,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessReporting\\Domain\\ReportDefinition",
+      "type": "Kumwe\\App\\BusinessReporting\\Domain\\ReportDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -481,7 +481,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSecurity\\Application\\FieldAccessUsage",
+      "type": "Kumwe\\App\\BusinessSecurity\\Application\\FieldAccessUsage",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -491,7 +491,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSecurity\\Application\\FieldDisclosurePlan",
+      "type": "Kumwe\\App\\BusinessSecurity\\Application\\FieldDisclosurePlan",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -501,7 +501,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicyComparison",
+      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyComparison",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -511,7 +511,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicyComparisonOperator",
+      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyComparisonOperator",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -521,7 +521,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicyPredicate",
+      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyPredicate",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -531,7 +531,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicySchema",
+      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicySchema",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -541,7 +541,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicySet",
+      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicySet",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -551,7 +551,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSecurity\\Policy\\RecordPolicyValueType",
+      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyValueType",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -561,7 +561,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessActionContract",
+      "type": "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessActionContract",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -571,7 +571,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessActionHandler",
+      "type": "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessActionHandler",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -581,7 +581,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewContract",
+      "type": "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessViewContract",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -591,7 +591,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewHandler",
+      "type": "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessViewHandler",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -601,7 +601,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewQuery",
+      "type": "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessViewQuery",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -611,7 +611,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewResult",
+      "type": "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessViewResult",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -621,7 +621,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentation",
+      "type": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentation",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -631,7 +631,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContext",
+      "type": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContext",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -641,7 +641,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
+      "type": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -651,7 +651,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationRequest",
+      "type": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationRequest",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -661,7 +661,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresenter",
+      "type": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresenter",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -671,7 +671,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldWidget",
+      "type": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldWidget",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -681,7 +681,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Content\\Application\\ContentService",
+      "type": "Kumwe\\App\\Content\\Application\\ContentService",
       "kind": "class",
       "visibility": "public",
       "role": "resolve",
@@ -691,7 +691,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Application\\ExtensionServiceProvider",
+      "type": "Kumwe\\App\\Extension\\Application\\ExtensionServiceProvider",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -701,7 +701,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionMigration",
+      "type": "Kumwe\\App\\Extension\\Application\\Migration\\ExtensionMigration",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -711,7 +711,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionTableNames",
+      "type": "Kumwe\\App\\Extension\\Application\\Migration\\ExtensionTableNames",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -721,7 +721,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorNavigationDefinition",
+      "type": "Kumwe\\App\\Extension\\Contribution\\AdministratorNavigationDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -731,7 +731,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteDefinition",
+      "type": "Kumwe\\App\\Extension\\Contribution\\AdministratorRouteDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -741,7 +741,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteHandlerFactory",
+      "type": "Kumwe\\App\\Extension\\Contribution\\AdministratorRouteHandlerFactory",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -751,7 +751,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorViewDefinition",
+      "type": "Kumwe\\App\\Extension\\Contribution\\AdministratorViewDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -761,7 +761,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorWorkspaceDefinition",
+      "type": "Kumwe\\App\\Extension\\Contribution\\AdministratorWorkspaceDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -771,7 +771,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CapabilityDefinition",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CapabilityDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -781,7 +781,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionBlockDeclaration",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionBlockDeclaration",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -791,7 +791,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionContributionRegistrar",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionContributionRegistrar",
       "kind": "interface",
       "visibility": "public",
       "role": "call",
@@ -801,7 +801,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/composition-contribution-registrar-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionDesignVocabularyDeclaration",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionDesignVocabularyDeclaration",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -811,7 +811,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionFieldControlDeclaration",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionFieldControlDeclaration",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -821,7 +821,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionInspectorDeclaration",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionInspectorDeclaration",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -831,7 +831,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionMigrationDeclaration",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionMigrationDeclaration",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -841,7 +841,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionPatternDeclaration",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionPatternDeclaration",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -851,7 +851,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionPropertySchema",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionPropertySchema",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -861,7 +861,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\CompositionPropertyType",
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionPropertyType",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
@@ -871,7 +871,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/composition-contribution-registrar-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\ContentTranslationRegistrar",
+      "type": "Kumwe\\App\\Extension\\Contribution\\ContentTranslationRegistrar",
       "kind": "interface",
       "visibility": "public",
       "role": "call",
@@ -881,7 +881,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/content-translation-registrar-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\ContributionDefinition",
+      "type": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -891,7 +891,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\ContributionOwner",
+      "type": "Kumwe\\App\\Extension\\Contribution\\ContributionOwner",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -901,7 +901,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionProvider",
+      "type": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionProvider",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -911,7 +911,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar",
+      "type": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrar",
       "kind": "interface",
       "visibility": "public",
       "role": "call",
@@ -921,7 +921,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\InterfaceSurfaceRegistrar",
+      "type": "Kumwe\\App\\Extension\\Contribution\\InterfaceSurfaceRegistrar",
       "kind": "interface",
       "visibility": "public",
       "role": "call",
@@ -931,7 +931,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/interface-surface-registrar-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\ManifestContributionSet",
+      "type": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -941,7 +941,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\MoneyRateProviderRegistrar",
+      "type": "Kumwe\\App\\Extension\\Contribution\\MoneyRateProviderRegistrar",
       "kind": "interface",
       "visibility": "public",
       "role": "call",
@@ -951,7 +951,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\ResourcePolicyDefinition",
+      "type": "Kumwe\\App\\Extension\\Contribution\\ResourcePolicyDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -961,7 +961,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\TranslationGroupDeclaration",
+      "type": "Kumwe\\App\\Extension\\Contribution\\TranslationGroupDeclaration",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -971,7 +971,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\TranslationSetItemAssociation",
+      "type": "Kumwe\\App\\Extension\\Contribution\\TranslationSetItemAssociation",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -981,7 +981,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\UnitConversionProviderDefinition",
+      "type": "Kumwe\\App\\Extension\\Contribution\\UnitConversionProviderDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -991,7 +991,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Contribution\\UnitConversionProviderRegistrar",
+      "type": "Kumwe\\App\\Extension\\Contribution\\UnitConversionProviderRegistrar",
       "kind": "interface",
       "visibility": "public",
       "role": "call",
@@ -1001,7 +1001,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Development\\LifecycleConformanceAdapter",
+      "type": "Kumwe\\App\\Extension\\Development\\LifecycleConformanceAdapter",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -1011,7 +1011,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Domain\\ExtensionManifest",
+      "type": "Kumwe\\App\\Extension\\Domain\\ExtensionManifest",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -1021,7 +1021,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Runtime\\ExtensionContainer",
+      "type": "Kumwe\\App\\Extension\\Runtime\\ExtensionContainer",
       "kind": "interface",
       "visibility": "public",
       "role": "call",
@@ -1031,7 +1031,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Runtime\\ExtensionEventRegistrar",
+      "type": "Kumwe\\App\\Extension\\Runtime\\ExtensionEventRegistrar",
       "kind": "interface",
       "visibility": "public",
       "role": "resolve",
@@ -1041,7 +1041,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Runtime\\ExtensionRouteRegistrar",
+      "type": "Kumwe\\App\\Extension\\Runtime\\ExtensionRouteRegistrar",
       "kind": "interface",
       "visibility": "public",
       "role": "call",
@@ -1051,7 +1051,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Extension\\Runtime\\RuntimeExtension",
+      "type": "Kumwe\\App\\Extension\\Runtime\\RuntimeExtension",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -1061,7 +1061,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Identity\\Domain\\Capability",
+      "type": "Kumwe\\App\\Identity\\Domain\\Capability",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -1071,7 +1071,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\InterfaceStandard\\SurfaceDefinition",
+      "type": "Kumwe\\App\\InterfaceStandard\\SurfaceDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -1081,7 +1081,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Navigation\\Application\\NavigationService",
+      "type": "Kumwe\\App\\Navigation\\Application\\NavigationService",
       "kind": "class",
       "visibility": "public",
       "role": "resolve",
@@ -1091,7 +1091,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalNavigationDefinition",
+      "type": "Kumwe\\App\\Portal\\Contribution\\PortalNavigationDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -1101,7 +1101,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteDefinition",
+      "type": "Kumwe\\App\\Portal\\Contribution\\PortalRouteDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -1111,7 +1111,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteHandlerFactory",
+      "type": "Kumwe\\App\\Portal\\Contribution\\PortalRouteHandlerFactory",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
@@ -1121,7 +1121,7 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
-      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalTemplateDefinition",
+      "type": "Kumwe\\App\\Portal\\Contribution\\PortalTemplateDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -1131,7 +1131,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Portal\\Contribution\\PortalWorkspaceDefinition",
+      "type": "Kumwe\\App\\Portal\\Contribution\\PortalWorkspaceDefinition",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
@@ -1141,7 +1141,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Portal\\Http\\PortalRequest",
+      "type": "Kumwe\\App\\Portal\\Http\\PortalRequest",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -1151,7 +1151,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Portal\\Presentation\\PortalContributionRenderer",
+      "type": "Kumwe\\App\\Portal\\Presentation\\PortalContributionRenderer",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
@@ -1161,7 +1161,7 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\CMS\\Site\\Application\\SiteSettings",
+      "type": "Kumwe\\App\\Site\\Application\\SiteSettings",
       "kind": "interface",
       "visibility": "public",
       "role": "resolve",

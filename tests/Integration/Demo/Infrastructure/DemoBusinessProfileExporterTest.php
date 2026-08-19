@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Demo\Infrastructure;
+namespace Kumwe\App\Tests\Integration\Demo\Infrastructure;
 
 use FilesystemIterator;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\Demo\Infrastructure\DemoBusinessProfileExporter;
-use Kumwe\CMS\Demo\Infrastructure\DemoProfileExporter;
-use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\Demo\Infrastructure\DemoBusinessProfileExporter;
+use Kumwe\App\Demo\Infrastructure\DemoProfileExporter;
+use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

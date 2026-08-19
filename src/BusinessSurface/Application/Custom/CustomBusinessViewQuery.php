@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application\Custom;
+namespace Kumwe\App\BusinessSurface\Application\Custom;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
 
 /**
  * Validated, delivery-neutral request passed to an extension-specific business view handler.

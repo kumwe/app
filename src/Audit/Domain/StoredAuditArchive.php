@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Domain;
+namespace Kumwe\App\Audit\Domain;
 
 /**
  * Evidence for one audit archive file written to private storage: its key, byte size and checksum.

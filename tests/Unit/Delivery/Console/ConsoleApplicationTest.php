@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console;
+namespace Kumwe\App\Tests\Unit\Delivery\Console;
 
-use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\ConsoleApplication;
-use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\ConsoleApplication;
+use Kumwe\App\Delivery\Console\Output;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -49,7 +49,7 @@ final class ConsoleApplicationTest extends TestCase
         $application = new ConsoleApplication([new SuccessfulCommand()], $output);
 
         self::assertSame(0, $application->run(['kumwe', 'list']));
-        self::assertSame('Kumwe CMS 2.0', $output->lines[0]);
+        self::assertSame('Kumwe App 2.0', $output->lines[0]);
         self::assertSame('Available commands:', $output->lines[1]);
         self::assertStringContainsString('example', $output->lines[2]);
         self::assertStringContainsString('Check whether Kumwe is ready to serve traffic.', $output->lines[2]);

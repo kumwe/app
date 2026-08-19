@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Http\Handler;
+namespace Kumwe\App\Portal\Http\Handler;
 
-use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpProvider;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
-use Kumwe\CMS\Identity\Domain\StepUp\RotatedStepUpSession;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\CMS\Portal\Application\PortalSession;
-use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
-use Kumwe\CMS\Localization\Application\Translator;
-use Kumwe\CMS\Portal\Http\PortalRequest;
-use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Identity\Application\StepUp\StepUpProvider;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\App\Identity\Domain\StepUp\RotatedStepUpSession;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\App\Localization\Application\Translator;
+use Kumwe\App\Portal\Http\PortalRequest;
+use Kumwe\App\Portal\Presentation\PortalRenderer;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;

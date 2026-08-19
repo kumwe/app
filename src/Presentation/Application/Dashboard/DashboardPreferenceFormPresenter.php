@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Dashboard;
+namespace Kumwe\App\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceState;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\PresentationPreference;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceState;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\PresentationPreference;
+use Kumwe\App\InterfaceStandard\SurfaceId;
 use RuntimeException;
 
 /**

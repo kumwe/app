@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Handler;
+namespace Kumwe\App\Http\Handler;
 
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -34,6 +34,6 @@ final class LivenessHandler implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return new JsonResponse(['status' => 'alive', 'product' => 'Kumwe CMS']);
+        return new JsonResponse(['status' => 'alive', 'product' => 'Kumwe App']);
     }
 }

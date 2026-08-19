@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Demo\Infrastructure;
+namespace Kumwe\App\Tests\Unit\Demo\Infrastructure;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\MySQL84Platform;
-use Kumwe\CMS\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Demo\Infrastructure;
+namespace Kumwe\App\Tests\Unit\Demo\Infrastructure;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Demo\Infrastructure\DemoExampleExtensionInstaller;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Demo\Infrastructure\DemoExampleExtensionInstaller;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -149,11 +149,11 @@ final class DemoExampleExtensionInstallerTest extends TestCase
     /**
      * Build the administrator context every scenario runs under.
      *
-     * @return  \Kumwe\CMS\Application\Authorization\ExecutionContext  Provenance-bound test context.
+     * @return  \Kumwe\App\Application\Authorization\ExecutionContext  Provenance-bound test context.
      *
      * @since   2.0.0
      */
-    private function context(): \Kumwe\CMS\Application\Authorization\ExecutionContext
+    private function context(): \Kumwe\App\Application\Authorization\ExecutionContext
     {
         return AuthorizationContext::human(['extensions.manage']);
     }

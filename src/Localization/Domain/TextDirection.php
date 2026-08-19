@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Domain;
+namespace Kumwe\App\Localization\Domain;
 
 /**
  * Inline writing direction a locale's script is laid out in.

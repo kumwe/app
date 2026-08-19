@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Runtime;
+namespace Kumwe\App\Extension\Runtime;
 
 use DateInterval;
 use Doctrine\DBAL\Connection;
@@ -10,9 +10,9 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Application\Trust\TrustRuntimeInvalidator;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Extension\Application\Trust\TrustRuntimeInvalidator;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;

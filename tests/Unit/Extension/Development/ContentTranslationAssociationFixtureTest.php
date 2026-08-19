@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Development;
+namespace Kumwe\App\Tests\Unit\Extension\Development;
 
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Extension\Contribution\TranslationSetItemAssociation;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Extension\Contribution\TranslationSetItemAssociation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -121,7 +121,7 @@ final class ContentTranslationAssociationFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            'a7650ea384986e2022e9a3eb9f5c84768aff421229741b5b9cec68cc8b0997cd',
+            'bf0cb4b47b2ad3760847158f633322d9cc90f9d4abda215b4dff50e7dccdb6a4',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);

@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
+namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionCursor;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionRepository;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
-use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRevisionRepository;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionCursor;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionRepository;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\UpdateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
+use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
+use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRevisionRepository;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

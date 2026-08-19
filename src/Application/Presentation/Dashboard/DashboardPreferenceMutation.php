@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Presentation\Dashboard;
+namespace Kumwe\App\Application\Presentation\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\SurfaceId;
 
 /**
  * Typed application command for one dashboard preference save or reset.

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Http;
+namespace Kumwe\App\Portal\Http;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Portal\Application\PortalSession;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Portal\Application\PortalSession;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**

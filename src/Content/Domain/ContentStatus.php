@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Domain;
+namespace Kumwe\App\Content\Domain;
 
 /**
  * Editorial states a content entry moves through under the workflow Kumwe ships with.

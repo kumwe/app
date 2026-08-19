@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Http\Handler;
+namespace Kumwe\App\Portal\Http\Handler;
 
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
-use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Portal\Http\PortalRequest;
-use Kumwe\CMS\Portal\Presentation\PortalRenderer;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardComposer;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormProjection;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Portal\Http\PortalRequest;
+use Kumwe\App\Portal\Presentation\PortalRenderer;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardComposer;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardPreferenceFormProjection;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWidget;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

@@ -145,7 +145,7 @@ Composer scripts never run with a web-server identity or an unrestricted databas
 
 The ZIP contains production dependencies and is intended for hosts that cannot run Composer on the server.
 
-1. Download `kumwe-cms-VERSION.zip`, `SHA256SUMS`, and the Cosign bundle from the GitHub release.
+1. Download `kumwe-app-VERSION.zip`, `SHA256SUMS`, and the Cosign bundle from the GitHub release.
 2. Verify the checksum, signature, and provenance.
 3. Extract into a new versioned directory, never over a running release.
 4. Run `php bin/kumwe-install` in a protected terminal.
@@ -156,7 +156,7 @@ Example extraction:
 
 ```bash
 install -d -m 0750 /srv/kumwe/releases/2.0.0
-unzip -q kumwe-cms-2.0.0.zip -d /srv/kumwe/releases/2.0.0
+unzip -q kumwe-app-2.0.0.zip -d /srv/kumwe/releases/2.0.0
 cd /srv/kumwe/releases/2.0.0
 php bin/kumwe-install
 ```

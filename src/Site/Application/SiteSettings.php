@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Site\Application;
+namespace Kumwe\App\Site\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Port through which every layer reads and writes the site's global settings document.
@@ -44,7 +44,7 @@ interface SiteSettings
      *
      * @return  array<string, mixed>  Every public setting key, defaults included for keys never stored.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      *
      * @since   2.0.0
      */
@@ -63,7 +63,7 @@ interface SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      * @throws  \InvalidArgumentException  When the name or the slug fails validation.
      *
      * @since   2.0.0
@@ -83,7 +83,7 @@ interface SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      * @throws  \InvalidArgumentException  When a value, the nominated homepage, or the primary menu is
      *          rejected.
      *

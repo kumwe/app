@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Handler;
+namespace Kumwe\App\Tests\Unit\Administrator\Http\Handler;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Administrator\Http\Handler\AdministratorInterfaceStandardHandler;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
-use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
-use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Administrator\Http\Handler\AdministratorInterfaceStandardHandler;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWidget;
+use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;

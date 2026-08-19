@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionDraft;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\App\BusinessDefinition\Application\DefinitionDraft;
+use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
 use Throwable;
 
 /**
@@ -164,22 +164,22 @@ final readonly class ManageBusinessDefinitionsCommand implements Command
      * `execute()` routes no other action here. Only a site-owned definition can be retired this way —
      * a definition a package owns follows its extension's lifecycle instead.
      *
-     * @param   \Kumwe\CMS\Application\Authorization\ExecutionContext  $context  Authorized actor and site.
+     * @param   \Kumwe\App\Application\Authorization\ExecutionContext  $context  Authorized actor and site.
      * @param   string                                                 $action   `supersede`, `deprecate` or `reject`.
      * @param   string                                                 $handle   Definition handle being retired.
      * @param   int                                                    $version  Published version to retire.
      *
      * @return  DefinitionVersionRecord  The version as stored after the status change.
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionNotFound  When the actor's
+     * @throws  \Kumwe\App\BusinessDefinition\Application\BusinessDefinitionNotFound  When the actor's
      *          site holds no definition under that handle.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the definition is
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the definition is
      *          package-owned, so its status is not the operator's to set.
      *
      * @since   2.0.0
      */
     private function retire(
-        \Kumwe\CMS\Application\Authorization\ExecutionContext $context,
+        \Kumwe\App\Application\Authorization\ExecutionContext $context,
         string $action,
         string $handle,
         int $version,

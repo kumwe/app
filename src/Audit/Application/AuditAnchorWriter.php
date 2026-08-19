@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Application;
+namespace Kumwe\App\Audit\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Port that seals the audit rows written since the last anchor into a new chained anchor.
@@ -26,7 +26,7 @@ interface AuditAnchorWriter
      *
      * @return  ?int  Sequence number of the anchor written, or null when no unsealed rows existed.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          the audit trail.
      *
      * @since   2.0.0

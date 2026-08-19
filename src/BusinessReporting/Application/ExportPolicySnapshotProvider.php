@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
 
 /**
  * Resolves the current row, field, relation and authority decision for an export.

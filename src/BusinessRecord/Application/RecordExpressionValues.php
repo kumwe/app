@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
-use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\MoneyValue;
+use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
 
 /**
  * Converts normalized record values into the scalar vocabulary definition expressions can evaluate.

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\Announcements;
 
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
 
 final class BusinessDefinitions
 {

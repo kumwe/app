@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Navigation\Application;
+namespace Kumwe\App\Navigation\Application;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\App\Application\Authorization\SiteContext;
 
 /**
  * Read-only view of a site's navigation, shaped for anonymous visitors.

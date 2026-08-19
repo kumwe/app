@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Workflow\Domain;
+namespace Kumwe\App\Workflow\Domain;
 
-use Kumwe\CMS\Content\Domain\ContentStatus;
+use Kumwe\App\Content\Domain\ContentStatus;
 
 /**
  * Decides which status changes content is allowed to make.

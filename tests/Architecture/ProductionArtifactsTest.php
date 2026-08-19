@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -223,7 +223,7 @@ final class ProductionArtifactsTest extends TestCase
      * Require the deployment drills to resolve their own classes inside the production image.
      *
      * The image installs with `--no-dev` and an authoritative classmap, so no class under
-     * `Kumwe\CMS\Tests\` is autoloadable there even though the drill's directory is mounted into it.
+     * `Kumwe\App\Tests\` is autoloadable there even though the drill's directory is mounted into it.
      * The entry points once compensated with a list of `require` lines naming each collaborator, and
      * a drill that gained a class without gaining a line still passed every cheaper job — those run
      * under the dev autoloader — before dying in the deployed image with "class not found". Holding
@@ -240,7 +240,7 @@ final class ProductionArtifactsTest extends TestCase
 
         self::assertStringContainsString("require dirname(__DIR__, 2) . '/vendor/autoload.php';", $loader);
         self::assertStringContainsString('spl_autoload_register(', $loader);
-        self::assertStringContainsString('\'Kumwe\\\\CMS\\\\Tests\\\\\'', $loader);
+        self::assertStringContainsString('\'Kumwe\\\\App\\\\Tests\\\\\'', $loader);
 
         self::assertStringContainsString(
             '/tests/Support:/var/www/kumwe/tests/Support:ro',

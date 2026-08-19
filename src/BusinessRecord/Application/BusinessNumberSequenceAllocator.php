@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
 
 /**
  * Reserves the next value of one business number counter, inside the caller's own transaction.

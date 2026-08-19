@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Command;
+namespace Kumwe\App\BusinessRecord\Application\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
-use Kumwe\CMS\BusinessRecord\Domain\ClientAssertedInstant;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
+use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
 
 /**
  * Request to write one whole document — a header and the owned lines belonging to it — as a single thing.

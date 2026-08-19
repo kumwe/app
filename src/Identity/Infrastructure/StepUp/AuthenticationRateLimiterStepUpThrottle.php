@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\StepUp;
+namespace Kumwe\App\Identity\Infrastructure\StepUp;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpAttemptThrottle;
+use Kumwe\App\Identity\Application\Administration\AuthenticationRateLimiter;
+use Kumwe\App\Identity\Application\StepUp\StepUpAttemptThrottle;
 
 /**
  * Domain-separated adapter from step-up attempts to the shared Redis authentication budget.

@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Automation;
+namespace Kumwe\App\Tests\Integration\Automation;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Automation\JobExecutionScope;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\CMS\Infrastructure\Automation\DoctrineJobQueue;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Automation\JobExecutionScope;
+use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Administrator;
+namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaEnvironment;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaRecoveryEvidence;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Application\Security\HighImpactCredentialGuard;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaEnvironment;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\BusinessSchema\Domain\SchemaRecoveryEvidence;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -67,15 +67,15 @@ final readonly class RecordBusinessSchemaRecoveryEvidenceHandler implements Requ
      *
      * @throws  InvalidArgumentException  When a required field is missing or blank, a timestamp cannot be
      *          read, a clean-target proof was not confirmed, or the plan has no installed source schema.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read schema
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read schema
      *          plans or may not record recovery evidence.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When no plan with that identifier
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no plan with that identifier
      *          belongs to this site.
-     * @throws  \Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired  When the password step-up
+     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the password step-up
      *          fails.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When a submitted checksum, reference or
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When a submitted checksum, reference or
      *          timestamp breaks the evidence document's own rules.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict  When the drill does not match the
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When the drill does not match the
      *          authenticated site, environment and verifier, or is dated in the future.
      *
      * @since   2.0.0

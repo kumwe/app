@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api;
+namespace Kumwe\App\Delivery\Http\Api;
 
 use InvalidArgumentException;
 use Laminas\Diactoros\Response\JsonResponse;

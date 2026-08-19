@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
@@ -24,7 +24,7 @@ final class BusinessDefinitionBoundaryTest extends TestCase
                 $source .= $contents;
             }
         }
-        self::assertStringNotContainsString('Kumwe\\CMS\\Content\\', $source);
+        self::assertStringNotContainsString('Kumwe\\App\\Content\\', $source);
         self::assertDoesNotMatchRegularExpression('/\beval\s*\(/i', $source);
         self::assertStringNotContainsString('EAV', $source);
     }

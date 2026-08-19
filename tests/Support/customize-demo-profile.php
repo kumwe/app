@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Demo\Application\DemoProfileLedger;
-use Kumwe\CMS\Demo\Infrastructure\DemoContentProfileInstaller;
-use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Navigation\Application\MenuItemRecord;
-use Kumwe\CMS\Navigation\Application\MenuRecord;
-use Kumwe\CMS\Navigation\Application\NavigationService;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Demo\Application\DemoProfileLedger;
+use Kumwe\App\Demo\Infrastructure\DemoContentProfileInstaller;
+use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Navigation\Application\MenuItemRecord;
+use Kumwe\App\Navigation\Application\MenuRecord;
+use Kumwe\App\Navigation\Application\NavigationService;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 
 require dirname(__DIR__, 2) . '/vendor/autoload.php';
 

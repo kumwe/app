@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Application;
+namespace Kumwe\App\BusinessDefinition\Application;
 
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
 
 /**
  * Resolves immutable field-type structure without implying that its owner is executable.
@@ -30,7 +30,7 @@ interface FieldTypeDefinitionResolver
      *
      * @return  FieldTypeDefinition  The structure the identifier was registered with.
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the identifier is unresolvable.
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the identifier is unresolvable.
      *
      * @since   2.0.0
      */

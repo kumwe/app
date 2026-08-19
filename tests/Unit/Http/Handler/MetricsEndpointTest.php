@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Http\Handler;
+namespace Kumwe\App\Tests\Unit\Http\Handler;
 
-use Kumwe\CMS\Http\Handler\MetricsHandler;
-use Kumwe\CMS\Infrastructure\Observability\MetricCatalog;
-use Kumwe\CMS\Infrastructure\Observability\MetricCollector;
-use Kumwe\CMS\Infrastructure\Observability\MetricRecorder;
-use Kumwe\CMS\Infrastructure\Observability\MetricSample;
-use Kumwe\CMS\Infrastructure\Observability\MetricsAccessPolicy;
-use Kumwe\CMS\Infrastructure\Observability\NullMetricRecorder;
-use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
-use Kumwe\CMS\Infrastructure\Observability\PrometheusExposition;
+use Kumwe\App\Http\Handler\MetricsHandler;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricCollector;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\MetricSample;
+use Kumwe\App\Infrastructure\Observability\MetricsAccessPolicy;
+use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
+use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Infrastructure\Observability\PrometheusExposition;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

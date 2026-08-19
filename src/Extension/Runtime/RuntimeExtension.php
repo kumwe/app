@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Runtime;
+namespace Kumwe\App\Extension\Runtime;
 
-use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Application\ExtensionServiceProvider;
 
 /**
  * Contract for an extension that takes part in the request runtime, not only in service registration.

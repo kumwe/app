@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Content;
+namespace Kumwe\App\Delivery\Http\Api\Content;
 
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Content\Application\ContentNotFound;
-use Kumwe\CMS\Content\Application\ContentModelNotFound;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Domain\VersionConflict;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Content\Application\ContentNotFound;
+use Kumwe\App\Content\Application\ContentModelNotFound;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Domain\VersionConflict;
+use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;

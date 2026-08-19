@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Administration;
+namespace Kumwe\App\Identity\Application\Administration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * The single rotation check every path that replaces an API token must clear before the swap is written.
@@ -61,7 +61,7 @@ final readonly class TokenRotationPreauthorizer
      *
      * @throws  InvalidArgumentException  When the token is not live, belongs to another site, or resolves
      *          to a different subject than the one stored on it.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          token, or may no longer delegate the capabilities it carries.
      *
      * @since   2.0.0

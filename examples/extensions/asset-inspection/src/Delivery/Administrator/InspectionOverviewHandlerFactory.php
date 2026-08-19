@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Delivery\Administrator;
 
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Extension\Contribution\AdministratorRouteHandlerFactory;
 use KumweExample\AssetInspection\Application\InspectionOverviewService;
 use Psr\Http\Server\RequestHandlerInterface;
 

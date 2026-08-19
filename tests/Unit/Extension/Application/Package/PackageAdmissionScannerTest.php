@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Application\Package;
+namespace Kumwe\App\Tests\Unit\Extension\Application\Package;
 
 use FilesystemIterator;
-use Kumwe\CMS\Extension\Application\Package\NonConformingPackage;
-use Kumwe\CMS\Extension\Application\Package\PackageAdmissionReport;
-use Kumwe\CMS\Extension\Application\Package\PackageAdmissionScanner;
-use Kumwe\CMS\Extension\Application\Package\PackageAttestationState;
-use Kumwe\CMS\Extension\Application\Package\PackageBillOfMaterials;
-use Kumwe\CMS\Extension\Application\Package\PackageCodeConformance;
-use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
-use Kumwe\CMS\Extension\Application\Package\PackageProvenance;
-use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
-use Kumwe\CMS\Extension\Development\ComponentScaffolder;
-use Kumwe\CMS\Extension\Development\DeterministicPackageBuilder;
-use Kumwe\CMS\Extension\Development\PackageInspector;
-use Kumwe\CMS\Extension\Development\ScaffoldRequest;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveContentReader;
-use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
+use Kumwe\App\Extension\Application\Package\NonConformingPackage;
+use Kumwe\App\Extension\Application\Package\PackageAdmissionReport;
+use Kumwe\App\Extension\Application\Package\PackageAdmissionScanner;
+use Kumwe\App\Extension\Application\Package\PackageAttestationState;
+use Kumwe\App\Extension\Application\Package\PackageBillOfMaterials;
+use Kumwe\App\Extension\Application\Package\PackageCodeConformance;
+use Kumwe\App\Extension\Application\Package\PackageConformanceMode;
+use Kumwe\App\Extension\Application\Package\PackageProvenance;
+use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\App\Extension\Development\ComponentScaffolder;
+use Kumwe\App\Extension\Development\DeterministicPackageBuilder;
+use Kumwe\App\Extension\Development\PackageInspector;
+use Kumwe\App\Extension\Development\ScaffoldRequest;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveContentReader;
+use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveReader;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

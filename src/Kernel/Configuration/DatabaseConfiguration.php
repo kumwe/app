@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Kernel\Configuration;
+namespace Kumwe\App\Kernel\Configuration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Shared\Domain\DatabaseTablePrefix;
+use Kumwe\App\Shared\Domain\DatabaseTablePrefix;
 
 /**
  * Validated connection settings for the relational database that holds all Kumwe state.

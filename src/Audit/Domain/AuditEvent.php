@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Domain;
+namespace Kumwe\App\Audit\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;

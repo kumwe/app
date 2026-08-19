@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Administration;
+namespace Kumwe\App\Identity\Application\Administration;
 
 use DateTimeImmutable;
 

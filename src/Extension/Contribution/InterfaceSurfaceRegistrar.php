@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
+use Kumwe\App\InterfaceStandard\SurfaceDefinition;
 
 /**
  * Additive capability for providers that declare KIS semantic surfaces.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Mcp;
+namespace Kumwe\App\Infrastructure\Mcp;
 
 /**
  * Closed vocabulary describing what authority an MCP tool exercises when it is called.

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Content\Infrastructure\Persistence;
+namespace Kumwe\App\Tests\Unit\Content\Infrastructure\Persistence;
 
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Domain\InvalidTranslationGroup;
-use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Domain\InvalidTranslationGroup;
+use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Localization\Domain\LocaleTag;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;

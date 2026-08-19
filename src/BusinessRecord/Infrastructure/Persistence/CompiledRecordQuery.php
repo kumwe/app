@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use InvalidArgumentException;
 

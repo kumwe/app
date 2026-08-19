@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Observability;
+namespace Kumwe\App\Infrastructure\Observability;
 
-use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
+use Kumwe\App\Infrastructure\Redis\RedisRuntime;
 use Throwable;
 
 /**

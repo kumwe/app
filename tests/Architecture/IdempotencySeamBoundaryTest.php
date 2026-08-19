@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\CMS\Application\Automation\IdempotencyPurger;
-use Kumwe\CMS\Application\Idempotency\IdempotencyLedger;
-use Kumwe\CMS\Application\Idempotency\SecretOnceIdempotencyLedger;
-use Kumwe\CMS\Infrastructure\Automation\DoctrineIdempotencyPurger;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineIdempotencyLedger;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineSecretOnceIdempotencyLedger;
+use Kumwe\App\Application\Automation\IdempotencyPurger;
+use Kumwe\App\Application\Idempotency\IdempotencyLedger;
+use Kumwe\App\Application\Idempotency\SecretOnceIdempotencyLedger;
+use Kumwe\App\Infrastructure\Automation\DoctrineIdempotencyPurger;
+use Kumwe\App\Infrastructure\Persistence\DoctrineIdempotencyLedger;
+use Kumwe\App\Infrastructure\Persistence\DoctrineSecretOnceIdempotencyLedger;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -58,8 +58,8 @@ final class IdempotencySeamBoundaryTest extends TestCase
             $adapterClass = new ReflectionClass($adapter);
 
             self::assertTrue($portClass->isInterface(), $port . ' must be a contract, not a class.');
-            self::assertStringStartsWith('Kumwe\\CMS\\Application\\', $port);
-            self::assertStringStartsWith('Kumwe\\CMS\\Infrastructure\\', $adapter);
+            self::assertStringStartsWith('Kumwe\\App\\Application\\', $port);
+            self::assertStringStartsWith('Kumwe\\App\\Infrastructure\\', $adapter);
             self::assertTrue($adapterClass->implementsInterface($port), $adapter . ' must answer ' . $port . '.');
             self::assertStringStartsWith(
                 dirname(__DIR__, 2) . '/src/Application/',
@@ -136,7 +136,7 @@ final class IdempotencySeamBoundaryTest extends TestCase
                     continue;
                 }
                 $name = ltrim($token[1], '\\');
-                if (str_starts_with($name, 'Doctrine\\') || str_starts_with($name, 'Kumwe\\CMS\\Infrastructure\\')) {
+                if (str_starts_with($name, 'Doctrine\\') || str_starts_with($name, 'Kumwe\\App\\Infrastructure\\')) {
                     $offenders[] = sprintf('%s:%d %s', $file->getFilename(), $token[2], $name);
                 }
             }

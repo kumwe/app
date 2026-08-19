@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Presentation\Persistence;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Presentation\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Infrastructure\Presentation\Persistence\DoctrinePresentationAccessGroupRepository;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Presentation\Persistence\DoctrinePresentationAccessGroupRepository;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

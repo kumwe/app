@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\CMS\Identity\Application\Authentication\ScopedAccessTokenVerifier;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\App\Identity\Application\Authentication\ScopedAccessTokenVerifier;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Turns the token file a console command was invoked with into an authorized execution context.

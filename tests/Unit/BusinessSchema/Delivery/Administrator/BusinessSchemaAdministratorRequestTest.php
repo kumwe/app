@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSchema\Delivery\Administrator;
+namespace Kumwe\App\Tests\Unit\BusinessSchema\Delivery\Administrator;
 
-use Kumwe\CMS\BusinessSchema\Delivery\Administrator\BusinessSchemaAdministratorRequest;
+use Kumwe\App\BusinessSchema\Delivery\Administrator\BusinessSchemaAdministratorRequest;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

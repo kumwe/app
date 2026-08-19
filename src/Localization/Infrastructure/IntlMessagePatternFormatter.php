@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Infrastructure;
+namespace Kumwe\App\Localization\Infrastructure;
 
-use Kumwe\CMS\Localization\Application\MessageFormattingFailed;
-use Kumwe\CMS\Localization\Application\MessagePatternFormatter;
-use Kumwe\CMS\Localization\Application\MessagePatternValidator;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Application\MessageFormattingFailed;
+use Kumwe\App\Localization\Application\MessagePatternFormatter;
+use Kumwe\App\Localization\Application\MessagePatternValidator;
+use Kumwe\App\Localization\Domain\LocaleTag;
 use MessageFormatter;
 
 /**

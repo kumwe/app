@@ -2,38 +2,38 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
 use DateInterval;
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordCustomActionGuard;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
-use Kumwe\CMS\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
-use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotency;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotencyState;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordCustomActionGuard;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
+use Kumwe\App\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
+use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -89,7 +89,7 @@ final readonly class CustomBusinessActionExecutor
      * @throws  BusinessRecordIdempotencyConflict  When a key is reused, unfinished, expired, or corrupt.
      * @throws  BusinessRecordTemporarilyUnavailable  When runtime is untrusted or three transient attempts fail.
      * @throws  BusinessRecordDefinitionUnavailable  When the exact custom contract is inactive.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When the
      *          record's declared posting date falls inside a closed posting period.
      *
      * @since   2.0.0

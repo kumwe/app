@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Domain;
+namespace Kumwe\App\Extension\Domain;
 
 /**
  * Kind of extension a package declares, taken from the `type` field of its manifest.

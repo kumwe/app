@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 
 /**

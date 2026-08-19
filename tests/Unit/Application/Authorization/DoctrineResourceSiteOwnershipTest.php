@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\CMS\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\CMS\Application\Authorization\SiteGroup;
-use Kumwe\CMS\Application\Authorization\SiteGroupRegistry;
-use Kumwe\CMS\Application\Authorization\SiteGroupUnknown;
-use Kumwe\CMS\Infrastructure\Authorization\DoctrineResourceSiteOwnership;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
+use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\App\Application\Authorization\SiteGroupRegistry;
+use Kumwe\App\Application\Authorization\SiteGroupUnknown;
+use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnership;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

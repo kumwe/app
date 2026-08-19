@@ -1081,9 +1081,9 @@
     },
     {
       "id": "V2-DOC-002",
-      "title": "The product's outward identity still reads Kumwe CMS after the repository rename to kumwe/app",
+      "title": "The outward identity now reads Kumwe App, and the wire value it emits is not yet coordinated with the SDK that parses it",
       "severity": "medium",
-      "state": "open",
+      "state": "in_progress",
       "phase": "0",
       "gate": null,
       "origin": "new",
@@ -1091,23 +1091,24 @@
         {
           "file": "src/Http/Handler/ApiIndexHandler.php",
           "symbol": "ApiIndexHandler",
-          "note": "The anonymous /api/v1 identity document reports product 'Kumwe CMS', as does the liveness document; the Dart SDK's discovery client pins that observed value, so the wire string cannot change without a coordinated SDK release."
+          "note": "The anonymous /api/v1 identity document reports product 'Kumwe App', as does the liveness document; the Dart SDK's discovery client pins that observed value, so the wire string cannot change without a coordinated SDK release."
         },
         {
           "file": "api/openapi/kumwe-v1.json",
           "symbol": "info.title",
-          "note": "The canonical contract is titled 'Kumwe CMS API', and documentation headings (README.md, CLAUDE.md) still introduce the product as Kumwe CMS. The composer and npm package names moved to kumwe/app and @kumwe/app-administrator with the repository rename; the PSR-4 namespace Kumwe\\CMS\\ remains."
+          "note": "The canonical contract is titled 'Kumwe App API' now, and the documentation headings follow it. The composer and npm package names moved with the repository rename, and the PSR-4 namespace moved to Kumwe\\App\\ under the product owner's decision that the core is called app. What remains is the SDK side of the wire value, not the core side."
         },
         {
           "file": ".github/workflows/release.yml",
           "symbol": "the release artifact name",
-          "note": "The published archive is still built, checksummed, attested and documented as kumwe-cms-${version}.zip, beside an already-renamed dist/kumwe-app.cdx.json; deployment-acceptance.yml repeats the name four times and docs/operations/install.md twice. The name is consumer-visible - it is the release asset people download and the provenance subject - so all nine references move together and deliberately, or none do."
+          "note": "The published archive is still built, checksummed, attested and documented as kumwe-app-${version}.zip, beside an already-renamed dist/kumwe-app.cdx.json; deployment-acceptance.yml repeats the name four times and docs/operations/install.md twice. The name is consumer-visible - it is the release asset people download and the provenance subject - so all nine references move together and deliberately, or none do."
         }
       ],
-      "acceptance_test": "The outward product identity agrees with the renamed repository: the product owner's chosen strings replace 'Kumwe CMS' in documentation headings, the OpenAPI info.title and the /api/v1 and liveness identity documents, and the release artifact name kumwe-cms-${version}.zip moves with them across release.yml, deployment-acceptance.yml and docs/operations/install.md as one change, shipped behind a recorded compatibility note. The identity-document change is coordinated with a Dart SDK release that accepts the new product value before core emits it - kumwe/dart-sdk's discovery and liveness parsers refuse an unrecognized product, so an uncoordinated change breaks every deployed native client - and openapi:check is regenerated in the same change. The PSR-4 namespace Kumwe\\CMS\\ changes only if the product owner separately decides that refactor; keeping it is a valid outcome this entry records explicitly.",
+      "acceptance_test": "The wire identity is coordinated rather than merely changed: kumwe/dart-sdk's discovery and liveness parsers accept 'Kumwe App' in a released version before core emits it, and the compatibility note recording the change is published with it. Core already emits the new value from ApiIndexHandler and LivenessHandler, so until the SDK release lands, any deployed native client that pins the old product string refuses the response. Nothing in the Version 3 native programme has started, so the exposure is believed to be nil, but believed is not verified and the SDK release closes this either way.",
       "owner": "UNASSIGNED",
       "closure_sha": null,
-      "product_owner_decision": "The core is called app — Kumwe core app; the repository is renamed kumwe/cms to kumwe/app and every cross-repository reference follows it. The wire identity value is changed deliberately and in coordination with the SDK's pinned discovery contract, never silently."
+      "product_owner_decision": "The core is called app — Kumwe core app; the repository is renamed kumwe/cms to kumwe/app and every cross-repository reference follows it. The wire identity value is changed deliberately and in coordination with the SDK's pinned discovery contract, never silently.",
+      "progress": "Delivered: the PSR-4 namespace moved from Kumwe\\CMS\\ to Kumwe\\App\\ across 2,021 files, and the product name moved from 'Kumwe CMS' to 'Kumwe App' across every documentation heading, the composer description, the OpenAPI info.title and description, the MCP server name and capability catalogue, the site footer and demo content, and the release artifact, which is now kumwe-app-${version}.zip across release.yml, deployment-acceptance.yml and docs/operations/install.md. Three frozen SPI generation digests were re-recorded because the public type names moved, every published migration checksum was regenerated, and the two runtime checksum pins in DoctrineNonTransactionalMigrationRecovery were recomputed. All of it was free only because no version has been tagged: the migration checksums are the hash of each file's own bytes, so after a release the same rename would read as tampering on every installation and refuse to migrate. It was proven locally -- a database migrated before the rename answered 'Migration checksum drift detected' until it was rebuilt."
     },
     {
       "id": "V2-QA-010",

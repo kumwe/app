@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Demo\Infrastructure;
+namespace Kumwe\App\Demo\Infrastructure;
 
 use JsonException;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use RuntimeException;
 
 /**

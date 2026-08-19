@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**

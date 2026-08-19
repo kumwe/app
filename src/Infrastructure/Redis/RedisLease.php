@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Redis;
+namespace Kumwe\App\Infrastructure\Redis;
 
 use RuntimeException;
 

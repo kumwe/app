@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceManager;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferencePolicy;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\MembershipContextValidator;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceManager;
+use Kumwe\App\Application\Presentation\Preference\PresentationPreferencePolicy;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
 use Psr\Clock\ClockInterface;
 
 /**

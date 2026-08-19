@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\StepUp;
+namespace Kumwe\App\Identity\Application\StepUp;
 
 /**
  * Shared attempt budget for a step-up subject, source, and narrow purpose.
@@ -23,7 +23,7 @@ interface StepUpAttemptThrottle
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled  When exhausted.
+     * @throws  \Kumwe\App\Identity\Application\Administration\AuthenticationThrottled  When exhausted.
      *
      * @since   2.0.0
      */

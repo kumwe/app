@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Infrastructure;
+namespace Kumwe\App\BusinessReporting\Infrastructure;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\BusinessReporting\Application\ExportJobDispatcher;
-use Kumwe\CMS\BusinessReporting\Application\ExportQueueProducerContextProvider;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\BusinessReporting\Application\ExportJobDispatcher;
+use Kumwe\App\BusinessReporting\Application\ExportQueueProducerContextProvider;
 use Psr\Clock\ClockInterface;
 
 /**

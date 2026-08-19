@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Development;
+namespace Kumwe\App\Tests\Unit\Extension\Development;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
@@ -74,7 +74,7 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '4139eb2964055dc313e21ab08aab5d07967ef4dacf87373a6bcf9220dffe8a7c',
+            '4463c89cc8fcb877dc624611ca0c9b217246a2a7b9cd18aec62018b016959d54',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 8, JSON_THROW_ON_ERROR);
@@ -117,7 +117,7 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '8fc35c4cf4596ad3c1efb786bb3794aac852a636e7a9d1edaac94edd30517900',
+            '301b9778de8a782cc387925729e3a88d7e67d80198b4da1364e104e5509a8b65',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
@@ -176,7 +176,7 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '936221180d72c3b246a73cd292452c682d5f11cf0db297edccbefdb4370e0e1f',
+            '1b8b5d2c0227138ca9e1e0709b58365f6c332c7ba6aa0a628f47dce83563cb42',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
@@ -256,7 +256,7 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '37f92c1fe94eb1add37930d3e36605ff10fb86d80e0ba157b76091e72337ad7a',
+            'a155c13a5a8271c8ff92288626cce70476a751881c9b4d8ebb670deda2cf1bfb',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 32, JSON_THROW_ON_ERROR);

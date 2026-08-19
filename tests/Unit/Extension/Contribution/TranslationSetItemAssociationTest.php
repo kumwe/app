@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Contribution;
+namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\TranslationSetItemAssociation;
+use Kumwe\App\Extension\Contribution\TranslationSetItemAssociation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

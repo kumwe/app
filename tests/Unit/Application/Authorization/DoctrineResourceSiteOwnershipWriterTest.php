@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\CMS\Application\Authorization\OwnershipScope;
-use Kumwe\CMS\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\CMS\Application\Authorization\ResourceOwnership;
-use Kumwe\CMS\Application\Authorization\ResourceOwnershipScopePolicy;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipConflict;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SiteGroup;
-use Kumwe\CMS\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\App\Application\Authorization\OwnershipScope;
+use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
+use Kumwe\App\Application\Authorization\ResourceOwnership;
+use Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

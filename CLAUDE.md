@@ -1,4 +1,4 @@
-# Kumwe CMS
+# Kumwe App
 
 See [`AGENTS.md`](AGENTS.md) for the contributor entry point and
 [`docs/coding-standard.md`](docs/coding-standard.md) for the normative coding standard. Those two files
@@ -8,7 +8,7 @@ carry a second, drifting copy of the rules.
 ## Quick orientation
 
 - PHP 8.5, Mezzio/Laminas HTTP stack, Joomla Framework components, Doctrine DBAL persistence.
-- Source is PSR-4 under `Kumwe\CMS\` in `src/`; tests are `Kumwe\CMS\Tests\` in `tests/`.
+- Source is PSR-4 under `Kumwe\App\` in `src/`; tests are `Kumwe\App\Tests\` in `tests/`.
 - `final readonly class` with constructor property promotion is the default class shape.
 - PHPStan runs at level `max`; PHP_CodeSniffer enforces PSR-12 with a 120-character line limit.
 

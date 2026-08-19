@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessSecurity;
+namespace Kumwe\App\Tests\Integration\BusinessSecurity;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRequestView;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalStatus;
-use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalQueryRepository;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
+use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalQueryRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

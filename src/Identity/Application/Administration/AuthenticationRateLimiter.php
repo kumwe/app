@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Administration;
+namespace Kumwe\App\Identity\Application\Administration;
 
 /**
  * Budget of failed sign-in attempts one account may spend from one request origin.

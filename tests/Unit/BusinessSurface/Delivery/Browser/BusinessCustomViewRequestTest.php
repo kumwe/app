@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Delivery\Browser;
 
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessCustomViewPresenter;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessCustomViewRequest;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessSchemaForm;
+use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessCustomViewPresenter;
+use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessCustomViewRequest;
+use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessSchemaForm;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

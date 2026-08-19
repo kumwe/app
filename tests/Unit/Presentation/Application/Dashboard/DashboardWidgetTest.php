@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Presentation\Application\Dashboard;
+namespace Kumwe\App\Tests\Unit\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Infrastructure;
+namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\Application\Automation\PermanentFailure;
-use Kumwe\CMS\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
-use Kumwe\CMS\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationDeliveryBackpressure;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Application\Automation\PermanentFailure;
+use Kumwe\App\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
+use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
+use Kumwe\App\BusinessIntegration\Application\IntegrationDeliveryBackpressure;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use RuntimeException;
 
 /**

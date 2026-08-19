@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Plan;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Plan;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Http\Api\Plan\SafePlan;
-use Kumwe\CMS\Delivery\Http\Api\Plan\SafePlanFactory;
-use Kumwe\CMS\Delivery\Http\Api\Plan\SafePlanOperation;
+use Kumwe\App\Delivery\Http\Api\Plan\SafePlan;
+use Kumwe\App\Delivery\Http\Api\Plan\SafePlanFactory;
+use Kumwe\App\Delivery\Http\Api\Plan\SafePlanOperation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

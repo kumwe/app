@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Persistence;
+namespace Kumwe\App\Tests\Integration\Persistence;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

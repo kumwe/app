@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Query;
+namespace Kumwe\App\BusinessRecord\Application\Query;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 
 /**
  * Request to read a single record by its public identity, carrying the caller's context and projection.

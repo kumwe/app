@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Navigation\Application;
+namespace Kumwe\App\Navigation\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -95,7 +95,7 @@ final readonly class NavigationService
      *
      * @return  MenuRecord  The stored menu.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
      * @throws  NavigationNotFound  When no menu carries that identifier.
      *
      * @since   2.0.0
@@ -117,7 +117,7 @@ final readonly class NavigationService
      *
      * @return  list<MenuItemRecord>  The visible items, ordered by path so parents precede children.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the menu is out of reach.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the menu is out of reach.
      * @throws  NavigationNotFound  When no menu carries that identifier.
      *
      * @since   2.0.0
@@ -144,7 +144,7 @@ final readonly class NavigationService
      *
      * @return  MenuItemRecord  The stored item, including the version a later write must quote back.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
      * @throws  NavigationNotFound  When no item carries that identifier.
      *
      * @since   2.0.0
@@ -167,7 +167,7 @@ final readonly class NavigationService
      *
      * @return  MenuRecord  The stored menu, at version 1.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create menus.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create menus.
      * @throws  InvalidArgumentException  When the handle or title is not in an acceptable shape.
      *
      * @since   2.0.0
@@ -203,7 +203,7 @@ final readonly class NavigationService
      *
      * @return  MenuRecord  The stored menu, with its version incremented.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
      * @throws  NavigationNotFound  When no menu carries that identifier.
      * @throws  NavigationVersionConflict  When the stored menu has moved past the expected version.
      * @throws  InvalidArgumentException  When the handle or title is not in an acceptable shape.
@@ -258,7 +258,7 @@ final readonly class NavigationService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
      * @throws  NavigationNotFound  When no menu carries that identifier.
      * @throws  NavigationVersionConflict  When the stored menu has moved past the expected version.
      *
@@ -313,10 +313,10 @@ final readonly class NavigationService
      *
      * @return  MenuItemRecord  The stored item, at version 1, with its path resolved.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the menu is out of reach.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the menu is out of reach.
      * @throws  NavigationNotFound  When no menu carries that identifier.
      * @throws  InvalidArgumentException  When a field, the parent, the target or the resolved path is rejected.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When the content target does not exist.
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the content target does not exist.
      *
      * @since   2.0.0
      */
@@ -412,11 +412,11 @@ final readonly class NavigationService
      *
      * @return  MenuItemRecord  The stored item, with its version incremented and its path resolved.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
      * @throws  NavigationNotFound  When no item carries that identifier.
      * @throws  NavigationVersionConflict  When the stored item has moved past the expected version.
      * @throws  InvalidArgumentException  When a field, the move, the target or a resulting path is rejected.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When the content target does not exist.
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the content target does not exist.
      *
      * @since   2.0.0
      */
@@ -508,7 +508,7 @@ final readonly class NavigationService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage it.
      * @throws  NavigationNotFound  When no item carries that identifier.
      * @throws  NavigationVersionConflict  When the stored item has moved past the expected version.
      *
@@ -559,7 +559,7 @@ final readonly class NavigationService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
      *
      * @since   2.0.0
      */
@@ -700,7 +700,7 @@ final readonly class NavigationService
      *
      * @throws  InvalidArgumentException  When the type is unknown, the combination is contradictory, or
      *          the fragment, URL or content identifier is unsafe.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When the referenced content does not exist.
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the referenced content does not exist.
      *
      * @since   2.0.0
      */

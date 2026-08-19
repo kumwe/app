@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Media\Application;
+namespace Kumwe\App\Media\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SiteContext;
 
 /**
  * Port for the store that holds one site's media library.

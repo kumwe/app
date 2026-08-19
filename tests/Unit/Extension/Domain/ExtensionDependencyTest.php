@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Domain;
+namespace Kumwe\App\Tests\Unit\Extension\Domain;
 
-use Kumwe\CMS\Extension\Domain\ExtensionDependency;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Extension\Domain\SemanticVersion;
-use Kumwe\CMS\Extension\Domain\VersionConstraint;
+use Kumwe\App\Extension\Domain\ExtensionDependency;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\SemanticVersion;
+use Kumwe\App\Extension\Domain\VersionConstraint;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

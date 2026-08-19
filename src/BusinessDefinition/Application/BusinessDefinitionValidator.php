@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Application;
+namespace Kumwe\App\BusinessDefinition\Application;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\ComputationMode;
-use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceReset;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceScope;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
+use Kumwe\App\BusinessDefinition\Domain\ComputationMode;
+use Kumwe\App\BusinessDefinition\Domain\DeleteBehavior;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceFormat;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceReset;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceScope;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
 use Ramsey\Uuid\Uuid;
 use Throwable;
 
@@ -1399,7 +1399,7 @@ final readonly class BusinessDefinitionValidator
             return false;
         }
 
-        return strlen(\Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson::encode($value)) <= $maximum;
+        return strlen(\Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson::encode($value)) <= $maximum;
     }
 
     /**

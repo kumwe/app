@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Domain;
+namespace Kumwe\App\BusinessSchema\Domain;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 /**
  * One approvable, executable migration of a business definition's physical schema on one site.
@@ -86,7 +86,7 @@ final readonly class SchemaPlan
      *          string-keyed object, the status carries evidence it may not or omits
      *          evidence it must, the approval is bound to a different canonical plan,
      *          or the update time precedes the creation time.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
      *          that cannot be canonically encoded, such as a float or an object, or an approved plan carries
      *          more than 512 operations, which the canonical encoder refuses to fingerprint.
      *
@@ -187,7 +187,7 @@ final readonly class SchemaPlan
      * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is missing or
      *          misshapen, the stored risk or status is not a known one, any plan
      *          invariant fails, or the stored checksum does not match the content.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored outcome holds
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored outcome holds
      *          a value that cannot be canonically encoded, or the document holds more than 512 operations.
      *
      * @since   2.0.0
@@ -272,7 +272,7 @@ final readonly class SchemaPlan
      * @throws  InvalidBusinessSchema  When the plan is not pending approval, the checksum no longer matches,
      *          a required confirmation digest or recovery evidence is absent, or the
      *          approval evidence itself is malformed.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
      *          512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -321,7 +321,7 @@ final readonly class SchemaPlan
      * @return  self  An executing copy at the next revision, holding the fence and no outcome.
      *
      * @throws  InvalidBusinessSchema  When the plan is not approved, or the fence is below one.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
      *          512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -357,7 +357,7 @@ final readonly class SchemaPlan
      *
      * @throws  InvalidBusinessSchema  When the plan is not executing, failed, or awaiting recovery, or the
      *          fence is below one.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
      *          512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -397,7 +397,7 @@ final readonly class SchemaPlan
      * @return  self  A completed copy at the next revision, keeping the fence the run held.
      *
      * @throws  InvalidBusinessSchema  When the plan is not currently executing.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
      *          that cannot be canonically encoded, such as a float or an object.
      *
      * @since   2.0.0
@@ -433,7 +433,7 @@ final readonly class SchemaPlan
      *
      * @throws  InvalidBusinessSchema  When the plan is not currently executing, or the error code is outside
      *          its grammar.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
      *          that cannot be canonically encoded, such as a float or an object.
      *
      * @since   2.0.0
@@ -469,7 +469,7 @@ final readonly class SchemaPlan
      *
      * @throws  InvalidBusinessSchema  When the plan is not currently executing, or the error code is outside
      *          its grammar.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
      *          that cannot be canonically encoded, such as a float or an object.
      *
      * @since   2.0.0
@@ -503,7 +503,7 @@ final readonly class SchemaPlan
      * @return  self  A compensated copy at the next revision, keeping the fence the interrupted run held.
      *
      * @throws  InvalidBusinessSchema  When the plan is neither failed nor awaiting recovery.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
      *          that cannot be canonically encoded, such as a float or an object.
      *
      * @since   2.0.0
@@ -561,7 +561,7 @@ final readonly class SchemaPlan
      *
      * @return  string  Lowercase SHA-256 over the canonical JSON encoding of `canonicalPlan()`.
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
      *          512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -580,7 +580,7 @@ final readonly class SchemaPlan
      * @return  array<string, mixed>  The canonical plan plus identity, status, revision, creator, timestamps,
      *          execution evidence, and the recomputed `plan_checksum`.
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
      *          512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -614,7 +614,7 @@ final readonly class SchemaPlan
      *
      * @return  string  Lowercase SHA-256 over the canonical encoding of those steps and this plan's bindings.
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When more than 512 operations
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When more than 512 operations
      *          are supplied, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -656,7 +656,7 @@ final readonly class SchemaPlan
      *
      * @throws  InvalidBusinessSchema  When the requested combination breaks a plan invariant, such as an
      *          evidence set the status does not permit or an update time before creation.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome cannot be
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome cannot be
      *          canonically encoded, or an approved plan holds more than 512 operations.
      *
      * @since   2.0.0

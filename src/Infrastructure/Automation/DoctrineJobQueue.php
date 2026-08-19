@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Automation;
+namespace Kumwe\App\Infrastructure\Automation;
 
 use DateInterval;
 use DateTimeImmutable;
@@ -12,19 +12,19 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Automation\JobExecutionClass;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\Application\Automation\JobExecutionScope;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicy;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\CMS\Application\Automation\StoredJob;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\Application\Automation\JobExecutionScope;
+use Kumwe\App\Application\Automation\QueueRuntimePolicy;
+use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\App\Application\Automation\StoredJob;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -117,7 +117,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      *
      * @throws  InvalidArgumentException  When the queue name or job type breaks its naming rule, or the
      *          priority or attempt budget falls outside the accepted range.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
      *          automation on this queue, or may not enqueue this installation-global job type.
      *
      * @since   2.0.0
@@ -218,7 +218,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      *          another worker took the reservation between the read and the write.
      * @throws  JsonException  When a row being dead-lettered stores a payload that is not decodable JSON.
      * @throws  \LogicException  When a row's stored execution scope disagrees with its job type.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not operate
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not operate
      *          workers on this queue.
      *
      * @since   2.0.0
@@ -386,7 +386,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      *
      * @throws  InvalidArgumentException  When the worker identity or lease length is invalid.
      * @throws  RuntimeException  When the worker no longer holds an unexpired lease on this job.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not operate
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not operate
      *          workers on this job's queue.
      *
      * @since   2.0.0
@@ -439,7 +439,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      *
      * @throws  InvalidArgumentException  When the worker identity is invalid.
      * @throws  RuntimeException  When the worker no longer holds an unexpired lease on this job.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not operate
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not operate
      *          workers on this job's queue.
      *
      * @since   2.0.0
@@ -480,7 +480,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      *
      * @throws  InvalidArgumentException  When the worker identity is invalid.
      * @throws  RuntimeException  When the worker no longer holds an unexpired lease on this job.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not operate
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not operate
      *          workers on this job's queue.
      *
      * @since   2.0.0
@@ -563,7 +563,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      * @return  void
      *
      * @throws  InvalidArgumentException  When the worker identity or queue name is invalid.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not operate
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not operate
      *          workers on this queue.
      *
      * @since   2.0.0
@@ -618,7 +618,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      * @return  void
      *
      * @throws  InvalidArgumentException  When the worker identity or queue name is invalid.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not operate
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not operate
      *          workers on this queue.
      *
      * @since   2.0.0
@@ -703,7 +703,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      * @throws  InvalidArgumentException  When no job carries the identifier, or the job is not dead.
      * @throws  RuntimeException  When the stored row carries no usable job type or execution scope.
      * @throws  \LogicException  When the row's stored execution scope disagrees with its job type.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
      *          this job.
      *
      * @since   2.0.0
@@ -744,7 +744,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      * @throws  InvalidArgumentException  When no job carries the identifier, or the job is not pending.
      * @throws  RuntimeException  When the stored row carries no usable job type or execution scope.
      * @throws  \LogicException  When the row's stored execution scope disagrees with its job type.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
      *          this job.
      *
      * @since   2.0.0
@@ -850,7 +850,7 @@ final readonly class DoctrineJobQueue implements JobQueue
             'attempts' => $this->integer($row, 'attempts'),
             'maximum_attempts' => $this->integer($row, 'maximum_attempts'),
             'failure_classification' => 'transient',
-            'exception_type' => 'Kumwe\\CMS\\Application\\Automation\\ExpiredJobLease',
+            'exception_type' => 'Kumwe\\App\\Application\\Automation\\ExpiredJobLease',
             'error_message' => 'The final worker lease expired before the job completed.',
             'failed_at' => $now,
             'created_at' => $now,
@@ -1150,7 +1150,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor
      *          this capability on this resource.
      *
      * @since   2.0.0
@@ -1175,7 +1175,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor
      *          this capability on this queue.
      *
      * @since   2.0.0
@@ -1201,7 +1201,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          this installation-global job type.
      *
      * @since   2.0.0
@@ -1269,7 +1269,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      * @throws  InvalidArgumentException  When no job carries the identifier.
      * @throws  RuntimeException  When the stored row carries no usable job type or execution scope.
      * @throws  \LogicException  When the stored execution scope disagrees with the job type's declaration.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          this job.
      *
      * @since   2.0.0

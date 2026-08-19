@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence;
+namespace Kumwe\App\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\CMS\Shared\Domain\DatabaseTablePrefix;
+use Kumwe\App\Shared\Domain\DatabaseTablePrefix;
 
 /**
  * Compiler that turns a logical table name into the physical identifier a statement may carry.

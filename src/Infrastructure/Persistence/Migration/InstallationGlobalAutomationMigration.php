@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Types\StringType;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Automation\JobExecutionClass;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /** Persists the site-versus-installation execution boundary for automation. */

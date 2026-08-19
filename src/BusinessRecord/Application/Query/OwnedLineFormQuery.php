@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Query;
+namespace Kumwe\App\BusinessRecord\Application\Query;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 
 /**
  * Request for the policy-authorized create fields of one owned-line relationship.

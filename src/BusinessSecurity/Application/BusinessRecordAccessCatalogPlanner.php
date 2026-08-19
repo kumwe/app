@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application;
+namespace Kumwe\App\BusinessSecurity\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
 
 /**
  * Optional bulk policy-planning port for generated definition catalogs.

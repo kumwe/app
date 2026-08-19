@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\InterfaceStandard;
+namespace Kumwe\App\Tests\Unit\InterfaceStandard;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupCatalog;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferencePolicy;
-use Kumwe\CMS\Application\Presentation\Preference\RegisteredPresentationPreferencePolicy;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\OwnedRuntimeContributionRegistry;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\PresentationPreference;
-use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceContext;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\InMemoryPresentationPreferenceRepository;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupCatalog;
+use Kumwe\App\Application\Presentation\Preference\PresentationPreferencePolicy;
+use Kumwe\App\Application\Presentation\Preference\RegisteredPresentationPreferencePolicy;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\PresentationPreference;
+use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceDefinition;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Presentation\Application\Preference\PresentationPreferenceContext;
+use Kumwe\App\Presentation\Application\Preference\PresentationPreferenceResolver;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\InMemoryPresentationPreferenceRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

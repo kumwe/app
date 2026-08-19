@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Authentication;
+namespace Kumwe\App\Identity\Application\Authentication;
 
 /**
  * Access-token verifier that returns the exact live delegation envelope as well as the principal.

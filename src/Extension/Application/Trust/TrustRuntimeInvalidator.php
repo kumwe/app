@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Trust;
+namespace Kumwe\App\Extension\Application\Trust;
 
 /**
  * Port trust operations use to retire the compiled runtime map their change has just invalidated.

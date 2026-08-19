@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Install;
+namespace Kumwe\App\Extension\Application\Install;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Extension\Domain\SemanticVersion;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Extension\Domain\SemanticVersion;
 
 /**
  * Bookkeeping half of one extension installation: its declared step order and its legal state changes.

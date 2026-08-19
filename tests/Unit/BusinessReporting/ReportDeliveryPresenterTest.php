@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessReporting;
+namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\BusinessReporting\Application\ReportDefinitionRegistry;
-use Kumwe\CMS\BusinessReporting\Application\ReportExecutionResult;
-use Kumwe\CMS\BusinessReporting\Delivery\Api\ReportApiPresenter;
-use Kumwe\CMS\BusinessReporting\Domain\ReportColumnDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDrillDownDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportParameterDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\BusinessReporting\Application\ReportDefinitionRegistry;
+use Kumwe\App\BusinessReporting\Application\ReportExecutionResult;
+use Kumwe\App\BusinessReporting\Delivery\Api\ReportApiPresenter;
+use Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportDrillDownDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

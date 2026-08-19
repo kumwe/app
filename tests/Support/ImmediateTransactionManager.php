@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
-use Kumwe\CMS\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Persistence\TransactionManager;
 
 /**
  * Executes focused unit-test transactions synchronously without persistence.

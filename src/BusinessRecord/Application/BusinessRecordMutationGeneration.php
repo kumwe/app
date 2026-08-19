@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
 
 /**
  * Exact active installation generation observed by the mutation's current locking read.

@@ -17,7 +17,7 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\Localization\Infrastructure\MessageCatalogueCompiler;
+use Kumwe\App\Localization\Infrastructure\MessageCatalogueCompiler;
 
 $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';

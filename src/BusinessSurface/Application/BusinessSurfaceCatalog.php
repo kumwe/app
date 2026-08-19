@@ -2,38 +2,38 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeDefinitionResolver;
-use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\DocumentViewDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\PortalOperation;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessDefinition\Domain\ViewDefinition;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessCatalogPlanner;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessOperationCatalogPlanner;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Localization\Application\ActiveLocale;
-use Kumwe\CMS\Localization\Application\SupportedLocales;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\App\BusinessDefinition\Domain\DocumentViewDefinition;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessDefinition\Domain\PortalOperation;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessDefinition\Domain\ViewDefinition;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessCatalogPlanner;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessOperationCatalogPlanner;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Localization\Application\SupportedLocales;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -843,12 +843,12 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
     /**
      * Return the locale user-facing definition text is projected in.
      *
-     * @return  string|\Kumwe\CMS\Localization\Domain\LocaleTag  Active locale, or the source tag when this
+     * @return  string|\Kumwe\App\Localization\Domain\LocaleTag  Active locale, or the source tag when this
      *          catalog is used outside a locale unit of work.
      *
      * @since   2.0.0
      */
-    private function locale(): string|\Kumwe\CMS\Localization\Domain\LocaleTag
+    private function locale(): string|\Kumwe\App\Localization\Domain\LocaleTag
     {
         return $this->active?->locale() ?? SupportedLocales::SOURCE;
     }

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Portal\Infrastructure\Identity;
+namespace Kumwe\App\Tests\Unit\Portal\Infrastructure\Identity;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\OrganizationContext;
-use Kumwe\CMS\Application\Authorization\WorkspaceContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Portal\Infrastructure\Identity\DoctrinePortalPrincipalLoader;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\OrganizationContext;
+use Kumwe\App\Application\Authorization\WorkspaceContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Portal\Infrastructure\Identity\DoctrinePortalPrincipalLoader;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

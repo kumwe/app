@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Install;
+namespace Kumwe\App\Extension\Application\Install;
 
 /**
  * Narrow port for settling extension installs that were interrupted before their outcome was known.

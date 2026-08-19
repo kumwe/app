@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Functional\Localization;
+namespace Kumwe\App\Tests\Functional\Localization;
 
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Localization\Http\Middleware\LocaleNegotiationMiddleware;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Localization\Http\Middleware\LocaleNegotiationMiddleware;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Laminas\Diactoros\ServerRequestFactory;
 use Mezzio\Application;
 use PHPUnit\Framework\Attributes\CoversClass;

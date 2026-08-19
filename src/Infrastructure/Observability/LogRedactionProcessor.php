@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Observability;
+namespace Kumwe\App\Infrastructure\Observability;
 
 use Monolog\LogRecord;
 use Monolog\Processor\ProcessorInterface;

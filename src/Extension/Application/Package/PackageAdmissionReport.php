@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Package;
+namespace Kumwe\App\Extension\Application\Package;
 
 /**
  * Everything install-time admission established about a package, in the form an operator later reads.

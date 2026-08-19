@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessIntegration;
+namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Automation\FailureClassification;
-use Kumwe\CMS\Application\Automation\JitterSource;
-use Kumwe\CMS\Application\Automation\RetryPolicy;
-use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationDeliveryBackpressure;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\CMS\BusinessIntegration\Application\OutboxDispatcher;
-use Kumwe\CMS\BusinessIntegration\Application\OutboxLease;
-use Kumwe\CMS\BusinessIntegration\Application\OutboxStore;
-use Kumwe\CMS\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\Application\Automation\FailureClassification;
+use Kumwe\App\Application\Automation\JitterSource;
+use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\App\BusinessIntegration\Application\IntegrationDeliveryBackpressure;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
+use Kumwe\App\BusinessIntegration\Application\OutboxLease;
+use Kumwe\App\BusinessIntegration\Application\OutboxStore;
+use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

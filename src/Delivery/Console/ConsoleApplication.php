@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console;
+namespace Kumwe\App\Delivery\Console;
 
 /**
  * Dispatcher behind `bin/kumwe`: it maps the requested name onto a registered command and runs it.

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Infrastructure;
+namespace Kumwe\App\Presentation\Infrastructure;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
-use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired;
-use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Application\Administration\AuthenticationRateLimiter;
+use Kumwe\App\Identity\Application\Security\PasswordHasher;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Presentation\Application\StepUpAuthenticationRequired;
+use Kumwe\App\Presentation\Application\ThemeActivationGuard;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 
 /**
  * Demands re-entry of the actor's current password before an administrator theme is activated.
@@ -65,7 +65,7 @@ final readonly class DoctrineThemeActivationGuard implements ThemeActivationGuar
      *
      * @throws  StepUpAuthenticationRequired  When no human principal is present, or the supplied password
      *          does not match the actor's active credential.
-     * @throws  \Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled  When the actor has
+     * @throws  \Kumwe\App\Identity\Application\Administration\AuthenticationThrottled  When the actor has
      *          already spent the step-up attempt budget.
      *
      * @since   2.0.0

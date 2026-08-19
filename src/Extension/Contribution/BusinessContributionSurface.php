@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use Closure;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewContract;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 
 /**
  * Presents a business-definition registry as a contribution surface.

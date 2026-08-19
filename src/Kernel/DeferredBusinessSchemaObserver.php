@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Kernel;
+namespace Kumwe\App\Kernel;
 
 use Closure;
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaLifecycleObserver;
-use Kumwe\CMS\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaLifecycleObserver;
+use Kumwe\App\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
 
 /**
  * Stand-in for both business-schema observers that resolves the real ones only when a call arrives.

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Presentation\Twig;
+namespace Kumwe\App\Tests\Unit\Presentation\Twig;
 
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Twig\Environment;

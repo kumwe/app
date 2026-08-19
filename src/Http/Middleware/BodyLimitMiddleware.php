@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Middleware;
+namespace Kumwe\App\Http\Middleware;
 
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Stream;

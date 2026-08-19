@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessReporting;
+namespace Kumwe\App\Tests\Integration\BusinessReporting;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
-use Kumwe\CMS\BusinessReporting\Application\ExportVersionConflict;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
-use Kumwe\CMS\BusinessReporting\Infrastructure\DoctrineExportArtifactRepository;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
+use Kumwe\App\BusinessReporting\Application\ExportVersionConflict;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifactStatus;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineExportArtifactRepository;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

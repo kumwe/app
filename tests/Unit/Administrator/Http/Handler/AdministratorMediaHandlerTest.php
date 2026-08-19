@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Handler;
+namespace Kumwe\App\Tests\Unit\Administrator\Http\Handler;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Administrator\Http\Handler\AdministratorMediaHandler;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
-use Kumwe\CMS\Media\Application\MediaAsset;
-use Kumwe\CMS\Media\Application\MediaService;
-use Kumwe\CMS\Media\Application\MediaStorage;
-use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
-use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Administrator\Http\Handler\AdministratorMediaHandler;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Media\Application\MediaAsset;
+use Kumwe\App\Media\Application\MediaService;
+use Kumwe\App\Media\Application\MediaStorage;
+use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -63,7 +63,7 @@ final class AdministratorMediaHandlerTest extends TestCase
                 ExecutionContext::REQUEST_ATTRIBUTE,
                 AuthorizationContext::principal(['content.read', 'content.update'])->context(
                     SiteContext::default(),
-                    \Kumwe\CMS\Application\Authorization\AuthenticationStrength::Password,
+                    \Kumwe\App\Application\Authorization\AuthenticationStrength::Password,
                     'media-refusal',
                 ),
             )

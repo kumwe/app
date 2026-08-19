@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

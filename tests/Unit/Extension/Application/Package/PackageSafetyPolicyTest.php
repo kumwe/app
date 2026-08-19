@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Application\Package;
+namespace Kumwe\App\Tests\Unit\Extension\Application\Package;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Application\Package\ArchiveEntry;
-use Kumwe\CMS\Extension\Application\Package\ArchiveEntryType;
-use Kumwe\CMS\Extension\Application\Package\ArchivePackage;
-use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
-use Kumwe\CMS\Extension\Application\Package\UnsafePackage;
-use Kumwe\CMS\Extension\Domain\PackagePath;
+use Kumwe\App\Extension\Application\Package\ArchiveEntry;
+use Kumwe\App\Extension\Application\Package\ArchiveEntryType;
+use Kumwe\App\Extension\Application\Package\ArchivePackage;
+use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\App\Extension\Application\Package\UnsafePackage;
+use Kumwe\App\Extension\Domain\PackagePath;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
 
 /**
  * Deterministic UTF-8 CSV encoder with spreadsheet-formula injection defenses.

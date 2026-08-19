@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection;
 
 use LogicException;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
 
 /**
  * Resolves the exact immutable declarations already carried by this package's signed manifest.
