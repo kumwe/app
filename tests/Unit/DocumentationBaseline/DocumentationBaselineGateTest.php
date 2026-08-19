@@ -253,6 +253,99 @@ final class DocumentationBaselineGateTest extends TestCase
     }
 
     /**
+     * An attribute carrying arguments must not cost a member the documentation block above it.
+     *
+     * An attribute sits between a doc block and the name it documents, and its arguments may hold any
+     * expression — `::class`, strings, arrays — whose tokens the walk has no other reason to expect.
+     * Stepping through them one at a time let a single unrecognised token drop the pending block, so a
+     * fully documented class reported as undocumented and its debt was recorded as real. Stacked
+     * attributes made it worse, and `#[CoversClass(Foo::class)]` is the single most common attribute in
+     * this suite: the gate was quietly wrong about a large part of the tree it was hired to judge.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnAttributeWithArgumentsDoesNotSwallowTheDocumentationBlock(): void
+    {
+        $this->write('Attributed.php', <<<'SOURCE'
+            <?php
+
+            declare(strict_types=1);
+
+            namespace Kumwe\App\Tests\Fixture;
+
+            /**
+             * Documented, behind attributes that carry arguments.
+             *
+             * @since  2.0.0
+             */
+            #[Covers(Alpha::class)]
+            #[Covers(Beta::class)]
+            #[Group('slow', 'integration')]
+            final class Attributed
+            {
+                /**
+                 * Documented, behind an attribute holding an array argument.
+                 *
+                 * @param   string  $name  Name to answer with.
+                 *
+                 * @return  string  The name it was given.
+                 *
+                 * @since   2.0.0
+                 */
+                #[Provider(['a' => [1, 2], 'b' => [3, 4]])]
+                public function handle(string $name): string
+                {
+                    return $name;
+                }
+            }
+            SOURCE);
+
+        self::assertSame([], $this->emit()['entries']);
+    }
+
+    /**
+     * A member that genuinely lacks a block is still caught when it sits behind the same attributes.
+     *
+     * Skipping an attribute must move the walk past it, not past the declaration it decorates, or the
+     * fix for the swallowed block would have bought silence instead of accuracy.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSkippingAnAttributeStillLeavesAnUndocumentedMemberVisible(): void
+    {
+        $this->write('AttributedUndocumented.php', <<<'SOURCE'
+            <?php
+
+            declare(strict_types=1);
+
+            namespace Kumwe\App\Tests\Fixture;
+
+            #[Covers(Alpha::class)]
+            #[Covers(Beta::class)]
+            final class AttributedUndocumented
+            {
+                #[Provider(['a' => [1, 2]])]
+                public function handle(string $name): string
+                {
+                    return $name;
+                }
+            }
+            SOURCE);
+
+        $members = array_column($this->emit()['entries'], 'member');
+        sort($members, SORT_STRING);
+
+        self::assertSame(
+            ['AttributedUndocumented', 'AttributedUndocumented::handle()'],
+            $members,
+        );
+    }
+
+    /**
      * Write one fixture file into the scratch tree.
      *
      * @param   string  $name    File name below `fixtures/`.
