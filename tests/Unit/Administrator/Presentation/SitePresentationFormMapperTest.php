@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Administrator\Presentation;
 
+use InvalidArgumentException;
 use Kumwe\CMS\Tests\Support\InterfaceTranslation;
 use Kumwe\CMS\Administrator\Presentation\SitePresentationFormMapper;
 use Kumwe\CMS\Presentation\Application\SitePresentation;
@@ -39,5 +40,24 @@ final class SitePresentationFormMapperTest extends TestCase
         self::assertSame('corporate', $mapped['primary_menu']);
         self::assertSame('Brand scheme', $mapped['schemes'][0]['name']);
         self::assertSame('#0c9189', $mapped['schemes'][0]['colors']['accent']);
+    }
+
+    /**
+     * A missing presentation field is refused by name, in catalogue wording.
+     *
+     * The settings screen re-renders this sentence at 422, so it is text an operator reads; the field
+     * name inside it is the form key, which is machinery and stays as it is.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMissingPresentationFieldIsRefusedByNameInCatalogueWording(): void
+    {
+        $mapper = new SitePresentationFormMapper(InterfaceTranslation::translator());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Presentation field presentation_logo is required.');
+        $mapper->map([]);
     }
 }

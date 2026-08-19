@@ -24,8 +24,24 @@ use RuntimeException;
 /** Boots the real kernel and obtains a context only through production authentication. */
 final class TestKernelFactory
 {
-    private const EMAIL = 'integration-administrator@example.test';
-    private const PASSWORD = 'integration administrator password';
+    /**
+     * Address the bootstrapped administrator is created under, for tests that authenticate by hand.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const ADMINISTRATOR_EMAIL = 'integration-administrator@example.test';
+
+    private const EMAIL = self::ADMINISTRATOR_EMAIL;
+    /**
+     * Password the bootstrapped administrator is created with, for tests that authenticate by hand.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const ADMINISTRATOR_PASSWORD = 'integration administrator password';
+
+    private const PASSWORD = self::ADMINISTRATOR_PASSWORD;
 
     public static function create(Environment $environment): Container
     {
