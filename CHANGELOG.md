@@ -23,6 +23,29 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **The documentation rule for `tests/` is enforced, not merely written down.** `docs/coding-standard.md`
+  has asked for a documentation block on every test class and test method since it was written, and
+  `composer docs:api` scanned `src/` only, so the rule had never once been checked. `composer docs:tests`
+  now holds `tests/` to every rule the verifier has — a missing block on a class or a method, a block with
+  no summary, a missing `@since`, `@param` or `@return` — against a record of 3,829 entries that only ever
+  shrinks. Line width is the one rule left out, because `phpcs.xml` already holds `tests/` to the same 120
+  characters. Entries are keyed by file, code and **class-qualified** member: a test file may declare
+  several classes, so a bare method name is not unique inside one, and a record keyed on the name alone
+  hands every collision a free pass. Anonymous classes carry an identity of their own rather than
+  borrowing the enclosing class's, and a parameter finding names its parameter, because one method can
+  owe several. A violation the record does not carry fails; an entry that no longer matches anything fails
+  and must be deleted; and the record is refused outright when an entry lacks an owner, the finding that
+  removes it, a justification or a well-formed expiry, when two entries share one key, or when the
+  declared count disagrees with the entries — so the count is a burn-down rather than a number that can
+  be edited down. Seven cases in `tests/Unit/DocumentationBaseline` pin each of those promises, including
+  the collision itself. Two parser defects surfaced on the way and are fixed: `const array NAME` was read
+  as having no name at all, and the line-width fallback for a missing `ext-mbstring` counted bytes, which
+  would have failed compliant lines carrying em-dashes. Progress on `V2-QA-010`. (#95)
+- **`composer roadmap:check` reads `docs/roadmap/STATUS.md`.** The page states the same facts three times
+  — a phase board, a table of open work packages, and the Gate A criteria — and nothing checked that the
+  three agreed. A phase may no longer open by calling itself delivered while its packages are still listed
+  as open, a package may not be recorded as open and complete in the same row, and the gate may not read
+  ready while its own criteria table carries an unmet criterion. All three had happened. (#95)
 - **Every user-facing string is looked up, and a gate keeps it that way.** The forty-eight remaining
   templates, all forty-eight console commands and the user-facing error paths of `src/` now resolve their
   wording from the message catalogue, which grew from 117 messages to 2,099 with the pending-extraction

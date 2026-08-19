@@ -1113,7 +1113,7 @@
       "id": "V2-QA-010",
       "title": "The standard asks every test method for a documentation block and no gate has ever checked",
       "severity": "medium",
-      "state": "reproduced",
+      "state": "in_progress",
       "phase": "2",
       "origin": "new",
       "source_anchors": [
@@ -1125,12 +1125,13 @@
         {
           "file": "composer.json",
           "symbol": "docs:api",
-          "note": "Runs tools/verify-docblocks.php against src/ only. The rule for tests/ has therefore been written and unenforced since it was set down, and 1,193 of 2,586 test methods carry no block - forty-six percent. Each new test written beside an undocumented neighbour inherits the habit, which is how the drift compounds."
+          "note": "Ran tools/verify-docblocks.php against src/ only, so the rule for tests/ was written and unenforced from the day it was set down. The originally recorded figure counted test methods: 1,193 of 2,586 carried no block. Measured across every member the standard covers, tests/ owed 3,829 findings when the gate was armed. Each new test written beside an undocumented neighbour inherited the habit, which is how the drift compounded."
         }
       ],
-      "acceptance_test": "tools/verify-docblocks.php covers tests/ as well as src/, introduced the way this repository introduces every gate against pre-existing debt: a recorded baseline of the undocumented methods that only ever shrinks, with a stale entry failing the build. A newly written test method without a block fails immediately; the recorded ones are burned down in their own change rather than inside a delivery wave.",
+      "acceptance_test": "The recorded entries reach zero and the baseline document is deleted with the change that empties it, the way docs/quality/idempotency-baseline.json was emptied. The gate itself is delivered; what remains is the burn-down, taken in its own changes rather than inside a delivery wave.",
       "owner": "UNASSIGNED",
-      "closure_sha": null
+      "closure_sha": null,
+      "progress": "Delivered: the gate exists and is enforced. composer docs:tests runs in composer qa and in the CI quality job, and tools/verify-docblocks.php holds tests/ to every documentation rule it checks -- not undocumented methods alone, but classes, summaries, @since, @param and @return -- against a record of 3,829 entries keyed by file, code and class-qualified member. Line width is the one rule left out, because phpcs.xml already holds tests/ to the same 120 characters and the tree owes nothing there. A violation the record does not carry fails, an entry that no longer matches fails, and the record is refused outright if an entry lacks an owner, a finding, a justification or a well-formed expiry, if two entries share a key, or if the declared count disagrees with the entries. Seven cases in tests/Unit/DocumentationBaseline pin each of those, including the keying defect the first attempt shipped with. Outstanding: the 3,829 recorded entries, of which 1,215 are test methods and the rest constructors, helpers and providers, burned down in their own changes."
     },
     {
       "id": "V2-LNG-013",
