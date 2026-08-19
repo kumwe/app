@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
@@ -15,13 +15,13 @@ final class PublishedMigrationIntegrityTest extends TestCase
         $root = dirname(__DIR__, 5);
         $published = [
             'ApplicationAuthorizationMigration.php' =>
-                '793c097e9116054619e512fea66b24609129f124a11da8bc01ab9eba3dabccb7',
+                '52667a12993dfd7944c95fa8723193ce199c663470385ddd77bcf4b3823dced6',
             'AuthorizationRecoveryIntegrationMigration.php' =>
-                '3e94286df919901ea618a4f34891d82230cd3d3f6bce97d7e674758ae3b9f2ed',
+                '60c2d1cd888c89bffb49456b77851d13e08d520d57bb7851c9640443b5910f43',
             'CoreSchemaMigration.php' =>
-                '04088624b20ac688f8cb6cf430a0cc8b20f3791cd22982acc24e8702f475a0dc',
+                '6e2b6ab55e5f0eae4f979e9e49090ae6fcbd061ea3ed3ba8caac20e42d02c021',
             'JobRecoveryMigration.php' =>
-                'db7140ab9f4991514a7011d2c96738a023dba98bb9afae1e0721bc69627f1261',
+                '23d02dcd543e35ef72849dae327bccda2115ddaaa3f6298c8449123174e5b92f',
         ];
 
         foreach ($published as $file => $expected) {

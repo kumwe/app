@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Presentation\Field;
+namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
-use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\MoneyValue;
+use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
 
 /**
  * Semantic presenter for the complete core business field-type catalogue.

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Runtime;
+namespace Kumwe\App\Extension\Runtime;
 
 use Joomla\Event\EventInterface;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 
 /**
  * Extension event registrar that re-checks trust at dispatch time instead of at subscription time.

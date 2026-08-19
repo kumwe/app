@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\StepUp;
+namespace Kumwe\App\Identity\Infrastructure\StepUp;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpProofStore;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Identity\Application\StepUp\StepUpProofStore;
+use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
 
 /**

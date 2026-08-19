@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console;
+namespace Kumwe\App\Delivery\Console;
 
 /**
  * Sink a console command writes its result text and its failure text to.

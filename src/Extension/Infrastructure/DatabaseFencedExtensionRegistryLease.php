@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Infrastructure;
+namespace Kumwe\App\Extension\Infrastructure;
 
-use Kumwe\CMS\Extension\Application\ExtensionRegistryLease;
-use Kumwe\CMS\Infrastructure\Redis\RedisLease;
+use Kumwe\App\Extension\Application\ExtensionRegistryLease;
+use Kumwe\App\Infrastructure\Redis\RedisLease;
 
 /**
  * The registry lease every extension lifecycle operation runs under: a Redis lock plus a database fence.

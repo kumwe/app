@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Application;
+namespace Kumwe\App\Portal\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 
 /**
  * Principal and authorization epoch returned by portal password authentication.

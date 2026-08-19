@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Runtime;
+namespace Kumwe\App\Extension\Runtime;
 
-use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
-use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Extension\Domain\ThemeSurface;
+use Kumwe\App\Portal\Presentation\PortalRenderer;
 use LogicException;
 use Mezzio\Application;
 
@@ -287,7 +287,7 @@ final class ActiveExtensionSet
      *          contract, or a schema-1 extension does implement it and tries to contribute.
      * @throws  \InvalidArgumentException  When a provider omits or repeats a contribution its manifest
      *          declared, or claims an identifier it does not own.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled
      *          business definition graph does not validate.
      *
      * @since   2.0.0

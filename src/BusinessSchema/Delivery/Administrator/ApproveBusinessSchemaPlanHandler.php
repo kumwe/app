@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Administrator;
+namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Application\Security\HighImpactCredentialGuard;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -62,13 +62,13 @@ final readonly class ApproveBusinessSchemaPlanHandler implements RequestHandlerI
      *
      * @throws  InvalidArgumentException  When a required field is missing or the confirmation does not
      *          repeat the plan's current checksum.
-     * @throws  \Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired  When the re-entered
+     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the re-entered
      *          password is absent, wrong, or the context has no human principal behind it.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.read`,
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read`,
      *          `business.schema.approve`, or `business.schema.destructive` is refused.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When no plan or referenced
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no plan or referenced
      *          recovery evidence matches within the site.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict  When the plan changed after
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When the plan changed after
      *          it was inspected, or its recovery-evidence requirement is unmet.
      *
      * @since   2.0.0

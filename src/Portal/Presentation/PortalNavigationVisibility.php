@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Presentation;
+namespace Kumwe\App\Portal\Presentation;
 
-use Kumwe\CMS\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Application\PortalSession;
 
 /**
  * Applies request-session conditions that cannot be expressed by static capability-owned navigation.

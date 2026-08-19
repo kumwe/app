@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Infrastructure;
+namespace Kumwe\App\Tests\Integration\Infrastructure;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessReporting\Infrastructure\FilesystemExportArtifactStorage;
-use Kumwe\CMS\Media\Infrastructure\FilesystemMediaStorage;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessReporting\Infrastructure\FilesystemExportArtifactStorage;
+use Kumwe\App\Media\Infrastructure\FilesystemMediaStorage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

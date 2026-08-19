@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Workflow\Domain;
+namespace Kumwe\App\Workflow\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SiteContext;
 
 /**
  * One published version of a site's editorial workflow: its states, its edges, and what each edge costs.

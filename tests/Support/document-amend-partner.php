@@ -18,13 +18,13 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\DocumentLineInput;
-use Kumwe\CMS\BusinessRecord\Application\Command\DocumentWriteIntent;
-use Kumwe\CMS\BusinessRecord\Application\Command\WriteDocumentCommand;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\DocumentLineInput;
+use Kumwe\App\BusinessRecord\Application\Command\DocumentWriteIntent;
+use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 
 require dirname(__DIR__, 2) . '/vendor/autoload.php';
 

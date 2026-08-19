@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Security;
+namespace Kumwe\App\Http\Security;
 
 use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Application;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Query\BooleanFilter;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\CMS\BusinessRecord\Query\RelationFilter;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordQueryFactory;
+use Kumwe\App\BusinessRecord\Query\BooleanFilter;
+use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
+use Kumwe\App\BusinessRecord\Query\RelationFilter;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordQueryFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

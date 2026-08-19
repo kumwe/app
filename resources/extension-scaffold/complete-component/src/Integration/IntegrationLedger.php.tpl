@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace @@PHP_NAMESPACE@@\Integration;
 
-use Kumwe\CMS\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
 
 /**
  * Keeps bounded process-local evidence that each generated integration handler executed.

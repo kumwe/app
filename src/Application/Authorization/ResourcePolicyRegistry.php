@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Authorization;
+namespace Kumwe\App\Application\Authorization;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Collision-safe owner-aware registry of capability-to-resource policy bindings.

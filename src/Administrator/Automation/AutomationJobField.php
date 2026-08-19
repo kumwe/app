@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Automation;
+namespace Kumwe\App\Administrator\Automation;
 
 use InvalidArgumentException;
 

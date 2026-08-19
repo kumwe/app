@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
-use Kumwe\CMS\BusinessRecord\Application\RecordBrowseResult;
-use Kumwe\CMS\BusinessRecord\Application\RecordHistoryResult;
-use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
-use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
-use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
+use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
+use Kumwe\App\BusinessRecord\Application\RecordHistoryResult;
+use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\MoneyValue;
+use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
 
 /**
  * Projects business-record results into the one safe document shape shared by every adapter.

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
-use Kumwe\CMS\Administrator\Content\ContentEditorSubmission;
-use Kumwe\CMS\Administrator\Content\ContentFormPresenter;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Application\ContentModelService;
-use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
-use Kumwe\CMS\Media\Application\MediaAsset;
-use Kumwe\CMS\Media\Application\MediaService;
-use Kumwe\CMS\Site\Application\PublicPageLocator;
+use Kumwe\App\Administrator\Content\ContentEditorSubmission;
+use Kumwe\App\Administrator\Content\ContentFormPresenter;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Content\Application\ContentModelService;
+use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Media\Application\MediaAsset;
+use Kumwe\App\Media\Application\MediaService;
+use Kumwe\App\Site\Application\PublicPageLocator;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -69,7 +69,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      * @return  ResponseInterface  The rendered editor, marked `no-store` because it carries a CSRF token.
      *
      * @throws  \RuntimeException  When the stored entry's pinned type or workflow reference is unusable.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When the route names an entry out of reach.
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the route names an entry out of reach.
      *
      * @since   2.0.0
      */
@@ -100,7 +100,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      * @return  ResponseInterface  The rendered editor, marked `no-store` because it carries a CSRF token.
      *
      * @throws  \RuntimeException  When the stored entry's pinned type or workflow reference is unusable.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When the route names an entry out of reach.
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the route names an entry out of reach.
      *
      * @since   2.0.0
      */

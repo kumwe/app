@@ -29,11 +29,11 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
-use Kumwe\CMS\Application\Automation\Worker;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\DrillDirectedJobHandler;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\App\Application\Automation\Worker;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\DrillDirectedJobHandler;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 
 require dirname(__DIR__, 2) . '/vendor/autoload.php';
 

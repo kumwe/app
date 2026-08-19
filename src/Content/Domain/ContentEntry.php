@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Domain;
+namespace Kumwe\App\Content\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Workflow\Domain\Workflow;
+use Kumwe\App\Localization\Domain\InvalidLocaleTag;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Workflow\Domain\Workflow;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -443,7 +443,7 @@ final readonly class ContentEntry
      *
      * @throws  VersionConflict  When the entry has already moved past the expected version.
      * @throws  InvalidArgumentException  When the target is not a well-formed state key.
-     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
+     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
      *
      * @since   2.0.0
      */

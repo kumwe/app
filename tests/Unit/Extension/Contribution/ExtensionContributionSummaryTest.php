@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Contribution;
+namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionSummary;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Contribution\ExtensionContributionSummary;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

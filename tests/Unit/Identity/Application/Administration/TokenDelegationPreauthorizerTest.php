@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Application\Administration;
+namespace Kumwe\App\Tests\Unit\Identity\Application\Administration;
 
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\OrganizationContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\WorkspaceContext;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
-use Kumwe\CMS\Identity\Application\Administration\TokenDelegation;
-use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\OrganizationContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\WorkspaceContext;
+use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
+use Kumwe\App\Identity\Application\Administration\TokenDelegation;
+use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

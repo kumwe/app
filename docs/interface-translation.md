@@ -69,7 +69,7 @@ segment     ::= [a-z0-9] [a-z0-9_-]*
 - **Never the source text.** `Save settings and design` is refused by name, with a message that says
   so, rather than by a generic grammar complaint.
 
-`Kumwe\CMS\Localization\Domain\MessageIdentifier` is the validator. `fromString()` checks the
+`Kumwe\App\Localization\Domain\MessageIdentifier` is the validator. `fromString()` checks the
 grammar; `ownedBy()` additionally proves the contributor may claim the namespace; `isValid()`
 answers without raising, which is what the compiler and the extraction gate use to report every
 offending identifier in one pass.
@@ -269,7 +269,7 @@ An extension may **add** messages and may **override** core's, and a site or an 
 override either. Within the extension layer, catalogue directories resolve in runtime-map order, so
 the outcome is a property of the compiled map and not of filesystem enumeration.
 
-Read the translator through the `Kumwe\CMS\Localization\Application\Translator` port, injected
+Read the translator through the `Kumwe\App\Localization\Application\Translator` port, injected
 through your constructor. Pass the locale explicitly wherever you are not on the request path — a
 queue handler, a scheduled job, a report — because the locale is an argument and never process state.
 

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\BusinessRecord\Query\CursorPosition;
-use Kumwe\CMS\BusinessRecord\Query\RecordCursor;
+use Kumwe\App\BusinessRecord\Query\CursorPosition;
+use Kumwe\App\BusinessRecord\Query\RecordCursor;
 
 /**
  * Signs and verifies the opaque page cursors a business-record browse hands back to its callers.

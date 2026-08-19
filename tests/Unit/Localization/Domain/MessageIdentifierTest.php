@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Localization\Domain;
+namespace Kumwe\App\Tests\Unit\Localization\Domain;
 
-use Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier;
-use Kumwe\CMS\Localization\Domain\MessageIdentifier;
+use Kumwe\App\Localization\Domain\InvalidMessageIdentifier;
+use Kumwe\App\Localization\Domain\MessageIdentifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

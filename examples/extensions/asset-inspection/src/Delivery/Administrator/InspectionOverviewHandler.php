@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Delivery\Administrator;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use KumweExample\AssetInspection\Application\InspectionOverviewService;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;

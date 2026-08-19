@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
-use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Audit\Application\AuditTrailExport;
-use Kumwe\CMS\Audit\Application\AuditTrailExporter;
-use Kumwe\CMS\Audit\Application\AuditTrailVerifier;
-use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
-use Kumwe\CMS\Audit\Domain\AuditVerificationFinding;
-use Kumwe\CMS\Audit\Domain\AuditVerificationReport;
-use Kumwe\CMS\Audit\Domain\StoredAuditArchive;
-use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
-use Kumwe\CMS\Delivery\Console\Command\ExportAuditTrailCommand;
-use Kumwe\CMS\Delivery\Console\Command\VerifyAuditTrailCommand;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Audit\Application\AuditTrailExport;
+use Kumwe\App\Audit\Application\AuditTrailExporter;
+use Kumwe\App\Audit\Application\AuditTrailVerifier;
+use Kumwe\App\Audit\Domain\AuditEnforcementState;
+use Kumwe\App\Audit\Domain\AuditVerificationFinding;
+use Kumwe\App\Audit\Domain\AuditVerificationReport;
+use Kumwe\App\Audit\Domain\StoredAuditArchive;
+use Kumwe\App\Delivery\Console\Command\ConsoleAuthorizer;
+use Kumwe\App\Delivery\Console\Command\ExportAuditTrailCommand;
+use Kumwe\App\Delivery\Console\Command\VerifyAuditTrailCommand;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -254,8 +254,8 @@ final class AuditConsoleCommandTest extends TestCase
                 string $audience = 'kumwe-http',
                 string $purpose = 'api',
                 ?string $site = null,
-            ): ?\Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal {
-                return \Kumwe\CMS\Tests\Support\AuthorizationContext::principal(
+            ): ?\Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal {
+                return \Kumwe\App\Tests\Support\AuthorizationContext::principal(
                     ['audit.manage', 'audit.export'],
                 );
             }

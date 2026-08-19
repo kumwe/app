@@ -21,14 +21,14 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\BusinessRecord\Application\SecretAssociatedData;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyMaterial;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyRing;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
-use Kumwe\CMS\Tests\Deployment\CaseReport;
+use Kumwe\App\BusinessRecord\Application\SecretAssociatedData;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyMaterial;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyRing;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
+use Kumwe\App\Tests\Deployment\CaseReport;
 
 require __DIR__ . '/../Support/deployment-drill-autoload.php';
 

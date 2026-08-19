@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Automation;
+namespace Kumwe\App\Delivery\Http\Api\Automation;
 
 use DomainException;
 

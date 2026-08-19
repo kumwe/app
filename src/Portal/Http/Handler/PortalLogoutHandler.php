@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Http\Handler;
+namespace Kumwe\App\Portal\Http\Handler;
 
-use Kumwe\CMS\Portal\Application\PortalSessionStore;
-use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
-use Kumwe\CMS\Portal\Http\PortalRequest;
+use Kumwe\App\Portal\Application\PortalSessionStore;
+use Kumwe\App\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\App\Portal\Http\PortalRequest;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

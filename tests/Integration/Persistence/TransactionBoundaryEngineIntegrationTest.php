@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Persistence;
+namespace Kumwe\App\Tests\Integration\Persistence;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -17,21 +17,21 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use DomainException;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
-use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
-use Kumwe\CMS\BusinessRecord\Application\BusinessNumberSequenceAllocator;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
+use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
+use Kumwe\App\BusinessRecord\Application\BusinessNumberSequenceAllocator;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

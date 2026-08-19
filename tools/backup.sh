@@ -218,7 +218,7 @@ jq -n \
     --arg release "$KUMWE_RELEASE" \
     '{
         format: "kumwe-backup-v2",
-        product: "Kumwe CMS",
+        product: "Kumwe App",
         product_major: 2,
         release: $release,
         created_at: $created_at,

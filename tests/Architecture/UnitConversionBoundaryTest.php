@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
-use Kumwe\CMS\BusinessRecord\Domain\ConvertedQuantityValue;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimalArithmetic;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityConverter;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityRoundingMode;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
-use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
-use Kumwe\CMS\BusinessRecord\Domain\UnitConversionFactor;
-use Kumwe\CMS\BusinessRecord\Domain\UnitConversionRequest;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\App\BusinessRecord\Domain\ConvertedQuantityValue;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimalArithmetic;
+use Kumwe\App\BusinessRecord\Domain\QuantityConverter;
+use Kumwe\App\BusinessRecord\Domain\QuantityRoundingMode;
+use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\UnitConversionFactor;
+use Kumwe\App\BusinessRecord\Domain\UnitConversionRequest;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

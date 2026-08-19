@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Domain;
+namespace Kumwe\App\Content\Domain;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\InvalidLocaleTag;
+use Kumwe\App\Localization\Domain\LocaleTag;
 use Ramsey\Uuid\Uuid;
 
 /**

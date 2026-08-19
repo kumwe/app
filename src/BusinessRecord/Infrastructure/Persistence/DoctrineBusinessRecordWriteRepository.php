@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\ArrayParameterType;
@@ -12,24 +12,24 @@ use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordWriteRepository;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
-use Kumwe\CMS\BusinessRecord\Application\OwnedLineWrite;
-use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
-use Kumwe\CMS\BusinessRecord\Application\RelationshipWriteResult;
-use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordWriteRepository;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
+use Kumwe\App\BusinessRecord\Application\OwnedLineWrite;
+use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\App\BusinessRecord\Application\RelationshipWriteResult;
+use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
 use LogicException;
 
 /**

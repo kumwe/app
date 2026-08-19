@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace @@PHP_NAMESPACE@@\Delivery\Administrator;
 
 use @@PHP_NAMESPACE@@\Application\OverviewService;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Extension\Contribution\AdministratorRouteHandlerFactory;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**

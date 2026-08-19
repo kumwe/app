@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Application;
+namespace Kumwe\App\Portal\Application;
 
 /**
  * Password authentication port shared with identities but exposed without administrator semantics.
@@ -20,7 +20,7 @@ interface PortalAuthenticator
      *
      * @return  ?PortalPasswordIdentity  Live principal and epoch, or null for every authentication failure.
      *
-     * @throws  \Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled  When exhausted.
+     * @throws  \Kumwe\App\Identity\Application\Administration\AuthenticationThrottled  When exhausted.
      *
      * @since   2.0.0
      */

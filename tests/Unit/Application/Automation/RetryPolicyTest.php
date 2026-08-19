@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\FailureClassification;
-use Kumwe\CMS\Application\Automation\JitterSource;
-use Kumwe\CMS\Application\Automation\PermanentFailure;
-use Kumwe\CMS\Application\Automation\RetryDecision;
-use Kumwe\CMS\Application\Automation\RetryPolicy;
-use Kumwe\CMS\Application\Automation\TransientFailure;
+use Kumwe\App\Application\Automation\FailureClassification;
+use Kumwe\App\Application\Automation\JitterSource;
+use Kumwe\App\Application\Automation\PermanentFailure;
+use Kumwe\App\Application\Automation\RetryDecision;
+use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\App\Application\Automation\TransientFailure;
 use Psr\Clock\ClockInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

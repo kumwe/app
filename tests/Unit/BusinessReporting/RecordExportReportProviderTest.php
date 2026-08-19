@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessReporting;
+namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessReporting\Application\RecordExportReportProvider;
-use Kumwe\CMS\BusinessReporting\Application\ReportUnavailable;
-use Kumwe\CMS\BusinessReporting\Domain\ReportColumnDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableKind;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\App\BusinessReporting\Application\RecordExportReportProvider;
+use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
+use Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableKind;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

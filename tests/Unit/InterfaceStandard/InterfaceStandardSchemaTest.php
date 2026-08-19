@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\InterfaceStandard;
+namespace Kumwe\App\Tests\Unit\InterfaceStandard;
 
 use BackedEnum;
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\ResponsivePriority;
-use Kumwe\CMS\InterfaceStandard\SurfaceActor;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
-use Kumwe\CMS\InterfaceStandard\SurfaceIntent;
-use Kumwe\CMS\InterfaceStandard\SurfacePattern;
-use Kumwe\CMS\InterfaceStandard\SurfaceState;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\ResponsivePriority;
+use Kumwe\App\InterfaceStandard\SurfaceActor;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceDefinition;
+use Kumwe\App\InterfaceStandard\SurfaceIntent;
+use Kumwe\App\InterfaceStandard\SurfacePattern;
+use Kumwe\App\InterfaceStandard\SurfaceState;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 

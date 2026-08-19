@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Infrastructure;
+namespace Kumwe\App\BusinessReporting\Infrastructure;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessReporting\Application\ExportPolicySnapshotProvider;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessReporting\Application\ExportPolicySnapshotProvider;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 
 /**
  * Builds export snapshots from the same resolved business-record access plan used by query compilation.

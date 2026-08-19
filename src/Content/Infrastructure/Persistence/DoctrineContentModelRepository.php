@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Infrastructure\Persistence;
+namespace Kumwe\App\Content\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -11,15 +11,15 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
 use LogicException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Application\ContentModelRepository;
-use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
-use Kumwe\CMS\Content\Domain\VersionConflict;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Workflow\Domain\WorkflowDefinition;
-use Kumwe\CMS\Workflow\Domain\WorkflowStateDefinition;
-use Kumwe\CMS\Workflow\Domain\WorkflowTransitionDefinition;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Application\ContentModelRepository;
+use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Content\Domain\VersionConflict;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Workflow\Domain\WorkflowDefinition;
+use Kumwe\App\Workflow\Domain\WorkflowStateDefinition;
+use Kumwe\App\Workflow\Domain\WorkflowTransitionDefinition;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 

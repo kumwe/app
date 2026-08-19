@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Infrastructure\Execution;
+namespace Kumwe\App\BusinessSchema\Infrastructure\Execution;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaExecutionStateGuard;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaExecutionStateGuard;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Doctrine-backed locking reads the executor takes before it finalizes a schema execution.

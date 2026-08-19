@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDrillDownDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessReporting\Domain\ReportDrillDownDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
 
 /**
  * Bounded report result whose rows contain disclosure-safe scalar output only.

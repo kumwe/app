@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Port that moves stored record secrets onto the active key, one bounded pass at a time.
@@ -48,9 +48,9 @@ interface RecordSecretRotation
      * @return  RecordSecretRotationReport  Counts, skipped installations, and whether anything is left.
      *
      * @throws  InvalidArgumentException  When the batch size falls outside its range.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not re-key
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not re-key
      *          business-record secrets on this site.
-     * @throws  \Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable  When a stored envelope names a key
+     * @throws  \Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable  When a stored envelope names a key
      *          this deployment does not hold; the pass stops rather than skipping the row, because a row
      *          it cannot open is a row it would otherwise spin on forever.
      * @throws  \RuntimeException  When a stored envelope fails authentication, which is a data-integrity

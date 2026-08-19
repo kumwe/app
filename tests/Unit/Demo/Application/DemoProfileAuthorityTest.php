@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Demo\Application;
+namespace Kumwe\App\Tests\Unit\Demo\Application;
 
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Extension\Contribution\CoreExtensionContributions;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Extension\Contribution\CoreExtensionContributions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

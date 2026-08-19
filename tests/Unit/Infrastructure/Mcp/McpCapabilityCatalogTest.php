@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Mcp;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Mcp;
 
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
-use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
+use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
+use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

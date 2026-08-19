@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Domain;
+namespace Kumwe\App\BusinessReporting\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\GrantScope;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\GrantScope;
 use LogicException;
 
 /**

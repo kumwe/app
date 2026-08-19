@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 use Throwable;
 
 /**
@@ -153,8 +153,8 @@ final readonly class ManageContentCommand implements Command
      * @return  array<string, mixed>  The stored record after the move, in the JSON shape the command prints.
      *
      * @throws  \InvalidArgumentException  When `--id`, `--status` or a positive `--version` is missing.
-     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */

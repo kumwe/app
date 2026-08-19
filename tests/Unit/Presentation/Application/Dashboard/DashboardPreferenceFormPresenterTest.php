@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Presentation\Application\Dashboard;
+namespace Kumwe\App\Tests\Unit\Presentation\Application\Dashboard;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceAccessGroupState;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceState;
-use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\PresentationPreference;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardPreferenceFormProjection;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWidget;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
-use Kumwe\CMS\Presentation\Application\Dashboard\DashboardWorkflowPage;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceAccessGroupState;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceState;
+use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\PresentationPreference;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardPreferenceFormProjection;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWidget;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowPage;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

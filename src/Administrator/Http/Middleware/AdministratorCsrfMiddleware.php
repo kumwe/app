@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Middleware;
+namespace Kumwe\App\Administrator\Http\Middleware;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Localization\Application\ActiveLocale;
-use Kumwe\CMS\Localization\Application\Translator;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Localization\Application\Translator;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

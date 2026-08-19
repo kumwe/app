@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Demo\Infrastructure\Persistence;
+namespace Kumwe\App\Demo\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Demo\Application\DemoProfileLedger;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Demo\Application\DemoProfileLedger;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
 use Throwable;

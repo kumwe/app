@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\OpenApi\Delivery\Http;
+namespace Kumwe\App\OpenApi\Delivery\Http;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractProvider;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractUnavailable;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\OpenApi\Application\OpenApiContractProvider;
+use Kumwe\App\OpenApi\Application\OpenApiContractUnavailable;
 use Laminas\Diactoros\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

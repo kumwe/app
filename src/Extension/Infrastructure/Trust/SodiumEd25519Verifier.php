@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Infrastructure\Trust;
+namespace Kumwe\App\Extension\Infrastructure\Trust;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Application\Trust\PackageSignatureVerifier;
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Extension\Domain\PackageSignature;
+use Kumwe\App\Extension\Application\Trust\PackageSignatureVerifier;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Extension\Domain\PackageSignature;
 
 /**
  * Verifies package signatures with libsodium's Ed25519 against a fixed set of configured public keys.

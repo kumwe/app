@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
 
 /**
  * Port translating a published business definition into the physical schema that definition installs.
@@ -31,7 +31,7 @@ interface DefinitionPhysicalSchemaCompiler
      *
      * @return  PhysicalSchemaBlueprint  Every table the version needs, checksummed for later comparison.
      *
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the definition belongs to
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the definition belongs to
      *          another site, or carries no published version number.
      *
      * @since   2.0.0

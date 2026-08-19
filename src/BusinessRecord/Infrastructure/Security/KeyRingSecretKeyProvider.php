@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Security;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Security;
 
-use Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyMaterial;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyRing;
+use Kumwe\App\BusinessRecord\Application\SecretKeyProvider;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyMaterial;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyRing;
 
 /**
  * The production-capable default `SecretKeyProvider`: an in-process ring built from configuration.
@@ -67,7 +67,7 @@ final readonly class KeyRingSecretKeyProvider implements SecretKeyProvider
      *
      * @return  SecretKeyMaterial  The key that identifier names.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable  When the ring holds no such key.
+     * @throws  \Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable  When the ring holds no such key.
      *
      * @since   2.0.0
      */

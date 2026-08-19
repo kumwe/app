@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Application;
+namespace Kumwe\App\Localization\Application;
 
-use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\InvalidLocaleTag;
+use Kumwe\App\Localization\Domain\LocaleTag;
 
 /**
  * The locales this installation carries, in preference order, with `en-GB` as the source of record.

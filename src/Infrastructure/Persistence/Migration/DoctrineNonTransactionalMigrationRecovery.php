@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
@@ -12,7 +12,7 @@ use Doctrine\DBAL\Types\JsonType;
 use Doctrine\DBAL\Types\StringType;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**
@@ -86,7 +86,7 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
      * @var    string
      * @since  2.0.0
      */
-    private const PUBLISHED_CORE_CHECKSUM = '69741c8e3fc14a1a0e318a643deb3fa7901685ba8f534a1782917839ad1f0b57';
+    private const PUBLISHED_CORE_CHECKSUM = '40bf9c3fa708f153453cfbd6caf93c9cef806052eabb6a1bb8ad7a4b71e7dddf';
     /**
      * SHA-256 of `ApplicationAuthorizationMigration` as released, pinning the skip-`up()` strategy to it.
      *
@@ -97,7 +97,7 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
      * @since  2.0.0
      */
     private const PUBLISHED_APPLICATION_AUTHORIZATION_CHECKSUM =
-        '873179e96a0e4ce35ec40adc7c62ea90c707fbbc7f4ede3baa1c56d849a5e785';
+        '484705ff88bf14bc4f92a63cff2fcb613a739aa147a0e76c152e4f564f129bf0';
 
     /**
      * IDs of already-released migrations whose `up()` is idempotent but which cannot say so in code.

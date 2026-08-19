@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Application;
+namespace Kumwe\App\Localization\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
-use Kumwe\CMS\Localization\Domain\MessageIdentifier;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Localization\Domain\InvalidLocaleTag;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Localization\Domain\MessageIdentifier;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -104,7 +104,7 @@ final readonly class MessageOverrideService
      *
      * @return  list<MessageOverrideRecord>  Stored overrides in a stable order.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
      * @throws  InvalidArgumentException  When the layer is not administered, or the locale is not carried.
      *
      * @since   2.0.0
@@ -135,8 +135,8 @@ final readonly class MessageOverrideService
      *
      * @return  MessageOverrideRecord  The stored override, carrying the instant it was written.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
-     * @throws  \Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier  When the identifier breaks the grammar.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\App\Localization\Domain\InvalidMessageIdentifier  When the identifier breaks the grammar.
      * @throws  InvalidArgumentException  When the layer is not administered, the locale is not carried, the
      *          pattern is blank or too long, no file-shipped layer declares the identifier, or the scope
      *          already holds the maximum number of overrides.
@@ -212,8 +212,8 @@ final readonly class MessageOverrideService
      *
      * @return  bool  True when an override was withdrawn, false when the scope carried none.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
-     * @throws  \Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier  When the identifier breaks the grammar.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\App\Localization\Domain\InvalidMessageIdentifier  When the identifier breaks the grammar.
      * @throws  InvalidArgumentException  When the layer is not administered or the locale is not carried.
      *
      * @since   2.0.0
@@ -276,7 +276,7 @@ final readonly class MessageOverrideService
      * @return  list<array{identifier: string, pattern: string, layer: string}>  Matches in identifier
      *          order, each naming the file-shipped layer the wording came from.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
      * @throws  InvalidArgumentException  When the locale is not one this installation carries.
      *
      * @since   2.0.0
@@ -530,7 +530,7 @@ final readonly class MessageOverrideService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the capability is absent.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the capability is absent.
      *
      * @since   2.0.0
      */

@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessIntegration;
+namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\Application\Automation\JitterSource;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\Application\Automation\RetryPolicy;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessIntegration\Application\JobQueueProcessWorkHandler;
-use Kumwe\CMS\BusinessIntegration\Application\ProcessManagerStore;
-use Kumwe\CMS\BusinessIntegration\Application\ProcessWorkDispatcher;
-use Kumwe\CMS\BusinessIntegration\Application\ProcessWorkHandler;
-use Kumwe\CMS\BusinessIntegration\Application\ProcessWorkLease;
-use Kumwe\CMS\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkItem;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Application\Automation\JitterSource;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessIntegration\Application\JobQueueProcessWorkHandler;
+use Kumwe\App\BusinessIntegration\Application\ProcessManagerStore;
+use Kumwe\App\BusinessIntegration\Application\ProcessWorkDispatcher;
+use Kumwe\App\BusinessIntegration\Application\ProcessWorkHandler;
+use Kumwe\App\BusinessIntegration\Application\ProcessWorkLease;
+use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
+use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
+use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

@@ -1,7 +1,7 @@
 {
   "format": "kumwe-content-translation-association-v1",
   "generation": 1,
-  "association_class": "Kumwe\\CMS\\Extension\\Contribution\\TranslationSetItemAssociation",
+  "association_class": "Kumwe\\App\\Extension\\Contribution\\TranslationSetItemAssociation",
   "association_members": ["generation", "owner", "translation_set"],
   "group_derivation": {
     "algorithm": "uuid5",
@@ -16,7 +16,7 @@
     }
   },
   "application_path": {
-    "service": "Kumwe\\CMS\\Content\\Application\\ContentService",
-    "method": "translateContributed(Kumwe\\CMS\\Application\\Authorization\\ExecutionContext $context, string $id, int $expectedVersion, Kumwe\\CMS\\Localization\\Domain\\LocaleTag $locale, Kumwe\\CMS\\Extension\\Contribution\\TranslationSetItemAssociation $association): Kumwe\\CMS\\Content\\Application\\ContentRecord"
+    "service": "Kumwe\\App\\Content\\Application\\ContentService",
+    "method": "translateContributed(Kumwe\\App\\Application\\Authorization\\ExecutionContext $context, string $id, int $expectedVersion, Kumwe\\App\\Localization\\Domain\\LocaleTag $locale, Kumwe\\App\\Extension\\Contribution\\TranslationSetItemAssociation $association): Kumwe\\App\\Content\\Application\\ContentRecord"
   }
 }

@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Portal\Http;
+namespace Kumwe\App\Tests\Unit\Portal\Http;
 
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\GrantScope;
-use Kumwe\CMS\Portal\Application\CreatedPortalSession;
-use Kumwe\CMS\Portal\Application\PortalExecutionContextFactory;
-use Kumwe\CMS\Portal\Application\PortalPasswordIdentity;
-use Kumwe\CMS\Portal\Application\PortalSession;
-use Kumwe\CMS\Portal\Application\PortalSessionIdentity;
-use Kumwe\CMS\Portal\Application\PortalSessionStore;
-use Kumwe\CMS\Portal\Domain\PortalContext;
-use Kumwe\CMS\Portal\Http\Middleware\PortalCsrfMiddleware;
-use Kumwe\CMS\Portal\Http\Middleware\PortalAuthorizationMiddleware;
-use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\AuthorizationDecision;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\App\Portal\Application\CreatedPortalSession;
+use Kumwe\App\Portal\Application\PortalExecutionContextFactory;
+use Kumwe\App\Portal\Application\PortalPasswordIdentity;
+use Kumwe\App\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Application\PortalSessionIdentity;
+use Kumwe\App\Portal\Application\PortalSessionStore;
+use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Http\Middleware\PortalCsrfMiddleware;
+use Kumwe\App\Portal\Http\Middleware\PortalAuthorizationMiddleware;
+use Kumwe\App\Portal\Http\Middleware\PortalSessionMiddleware;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\Uri;
@@ -261,7 +261,7 @@ final class AllowingPortalAuthorization implements AuthorizationGateway
     ): void {
         $this->attempts[] = [$action->value(), $resource->type(), $resource->identifier()];
         if (!$this->allow) {
-            throw new \Kumwe\CMS\Application\Authorization\AuthorizationDenied(
+            throw new \Kumwe\App\Application\Authorization\AuthorizationDenied(
                 $context->actorId(),
                 $action->value(),
                 $resource->type(),

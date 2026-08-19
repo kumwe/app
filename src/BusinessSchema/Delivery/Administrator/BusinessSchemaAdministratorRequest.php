@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Administrator;
+namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
 use DateTimeImmutable;
 use InvalidArgumentException;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\OpenApi\Application;
+namespace Kumwe\App\Tests\Unit\OpenApi\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractCompiler;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractLimits;
+use Kumwe\App\OpenApi\Application\OpenApiContractCompiler;
+use Kumwe\App\OpenApi\Application\OpenApiContractLimits;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

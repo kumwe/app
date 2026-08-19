@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Media\Infrastructure;
+namespace Kumwe\App\Media\Infrastructure;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Media\Application\BoundedMediaChoiceStorage;
-use Kumwe\CMS\Media\Application\MediaAsset;
-use Kumwe\CMS\Media\Application\MediaStorage;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Media\Application\BoundedMediaChoiceStorage;
+use Kumwe\App\Media\Application\MediaAsset;
+use Kumwe\App\Media\Application\MediaStorage;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 

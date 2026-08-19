@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationDefinitionLifecycle;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\CMS\Application\Authorization\CapabilityDefinition;
-use Kumwe\CMS\Application\Authorization\ResourcePolicyDefinition;
-use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
+use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\CapabilityDefinition;
+use Kumwe\App\Application\Authorization\ResourcePolicyDefinition;
+use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\App\Identity\Domain\Capability;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -101,7 +101,7 @@ final class AuthorizationPolicyRegistryTest extends TestCase
 
         self::assertFalse($registry->supports(
             $capability,
-            \Kumwe\CMS\Application\Authorization\AuthorizationResource::collection('business_record'),
+            \Kumwe\App\Application\Authorization\AuthorizationResource::collection('business_record'),
         ));
         self::assertFalse($registry->requiresMembershipContext($capability));
     }

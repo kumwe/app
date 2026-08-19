@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Domain;
+namespace Kumwe\App\BusinessIntegration\Domain;
 
 /**
  * Durable lifecycle of a generic process-manager instance.

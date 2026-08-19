@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Dashboard;
+namespace Kumwe\App\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceMutation;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceMutation;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceId;
 
 /**
  * Request-local projection of the ordinary filtered navigation catalogue for dashboard selection.

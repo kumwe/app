@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Domain;
+namespace Kumwe\App\BusinessIntegration\Domain;
 
 /**
  * Transaction-local fact dispatched synchronously to deterministic domain listeners.

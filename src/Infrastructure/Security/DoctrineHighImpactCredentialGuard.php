@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Security;
+namespace Kumwe\App\Infrastructure\Security;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired;
-use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
-use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Security\HighImpactAuthenticationRequired;
+use Kumwe\App\Application\Security\HighImpactCredentialGuard;
+use Kumwe\App\Identity\Application\Administration\AuthenticationRateLimiter;
+use Kumwe\App\Identity\Application\Security\PasswordHasher;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Re-proves the acting operator's password against the credential table before a high-impact operation.
@@ -72,7 +72,7 @@ final readonly class DoctrineHighImpactCredentialGuard implements HighImpactCred
      *          shape and length.
      * @throws  HighImpactAuthenticationRequired  When the context carries no human principal, or the
      *          supplied password does not match the actor's active credential.
-     * @throws  \Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled  When the actor
+     * @throws  \Kumwe\App\Identity\Application\Administration\AuthenticationThrottled  When the actor
      *          has already spent the attempt budget for this purpose.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the credential lookup.
      *

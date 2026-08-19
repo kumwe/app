@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Idempotency;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Idempotency;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
-use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
-use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineIdempotencyLedger;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
+use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\App\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
+use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
+use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\App\Identity\Application\Administration\TokenRotationPreauthorizer;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Infrastructure\Persistence\DoctrineIdempotencyLedger;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -69,8 +69,8 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
     {
         $principal = AuthorizationContext::principal(['business.record.export']);
         $context = $principal->context(
-            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
-            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            \Kumwe\App\Application\Authorization\SiteContext::default(),
+            \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
             'idempotency-malformed-report-export-test',
         );
         $authorization = $this->createMock(AuthorizationGateway::class);
@@ -109,8 +109,8 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
             'scope_identifier' => 'acme.allowed_report',
         ]]);
         $context = $principal->context(
-            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
-            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            \Kumwe\App\Application\Authorization\SiteContext::default(),
+            \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
             'idempotency-report-export-test',
         );
         $database = $this->createMock(Connection::class);
@@ -144,8 +144,8 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
             'scope_identifier' => $allowed,
         ]]);
         $context = $principal->context(
-            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
-            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            \Kumwe\App\Application\Authorization\SiteContext::default(),
+            \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
             'idempotency-auth-test',
         );
         $database = $this->createMock(Connection::class);
@@ -182,8 +182,8 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
     {
         $principal = AuthorizationContext::principal(['content.create']);
         $context = $principal->context(
-            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
-            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            \Kumwe\App\Application\Authorization\SiteContext::default(),
+            \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
             'idempotency-failure-test',
         );
         $database = $this->createMock(Connection::class);
@@ -229,8 +229,8 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
         $subjectId = '018f22e2-7c8b-7ab0-8f3a-88e8026bb421';
         $principal = AuthorizationContext::principal(['users.manage']);
         $context = $principal->context(
-            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
-            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            \Kumwe\App\Application\Authorization\SiteContext::default(),
+            \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
             'idempotency-token-delegation-test',
         );
         $repository = $this->createStub(AccessControlRepository::class);

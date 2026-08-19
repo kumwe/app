@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Administration;
+namespace Kumwe\App\Identity\Application\Administration;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 
 /**
  * The operations that produce a credential rather than consume one: sign in, bootstrap, mint, rotate.
@@ -59,7 +59,7 @@ interface AdministratorIdentityGateway
      *
      * @return  string  UUID of the created user, already holding the full administrator role.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the context does not carry
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context does not carry
      *          the bootstrap authority.
      * @throws  \InvalidArgumentException  When the display name is unusable or the email is already taken.
      *
@@ -96,7 +96,7 @@ interface AdministratorIdentityGateway
      * @return  array{token: string, token_id: string}  The plaintext secret, shown only here, under
      *          `token`, and the stored record's UUID under `token_id`.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not act for
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not act for
      *          the subject or may not delegate one of the capabilities.
      * @throws  \InvalidArgumentException  When the name, expiry, capability set or quota forbids the token.
      *
@@ -131,7 +131,7 @@ interface AdministratorIdentityGateway
      * @return  array{token: string, token_id: string}  The replacement's plaintext secret under `token`
      *          and its new UUID under `token_id`.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          token or may not delegate the capabilities it carries.
      * @throws  \InvalidArgumentException  When the token is absent, already dead, outside the site, or the
      *          replacement's name or expiry is unusable.

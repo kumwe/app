@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\OpenApi;
+namespace Kumwe\App\Tests\Integration\OpenApi;
 
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
-use Kumwe\CMS\OpenApi\Application\CompiledOpenApiContract;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractCache;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractCompiler;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractLimits;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractService;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractUnavailable;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\OpenApi\Application\CompiledOpenApiContract;
+use Kumwe\App\OpenApi\Application\OpenApiContractCache;
+use Kumwe\App\OpenApi\Application\OpenApiContractCompiler;
+use Kumwe\App\OpenApi\Application\OpenApiContractLimits;
+use Kumwe\App\OpenApi\Application\OpenApiContractService;
+use Kumwe\App\OpenApi\Application\OpenApiContractUnavailable;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;

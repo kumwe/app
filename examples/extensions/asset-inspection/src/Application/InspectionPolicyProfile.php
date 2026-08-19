@@ -6,15 +6,15 @@ namespace KumweExample\AssetInspection\Application;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparison;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyPredicate;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySchema;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySet;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\BusinessSecurity\Application\FieldDisclosurePlan;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyPredicate;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicySet;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyValueType;
 use KumweExample\AssetInspection\Definitions;
 
 /**

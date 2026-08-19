@@ -3297,8 +3297,8 @@
         }
     },
     "info": {
-        "description": "Authenticated, explicitly site-bound content management, public discovery, and health endpoints for Kumwe CMS 2.0.",
-        "title": "Kumwe CMS API",
+        "description": "Authenticated, explicitly site-bound content management, public discovery, and health endpoints for Kumwe App 2.0.",
+        "title": "Kumwe App API",
         "version": "1.0.0"
     },
     "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",

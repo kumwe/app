@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Administrator\Automation\AutomationJobFormRegistry;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Application\Automation\AutomationManagementService;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Administrator\Automation\AutomationJobFormRegistry;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Application\Automation\AutomationManagementService;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;

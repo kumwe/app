@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessDefinition\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessDefinition\Domain;
 
-use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\ViewDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ViewDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

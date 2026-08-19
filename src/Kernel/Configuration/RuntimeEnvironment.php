@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Kernel\Configuration;
+namespace Kumwe\App\Kernel\Configuration;
 
 /**
  * Deployment mode a Kumwe process runs under, as declared by the `APP_ENV` variable.

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Idempotency;
+namespace Kumwe\App\Delivery\Http\Api\Idempotency;
 
 use JsonException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Idempotency\SecretOnceIdempotencyLedger;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Idempotency\SecretOnceIdempotencyLedger;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Laminas\Diactoros\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -87,7 +87,7 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
      *          between acquiring it and completing; or when a stored result fails its integrity check.
      * @throws  \InvalidArgumentException  When the route has no exact authorization policy, or the body
      *          the policy check reads is not a usable JSON object.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not perform
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not perform
      *          the mutation, checked before any record is observed.
      *
      * @since   2.0.0

@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodConflict;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriod;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriodStatus;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodConflict;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriodStatus;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -89,7 +89,7 @@ final readonly class PostingPeriodService
      *
      * @return  PostingPeriod  The declaration as now stored, closed.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          posting periods.
      * @throws  InvalidArgumentException  When the key, range or organization is malformed.
      * @throws  BusinessRecordPostingPeriodConflict  When the key is already declared over a different
@@ -158,7 +158,7 @@ final readonly class PostingPeriodService
      *
      * @return  PostingPeriod  The declaration as now stored, open.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          posting periods.
      * @throws  BusinessRecordPostingPeriodConflict  When the key names no declaration in this scope,
      *          or the period is not closed.
@@ -204,7 +204,7 @@ final readonly class PostingPeriodService
      *
      * @return  list<PostingPeriod>  Declarations ordered by their range start and then by key.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read
      *          posting periods.
      *
      * @since   2.0.0
@@ -224,7 +224,7 @@ final readonly class PostingPeriodService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the capability is absent.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the capability is absent.
      *
      * @since   2.0.0
      */

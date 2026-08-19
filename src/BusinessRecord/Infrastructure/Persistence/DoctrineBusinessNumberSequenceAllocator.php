@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -12,9 +12,9 @@ use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\BusinessRecord\Application\BusinessNumberSequenceAllocator;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\BusinessRecord\Application\BusinessNumberSequenceAllocator;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use LogicException;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

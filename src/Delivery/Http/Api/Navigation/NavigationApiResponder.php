@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Navigation;
+namespace Kumwe\App\Delivery\Http\Api\Navigation;
 
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Navigation\Application\MenuItemRecord;
-use Kumwe\CMS\Navigation\Application\MenuRecord;
-use Kumwe\CMS\Navigation\Application\NavigationNotFound;
-use Kumwe\CMS\Navigation\Application\NavigationVersionConflict;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Navigation\Application\MenuItemRecord;
+use Kumwe\App\Navigation\Application\MenuRecord;
+use Kumwe\App\Navigation\Application\NavigationNotFound;
+use Kumwe\App\Navigation\Application\NavigationVersionConflict;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;

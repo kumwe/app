@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application;
+namespace Kumwe\App\BusinessSecurity\Application;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySet;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicySet;
 
 /**
  * Immutable authorization decision consumed by every read of one business-record resource.

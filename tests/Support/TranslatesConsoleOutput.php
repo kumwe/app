@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
-use Kumwe\CMS\Localization\Application\CatalogueTranslator;
+use Kumwe\App\Localization\Application\CatalogueTranslator;
 
 /**
  * Implements the translated half of the console `Output` contract for test doubles.

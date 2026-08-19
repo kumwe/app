@@ -189,12 +189,12 @@ development programme, from the architecture decision that opened it to the curr
   edges that already pointed the wrong way, each with the finding that removes it, an owner and an expiry.
   (`c72707b`)
 - **A frozen extension contract, written down as data instead of inferred from the code.** An author could
-  not tell which of the types under `Kumwe\CMS\` they were allowed to build against, which meant every
+  not tell which of the types under `Kumwe\App\` they were allowed to build against, which meant every
   internal refactor was silently a compatibility decision and no generation could be called supported
   except by assertion. [`docs/extension-contract/classification.json`](docs/extension-contract/classification.json)
   now classifies **93 public types** — kind, the role a package plays with each, the manifest generation it
   is reachable from, the contribution SPI it belongs to, and the compatibility fixture whose committed bytes
-  pin its member signatures. Everything else under `Kumwe\CMS\` is internal by default, so absence from
+  pin its member signatures. Everything else under `Kumwe\App\` is internal by default, so absence from
   that file is the answer rather than an oversight, and internal code stays free to move. The surface is
   closed over itself: nothing named in a promised signature is left unclassified, which is what stops an
   interface an author implements from handing them an internal class. The five host services the restricted
@@ -859,6 +859,19 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **The core is called App.** The PSR-4 namespace moved from `Kumwe\CMS\` to `Kumwe\App\` across 2,021
+  files, and the product name moved from "Kumwe CMS" to "Kumwe App" everywhere it is written: the
+  documentation headings, the composer description, the OpenAPI `info.title`, the MCP server name and
+  capability catalogue, the site footer, the demo content, and the release artifact, which is now
+  `kumwe-app-${version}.zip`. Three frozen SPI generation digests are re-recorded, because the public
+  type names are part of the frozen surface and they moved; every published migration checksum is
+  regenerated, and so are the two runtime pins in `DoctrineNonTransactionalMigrationRecovery`.
+  **This was free only because nothing has been tagged yet.** A published migration's checksum is the
+  hash of its own file bytes, so the same rename after a release reads as tampering on every existing
+  installation and refuses to migrate — demonstrated here, when a database migrated before the rename
+  answered `Migration checksum drift detected` until it was rebuilt. It is a decision that had to be
+  taken before the first version or not at all. Progress on `V2-DOC-002`; the wire identity the SDK
+  parses is emitted but not yet coordinated, which is what that finding now tracks. (#97)
 - **Quality evidence now has to prove the lane and pass it claims.** The quality-contract runner distinguishes
   checks it can execute generically from checks delegated to a named provisioned job, and the contract verifier
   proves that each workflow, job and command binding still exists. Dependency analysis recognizes grouped imports;
@@ -940,7 +953,7 @@ development programme, from the architecture decision that opened it to the curr
   settle together is a use-case decision, but the contract expressing it — `TransactionManager` — was
   declared in Infrastructure and imported inward by thirty-three application services, so no use case could
   say "these settle together" without naming the persistence package that happens to implement it. The
-  contract moves to `Kumwe\CMS\Application\Persistence\TransactionManager`; `DoctrineTransactionManager`
+  contract moves to `Kumwe\App\Application\Persistence\TransactionManager`; `DoctrineTransactionManager`
   stays exactly where it was and implements it. Nothing about the abstraction changed: the same three
   methods, the same rule that a nested call joins the scope already open, the same guarantee that a commit
   hook waits for the outermost commit while a rollback hook fires as soon as its own scope is discarded.
@@ -950,7 +963,7 @@ development programme, from the architecture decision that opened it to the curr
   `DoctrineScheduler` and `DoctrineQueueRuntimeOperations` sat under `src/Application` while opening
   connections, branching on the PostgreSQL platform and writing `FOR UPDATE SKIP LOCKED` claim scans — two
   and a half thousand lines of driver knowledge in the layer that is meant to hold none. They move to
-  `Kumwe\CMS\Infrastructure\Automation`, beside the Doctrine adapters for authorization, security and
+  `Kumwe\App\Infrastructure\Automation`, beside the Doctrine adapters for authorization, security and
   persistence, while the ports they answer stay in Application. No SQL, no lease token, no claim scan, no
   engine branch and no concurrency semantic is touched: the queue-slot redesign is later work and would be
   unreviewable stacked on a move. (`4f4770d`)
@@ -958,7 +971,7 @@ development programme, from the architecture decision that opened it to the curr
   kind that regress from one misplaced import or one file created in the wrong directory, and nothing in
   the build would have noticed. `composer architecture:policy` gains two predicates: application code —
   the shared `src/Application` root and every module's own `Application` directory alike — cannot import
-  Doctrine or `Kumwe\CMS\Infrastructure`, and a class named for the technology it binds to cannot sit
+  Doctrine or `Kumwe\App\Infrastructure`, and a class named for the technology it binds to cannot sit
   inside an application layer. The extension migration SPI is the single admitted exception, because a
   contributed migration is handed the connection it runs its own DDL on; it is named file by file, so a
   fourth offender fails rather than inheriting a directory-wide waiver. Because a grep cannot see a fully

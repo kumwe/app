@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application;
+namespace Kumwe\App\BusinessSecurity\Application;
 
 use InvalidArgumentException;
 

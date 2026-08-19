@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Exception;
+namespace Kumwe\App\BusinessRecord\Application\Exception;
 
 /**
  * Signals that a concurrent command claimed the same idempotency scope digest first.

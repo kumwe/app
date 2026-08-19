@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Administration;
+namespace Kumwe\App\Identity\Application\Administration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\CanonicalJson;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\EmailAddress;
-use Kumwe\CMS\Identity\Domain\GrantScope;
-use Kumwe\CMS\Identity\Domain\UserStatus;
+use Kumwe\App\Application\Automation\CanonicalJson;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Security\HighImpactCredentialGuard;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Identity\Application\Security\PasswordHasher;
+use Kumwe\App\Identity\Application\StepUp\StepUpCredentialStore;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\EmailAddress;
+use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\App\Identity\Domain\UserStatus;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -87,7 +87,7 @@ final readonly class AccessControlService
      *
      * @return  list<array<string, mixed>>  One row per visible user, each carrying its assigned roles.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage users
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage users
      *          at all.
      *
      * @since   2.0.0
@@ -105,7 +105,7 @@ final readonly class AccessControlService
      *
      * @return  list<array<string, mixed>>  One row per visible role, each carrying its capability grants.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage roles
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage roles
      *          at all.
      *
      * @since   2.0.0
@@ -138,7 +138,7 @@ final readonly class AccessControlService
      * @return  list<array{code: string, description: string}>  Capability codes with their operator-facing text.
      *
      * @throws  RuntimeException  When a stored capability row is missing its code or its description.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          capabilities.
      *
      * @since   2.0.0
@@ -173,7 +173,7 @@ final readonly class AccessControlService
      *
      * @return  list<array<string, mixed>>  Newest first, each row carrying the token's subject, scope and life.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          site's tokens.
      *
      * @since   2.0.0
@@ -204,7 +204,7 @@ final readonly class AccessControlService
      *
      * @return  list<array<string, mixed>>  Newest accountable identity events, capped at 100 rows.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor lacks installation
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks installation
      *          identity-management authority.
      *
      * @since   2.0.0
@@ -231,7 +231,7 @@ final readonly class AccessControlService
      * @return  string  UUID of the created user.
      *
      * @throws  InvalidArgumentException  When the address is not an email or the display name is unusable.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create users.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create users.
      *
      * @since   2.0.0
      */
@@ -292,7 +292,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the actor would lock itself out, the input is unusable, the
      *          transition is illegal, or the record moved on under the caller.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage this
      *          user.
      *
      * @since   2.0.0
@@ -362,9 +362,9 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the replacement fails the password rule or repeats the
      *          current one.
-     * @throws  \Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired  When the context carries
+     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the context carries
      *          no human principal, or the current password does not match the actor's credential.
-     * @throws  \Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled  When the actor has
+     * @throws  \Kumwe\App\Identity\Application\Administration\AuthenticationThrottled  When the actor has
      *          already spent the attempt budget for credential changes.
      *
      * @since   2.0.0
@@ -423,7 +423,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the actor names their own account, the reason is empty or
      *          too long, the replacement fails the password rule, or the subject has no credential.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          this user.
      *
      * @since   2.0.0
@@ -492,7 +492,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not
      *          exist and so could not be locked.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          this user.
      *
      * @since   2.0.0
@@ -544,7 +544,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not
      *          exist and so could not be locked.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          this user.
      *
      * @since   2.0.0
@@ -583,7 +583,7 @@ final readonly class AccessControlService
      * @return  string  UUID of the created role.
      *
      * @throws  InvalidArgumentException  When the code is not a stable identifier or the name is unusable.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create roles.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create roles.
      *
      * @since   2.0.0
      */
@@ -624,7 +624,7 @@ final readonly class AccessControlService
      * @return  void
      *
      * @throws  InvalidArgumentException  When the role does not exist, so it could not be locked.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          user or the role, or may not delegate one of the role's grants.
      *
      * @since   2.0.0
@@ -657,7 +657,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the actor is removing its own administrator role, or the user
      *          did not hold the role at all.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          user or the role.
      *
      * @since   2.0.0
@@ -694,7 +694,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the capability, the scope type, or the pairing of scope type
      *          and identifier is invalid.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          role or may not delegate that capability at that scope.
      *
      * @since   2.0.0
@@ -778,7 +778,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the snapshot is stale, a capability is unknown, or the
      *          submitted set is malformed or unreasonably large.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          role or one removed grant, or may not delegate one requested addition.
      *
      * @since   2.0.0
@@ -910,7 +910,7 @@ final readonly class AccessControlService
      * @return  void
      *
      * @throws  InvalidArgumentException  When no grant carries that identifier.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          grant or the role that holds it.
      *
      * @since   2.0.0
@@ -946,7 +946,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the token belongs to another site, is unknown, or has already
      *          been revoked.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          token.
      *
      * @since   2.0.0
@@ -980,7 +980,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not exist
      *          and so could not be locked.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
      *          site's tokens.
      *
      * @since   2.0.0
@@ -1031,7 +1031,7 @@ final readonly class AccessControlService
      *
      * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not exist
      *          and so could not be locked.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage this
      *          user.
      *
      * @since   2.0.0
@@ -1174,7 +1174,7 @@ final readonly class AccessControlService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor does not hold
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor does not hold
      *          `users.manage` for that resource.
      *
      * @since   2.0.0
@@ -1307,7 +1307,7 @@ final readonly class AccessControlService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When one of the role's grants
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When one of the role's grants
      *          exceeds what the actor may delegate.
      *
      * @since   2.0.0

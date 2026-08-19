@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Presentation;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Presentation;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\ClientAssertedInstant;
-use Kumwe\CMS\BusinessRecord\Domain\ConvertedMoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimalArithmetic;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyConversionRequest;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyConverter;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyExchangeRate;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyRoundingMode;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
+use Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimalArithmetic;
+use Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest;
+use Kumwe\App\BusinessRecord\Domain\MoneyConverter;
+use Kumwe\App\BusinessRecord\Domain\MoneyExchangeRate;
+use Kumwe\App\BusinessRecord\Domain\MoneyRoundingMode;
+use Kumwe\App\BusinessRecord\Domain\MoneyValue;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

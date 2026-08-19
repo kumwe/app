@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Domain\ExtensionType;
-use Kumwe\CMS\Presentation\Infrastructure\TwigThemePackageValidator;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Domain\ExtensionType;
+use Kumwe\App\Presentation\Infrastructure\TwigThemePackageValidator;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 

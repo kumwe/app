@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Query\AggregateFunction;
-use Kumwe\CMS\BusinessRecord\Query\BooleanFilter;
-use Kumwe\CMS\BusinessRecord\Query\BooleanOperator;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonOperator;
-use Kumwe\CMS\BusinessRecord\Query\NullFilter;
-use Kumwe\CMS\BusinessRecord\Query\RecordAggregate;
-use Kumwe\CMS\BusinessRecord\Query\RecordCursor;
-use Kumwe\CMS\BusinessRecord\Query\RecordFilter;
-use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessRecord\Query\RecordSearch;
-use Kumwe\CMS\BusinessRecord\Query\RecordSort;
-use Kumwe\CMS\BusinessRecord\Query\RelationFilter;
-use Kumwe\CMS\BusinessRecord\Query\RelationQuantifier;
-use Kumwe\CMS\BusinessRecord\Query\SetFilter;
-use Kumwe\CMS\BusinessRecord\Query\SortDirection;
-use Kumwe\CMS\BusinessRecord\Query\TextFilter;
-use Kumwe\CMS\BusinessRecord\Query\TextOperator;
+use Kumwe\App\BusinessRecord\Query\AggregateFunction;
+use Kumwe\App\BusinessRecord\Query\BooleanFilter;
+use Kumwe\App\BusinessRecord\Query\BooleanOperator;
+use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
+use Kumwe\App\BusinessRecord\Query\ComparisonOperator;
+use Kumwe\App\BusinessRecord\Query\NullFilter;
+use Kumwe\App\BusinessRecord\Query\RecordAggregate;
+use Kumwe\App\BusinessRecord\Query\RecordCursor;
+use Kumwe\App\BusinessRecord\Query\RecordFilter;
+use Kumwe\App\BusinessRecord\Query\RecordProjection;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessRecord\Query\RecordSearch;
+use Kumwe\App\BusinessRecord\Query\RecordSort;
+use Kumwe\App\BusinessRecord\Query\RelationFilter;
+use Kumwe\App\BusinessRecord\Query\RelationQuantifier;
+use Kumwe\App\BusinessRecord\Query\SetFilter;
+use Kumwe\App\BusinessRecord\Query\SortDirection;
+use Kumwe\App\BusinessRecord\Query\TextFilter;
+use Kumwe\App\BusinessRecord\Query\TextOperator;
 
 /**
  * Compiles one transport-neutral record-query document into the bounded domain query tree.

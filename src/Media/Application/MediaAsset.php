@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Media\Application;
+namespace Kumwe\App\Media\Application;
 
 use DateTimeImmutable;
 

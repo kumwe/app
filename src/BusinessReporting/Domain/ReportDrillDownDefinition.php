@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Domain;
+namespace Kumwe\App\BusinessReporting\Domain;
 
 /**
  * Declarative link from one output identity to a generated record view.

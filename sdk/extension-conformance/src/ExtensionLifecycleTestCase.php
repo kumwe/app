@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\ExtensionConformance;
 
-use Kumwe\CMS\Extension\Development\LifecycleConformanceAdapter;
+use Kumwe\App\Extension\Development\LifecycleConformanceAdapter;
 use PHPUnit\Framework\TestCase;
 
 /**

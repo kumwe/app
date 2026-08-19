@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Workflow\Application;
+namespace Kumwe\App\Tests\Unit\Workflow\Application;
 
-use Kumwe\CMS\Content\Domain\ContentStatus;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Workflow\Application\ContentTransitionAuthorizer;
+use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Workflow\Application\ContentTransitionAuthorizer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(ContentTransitionAuthorizer::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]

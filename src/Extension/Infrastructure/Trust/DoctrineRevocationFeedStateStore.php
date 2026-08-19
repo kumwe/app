@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Infrastructure\Trust;
+namespace Kumwe\App\Extension\Infrastructure\Trust;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Exception;
-use Kumwe\CMS\Extension\Application\Trust\RevocationFeedState;
-use Kumwe\CMS\Extension\Application\Trust\RevocationFeedStateStore;
-use Kumwe\CMS\Extension\Application\Trust\RevocationList;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Extension\Application\Trust\RevocationFeedState;
+use Kumwe\App\Extension\Application\Trust\RevocationFeedStateStore;
+use Kumwe\App\Extension\Application\Trust\RevocationList;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Stores one revocation-feed position row per configured origin.

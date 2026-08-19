@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Type;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Type;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -11,9 +11,9 @@ use Doctrine\DBAL\Platforms\MySQL84Platform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Infrastructure\Persistence\Type\DoctrineTemporalTypes;
-use Kumwe\CMS\Infrastructure\Persistence\Type\MicrosecondDateTimeImmutableType;
-use Kumwe\CMS\Infrastructure\Persistence\Type\MicrosecondTimeImmutableType;
+use Kumwe\App\Infrastructure\Persistence\Type\DoctrineTemporalTypes;
+use Kumwe\App\Infrastructure\Persistence\Type\MicrosecondDateTimeImmutableType;
+use Kumwe\App\Infrastructure\Persistence\Type\MicrosecondTimeImmutableType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Demo\Infrastructure;
+namespace Kumwe\App\Demo\Infrastructure;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionSummary;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Contribution\ExtensionContributionSummary;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Domain\PackageChecksum;
 use Psr\Clock\ClockInterface;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;

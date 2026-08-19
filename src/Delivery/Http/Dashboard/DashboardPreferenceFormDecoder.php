@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Dashboard;
+namespace Kumwe\App\Delivery\Http\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceMutation;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceMutation;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
 
 /**
  * Translates one flat browser form into the typed dashboard preference application command.

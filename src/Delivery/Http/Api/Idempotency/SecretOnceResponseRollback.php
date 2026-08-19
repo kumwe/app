@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Idempotency;
+namespace Kumwe\App\Delivery\Http\Api\Idempotency;
 
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\PostingPeriodService;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriod;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodService;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
 use Throwable;
 
 /**

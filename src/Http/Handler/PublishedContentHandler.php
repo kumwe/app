@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Handler;
+namespace Kumwe\App\Http\Handler;
 
-use Kumwe\CMS\Content\Presentation\TranslationGroupPresenter;
-use Kumwe\CMS\Localization\Application\ActiveLocale;
-use Kumwe\CMS\Presentation\Application\SitePresentation;
-use Kumwe\CMS\Presentation\ContentLayoutCatalog;
-use Kumwe\CMS\Presentation\ContentPresenter;
-use Kumwe\CMS\Presentation\SiteRenderer;
-use Kumwe\CMS\Site\Application\PublicPageLocator;
-use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Presentation\Application\SitePresentation;
+use Kumwe\App\Presentation\ContentLayoutCatalog;
+use Kumwe\App\Presentation\ContentPresenter;
+use Kumwe\App\Presentation\SiteRenderer;
+use Kumwe\App\Site\Application\PublicPageLocator;
+use Kumwe\App\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;

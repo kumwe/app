@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\OpenApi\Application;
+namespace Kumwe\App\OpenApi\Application;
 
 /**
  * Shared memory and publication bounds for generated OpenAPI contracts.

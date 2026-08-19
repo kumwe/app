@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Navigation\Application;
+namespace Kumwe\App\Tests\Unit\Navigation\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Navigation\Application\MenuItemRecord;
-use Kumwe\CMS\Navigation\Application\MenuRecord;
-use Kumwe\CMS\Navigation\Application\NavigationRepository;
-use Kumwe\CMS\Navigation\Application\NavigationService;
-use Kumwe\CMS\Navigation\Application\NavigationVersionConflict;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Navigation\Application\MenuItemRecord;
+use Kumwe\App\Navigation\Application\MenuRecord;
+use Kumwe\App\Navigation\Application\NavigationRepository;
+use Kumwe\App\Navigation\Application\NavigationService;
+use Kumwe\App\Navigation\Application\NavigationVersionConflict;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -352,7 +352,7 @@ final class NavigationServiceTest extends TestCase
         );
     }
 
-    private function context(): \Kumwe\CMS\Application\Authorization\ExecutionContext
+    private function context(): \Kumwe\App\Application\Authorization\ExecutionContext
     {
         return AuthorizationContext::human(['navigation.manage'], self::ACTOR);
     }

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Business;
+namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Business;
+namespace Kumwe\App\Delivery\Http\Api\Business;
 
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
-use Kumwe\CMS\BusinessRecord\Application\RecordBrowseResult;
-use Kumwe\CMS\BusinessRecord\Application\RecordHistoryResult;
-use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordProjector;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
+use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
+use Kumwe\App\BusinessRecord\Application\RecordHistoryResult;
+use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 
 /**
  * Adapts the shared generated-business projection to REST response methods.

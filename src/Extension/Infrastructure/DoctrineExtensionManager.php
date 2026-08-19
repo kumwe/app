@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Infrastructure;
+namespace Kumwe\App\Extension\Infrastructure;
 
 use InvalidArgumentException;
 use Doctrine\DBAL\Connection;
@@ -10,41 +10,41 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
-use Kumwe\CMS\Extension\Application\ExtensionRegistryLease;
-use Kumwe\CMS\Extension\Application\Install\ExtensionInstallOutcome;
-use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
-use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
-use Kumwe\CMS\Extension\Application\Package\ExtensionActivationAdmission;
-use Kumwe\CMS\Extension\Application\Package\PackageAdmissionReport;
-use Kumwe\CMS\Extension\Application\Package\PackageAdmissionScanner;
-use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Contribution\ContributionDefinitionChecksum;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionSummary;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Domain\ExtensionType;
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Extension\Domain\PackageSignature;
-use Kumwe\CMS\Extension\Domain\SemanticVersion;
-use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
-use Kumwe\CMS\Application\Presentation\ThemePackageValidator;
-use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
+use Kumwe\App\Extension\Application\ExtensionRegistryLease;
+use Kumwe\App\Extension\Application\Install\ExtensionInstallOutcome;
+use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
+use Kumwe\App\Extension\Application\Package\ArchiveReader;
+use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
+use Kumwe\App\Extension\Application\Package\PackageAdmissionReport;
+use Kumwe\App\Extension\Application\Package\PackageAdmissionScanner;
+use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Contribution\ContributionDefinitionChecksum;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionSummary;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Domain\ExtensionType;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\App\Extension\Domain\SemanticVersion;
+use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Presentation\Application\ThemeActivationGuard;
+use Kumwe\App\Application\Presentation\ThemePackageValidator;
+use Kumwe\App\Presentation\Application\ThemeMutationAuthorizer;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -424,9 +424,9 @@ final readonly class DoctrineExtensionManager
      * @return  array<string, mixed>  Registry row for the extension as it now stands, carrying the version
      *          just installed and the runtime path its files were published to.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          extensions.
-     * @throws  \Kumwe\CMS\Extension\Application\Trust\UntrustedPackage  When the trust store refuses the
+     * @throws  \Kumwe\App\Extension\Application\Trust\UntrustedPackage  When the trust store refuses the
      *          package's digest or signature.
      * @throws  InvalidArgumentException  When the archive path, its manifest, its dependencies or its
      *          version ordering is rejected.
@@ -477,7 +477,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  array<string, mixed>  Registry row for the extension as it now stands.
      *
-     * @throws  \Kumwe\CMS\Extension\Application\Trust\UntrustedPackage  When the trust store refuses the
+     * @throws  \Kumwe\App\Extension\Application\Trust\UntrustedPackage  When the trust store refuses the
      *          package's digest or signature.
      * @throws  InvalidArgumentException  When the path does not identify a regular file, or the package
      *          itself is rejected.
@@ -557,7 +557,7 @@ final readonly class DoctrineExtensionManager
      * @return  array<string, mixed>  Registry row for the extension after the release is persisted, or the
      *          row an earlier committed attempt already left when this call is a replay of it.
      *
-     * @throws  \Kumwe\CMS\Extension\Application\Trust\UntrustedPackage  When the trust store refuses the
+     * @throws  \Kumwe\App\Extension\Application\Trust\UntrustedPackage  When the trust store refuses the
      *          package's digest or signature, before staging or again at commit time.
      * @throws  InvalidArgumentException  When the archive, its manifest, its dependencies or its version
      *          ordering is rejected, or an active theme would be upgraded in place.
@@ -807,9 +807,9 @@ final readonly class DoctrineExtensionManager
      *
      * @return  array<string, mixed>  Registry row for the extension after the status change.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage this
      *          extension, or may not manage the requested surface.
-     * @throws  \Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired  When the surface demands a
+     * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the surface demands a
      *          step-up the supplied credential does not satisfy.
      * @throws  InvalidArgumentException  When the identifier is malformed, a template names no surface, a
      *          non-template names one, or the theme package fails validation.
@@ -889,9 +889,9 @@ final readonly class DoctrineExtensionManager
      * @return  array<string, mixed>  Registry row for the extension after the change; its status is still
      *          `active` when another site's binding survives.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage this
      *          extension, or may not manage a surface it is bound to.
-     * @throws  \Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired  When the administrator
+     * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the administrator
      *          surface demands a step-up the supplied credential does not satisfy.
      * @throws  InvalidArgumentException  When the identifier is malformed or no such extension is installed.
      * @throws  RuntimeException  When the lease has been fenced, the installed manifest is unavailable, or
@@ -949,9 +949,9 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage this
      *          extension, or may not manage a surface it is bound to.
-     * @throws  \Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired  When the administrator
+     * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the administrator
      *          surface demands a step-up the supplied credential does not satisfy.
      * @throws  InvalidArgumentException  When the identifier is malformed or no such extension is installed.
      * @throws  RuntimeException  When the lease has been fenced, the installed extension records no runtime
@@ -1049,7 +1049,7 @@ final readonly class DoctrineExtensionManager
      * @return  array<string, mixed>  Registry row read back inside the same transaction, so it already
      *          reflects the status actually persisted.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage a
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage a
      *          surface this change binds or releases.
      * @throws  InvalidArgumentException  When no such extension is installed.
      * @throws  RuntimeException  When the lease has been fenced, a theme change arrives without an
@@ -2004,7 +2004,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired  When the administrator
+     * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the administrator
      *          theme is affected and the supplied credential does not satisfy the guard.
      * @throws  InvalidArgumentException  When no such extension is installed.
      * @throws  RuntimeException  When the registry row carries no usable id, or the binding count cannot be
@@ -2045,7 +2045,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage a
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage a
      *          surface this extension is bound to.
      * @throws  RuntimeException  When the row carries no usable id, a stored surface or site assignment is
      *          invalid, or the theme is still bound by another site.
@@ -2100,7 +2100,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage a
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage a
      *          surface this change would release.
      * @throws  RuntimeException  When the row carries no usable id, or a binding count cannot be read back
      *          as an integer.
@@ -2132,7 +2132,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor this
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor this
      *          surface.
      *
      * @since   2.0.0
@@ -2155,7 +2155,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor this
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor this
      *          action on this resource.
      *
      * @since   2.0.0

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Administrator;
+namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -53,11 +53,11 @@ final readonly class ExecuteBusinessSchemaPlanHandler implements RequestHandlerI
      *
      * @throws  \InvalidArgumentException  When the route carries no identifier, or was mounted without
      *          administrator authorization.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.execute` or
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.execute` or
      *          `business.schema.destructive` is refused.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When no plan matches within
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no plan matches within
      *          the site.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict  When the plan is not approved,
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When the plan is not approved,
      *          a connected plan is not independently approved, or an operation misses its postcondition.
      *
      * @since   2.0.0

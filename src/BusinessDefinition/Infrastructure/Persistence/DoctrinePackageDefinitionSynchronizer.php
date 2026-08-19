@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessDefinition\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwnerType;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\CMS\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaLifecycleObserver;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\App\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaLifecycleObserver;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use LogicException;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -122,9 +122,9 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
      * @throws  InvalidBusinessDefinition  When a declaration claims an identifier outside this owner's
      *          namespace, arrives unpublished, replaces another owner's field type or definition, edits
      *          bytes already published, skips a version, or fails validation against the resulting graph.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRevisionConflict  When another
+     * @throws  \Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRevisionConflict  When another
      *          writer advanced one of these handles while the release was being applied.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict  When an installation this
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When an installation this
      *          owner holds cannot be returned to service as the new activation state requires.
      *
      * @since   2.0.0
@@ -220,7 +220,7 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
      * @return  void
      *
      * @throws  LogicException  When the caller has not opened the lifecycle transaction.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict  When an installation cannot
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When an installation cannot
      *          be proved to match the schema it claims and so cannot be returned to service.
      *
      * @since   2.0.0
@@ -358,7 +358,7 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
      * @throws  InvalidBusinessDefinition  When an already applied version's bytes differ from what the
      *          release declares, a definition does not carry the next version in sequence, or the handle
      *          is already held by another owner.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRevisionConflict  When another
+     * @throws  \Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRevisionConflict  When another
      *          writer advanced the same handle between the draft being saved and published.
      *
      * @since   2.0.0

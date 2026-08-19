@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\Migration\ExtensionSupplyChainMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

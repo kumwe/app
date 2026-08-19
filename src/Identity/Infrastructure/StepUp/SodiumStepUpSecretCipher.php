@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\StepUp;
+namespace Kumwe\App\Identity\Infrastructure\StepUp;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpSecretCipher;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\App\Identity\Application\StepUp\StepUpSecretCipher;
 use SodiumException;
 
 /**

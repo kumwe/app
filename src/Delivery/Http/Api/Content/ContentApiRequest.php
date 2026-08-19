@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Content;
+namespace Kumwe\App\Delivery\Http\Api\Content;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Content\Domain\PublicationWindow;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
+use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
+use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
 

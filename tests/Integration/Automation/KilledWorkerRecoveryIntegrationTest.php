@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Automation;
+namespace Kumwe\App\Tests\Integration\Automation;
 
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\Application\Automation\Worker;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Infrastructure\Automation\DoctrineJobQueue;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\Application\Automation\Worker;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

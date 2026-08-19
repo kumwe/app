@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Contribution;
+namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Contribution\InterfaceSurfaceRegistrar;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Contribution\OwnedExtensionContributionRegistrar;
-use Kumwe\CMS\Extension\Contribution\OwnedRuntimeContributionRegistry;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Extension\Contribution\AdministratorRouteHandlerFactory;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\InterfaceSurfaceRegistrar;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Contribution\OwnedExtensionContributionRegistrar;
+use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\InterfaceStandard\SurfaceDefinition;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

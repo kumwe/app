@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Content\Domain;
+namespace Kumwe\App\Tests\Unit\Content\Domain;
 
-use Kumwe\CMS\Content\Domain\ContentStatus;
+use Kumwe\App\Content\Domain\ContentStatus;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

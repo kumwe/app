@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
@@ -103,7 +103,7 @@ final class ExtensionContractGateTest extends TestCase
         self::assertIsArray($withdrawn);
         $withdrawn[] = [
             'id' => 'still-present',
-            'type' => 'Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar',
+            'type' => 'Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrar',
             'kind' => 'interface',
             'withdrawn_in' => '0000000',
             'reason' => 'It is not withdrawn at all, which is what this proves the check notices.',

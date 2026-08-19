@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Infrastructure\Persistence;
+namespace Kumwe\App\Audit\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Generator;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditArchiveStorage;
-use Kumwe\CMS\Audit\Application\AuditMetadataRedactor;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Application\AuditTrailExport;
-use Kumwe\CMS\Audit\Application\AuditTrailExporter;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditArchiveStorage;
+use Kumwe\App\Audit\Application\AuditMetadataRedactor;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Application\AuditTrailExport;
+use Kumwe\App\Audit\Application\AuditTrailExporter;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -85,7 +85,7 @@ final readonly class DoctrineAuditTrailExporter implements AuditTrailExporter
      *
      * @throws  InvalidArgumentException  When the requested range is inverted or not positive.
      * @throws  RuntimeException  When the range holds no events or the archive cannot be written.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not export
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not export
      *          the audit trail.
      *
      * @since   2.0.0

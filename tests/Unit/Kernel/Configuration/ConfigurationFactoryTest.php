@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Kernel\Configuration;
+namespace Kumwe\App\Tests\Unit\Kernel\Configuration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
-use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
-use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
-use Kumwe\CMS\Kernel\Configuration\DatabaseConfiguration;
-use Kumwe\CMS\Kernel\Configuration\RuntimeEnvironment;
-use Kumwe\CMS\Kernel\Configuration\RedisConfiguration;
-use Kumwe\CMS\Kernel\Configuration\RevocationFeedConfiguration;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Extension\Application\Package\PackageConformanceMode;
+use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\App\Kernel\Configuration\ConfigurationFactory;
+use Kumwe\App\Kernel\Configuration\DatabaseConfiguration;
+use Kumwe\App\Kernel\Configuration\RuntimeEnvironment;
+use Kumwe\App\Kernel\Configuration\RedisConfiguration;
+use Kumwe\App\Kernel\Configuration\RevocationFeedConfiguration;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Observability;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Observability;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Infrastructure\Observability\MetricCatalog;
-use Kumwe\CMS\Infrastructure\Observability\MetricDefinition;
-use Kumwe\CMS\Infrastructure\Observability\MetricType;
-use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricDefinition;
+use Kumwe\App\Infrastructure\Observability\MetricType;
+use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

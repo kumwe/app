@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\ConvertedQuantityValue;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityConverter;
-use Kumwe\CMS\BusinessRecord\Domain\UnitConversionRequest;
+use Kumwe\App\BusinessRecord\Domain\ConvertedQuantityValue;
+use Kumwe\App\BusinessRecord\Domain\QuantityConverter;
+use Kumwe\App\BusinessRecord\Domain\UnitConversionRequest;
 
 /**
  * The single path from a unit conversion request to an evidenced converted quantity.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Automation;
+namespace Kumwe\App\Infrastructure\Automation;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -12,24 +12,24 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\Application\Automation\CronExpression;
-use Kumwe\CMS\Application\Automation\JobExecutionClass;
-use Kumwe\CMS\Application\Automation\JobExecutionScope;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\CMS\Application\Automation\ScheduleOccurrenceKey;
-use Kumwe\CMS\Application\Automation\Scheduler;
-use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Application\Automation\CronExpression;
+use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\App\Application\Automation\JobExecutionScope;
+use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\App\Application\Automation\ScheduleOccurrenceKey;
+use Kumwe\App\Application\Automation\Scheduler;
+use Kumwe\App\Application\Automation\Job\ScheduleRepository;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -114,7 +114,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      *
      * @throws  InvalidArgumentException  When the limit is outside 1 to 1000.
      * @throws  RuntimeException  When a claimed row is malformed or its recurrence has no next occurrence.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not dispatch
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not dispatch
      *          schedules, or may not dispatch one that a site owns.
      *
      * @since   2.0.0
@@ -228,7 +228,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @throws  InvalidArgumentException  When the name, cron expression, timezone, job type or queue
      *          name is not acceptable.
      * @throws  UniqueConstraintViolationException  When another schedule already carries the same name.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
      *          automation, or may not schedule this installation-wide job type.
      *
      * @since   2.0.0
@@ -349,7 +349,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @return  array<string, mixed>|null  The normalized row, or null when no such schedule exists.
      *
      * @throws  RuntimeException  When the stored row carries an unusable payload, version or job type.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
      *          this schedule.
      *
      * @since   2.0.0
@@ -387,7 +387,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @throws  InvalidArgumentException  When the schedule does not exist, the expected version is not
      *          positive, or the stored version has already moved on.
      * @throws  RuntimeException  When the stored row carries an unusable job type or execution scope.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
      *          this schedule.
      *
      * @since   2.0.0
@@ -435,7 +435,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @throws  InvalidArgumentException  When the schedule does not exist, the expected version is not
      *          positive, or the stored version has already moved on.
      * @throws  RuntimeException  When the stored row carries an unusable job type or execution scope.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
      *          this schedule.
      *
      * @since   2.0.0
@@ -487,7 +487,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * mean the same thing on all four supported engines.
      *
      * @param   array<string, mixed>                               $row             Claimed schedule row.
-     * @param   ?\Kumwe\CMS\Application\Authorization\SiteContext  $site            Owner, null if global.
+     * @param   ?\Kumwe\App\Application\Authorization\SiteContext  $site            Owner, null if global.
      * @param   JobExecutionClass                                  $executionClass  Scope the job inherits.
      *
      * @return  void
@@ -500,7 +500,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      */
     private function dispatch(
         array $row,
-        ?\Kumwe\CMS\Application\Authorization\SiteContext $site,
+        ?\Kumwe\App\Application\Authorization\SiteContext $site,
         JobExecutionClass $executionClass,
     ): void {
         $id = $this->requiredString($row, 'id');
@@ -737,7 +737,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the context does not hold
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context does not hold
      *          `automation.manage` over the resource.
      *
      * @since   2.0.0
@@ -763,7 +763,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the context may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context may not manage
      *          this installation-wide job type.
      *
      * @since   2.0.0
@@ -829,7 +829,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @return  JobExecutionClass  Whether the schedule is installation-wide or site-local.
      *
      * @throws  RuntimeException  When the row has no usable job type, execution scope or identifier.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the context may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context may not manage
      *          this schedule.
      *
      * @since   2.0.0
@@ -887,13 +887,13 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * then be disabled or retired between this check and the job insert, so no occurrence is enqueued
      * for a site already on its way out.
      *
-     * @param   \Kumwe\CMS\Application\Authorization\SiteContext  $site  Site the schedule belongs to.
+     * @param   \Kumwe\App\Application\Authorization\SiteContext  $site  Site the schedule belongs to.
      *
      * @return  bool  True when the site exists and is enabled, false when it is missing or disabled.
      *
      * @since   2.0.0
      */
-    private function lockEnabledSite(\Kumwe\CMS\Application\Authorization\SiteContext $site): bool
+    private function lockEnabledSite(\Kumwe\App\Application\Authorization\SiteContext $site): bool
     {
         return $this->database->fetchOne(sprintf(
             'SELECT identifier FROM %s WHERE identifier = ? AND enabled = ? FOR UPDATE',

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessInstance;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessStatus;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessTransition;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkItem;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
+use Kumwe\App\BusinessIntegration\Domain\ProcessStatus;
+use Kumwe\App\BusinessIntegration\Domain\ProcessTransition;
+use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -118,7 +118,7 @@ final readonly class ProcessManagerService
         }
         $items = [];
         foreach ($compensations as $work) {
-            if ($work->kind() !== \Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkKind::COMPENSATION) {
+            if ($work->kind() !== \Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind::COMPENSATION) {
                 throw new InvalidArgumentException('Cancellation may enqueue only compensation work.');
             }
             $items[] = $work;

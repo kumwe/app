@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Presentation;
+namespace Kumwe\App\Administrator\Presentation;
 
 use JsonException;
-use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
-use Kumwe\CMS\Extension\Contribution\AdministratorViewRegistry;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
-use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
-use Kumwe\CMS\Presentation\Twig\IsolatedTwigEnvironmentFactory;
+use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
+use Kumwe\App\Extension\Contribution\AdministratorViewRegistry;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Presentation\Asset\ViteAssetManifest;
+use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\App\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use Twig\Error\Error;
 
 /**

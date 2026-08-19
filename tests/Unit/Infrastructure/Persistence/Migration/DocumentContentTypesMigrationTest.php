@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration;
 
-use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\DocumentContentTypesMigration;
+use Kumwe\App\Content\Domain\JsonSchemaValidator;
+use Kumwe\App\Infrastructure\Persistence\Migration\DocumentContentTypesMigration;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

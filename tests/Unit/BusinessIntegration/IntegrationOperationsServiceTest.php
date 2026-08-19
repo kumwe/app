@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessIntegration;
+namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\CMS\BusinessIntegration\Application\InboxStore;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationOperationsService;
-use Kumwe\CMS\BusinessIntegration\Application\OutboxStore;
-use Kumwe\CMS\BusinessIntegration\Application\ProcessManagerService;
-use Kumwe\CMS\BusinessIntegration\Application\ProcessManagerStore;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionRebuildResult;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\App\BusinessIntegration\Application\InboxStore;
+use Kumwe\App\BusinessIntegration\Application\IntegrationOperationsService;
+use Kumwe\App\BusinessIntegration\Application\OutboxStore;
+use Kumwe\App\BusinessIntegration\Application\ProcessManagerService;
+use Kumwe\App\BusinessIntegration\Application\ProcessManagerStore;
+use Kumwe\App\BusinessReporting\Application\ProjectionRebuildResult;
+use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -57,7 +57,7 @@ final class IntegrationOperationsServiceTest extends TestCase
         $outbox = $this->createMock(OutboxStore::class);
         $outbox->expects(self::never())->method('recent');
 
-        $this->expectException(\Kumwe\CMS\Application\Authorization\AuthorizationDenied::class);
+        $this->expectException(\Kumwe\App\Application\Authorization\AuthorizationDenied::class);
         $this->service($outbox)->outbox(AuthorizationContext::human([]));
     }
 

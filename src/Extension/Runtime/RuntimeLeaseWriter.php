@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Runtime;
+namespace Kumwe\App\Extension\Runtime;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -10,7 +10,7 @@ use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Log\LoggerInterface;
 
 /**

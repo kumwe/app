@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Domain;
+namespace Kumwe\App\BusinessReporting\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\Expression;
+use Kumwe\App\BusinessDefinition\Domain\Expression;
 
 /**
  * One bounded expression evaluated only over disclosure-safe report output aliases.

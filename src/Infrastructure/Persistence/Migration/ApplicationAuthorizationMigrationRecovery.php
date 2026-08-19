@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
@@ -17,8 +17,8 @@ use Doctrine\DBAL\Types\DateTimeType;
 use Doctrine\DBAL\Types\IntegerType;
 use Doctrine\DBAL\Types\StringType;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 

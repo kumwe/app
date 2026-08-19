@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Infrastructure;
+namespace Kumwe\App\BusinessReporting\Infrastructure;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessReporting\Application\ExportArtifactStorage;
-use Kumwe\CMS\BusinessReporting\Application\StoredExportArtifact;
+use Kumwe\App\BusinessReporting\Application\ExportArtifactStorage;
+use Kumwe\App\BusinessReporting\Application\StoredExportArtifact;
 use RuntimeException;
 
 /**

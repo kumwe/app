@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api;
+namespace Kumwe\App\Delivery\Http\Api;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**

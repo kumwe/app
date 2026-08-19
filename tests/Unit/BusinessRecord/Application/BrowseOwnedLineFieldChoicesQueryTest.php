@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Application;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
-use Kumwe\CMS\BusinessRecord\Query\AggregateFunction;
-use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessRecord\Query\RecordAggregate;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
+use Kumwe\App\BusinessRecord\Query\AggregateFunction;
+use Kumwe\App\BusinessRecord\Query\RecordProjection;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessRecord\Query\RecordAggregate;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

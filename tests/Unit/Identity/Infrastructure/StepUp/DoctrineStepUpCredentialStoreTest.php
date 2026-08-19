@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Infrastructure\StepUp;
+namespace Kumwe\App\Tests\Unit\Identity\Infrastructure\StepUp;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Infrastructure\StepUp\DoctrineStepUpCredentialStore;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Identity\Infrastructure\StepUp\DoctrineStepUpCredentialStore;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
 
 /**
  * Deterministic event-to-derived-row function for one projection contract.

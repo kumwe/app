@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\BusinessSurface\Delivery\Browser;
 
 /**
  * Retains safe generated-action controls after a rejected step-up attempt.

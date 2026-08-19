@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Application;
+namespace Kumwe\App\BusinessDefinition\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 
 /**
  * Admits a complete post-publication definition set to derived public contracts before commit.
@@ -22,7 +22,7 @@ interface BusinessDefinitionContractAdmission
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a derived contract name
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a derived contract name
      *          is unsafe or collides.
      *
      * @since   2.0.0

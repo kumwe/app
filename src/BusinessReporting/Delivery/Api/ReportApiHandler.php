@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Delivery\Api;
+namespace Kumwe\App\BusinessReporting\Delivery\Api;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessReporting\Application\ExportArtifactUnavailable;
-use Kumwe\CMS\BusinessReporting\Application\ExportService;
-use Kumwe\CMS\BusinessReporting\Application\ReportExecutionRequest;
-use Kumwe\CMS\BusinessReporting\Application\ReportRowLimitExceeded;
-use Kumwe\CMS\BusinessReporting\Application\ReportService;
-use Kumwe\CMS\BusinessReporting\Application\ReportUnavailable;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessReporting\Application\ExportArtifactUnavailable;
+use Kumwe\App\BusinessReporting\Application\ExportService;
+use Kumwe\App\BusinessReporting\Application\ReportExecutionRequest;
+use Kumwe\App\BusinessReporting\Application\ReportRowLimitExceeded;
+use Kumwe\App\BusinessReporting\Application\ReportService;
+use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;

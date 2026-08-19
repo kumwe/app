@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Domain;
+namespace Kumwe\App\BusinessRecord\Domain;
 
 use RuntimeException;
 

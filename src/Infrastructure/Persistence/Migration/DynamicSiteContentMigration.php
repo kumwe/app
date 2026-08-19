@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Domain\ContentEntry;
-use Kumwe\CMS\Content\Domain\ContentRevision;
-use Kumwe\CMS\Content\Domain\ContentStatus;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Content\Domain\ContentEntry;
+use Kumwe\App\Content\Domain\ContentRevision;
+use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /** Adds typed navigation targets and installs the editable example site without overwriting user content. */
@@ -462,7 +462,7 @@ final readonly class DynamicSiteContentMigration implements RepeatableMigration
         return [
             'logo' => '/media/00000000-0000-7000-8000-000000000902/kumwe-wordmark.svg',
             'brand_logo' => '/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg',
-            'eyebrow' => 'Kumwe CMS 2.0',
+            'eyebrow' => 'Kumwe App 2.0',
             'heading' => 'Content systems ready for what comes next.',
             'summary' => 'A modern publishing foundation for structured content, governed workflows, '
                 . 'browser delivery, APIs, automation, and AI-assisted operations.',

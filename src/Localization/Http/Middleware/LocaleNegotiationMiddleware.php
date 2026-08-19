@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Http\Middleware;
+namespace Kumwe\App\Localization\Http\Middleware;
 
-use Kumwe\CMS\Localization\Application\ActiveLocale;
-use Kumwe\CMS\Localization\Application\LocaleNegotiator;
-use Kumwe\CMS\Localization\Application\TranslationScope;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Localization\Application\LocaleNegotiator;
+use Kumwe\App\Localization\Application\TranslationScope;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

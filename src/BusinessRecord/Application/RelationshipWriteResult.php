@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 
 /**
  * Reports which rows one relationship write actually re-versioned.

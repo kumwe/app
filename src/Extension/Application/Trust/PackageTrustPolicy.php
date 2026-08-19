@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Trust;
+namespace Kumwe\App\Extension\Application\Trust;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Extension\Domain\PackageSignature;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Extension\Domain\PackageSignature;
 
 /**
  * Signing policy for an installation whose set of trusted keys is fixed at wiring time.

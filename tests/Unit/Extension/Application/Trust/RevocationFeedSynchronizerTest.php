@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Application\Trust;
+namespace Kumwe\App\Tests\Unit\Extension\Application\Trust;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Application\Trust\RevocationFeedState;
-use Kumwe\CMS\Extension\Application\Trust\RevocationList;
-use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumRevocationListVerifier;
-use Kumwe\CMS\Kernel\Configuration\RevocationFeedConfiguration;
+use Kumwe\App\Extension\Application\Trust\RevocationFeedState;
+use Kumwe\App\Extension\Application\Trust\RevocationList;
+use Kumwe\App\Extension\Infrastructure\Trust\SodiumRevocationListVerifier;
+use Kumwe\App\Kernel\Configuration\RevocationFeedConfiguration;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

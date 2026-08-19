@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Localization\Infrastructure;
+namespace Kumwe\App\Tests\Unit\Localization\Infrastructure;
 
-use Kumwe\CMS\Localization\Application\MessageFormattingFailed;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
-use Kumwe\CMS\Localization\Infrastructure\CompiledMessageCatalogueRepository;
-use Kumwe\CMS\Localization\Infrastructure\MessageCatalogueCompiler;
-use Kumwe\CMS\Localization\Infrastructure\XliffCatalogue;
-use Kumwe\CMS\Localization\Infrastructure\XliffCatalogueReader;
+use Kumwe\App\Localization\Application\MessageFormattingFailed;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Localization\Infrastructure\CompiledMessageCatalogueRepository;
+use Kumwe\App\Localization\Infrastructure\MessageCatalogueCompiler;
+use Kumwe\App\Localization\Infrastructure\XliffCatalogue;
+use Kumwe\App\Localization\Infrastructure\XliffCatalogueReader;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

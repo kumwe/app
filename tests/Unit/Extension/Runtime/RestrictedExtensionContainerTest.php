@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Runtime;
+namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Content\Application\ContentRepository;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
-use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Content\Application\ContentRepository;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
+use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -32,10 +32,10 @@ final class RestrictedExtensionContainerTest extends TestCase
     /** @return iterable<string, array{string}> */
     public static function privilegedServiceIds(): iterable
     {
-        yield 'execution context' => [\Kumwe\CMS\Application\Authorization\ExecutionContext::class];
-        yield 'authorization gateway' => [\Kumwe\CMS\Application\Authorization\AuthorizationGateway::class];
-        yield 'site ownership registry' => [\Kumwe\CMS\Application\Authorization\ResourceSiteOwnership::class];
-        yield 'site ownership writer' => [\Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter::class];
+        yield 'execution context' => [\Kumwe\App\Application\Authorization\ExecutionContext::class];
+        yield 'authorization gateway' => [\Kumwe\App\Application\Authorization\AuthorizationGateway::class];
+        yield 'site ownership registry' => [\Kumwe\App\Application\Authorization\ResourceSiteOwnership::class];
+        yield 'site ownership writer' => [\Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter::class];
         yield 'root container' => [\Joomla\DI\Container::class];
         yield 'database connection' => [\Doctrine\DBAL\Connection::class];
         yield 'raw event dispatcher' => [\Joomla\Event\DispatcherInterface::class];

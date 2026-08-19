@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Portal\Presentation;
+namespace Kumwe\App\Tests\Unit\Portal\Presentation;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\CMS\Portal\Contribution\PortalNavigationRegistry;
-use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
-use Kumwe\CMS\Portal\Contribution\PortalWorkspaceRegistry;
-use Kumwe\CMS\Portal\Presentation\PortalNavigationVisibility;
-use Kumwe\CMS\Portal\Presentation\PortalRenderer;
-use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
+use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
+use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
+use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
+use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
+use Kumwe\App\Portal\Presentation\PortalNavigationVisibility;
+use Kumwe\App\Portal\Presentation\PortalRenderer;
+use Kumwe\App\Presentation\Asset\ViteAssetManifest;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

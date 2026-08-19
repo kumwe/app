@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Site\Infrastructure\Persistence;
+namespace Kumwe\App\Tests\Unit\Site\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Application\SiteScopedContentRepository;
-use Kumwe\CMS\Content\Domain\ContentEntry;
-use Kumwe\CMS\Content\Domain\ContentStatus;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Site\Infrastructure\Persistence\DoctrineSiteSettings;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\ImmediateTransactionManager;
-use Kumwe\CMS\Workflow\Domain\Workflow;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Content\Application\SiteScopedContentRepository;
+use Kumwe\App\Content\Domain\ContentEntry;
+use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\ImmediateTransactionManager;
+use Kumwe\App\Workflow\Domain\Workflow;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
 
 /**
  * Port for the append-only log that keeps every past state of a business record.
@@ -63,7 +63,7 @@ interface BusinessRecordRevisionRepository
      *
      * @throws  \InvalidArgumentException  When the requested window falls outside the bound the
      *          implementation accepts.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When a
      *          stored row is malformed, or its checksum disagrees with the entry rebuilt from it.
      *
      * @since   2.0.0
@@ -108,7 +108,7 @@ interface BusinessRecordRevisionRepository
      *
      * @throws  \InvalidArgumentException  When the requested window falls outside the bound the
      *          implementation accepts, or the digest is not 64 hexadecimal characters.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When a
      *          stored row is malformed, or its checksum disagrees with the entry rebuilt from it.
      *
      * @since   2.0.0
@@ -148,7 +148,7 @@ interface BusinessRecordRevisionRepository
      *
      * @throws  \InvalidArgumentException  When the bound is outside what the implementation accepts, or
      *          the digest is not 64 hexadecimal characters.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When a
      *          stored key is not a string.
      *
      * @since   2.0.0

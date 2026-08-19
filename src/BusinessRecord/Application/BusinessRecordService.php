@@ -2,83 +2,83 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\ComputationMode;
-use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceFormat;
-use Kumwe\CMS\BusinessDefinition\Domain\NumberSequenceReset;
-use Kumwe\CMS\BusinessDefinition\Domain\PortalOperation;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
-use Kumwe\CMS\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
-use Kumwe\CMS\BusinessRecord\Application\Command\ArchiveRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\DocumentLineInput;
-use Kumwe\CMS\BusinessRecord\Application\Command\DocumentWriteIntent;
-use Kumwe\CMS\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\RelateRecordsCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\RestoreRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\UnrelateRecordsCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\WriteDocumentCommand;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordImmutable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodUndeclared;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessRecord\Application\Query\OwnedLineFormQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotency;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotencyState;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\CMS\BusinessRecord\Domain\ClientAssertedInstant;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
-use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalBinding;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalService;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ComputationMode;
+use Kumwe\App\BusinessDefinition\Domain\DeleteBehavior;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceFormat;
+use Kumwe\App\BusinessDefinition\Domain\NumberSequenceReset;
+use Kumwe\App\BusinessDefinition\Domain\PortalOperation;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
+use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
+use Kumwe\App\BusinessRecord\Application\Command\ArchiveRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\DocumentLineInput;
+use Kumwe\App\BusinessRecord\Application\Command\DocumentWriteIntent;
+use Kumwe\App\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
+use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
+use Kumwe\App\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
+use Kumwe\App\BusinessRecord\Application\Command\RestoreRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\UnrelateRecordsCommand;
+use Kumwe\App\BusinessRecord\Application\Command\UpdateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordImmutable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodUndeclared;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessRecord\Application\Query\OwnedLineFormQuery;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
+use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -206,7 +206,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, version and workflow state of the stored record; `replayed` is
      *          true when an earlier command under the same key produced it and nothing was written now.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -350,9 +350,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  BusinessRecordView  The record narrowed to the readable fields the projection kept, with
      *          restricted, secret and unresolved-reference handles omitted.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read
      *          business records.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
      *          definition on this site matches the identifier, or its owner is disabled.
      * @throws  BusinessRecordSchemaUnavailable  When the definition's schema is not installed and active,
      *          or a stored value does not match the column the blueprint describes.
@@ -421,15 +421,15 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordBrowseResult  Projected records for this page, a continuation cursor present only
      *          while further rows remain, and any aggregates the specification asked for.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not browse
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not browse
      *          business records.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
      *          definition on this site matches the identifier, or its owner is disabled.
      * @throws  BusinessRecordSchemaUnavailable  When the definition's schema is not installed and active,
      *          or the query names something the installed columns do not carry.
      * @throws  BusinessRecordValidationFailed  When the organization scope is not one this definition
      *          accepts.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery  When the
      *          specification cannot be compiled, such as a cursor raised against a different query.
      * @throws  BusinessRecordTemporarilyUnavailable  When the installation moved between the resolve and
      *          the fence, or the shared lock could not be taken.
@@ -488,7 +488,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  RelatedRecordBrowseResult  Active target definition and its policy-filtered page.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor cannot relate records.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor cannot relate records.
      * @throws  BusinessRecordNotFound  When the source handle, nested access plan, target, or scope is unavailable.
      * @throws  BusinessRecordTemporarilyUnavailable  When either installation changes under its shared fence.
      *
@@ -584,7 +584,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  RelatedRecordBrowseResult  Policy-filtered entity-reference target choices.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When relate authority is absent.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When relate authority is absent.
      * @throws  BusinessRecordNotFound  When either target, scope, field, or nested plan is unavailable.
      * @throws  BusinessRecordTemporarilyUnavailable  When an installation changes under its shared fence.
      *
@@ -670,7 +670,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  OwnedLineFormResult  Pinned target definition and policy-authorized create handles.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When relate authority is absent.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When relate authority is absent.
      * @throws  BusinessRecordNotFound  When the source, relationship, target, scope, or nested plan is unavailable.
      * @throws  BusinessRecordTemporarilyUnavailable  When an installation changes under a shared fence.
      *
@@ -745,7 +745,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, new version and workflow state of the stored record; `replayed`
      *          is true when an earlier command under the same key produced it.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -844,7 +844,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, new version and workflow state of the archived record;
      *          `replayed` is true when an earlier command under the same key produced it.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not archive
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not archive
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -883,7 +883,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys and new version of the record, with `deleted` raised; the
      *          version is reported even on the hard-delete path, where no row survives to carry it.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not delete
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not delete
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -923,7 +923,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, new version and workflow state of the live record; `replayed`
      *          is true when an earlier command under the same key produced it.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not restore
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not restore
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -964,7 +964,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, new version and the workflow state the record was moved into;
      *          `replayed` is true when an earlier command under the same key produced it.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor holds neither the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor holds neither the
      *          action capability nor the transition capability, or may not run record actions at all.
      * @throws  BusinessRecordActionRejected  When the command carries action input, the pinned definition
      *          declares no such action, its condition does not evaluate to true, or it names no transition
@@ -1147,9 +1147,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When the
      *          record's declared posting date falls inside a closed period.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          no definition matches the identifier on this site, or its owner is disabled.
      *
      * @since   2.0.0
@@ -1300,7 +1300,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys and new version of the source record; the target's own new
      *          version, where one was written, is recorded in the trail rather than returned here.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not relate
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not relate
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -1520,7 +1520,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys and new version of the source record; the target's own new
      *          version, where one was written, is recorded in the trail rather than returned here.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not relate
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not relate
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -1685,7 +1685,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys and new version of the owning record, whose collection is
      *          renumbered from zero in the order given.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not relate
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not relate
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -1857,7 +1857,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *          `replayed` is true when an earlier command under the same key wrote this document and
      *          nothing was written now.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create or
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create or
      *          update business records, or may not relate them.
      * @throws  BusinessRecordImmutable  When an amendment reaches a document the definition's workflow
      *          closes in its current state; a closed document is corrected by a linked reversal.
@@ -1938,9 +1938,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordHistoryResult  Up to `$query->limit` revision views, newest first, and whether older
      *          revisions remain — established by fetching one row past the limit and discarding it.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read
      *          business-record history.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
      *          definition on this site matches the identifier, or the requested version is not published.
      * @throws  BusinessRecordSchemaUnavailable  When no retained installation exists for the definition, or
      *          a stored row disagrees with the checksum written beside it.
@@ -2888,7 +2888,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @throws  BusinessRecordImmutable  When a record holding a set-null reference to the one being
      *          deleted is closed by its workflow state, because clearing the reference would rewrite a
      *          closed document's own fields.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When a
      *          referencing definition or the version one of its rows was written under cannot be resolved.
      * @throws  BusinessRecordSchemaUnavailable  When an active installation disagrees with the definition
      *          version it records, or describes no storage for a relationship being cleared.
@@ -3021,9 +3021,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When a
      *          posting date the mutation touches falls inside a closed period.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          no definition matches the identifier on this site, or its owner is disabled.
      * @throws  BusinessRecordValidationFailed  When the organization scope is not one this definition
      *          accepts.
@@ -3471,7 +3471,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  array{ResolvedBusinessDefinition, RecordScope, BusinessRecord, BusinessRecordAccessPlan}
      *          The pinned definition, exact scope, decoded record and operation-specific access decision.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
      *          definition on this site matches the identifier, or the pinned version is not published.
      * @throws  BusinessRecordSchemaUnavailable  When the schema is not installed and active, or a stored
      *          value does not match the column the blueprint describes.
@@ -3768,7 +3768,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @throws  BusinessRecordValidationFailed  Carrying one violation per unusable reference, when a value
      *          or its declared target is not a string, or names no record in this scope; and carrying a
      *          `scope` violation when a target definition will not accept the source's organization.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When a
      *          field's declared target definition does not exist on this site, or its owner is disabled.
      * @throws  BusinessRecordSchemaUnavailable  When a target definition's schema is not installed and
      *          active, or a stored identity is malformed.
@@ -4039,7 +4039,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor this
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor this
      *          operation on business records in this site.
      *
      * @since   2.0.0
@@ -4619,7 +4619,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @throws  BusinessRelationshipRejected  When the pinned definition declares neither a relationship
      *          nor an ordered-lines field under that handle.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a matching
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a matching
      *          ordered-lines field declares no usable target entity.
      *
      * @since   2.0.0
@@ -4727,7 +4727,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @throws  BusinessRelationshipRejected  When the owner's blueprint carries no table for this
      *          collection, or records no integer target definition version for it.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          the line type does not exist on this site, or that version of it is not published.
      * @throws  BusinessRecordSchemaUnavailable  When the line type's schema is not installed and active.
      * @throws  BusinessRecordTemporarilyUnavailable  When the line type's installation moved between the

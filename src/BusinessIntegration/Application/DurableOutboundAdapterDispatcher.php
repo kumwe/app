@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\PermanentFailure;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\CMS\Application\Automation\RetryPolicy;
-use Kumwe\CMS\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\App\Application\Automation\PermanentFailure;
+use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\WebhookContributionDefinition;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;

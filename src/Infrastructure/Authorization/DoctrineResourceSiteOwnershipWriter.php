@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Authorization;
+namespace Kumwe\App\Infrastructure\Authorization;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\CMS\Application\Authorization\OwnershipScope;
-use Kumwe\CMS\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\CMS\Application\Authorization\ResourceOwnership;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipConflict;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\App\Application\Authorization\OwnershipScope;
+use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
+use Kumwe\App\Application\Authorization\ResourceOwnership;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Write side of the resource-to-scope registry, kept in the prefixed `resource_site_ownership` table.
@@ -220,7 +220,7 @@ final readonly class DoctrineResourceSiteOwnershipWriter implements ResourceSite
             return OwnershipScope::site(SiteContext::fromString($site));
         }
         if ($level === OwnershipScopeLevel::Group && is_string($group) && $group !== '') {
-            return OwnershipScope::group(new \Kumwe\CMS\Application\Authorization\SiteGroup(
+            return OwnershipScope::group(new \Kumwe\App\Application\Authorization\SiteGroup(
                 $group,
                 $group,
                 [SiteContext::DEFAULT],

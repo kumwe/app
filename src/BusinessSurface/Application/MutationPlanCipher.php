@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
-use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
+use Kumwe\App\BusinessRecord\Application\SecretCipher;
 
 /**
  * The cipher mutation-plan tokens are sealed with, deliberately not the one record secrets use.

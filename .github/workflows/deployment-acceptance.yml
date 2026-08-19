@@ -113,15 +113,15 @@ jobs:
             --prefer-dist
           (
             cd build/distribution/package
-            zip -X --quiet --recurse-paths ../kumwe-cms.zip .
+            zip -X --quiet --recurse-paths ../kumwe-app.zip .
           )
-          unzip -Z1 build/distribution/kumwe-cms.zip | grep --fixed-strings --quiet composer.json
-          if unzip -Z1 build/distribution/kumwe-cms.zip \
+          unzip -Z1 build/distribution/kumwe-app.zip | grep --fixed-strings --quiet composer.json
+          if unzip -Z1 build/distribution/kumwe-app.zip \
               | grep -E '^(\.github|tests|docker)(/|$)|^compose\.yaml$' >/dev/null; then
             echo 'Distribution ZIP contains development-only paths.' >&2
             exit 1
           fi
-          unzip -q build/distribution/kumwe-cms.zip -d "$RUNNER_TEMP/kumwe-zip"
+          unzip -q build/distribution/kumwe-app.zip -d "$RUNNER_TEMP/kumwe-zip"
 
       - name: Verify non-interactive Composer bootstrap
         shell: bash

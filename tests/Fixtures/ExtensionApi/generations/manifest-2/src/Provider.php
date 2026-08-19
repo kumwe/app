@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace KumweContract\ManifestTwo;
 
-use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
-use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
-use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
-use Kumwe\CMS\Extension\Contribution\AdministratorViewDefinition;
-use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceDefinition;
-use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
-use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition;
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Contribution\AdministratorNavigationDefinition;
+use Kumwe\App\Extension\Contribution\AdministratorViewDefinition;
+use Kumwe\App\Extension\Contribution\AdministratorWorkspaceDefinition;
+use Kumwe\App\Extension\Contribution\CapabilityDefinition;
+use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrar;
+use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
 
 /**
  * Compatibility provider for the manifest-2 generation of the extension contract.

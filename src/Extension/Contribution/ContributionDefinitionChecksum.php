@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
+use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 
 /**
  * Produces owner-bound digests for persisted contribution declarations.

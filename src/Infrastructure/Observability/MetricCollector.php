@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Observability;
+namespace Kumwe\App\Infrastructure\Observability;
 
 /**
  * The read side of metrics: values recomputed at scrape time rather than accumulated as they happen.

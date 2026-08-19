@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Identity;
+namespace Kumwe\App\Delivery\Http\Api\Identity;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Domain\UserStatus;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Identity\Application\Administration\AccessControlService;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Domain\UserStatus;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -73,7 +73,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
      * @return  ResponseInterface  The operation's JSON or 204 response, or a 422 problem document when the
      *          route, body or route parameter was unusable.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not perform the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not perform the
      *          operation; it is re-thrown deliberately so it is answered as a refusal, not as a 422.
      *
      * @since   2.0.0

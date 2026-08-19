@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Infrastructure\Persistence;
+namespace Kumwe\App\Audit\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Audit\Domain\AuditEventDigest;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Audit\Domain\AuditEventDigest;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Records audit events as digest-chained rows in the prefixed `audit_events` table.

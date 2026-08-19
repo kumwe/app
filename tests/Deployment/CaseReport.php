@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Deployment;
+namespace Kumwe\App\Tests\Deployment;
 
 /**
  * The single line every deployed-artifact regression case reports, and the driver reads.

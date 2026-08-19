@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Asset;
+namespace Kumwe\App\Presentation\Asset;
 
 /**
  * Resolved set of built frontend files a template must link for one Vite entry point.

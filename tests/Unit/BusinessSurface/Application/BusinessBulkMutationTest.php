@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Application;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSurface\Application\BusinessBulkMutation;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\BusinessSurface\Application\BusinessBulkMutation;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

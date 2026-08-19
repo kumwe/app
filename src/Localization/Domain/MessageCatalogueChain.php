@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Domain;
+namespace Kumwe\App\Localization\Domain;
 
 /**
  * The four layers of one locale, ordered so that the first layer carrying an identifier wins.

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
 
 /**
  * Closed operation vocabulary shared by generated browser, REST, CLI and MCP adapters.

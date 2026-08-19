@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
-use Kumwe\CMS\BusinessRecord\Application\RecordBrowseResult;
-use Kumwe\CMS\BusinessRecord\Application\RecordHistoryResult;
-use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordProjector;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRequestView;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalStatus;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalVoteView;
-use Kumwe\CMS\Delivery\Console\Command\BusinessConsoleFailure;
-use Kumwe\CMS\Delivery\Console\Command\BusinessRecordConsolePresenter;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
+use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
+use Kumwe\App\BusinessRecord\Application\RecordHistoryResult;
+use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalVoteView;
+use Kumwe\App\Delivery\Console\Command\BusinessConsoleFailure;
+use Kumwe\App\Delivery\Console\Command\BusinessRecordConsolePresenter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

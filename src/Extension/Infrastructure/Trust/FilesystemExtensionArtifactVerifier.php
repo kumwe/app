@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Infrastructure\Trust;
+namespace Kumwe\App\Extension\Infrastructure\Trust;
 
-use Kumwe\CMS\Extension\Application\Trust\ExtensionArtifactVerifier;
-use Kumwe\CMS\Extension\Application\Trust\UntrustedPackage;
+use Kumwe\App\Extension\Application\Trust\ExtensionArtifactVerifier;
+use Kumwe\App\Extension\Application\Trust\UntrustedPackage;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;

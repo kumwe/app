@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessSchema\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRepository;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaRecoveryEvidence;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRepository;
+use Kumwe\App\BusinessSchema\Domain\SchemaRecoveryEvidence;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**
@@ -56,9 +56,9 @@ final readonly class DoctrineBusinessSchemaRecoveryEvidenceRepository implements
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When a stored column is absent, empty, wrongly typed, or holds invalid JSON.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the stored row no longer
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the stored row no longer
      *          satisfies the evidence rules, such as a verification that precedes its own backup.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored details hold
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored details hold
      *          a value that cannot be canonically encoded.
      *
      * @since   2.0.0
@@ -107,9 +107,9 @@ final readonly class DoctrineBusinessSchemaRecoveryEvidenceRepository implements
      *          one this site cannot read back.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the probe or the insert, including when a
      *          concurrent writer claimed the identifier first.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the record already held under the
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the record already held under the
      *          identifier no longer satisfies the evidence rules.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the details of the record
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the details of the record
      *          already held cannot be canonically encoded.
      *
      * @since   2.0.0

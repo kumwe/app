@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Domain;
+namespace Kumwe\App\BusinessIntegration\Domain;
 
 /**
  * Durable fact written to the transactional outbox for at-least-once delivery.

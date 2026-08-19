@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Delivery\Browser;
 
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessStructuredFieldForm;
+use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessStructuredFieldForm;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

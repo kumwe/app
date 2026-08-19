@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
-use Kumwe\CMS\Localization\Application\ActiveLocale;
-use Kumwe\CMS\Localization\Application\CatalogueTranslator;
-use Kumwe\CMS\Localization\Application\MessageOverrideRepository;
-use Kumwe\CMS\Localization\Application\SupportedLocales;
-use Kumwe\CMS\Localization\Application\TranslationScope;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Infrastructure\ArrayMessageOverrideRepository;
-use Kumwe\CMS\Localization\Infrastructure\CompiledMessageCatalogueRepository;
-use Kumwe\CMS\Localization\Infrastructure\IntlMessagePatternFormatter;
-use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Localization\Application\CatalogueTranslator;
+use Kumwe\App\Localization\Application\MessageOverrideRepository;
+use Kumwe\App\Localization\Application\SupportedLocales;
+use Kumwe\App\Localization\Application\TranslationScope;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Infrastructure\ArrayMessageOverrideRepository;
+use Kumwe\App\Localization\Infrastructure\CompiledMessageCatalogueRepository;
+use Kumwe\App\Localization\Infrastructure\IntlMessagePatternFormatter;
+use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
 
 /** Builds a translator over the repository's own compiled catalogues, as the container does. */
 final class InterfaceTranslation

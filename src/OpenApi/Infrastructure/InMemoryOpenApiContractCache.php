@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\OpenApi\Infrastructure;
+namespace Kumwe\App\OpenApi\Infrastructure;
 
-use Kumwe\CMS\OpenApi\Application\CompiledOpenApiContract;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractCache;
+use Kumwe\App\OpenApi\Application\CompiledOpenApiContract;
+use Kumwe\App\OpenApi\Application\OpenApiContractCache;
 
 /**
  * Process-local disposable OpenAPI cache used by web workers and unit tests.

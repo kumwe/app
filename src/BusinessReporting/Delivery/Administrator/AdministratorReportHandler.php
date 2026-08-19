@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Delivery\Administrator;
+namespace Kumwe\App\BusinessReporting\Delivery\Administrator;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessReporting\Application\ExportArtifactUnavailable;
-use Kumwe\CMS\BusinessReporting\Application\ExportService;
-use Kumwe\CMS\BusinessReporting\Application\ReportExecutionRequest;
-use Kumwe\CMS\BusinessReporting\Application\ReportRowLimitExceeded;
-use Kumwe\CMS\BusinessReporting\Application\ReportService;
-use Kumwe\CMS\BusinessReporting\Application\ReportUnavailable;
-use Kumwe\CMS\BusinessReporting\Delivery\Api\ReportApiPresenter;
-use Kumwe\CMS\BusinessReporting\Delivery\Browser\ReportParameterInput;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessReporting\Application\ExportArtifactUnavailable;
+use Kumwe\App\BusinessReporting\Application\ExportService;
+use Kumwe\App\BusinessReporting\Application\ReportExecutionRequest;
+use Kumwe\App\BusinessReporting\Application\ReportRowLimitExceeded;
+use Kumwe\App\BusinessReporting\Application\ReportService;
+use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
+use Kumwe\App\BusinessReporting\Delivery\Api\ReportApiPresenter;
+use Kumwe\App\BusinessReporting\Delivery\Browser\ReportParameterInput;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\HtmlResponse;

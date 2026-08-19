@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Dashboard;
+namespace Kumwe\App\Delivery\Http\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
 
 /**
  * Decodes independent dashboard group/workflow GET state and builds fixed same-area continuation URLs.

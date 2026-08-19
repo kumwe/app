@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Presentation;
+namespace Kumwe\App\Tests\Unit\Presentation;
 
-use Kumwe\CMS\Presentation\RichTextFormatter;
+use Kumwe\App\Presentation\RichTextFormatter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

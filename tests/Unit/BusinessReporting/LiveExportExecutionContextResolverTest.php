@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessReporting;
+namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\BusinessReporting\Application\ExportGenerationRejected;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
-use Kumwe\CMS\BusinessReporting\Infrastructure\LiveExportExecutionContextResolver;
-use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Portal\Application\PortalPasswordIdentity;
-use Kumwe\CMS\Portal\Application\PortalPrincipalLoader;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\BusinessReporting\Application\ExportGenerationRejected;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifactStatus;
+use Kumwe\App\BusinessReporting\Infrastructure\LiveExportExecutionContextResolver;
+use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Portal\Application\PortalPasswordIdentity;
+use Kumwe\App\Portal\Application\PortalPrincipalLoader;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

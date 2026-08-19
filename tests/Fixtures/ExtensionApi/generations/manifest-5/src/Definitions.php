@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace KumweContract\ManifestFive;
 
-use Kumwe\CMS\Extension\Contribution\CompositionBlockDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionDesignVocabularyDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionFieldControlDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionInspectorDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionMigrationDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionPatternDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionPropertySchema;
-use Kumwe\CMS\Extension\Contribution\CompositionPropertyType;
+use Kumwe\App\Extension\Contribution\CompositionBlockDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionDesignVocabularyDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionFieldControlDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionInspectorDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionMigrationDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionPatternDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionPropertySchema;
+use Kumwe\App\Extension\Contribution\CompositionPropertyType;
 
 /**
  * The composition declarations the manifest-five compatibility package promises.

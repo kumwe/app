@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence;
+namespace Kumwe\App\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use Kumwe\CMS\Infrastructure\Persistence\Type\DoctrineTemporalTypes;
-use Kumwe\CMS\Kernel\Configuration\DatabaseConfiguration;
+use Kumwe\App\Infrastructure\Persistence\Type\DoctrineTemporalTypes;
+use Kumwe\App\Kernel\Configuration\DatabaseConfiguration;
 use Pdo\Mysql;
 
 /**

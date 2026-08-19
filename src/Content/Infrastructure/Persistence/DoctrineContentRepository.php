@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Infrastructure\Persistence;
+namespace Kumwe\App\Content\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -11,17 +11,17 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentBrowseQuery;
-use Kumwe\CMS\Content\Application\ContentRepository;
-use Kumwe\CMS\Content\Application\ContentSearchRepository;
-use Kumwe\CMS\Content\Application\SiteScopedContentRepository;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Domain\ContentEntry;
-use Kumwe\CMS\Content\Domain\ContentRevision;
-use Kumwe\CMS\Content\Domain\PublicationWindow;
-use Kumwe\CMS\Content\Domain\VersionConflict;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentBrowseQuery;
+use Kumwe\App\Content\Application\ContentRepository;
+use Kumwe\App\Content\Application\ContentSearchRepository;
+use Kumwe\App\Content\Application\SiteScopedContentRepository;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Domain\ContentEntry;
+use Kumwe\App\Content\Domain\ContentRevision;
+use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\App\Content\Domain\VersionConflict;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**

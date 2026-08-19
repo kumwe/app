@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application\Query;
+namespace Kumwe\App\BusinessRecord\Application\Query;
 
 /**
  * Security purpose under which a record collection is evaluated and disclosed.

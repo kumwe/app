@@ -2,32 +2,32 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Contribution;
+namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewResult;
-use Kumwe\CMS\Extension\Contribution\BusinessContributionSurface;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Contribution\OwnedExtensionContributionRegistrar;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewContract;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\App\Extension\Contribution\BusinessContributionSurface;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Contribution\OwnedExtensionContributionRegistrar;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

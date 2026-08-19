@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
@@ -20,7 +20,7 @@ final class BusinessRuntimeBoundaryTest extends TestCase
             'src/Infrastructure/Persistence/Migration/BusinessTransactionalRuntimeMigration.php',
         );
 
-        self::assertStringNotContainsString('Kumwe\\CMS\\Content\\', $runtime);
+        self::assertStringNotContainsString('Kumwe\\App\\Content\\', $runtime);
         self::assertDoesNotMatchRegularExpression(
             '/(?:raw|quoted)\([\'\"]business_records[\'\"]\)|new\s+Table\([^\n]*business_records/i',
             $runtime . $migration,
@@ -43,7 +43,7 @@ final class BusinessRuntimeBoundaryTest extends TestCase
         self::assertStringNotContainsString('Doctrine\\DBAL\\Connection', $outsideInfrastructure);
         self::assertStringNotContainsString('Doctrine\\ORM\\EntityManager', $outsideInfrastructure);
         self::assertStringNotContainsString(
-            'Kumwe\\CMS\\BusinessRecord\\Infrastructure',
+            'Kumwe\\App\\BusinessRecord\\Infrastructure',
             $this->source('src/BusinessSurface/Delivery'),
             'Generated delivery adapters must use application contracts instead of record infrastructure.',
         );

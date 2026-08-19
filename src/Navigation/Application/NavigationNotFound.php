@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Navigation\Application;
+namespace Kumwe\App\Navigation\Application;
 
 use DomainException;
 

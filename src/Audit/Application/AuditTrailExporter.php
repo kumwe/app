@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Application;
+namespace Kumwe\App\Audit\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Port that writes a protected, redacted archive of an audit trail range for preservation.
@@ -29,7 +29,7 @@ interface AuditTrailExporter
      *
      * @throws  \InvalidArgumentException  When the requested range is inverted or not positive.
      * @throws  \RuntimeException  When the range holds no events or the archive cannot be written.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not export
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not export
      *          the audit trail.
      *
      * @since   2.0.0

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
@@ -12,10 +12,10 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint\MatchType;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\MultilingualContentMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\TranslationGroupSiteOwnershipMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\MultilingualContentMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\TranslationGroupSiteOwnershipMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;

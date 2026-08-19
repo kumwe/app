@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Administration;
+namespace Kumwe\App\Identity\Application\Administration;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 
 /**
  * Store that mints, resolves, and ends the browser sessions behind the administrator.
@@ -31,7 +31,7 @@ interface AdministratorSessionStore
      *
      * @return  CreatedAdministratorSession  The session paired with the one-time cookie token.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not hold an
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not hold an
      *          administrator session.
      * @throws  \InvalidArgumentException  When the context carries no human principal to sign in as.
      *
@@ -88,7 +88,7 @@ interface AdministratorSessionStore
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not end this
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not end this
      *          session.
      * @throws  \InvalidArgumentException  When no session carries that identifier, so nothing was ended.
      *
@@ -113,7 +113,7 @@ interface AdministratorSessionStore
      *
      * @return  int  How many live sessions were ended, zero when the user held none.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          this user, or may not hold an administrator session at all.
      *
      * @since   2.0.0
@@ -130,7 +130,7 @@ interface AdministratorSessionStore
      *
      * @return  int  How many expired sessions were removed, zero when there was nothing to clear.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not run
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not run
      *          administrator housekeeping.
      *
      * @since   2.0.0

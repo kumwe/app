@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Demo\Infrastructure\DemoBusinessProfileExporter;
-use Kumwe\CMS\Demo\Infrastructure\DemoProfileExporter;
-use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Demo\Infrastructure\DemoBusinessProfileExporter;
+use Kumwe\App\Demo\Infrastructure\DemoProfileExporter;
+use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
 use RuntimeException;
 use Throwable;
 

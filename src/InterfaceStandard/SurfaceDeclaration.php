@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\InterfaceStandard;
+namespace Kumwe\App\InterfaceStandard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Typed semantic candidate for one core, extension, or installable-template interface surface.

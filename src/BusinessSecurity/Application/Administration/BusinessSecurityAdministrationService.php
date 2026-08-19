@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application\Administration;
+namespace Kumwe\App\BusinessSecurity\Application\Administration;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\StepUpProofConsumer;
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparison;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyNullCheck;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyPredicate;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySchema;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyNullCheck;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyPredicate;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -913,8 +913,8 @@ final readonly class BusinessSecurityAdministrationService
     {
         foreach ($this->repository->roleGrants($roleId) as $grant) {
             $scope = $grant['scope_type'] === 'global'
-                ? \Kumwe\CMS\Identity\Domain\GrantScope::global()
-                : \Kumwe\CMS\Identity\Domain\GrantScope::named(
+                ? \Kumwe\App\Identity\Domain\GrantScope::global()
+                : \Kumwe\App\Identity\Domain\GrantScope::named(
                     $grant['scope_type'],
                     $grant['scope_identifier'] ?? '',
                 );

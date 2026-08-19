@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Http\Middleware;
+namespace Kumwe\App\Tests\Unit\Http\Middleware;
 
-use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
-use Kumwe\CMS\Http\Security\ForwardedHeaderParser;
-use Kumwe\CMS\Http\Security\ForwardedRequest;
-use Kumwe\CMS\Http\Security\TrustedProxyMatcher;
+use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\App\Http\Security\ForwardedHeaderParser;
+use Kumwe\App\Http\Security\ForwardedRequest;
+use Kumwe\App\Http\Security\TrustedProxyMatcher;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

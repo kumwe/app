@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
-use Kumwe\CMS\Delivery\Console\Command\ManageBusinessDefinitionsCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageBusinessSchemaCommand;
+use Kumwe\App\Delivery\Console\Command\ManageBusinessDefinitionsCommand;
+use Kumwe\App\Delivery\Console\Command\ManageBusinessSchemaCommand;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;

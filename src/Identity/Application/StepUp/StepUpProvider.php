@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\StepUp;
+namespace Kumwe\App\Identity\Application\StepUp;
 
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentSetup;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\App\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
+use Kumwe\App\Identity\Domain\StepUp\StepUpEnrollmentSetup;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
 
 /**
  * Provider contract for TOTP enrollment, ordinary challenges, and recovery challenges.

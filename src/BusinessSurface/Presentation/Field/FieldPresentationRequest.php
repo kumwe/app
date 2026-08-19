@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Presentation\Field;
+namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
 
 /**
  * Validated, transport-free input handed to a field presentation strategy.

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Business;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Business;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
-use Kumwe\CMS\BusinessRecord\Application\RecordHistoryResult;
-use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordProjector;
-use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiPresenter;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
+use Kumwe\App\BusinessRecord\Application\RecordHistoryResult;
+use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
+use Kumwe\App\Delivery\Http\Api\Business\BusinessRecordApiPresenter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

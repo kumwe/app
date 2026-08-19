@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application;
+namespace Kumwe\App\Presentation\Application;
 
 /**
  * Break-glass port for restoring the protected built-in administrator theme.

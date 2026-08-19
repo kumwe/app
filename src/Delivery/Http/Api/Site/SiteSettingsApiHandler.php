@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Site;
+namespace Kumwe\App\Delivery\Http\Api\Site;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -61,7 +61,7 @@ final readonly class SiteSettingsApiHandler implements RequestHandlerInterface
      * @throws  InvalidArgumentException  When a `GET` arrives without a matching execution context and
      *          authenticated principal; on the replacement path the same failure is answered as a 422.
      * @throws  \LogicException  When the replacement path finds no authenticated principal on the request.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          settings; it is left to propagate so it is answered as a refusal, not as a 422.
      *
      * @since   2.0.0

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\App\Application\Automation\Job;
 
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Automation\PermanentFailure;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Automation\PermanentFailure;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Content\Application\ContentService;
 
 /**
  * Scheduled job that moves one content record to a workflow state at a planned moment.

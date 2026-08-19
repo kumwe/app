@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection\Integration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\App\BusinessReporting\Application\ProjectionEvent;
+use Kumwe\App\BusinessReporting\Application\ProjectionWriter;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
 use KumweExample\AssetInspection\Definitions;
 
 /**

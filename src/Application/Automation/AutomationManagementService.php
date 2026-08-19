@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation;
+namespace Kumwe\App\Application\Automation;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\Job\ScheduleRepository;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -189,7 +189,7 @@ final readonly class AutomationManagementService
      *
      * @return  list<string>  Usable job type identifiers, in the registry's byte order.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
      *          automation at all.
      *
      * @since   2.0.0
@@ -227,7 +227,7 @@ final readonly class AutomationManagementService
      *
      * @return  string  Canonical UUID of the stored schedule.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create
      *          schedules, or may not use this job type.
      * @throws  InvalidArgumentException  When no handler is registered for the job type, or the
      *          repository rejects the cron expression, timezone, queue or name.
@@ -436,7 +436,7 @@ final readonly class AutomationManagementService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
      *
      * @since   2.0.0
      */

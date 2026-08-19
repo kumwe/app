@@ -346,7 +346,7 @@ whoever owns the rate. `MoneyConversionPipeline` asks each contributed provider 
 rate offered, and applies it through `MoneyConverter`. With no rate package installed it raises
 `MoneyRateUnavailable`; presenting the stored amount instead is the correct response to that.
 
-Implement `Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider` and contribute it through
+Implement `Kumwe\App\BusinessRecord\Application\MoneyRateProvider` and contribute it through
 `MoneyRateProviderRegistrar::moneyRateProvider()`, the additive registrar the owner-bound registrar also
 implements. The declaration is reconciled against the manifest like every other contribution, and three further
 rules apply to the runtime object:
@@ -412,7 +412,7 @@ rounded to. `UnitConversionPipeline` asks each contributed provider in declared 
 offered, and applies it through `QuantityConverter`. With no conversion package installed it raises
 `UnitConversionUnavailable`; presenting the stored quantity in its own unit is the correct response to that.
 
-Implement `Kumwe\CMS\BusinessRecord\Application\UnitConversionProvider` and contribute it through
+Implement `Kumwe\App\BusinessRecord\Application\UnitConversionProvider` and contribute it through
 `UnitConversionProviderRegistrar::unitConversionProvider()`, the additive registrar the owner-bound registrar
 also implements. The declaration is reconciled against the manifest like every other contribution, and the same
 three runtime rules apply as for rates:

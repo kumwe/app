@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\OpenApi\Infrastructure;
+namespace Kumwe\App\OpenApi\Infrastructure;
 
 use JsonException;
-use Kumwe\CMS\OpenApi\Application\CompiledOpenApiContract;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractCache;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractLimits;
+use Kumwe\App\OpenApi\Application\CompiledOpenApiContract;
+use Kumwe\App\OpenApi\Application\OpenApiContractCache;
+use Kumwe\App\OpenApi\Application\OpenApiContractLimits;
 use RuntimeException;
 
 /**

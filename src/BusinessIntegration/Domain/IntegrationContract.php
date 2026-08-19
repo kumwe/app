@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Domain;
+namespace Kumwe\App\BusinessIntegration\Domain;
 
-use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
+use Kumwe\App\Extension\Contribution\ContributionDefinition;
 
 /**
  * Data-only declaration that may be compiled into a trusted runtime generation.

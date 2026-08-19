@@ -36,12 +36,12 @@ if command -v rg >/dev/null 2>&1; then
 
     static_locator_matches() {
         find . -path './vendor' -prune -o -type f -name '*.php' -print0 \
-            | xargs -0 -r rg -n 'Kumwe\\CMS\\Factory|Factory::getContainer\(' 2>/dev/null
+            | xargs -0 -r rg -n 'Kumwe\\App\\Factory|Factory::getContainer\(' 2>/dev/null
     }
 
     outward_application_import_matches() {
         application_layer_files \
-            | xargs -r rg -n '^use (Doctrine\\|Kumwe\\CMS\\Infrastructure\\)' 2>/dev/null \
+            | xargs -r rg -n '^use (Doctrine\\|Kumwe\\App\\Infrastructure\\)' 2>/dev/null \
             | rg -v "$application_layer_exceptions"
     }
 else
@@ -62,12 +62,12 @@ else
 
     static_locator_matches() {
         find . -path './vendor' -prune -o -type f -name '*.php' -print0 \
-            | xargs -0 -r grep -I -nE 'Kumwe\\CMS\\Factory|Factory::getContainer\('
+            | xargs -0 -r grep -I -nE 'Kumwe\\App\\Factory|Factory::getContainer\('
     }
 
     outward_application_import_matches() {
         application_layer_files \
-            | xargs -r grep -I -nE '^use (Doctrine\\|Kumwe\\CMS\\Infrastructure\\)' \
+            | xargs -r grep -I -nE '^use (Doctrine\\|Kumwe\\App\\Infrastructure\\)' \
             | grep -Ev "$application_layer_exceptions"
     }
 fi

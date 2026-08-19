@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Presentation;
+namespace Kumwe\App\Portal\Presentation;
 
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Portal\Application\PortalSession;
-use Kumwe\CMS\Portal\Contribution\PortalNavigationRegistry;
-use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
-use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
-use Kumwe\CMS\Presentation\Twig\IsolatedTwigEnvironmentFactory;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
+use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
+use Kumwe\App\Presentation\Asset\ViteAssetManifest;
+use Kumwe\App\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use Twig\Environment;
 
 /**

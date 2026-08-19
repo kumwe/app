@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Dashboard;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceMutation;
-use Kumwe\CMS\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\CustomizationSlot;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceMutation;
+use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\CustomizationSlot;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;

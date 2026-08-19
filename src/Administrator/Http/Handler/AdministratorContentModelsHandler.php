@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use JsonException;
-use Kumwe\CMS\Administrator\Content\ContentModelFormMapper;
-use Kumwe\CMS\Administrator\Content\ContentModelFormPresenter;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Content\Application\ContentModelService;
-use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
-use Kumwe\CMS\Workflow\Domain\WorkflowDefinition;
+use Kumwe\App\Administrator\Content\ContentModelFormMapper;
+use Kumwe\App\Administrator\Content\ContentModelFormPresenter;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Content\Application\ContentModelService;
+use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Workflow\Domain\WorkflowDefinition;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;

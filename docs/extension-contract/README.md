@@ -15,7 +15,7 @@ check is dependency-free, so it runs before `composer install`.
 
 ## Public and internal
 
-Everything under `Kumwe\CMS\` is **internal** unless `classification.json` lists it. That is the default
+Everything under `Kumwe\App\` is **internal** unless `classification.json` lists it. That is the default
 and it is deliberate: the absence of a type from that file is the answer, not an omission. Internal code
 may be renamed, split or deleted at any time, and a package that reaches for it will break without
 warning and without recourse.

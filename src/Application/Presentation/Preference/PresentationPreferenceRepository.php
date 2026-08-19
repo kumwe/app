@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Presentation\Preference;
+namespace Kumwe\App\Application\Presentation\Preference;
 
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\InterfaceStandard\PresentationPreference;
-use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\InterfaceStandard\PresentationPreference;
+use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 
 /**
  * Persistence boundary for versioned KIS presentation preferences.

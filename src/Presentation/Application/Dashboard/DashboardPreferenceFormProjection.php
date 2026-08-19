@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Dashboard;
+namespace Kumwe\App\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceQuery;
-use Kumwe\CMS\Application\Presentation\Dashboard\DashboardPreferenceService;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
+use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
 
 /**
  * Bounded dashboard preference forms plus access-group browser evidence.

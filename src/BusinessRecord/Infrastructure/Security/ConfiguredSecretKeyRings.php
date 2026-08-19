@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Security;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Security;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyMaterial;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyPurpose;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyRing;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyMaterial;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyPurpose;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyRing;
 use SensitiveParameter;
 
 /**

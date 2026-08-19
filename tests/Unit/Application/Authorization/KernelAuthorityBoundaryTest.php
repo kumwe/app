@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
-use Kumwe\CMS\Kernel\ContainerFactory;
+use Kumwe\App\Kernel\ContainerFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -24,6 +24,6 @@ final class KernelAuthorityBoundaryTest extends TestCase
                 self::assertNotSame('provenance', $parameter->getName());
             }
         }
-        self::assertFalse(class_exists('Kumwe\\CMS\\Application\\Authorization\\AuthorizationAuthority'));
+        self::assertFalse(class_exists('Kumwe\\App\\Application\\Authorization\\AuthorizationAuthority'));
     }
 }

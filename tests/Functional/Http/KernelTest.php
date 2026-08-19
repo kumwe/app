@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Functional\Http;
+namespace Kumwe\App\Tests\Functional\Http;
 
 use Joomla\DI\Container;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Http\Handler\ApiIndexHandler;
-use Kumwe\CMS\Http\Handler\HomePageHandler;
-use Kumwe\CMS\Http\Handler\LivenessHandler;
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
-use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
-use Kumwe\CMS\Presentation\Twig\SiteTwigEnvironment;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Http\Handler\ApiIndexHandler;
+use Kumwe\App\Http\Handler\HomePageHandler;
+use Kumwe\App\Http\Handler\LivenessHandler;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\App\Presentation\Twig\SiteTwigEnvironment;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Laminas\Diactoros\ServerRequestFactory;
 use Mezzio\Application;
 use Mezzio\Router\RouterInterface;

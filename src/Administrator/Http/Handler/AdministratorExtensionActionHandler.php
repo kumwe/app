@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\CMS\Presentation\Application\StepUpAuthenticationRequired;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Presentation\Application\StepUpAuthenticationRequired;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;

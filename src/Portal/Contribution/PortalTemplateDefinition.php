@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Contribution;
+namespace Kumwe\App\Portal\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
+use Kumwe\App\Extension\Contribution\ContributionDefinition;
 
 /**
  * Explicit portal template declaration confined to its owner's isolated Twig namespace.

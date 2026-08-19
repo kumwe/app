@@ -2,42 +2,42 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
-use Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider;
-use Kumwe\CMS\BusinessRecord\Application\UnitConversionProvider;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyRateProviderDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
-use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
-use Kumwe\CMS\Portal\Contribution\PortalTemplateDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\App\BusinessRecord\Application\MoneyRateProvider;
+use Kumwe\App\BusinessRecord\Application\UnitConversionProvider;
+use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewContract;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
+use Kumwe\App\InterfaceStandard\SurfaceDefinition;
+use Kumwe\App\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\App\Portal\Contribution\PortalRouteDefinition;
+use Kumwe\App\Portal\Contribution\PortalRouteHandlerFactory;
+use Kumwe\App\Portal\Contribution\PortalTemplateDefinition;
+use Kumwe\App\Portal\Contribution\PortalWorkspaceDefinition;
 
 /**
  * The single-owner, single-phase registrar an extension actually contributes through.

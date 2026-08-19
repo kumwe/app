@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Functional\Http;
+namespace Kumwe\App\Tests\Functional\Http;
 
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
-use Kumwe\CMS\Http\Middleware\BearerAuthenticationMiddleware;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\ConsoleApplication;
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
+use Kumwe\App\Http\Middleware\BearerAuthenticationMiddleware;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\ConsoleApplication;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use Mezzio\Application;

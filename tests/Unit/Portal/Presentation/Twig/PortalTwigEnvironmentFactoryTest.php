@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Portal\Presentation\Twig;
+namespace Kumwe\App\Tests\Unit\Portal\Presentation\Twig;
 
-use Kumwe\CMS\Portal\Presentation\Twig\PortalTwigEnvironmentFactory;
+use Kumwe\App\Portal\Presentation\Twig\PortalTwigEnvironmentFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Workflow\Application;
+namespace Kumwe\App\Workflow\Application;
 
-use Kumwe\CMS\Content\Domain\ContentStatus;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Maps a built-in content status transition onto the one capability that authorizes it.

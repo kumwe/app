@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Extension;
+namespace Kumwe\App\Delivery\Http\Api\Extension;
 
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

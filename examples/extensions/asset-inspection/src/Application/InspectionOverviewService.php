@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 use KumweExample\AssetInspection\Integration\IntegrationLedger;
 
 /**

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Observability;
+namespace Kumwe\App\Infrastructure\Observability;
 
 /**
  * The three metric shapes Kumwe exposes, named as the Prometheus exposition format names them.

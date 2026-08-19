@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application\Administration;
+namespace Kumwe\App\BusinessSecurity\Application\Administration;
 
 /**
  * Refusal raised when an administrator mutation would alter the actor's own effective authority.

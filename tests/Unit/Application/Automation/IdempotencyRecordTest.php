@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\Application\Automation\IdempotencyRecord;
-use Kumwe\CMS\Application\Automation\IdempotencyResult;
-use Kumwe\CMS\Application\Automation\IdempotencyState;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\Application\Automation\IdempotencyRecord;
+use Kumwe\App\Application\Automation\IdempotencyResult;
+use Kumwe\App\Application\Automation\IdempotencyState;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

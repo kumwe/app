@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Navigation\Infrastructure\Persistence;
+namespace Kumwe\App\Navigation\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Navigation\Application\MenuItemRecord;
-use Kumwe\CMS\Navigation\Application\MenuRecord;
-use Kumwe\CMS\Navigation\Application\NavigationRepository;
-use Kumwe\CMS\Navigation\Application\NavigationVersionConflict;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Navigation\Application\MenuItemRecord;
+use Kumwe\App\Navigation\Application\MenuRecord;
+use Kumwe\App\Navigation\Application\NavigationRepository;
+use Kumwe\App\Navigation\Application\NavigationVersionConflict;
 use RuntimeException;
 
 /**

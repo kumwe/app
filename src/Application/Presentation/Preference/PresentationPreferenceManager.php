@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Presentation\Preference;
+namespace Kumwe\App\Application\Presentation\Preference;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\InterfaceStandard\PresentationPreference;
-use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\MembershipContextValidator;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\InterfaceStandard\PresentationPreference;
+use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -72,7 +72,7 @@ final readonly class PresentationPreferenceManager
      *
      * @return  PresentationPreference  Newly persisted exact successor record.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
      * @throws  PresentationPreferenceVersionConflict  When another mutation changed the row.
      * @throws  InvalidArgumentException  When scope, current surface admission, value, or version is invalid.
      *
@@ -109,7 +109,7 @@ final readonly class PresentationPreferenceManager
      *
      * @return  PresentationPreference  Revalidated destination record with a rebased next version.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
      * @throws  PresentationPreferenceVersionConflict  When the destination version changed.
      * @throws  InvalidArgumentException  When compatibility, owner, scope, current admission, or value is invalid.
      *
@@ -150,7 +150,7 @@ final readonly class PresentationPreferenceManager
      *
      * @return  ?array<string, mixed>  Portable preference document, or null when the layer has no record.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
      * @throws  InvalidArgumentException  When scope or current surface admission is invalid.
      *
      * @since   2.0.0
@@ -290,7 +290,7 @@ final readonly class PresentationPreferenceManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
      * @throws  PresentationPreferenceVersionConflict  When the record is absent or its version changed.
      * @throws  InvalidArgumentException  When scope, stored owner, or version is invalid.
      *
@@ -336,7 +336,7 @@ final readonly class PresentationPreferenceManager
      *
      * @return  PresentationPreference  Persisted exact successor record.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
      * @throws  InvalidArgumentException  When input or the existing record owner is invalid.
      * @throws  PresentationPreferenceVersionConflict  When the destination version changed.
      *
@@ -414,7 +414,7 @@ final readonly class PresentationPreferenceManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When capability policy refuses access.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When capability policy refuses access.
      * @throws  InvalidArgumentException  When a layer identifier is absent, foreign to the site, or unexpected.
      *
      * @since   2.0.0
@@ -495,7 +495,7 @@ final readonly class PresentationPreferenceManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When site policy refuses management.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When site policy refuses management.
      *
      * @since   2.0.0
      */

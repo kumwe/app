@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Development;
+namespace Kumwe\App\Tests\Unit\Extension\Development;
 
-use Kumwe\CMS\Extension\Contribution\CompositionBlockDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionContributionRegistrar;
-use Kumwe\CMS\Extension\Contribution\CompositionDesignVocabularyDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionFieldControlDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionInspectorDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionMigrationDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionPatternDeclaration;
-use Kumwe\CMS\Extension\Contribution\CompositionPropertySchema;
-use Kumwe\CMS\Extension\Contribution\CompositionPropertyType;
+use Kumwe\App\Extension\Contribution\CompositionBlockDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionContributionRegistrar;
+use Kumwe\App\Extension\Contribution\CompositionDesignVocabularyDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionFieldControlDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionInspectorDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionMigrationDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionPatternDeclaration;
+use Kumwe\App\Extension\Contribution\CompositionPropertySchema;
+use Kumwe\App\Extension\Contribution\CompositionPropertyType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -74,7 +74,7 @@ final class CompositionContributionRegistrarFixtureTest extends TestCase
             self::assertSame($expected, $actual, sprintf('Public interface %s changed.', $interface));
         }
         self::assertTrue(is_a(
-            \Kumwe\CMS\Extension\Contribution\OwnedExtensionContributionRegistrar::class,
+            \Kumwe\App\Extension\Contribution\OwnedExtensionContributionRegistrar::class,
             CompositionContributionRegistrar::class,
             true,
         ));
@@ -181,7 +181,7 @@ final class CompositionContributionRegistrarFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '30c0c68d7dd5ef53495ecef41bfc5fc512820031c1ceb30e793d55a7985a22d1',
+            'abe523701f8ddfb38ad23fbbabe3ba0d513f288e336a1a6c2b4f009dcd8f388f',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);

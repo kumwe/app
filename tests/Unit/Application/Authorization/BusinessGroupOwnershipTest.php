@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\CMS\Application\Authorization\DenyByDefaultAuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\OwnershipScope;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SiteGroup;
-use Kumwe\CMS\Application\Authorization\SiteGroupRegistry;
-use Kumwe\CMS\Application\Authorization\SiteGroupUnknown;
-use Kumwe\CMS\BusinessReporting\Application\ConsolidatedGroupReportScope;
-use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
-use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition;
-use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
-use Kumwe\CMS\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\App\Application\Authorization\DenyByDefaultAuthorizationGateway;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\OwnershipScope;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\App\Application\Authorization\SiteGroupRegistry;
+use Kumwe\App\Application\Authorization\SiteGroupUnknown;
+use Kumwe\App\BusinessReporting\Application\ConsolidatedGroupReportScope;
+use Kumwe\App\Extension\Contribution\CapabilityDefinition;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
+use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -236,7 +236,7 @@ final class BusinessGroupOwnershipTest extends TestCase
     {
         $scope = new ConsolidatedGroupReportScope($this->gateway(), $this->groupRegistry());
 
-        $this->expectException(\Kumwe\CMS\Application\Authorization\AuthorizationDenied::class);
+        $this->expectException(\Kumwe\App\Application\Authorization\AuthorizationDenied::class);
         $scope->sitesFor($this->actor('reports.consolidated.read', 'unrelated'), 'kumwe-group');
     }
 
@@ -255,7 +255,7 @@ final class BusinessGroupOwnershipTest extends TestCase
             'scope_identifier' => 'freight',
         ]])->context(
             SiteContext::fromString('retail'),
-            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            \Kumwe\App\Application\Authorization\AuthenticationStrength::BearerToken,
             'test-request-group-0001',
         );
 
@@ -282,7 +282,7 @@ final class BusinessGroupOwnershipTest extends TestCase
         return new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
             $this->policies(),
-            $this->createStub(\Kumwe\CMS\Application\Authorization\MembershipContextValidator::class),
+            $this->createStub(\Kumwe\App\Application\Authorization\MembershipContextValidator::class),
             $this->ownership(),
             new StructuredLogAuthorizationDecisionRecorder(new \Psr\Log\NullLogger()),
         );
@@ -295,12 +295,12 @@ final class BusinessGroupOwnershipTest extends TestCase
      * one read and one write capability. Their ownership-scope rules are not contributed: this build
      * reserves them, which is exactly the property the accounting assertions rely on.
      *
-     * @return  \Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry  Core plus the payroll
+     * @return  \Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry  Core plus the payroll
      *          extension's bindings.
      *
      * @since   2.0.0
      */
-    private function policies(): \Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry
+    private function policies(): \Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry
     {
         $registries = new ExtensionContributionRegistrySet();
         $owner = ContributionOwner::extension('kumwe/payroll');

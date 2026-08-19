@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Application;
+namespace Kumwe\App\Localization\Application;
 
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\LocaleTag;
 
 /**
  * Port every layer reads user-facing text through, given an identifier, a parameter bag and a locale.
@@ -36,7 +36,7 @@ interface Translator
      *
      * @return  string  The formatted message, or the identifier itself when no layer carries it.
      *
-     * @throws  \Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier  When the identifier does not
+     * @throws  \Kumwe\App\Localization\Domain\InvalidMessageIdentifier  When the identifier does not
      *          satisfy the frozen grammar.
      * @throws  MessageFormattingFailed  When the resolved pattern is not valid ICU MessageFormat, or
      *          the supplied parameters cannot satisfy it.

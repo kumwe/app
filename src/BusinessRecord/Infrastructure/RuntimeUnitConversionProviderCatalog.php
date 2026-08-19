@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure;
+namespace Kumwe\App\BusinessRecord\Infrastructure;
 
-use Kumwe\CMS\BusinessRecord\Application\UnitConversionProvider;
-use Kumwe\CMS\BusinessRecord\Application\UnitConversionProviderCatalog;
-use Kumwe\CMS\Extension\Contribution\UnitConversionProviderDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\UnitConversionRequest;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessRecord\Application\UnitConversionProvider;
+use Kumwe\App\BusinessRecord\Application\UnitConversionProviderCatalog;
+use Kumwe\App\Extension\Contribution\UnitConversionProviderDefinition;
+use Kumwe\App\BusinessRecord\Domain\UnitConversionRequest;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 
 /**
  * The active unit conversion providers, read from the extension contributions of the running generation.

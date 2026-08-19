@@ -3,33 +3,33 @@
 <testsuites>
   <testsuite name="integration" tests="7" assertions="7" errors="0" failures="1" time="1.000000">
     <testcase name="testArchiveAndDeleteRedirectToLifecycleReadableDestinations"
-              class="Kumwe\CMS\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
+              class="Kumwe\App\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
               classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
               time="1.000000">
       <failure type="PHPUnit\Framework\ExpectationFailedException">Reverse order exposed a new failure.</failure>
     </testcase>
     <testcase name="testGraphicalQueryControlsSurviveOpaqueCursorPagination"
-              class="Kumwe\CMS\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
+              class="Kumwe\App\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
               classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
               time="1.000000"/>
     <testcase name="testWorkflowActionConfirmationExecutesWithoutJavascript"
-              class="Kumwe\CMS\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
+              class="Kumwe\App\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
               classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
               time="1.000000"/>
     <testcase name="testSummaryUsesCanonicalBrowsePolicyAndOmitsRestrictedFields"
-              class="Kumwe\CMS\Tests\Integration\Extension\AssetInspectionCustomViewIntegrationTest"
+              class="Kumwe\App\Tests\Integration\Extension\AssetInspectionCustomViewIntegrationTest"
               classname="Kumwe.CMS.Tests.Integration.Extension.AssetInspectionCustomViewIntegrationTest"
               time="1.000000"/>
     <testcase name="testSignedContributionLifecycleIsPermissionAwareTrustBoundAndDataPreserving"
-              class="Kumwe\CMS\Tests\Integration\Extension\ExtensionContributionLifecycleIntegrationTest"
+              class="Kumwe\App\Tests\Integration\Extension\ExtensionContributionLifecycleIntegrationTest"
               classname="Kumwe.CMS.Tests.Integration.Extension.ExtensionContributionLifecycleIntegrationTest"
               time="1.000000"/>
     <testcase name="testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone"
-              class="Kumwe\CMS\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
+              class="Kumwe\App\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
               classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
               time="1.000000"/>
     <testcase name="testAnIdempotentNeighbourStillPasses"
-              class="Kumwe\CMS\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
+              class="Kumwe\App\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
               classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
               time="1.000000"/>
   </testsuite>

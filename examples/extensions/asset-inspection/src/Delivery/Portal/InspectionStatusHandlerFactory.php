@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Delivery\Portal;
 
-use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
-use Kumwe\CMS\Portal\Presentation\PortalContributionRenderer;
+use Kumwe\App\Portal\Contribution\PortalRouteHandlerFactory;
+use Kumwe\App\Portal\Presentation\PortalContributionRenderer;
 use KumweExample\AssetInspection\Application\InspectionOverviewService;
 use Psr\Http\Server\RequestHandlerInterface;
 

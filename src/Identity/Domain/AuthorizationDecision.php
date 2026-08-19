@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Domain;
+namespace Kumwe\App\Identity\Domain;
 
 use InvalidArgumentException;
 
@@ -17,7 +17,7 @@ use InvalidArgumentException;
  * Instances exist only through `allow()` and `deny()`, so a decision is always one or the other.
  *
  * This is the identity-layer verdict, distinct from the namesake in
- * `Kumwe\CMS\Application\Authorization`, which records the wider gateway outcome and also names the
+ * `Kumwe\App\Application\Authorization`, which records the wider gateway outcome and also names the
  * versioned policy that reached it.
  *
  * @since  2.0.0

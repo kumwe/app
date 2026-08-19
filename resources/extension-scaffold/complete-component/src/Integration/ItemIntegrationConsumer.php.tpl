@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace @@PHP_NAMESPACE@@\Integration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
 
 /**
  * Performs an idempotent process-local observation of durable item events.

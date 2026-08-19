@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Audit\Domain;
+namespace Kumwe\App\Tests\Unit\Audit\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\App\Audit\Domain\AuditEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

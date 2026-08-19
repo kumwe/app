@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpProvider;
-use Kumwe\CMS\Identity\Domain\StepUp\RotatedStepUpSession;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentSetup;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpMethod;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\App\Identity\Application\StepUp\StepUpProvider;
+use Kumwe\App\Identity\Domain\StepUp\RotatedStepUpSession;
+use Kumwe\App\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
+use Kumwe\App\Identity\Domain\StepUp\StepUpEnrollmentSetup;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Identity\Domain\StepUp\StepUpMethod;
+use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
 
 /**
  * Captures generated-action provider inputs and returns one deterministic rotated proof.

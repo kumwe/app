@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Application\Authentication;
+namespace Kumwe\App\Tests\Unit\Identity\Application\Authentication;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\Authentication\PrincipalGrant;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\GrantScope;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Authentication\PrincipalGrant;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\GrantScope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AuthenticatedPrincipal::class)]
 #[UsesClass(Capability::class)]

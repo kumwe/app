@@ -2,43 +2,43 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
+namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Logging\Middleware;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\DocumentLineInput;
-use Kumwe\CMS\BusinessRecord\Application\Command\DocumentWriteIntent;
-use Kumwe\CMS\BusinessRecord\Application\Command\RelateRecordsCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\WriteDocumentCommand;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
-use Kumwe\CMS\BusinessRecord\Application\OwnedLineWrite;
-use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
-use Kumwe\CMS\BusinessRecord\Application\ValidationViolation;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\BusinessQueryCounter;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\DocumentLineInput;
+use Kumwe\App\BusinessRecord\Application\Command\DocumentWriteIntent;
+use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
+use Kumwe\App\BusinessRecord\Application\Command\UpdateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\App\BusinessRecord\Application\OwnedLineWrite;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
+use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\App\BusinessRecord\Application\ValidationViolation;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\BusinessQueryCounter;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -937,7 +937,7 @@ final class AggregateDocumentIntegrationTest extends TestCase
      * @param   EntityTypeDefinition  $header      Installed header definition.
      * @param   string                $documentId  Identity of the document.
      *
-     * @return  \Kumwe\CMS\BusinessRecord\Domain\BusinessRecord  The stored header record.
+     * @return  \Kumwe\App\BusinessRecord\Domain\BusinessRecord  The stored header record.
      *
      * @since   2.0.0
      */

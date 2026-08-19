@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Package;
+namespace Kumwe\App\Extension\Application\Package;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
 
 /**
  * Validates a candidate extension's declarative public contract before activation is committed.

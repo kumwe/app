@@ -2,55 +2,55 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console;
+namespace Kumwe\App\Tests\Unit\Delivery\Console;
 
-use Kumwe\CMS\BusinessReporting\Delivery\Console\ReportCommand;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
-use Kumwe\CMS\Delivery\Console\Command\BuildExtensionCommand;
-use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
-use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
-use Kumwe\CMS\Delivery\Console\Command\DemoAccessCommand;
-use Kumwe\CMS\Delivery\Console\Command\DemoExamplesCommand;
-use Kumwe\CMS\Delivery\Console\Command\DemoExportCommand;
-use Kumwe\CMS\Delivery\Console\Command\DemoInstallCommand;
-use Kumwe\CMS\Delivery\Console\Command\DisableExtensionCommand;
-use Kumwe\CMS\Delivery\Console\Command\ExportAuditTrailCommand;
-use Kumwe\CMS\Delivery\Console\Command\HealthCheckCommand;
-use Kumwe\CMS\Delivery\Console\Command\InspectExtensionCommand;
-use Kumwe\CMS\Delivery\Console\Command\InstallExtensionCommand;
-use Kumwe\CMS\Delivery\Console\Command\IntegrationWorkCommand;
-use Kumwe\CMS\Delivery\Console\Command\ListExtensionsCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageAccessCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageAutomationCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageBusinessDefinitionsCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageBusinessRecordsCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageBusinessSchemaCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageContentCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageContentModelsCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageIntegrationsCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageNavigationCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManagePostingPeriodsCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageSettingsCommand;
-use Kumwe\CMS\Delivery\Console\Command\ManageTrustStoreCommand;
-use Kumwe\CMS\Delivery\Console\Command\MaterializeExtensionRuntimeCommand;
-use Kumwe\CMS\Delivery\Console\Command\McpServeCommand;
-use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
-use Kumwe\CMS\Delivery\Console\Command\MigrationStatusCommand;
-use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
-use Kumwe\CMS\Delivery\Console\Command\RecoverAdministratorThemeCommand;
-use Kumwe\CMS\Delivery\Console\Command\RecoverCredentialsCommand;
-use Kumwe\CMS\Delivery\Console\Command\RecoverMigrationLockCommand;
-use Kumwe\CMS\Delivery\Console\Command\RotateRecordSecretsCommand;
-use Kumwe\CMS\Delivery\Console\Command\RunExtensionConformanceCommand;
-use Kumwe\CMS\Delivery\Console\Command\ScaffoldExtensionCommand;
-use Kumwe\CMS\Delivery\Console\Command\ScheduleRunCommand;
-use Kumwe\CMS\Delivery\Console\Command\SignExtensionCommand;
-use Kumwe\CMS\Delivery\Console\Command\UninstallExtensionCommand;
-use Kumwe\CMS\Delivery\Console\Command\VerifyAuditTrailCommand;
-use Kumwe\CMS\Delivery\Console\Command\WatchExtensionRuntimeCommand;
-use Kumwe\CMS\Localization\Domain\MessageIdentifier;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\BusinessReporting\Delivery\Console\ReportCommand;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Command\ActivateExtensionCommand;
+use Kumwe\App\Delivery\Console\Command\BuildExtensionCommand;
+use Kumwe\App\Delivery\Console\Command\CreateAccessTokenCommand;
+use Kumwe\App\Delivery\Console\Command\CreateAdministratorCommand;
+use Kumwe\App\Delivery\Console\Command\DemoAccessCommand;
+use Kumwe\App\Delivery\Console\Command\DemoExamplesCommand;
+use Kumwe\App\Delivery\Console\Command\DemoExportCommand;
+use Kumwe\App\Delivery\Console\Command\DemoInstallCommand;
+use Kumwe\App\Delivery\Console\Command\DisableExtensionCommand;
+use Kumwe\App\Delivery\Console\Command\ExportAuditTrailCommand;
+use Kumwe\App\Delivery\Console\Command\HealthCheckCommand;
+use Kumwe\App\Delivery\Console\Command\InspectExtensionCommand;
+use Kumwe\App\Delivery\Console\Command\InstallExtensionCommand;
+use Kumwe\App\Delivery\Console\Command\IntegrationWorkCommand;
+use Kumwe\App\Delivery\Console\Command\ListExtensionsCommand;
+use Kumwe\App\Delivery\Console\Command\ManageAccessCommand;
+use Kumwe\App\Delivery\Console\Command\ManageAutomationCommand;
+use Kumwe\App\Delivery\Console\Command\ManageBusinessDefinitionsCommand;
+use Kumwe\App\Delivery\Console\Command\ManageBusinessRecordsCommand;
+use Kumwe\App\Delivery\Console\Command\ManageBusinessSchemaCommand;
+use Kumwe\App\Delivery\Console\Command\ManageContentCommand;
+use Kumwe\App\Delivery\Console\Command\ManageContentModelsCommand;
+use Kumwe\App\Delivery\Console\Command\ManageIntegrationsCommand;
+use Kumwe\App\Delivery\Console\Command\ManageNavigationCommand;
+use Kumwe\App\Delivery\Console\Command\ManagePostingPeriodsCommand;
+use Kumwe\App\Delivery\Console\Command\ManageSettingsCommand;
+use Kumwe\App\Delivery\Console\Command\ManageTrustStoreCommand;
+use Kumwe\App\Delivery\Console\Command\MaterializeExtensionRuntimeCommand;
+use Kumwe\App\Delivery\Console\Command\McpServeCommand;
+use Kumwe\App\Delivery\Console\Command\MigrateCommand;
+use Kumwe\App\Delivery\Console\Command\MigrationStatusCommand;
+use Kumwe\App\Delivery\Console\Command\QueueWorkCommand;
+use Kumwe\App\Delivery\Console\Command\RecoverAdministratorThemeCommand;
+use Kumwe\App\Delivery\Console\Command\RecoverCredentialsCommand;
+use Kumwe\App\Delivery\Console\Command\RecoverMigrationLockCommand;
+use Kumwe\App\Delivery\Console\Command\RotateRecordSecretsCommand;
+use Kumwe\App\Delivery\Console\Command\RunExtensionConformanceCommand;
+use Kumwe\App\Delivery\Console\Command\ScaffoldExtensionCommand;
+use Kumwe\App\Delivery\Console\Command\ScheduleRunCommand;
+use Kumwe\App\Delivery\Console\Command\SignExtensionCommand;
+use Kumwe\App\Delivery\Console\Command\UninstallExtensionCommand;
+use Kumwe\App\Delivery\Console\Command\VerifyAuditTrailCommand;
+use Kumwe\App\Delivery\Console\Command\WatchExtensionRuntimeCommand;
+use Kumwe\App\Localization\Domain\MessageIdentifier;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -184,8 +184,8 @@ final class CommandDescriptionTest extends TestCase
         $root = dirname(__DIR__, 4);
         $found = [];
         $trees = [
-            '/src/Delivery/Console/Command' => 'Kumwe\\CMS\\Delivery\\Console\\Command\\',
-            '/src/BusinessReporting/Delivery/Console' => 'Kumwe\\CMS\\BusinessReporting\\Delivery\\Console\\',
+            '/src/Delivery/Console/Command' => 'Kumwe\\App\\Delivery\\Console\\Command\\',
+            '/src/BusinessReporting/Delivery/Console' => 'Kumwe\\App\\BusinessReporting\\Delivery\\Console\\',
         ];
         foreach ($trees as $relative => $namespace) {
             $entries = glob($root . $relative . '/*.php');

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Application\Operations\ExpiredMigrationLockRecovery;
-use Kumwe\CMS\Application\Operations\MigrationLockRecoveryService;
-use Kumwe\CMS\Delivery\Console\Command\RecoverMigrationLockCommand;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Operations\ExpiredMigrationLockRecovery;
+use Kumwe\App\Application\Operations\MigrationLockRecoveryService;
+use Kumwe\App\Delivery\Console\Command\RecoverMigrationLockCommand;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

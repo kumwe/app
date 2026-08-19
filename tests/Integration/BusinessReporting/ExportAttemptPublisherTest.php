@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessReporting;
+namespace Kumwe\App\Tests\Integration\BusinessReporting;
 
 use Closure;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\BusinessReporting\Application\ExportArtifactStorage;
-use Kumwe\CMS\BusinessReporting\Application\ExportAttemptPublisher;
-use Kumwe\CMS\BusinessReporting\Application\StoredExportArtifact;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
-use Kumwe\CMS\BusinessReporting\Infrastructure\DoctrineExportArtifactRepository;
-use Kumwe\CMS\BusinessReporting\Infrastructure\FilesystemExportArtifactStorage;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\BusinessReporting\Application\ExportArtifactStorage;
+use Kumwe\App\BusinessReporting\Application\ExportAttemptPublisher;
+use Kumwe\App\BusinessReporting\Application\StoredExportArtifact;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifactStatus;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineExportArtifactRepository;
+use Kumwe\App\BusinessReporting\Infrastructure\FilesystemExportArtifactStorage;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Application;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryRepository;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryService;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRequestView;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalStatus;
-use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\CMS\BusinessSurface\Application\BusinessApprovalExposureCatalog;
-use Kumwe\CMS\BusinessSurface\Application\BusinessApprovalSurfaceService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\AuthorizationDecision;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryRepository;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryService;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
+use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\App\BusinessSurface\Application\BusinessApprovalExposureCatalog;
+use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

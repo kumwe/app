@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Localization\Application\Translator;
-use Kumwe\CMS\Administrator\Presentation\SecurityWorkspaceState;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalService;
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
-use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
-use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Http\Middleware\AdministratorSessionMiddleware;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Localization\Application\Translator;
+use Kumwe\App\Administrator\Presentation\SecurityWorkspaceState;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\App\Identity\Application\StepUp\AdministratorStepUpProvider;
+use Kumwe\App\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessRecord\Domain\MoneyConversionRequest;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyExchangeRate;
+use Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest;
+use Kumwe\App\BusinessRecord\Domain\MoneyExchangeRate;
 
 /**
  * The port an extension implements to be the source of an exchange rate.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Security;
+namespace Kumwe\App\Application\Security;
 
 use RuntimeException;
 

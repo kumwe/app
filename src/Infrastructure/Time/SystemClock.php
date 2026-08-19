@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Time;
+namespace Kumwe\App\Infrastructure\Time;
 
 use DateTimeImmutable;
 use DateTimeZone;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application;
+namespace Kumwe\App\BusinessSurface\Application;
 
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 
 /**
  * Delivery boundary requesting generated business metadata or operations.

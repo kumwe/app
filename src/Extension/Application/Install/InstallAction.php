@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Install;
+namespace Kumwe\App\Extension\Application\Install;
 
 /**
  * The steps one extension installation is decomposed into, in the order they must complete.

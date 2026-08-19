@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Twig;
+namespace Kumwe\App\Presentation\Twig;
 
-use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 use Twig\Environment;
 use Twig\Loader\ChainLoader;
 use Twig\Loader\FilesystemLoader;

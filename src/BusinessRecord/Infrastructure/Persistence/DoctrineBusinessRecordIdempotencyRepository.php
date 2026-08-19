@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -12,13 +12,13 @@ use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
-use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotency;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotencyState;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
+use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use LogicException;
 use Throwable;
 

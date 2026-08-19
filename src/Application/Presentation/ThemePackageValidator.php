@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Presentation;
+namespace Kumwe\App\Application\Presentation;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Extension\Domain\TemplateKisCompatibility;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 
 /**
  * Contract for proving a candidate theme package can render before its activation is written.

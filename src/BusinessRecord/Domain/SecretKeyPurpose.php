@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Domain;
+namespace Kumwe\App\BusinessRecord\Domain;
 
 /**
  * The separate reasons Kumwe holds authenticated-encryption key material, one key ring each.

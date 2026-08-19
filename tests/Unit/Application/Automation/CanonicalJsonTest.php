@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\CanonicalJson;
+use Kumwe\App\Application\Automation\CanonicalJson;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

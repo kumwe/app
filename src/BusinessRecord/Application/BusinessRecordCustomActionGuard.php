@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
+use Kumwe\App\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
 
 /**
  * Canonical record-policy, concurrency, condition, capability, and approval guard for custom actions.
@@ -28,13 +28,13 @@ interface BusinessRecordCustomActionGuard
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound  When the target or
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound  When the target or
      *          action is absent, denied, or outside row policy.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  On a stale
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict  On a stale
      *          expected version.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordActionRejected  When the action
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordActionRejected  When the action
      *          is not a custom declaration or its record condition fails.
-     * @throws  \Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied  When a required exact
+     * @throws  \Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied  When a required exact
      *          maker-checker approval is absent, stale, or already consumed.
      *
      * @since   2.0.0
@@ -56,9 +56,9 @@ interface BusinessRecordCustomActionGuard
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When the
      *          record's declared posting date falls inside a closed period.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          no definition matches the identifier on this site, or its owner is disabled.
      *
      * @since   2.0.0

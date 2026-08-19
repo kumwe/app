@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriod;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
 
 /**
  * Read seam answering which declared posting period contains an instant within one scope.

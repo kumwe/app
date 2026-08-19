@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Audit\Infrastructure\Storage;
+namespace Kumwe\App\Audit\Infrastructure\Storage;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Audit\Application\AuditArchiveStorage;
-use Kumwe\CMS\Audit\Domain\StoredAuditArchive;
+use Kumwe\App\Audit\Application\AuditArchiveStorage;
+use Kumwe\App\Audit\Domain\StoredAuditArchive;
 use RuntimeException;
 
 /**

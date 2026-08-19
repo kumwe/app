@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Console\Command\CommandInput;
+use Kumwe\App\Delivery\Console\Command\CommandInput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDefinitionLifecycle;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * One capability a contributor adds to the permission vocabulary, with the wording an operator reads.

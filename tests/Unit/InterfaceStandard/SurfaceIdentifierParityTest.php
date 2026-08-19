@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\InterfaceStandard;
+namespace Kumwe\App\Tests\Unit\InterfaceStandard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
-use Kumwe\CMS\Extension\Contribution\AdministratorRouteDefinition;
-use Kumwe\CMS\Extension\Contribution\AdministratorViewDefinition;
-use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceDefinition;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
-use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalTemplateDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\App\Extension\Contribution\AdministratorNavigationDefinition;
+use Kumwe\App\Extension\Contribution\AdministratorRouteDefinition;
+use Kumwe\App\Extension\Contribution\AdministratorViewDefinition;
+use Kumwe\App\Extension\Contribution\AdministratorWorkspaceDefinition;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\App\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\App\Portal\Contribution\PortalRouteDefinition;
+use Kumwe\App\Portal\Contribution\PortalTemplateDefinition;
+use Kumwe\App\Portal\Contribution\PortalWorkspaceDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;

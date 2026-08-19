@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Query;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Query;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\RecordCursorCodec;
-use Kumwe\CMS\BusinessRecord\Query\BooleanFilter;
-use Kumwe\CMS\BusinessRecord\Query\BooleanOperator;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonOperator;
-use Kumwe\CMS\BusinessRecord\Query\CursorPosition;
-use Kumwe\CMS\BusinessRecord\Query\RecordCursor;
-use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessRecord\Query\RecordSort;
-use Kumwe\CMS\BusinessRecord\Query\RelationFilter;
-use Kumwe\CMS\BusinessRecord\Query\RelationQuantifier;
-use Kumwe\CMS\BusinessRecord\Query\SetFilter;
+use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
+use Kumwe\App\BusinessRecord\Query\BooleanFilter;
+use Kumwe\App\BusinessRecord\Query\BooleanOperator;
+use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
+use Kumwe\App\BusinessRecord\Query\ComparisonOperator;
+use Kumwe\App\BusinessRecord\Query\CursorPosition;
+use Kumwe\App\BusinessRecord\Query\RecordCursor;
+use Kumwe\App\BusinessRecord\Query\RecordProjection;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessRecord\Query\RecordSort;
+use Kumwe\App\BusinessRecord\Query\RelationFilter;
+use Kumwe\App\BusinessRecord\Query\RelationQuantifier;
+use Kumwe\App\BusinessRecord\Query\SetFilter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

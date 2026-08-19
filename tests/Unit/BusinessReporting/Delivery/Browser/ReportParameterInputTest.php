@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessReporting\Delivery\Browser;
+namespace Kumwe\App\Tests\Unit\BusinessReporting\Delivery\Browser;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessReporting\Delivery\Browser\ReportParameterInput;
-use Kumwe\CMS\BusinessReporting\Domain\ReportParameterDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessReporting\Delivery\Browser\ReportParameterInput;
+use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

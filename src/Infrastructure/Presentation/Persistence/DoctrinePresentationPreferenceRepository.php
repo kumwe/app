@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Presentation\Persistence;
+namespace Kumwe\App\Infrastructure\Presentation\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -10,12 +10,12 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceRepository;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\InterfaceStandard\PresentationPreference;
-use Kumwe\CMS\InterfaceStandard\PresentationPreferenceKey;
+use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceRepository;
+use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\InterfaceStandard\PresentationPreference;
+use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 use RuntimeException;
 
 /**

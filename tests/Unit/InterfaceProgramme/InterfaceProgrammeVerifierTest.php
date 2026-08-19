@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\InterfaceProgramme;
+namespace Kumwe\App\Tests\Unit\InterfaceProgramme;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;

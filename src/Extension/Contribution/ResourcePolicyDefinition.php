@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDefinitionLifecycle;
-use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
+use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Declarative contribution binding one owned capability to bounded resource selectors.

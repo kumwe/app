@@ -2,37 +2,37 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\ArchiveRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\RelateRecordsCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\RestoreRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\UnrelateRecordsCommand;
-use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessSurface\Application\BusinessApprovalSurfaceService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordProjector;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordQueryFactory;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\ArchiveRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
+use Kumwe\App\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
+use Kumwe\App\BusinessRecord\Application\Command\RestoreRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\UnrelateRecordsCommand;
+use Kumwe\App\BusinessRecord\Application\Command\UpdateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
+use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordQueryFactory;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
 use Throwable;
 
 /**

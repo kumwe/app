@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Content;
+namespace Kumwe\App\Tests\Unit\Administrator\Content;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Administrator\Content\ContentFormDataMapper;
-use Kumwe\CMS\Administrator\Content\ContentFormPresenter;
-use Kumwe\CMS\Administrator\Content\ContentModelFormMapper;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Administrator\Content\ContentFormDataMapper;
+use Kumwe\App\Administrator\Content\ContentFormPresenter;
+use Kumwe\App\Administrator\Content\ContentModelFormMapper;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

@@ -46,7 +46,7 @@
         <note category="context">Footer line shown when an operator has not set their own footer text.</note>
       </notes>
       <segment>
-        <source>Powered by Kumwe CMS</source>
+        <source>Powered by Kumwe App</source>
       </segment>
     </unit>
     <unit id="core.site.home.document_title">
@@ -15405,7 +15405,7 @@
         <note category="context">Product banner atop the bin/kumwe command listing. The product name and version stay the same in every language.</note>
       </notes>
       <segment>
-        <source>Kumwe CMS 2.0</source>
+        <source>Kumwe App 2.0</source>
       </segment>
     </unit>
     <unit id="core.console.application.available_commands">

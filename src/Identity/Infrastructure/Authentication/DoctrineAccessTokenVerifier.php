@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\Authentication;
+namespace Kumwe\App\Identity\Infrastructure\Authentication;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -10,15 +10,15 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\OrganizationContext;
-use Kumwe\CMS\Application\Authorization\WorkspaceContext;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\Authentication\ScopedAccessTokenVerifier;
-use Kumwe\CMS\Identity\Application\Authentication\VerifiedAccessToken;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\OrganizationContext;
+use Kumwe\App\Application\Authorization\WorkspaceContext;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenContext;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Authentication\ScopedAccessTokenVerifier;
+use Kumwe\App\Identity\Application\Authentication\VerifiedAccessToken;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 
 /**

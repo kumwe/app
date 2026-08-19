@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
 
 /**
  * Locking re-reads of the facts a schema execution started from, taken again before it commits.

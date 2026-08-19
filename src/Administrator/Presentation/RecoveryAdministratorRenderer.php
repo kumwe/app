@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Presentation;
+namespace Kumwe\App\Administrator\Presentation;
 
-use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
 
 /**
  * Last-resort administrator renderer that draws only from the protected core templates.

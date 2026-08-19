@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Infrastructure;
+namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Automation\CronExpression;
-use Kumwe\CMS\Application\Automation\JobExecutionClass;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessIntegration\Application\PayloadSchemaValidator;
-use Kumwe\CMS\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
-use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Automation\CronExpression;
+use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator;
+use Kumwe\App\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
+use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

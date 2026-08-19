@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Policy;
+namespace Kumwe\App\BusinessSecurity\Policy;
 
 /**
  * Closed scalar types a record policy may compare without lossy coercion.

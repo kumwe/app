@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
@@ -10,9 +10,9 @@ use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\RepeatableMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\RepeatableMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;

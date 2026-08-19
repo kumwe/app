@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application\Dashboard;
+namespace Kumwe\App\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\InterfaceStandard\CustomizationScope;
-use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolution;
+use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\App\Presentation\Application\Preference\PresentationPreferenceResolution;
 
 /**
  * Immutable composition of selected dashboard widgets, shortcuts, choices, and safe preference evidence.

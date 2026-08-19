@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Administration;
+namespace Kumwe\App\Identity\Application\Administration;
 
 /**
  * Ceiling on how many API tokens one subject may hold live for a single site, audience and purpose.

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Application\PostingPeriodRepository;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriod;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodRepository;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
 
 /**
  * Serves posting-period declarations from memory for focused unit tests.

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Application;
+namespace Kumwe\App\Content\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
-use Kumwe\CMS\Workflow\Domain\WorkflowDefinition;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Workflow\Domain\WorkflowDefinition;
 
 /**
  * Persistence contract for the versioned content model: content type and workflow definitions.
@@ -68,7 +68,7 @@ interface ContentModelRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When the stored head has already moved on.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When the stored head has already moved on.
      *
      * @since   2.0.0
      */
@@ -120,7 +120,7 @@ interface ContentModelRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Content\Domain\VersionConflict  When the stored head has already moved on.
+     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When the stored head has already moved on.
      *
      * @since   2.0.0
      */

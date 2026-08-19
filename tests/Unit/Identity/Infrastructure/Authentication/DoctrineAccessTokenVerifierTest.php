@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Infrastructure\Authentication;
+namespace Kumwe\App\Tests\Unit\Identity\Infrastructure\Authentication;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\MySQL84Platform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\Authentication\PrincipalGrant;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\GrantScope;
-use Kumwe\CMS\Identity\Infrastructure\Authentication\DoctrineAccessTokenVerifier;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Authentication\PrincipalGrant;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\App\Identity\Infrastructure\Authentication\DoctrineAccessTokenVerifier;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(DoctrineAccessTokenVerifier::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]

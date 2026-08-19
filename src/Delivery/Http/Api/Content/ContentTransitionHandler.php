@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Content;
+namespace Kumwe\App\Delivery\Http\Api\Content;
 
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;

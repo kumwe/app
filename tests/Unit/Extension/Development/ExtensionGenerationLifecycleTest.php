@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Development;
+namespace Kumwe\App\Tests\Unit\Extension\Development;
 
 use FilesystemIterator;
-use Kumwe\CMS\Extension\Application\Install\AtomicInstallPlan;
-use Kumwe\CMS\Extension\Application\Install\InstallState;
-use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
-use Kumwe\CMS\Extension\Application\Trust\PackageTrustPolicy;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Development\DeterministicPackageBuilder;
-use Kumwe\CMS\Extension\Development\PackageInspector;
-use Kumwe\CMS\Extension\Development\PackageSigner;
-use Kumwe\CMS\Extension\Development\ProtectedSigningKeyReader;
-use Kumwe\CMS\Extension\Development\SignatureDocument;
-use Kumwe\CMS\Extension\Development\StaticConformanceRunner;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Domain\ExtensionRecord;
-use Kumwe\CMS\Extension\Domain\ExtensionStatus;
-use Kumwe\CMS\Extension\Domain\PackageSignature;
-use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
-use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumEd25519Verifier;
-use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
-use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
+use Kumwe\App\Extension\Application\Install\AtomicInstallPlan;
+use Kumwe\App\Extension\Application\Install\InstallState;
+use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\App\Extension\Application\Trust\PackageTrustPolicy;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Development\DeterministicPackageBuilder;
+use Kumwe\App\Extension\Development\PackageInspector;
+use Kumwe\App\Extension\Development\PackageSigner;
+use Kumwe\App\Extension\Development\ProtectedSigningKeyReader;
+use Kumwe\App\Extension\Development\SignatureDocument;
+use Kumwe\App\Extension\Development\StaticConformanceRunner;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Domain\ExtensionRecord;
+use Kumwe\App\Extension\Domain\ExtensionStatus;
+use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveReader;
+use Kumwe\App\Extension\Infrastructure\Trust\SodiumEd25519Verifier;
+use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
+use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -212,7 +212,7 @@ final class ExtensionGenerationLifecycleTest extends TestCase
      * @param   string             $label     Short name distinguishing this build's artifacts.
      * @param   ExtensionManifest  $manifest  Parsed manifest of the tree being built.
      *
-     * @return  \Kumwe\CMS\Extension\Domain\PackageChecksum  Digest of the admitted package.
+     * @return  \Kumwe\App\Extension\Domain\PackageChecksum  Digest of the admitted package.
      *
      * @since   2.0.0
      */
@@ -220,7 +220,7 @@ final class ExtensionGenerationLifecycleTest extends TestCase
         string $source,
         string $label,
         ExtensionManifest $manifest,
-    ): \Kumwe\CMS\Extension\Domain\PackageChecksum {
+    ): \Kumwe\App\Extension\Domain\PackageChecksum {
         $inspector = new PackageInspector(new ZipArchiveReader(), new PackageSafetyPolicy());
         $artifacts = $this->workspace . '/artifacts';
         if (!is_dir($artifacts)) {

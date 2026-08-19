@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\OpenApi\Infrastructure;
+namespace Kumwe\App\Tests\Unit\OpenApi\Infrastructure;
 
-use Kumwe\CMS\OpenApi\Application\CompiledOpenApiContract;
-use Kumwe\CMS\OpenApi\Application\OpenApiContractLimits;
-use Kumwe\CMS\OpenApi\Infrastructure\FilesystemOpenApiContractCache;
+use Kumwe\App\OpenApi\Application\CompiledOpenApiContract;
+use Kumwe\App\OpenApi\Application\OpenApiContractLimits;
+use Kumwe\App\OpenApi\Infrastructure\FilesystemOpenApiContractCache;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Api;
+namespace Kumwe\App\BusinessSchema\Delivery\Api;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Delivery\Http\Api\Business\BusinessApiResponder;
-use Kumwe\CMS\Delivery\Http\Api\Content\ContentApiRequest;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Security\HighImpactCredentialGuard;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
+use Kumwe\App\Delivery\Http\Api\Business\BusinessApiResponder;
+use Kumwe\App\Delivery\Http\Api\Content\ContentApiRequest;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -117,8 +117,8 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
      * @return  array<string, mixed>  The presented plan with a `steps` list appended — one entry per planned
      *          operation, in journal order, each carrying the state that step has reached.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read plans.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When no plan with that identifier
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read plans.
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no plan with that identifier
      *          belongs to the context's site.
      *
      * @since   2.0.0
@@ -145,10 +145,10 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
      *
      * @throws  InvalidArgumentException  When the body is not a JSON object, or omits `current_password` or
      *          `definition_id`.
-     * @throws  \Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired  When the step-up fails.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not act
+     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the step-up fails.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not act
      *          destructively on schemas.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When the definition is not
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When the definition is not
      *          installed on this site, or has no published version.
      *
      * @since   2.0.0
@@ -182,13 +182,13 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
      *
      * @throws  InvalidArgumentException  When the body is not a JSON object, `expected_checksum` is missing, or
      *          `confirmation` or `recovery_evidence_id` is supplied as something other than a string.
-     * @throws  \Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired  When a confirmation is
+     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When a confirmation is
      *          supplied and the step-up fails.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not approve, or may
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not approve, or may
      *          not approve a destructive plan.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When the plan, or the recovery
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When the plan, or the recovery
      *          evidence it cites, does not belong to the site.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict  When the plan changed after it was
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When the plan changed after it was
      *          inspected, or the confirmation and recovery-evidence rules for its risk are not satisfied.
      *
      * @since   2.0.0
@@ -234,7 +234,7 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
      *
      * @throws  InvalidArgumentException  When the body is not a JSON object or carries no non-empty
      *          `current_password`.
-     * @throws  \Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired  When the guard refuses the
+     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the guard refuses the
      *          request, which includes a context that carries no human principal.
      *
      * @since   2.0.0

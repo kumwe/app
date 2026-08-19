@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Administrator;
+namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -51,13 +51,13 @@ final readonly class CreateBusinessSchemaPlanHandler implements RequestHandlerIn
      *
      * @throws  \InvalidArgumentException  When `definition_id` is absent or blank, or the route was
      *          mounted without administrator authorization.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.plan` is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.plan` is
      *          refused.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When no published definition
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no published definition
      *          matches within the site.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict  When the installed schema
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When the installed schema
      *          contradicts its recorded metadata or is not older than the published definition.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the published definition graph
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the published definition graph
      *          cannot be compiled into a valid physical blueprint.
      *
      * @since   2.0.0

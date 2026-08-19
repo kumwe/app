@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Demo\Infrastructure;
+namespace Kumwe\App\Tests\Integration\Demo\Infrastructure;
 
 use FilesystemIterator;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Demo\Infrastructure\DemoProfileExporter;
-use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
-use Kumwe\CMS\Navigation\Application\NavigationService;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Demo\Infrastructure\DemoProfileExporter;
+use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
+use Kumwe\App\Navigation\Application\NavigationService;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

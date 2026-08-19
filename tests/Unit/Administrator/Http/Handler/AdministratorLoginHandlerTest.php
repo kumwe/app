@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Handler;
+namespace Kumwe\App\Tests\Unit\Administrator\Http\Handler;
 
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
-use Kumwe\CMS\Administrator\Http\Handler\AdministratorLoginHandler;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
-use Kumwe\CMS\Identity\Application\Administration\CreatedAdministratorSession;
-use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
-use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Administrator\Http\Handler\AdministratorLoginHandler;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
+use Kumwe\App\Identity\Application\Administration\CreatedAdministratorSession;
+use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

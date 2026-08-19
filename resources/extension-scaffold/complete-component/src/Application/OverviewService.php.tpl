@@ -6,8 +6,8 @@ namespace @@PHP_NAMESPACE@@\Application;
 
 use @@PHP_NAMESPACE@@\Integration\IntegrationLedger;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Supplies the transport-neutral overview model for both contributed surfaces.

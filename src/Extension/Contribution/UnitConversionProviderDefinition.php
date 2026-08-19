@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\UnitConversionFactor;
-use Kumwe\CMS\BusinessRecord\Domain\UnitConversionRequest;
+use Kumwe\App\BusinessRecord\Domain\UnitConversionFactor;
+use Kumwe\App\BusinessRecord\Domain\UnitConversionRequest;
 
 /**
  * What a package declares before any of its code is allowed to convert between units of measure.

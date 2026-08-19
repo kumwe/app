@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Policy;
+namespace Kumwe\App\BusinessSecurity\Policy;
 
 /**
  * Boolean composition available to a record-policy expression.

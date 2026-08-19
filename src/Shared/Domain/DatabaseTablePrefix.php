@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Shared\Domain;
+namespace Kumwe\App\Shared\Domain;
 
 /**
  * Rule that decides whether a configured table prefix is safe to interpolate into SQL.

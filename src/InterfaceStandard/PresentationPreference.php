@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\InterfaceStandard;
+namespace Kumwe\App\InterfaceStandard;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
 use ValueError;
 
 /**

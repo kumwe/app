@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Domain;
+namespace Kumwe\App\Extension\Domain;
 
 /**
  * One other package an extension requires, and the versions of it that will do.

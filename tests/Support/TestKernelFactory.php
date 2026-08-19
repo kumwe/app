@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemPrincipal;
-use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
-use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
-use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
-use Kumwe\CMS\Delivery\Console\Command\ScheduleRunCommand;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Delivery\Console\Command\CreateAdministratorCommand;
+use Kumwe\App\Delivery\Console\Command\MigrateCommand;
+use Kumwe\App\Delivery\Console\Command\QueueWorkCommand;
+use Kumwe\App\Delivery\Console\Command\ScheduleRunCommand;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use RuntimeException;
 
 /** Boots the real kernel and obtains a context only through production authentication. */

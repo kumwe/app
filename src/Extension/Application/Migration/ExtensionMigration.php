@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application\Migration;
+namespace Kumwe\App\Extension\Application\Migration;
 
 use Doctrine\DBAL\Connection;
 

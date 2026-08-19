@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Domain\ContentEntry;
-use Kumwe\CMS\Content\Domain\ContentRevision;
-use Kumwe\CMS\Content\Domain\PublicationWindow;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Presentation\Application\SitePresentation;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Content\Domain\ContentEntry;
+use Kumwe\App\Content\Domain\ContentRevision;
+use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Presentation\Application\SitePresentation;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 

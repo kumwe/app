@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\AutomationManagementService;
-use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\Application\Automation\QueueRuntimeOperations;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\App\Application\Automation\AutomationManagementService;
+use Kumwe\App\Application\Automation\Job\ScheduleRepository;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\Application\Automation\QueueRuntimeOperations;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AutomationManagementService::class)]
 #[UsesClass(AuditEvent::class)]
@@ -184,7 +184,7 @@ final class AutomationManagementServiceTest extends TestCase
             $audit ?? $this->createStub(AuditRecorder::class),
             $clock,
             AuthorizationContext::gateway(),
-            new \Kumwe\CMS\Application\Automation\JobExecutionScope(),
+            new \Kumwe\App\Application\Automation\JobExecutionScope(),
             $queueRuntime,
         );
     }

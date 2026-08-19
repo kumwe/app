@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Idempotency;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Idempotency;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
-use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
-use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineIdempotencyLedger;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
+use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\App\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
+use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
+use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\App\Identity\Application\Administration\TokenRotationPreauthorizer;
+use Kumwe\App\Infrastructure\Persistence\DoctrineIdempotencyLedger;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

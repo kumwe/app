@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Concurrency;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Concurrency;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
+use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

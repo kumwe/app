@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Site\Infrastructure\Persistence;
+namespace Kumwe\App\Site\Infrastructure\Persistence;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
-use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Infrastructure\Redis\RedisRuntime;
+use Kumwe\App\Site\Application\SiteSettings;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -136,7 +136,7 @@ final readonly class CachedSiteSettings implements SiteSettings
      *
      * @return  array<string, mixed>  Every public setting key, defaults included for keys never stored.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      *
      * @since   2.0.0
      */
@@ -157,7 +157,7 @@ final readonly class CachedSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      * @throws  \InvalidArgumentException  When the name or the slug fails validation.
      *
      * @since   2.0.0
@@ -179,7 +179,7 @@ final readonly class CachedSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      * @throws  \InvalidArgumentException  When a value, the nominated homepage, or the primary menu is
      *          rejected.
      *

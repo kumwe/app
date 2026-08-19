@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Navigation\Domain;
+namespace Kumwe\App\Tests\Unit\Navigation\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Navigation\Domain\MenuItem;
+use Kumwe\App\Navigation\Domain\MenuItem;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

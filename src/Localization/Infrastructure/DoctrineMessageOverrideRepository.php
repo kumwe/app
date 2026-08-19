@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Infrastructure;
+namespace Kumwe\App\Localization\Infrastructure;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Localization\Application\MessageOverrideRecord;
-use Kumwe\CMS\Localization\Application\MessageOverrideRepository;
-use Kumwe\CMS\Localization\Application\MessageOverrideStore;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Localization\Application\MessageOverrideRecord;
+use Kumwe\App\Localization\Application\MessageOverrideRepository;
+use Kumwe\App\Localization\Application\MessageOverrideStore;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 

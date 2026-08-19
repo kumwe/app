@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Media\Application;
+namespace Kumwe\App\Media\Application;
 
 /**
  * One page of media library results together with the counters a pager needs.

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
 
 /**
  * Idempotent handler for one durable process work contract.

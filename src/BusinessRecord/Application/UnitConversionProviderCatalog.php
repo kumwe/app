@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessRecord\Domain\UnitConversionRequest;
+use Kumwe\App\BusinessRecord\Domain\UnitConversionRequest;
 
 /**
  * The conversion providers entitled to answer one request, in the order they are consulted.

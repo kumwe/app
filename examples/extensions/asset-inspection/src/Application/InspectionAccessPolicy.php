@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Applies the example page's row scope and sensitive-field disclosure before rendering.

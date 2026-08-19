@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Domain;
+namespace Kumwe\App\BusinessIntegration\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\CanonicalJson;
+use Kumwe\App\Application\Automation\CanonicalJson;
 
 /**
  * Shared syntax and bounded-JSON checks for trusted integration declarations.

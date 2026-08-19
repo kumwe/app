@@ -16,8 +16,8 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveContentReader;
-use Kumwe\CMS\Tests\Deployment\CaseReport;
+use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveContentReader;
+use Kumwe\App\Tests\Deployment\CaseReport;
 
 require __DIR__ . '/../Support/deployment-drill-autoload.php';
 

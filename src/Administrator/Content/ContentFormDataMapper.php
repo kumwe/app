@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Content;
+namespace Kumwe\App\Administrator\Content;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Content\Domain\ContentTypeDefinition;
 
 /**
  * Rebuilds a content entry's data object from the flat `field__` inputs an editor form submits.

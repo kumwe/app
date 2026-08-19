@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence;
+namespace Kumwe\App\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationPlan;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
-use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Infrastructure\Persistence\Migration\MigrationPlan;
+use Kumwe\App\Infrastructure\Persistence\Migration\MigrationRepository;
+use Kumwe\App\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
+use Kumwe\App\Infrastructure\Redis\RedisRuntime;
 use Psr\Log\LoggerInterface;
 use Throwable;
 

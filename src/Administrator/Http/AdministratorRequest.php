@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http;
+namespace Kumwe\App\Administrator\Http;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Content\Domain\PublicationWindow;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**

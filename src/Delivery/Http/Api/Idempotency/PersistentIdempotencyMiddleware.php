@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Http\Api\Idempotency;
+namespace Kumwe\App\Delivery\Http\Api\Idempotency;
 
 use DateTimeImmutable;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Idempotency\IdempotencyLedger;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Idempotency\IdempotencyLedger;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Laminas\Diactoros\Response;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -96,14 +96,14 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
      * @throws  \InvalidArgumentException  When the route carries no policy in `HttpMutationPreauthorizer`,
      *          a path segment is not a usable resource identifier, or the body that policy reads is not a
      *          usable JSON object.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not perform the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not perform the
      *          mutation, or may not delegate a capability it would hand on — checked before the ledger is
      *          touched.
-     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When a workflow transition names an entry
+     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a workflow transition names an entry
      *          the context cannot reach.
-     * @throws  \Kumwe\CMS\Content\Application\ContentModelNotFound  When the entry's pinned workflow
+     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned workflow
      *          version is no longer published.
-     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
+     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
      *          the requested status.
      *
      * @since   2.0.0

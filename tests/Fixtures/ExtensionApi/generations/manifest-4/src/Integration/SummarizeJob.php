@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweContract\ManifestFour\Integration;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\JobHandler;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobHandler;
 
 /**
  * Background job half of the manifest-4 compatibility package.

@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Identity;
+namespace Kumwe\App\Tests\Integration\Identity;
 
-use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
+use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use Doctrine\DBAL\Connection;
 use Joomla\DI\Container;
-use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
-use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Delivery\Console\Command\CreateAdministratorCommand;
+use Kumwe\App\Delivery\Console\Command\MigrateCommand;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

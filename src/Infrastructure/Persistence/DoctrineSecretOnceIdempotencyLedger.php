@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence;
+namespace Kumwe\App\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Idempotency\SecretOnceIdempotencyLedger;
+use Kumwe\App\Application\Idempotency\SecretOnceIdempotencyLedger;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

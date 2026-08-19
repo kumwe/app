@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\CMS\BusinessIntegration\Domain\DomainEvent;
+use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
 
 /**
  * Synchronously invokes matching domain listeners after validating the event contract.

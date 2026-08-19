@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Extension;
+namespace Kumwe\App\Tests\Integration\Extension;
 
 use Closure;
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
-use Kumwe\CMS\BusinessRecord\Query\RecordProjection;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
-use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparison;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
+use Kumwe\App\BusinessRecord\Query\RecordProjection;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
+use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use KumweExample\AssetInspection\Application\InspectionSummaryViewHandler;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

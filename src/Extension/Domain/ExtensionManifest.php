@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Domain;
+namespace Kumwe\App\Extension\Domain;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use ValueError;
 
 /**
@@ -328,7 +328,7 @@ final readonly class ExtensionManifest
 
         if ($schema >= 2 && $contributions !== null) {
             $declaredCapabilities = array_map(
-                static fn (\Kumwe\CMS\Extension\Contribution\CapabilityDefinition $definition): string =>
+                static fn (\Kumwe\App\Extension\Contribution\CapabilityDefinition $definition): string =>
                     $definition->id,
                 $contributions->capabilities(),
             );

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Contribution;
+namespace Kumwe\App\Portal\Contribution;
 
-use Kumwe\CMS\Portal\Presentation\PortalContributionRenderer;
+use Kumwe\App\Portal\Presentation\PortalContributionRenderer;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**

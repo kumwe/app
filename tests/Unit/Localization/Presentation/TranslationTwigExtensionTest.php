@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Localization\Presentation;
+namespace Kumwe\App\Tests\Unit\Localization\Presentation;
 
-use Kumwe\CMS\Localization\Presentation\TranslationTwigExtension;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Twig\Environment;

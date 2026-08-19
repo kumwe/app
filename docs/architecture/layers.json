@@ -62,20 +62,20 @@
     "Kernel": "kernel"
   },
   "namespace_prefixes": {
-    "Kumwe\\CMS\\Http": "delivery",
-    "Kumwe\\CMS\\Administrator\\Http": "delivery",
-    "Kumwe\\CMS\\Administrator\\Content": "presentation",
-    "Kumwe\\CMS\\Administrator\\Automation": "presentation",
-    "Kumwe\\CMS\\Administrator\\Navigation": "presentation",
-    "Kumwe\\CMS\\BusinessDefinition\\Administrator": "presentation",
-    "Kumwe\\CMS\\BusinessRecord\\Query": "application",
-    "Kumwe\\CMS\\BusinessSecurity\\Policy": "domain",
-    "Kumwe\\CMS\\Extension\\Contribution": "application",
-    "Kumwe\\CMS\\Extension\\Runtime": "application",
-    "Kumwe\\CMS\\Extension\\Development": "application",
-    "Kumwe\\CMS\\InterfaceStandard": "domain",
-    "Kumwe\\CMS\\Localization\\Http": "delivery",
-    "Kumwe\\CMS\\Portal\\Http": "delivery",
-    "Kumwe\\CMS\\Portal\\Contribution": "application"
+    "Kumwe\\App\\Http": "delivery",
+    "Kumwe\\App\\Administrator\\Http": "delivery",
+    "Kumwe\\App\\Administrator\\Content": "presentation",
+    "Kumwe\\App\\Administrator\\Automation": "presentation",
+    "Kumwe\\App\\Administrator\\Navigation": "presentation",
+    "Kumwe\\App\\BusinessDefinition\\Administrator": "presentation",
+    "Kumwe\\App\\BusinessRecord\\Query": "application",
+    "Kumwe\\App\\BusinessSecurity\\Policy": "domain",
+    "Kumwe\\App\\Extension\\Contribution": "application",
+    "Kumwe\\App\\Extension\\Runtime": "application",
+    "Kumwe\\App\\Extension\\Development": "application",
+    "Kumwe\\App\\InterfaceStandard": "domain",
+    "Kumwe\\App\\Localization\\Http": "delivery",
+    "Kumwe\\App\\Portal\\Http": "delivery",
+    "Kumwe\\App\\Portal\\Contribution": "application"
   }
 }

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Authorization;
+namespace Kumwe\App\Identity\Application\Authorization;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Domain\AuthorizationDecision;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\CapabilityGrant;
-use Kumwe\CMS\Identity\Domain\GrantScope;
-use Kumwe\CMS\Identity\Domain\User;
+use Kumwe\App\Identity\Domain\AuthorizationDecision;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\CapabilityGrant;
+use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\App\Identity\Domain\User;
 
 /**
  * Resolves the registered authorization policies into a single verdict, denying unless one allows.

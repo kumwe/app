@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<ruleset name="Kumwe CMS">
+<ruleset name="Kumwe App">
     <description>Kumwe 2.0 coding standard.</description>
     <file>src</file>
     <file>tests</file>

@@ -1,7 +1,7 @@
 {
   "name": "kumwe/app",
   "type": "project",
-  "description": "Kumwe CMS 2.0",
+  "description": "Kumwe App 2.0",
   "keywords": [
     "cms",
     "joomla-framework",
@@ -59,12 +59,12 @@
   },
   "autoload": {
     "psr-4": {
-      "Kumwe\\CMS\\": "src/"
+      "Kumwe\\App\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Kumwe\\CMS\\Tests\\": "tests/"
+      "Kumwe\\App\\Tests\\": "tests/"
     }
   },
   "config": {

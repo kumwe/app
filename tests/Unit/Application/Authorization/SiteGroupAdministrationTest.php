@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Kumwe\CMS\Application\Authorization\OwnershipNarrowingRefused;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SiteGroup;
-use Kumwe\CMS\Application\Authorization\SiteGroupAdministration;
-use Kumwe\CMS\Application\Authorization\SiteGroupRegistry;
-use Kumwe\CMS\Application\Authorization\SiteGroupUnknown;
-use Kumwe\CMS\Application\Authorization\SiteGroupWriter;
-use Kumwe\CMS\Tests\Support\AllowingAuditAuthorization;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\ImmediateTransactionManager;
+use Kumwe\App\Application\Authorization\OwnershipNarrowingRefused;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\App\Application\Authorization\SiteGroupAdministration;
+use Kumwe\App\Application\Authorization\SiteGroupRegistry;
+use Kumwe\App\Application\Authorization\SiteGroupUnknown;
+use Kumwe\App\Application\Authorization\SiteGroupWriter;
+use Kumwe\App\Tests\Support\AllowingAuditAuthorization;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\ImmediateTransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;

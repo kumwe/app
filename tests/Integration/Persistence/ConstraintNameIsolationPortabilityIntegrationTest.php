@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Persistence;
+namespace Kumwe\App\Tests\Integration\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
 use Doctrine\DBAL\Schema\Table;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigrationRecovery;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationCompatibilityMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineNonTransactionalMigrationRecovery;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationAction;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigrationRecovery;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationCompatibilityMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\DoctrineNonTransactionalMigrationRecovery;
+use Kumwe\App\Infrastructure\Persistence\Migration\NonTransactionalMigrationAction;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

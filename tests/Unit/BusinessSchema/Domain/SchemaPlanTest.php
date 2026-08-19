@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSchema\Domain;
+namespace Kumwe\App\Tests\Unit\BusinessSchema\Domain;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaOperation;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaOperationKind;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaRisk;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaStepStatus;
+use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\App\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\App\BusinessSchema\Domain\SchemaRisk;
+use Kumwe\App\BusinessSchema\Domain\SchemaStepStatus;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,31 +2,31 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordException;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\RecordSecretRotation;
-use Kumwe\CMS\BusinessRecord\Application\RecordSecretRotationReport;
-use Kumwe\CMS\BusinessRecord\Application\SecretAssociatedData;
-use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
-use Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordException;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\RecordSecretRotation;
+use Kumwe\App\BusinessRecord\Application\RecordSecretRotationReport;
+use Kumwe\App\BusinessRecord\Application\SecretAssociatedData;
+use Kumwe\App\BusinessRecord\Application\SecretCipher;
+use Kumwe\App\BusinessRecord\Application\SecretKeyProvider;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -117,8 +117,8 @@ final readonly class DoctrineRecordSecretRotation implements RecordSecretRotatio
      * @return  RecordSecretRotationReport  Counts, skipped installations, and whether work remains.
      *
      * @throws  InvalidArgumentException  When the batch size falls outside its range.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not re-key.
-     * @throws  \Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable  When a stored envelope names a key
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not re-key.
+     * @throws  \Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable  When a stored envelope names a key
      *          this deployment does not hold.
      * @throws  \RuntimeException  When a stored envelope fails authenticated decryption.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects a chunk read or one of its updates.
@@ -357,7 +357,7 @@ final readonly class DoctrineRecordSecretRotation implements RecordSecretRotatio
      *
      * @throws  BusinessRecordSchemaUnavailable  When the fenced installation no longer describes the
      *          table this chunk was asked to rotate.
-     * @throws  \Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable  When a row names a key that is not
+     * @throws  \Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable  When a row names a key that is not
      *          held; the pass stops rather than looping on a row it can never advance.
      * @throws  \RuntimeException  When a stored envelope fails authenticated decryption.
      *

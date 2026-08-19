@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace @@PHP_NAMESPACE@@\Integration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\App\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
+use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
 
 /**
  * Validates and records transaction-local item-observed facts.

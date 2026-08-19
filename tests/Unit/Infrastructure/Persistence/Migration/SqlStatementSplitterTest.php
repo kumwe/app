@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration;
 
-use Kumwe\CMS\Infrastructure\Persistence\Migration\SqlStatementSplitter;
+use Kumwe\App\Infrastructure\Persistence\Migration\SqlStatementSplitter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

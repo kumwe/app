@@ -5,8 +5,8 @@
   "recorded_at": "2026-08-15",
   "violations": [
     {
-      "from": "Kumwe\\CMS\\Audit\\Domain\\AuditAnchorDigest",
-      "to": "Kumwe\\CMS\\Application\\Automation\\CanonicalJson",
+      "from": "Kumwe\\App\\Audit\\Domain\\AuditAnchorDigest",
+      "to": "Kumwe\\App\\Application\\Automation\\CanonicalJson",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -15,8 +15,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\Audit\\Domain\\AuditEventDigest",
-      "to": "Kumwe\\CMS\\Application\\Automation\\CanonicalJson",
+      "from": "Kumwe\\App\\Audit\\Domain\\AuditEventDigest",
+      "to": "Kumwe\\App\\Application\\Automation\\CanonicalJson",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -25,8 +25,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventEnvelope",
-      "to": "Kumwe\\CMS\\Application\\Automation\\CanonicalJson",
+      "from": "Kumwe\\App\\BusinessIntegration\\Domain\\EventEnvelope",
+      "to": "Kumwe\\App\\Application\\Automation\\CanonicalJson",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -35,8 +35,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessIntegration\\Domain\\IntegrationContract",
-      "to": "Kumwe\\CMS\\Extension\\Contribution\\ContributionDefinition",
+      "from": "Kumwe\\App\\BusinessIntegration\\Domain\\IntegrationContract",
+      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -45,8 +45,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessIntegration\\Domain\\IntegrationContractValidator",
-      "to": "Kumwe\\CMS\\Application\\Automation\\CanonicalJson",
+      "from": "Kumwe\\App\\BusinessIntegration\\Domain\\IntegrationContractValidator",
+      "to": "Kumwe\\App\\Application\\Automation\\CanonicalJson",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -55,8 +55,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessIntegration\\Domain\\ScheduleContributionDefinition",
-      "to": "Kumwe\\CMS\\Application\\Automation\\CronExpression",
+      "from": "Kumwe\\App\\BusinessIntegration\\Domain\\ScheduleContributionDefinition",
+      "to": "Kumwe\\App\\Application\\Automation\\CronExpression",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -65,8 +65,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyRateProviderDefinition",
-      "to": "Kumwe\\CMS\\Extension\\Contribution\\ContributionDefinition",
+      "from": "Kumwe\\App\\BusinessRecord\\Domain\\MoneyRateProviderDefinition",
+      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -75,8 +75,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessRecord\\Domain\\RecordScope",
-      "to": "Kumwe\\CMS\\Application\\Authorization\\SiteContext",
+      "from": "Kumwe\\App\\BusinessRecord\\Domain\\RecordScope",
+      "to": "Kumwe\\App\\Application\\Authorization\\SiteContext",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -85,8 +85,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessReporting\\Domain\\ExportArtifact",
-      "to": "Kumwe\\CMS\\Application\\Authorization\\AuthenticatedSurface",
+      "from": "Kumwe\\App\\BusinessReporting\\Domain\\ExportArtifact",
+      "to": "Kumwe\\App\\Application\\Authorization\\AuthenticatedSurface",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -95,8 +95,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\BusinessReporting\\Domain\\ReportDefinition",
-      "to": "Kumwe\\CMS\\Extension\\Contribution\\ContributionDefinition",
+      "from": "Kumwe\\App\\BusinessReporting\\Domain\\ReportDefinition",
+      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -105,8 +105,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\Content\\Domain\\ContentTypeDefinition",
-      "to": "Kumwe\\CMS\\Application\\Authorization\\SiteContext",
+      "from": "Kumwe\\App\\Content\\Domain\\ContentTypeDefinition",
+      "to": "Kumwe\\App\\Application\\Authorization\\SiteContext",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -115,8 +115,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoAccessCommand",
-      "to": "Kumwe\\CMS\\Demo\\Infrastructure\\DemoAccessProvisioner",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoAccessCommand",
+      "to": "Kumwe\\App\\Demo\\Infrastructure\\DemoAccessProvisioner",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -125,8 +125,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoAccessCommand",
-      "to": "Kumwe\\CMS\\Demo\\Infrastructure\\FilesystemDemoManifestCatalog",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoAccessCommand",
+      "to": "Kumwe\\App\\Demo\\Infrastructure\\FilesystemDemoManifestCatalog",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -135,8 +135,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoAccessCommand",
-      "to": "Kumwe\\CMS\\Kernel\\Configuration\\ApplicationConfiguration",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoAccessCommand",
+      "to": "Kumwe\\App\\Kernel\\Configuration\\ApplicationConfiguration",
       "from_layer": "delivery",
       "to_layer": "kernel",
       "owner": "platform-architecture",
@@ -145,8 +145,8 @@
       "justification": "P3-D: the console command receives its typed configuration through its constructor rather than importing the composition root's own type."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoExamplesCommand",
-      "to": "Kumwe\\CMS\\Demo\\Infrastructure\\DemoExampleExtensionInstaller",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoExamplesCommand",
+      "to": "Kumwe\\App\\Demo\\Infrastructure\\DemoExampleExtensionInstaller",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -155,8 +155,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoExamplesCommand",
-      "to": "Kumwe\\CMS\\Kernel\\Configuration\\ApplicationConfiguration",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoExamplesCommand",
+      "to": "Kumwe\\App\\Kernel\\Configuration\\ApplicationConfiguration",
       "from_layer": "delivery",
       "to_layer": "kernel",
       "owner": "platform-architecture",
@@ -165,8 +165,8 @@
       "justification": "P3-D: the console command receives its typed configuration through its constructor rather than importing the composition root's own type."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoExportCommand",
-      "to": "Kumwe\\CMS\\Demo\\Infrastructure\\DemoBusinessProfileExporter",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoExportCommand",
+      "to": "Kumwe\\App\\Demo\\Infrastructure\\DemoBusinessProfileExporter",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -175,8 +175,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoExportCommand",
-      "to": "Kumwe\\CMS\\Demo\\Infrastructure\\DemoProfileExporter",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoExportCommand",
+      "to": "Kumwe\\App\\Demo\\Infrastructure\\DemoProfileExporter",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -185,8 +185,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoExportCommand",
-      "to": "Kumwe\\CMS\\Demo\\Infrastructure\\FilesystemDemoManifestCatalog",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoExportCommand",
+      "to": "Kumwe\\App\\Demo\\Infrastructure\\FilesystemDemoManifestCatalog",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -195,8 +195,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoExportCommand",
-      "to": "Kumwe\\CMS\\Kernel\\Configuration\\ApplicationConfiguration",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoExportCommand",
+      "to": "Kumwe\\App\\Kernel\\Configuration\\ApplicationConfiguration",
       "from_layer": "delivery",
       "to_layer": "kernel",
       "owner": "platform-architecture",
@@ -205,8 +205,8 @@
       "justification": "P3-D: the console command receives its typed configuration through its constructor rather than importing the composition root's own type."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoInstallCommand",
-      "to": "Kumwe\\CMS\\Demo\\Infrastructure\\DemoAccessProvisioner",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoInstallCommand",
+      "to": "Kumwe\\App\\Demo\\Infrastructure\\DemoAccessProvisioner",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -215,8 +215,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoInstallCommand",
-      "to": "Kumwe\\CMS\\Demo\\Infrastructure\\DemoExampleExtensionInstaller",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoInstallCommand",
+      "to": "Kumwe\\App\\Demo\\Infrastructure\\DemoExampleExtensionInstaller",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -225,8 +225,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoInstallCommand",
-      "to": "Kumwe\\CMS\\Demo\\Infrastructure\\FilesystemDemoManifestCatalog",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoInstallCommand",
+      "to": "Kumwe\\App\\Demo\\Infrastructure\\FilesystemDemoManifestCatalog",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -235,8 +235,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\DemoInstallCommand",
-      "to": "Kumwe\\CMS\\Kernel\\Configuration\\ApplicationConfiguration",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoInstallCommand",
+      "to": "Kumwe\\App\\Kernel\\Configuration\\ApplicationConfiguration",
       "from_layer": "delivery",
       "to_layer": "kernel",
       "owner": "platform-architecture",
@@ -245,8 +245,8 @@
       "justification": "P3-D: the console command receives its typed configuration through its constructor rather than importing the composition root's own type."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\HealthCheckCommand",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\ReadinessProbe",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\HealthCheckCommand",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\ReadinessProbe",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -255,8 +255,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\McpServeCommand",
-      "to": "Kumwe\\CMS\\Infrastructure\\Mcp\\KumweMcpHandlers",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\McpServeCommand",
+      "to": "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -265,8 +265,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\McpServeCommand",
-      "to": "Kumwe\\CMS\\Infrastructure\\Mcp\\KumweMcpServerFactory",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\McpServeCommand",
+      "to": "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpServerFactory",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -275,8 +275,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\MigrateCommand",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\Migration\\MigrationRunner",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\MigrateCommand",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\MigrationRunner",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -285,8 +285,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Console\\Command\\MigrationStatusCommand",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\Migration\\MigrationRunner",
+      "from": "Kumwe\\App\\Delivery\\Console\\Command\\MigrationStatusCommand",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\MigrationRunner",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -295,8 +295,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Http\\Mcp\\McpHttpHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Mcp\\KumweMcpHandlers",
+      "from": "Kumwe\\App\\Delivery\\Http\\Mcp\\McpHttpHandler",
+      "to": "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -305,8 +305,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Delivery\\Http\\Mcp\\McpHttpHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Mcp\\KumweMcpServerFactory",
+      "from": "Kumwe\\App\\Delivery\\Http\\Mcp\\McpHttpHandler",
+      "to": "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpServerFactory",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -315,8 +315,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Demo\\Infrastructure\\DemoBusinessProfileExporter",
-      "to": "Kumwe\\CMS\\Kernel\\Configuration\\ApplicationConfiguration",
+      "from": "Kumwe\\App\\Demo\\Infrastructure\\DemoBusinessProfileExporter",
+      "to": "Kumwe\\App\\Kernel\\Configuration\\ApplicationConfiguration",
       "from_layer": "infrastructure",
       "to_layer": "kernel",
       "owner": "platform-architecture",
@@ -325,8 +325,8 @@
       "justification": "P3-D: the adapter is constructed with its typed configuration rather than importing the composition root's configuration type."
     },
     {
-      "from": "Kumwe\\CMS\\Demo\\Infrastructure\\DemoProfileInstaller",
-      "to": "Kumwe\\CMS\\Kernel\\Configuration\\ApplicationConfiguration",
+      "from": "Kumwe\\App\\Demo\\Infrastructure\\DemoProfileInstaller",
+      "to": "Kumwe\\App\\Kernel\\Configuration\\ApplicationConfiguration",
       "from_layer": "infrastructure",
       "to_layer": "kernel",
       "owner": "platform-architecture",
@@ -335,8 +335,8 @@
       "justification": "P3-D: the adapter is constructed with its typed configuration rather than importing the composition root's configuration type."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionMigrationRunner",
-      "to": "Kumwe\\CMS\\Extension\\Infrastructure\\Trust\\FilesystemExtensionArtifactVerifier",
+      "from": "Kumwe\\App\\Extension\\Application\\Migration\\ExtensionMigrationRunner",
+      "to": "Kumwe\\App\\Extension\\Infrastructure\\Trust\\FilesystemExtensionArtifactVerifier",
       "from_layer": "application",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -345,8 +345,8 @@
       "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionMigrationRunner",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
+      "from": "Kumwe\\App\\Extension\\Application\\Migration\\ExtensionMigrationRunner",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "application",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -355,8 +355,8 @@
       "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionTableNames",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
+      "from": "Kumwe\\App\\Extension\\Application\\Migration\\ExtensionTableNames",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "application",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -365,8 +365,8 @@
       "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Application\\Trust\\RevocationFeedSynchronizer",
-      "to": "Kumwe\\CMS\\Kernel\\Configuration\\RevocationFeedConfiguration",
+      "from": "Kumwe\\App\\Extension\\Application\\Trust\\RevocationFeedSynchronizer",
+      "to": "Kumwe\\App\\Kernel\\Configuration\\RevocationFeedConfiguration",
       "from_layer": "application",
       "to_layer": "kernel",
       "owner": "platform-architecture",
@@ -375,8 +375,8 @@
       "justification": "P3-D: typed configuration is handed to this collaborator by the composition root rather than read out of it."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteHandlerFactory",
-      "to": "Kumwe\\CMS\\Administrator\\Presentation\\AdministratorRenderer",
+      "from": "Kumwe\\App\\Extension\\Contribution\\AdministratorRouteHandlerFactory",
+      "to": "Kumwe\\App\\Administrator\\Presentation\\AdministratorRenderer",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -385,8 +385,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteRegistry",
-      "to": "Kumwe\\CMS\\Administrator\\Http\\Middleware\\AdministratorAuthorizationMiddleware",
+      "from": "Kumwe\\App\\Extension\\Contribution\\AdministratorRouteRegistry",
+      "to": "Kumwe\\App\\Administrator\\Http\\Middleware\\AdministratorAuthorizationMiddleware",
       "from_layer": "application",
       "to_layer": "delivery",
       "owner": "platform-architecture",
@@ -395,8 +395,8 @@
       "justification": "P3-C keeps HTTP, machine-surface and console input models in delivery and translates them into typed application commands."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteRegistry",
-      "to": "Kumwe\\CMS\\Administrator\\Http\\Middleware\\AdministratorCsrfMiddleware",
+      "from": "Kumwe\\App\\Extension\\Contribution\\AdministratorRouteRegistry",
+      "to": "Kumwe\\App\\Administrator\\Http\\Middleware\\AdministratorCsrfMiddleware",
       "from_layer": "application",
       "to_layer": "delivery",
       "owner": "platform-architecture",
@@ -405,8 +405,8 @@
       "justification": "P3-C keeps HTTP, machine-surface and console input models in delivery and translates them into typed application commands."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteRegistry",
-      "to": "Kumwe\\CMS\\Administrator\\Presentation\\AdministratorRenderer",
+      "from": "Kumwe\\App\\Extension\\Contribution\\AdministratorRouteRegistry",
+      "to": "Kumwe\\App\\Administrator\\Presentation\\AdministratorRenderer",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -415,8 +415,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\BusinessContributionSurface",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
+      "from": "Kumwe\\App\\Extension\\Contribution\\BusinessContributionSurface",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -425,8 +425,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\BusinessContributionSurface",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationRegistry",
+      "from": "Kumwe\\App\\Extension\\Contribution\\BusinessContributionSurface",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationRegistry",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -435,8 +435,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\CoreExtensionContributions",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\CoreFieldPresenter",
+      "from": "Kumwe\\App\\Extension\\Contribution\\CoreExtensionContributions",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\CoreFieldPresenter",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -445,8 +445,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\CoreExtensionContributions",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContext",
+      "from": "Kumwe\\App\\Extension\\Contribution\\CoreExtensionContributions",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContext",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -455,8 +455,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\CoreExtensionContributions",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
+      "from": "Kumwe\\App\\Extension\\Contribution\\CoreExtensionContributions",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -465,8 +465,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
+      "from": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrar",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -475,8 +475,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresenter",
+      "from": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrar",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresenter",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -485,8 +485,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrySet",
-      "to": "Kumwe\\CMS\\Administrator\\Navigation\\AdministratorNavigationRegistry",
+      "from": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrySet",
+      "to": "Kumwe\\App\\Administrator\\Navigation\\AdministratorNavigationRegistry",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -495,8 +495,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrySet",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationRegistry",
+      "from": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrySet",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationRegistry",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -505,8 +505,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\ManifestContributionSet",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
+      "from": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -515,8 +515,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\ManifestContributionSet",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationCoverage",
+      "from": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationCoverage",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -525,8 +525,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\OwnedExtensionContributionRegistrar",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
+      "from": "Kumwe\\App\\Extension\\Contribution\\OwnedExtensionContributionRegistrar",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -535,8 +535,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Contribution\\OwnedExtensionContributionRegistrar",
-      "to": "Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresenter",
+      "from": "Kumwe\\App\\Extension\\Contribution\\OwnedExtensionContributionRegistrar",
+      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresenter",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -545,8 +545,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Domain\\ExtensionManifest",
-      "to": "Kumwe\\CMS\\Extension\\Contribution\\CapabilityDefinition",
+      "from": "Kumwe\\App\\Extension\\Domain\\ExtensionManifest",
+      "to": "Kumwe\\App\\Extension\\Contribution\\CapabilityDefinition",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -555,8 +555,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Domain\\ExtensionManifest",
-      "to": "Kumwe\\CMS\\Extension\\Contribution\\ManifestContributionSet",
+      "from": "Kumwe\\App\\Extension\\Domain\\ExtensionManifest",
+      "to": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -565,8 +565,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Infrastructure\\DoctrineExtensionManager",
-      "to": "Kumwe\\CMS\\Presentation\\Application\\ThemeActivationGuard",
+      "from": "Kumwe\\App\\Extension\\Infrastructure\\DoctrineExtensionManager",
+      "to": "Kumwe\\App\\Presentation\\Application\\ThemeActivationGuard",
       "from_layer": "infrastructure",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -575,8 +575,8 @@
       "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Infrastructure\\DoctrineExtensionManager",
-      "to": "Kumwe\\CMS\\Presentation\\Application\\ThemeMutationAuthorizer",
+      "from": "Kumwe\\App\\Extension\\Infrastructure\\DoctrineExtensionManager",
+      "to": "Kumwe\\App\\Presentation\\Application\\ThemeMutationAuthorizer",
       "from_layer": "infrastructure",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -585,8 +585,8 @@
       "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Runtime\\ActiveExtensionSet",
-      "to": "Kumwe\\CMS\\Administrator\\Presentation\\AdministratorRenderer",
+      "from": "Kumwe\\App\\Extension\\Runtime\\ActiveExtensionSet",
+      "to": "Kumwe\\App\\Administrator\\Presentation\\AdministratorRenderer",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -595,8 +595,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Runtime\\ActiveExtensionSet",
-      "to": "Kumwe\\CMS\\Portal\\Presentation\\PortalRenderer",
+      "from": "Kumwe\\App\\Extension\\Runtime\\ActiveExtensionSet",
+      "to": "Kumwe\\App\\Portal\\Presentation\\PortalRenderer",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -605,8 +605,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Runtime\\ExtensionRuntimeMapCompiler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
+      "from": "Kumwe\\App\\Extension\\Runtime\\ExtensionRuntimeMapCompiler",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "application",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -615,8 +615,8 @@
       "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Runtime\\LocalRuntimeReadinessProbe",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\ReadinessStatus",
+      "from": "Kumwe\\App\\Extension\\Runtime\\LocalRuntimeReadinessProbe",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\ReadinessStatus",
       "from_layer": "application",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -625,8 +625,8 @@
       "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
-      "from": "Kumwe\\CMS\\Extension\\Runtime\\RuntimeLeaseWriter",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
+      "from": "Kumwe\\App\\Extension\\Runtime\\RuntimeLeaseWriter",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "application",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -635,8 +635,8 @@
       "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Handler\\ExtensionAssetHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
+      "from": "Kumwe\\App\\Http\\Handler\\ExtensionAssetHandler",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -645,8 +645,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Handler\\MetricsHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Observability\\MetricCatalog",
+      "from": "Kumwe\\App\\Http\\Handler\\MetricsHandler",
+      "to": "Kumwe\\App\\Infrastructure\\Observability\\MetricCatalog",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -655,8 +655,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Handler\\MetricsHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Observability\\MetricCollector",
+      "from": "Kumwe\\App\\Http\\Handler\\MetricsHandler",
+      "to": "Kumwe\\App\\Infrastructure\\Observability\\MetricCollector",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -665,8 +665,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Handler\\MetricsHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Observability\\MetricRecorder",
+      "from": "Kumwe\\App\\Http\\Handler\\MetricsHandler",
+      "to": "Kumwe\\App\\Infrastructure\\Observability\\MetricRecorder",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -675,8 +675,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Handler\\MetricsHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Observability\\MetricsAccessPolicy",
+      "from": "Kumwe\\App\\Http\\Handler\\MetricsHandler",
+      "to": "Kumwe\\App\\Infrastructure\\Observability\\MetricsAccessPolicy",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -685,8 +685,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Handler\\MetricsHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Observability\\PrometheusExposition",
+      "from": "Kumwe\\App\\Http\\Handler\\MetricsHandler",
+      "to": "Kumwe\\App\\Infrastructure\\Observability\\PrometheusExposition",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -695,8 +695,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Handler\\ReadinessHandler",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\ReadinessStatus",
+      "from": "Kumwe\\App\\Http\\Handler\\ReadinessHandler",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\ReadinessStatus",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -705,8 +705,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Middleware\\MetricsMiddleware",
-      "to": "Kumwe\\CMS\\Infrastructure\\Observability\\MetricCatalog",
+      "from": "Kumwe\\App\\Http\\Middleware\\MetricsMiddleware",
+      "to": "Kumwe\\App\\Infrastructure\\Observability\\MetricCatalog",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -715,8 +715,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Middleware\\MetricsMiddleware",
-      "to": "Kumwe\\CMS\\Infrastructure\\Observability\\MetricRecorder",
+      "from": "Kumwe\\App\\Http\\Middleware\\MetricsMiddleware",
+      "to": "Kumwe\\App\\Infrastructure\\Observability\\MetricRecorder",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -725,8 +725,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Http\\Middleware\\RequestIdMiddleware",
-      "to": "Kumwe\\CMS\\Infrastructure\\Observability\\CorrelationContext",
+      "from": "Kumwe\\App\\Http\\Middleware\\RequestIdMiddleware",
+      "to": "Kumwe\\App\\Infrastructure\\Observability\\CorrelationContext",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -735,8 +735,8 @@
       "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
-      "from": "Kumwe\\CMS\\Infrastructure\\Mcp\\ReportMcpHandlers",
-      "to": "Kumwe\\CMS\\BusinessReporting\\Delivery\\Api\\ReportApiPresenter",
+      "from": "Kumwe\\App\\Infrastructure\\Mcp\\ReportMcpHandlers",
+      "to": "Kumwe\\App\\BusinessReporting\\Delivery\\Api\\ReportApiPresenter",
       "from_layer": "infrastructure",
       "to_layer": "delivery",
       "owner": "platform-architecture",
@@ -745,8 +745,8 @@
       "justification": "P3-C: the adapter depends on an application-owned contract rather than on the delivery entry point that calls it."
     },
     {
-      "from": "Kumwe\\CMS\\Infrastructure\\Persistence\\DoctrineConnectionFactory",
-      "to": "Kumwe\\CMS\\Kernel\\Configuration\\DatabaseConfiguration",
+      "from": "Kumwe\\App\\Infrastructure\\Persistence\\DoctrineConnectionFactory",
+      "to": "Kumwe\\App\\Kernel\\Configuration\\DatabaseConfiguration",
       "from_layer": "infrastructure",
       "to_layer": "kernel",
       "owner": "platform-architecture",
@@ -755,8 +755,8 @@
       "justification": "P3-D: the adapter is constructed with its typed configuration rather than importing the composition root's configuration type."
     },
     {
-      "from": "Kumwe\\CMS\\Infrastructure\\Persistence\\Migration\\DatabaseDrivenPresentationMigration",
-      "to": "Kumwe\\CMS\\Presentation\\Application\\SitePresentation",
+      "from": "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\DatabaseDrivenPresentationMigration",
+      "to": "Kumwe\\App\\Presentation\\Application\\SitePresentation",
       "from_layer": "infrastructure",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -765,8 +765,8 @@
       "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
     },
     {
-      "from": "Kumwe\\CMS\\Infrastructure\\Redis\\RedisConnectionFactory",
-      "to": "Kumwe\\CMS\\Kernel\\Configuration\\RedisConfiguration",
+      "from": "Kumwe\\App\\Infrastructure\\Redis\\RedisConnectionFactory",
+      "to": "Kumwe\\App\\Kernel\\Configuration\\RedisConfiguration",
       "from_layer": "infrastructure",
       "to_layer": "kernel",
       "owner": "platform-architecture",
@@ -775,8 +775,8 @@
       "justification": "P3-D: the adapter is constructed with its typed configuration rather than importing the composition root's configuration type."
     },
     {
-      "from": "Kumwe\\CMS\\InterfaceStandard\\PresentationPreference",
-      "to": "Kumwe\\CMS\\Extension\\Contribution\\ContributionOwner",
+      "from": "Kumwe\\App\\InterfaceStandard\\PresentationPreference",
+      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionOwner",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -785,8 +785,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\InterfaceStandard\\SurfaceDeclaration",
-      "to": "Kumwe\\CMS\\Extension\\Contribution\\ContributionOwner",
+      "from": "Kumwe\\App\\InterfaceStandard\\SurfaceDeclaration",
+      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionOwner",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -795,8 +795,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\InterfaceStandard\\SurfaceDefinition",
-      "to": "Kumwe\\CMS\\Extension\\Contribution\\ContributionDefinition",
+      "from": "Kumwe\\App\\InterfaceStandard\\SurfaceDefinition",
+      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -805,8 +805,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\InterfaceStandard\\SurfaceDefinition",
-      "to": "Kumwe\\CMS\\Extension\\Contribution\\ContributionOwner",
+      "from": "Kumwe\\App\\InterfaceStandard\\SurfaceDefinition",
+      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionOwner",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -815,8 +815,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\OpenApi\\Application\\OpenApiContractCompiler",
-      "to": "Kumwe\\CMS\\OpenApi\\Infrastructure\\CanonicalOpenApiJson",
+      "from": "Kumwe\\App\\OpenApi\\Application\\OpenApiContractCompiler",
+      "to": "Kumwe\\App\\OpenApi\\Infrastructure\\CanonicalOpenApiJson",
       "from_layer": "application",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -825,8 +825,8 @@
       "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
-      "from": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteHandlerFactory",
-      "to": "Kumwe\\CMS\\Portal\\Presentation\\PortalContributionRenderer",
+      "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteHandlerFactory",
+      "to": "Kumwe\\App\\Portal\\Presentation\\PortalContributionRenderer",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -835,8 +835,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteRegistry",
-      "to": "Kumwe\\CMS\\Portal\\Http\\Handler\\PortalExtensionRootRedirectHandler",
+      "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteRegistry",
+      "to": "Kumwe\\App\\Portal\\Http\\Handler\\PortalExtensionRootRedirectHandler",
       "from_layer": "application",
       "to_layer": "delivery",
       "owner": "platform-architecture",
@@ -845,8 +845,8 @@
       "justification": "P3-C keeps HTTP, machine-surface and console input models in delivery and translates them into typed application commands."
     },
     {
-      "from": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteRegistry",
-      "to": "Kumwe\\CMS\\Portal\\Http\\Middleware\\PortalAuthorizationMiddleware",
+      "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteRegistry",
+      "to": "Kumwe\\App\\Portal\\Http\\Middleware\\PortalAuthorizationMiddleware",
       "from_layer": "application",
       "to_layer": "delivery",
       "owner": "platform-architecture",
@@ -855,8 +855,8 @@
       "justification": "P3-C keeps HTTP, machine-surface and console input models in delivery and translates them into typed application commands."
     },
     {
-      "from": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteRegistry",
-      "to": "Kumwe\\CMS\\Portal\\Http\\Middleware\\PortalCsrfMiddleware",
+      "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteRegistry",
+      "to": "Kumwe\\App\\Portal\\Http\\Middleware\\PortalCsrfMiddleware",
       "from_layer": "application",
       "to_layer": "delivery",
       "owner": "platform-architecture",
@@ -865,8 +865,8 @@
       "justification": "P3-C keeps HTTP, machine-surface and console input models in delivery and translates them into typed application commands."
     },
     {
-      "from": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteRegistry",
-      "to": "Kumwe\\CMS\\Portal\\Presentation\\PortalContributionRenderer",
+      "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteRegistry",
+      "to": "Kumwe\\App\\Portal\\Presentation\\PortalContributionRenderer",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -875,8 +875,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteRegistry",
-      "to": "Kumwe\\CMS\\Portal\\Presentation\\PortalRenderer",
+      "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteRegistry",
+      "to": "Kumwe\\App\\Portal\\Presentation\\PortalRenderer",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -885,8 +885,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Portal\\Domain\\PortalContext",
-      "to": "Kumwe\\CMS\\Application\\Authorization\\MembershipContext",
+      "from": "Kumwe\\App\\Portal\\Domain\\PortalContext",
+      "to": "Kumwe\\App\\Application\\Authorization\\MembershipContext",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -895,8 +895,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\Portal\\Domain\\PortalContext",
-      "to": "Kumwe\\CMS\\Application\\Authorization\\SiteContext",
+      "from": "Kumwe\\App\\Portal\\Domain\\PortalContext",
+      "to": "Kumwe\\App\\Application\\Authorization\\SiteContext",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -905,8 +905,8 @@
       "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
-      "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\ConsoleAdministratorThemeRecovery",
-      "to": "Kumwe\\CMS\\Extension\\Infrastructure\\DatabaseFencedExtensionRegistryLease",
+      "from": "Kumwe\\App\\Presentation\\Infrastructure\\ConsoleAdministratorThemeRecovery",
+      "to": "Kumwe\\App\\Extension\\Infrastructure\\DatabaseFencedExtensionRegistryLease",
       "from_layer": "presentation",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -915,8 +915,8 @@
       "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
     },
     {
-      "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\ConsoleAdministratorThemeRecovery",
-      "to": "Kumwe\\CMS\\Extension\\Infrastructure\\ExtensionRegistryFenceAllocator",
+      "from": "Kumwe\\App\\Presentation\\Infrastructure\\ConsoleAdministratorThemeRecovery",
+      "to": "Kumwe\\App\\Extension\\Infrastructure\\ExtensionRegistryFenceAllocator",
       "from_layer": "presentation",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -925,8 +925,8 @@
       "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
     },
     {
-      "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\ConsoleAdministratorThemeRecovery",
-      "to": "Kumwe\\CMS\\Infrastructure\\Redis\\RedisRuntime",
+      "from": "Kumwe\\App\\Presentation\\Infrastructure\\ConsoleAdministratorThemeRecovery",
+      "to": "Kumwe\\App\\Infrastructure\\Redis\\RedisRuntime",
       "from_layer": "presentation",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -935,8 +935,8 @@
       "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
     },
     {
-      "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\DoctrineAdministratorThemeRecovery",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
+      "from": "Kumwe\\App\\Presentation\\Infrastructure\\DoctrineAdministratorThemeRecovery",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "presentation",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -945,8 +945,8 @@
       "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
     },
     {
-      "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\DoctrineThemeActivationGuard",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
+      "from": "Kumwe\\App\\Presentation\\Infrastructure\\DoctrineThemeActivationGuard",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "presentation",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -955,8 +955,8 @@
       "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
     },
     {
-      "from": "Kumwe\\CMS\\Presentation\\Infrastructure\\DoctrineThemeMutationAuthorizer",
-      "to": "Kumwe\\CMS\\Infrastructure\\Persistence\\TableNames",
+      "from": "Kumwe\\App\\Presentation\\Infrastructure\\DoctrineThemeMutationAuthorizer",
+      "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "presentation",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
@@ -965,8 +965,8 @@
       "justification": "P3-C: presentation depends on a rendering or template-validation port rather than on the adapter that implements it."
     },
     {
-      "from": "Kumwe\\CMS\\Site\\Application\\PublicPageLocator",
-      "to": "Kumwe\\CMS\\Presentation\\Application\\SitePresentation",
+      "from": "Kumwe\\App\\Site\\Application\\PublicPageLocator",
+      "to": "Kumwe\\App\\Presentation\\Application\\SitePresentation",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -975,8 +975,8 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\CMS\\Site\\Infrastructure\\Persistence\\DoctrineSiteSettings",
-      "to": "Kumwe\\CMS\\Presentation\\Application\\SitePresentation",
+      "from": "Kumwe\\App\\Site\\Infrastructure\\Persistence\\DoctrineSiteSettings",
+      "to": "Kumwe\\App\\Presentation\\Application\\SitePresentation",
       "from_layer": "infrastructure",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -985,8 +985,8 @@
       "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
     },
     {
-      "from": "Kumwe\\CMS\\Workflow\\Domain\\WorkflowDefinition",
-      "to": "Kumwe\\CMS\\Application\\Authorization\\SiteContext",
+      "from": "Kumwe\\App\\Workflow\\Domain\\WorkflowDefinition",
+      "to": "Kumwe\\App\\Application\\Authorization\\SiteContext",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",

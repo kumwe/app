@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Domain;
+namespace Kumwe\App\Content\Domain;
 
 /**
  * Raised when entry data fails the JSON Schema published by its content type.

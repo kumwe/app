@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Kernel\Configuration;
+namespace Kumwe\App\Kernel\Configuration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\CMS\Extension\Application\Package\PackageConformanceMode;
-use Kumwe\CMS\Http\Security\TrustedProxyMatcher;
-use Kumwe\CMS\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
+use Kumwe\App\Extension\Application\Package\PackageConformanceMode;
+use Kumwe\App\Http\Security\TrustedProxyMatcher;
+use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
 
 /**
  * The complete, already-validated settings one Kumwe process runs on.

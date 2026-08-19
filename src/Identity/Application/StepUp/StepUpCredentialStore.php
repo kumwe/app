@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\StepUp;
+namespace Kumwe\App\Identity\Application\StepUp;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Identity\Domain\StepUp\TotpCredential;
+use Kumwe\App\Identity\Domain\StepUp\TotpCredential;
 
 /**
  * Persistence port for encrypted TOTP credentials and single-use recovery digests.

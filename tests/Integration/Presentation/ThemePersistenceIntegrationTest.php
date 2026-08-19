@@ -2,43 +2,43 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Presentation;
+namespace Kumwe\App\Tests\Integration\Presentation;
 
 use DateInterval;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Extension\Runtime\RuntimeArtifactDigester;
-use Kumwe\CMS\Extension\Runtime\RuntimeIdentity;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Extension\Runtime\RuntimePublicationKeyRing;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
-use Kumwe\CMS\Identity\Application\Administration\AccessTokenQuotaPolicy;
-use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
-use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
-use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Extension\Runtime\RuntimeArtifactDigester;
+use Kumwe\App\Extension\Runtime\RuntimeIdentity;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Extension\Runtime\RuntimePublicationKeyRing;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
+use Kumwe\App\Identity\Application\Administration\AuthenticationRateLimiter;
+use Kumwe\App\Identity\Application\Administration\AccessTokenQuotaPolicy;
+use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\App\Identity\Application\Administration\TokenRotationPreauthorizer;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Identity\Application\Security\PasswordHasher;
+use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
+use Kumwe\App\Extension\Domain\ThemeSurface;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -84,7 +84,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         $gateway = $this->identityGateway($database, $tables);
         $userId = $gateway->createInitialAdministrator(
             AuthorizationContext::system(SystemIdentity::Bootstrap)->context(
-                \Kumwe\CMS\Application\Authorization\SiteContext::default(),
+                \Kumwe\App\Application\Authorization\SiteContext::default(),
                 'theme-bootstrap-test',
             ),
             'admin@example.test',
@@ -108,7 +108,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         $gateway = $this->identityGateway($database, $tables);
         $userId = $gateway->createInitialAdministrator(
             AuthorizationContext::system(SystemIdentity::Bootstrap)->context(
-                \Kumwe\CMS\Application\Authorization\SiteContext::default(),
+                \Kumwe\App\Application\Authorization\SiteContext::default(),
                 'theme-authority-bootstrap-test',
             ),
             'authority@example.test',

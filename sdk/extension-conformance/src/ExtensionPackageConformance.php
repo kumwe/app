@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\ExtensionConformance;
 
-use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
-use Kumwe\CMS\Extension\Development\ConformanceReport;
-use Kumwe\CMS\Extension\Development\LifecycleConformanceAdapter;
-use Kumwe\CMS\Extension\Development\LifecycleConformanceReport;
-use Kumwe\CMS\Extension\Development\LifecycleConformanceRunner;
-use Kumwe\CMS\Extension\Development\PackageInspector;
-use Kumwe\CMS\Extension\Development\StaticConformanceRunner;
-use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
+use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\App\Extension\Development\ConformanceReport;
+use Kumwe\App\Extension\Development\LifecycleConformanceAdapter;
+use Kumwe\App\Extension\Development\LifecycleConformanceReport;
+use Kumwe\App\Extension\Development\LifecycleConformanceRunner;
+use Kumwe\App\Extension\Development\PackageInspector;
+use Kumwe\App\Extension\Development\StaticConformanceRunner;
+use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveReader;
 
 /**
  * Public SDK facade for repeatable code-free extension package conformance.

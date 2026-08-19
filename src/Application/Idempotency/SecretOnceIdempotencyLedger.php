@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Idempotency;
+namespace Kumwe\App\Application\Idempotency;
 
 /**
  * Contract for the ledger behind token mutations, whose stored replays must never carry the secret.

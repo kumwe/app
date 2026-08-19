@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\CanonicalJson;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventEnvelope;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\Application\Automation\CanonicalJson;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventEnvelope;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
 
 /**
  * Immutable runtime catalog for exactly the event schemas and consumers in one trusted generation.

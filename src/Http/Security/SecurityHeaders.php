@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Security;
+namespace Kumwe\App\Http\Security;
 
 /**
  * Response header policy that every Kumwe response is hardened with.

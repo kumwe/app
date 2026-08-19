@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Http;
+namespace Kumwe\App\Tests\Unit\Administrator\Http;
 
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

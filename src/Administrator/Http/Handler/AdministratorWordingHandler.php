@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Localization\Application\MessageFormattingFailed;
-use Kumwe\CMS\Localization\Application\MessageOverrideRecord;
-use Kumwe\CMS\Localization\Application\MessageOverrideService;
-use Kumwe\CMS\Localization\Application\SupportedLocales;
-use Kumwe\CMS\Localization\Domain\InvalidMessageIdentifier;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Localization\Application\MessageFormattingFailed;
+use Kumwe\App\Localization\Application\MessageOverrideRecord;
+use Kumwe\App\Localization\Application\MessageOverrideService;
+use Kumwe\App\Localization\Application\SupportedLocales;
+use Kumwe\App\Localization\Domain\InvalidMessageIdentifier;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -68,7 +68,7 @@ final readonly class AdministratorWordingHandler implements RequestHandlerInterf
      *
      * @throws  InvalidArgumentException  When the request carries no administrator session or execution
      *          context, or the posted action is unknown.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the capability is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the capability is refused.
      *
      * @since   2.0.0
      */
@@ -123,7 +123,7 @@ final readonly class AdministratorWordingHandler implements RequestHandlerInterf
      *
      * @throws  InvalidArgumentException  When the request carries no administrator session or execution
      *          context, or the requested locale is not carried.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the capability is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the capability is refused.
      *
      * @since   2.0.0
      */

@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Business;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordImmutable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodUndeclared;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
-use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
-use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
-use Kumwe\CMS\BusinessRecord\Application\ValidationViolation;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordProjector;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
-use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiPresenter;
-use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiResponder;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordImmutable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodUndeclared;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
+use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\App\BusinessRecord\Application\ValidationViolation;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
+use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\App\Delivery\Http\Api\Business\BusinessRecordApiPresenter;
+use Kumwe\App\Delivery\Http\Api\Business\BusinessRecordApiResponder;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;

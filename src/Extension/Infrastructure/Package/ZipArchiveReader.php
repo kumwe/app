@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Infrastructure\Package;
+namespace Kumwe\App\Extension\Infrastructure\Package;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Application\Package\ArchiveEntry;
-use Kumwe\CMS\Extension\Application\Package\ArchiveEntryType;
-use Kumwe\CMS\Extension\Application\Package\ArchivePackage;
-use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
-use Kumwe\CMS\Extension\Domain\PackagePath;
+use Kumwe\App\Extension\Application\Package\ArchiveEntry;
+use Kumwe\App\Extension\Application\Package\ArchiveEntryType;
+use Kumwe\App\Extension\Application\Package\ArchivePackage;
+use Kumwe\App\Extension\Application\Package\ArchiveReader;
+use Kumwe\App\Extension\Domain\PackagePath;
 use RuntimeException;
 use ZipArchive;
 

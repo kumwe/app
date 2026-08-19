@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Application;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Application;
 
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\OrganizationContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\WorkspaceContext;
-use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessActionStepUp;
-use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessStepUpInputRejected;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
-use Kumwe\CMS\Tests\Support\GeneratedActionCapturingStepUpProvider;
-use Kumwe\CMS\Tests\Support\ImmediateTransactionManager;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\OrganizationContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\WorkspaceContext;
+use Kumwe\App\BusinessSurface\Application\GeneratedBusinessActionStepUp;
+use Kumwe\App\BusinessSurface\Application\GeneratedBusinessStepUpInputRejected;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
+use Kumwe\App\Tests\Support\GeneratedActionCapturingStepUpProvider;
+use Kumwe\App\Tests\Support\ImmediateTransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

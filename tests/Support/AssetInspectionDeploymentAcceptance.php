@@ -2,45 +2,45 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\CMS\BusinessReporting\Application\ExportArtifactRepository;
-use Kumwe\CMS\BusinessReporting\Application\ExportArtifactStorage;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
-use Kumwe\CMS\BusinessReporting\Application\StoredExportArtifact;
-use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableKind;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessRecordProjector;
-use Kumwe\CMS\BusinessIntegration\Application\InboxStore;
-use Kumwe\CMS\BusinessIntegration\Application\OutboxDispatcher;
-use Kumwe\CMS\BusinessIntegration\Application\OutboxStore;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
-use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
-use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\CMS\Identity\Domain\UserStatus;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessReporting\Application\ExportArtifactRepository;
+use Kumwe\App\BusinessReporting\Application\ExportArtifactStorage;
+use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
+use Kumwe\App\BusinessReporting\Application\StoredExportArtifact;
+use Kumwe\App\BusinessReporting\Domain\ExportArtifactStatus;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableKind;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
+use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
+use Kumwe\App\BusinessIntegration\Application\InboxStore;
+use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
+use Kumwe\App\BusinessIntegration\Application\OutboxStore;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Identity\Application\Administration\AccessControlService;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
+use Kumwe\App\Identity\Application\StepUp\AdministratorStepUpProvider;
+use Kumwe\App\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Identity\Domain\UserStatus;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
 use KumweExample\AssetInspection\Definitions;
 use RuntimeException;
@@ -574,7 +574,7 @@ final class AssetInspectionDeploymentAcceptance
     /**
      * Build the server-resolved intent for one rotating administrator MFA proof.
      *
-     * @param   \Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal  $principal  Policy actor.
+     * @param   \Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal  $principal  Policy actor.
      * @param string $sessionId Current persisted administrator session UUID.
      * @param string $purpose Exact protected Business Security operation.
      *
@@ -584,7 +584,7 @@ final class AssetInspectionDeploymentAcceptance
      */
     private static function stepUpIntent(object $principal, string $sessionId, string $purpose): StepUpIntent
     {
-        if (!$principal instanceof \Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal) {
+        if (!$principal instanceof \Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal) {
             throw new RuntimeException('The policy principal is unavailable.');
         }
 
@@ -604,8 +604,8 @@ final class AssetInspectionDeploymentAcceptance
      *
      * @param BusinessSecurityAdministrationService $security Guarded policy service.
      * @param AuthorizationStepUpProofAdapter $proofs Provider-to-authorization adapter.
-     * @param   \Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal  $principal     Policy actor.
-     * @param \Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification $verification Fresh rotated verification.
+     * @param   \Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal  $principal     Policy actor.
+     * @param \Kumwe\App\Identity\Domain\StepUp\StepUpVerification $verification Fresh rotated verification.
      * @param array<string, mixed> $request Closed signed request.
      *
      * @return  string  Persisted policy UUID.
@@ -620,8 +620,8 @@ final class AssetInspectionDeploymentAcceptance
         array $request,
     ): string {
         if (
-            !$principal instanceof \Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal
-            || !$verification instanceof \Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification
+            !$principal instanceof \Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal
+            || !$verification instanceof \Kumwe\App\Identity\Domain\StepUp\StepUpVerification
         ) {
             throw new RuntimeException('A typed policy proof is unavailable.');
         }

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Infrastructure;
+namespace Kumwe\App\Presentation\Infrastructure;
 
-use Kumwe\CMS\Extension\Infrastructure\DatabaseFencedExtensionRegistryLease;
-use Kumwe\CMS\Extension\Infrastructure\ExtensionRegistryFenceAllocator;
-use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
-use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Infrastructure\DatabaseFencedExtensionRegistryLease;
+use Kumwe\App\Extension\Infrastructure\ExtensionRegistryFenceAllocator;
+use Kumwe\App\Infrastructure\Redis\RedisRuntime;
+use Kumwe\App\Presentation\Application\AdministratorThemeRecovery;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 use RuntimeException;
 
 /**

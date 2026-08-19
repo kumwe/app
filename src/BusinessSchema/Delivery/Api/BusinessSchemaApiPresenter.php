@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Api;
+namespace Kumwe\App\BusinessSchema\Delivery\Api;
 
-use Kumwe\CMS\BusinessSchema\Application\SchemaExecutionOutcome;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\App\BusinessSchema\Application\SchemaExecutionOutcome;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
 
 /**
  * Renders schema-plan application results as stable REST documents.

@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessSurface\Application\BusinessOperationNotFound;
-use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
-use Kumwe\CMS\BusinessReporting\Application\RecordExportReportProvider;
-use Kumwe\CMS\BusinessReporting\Application\ReportService;
-use Kumwe\CMS\BusinessReporting\Application\ReportUnavailable;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessHandlerFailed;
-use Kumwe\CMS\Localization\Application\Translator;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessSurface\Application\BusinessOperationNotFound;
+use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\App\BusinessReporting\Application\RecordExportReportProvider;
+use Kumwe\App\BusinessReporting\Application\ReportService;
+use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessHandlerFailed;
+use Kumwe\App\Localization\Application\Translator;
 use Ramsey\Uuid\Uuid;
 
 /**

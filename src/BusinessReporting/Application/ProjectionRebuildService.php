@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Application;
+namespace Kumwe\App\BusinessReporting\Application;
 
 use RuntimeException;
 use Throwable;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
 
 /**
  * Replays a versioned event stream into an atomically replaceable derived generation.

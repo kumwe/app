@@ -3,8 +3,8 @@
 /**
  * Reproduce the missing production autoloader path.
  *
- * The image installs with `--no-dev` and dumps an authoritative classmap, so Composer resolves `Kumwe\CMS\`
- * and nothing else: no class under `Kumwe\CMS\Tests\` is loadable there even when the drill directory is
+ * The image installs with `--no-dev` and dumps an authoritative classmap, so Composer resolves `Kumwe\App\`
+ * and nothing else: no class under `Kumwe\App\Tests\` is loadable there even when the drill directory is
  * mounted into the container. The drills used to compensate with a hand-maintained `require` list, and the
  * wave that gave a harness three new collaborators did not give that list three new lines. Every cheaper job
  * kept passing, because they all run under the development autoloader.
@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\Tests\Deployment\CaseReport;
+use Kumwe\App\Tests\Deployment\CaseReport;
 
 require __DIR__ . '/CaseReport.php';
 
@@ -58,11 +58,11 @@ try {
     }
     $detail['classmap_entries'] = count($map);
 
-    if (!class_exists('Kumwe\\CMS\\Delivery\\Console\\ConsoleApplication')) {
+    if (!class_exists('Kumwe\\App\\Delivery\\Console\\ConsoleApplication')) {
         throw new RuntimeException('The production autoloader cannot resolve the application\'s own classes.');
     }
 
-    $drillClass = 'Kumwe\\CMS\\Tests\\Support\\NeutralBusinessFixture';
+    $drillClass = 'Kumwe\\App\\Tests\\Support\\NeutralBusinessFixture';
     if (class_exists($drillClass)) {
         throw new RuntimeException(
             'The production autoloader resolved a class under the test namespace. That namespace is absent '

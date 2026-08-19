@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -11,53 +11,53 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Domain\ComputationMode;
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
-use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
-use Kumwe\CMS\BusinessRecord\Application\RecordCursorCodec;
-use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
-use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessRecord\Query\AggregateFunction;
-use Kumwe\CMS\BusinessRecord\Query\BooleanFilter;
-use Kumwe\CMS\BusinessRecord\Query\BooleanOperator;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\CMS\BusinessRecord\Query\ComparisonOperator;
-use Kumwe\CMS\BusinessRecord\Query\NullFilter;
-use Kumwe\CMS\BusinessRecord\Query\RecordAggregate;
-use Kumwe\CMS\BusinessRecord\Query\RecordFilter;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessRecord\Query\RecordSort;
-use Kumwe\CMS\BusinessRecord\Query\RelationFilter;
-use Kumwe\CMS\BusinessRecord\Query\RelationQuantifier;
-use Kumwe\CMS\BusinessRecord\Query\SetFilter;
-use Kumwe\CMS\BusinessRecord\Query\SortDirection;
-use Kumwe\CMS\BusinessRecord\Query\TextFilter;
-use Kumwe\CMS\BusinessRecord\Query\TextOperator;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyBoolean;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyBooleanOperator;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparison;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyNullCheck;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyPredicate;
-use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Domain\ComputationMode;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
+use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
+use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
+use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessRecord\Query\AggregateFunction;
+use Kumwe\App\BusinessRecord\Query\BooleanFilter;
+use Kumwe\App\BusinessRecord\Query\BooleanOperator;
+use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
+use Kumwe\App\BusinessRecord\Query\ComparisonOperator;
+use Kumwe\App\BusinessRecord\Query\NullFilter;
+use Kumwe\App\BusinessRecord\Query\RecordAggregate;
+use Kumwe\App\BusinessRecord\Query\RecordFilter;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessRecord\Query\RecordSort;
+use Kumwe\App\BusinessRecord\Query\RelationFilter;
+use Kumwe\App\BusinessRecord\Query\RelationQuantifier;
+use Kumwe\App\BusinessRecord\Query\SetFilter;
+use Kumwe\App\BusinessRecord\Query\SortDirection;
+use Kumwe\App\BusinessRecord\Query\TextFilter;
+use Kumwe\App\BusinessRecord\Query\TextOperator;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBoolean;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBooleanOperator;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyNullCheck;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyPredicate;
+use Kumwe\App\BusinessSecurity\Policy\RecordPolicyValueType;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -2426,11 +2426,11 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * @throws  InvalidBusinessRecordQuery  When the target is unknown or its owner disabled, its
      *          installation is missing, inactive or on another site, the repin is newer than the installed
      *          schema, or that version was never published.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          the fence finds no definition of that handle on the site.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          fence finds no installation it admits for the definition.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          no transaction is open to hold the fence, the fence cannot be taken, or the installation
      *          moved between being fenced and being resolved.
      *
@@ -2578,7 +2578,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *
      * @return  string  Lowercase 64-character SHA-256 over the canonical form of all of it.
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When something the query
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When something the query
      *          carries cannot be canonically encoded, a string that is not valid UTF-8 being the case the
      *          query's own bounds still admit.
      *

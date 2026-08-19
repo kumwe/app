@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Application\Install;
+namespace Kumwe\App\Tests\Unit\Extension\Application\Install;
 
-use Kumwe\CMS\Extension\Application\Install\AtomicInstallPlan;
-use Kumwe\CMS\Extension\Application\Install\InstallAction;
-use Kumwe\CMS\Extension\Application\Install\InstallState;
-use Kumwe\CMS\Extension\Application\Install\InvalidInstallTransition;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Extension\Domain\PackageChecksum;
-use Kumwe\CMS\Extension\Domain\SemanticVersion;
+use Kumwe\App\Extension\Application\Install\AtomicInstallPlan;
+use Kumwe\App\Extension\Application\Install\InstallAction;
+use Kumwe\App\Extension\Application\Install\InstallState;
+use Kumwe\App\Extension\Application\Install\InvalidInstallTransition;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\App\Extension\Domain\SemanticVersion;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

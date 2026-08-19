@@ -6,10 +6,10 @@ namespace @@PHP_NAMESPACE@@\Tests;
 
 use @@PHP_NAMESPACE@@\Definition\BusinessDefinitions;
 use @@PHP_NAMESPACE@@\Provider;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
+namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
-use Kumwe\CMS\Tests\Support\TranslatesConsoleOutput;
+use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
-use Kumwe\CMS\Application\Automation\GlobalJobPrincipals;
-use Kumwe\CMS\Application\Automation\JobExecutionScope;
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicy;
-use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\CMS\Application\Automation\StoredJob;
-use Kumwe\CMS\Application\Automation\Worker;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\App\Application\Automation\GlobalJobPrincipals;
+use Kumwe\App\Application\Automation\JobExecutionScope;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\Application\Automation\QueueRuntimePolicy;
+use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\App\Application\Automation\StoredJob;
+use Kumwe\App\Application\Automation\Worker;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Delivery\Console\Command\QueueWorkCommand;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Throwable;

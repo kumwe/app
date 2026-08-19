@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Domain;
+namespace Kumwe\App\Identity\Domain;
 
 /**
  * Lifecycle state of a user account, together with the rule for which moves between states are legal.

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyMaterial;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyMaterial;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable;
 
 /**
  * Port through which the cipher acquires key material, separate from the cipher itself.

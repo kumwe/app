@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Media\Infrastructure;
+namespace Kumwe\App\Tests\Unit\Media\Infrastructure;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Media\Application\MediaAsset;
-use Kumwe\CMS\Media\Infrastructure\FilesystemMediaStorage;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Media\Application\MediaAsset;
+use Kumwe\App\Media\Infrastructure\FilesystemMediaStorage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

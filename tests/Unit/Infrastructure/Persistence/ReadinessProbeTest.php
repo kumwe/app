@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\Migration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationPlan;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
-use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\Migration\Migration;
+use Kumwe\App\Infrastructure\Persistence\Migration\MigrationPlan;
+use Kumwe\App\Infrastructure\Persistence\Migration\MigrationRepository;
+use Kumwe\App\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
+use Kumwe\App\Infrastructure\Persistence\ReadinessProbe;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;

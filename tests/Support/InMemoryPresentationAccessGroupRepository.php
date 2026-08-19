@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Support;
+namespace Kumwe\App\Tests\Support;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupCatalog;
-use Kumwe\CMS\Application\Presentation\Preference\PresentationAccessGroupRepository;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupCatalog;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupRepository;
 
 /**
  * Deterministic in-memory presentation access-group projection for application tests.

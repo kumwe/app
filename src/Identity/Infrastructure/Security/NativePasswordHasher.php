@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\Security;
+namespace Kumwe\App\Identity\Infrastructure\Security;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
+use Kumwe\App\Identity\Application\Security\PasswordHasher;
 
 /**
  * The `PasswordHasher` an installation runs on, wrapping PHP's native `password_*` functions.

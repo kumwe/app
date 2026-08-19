@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Audit\Infrastructure\Persistence;
+namespace Kumwe\App\Tests\Unit\Audit\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Driver\PDO\Exception as PdoDriverException;
 use Doctrine\DBAL\Exception\ConnectionException;
@@ -10,8 +10,8 @@ use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\DBAL\Exception\SyntaxErrorException;
 use Doctrine\DBAL\Exception\TableNotFoundException;
 use Doctrine\DBAL\Query;
-use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
-use Kumwe\CMS\Audit\Infrastructure\Persistence\AuditEnforcementRefusal;
+use Kumwe\App\Audit\Domain\AuditEnforcementState;
+use Kumwe\App\Audit\Infrastructure\Persistence\AuditEnforcementRefusal;
 use PDOException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;

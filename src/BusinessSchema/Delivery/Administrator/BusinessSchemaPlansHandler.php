@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Delivery\Administrator;
+namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
 use DateInterval;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Localization\Application\Translator;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaEnvironment;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Localization\Application\Translator;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaEnvironment;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -112,9 +112,9 @@ final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterfa
      *
      * @throws  \InvalidArgumentException  When the route was mounted without administrator authentication
      *          or authorization, so no session or execution context is attached.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
      *          refused.
-     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When the `plan` parameter
+     * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When the `plan` parameter
      *          names a plan outside this site.
      *
      * @since   2.0.0

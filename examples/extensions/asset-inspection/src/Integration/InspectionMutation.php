@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection\Integration;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessIntegration\Domain\EventEnvelope;
+use Kumwe\App\BusinessIntegration\Domain\EventEnvelope;
 use KumweExample\AssetInspection\Definitions;
 
 /**

@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Http\Handler;
+namespace Kumwe\App\Administrator\Http\Handler;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Http\AdministratorRequest;
-use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\CMS\Administrator\Presentation\SitePresentationFormMapper;
-use Kumwe\CMS\Content\Application\ContentRecord;
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Media\Application\MediaAsset;
-use Kumwe\CMS\Media\Application\MediaService;
-use Kumwe\CMS\Navigation\Application\MenuRecord;
-use Kumwe\CMS\Navigation\Application\NavigationService;
-use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\App\Administrator\Http\AdministratorRequest;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Presentation\SitePresentationFormMapper;
+use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentService;
+use Kumwe\App\Media\Application\MediaAsset;
+use Kumwe\App\Media\Application\MediaService;
+use Kumwe\App\Navigation\Application\MenuRecord;
+use Kumwe\App\Navigation\Application\NavigationService;
+use Kumwe\App\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -72,7 +72,7 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
      *          redirect after a successful save.
      *
      * @throws  \InvalidArgumentException  When the request carries no administrator session or execution context.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `settings.manage` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `settings.manage` is refused.
      *
      * @since   2.0.0
      */
@@ -114,7 +114,7 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
      * @return  ResponseInterface  The rendered form, marked `no-store` because it carries the CSRF token.
      *
      * @throws  \InvalidArgumentException  When the request carries no administrator session or execution context.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `settings.manage` is refused.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `settings.manage` is refused.
      *
      * @since   2.0.0
      */

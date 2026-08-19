@@ -228,7 +228,7 @@ foreach (contractList($generations['withdrawn'] ?? null, 'withdrawn', $errors) a
         continue;
     }
     $withdrawn[(string) $entry['type']] = true;
-    $path = $root . '/src/' . str_replace('\\', '/', substr((string) $entry['type'], strlen('Kumwe\\CMS\\'))) . '.php';
+    $path = $root . '/src/' . str_replace('\\', '/', substr((string) $entry['type'], strlen('Kumwe\\App\\'))) . '.php';
     if (is_file($path)) {
         $errors[] = sprintf(
             'Type %s is recorded as withdrawn but still exists. Withdraw it or stop saying it went.',

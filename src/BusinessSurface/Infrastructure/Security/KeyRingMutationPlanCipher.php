@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Infrastructure\Security;
+namespace Kumwe\App\BusinessSurface\Infrastructure\Security;
 
-use Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
-use Kumwe\CMS\BusinessSurface\Application\MutationPlanCipher;
+use Kumwe\App\BusinessRecord\Application\SecretKeyProvider;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
+use Kumwe\App\BusinessSurface\Application\MutationPlanCipher;
 
 /**
  * `MutationPlanCipher` over a key ring of the mutation-plan purpose alone.
@@ -75,7 +75,7 @@ final readonly class KeyRingMutationPlanCipher implements MutationPlanCipher
      *
      * @throws  \RuntimeException  When the envelope names an unsupported construction or fails
      *          authentication.
-     * @throws  \Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable  When the token names a key this
+     * @throws  \Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable  When the token names a key this
      *          ring does not hold.
      *
      * @since   2.0.0

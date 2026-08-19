@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Localization\Application;
+namespace Kumwe\App\Localization\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Localization\Domain\MessageCatalogueLayer;
+use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
 
 /**
  * One stored override, with the bookkeeping an administration screen needs and the render path does not.

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Authentication;
+namespace Kumwe\App\Identity\Application\Authentication;
 
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\GrantScope;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\GrantScope;
 
 /**
  * One capability paired with the reach it was granted over: the unit of a principal's authority.

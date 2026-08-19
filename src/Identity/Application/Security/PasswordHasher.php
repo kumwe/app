@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Security;
+namespace Kumwe\App\Identity\Application\Security;
 
 /**
  * Contract for turning a plaintext password into a stored hash and checking one against it.

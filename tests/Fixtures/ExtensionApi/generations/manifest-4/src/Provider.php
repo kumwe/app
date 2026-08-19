@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace KumweContract\ManifestFour;
 
-use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
-use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
-use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
-use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition;
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Contribution\CapabilityDefinition;
+use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrar;
+use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
 use KumweContract\ManifestFour\Integration\ObservationConsumer;
 use KumweContract\ManifestFour\Integration\ObservationLedger;
 use KumweContract\ManifestFour\Integration\ObservationListener;

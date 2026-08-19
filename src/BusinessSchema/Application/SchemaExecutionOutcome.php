@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaDocument;
+use Kumwe\App\BusinessSchema\Domain\SchemaDocument;
 
 /**
  * Result of one finished business-schema execution, as recorded on the plan and reported to callers.
@@ -35,7 +35,7 @@ final readonly class SchemaExecutionOutcome
      * @param   bool               $resumed         Whether the run continued an interrupted or paused execution.
      *
      * @throws  \InvalidArgumentException  When the fence is below one or either step counter is negative.
-     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the plan ID is not a canonical
+     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the plan ID is not a canonical
      *          UUID or the schema checksum is not a lowercase SHA-256 digest.
      *
      * @since   2.0.0

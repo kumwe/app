@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\Administration;
+namespace Kumwe\App\Identity\Infrastructure\Administration;
 
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
+use Kumwe\App\Identity\Application\Administration\AuthenticationRateLimiter;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Infrastructure\Redis\RedisRuntime;
 
 /**
  * Redis-backed attempt budget that refuses a sign-in pair after ten counted tries in a 15-minute window.

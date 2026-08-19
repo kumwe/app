@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Infrastructure;
+namespace Kumwe\App\Tests\Integration\Infrastructure;
 
 use Joomla\DI\Container;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Infrastructure\Administration\RedisAuthenticationRateLimiter;
-use Kumwe\CMS\Infrastructure\Redis\RedisConnectionFactory;
-use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
-use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
-use Kumwe\CMS\Kernel\Configuration\RedisConfiguration;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Site\Infrastructure\Persistence\CachedSiteSettings;
-use Kumwe\CMS\Site\Infrastructure\Persistence\DoctrineSiteSettings;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
+use Kumwe\App\Identity\Infrastructure\Administration\RedisAuthenticationRateLimiter;
+use Kumwe\App\Infrastructure\Redis\RedisConnectionFactory;
+use Kumwe\App\Infrastructure\Redis\RedisRuntime;
+use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
+use Kumwe\App\Kernel\Configuration\RedisConfiguration;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Site\Infrastructure\Persistence\CachedSiteSettings;
+use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;

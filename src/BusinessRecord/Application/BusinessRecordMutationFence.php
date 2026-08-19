@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
 
 /**
  * Serializes record mutations with definition lifecycle and physical-schema execution.
@@ -35,11 +35,11 @@ interface BusinessRecordMutationFence
      * @return  BusinessRecordMutationGeneration  Installation identity, version, checksums, and status
      *          as observed under the exclusive lock.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          no definition matches the identifier on this site, or its owner is disabled.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          definition has no installation that is live and owned by the definition's owner.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          no transaction is open to hold the lock, or the lock cannot be taken right now.
      *
      * @since   2.0.0
@@ -65,12 +65,12 @@ interface BusinessRecordMutationFence
      * @return  BusinessRecordMutationGeneration  Installation identity, version, checksums, and status
      *          as observed under the shared lock.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          no definition matches the identifier on this site, or its owner is disabled and
      *          $historyOnly is false.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          definition has no installation whose status this call admits.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          no transaction is open to hold the lock, the platform offers no shared row lock, or the
      *          lock cannot be taken right now.
      *

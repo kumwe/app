@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\OwnershipScope;
-use Kumwe\CMS\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\CMS\Application\Authorization\OwnershipScopeNotPermitted;
-use Kumwe\CMS\Application\Authorization\OwnershipScopeNotSiteBound;
-use Kumwe\CMS\Application\Authorization\OwnershipScopeRule;
-use Kumwe\CMS\Application\Authorization\ResourceOwnership;
-use Kumwe\CMS\Application\Authorization\ResourceOwnershipScopePolicy;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SiteGroup;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\OwnershipScope;
+use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
+use Kumwe\App\Application\Authorization\OwnershipScopeNotPermitted;
+use Kumwe\App\Application\Authorization\OwnershipScopeNotSiteBound;
+use Kumwe\App\Application\Authorization\OwnershipScopeRule;
+use Kumwe\App\Application\Authorization\ResourceOwnership;
+use Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SiteGroup;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

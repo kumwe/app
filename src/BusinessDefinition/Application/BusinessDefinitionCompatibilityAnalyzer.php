@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessDefinition\Application;
+namespace Kumwe\App\BusinessDefinition\Application;
 
-use Kumwe\CMS\BusinessDefinition\Domain\CompatibilityChange;
-use Kumwe\CMS\BusinessDefinition\Domain\CompatibilityClassification;
-use Kumwe\CMS\BusinessDefinition\Domain\CompatibilityPlan;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RecordInvariantDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\ViewDefinition;
+use Kumwe\App\BusinessDefinition\Domain\CompatibilityChange;
+use Kumwe\App\BusinessDefinition\Domain\CompatibilityClassification;
+use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RecordInvariantDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ViewDefinition;
 
 /**
  * Prices what publishing a draft definition would do to the version already in service.
@@ -43,7 +43,7 @@ final class BusinessDefinitionCompatibilityAnalyzer
      *
      * @return  CompatibilityPlan  Both version numbers, both canonical checksums, and the classified changes.
      *
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the draft is not in draft
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the draft is not in draft
      *          status and therefore cannot be advanced to the next published version.
      *
      * @since   2.0.0

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Application;
+namespace Kumwe\App\BusinessSecurity\Application;
 
-use Kumwe\CMS\Application\Authorization\MembershipContext;
-use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
-use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\MembershipContext;
+use Kumwe\App\Application\Authorization\MembershipContextValidator;
+use Kumwe\App\Application\Authorization\SiteContext;
 
 /**
  * Trusted resolver and freshness gate for organization and workspace membership.

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\CMS\Application\Authorization\ResourcePolicyDefinition as AuthorizationResourcePolicyDefinition;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\ResourcePolicyDefinition as AuthorizationResourcePolicyDefinition;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Contribution surface mirroring owner-bound resource policies into the authorization runtime.

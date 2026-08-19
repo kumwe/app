@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 
 /**
  * Keyed digest over any record-shaped value, for the comparisons that outlive the request that made them.

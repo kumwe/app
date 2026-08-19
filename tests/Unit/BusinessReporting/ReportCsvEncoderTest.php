@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessReporting;
+namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
-use Kumwe\CMS\BusinessReporting\Application\ReportCsvEncoder;
-use Kumwe\CMS\BusinessReporting\Application\ReportExecutionResult;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessReporting\Application\ReportCsvEncoder;
+use Kumwe\App\BusinessReporting\Application\ReportExecutionResult;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

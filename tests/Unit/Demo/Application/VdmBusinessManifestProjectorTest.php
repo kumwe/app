@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Demo\Application;
+namespace Kumwe\App\Tests\Unit\Demo\Application;
 
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\Demo\Application\VdmBusinessManifestProjector;
-use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\Demo\Application\VdmBusinessManifestProjector;
+use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

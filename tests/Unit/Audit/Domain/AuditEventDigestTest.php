@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Audit\Domain;
+namespace Kumwe\App\Tests\Unit\Audit\Domain;
 
-use Kumwe\CMS\Audit\Domain\AuditEventDigest;
+use Kumwe\App\Audit\Domain\AuditEventDigest;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

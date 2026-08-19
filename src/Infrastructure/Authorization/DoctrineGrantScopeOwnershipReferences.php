@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Authorization;
+namespace Kumwe\App\Infrastructure\Authorization;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\CMS\Application\Authorization\ResourceOwnershipReferences;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
+use Kumwe\App\Application\Authorization\ResourceOwnershipReferences;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Finds sites that would be stranded because one of their roles is granted authority over the resource.

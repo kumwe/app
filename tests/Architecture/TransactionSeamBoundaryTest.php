@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\CMS\Application\Automation\JobQueue;
-use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
-use Kumwe\CMS\Application\Automation\QueueRuntimeOperations;
-use Kumwe\CMS\Application\Automation\Scheduler;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Infrastructure\Automation\DoctrineJobQueue;
-use Kumwe\CMS\Infrastructure\Automation\DoctrineQueueRuntimeOperations;
-use Kumwe\CMS\Infrastructure\Automation\DoctrineScheduler;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\App\Application\Automation\Job\ScheduleRepository;
+use Kumwe\App\Application\Automation\QueueRuntimeOperations;
+use Kumwe\App\Application\Automation\Scheduler;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
+use Kumwe\App\Infrastructure\Automation\DoctrineQueueRuntimeOperations;
+use Kumwe\App\Infrastructure\Automation\DoctrineScheduler;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -48,9 +48,9 @@ final class TransactionSeamBoundaryTest extends TestCase
      * @since  2.0.0
      */
     private const array PUBLISHED_MIGRATION_CONTRACT = [
-        'Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionMigration',
-        'Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionMigrationRunner',
-        'Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionTableNames',
+        'Kumwe\\App\\Extension\\Application\\Migration\\ExtensionMigration',
+        'Kumwe\\App\\Extension\\Application\\Migration\\ExtensionMigrationRunner',
+        'Kumwe\\App\\Extension\\Application\\Migration\\ExtensionTableNames',
     ];
 
     /**
@@ -66,8 +66,8 @@ final class TransactionSeamBoundaryTest extends TestCase
         $adapter = new ReflectionClass(DoctrineTransactionManager::class);
 
         self::assertTrue($port->isInterface(), 'The transaction boundary must be a contract, not a class.');
-        self::assertStringStartsWith('Kumwe\\CMS\\Application\\', $port->getName());
-        self::assertStringStartsWith('Kumwe\\CMS\\Infrastructure\\', $adapter->getName());
+        self::assertStringStartsWith('Kumwe\\App\\Application\\', $port->getName());
+        self::assertStringStartsWith('Kumwe\\App\\Infrastructure\\', $adapter->getName());
         self::assertTrue($adapter->implementsInterface(TransactionManager::class));
         self::assertContains(
             dirname((string) $port->getFileName()),
@@ -165,7 +165,7 @@ final class TransactionSeamBoundaryTest extends TestCase
                     continue;
                 }
                 $name = ltrim($token[1], '\\');
-                if (str_starts_with($name, 'Doctrine\\') || str_starts_with($name, 'Kumwe\\CMS\\Infrastructure\\')) {
+                if (str_starts_with($name, 'Doctrine\\') || str_starts_with($name, 'Kumwe\\App\\Infrastructure\\')) {
                     $offenders[] = sprintf('%s:%d %s', $relative, $token[2], $name);
                 }
             }
@@ -191,7 +191,7 @@ final class TransactionSeamBoundaryTest extends TestCase
 
         foreach ($bindings as $adapter => $ports) {
             $class = new ReflectionClass($adapter);
-            self::assertStringStartsWith('Kumwe\\CMS\\Infrastructure\\', $adapter);
+            self::assertStringStartsWith('Kumwe\\App\\Infrastructure\\', $adapter);
             self::assertStringStartsWith(
                 dirname(__DIR__, 2) . '/src/Infrastructure/',
                 (string) $class->getFileName(),
@@ -199,7 +199,7 @@ final class TransactionSeamBoundaryTest extends TestCase
             );
             foreach ($ports as $port) {
                 self::assertTrue($class->implementsInterface($port), sprintf('%s must answer %s.', $adapter, $port));
-                self::assertStringStartsWith('Kumwe\\CMS\\Application\\', $port);
+                self::assertStringStartsWith('Kumwe\\App\\Application\\', $port);
             }
         }
     }
@@ -243,7 +243,7 @@ final class TransactionSeamBoundaryTest extends TestCase
     {
         $names = [];
         foreach ($this->applicationFiles() as $relative => $path) {
-            $name = 'Kumwe\\CMS\\' . str_replace('/', '\\', substr($relative, 0, -4));
+            $name = 'Kumwe\\App\\' . str_replace('/', '\\', substr($relative, 0, -4));
             if (class_exists($name) || interface_exists($name) || trait_exists($name) || enum_exists($name)) {
                 $names[] = $name;
             }
@@ -266,7 +266,7 @@ final class TransactionSeamBoundaryTest extends TestCase
     {
         $root = dirname(__DIR__, 2) . '/src';
         $exempt = array_map(
-            static fn (string $name): string => str_replace('\\', '/', substr($name, strlen('Kumwe\\CMS\\'))) . '.php',
+            static fn (string $name): string => str_replace('\\', '/', substr($name, strlen('Kumwe\\App\\'))) . '.php',
             self::PUBLISHED_MIGRATION_CONTRACT,
         );
 

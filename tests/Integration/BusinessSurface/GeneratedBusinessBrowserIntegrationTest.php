@@ -2,40 +2,40 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessSurface;
+namespace Kumwe\App\Tests\Integration\BusinessSurface;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
-use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
-use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessSurface\Application\BusinessBulkMutation;
-use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewResult;
-use Kumwe\CMS\BusinessSurface\Delivery\Administrator\AdministratorBusinessSurfaceHandler;
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Localization\Application\ActiveLocale;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessSurface\Application\BusinessBulkMutation;
+use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewContract;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\App\BusinessSurface\Delivery\Administrator\AdministratorBusinessSurfaceHandler;
+use Kumwe\App\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -1254,7 +1254,7 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
      *
      * @param   string  $label  Short uniqueness label.
      *
-     * @return  array{\Kumwe\CMS\Application\Authorization\ExecutionContext, string,
+     * @return  array{\Kumwe\App\Application\Authorization\ExecutionContext, string,
      *          BusinessRecordService, GeneratedBusinessBrowserController, string}
      *
      * @since   2.0.0

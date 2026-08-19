@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Mcp;
+namespace Kumwe\App\Infrastructure\Mcp;
 
 use Mcp\Schema\ServerCapabilities;
 use Mcp\Schema\ToolAnnotations;
@@ -84,7 +84,7 @@ final readonly class KumweMcpServerFactory
         $this->validator->assertValid($tools, $resources, $prompts, $handlers);
         $builder = Server::builder()
             ->setServerInfo(
-                name: 'Kumwe CMS',
+                name: 'Kumwe App',
                 version: $this->serverVersion,
                 description: 'Capability-protected CMS administration through Kumwe application services.',
             )

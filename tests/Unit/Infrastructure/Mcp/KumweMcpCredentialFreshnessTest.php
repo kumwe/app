@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Mcp;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Mcp;
 
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
-use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\McpHandlersFixture;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
+use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\McpHandlersFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

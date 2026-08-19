@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Mcp;
+namespace Kumwe\App\Infrastructure\Mcp;
 
 use LogicException;
 

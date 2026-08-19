@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Application\StepUp;
+namespace Kumwe\App\Tests\Unit\Identity\Application\StepUp;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpAttemptThrottle;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpRandomSource;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpProofStore;
-use Kumwe\CMS\Identity\Application\StepUp\StepUpSessionRotator;
-use Kumwe\CMS\Identity\Application\StepUp\TotpAlgorithm;
-use Kumwe\CMS\Identity\Application\StepUp\TotpStepUpProvider;
-use Kumwe\CMS\Identity\Domain\StepUp\RotatedStepUpSession;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\CMS\Identity\Domain\StepUp\StepUpMethod;
-use Kumwe\CMS\Identity\Domain\StepUp\TotpCredential;
-use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpRecoveryCodeHasher;
-use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpSecretCipher;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\Identity\Application\StepUp\StepUpAttemptThrottle;
+use Kumwe\App\Identity\Application\StepUp\StepUpCredentialStore;
+use Kumwe\App\Identity\Application\StepUp\StepUpRandomSource;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\App\Identity\Application\StepUp\StepUpProofStore;
+use Kumwe\App\Identity\Application\StepUp\StepUpSessionRotator;
+use Kumwe\App\Identity\Application\StepUp\TotpAlgorithm;
+use Kumwe\App\Identity\Application\StepUp\TotpStepUpProvider;
+use Kumwe\App\Identity\Domain\StepUp\RotatedStepUpSession;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Identity\Domain\StepUp\StepUpMethod;
+use Kumwe\App\Identity\Domain\StepUp\TotpCredential;
+use Kumwe\App\Identity\Infrastructure\StepUp\SodiumStepUpRecoveryCodeHasher;
+use Kumwe\App\Identity\Infrastructure\StepUp\SodiumStepUpSecretCipher;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -513,7 +513,7 @@ final class RecordingStepUpSessionRotator implements StepUpSessionRotator
 
 final class RecordingStepUpProofStore implements StepUpProofStore
 {
-    public function issue(\Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification $verification): void
+    public function issue(\Kumwe\App\Identity\Domain\StepUp\StepUpVerification $verification): void
     {
     }
 }

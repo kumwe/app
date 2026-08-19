@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure\Security;
+namespace Kumwe\App\BusinessRecord\Infrastructure\Security;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Application\SecretCipher;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
 use RuntimeException;
 use SodiumException;
 

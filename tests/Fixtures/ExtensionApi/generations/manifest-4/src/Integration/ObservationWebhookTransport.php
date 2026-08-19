@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace KumweContract\ManifestFour\Integration;
 
-use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
 
 /**
  * Outbound adapter half of the manifest-4 compatibility package.

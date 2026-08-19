@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Policy;
+namespace Kumwe\App\BusinessSecurity\Policy;
 
 use InvalidArgumentException;
 use JsonException;

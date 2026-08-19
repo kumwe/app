@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\App\Application\Automation\Job;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Audit\Application\AuditRetentionService;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Audit\Application\AuditRetentionService;
 
 /**
  * Scheduled driver for the audit retention window, off unless an operator configures one.
@@ -54,7 +54,7 @@ final readonly class EnforceAuditRetentionHandler implements JobHandler
      * @return  void
      *
      * @throws  InvalidArgumentException  When the configured window is not a non-negative integer.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
      *          manage the audit trail.
      *
      * @since   2.0.0

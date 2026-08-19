@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessSurface\Delivery\Browser;
+namespace Kumwe\App\Tests\Unit\BusinessSurface\Delivery\Browser;
 
-use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessDocumentPresenter;
+use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessDocumentPresenter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

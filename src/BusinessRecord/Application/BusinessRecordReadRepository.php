@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
 
 /**
  * Port for every read of the physical tables one business definition has installed.
@@ -47,7 +47,7 @@ interface BusinessRecordReadRepository
      * @return  list<BusinessRecord>  Referencing records ordered by their stored key; empty when none
      *          references the target.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          bound is out of range, or the requested scope disagrees with the installed columns.
      *
      * @since   2.0.0
@@ -77,7 +77,7 @@ interface BusinessRecordReadRepository
      *
      * @return  list<BusinessRecord>  Internal referrers ordered by storage key, never for disclosure.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          bound, table, relationship column, scope, pinned version, or stored row is invalid.
      *
      * @since   2.0.0
@@ -106,7 +106,7 @@ interface BusinessRecordReadRepository
      * @return  StoredRecordIdentity|null  Internal key, pinned definition version and optimistic-lock
      *          version, or null when no row matches in this scope.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          requested scope disagrees with the installed columns, or a stored identity is malformed.
      *
      * @since   2.0.0
@@ -136,7 +136,7 @@ interface BusinessRecordReadRepository
      *
      * @return  BusinessRecord|null  The decoded record, or null when no row matches in this scope.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          stored row was written under a different definition version, the scope disagrees with
      *          the installed columns, or a stored value does not match its physical column.
      *
@@ -170,7 +170,7 @@ interface BusinessRecordReadRepository
      *
      * @return  BusinessRecordView  The projected record, without relationship includes.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When a
      *          stored entity reference is malformed or has no target in this scope.
      *
      * @since   2.0.0
@@ -203,10 +203,10 @@ interface BusinessRecordReadRepository
      * @return  RecordBrowseResult  Views for this page, the cursor to continue from when more rows
      *          matched, and any requested aggregates.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery  When the
      *          specification cannot be compiled — a cursor raised against a different query, or an
      *          aggregate over a field that cannot be reported.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          query names something the installed schema does not carry, a row's pinned definition is
      *          unavailable, or a stored value does not match its physical column.
      *
@@ -237,7 +237,7 @@ interface BusinessRecordReadRepository
      * @return  StoredRecordIdentity|null  Internal key and optimistic-lock version of the line, with the
      *          version of the line definition passed in; null when this owner holds no such line.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          owned-line table or its identity column is absent from the installed schema, or a stored
      *          value is malformed.
      *
@@ -275,10 +275,10 @@ interface BusinessRecordReadRepository
      * @return  list<StoredOwnedLine>  The lines in position order, then storage-key order for a
      *          collection whose positions were never renumbered; empty when the owner holds none.
      *
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
      *          owned-line table or one of its control columns is absent from the installed schema, or a
      *          stored value does not match the column the blueprint describes.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
      *          decoded line's virtual computations cannot be rebuilt.
      *
      * @since   2.0.0

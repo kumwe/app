@@ -2,39 +2,39 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\AuthorizationDefinitionLifecycle;
-use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\CMS\BusinessIntegration\Application\PayloadSchemaValidator;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
-use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyRateProviderDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
-use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
-use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\InterfaceStandard\SurfaceArea;
-use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalTemplateDefinition;
-use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
+use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator;
+use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\App\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewContract;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\App\InterfaceStandard\SurfaceDefinition;
+use Kumwe\App\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\App\Portal\Contribution\PortalRouteDefinition;
+use Kumwe\App\Portal\Contribution\PortalTemplateDefinition;
+use Kumwe\App\Portal\Contribution\PortalWorkspaceDefinition;
 
 /**
  * The contributions one package declares, parsed, ordered, and checked for internal consistency.

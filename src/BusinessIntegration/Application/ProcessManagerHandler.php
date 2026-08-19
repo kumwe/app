@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessInstance;
-use Kumwe\CMS\BusinessIntegration\Domain\ProcessTransition;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
+use Kumwe\App\BusinessIntegration\Domain\ProcessTransition;
 
 /**
  * Pure decision handler for one generic process-manager type.

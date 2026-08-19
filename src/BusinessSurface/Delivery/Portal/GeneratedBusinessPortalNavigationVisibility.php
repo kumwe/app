@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Delivery\Portal;
+namespace Kumwe\App\BusinessSurface\Delivery\Portal;
 
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
-use Kumwe\CMS\BusinessReporting\Application\ReportService;
-use Kumwe\CMS\Portal\Application\PortalExecutionContextFactory;
-use Kumwe\CMS\Portal\Application\PortalSession;
-use Kumwe\CMS\Portal\Presentation\PortalNavigationVisibility;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\BusinessReporting\Application\ReportService;
+use Kumwe\App\Portal\Application\PortalExecutionContextFactory;
+use Kumwe\App\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Presentation\PortalNavigationVisibility;
 use Ramsey\Uuid\Uuid;
 
 /**

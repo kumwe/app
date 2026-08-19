@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Authorization;
+namespace Kumwe\App\Infrastructure\Authorization;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\SiteGroup;
-use Kumwe\CMS\Application\Authorization\SiteGroupRegistry;
-use Kumwe\CMS\Application\Authorization\SiteGroupUnknown;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\App\Application\Authorization\SiteGroupRegistry;
+use Kumwe\App\Application\Authorization\SiteGroupUnknown;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Read side of the declared-group registry, answered from the prefixed `site_groups` tables.

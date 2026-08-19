@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Authentication;
+namespace Kumwe\App\Identity\Application\Authentication;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\GrantScope;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Identity\Domain\GrantScope;
 
 /**
  * A human actor that has proved who it is, together with the exact scoped authority it holds.
@@ -459,21 +459,21 @@ final readonly class AuthenticatedPrincipal
      * invocation and pass the result down; every authorization decision, audit record and idempotency
      * fingerprint reads the context rather than re-deriving the actor.
      *
-     * @param   \Kumwe\CMS\Application\Authorization\SiteContext             $site                    Site this
+     * @param   \Kumwe\App\Application\Authorization\SiteContext             $site                    Site this
      *          unit of work executes in.
-     * @param   \Kumwe\CMS\Application\Authorization\AuthenticationStrength  $authenticationStrength  How the
+     * @param   \Kumwe\App\Application\Authorization\AuthenticationStrength  $authenticationStrength  How the
      *          actor proved itself; `System` is rejected, since this context has a human behind it.
      * @param   string                                                       $requestId               Identifier
      *          of this single unit of work.
      * @param   ?string                                                      $correlationId           Trace
      *          identifier shared by related work; defaults to `$requestId`.
-     * @param ?\Kumwe\CMS\Application\Authorization\AuthenticatedSurface $surface Authenticated delivery boundary.
-     * @param ?\Kumwe\CMS\Application\Authorization\MembershipContext $membership Exact live membership scope.
+     * @param ?\Kumwe\App\Application\Authorization\AuthenticatedSurface $surface Authenticated delivery boundary.
+     * @param ?\Kumwe\App\Application\Authorization\MembershipContext $membership Exact live membership scope.
      * @param ?string $sessionId Rotated browser-session
      *          identity.
-     * @param ?\Kumwe\CMS\Application\Authorization\StepUpProof $stepUpProof Fresh multi-factor proof.
+     * @param ?\Kumwe\App\Application\Authorization\StepUpProof $stepUpProof Fresh multi-factor proof.
      *
-     * @return  \Kumwe\CMS\Application\Authorization\ExecutionContext  A human context bound to this
+     * @return  \Kumwe\App\Application\Authorization\ExecutionContext  A human context bound to this
      *          principal's authority.
      *
      * @throws  InvalidArgumentException  When the strength is `System`, or either identifier is empty, longer
@@ -482,16 +482,16 @@ final readonly class AuthenticatedPrincipal
      * @since   2.0.0
      */
     public function context(
-        \Kumwe\CMS\Application\Authorization\SiteContext $site,
-        \Kumwe\CMS\Application\Authorization\AuthenticationStrength $authenticationStrength,
+        \Kumwe\App\Application\Authorization\SiteContext $site,
+        \Kumwe\App\Application\Authorization\AuthenticationStrength $authenticationStrength,
         string $requestId,
         ?string $correlationId = null,
-        ?\Kumwe\CMS\Application\Authorization\AuthenticatedSurface $surface = null,
-        ?\Kumwe\CMS\Application\Authorization\MembershipContext $membership = null,
+        ?\Kumwe\App\Application\Authorization\AuthenticatedSurface $surface = null,
+        ?\Kumwe\App\Application\Authorization\MembershipContext $membership = null,
         ?string $sessionId = null,
-        ?\Kumwe\CMS\Application\Authorization\StepUpProof $stepUpProof = null,
-    ): \Kumwe\CMS\Application\Authorization\ExecutionContext {
-        return \Kumwe\CMS\Application\Authorization\ExecutionContext::issueHuman(
+        ?\Kumwe\App\Application\Authorization\StepUpProof $stepUpProof = null,
+    ): \Kumwe\App\Application\Authorization\ExecutionContext {
+        return \Kumwe\App\Application\Authorization\ExecutionContext::issueHuman(
             $this->provenance,
             $this,
             $site,

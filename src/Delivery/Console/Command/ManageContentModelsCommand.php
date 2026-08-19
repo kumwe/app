@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Delivery\Console\Command;
+namespace Kumwe\App\Delivery\Console\Command;
 
-use Kumwe\CMS\Content\Application\ContentModelService;
-use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Workflow\Domain\WorkflowDefinition;
+use Kumwe\App\Content\Application\ContentModelService;
+use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
+use Kumwe\App\Workflow\Domain\WorkflowDefinition;
 use Throwable;
 
 /**

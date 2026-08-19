@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\Persistence;
+namespace Kumwe\App\Tests\Integration\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
@@ -12,29 +12,29 @@ use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigrationRecovery;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineNonTransactionalMigrationRecovery;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\Migration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationPlan;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\RepeatableMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
-use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Kernel\ContainerFactory;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigrationRecovery;
+use Kumwe\App\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
+use Kumwe\App\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
+use Kumwe\App\Infrastructure\Persistence\Migration\DoctrineNonTransactionalMigrationRecovery;
+use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\Migration;
+use Kumwe\App\Infrastructure\Persistence\Migration\MigrationLock;
+use Kumwe\App\Infrastructure\Persistence\Migration\MigrationPlan;
+use Kumwe\App\Infrastructure\Persistence\Migration\MigrationRunner;
+use Kumwe\App\Infrastructure\Persistence\Migration\JobRecoveryMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\RepeatableMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
+use Kumwe\App\Infrastructure\Persistence\ReadinessProbe;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Kernel\ContainerFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -608,7 +608,7 @@ final class CrashResumableMigrationIntegrationTest extends TestCase
         );
     }
 
-    private function context(): \Kumwe\CMS\Application\Authorization\ExecutionContext
+    private function context(): \Kumwe\App\Application\Authorization\ExecutionContext
     {
         return AuthorizationContext::system(SystemIdentity::Migration)->context(
             SiteContext::default(),

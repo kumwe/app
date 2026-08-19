@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Business;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Business;
 
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessRecord\Application\PostingPeriodService;
-use Kumwe\CMS\Delivery\Http\Api\Business\BusinessApiResponder;
-use Kumwe\CMS\Delivery\Http\Api\Business\PostingPeriodApiHandler;
-use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\ImmediateTransactionManager;
-use Kumwe\CMS\Tests\Support\InMemoryPostingPeriodRepository;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodService;
+use Kumwe\App\Delivery\Http\Api\Business\BusinessApiResponder;
+use Kumwe\App\Delivery\Http\Api\Business\PostingPeriodApiHandler;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\ImmediateTransactionManager;
+use Kumwe\App\Tests\Support\InMemoryPostingPeriodRepository;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

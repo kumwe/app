@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessIntegration\Application;
+namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\CMS\Application\Automation\RetryPolicy;
+use Kumwe\App\Application\Automation\RetryPolicy;
 use LogicException;
 use Psr\Log\LoggerInterface;
 use Throwable;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSurface\Application\Custom;
+namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Automation\IdempotencyKey;
+use Kumwe\App\Application\Automation\IdempotencyKey;
 
 /**
  * Bounded, versioned result returned by an extension-specific business action handler.

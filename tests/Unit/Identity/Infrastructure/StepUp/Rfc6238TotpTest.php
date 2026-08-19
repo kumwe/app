@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Infrastructure\StepUp;
+namespace Kumwe\App\Tests\Unit\Identity\Infrastructure\StepUp;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Kumwe\CMS\Identity\Infrastructure\StepUp\Rfc6238Totp;
+use Kumwe\App\Identity\Infrastructure\StepUp\Rfc6238Totp;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Http\Middleware;
+namespace Kumwe\App\Tests\Unit\Http\Middleware;
 
-use Kumwe\CMS\Http\Middleware\MetricsMiddleware;
-use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
-use Kumwe\CMS\Infrastructure\Observability\CorrelationContext;
-use Kumwe\CMS\Infrastructure\Observability\MetricCatalog;
-use Kumwe\CMS\Infrastructure\Observability\MetricRecorder;
-use Kumwe\CMS\Infrastructure\Observability\MetricSample;
-use Kumwe\CMS\Infrastructure\Observability\NullMetricRecorder;
+use Kumwe\App\Http\Middleware\MetricsMiddleware;
+use Kumwe\App\Http\Middleware\RequestIdMiddleware;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\MetricSample;
+use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

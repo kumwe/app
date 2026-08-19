@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Administrator\Navigation;
+namespace Kumwe\App\Administrator\Navigation;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Application\Trust\TrustStore;
-use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
-use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceRegistry;
-use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
-use Kumwe\CMS\Extension\Contribution\ContributionSurface;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Contribution\AdministratorNavigationDefinition;
+use Kumwe\App\Extension\Contribution\AdministratorWorkspaceRegistry;
+use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ContributionSurface;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 
 /**
  * Holds every administrator menu entry, core and contributed, and presents the subset an actor may see.

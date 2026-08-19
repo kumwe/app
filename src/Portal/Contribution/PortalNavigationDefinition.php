@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Contribution;
+namespace Kumwe\App\Portal\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\InterfaceStandard\SurfaceId;
+use Kumwe\App\Extension\Contribution\ContributionDefinition;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\InterfaceStandard\SurfaceId;
 
 /**
  * Capability-gated navigation declaration explicitly opted into the portal shell.

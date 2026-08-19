@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Authentication;
+namespace Kumwe\App\Identity\Application\Authentication;
 
 /**
  * Port that turns a presented bearer token into the principal it authenticates, or into nothing.

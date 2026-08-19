@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessReporting\Delivery\Console;
+namespace Kumwe\App\BusinessReporting\Delivery\Console;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessReporting\Application\ExportService;
-use Kumwe\CMS\BusinessReporting\Application\ReportExecutionRequest;
-use Kumwe\CMS\BusinessReporting\Application\ReportService;
-use Kumwe\CMS\BusinessReporting\Delivery\Api\ReportApiPresenter;
-use Kumwe\CMS\Delivery\Console\Command;
-use Kumwe\CMS\Delivery\Console\Command\CommandInput;
-use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
-use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessReporting\Application\ExportService;
+use Kumwe\App\BusinessReporting\Application\ReportExecutionRequest;
+use Kumwe\App\BusinessReporting\Application\ReportService;
+use Kumwe\App\BusinessReporting\Delivery\Api\ReportApiPresenter;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Command\CommandInput;
+use Kumwe\App\Delivery\Console\Command\ConsoleAuthorizer;
+use Kumwe\App\Delivery\Console\Output;
 use Throwable;
 
 /**

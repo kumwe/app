@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessRecord\Infrastructure;
+namespace Kumwe\App\Tests\Unit\BusinessRecord\Infrastructure;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyMaterial;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyPurpose;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyRing;
-use Kumwe\CMS\BusinessRecord\Domain\SecretKeyUnavailable;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\ConfiguredSecretKeyRings;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyMaterial;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyPurpose;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyRing;
+use Kumwe\App\BusinessRecord\Domain\SecretKeyUnavailable;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\ConfiguredSecretKeyRings;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Identity\Infrastructure\StepUp;
+namespace Kumwe\App\Tests\Unit\Identity\Infrastructure\StepUp;
 
-use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
-use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpRecoveryCodeHasher;
-use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpSecretCipher;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\App\Identity\Infrastructure\StepUp\SodiumStepUpRecoveryCodeHasher;
+use Kumwe\App\Identity\Infrastructure\StepUp\SodiumStepUpSecretCipher;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Authorization;
+namespace Kumwe\App\Infrastructure\Authorization;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SiteGroup;
-use Kumwe\CMS\Application\Authorization\SiteGroupUnknown;
-use Kumwe\CMS\Application\Authorization\SiteGroupWriter;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\App\Application\Authorization\SiteGroupUnknown;
+use Kumwe\App\Application\Authorization\SiteGroupWriter;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 
 /**

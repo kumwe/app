@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Http\Handler;
+namespace Kumwe\App\Http\Handler;
 
-use Kumwe\CMS\Infrastructure\Persistence\ReadinessStatus;
+use Kumwe\App\Infrastructure\Persistence\ReadinessStatus;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

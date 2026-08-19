@@ -17,8 +17,8 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\Tests\Deployment\CaseReport;
-use Kumwe\CMS\Tests\Deployment\DrillGraph;
+use Kumwe\App\Tests\Deployment\CaseReport;
+use Kumwe\App\Tests\Deployment\DrillGraph;
 
 require __DIR__ . '/../Support/deployment-drill-autoload.php';
 

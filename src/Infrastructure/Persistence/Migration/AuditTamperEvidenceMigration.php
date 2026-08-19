@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -13,11 +13,11 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\CMS\Application\Automation\JobExecutionClass;
-use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
-use Kumwe\CMS\Audit\Domain\AuditEventDigest;
-use Kumwe\CMS\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\App\Audit\Domain\AuditEnforcementState;
+use Kumwe\App\Audit\Domain\AuditEventDigest;
+use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 use Throwable;
 

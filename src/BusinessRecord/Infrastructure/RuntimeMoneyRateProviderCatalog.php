@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Infrastructure;
+namespace Kumwe\App\BusinessRecord\Infrastructure;
 
-use Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider;
-use Kumwe\CMS\BusinessRecord\Application\MoneyRateProviderCatalog;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyConversionRequest;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyRateProviderDefinition;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessRecord\Application\MoneyRateProvider;
+use Kumwe\App\BusinessRecord\Application\MoneyRateProviderCatalog;
+use Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest;
+use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 
 /**
  * The active rate providers, read from the extension contributions of the running generation.

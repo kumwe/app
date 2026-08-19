@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Mcp;
+namespace Kumwe\App\Infrastructure\Mcp;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
-use Kumwe\CMS\BusinessReporting\Application\ExportService;
-use Kumwe\CMS\BusinessReporting\Application\ReportExecutionRequest;
-use Kumwe\CMS\BusinessReporting\Application\ReportService;
-use Kumwe\CMS\BusinessReporting\Delivery\Api\ReportApiPresenter;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\App\BusinessReporting\Application\ExportService;
+use Kumwe\App\BusinessReporting\Application\ReportExecutionRequest;
+use Kumwe\App\BusinessReporting\Application\ReportService;
+use Kumwe\App\BusinessReporting\Delivery\Api\ReportApiPresenter;
 use RuntimeException;
 
 /**

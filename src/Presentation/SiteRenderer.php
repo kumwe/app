@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation;
+namespace Kumwe\App\Presentation;
 
-use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
-use Kumwe\CMS\Presentation\Twig\SiteTwigEnvironment;
+use Kumwe\App\Presentation\Asset\ViteAssetManifest;
+use Kumwe\App\Presentation\Twig\SiteTwigEnvironment;
 
 /**
  * Renders a public site template through the site Twig environment with the site-wide view data applied.

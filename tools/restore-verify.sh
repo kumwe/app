@@ -50,7 +50,7 @@ expected_checksum_files="$(printf '%s\n' database.dump extension-assets.tar.gz e
 
 jq -e '
     .format == "kumwe-backup-v2"
-    and .product == "Kumwe CMS"
+    and .product == "Kumwe App"
     and .product_major == 2
     and (.release | test("^2\\.[0-9]+\\.[0-9]+([+-][0-9A-Za-z.-]+)?$"))
     and (.database_driver == "mariadb" or .database_driver == "mysql" or .database_driver == "pgsql")

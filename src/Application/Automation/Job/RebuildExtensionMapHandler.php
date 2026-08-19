@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\App\Application\Automation\Job;
 
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Identity\Domain\Capability;
 
 /**
  * Scheduled job that recompiles the extension runtime map this replica serves requests from.
@@ -63,7 +63,7 @@ final readonly class RebuildExtensionMapHandler implements JobHandler
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
      *          manage extensions.
      * @throws  \RuntimeException  When the authoritative publication is missing or fails verification, or
      *          the replica-local map cannot be written.

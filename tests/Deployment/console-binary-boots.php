@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-use Kumwe\CMS\Tests\Deployment\CaseReport;
+use Kumwe\App\Tests\Deployment\CaseReport;
 
 require __DIR__ . '/../Support/deployment-drill-autoload.php';
 

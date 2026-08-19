@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Mcp;
+namespace Kumwe\App\Tests\Unit\Delivery\Http\Mcp;
 
-use Kumwe\CMS\Delivery\Http\Mcp\McpHttpHandler;
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
-use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Tests\Support\McpHandlersFixture;
+use Kumwe\App\Delivery\Http\Mcp\McpHttpHandler;
+use Kumwe\App\Infrastructure\Mcp\KumweMcpServerFactory;
+use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\McpHandlersFixture;
 use Laminas\Diactoros\ResponseFactory;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\StreamFactory;

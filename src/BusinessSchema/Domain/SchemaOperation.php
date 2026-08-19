@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Domain;
+namespace Kumwe\App\BusinessSchema\Domain;
 
-use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 /**
  * One approvable, journaled step of a schema plan, described semantically rather than as SQL.
@@ -67,7 +67,7 @@ final readonly class SchemaOperation
      *          metadata identifier nor a slash path, the recovery implication is
      *          not a declared one, a row-rewriting step claims to be online-safe
      *          additive, or either state is not a string-keyed object.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When either state holds a
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When either state holds a
      *          value that cannot be canonically encoded, such as a float or an object.
      *
      * @since   2.0.0
@@ -122,7 +122,7 @@ final readonly class SchemaOperation
      * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is missing or
      *          misshapen, the stored kind or risk is not a known one, an operation
      *          invariant fails, or the stored checksum does not match the content.
-     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored state holds a
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored state holds a
      *          value that cannot be canonically encoded.
      *
      * @since   2.0.0

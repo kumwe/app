@@ -11,15 +11,15 @@ use @@PHP_NAMESPACE@@\Integration\IntegrationLedger;
 use @@PHP_NAMESPACE@@\Integration\ItemDomainListener;
 use @@PHP_NAMESPACE@@\Integration\ItemIntegrationConsumer;
 use @@PHP_NAMESPACE@@\Integration\ItemProjectionBuilder;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\CMS\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
+use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessReporting\Application\ProjectionEvent;
+use Kumwe\App\BusinessReporting\Application\ProjectionWriter;
+use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
 use PHPUnit\Framework\TestCase;
 
 /**

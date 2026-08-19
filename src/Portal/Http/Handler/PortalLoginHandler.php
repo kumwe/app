@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Http\Handler;
+namespace Kumwe\App\Portal\Http\Handler;
 
-use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Localization\Application\Translator;
-use Kumwe\CMS\Portal\Application\PortalAuthenticator;
-use Kumwe\CMS\Portal\Application\PortalContextResolver;
-use Kumwe\CMS\Portal\Application\PortalPasswordIdentity;
-use Kumwe\CMS\Portal\Application\PortalSessionStore;
-use Kumwe\CMS\Portal\Domain\PortalContext;
-use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
-use Kumwe\CMS\Portal\Http\PortalRequest;
-use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Localization\Application\Translator;
+use Kumwe\App\Portal\Application\PortalAuthenticator;
+use Kumwe\App\Portal\Application\PortalContextResolver;
+use Kumwe\App\Portal\Application\PortalPasswordIdentity;
+use Kumwe\App\Portal\Application\PortalSessionStore;
+use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\App\Portal\Http\PortalRequest;
+use Kumwe\App\Portal\Presentation\PortalRenderer;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;

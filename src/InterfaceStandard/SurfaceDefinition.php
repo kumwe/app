@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\InterfaceStandard;
+namespace Kumwe\App\InterfaceStandard;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
-use Kumwe\CMS\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ContributionDefinition;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
 
 /**
  * Conformant owner-bound KIS surface accepted by Kumwe's existing contribution architecture.

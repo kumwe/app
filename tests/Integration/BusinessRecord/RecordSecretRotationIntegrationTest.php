@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Integration\BusinessRecord;
+namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
 use Doctrine\DBAL\Connection;
 use Joomla\DI\Container;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\CMS\BusinessRecord\Application\RecordSecretRotation;
-use Kumwe\CMS\BusinessRecord\Application\SecretAssociatedData;
-use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
-use Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider;
-use Kumwe\CMS\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineRecordSecretRotation;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessRecord\Application\RecordSecretRotation;
+use Kumwe\App\BusinessRecord\Application\SecretAssociatedData;
+use Kumwe\App\BusinessRecord\Application\SecretCipher;
+use Kumwe\App\BusinessRecord\Application\SecretKeyProvider;
+use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineRecordSecretRotation;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
+use Kumwe\App\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

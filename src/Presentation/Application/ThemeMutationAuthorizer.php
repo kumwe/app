@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Application;
+namespace Kumwe\App\Presentation\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 
 /**
  * Port deciding whether an actor may change which theme is bound to a presentation surface.
@@ -28,8 +28,8 @@ interface ThemeMutationAuthorizer
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
-     * @throws  \Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability  When no grant backs it.
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
+     * @throws  \Kumwe\App\Identity\Application\Authorization\InsufficientCapability  When no grant backs it.
      *
      * @since   2.0.0
      */

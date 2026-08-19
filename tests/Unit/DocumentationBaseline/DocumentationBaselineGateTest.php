@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\DocumentationBaseline;
+namespace Kumwe\App\Tests\Unit\DocumentationBaseline;
 
 use FilesystemIterator;
 use PHPUnit\Framework\Attributes\CoversNothing;
@@ -227,7 +227,7 @@ final class DocumentationBaselineGateTest extends TestCase
 
             declare(strict_types=1);
 
-            namespace Kumwe\CMS\Tests\Fixture;
+            namespace Kumwe\App\Tests\Fixture;
 
             /**
              * Documented.

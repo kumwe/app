@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Presentation;
+namespace Kumwe\App\Tests\Unit\Administrator\Presentation;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
-use Kumwe\CMS\Administrator\Presentation\SitePresentationFormMapper;
-use Kumwe\CMS\Presentation\Application\SitePresentation;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Administrator\Presentation\SitePresentationFormMapper;
+use Kumwe\App\Presentation\Application\SitePresentation;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

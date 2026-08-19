@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Mcp;
+namespace Kumwe\App\Infrastructure\Mcp;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\BusinessSurface\Application\BusinessHistoryUseCase;
-use Kumwe\CMS\BusinessSurface\Application\BusinessMutationPlanService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
-use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessSurface\Application\BusinessHistoryUseCase;
+use Kumwe\App\BusinessSurface\Application\BusinessMutationPlanService;
+use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
+use Kumwe\App\BusinessSurface\Application\BusinessSurface;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
 
 /**
  * Implements the bounded generated-business MCP tools behind Kumwe's authenticated MCP handler.

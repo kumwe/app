@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Infrastructure\StepUp;
+namespace Kumwe\App\Identity\Infrastructure\StepUp;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Identity\Application\StepUp\TotpAlgorithm;
+use Kumwe\App\Identity\Application\StepUp\TotpAlgorithm;
 
 /**
  * RFC 6238 TOTP calculator with a bounded clock-drift window and constant-time code comparison.

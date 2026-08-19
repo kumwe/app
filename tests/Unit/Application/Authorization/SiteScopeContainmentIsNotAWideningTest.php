@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
+namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\DenyByDefaultAuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
-use Kumwe\CMS\Application\Authorization\OwnershipScope;
-use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
-use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\DenyByDefaultAuthorizationGateway;
+use Kumwe\App\Application\Authorization\MembershipContextValidator;
+use Kumwe\App\Application\Authorization\OwnershipScope;
+use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -145,13 +145,13 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
              *
              * @return  OwnershipScope  Never returned.
              *
-             * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown  Always.
+             * @throws  \Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown  Always.
              *
              * @since   2.0.0
              */
             public function scopeFor(AuthorizationResource $resource): OwnershipScope
             {
-                throw new \Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown($resource);
+                throw new \Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown($resource);
             }
         };
         self::assertTrue($gateway->decide(

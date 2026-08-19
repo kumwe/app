@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\CMS\Application\Presentation\ThemePackageValidator;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
-use Kumwe\CMS\Presentation\Infrastructure\TwigThemePackageValidator;
+use Kumwe\App\Application\Presentation\ThemePackageValidator;
+use Kumwe\App\Extension\Domain\ThemeSurface;
+use Kumwe\App\Presentation\Infrastructure\TwigThemePackageValidator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -45,7 +45,7 @@ final class TemplateValidationSeamBoundaryTest extends TestCase
         $adapter = new ReflectionClass(TwigThemePackageValidator::class);
 
         self::assertTrue($port->isInterface(), 'The template-validation boundary must be a contract.');
-        self::assertStringStartsWith('Kumwe\\CMS\\Application\\', $port->getName());
+        self::assertStringStartsWith('Kumwe\\App\\Application\\', $port->getName());
         self::assertTrue($adapter->implementsInterface(ThemePackageValidator::class));
         self::assertStringStartsWith(
             dirname(__DIR__, 2) . '/src/Application/Presentation/',
@@ -79,7 +79,7 @@ final class TemplateValidationSeamBoundaryTest extends TestCase
                     continue;
                 }
                 self::assertStringStartsNotWith('Twig\\', $type->getName());
-                self::assertStringStartsNotWith('Kumwe\\CMS\\Presentation\\', $type->getName());
+                self::assertStringStartsNotWith('Kumwe\\App\\Presentation\\', $type->getName());
             }
         }
     }
@@ -95,7 +95,7 @@ final class TemplateValidationSeamBoundaryTest extends TestCase
     {
         $surface = new ReflectionEnum(ThemeSurface::class);
 
-        self::assertStringStartsWith('Kumwe\\CMS\\Extension\\Domain\\', $surface->getName());
+        self::assertStringStartsWith('Kumwe\\App\\Extension\\Domain\\', $surface->getName());
         self::assertStringStartsWith(
             dirname(__DIR__, 2) . '/src/Extension/Domain/',
             (string) $surface->getFileName(),

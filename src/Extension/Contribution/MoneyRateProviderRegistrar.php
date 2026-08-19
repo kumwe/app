@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Contribution;
+namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyRateProviderDefinition;
+use Kumwe\App\BusinessRecord\Application\MoneyRateProvider;
+use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
 
 /**
  * Additive capability for providers that supply exchange rates.

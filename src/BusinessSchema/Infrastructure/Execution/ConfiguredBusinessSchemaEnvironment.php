@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Infrastructure\Execution;
+namespace Kumwe\App\BusinessSchema\Infrastructure\Execution;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaEnvironment;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaEnvironment;
 
 /**
  * Business-schema environment identity taken from configuration rather than probed from the server.

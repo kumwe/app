@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\App\Application\Automation\Job;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Audit\Application\AuditTrailVerifier;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Audit\Application\AuditTrailVerifier;
 use RuntimeException;
 
 /**
@@ -63,7 +63,7 @@ final readonly class VerifyAuditTrailHandler implements JobHandler
      *
      * @throws  InvalidArgumentException  When the batch size is not an integer in range.
      * @throws  RuntimeException  When the trail diverges from its recomputed evidence.
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
      *          manage the audit trail.
      *
      * @since   2.0.0

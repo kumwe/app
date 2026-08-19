@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Administrator\Automation;
+namespace Kumwe\App\Tests\Unit\Administrator\Automation;
 
-use Kumwe\CMS\Tests\Support\InterfaceTranslation;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use InvalidArgumentException;
-use Kumwe\CMS\Administrator\Automation\AutomationJobField;
-use Kumwe\CMS\Administrator\Automation\AutomationJobFormRegistry;
+use Kumwe\App\Administrator\Automation\AutomationJobField;
+use Kumwe\App\Administrator\Automation\AutomationJobFormRegistry;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

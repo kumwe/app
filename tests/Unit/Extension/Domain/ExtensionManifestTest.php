@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Extension\Domain;
+namespace Kumwe\App\Tests\Unit\Extension\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Domain\ExtensionManifest;
-use Kumwe\CMS\Extension\Domain\ExtensionType;
-use Kumwe\CMS\Extension\Domain\SemanticVersion;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Domain\ExtensionType;
+use Kumwe\App\Extension\Domain\SemanticVersion;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Application\Automation\Job;
+namespace Kumwe\App\Application\Automation\Job;
 
-use Kumwe\CMS\Application\Automation\JobHandler;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
+use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
 
 /**
  * Scheduled job that removes the administrator sessions of one site once they have expired.
@@ -55,7 +55,7 @@ final readonly class PurgeAdministratorSessionsHandler implements JobHandler
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
      *          manage automation for that site.
      *
      * @since   2.0.0

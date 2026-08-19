@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
 use DateInterval;
 use DateTimeImmutable;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaOperation;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaOperationKind;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaStepStatus;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\App\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\App\BusinessSchema\Domain\SchemaStepStatus;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -137,7 +137,7 @@ final readonly class BusinessSchemaExecutor
      * @return  SchemaExecutionOutcome  The fence the run held, the steps it applied and skipped, and the
      *          checksum of the schema it left behind.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.execute`,
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.execute`,
      *          or `business.schema.destructive` for a destructive plan, is refused.
      * @throws  BusinessSchemaNotFound  When this site holds no plan under that identifier, or the plan's
      *          definition, published version, or recovery evidence can no longer be resolved.
@@ -171,7 +171,7 @@ final readonly class BusinessSchemaExecutor
      * @return  SchemaExecutionOutcome  The same report a first run produces, marked as resumed, with the
      *          steps an earlier attempt had finished counted as skipped.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.recover`,
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.recover`,
      *          or `business.schema.destructive` for a destructive plan, is refused.
      * @throws  BusinessSchemaNotFound  When this site holds no plan under that identifier, or the plan's
      *          definition, published version, or recovery evidence can no longer be resolved.
@@ -211,7 +211,7 @@ final readonly class BusinessSchemaExecutor
      *
      * @return  SchemaExecutionOutcome  The report of the completed install, marked as resumed.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.execute`,
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.execute`,
      *          or `business.schema.destructive` for a destructive plan, is refused.
      * @throws  BusinessSchemaNotFound  When this site holds no plan under that identifier, or the plan's
      *          definition, published version, or recovery evidence can no longer be resolved.
@@ -329,7 +329,7 @@ final readonly class BusinessSchemaExecutor
      * @return  SchemaExecutionOutcome  What this attempt applied and skipped, and the checksum the schema
      *          ended on — the purge sentinel when the plan dropped the installation.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When a destructive plan's
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When a destructive plan's
      *          `business.schema.destructive` capability is refused.
      * @throws  BusinessSchemaNotFound  When the definition, its published version, or the recovery
      *          evidence the plan cites cannot be resolved for this site.
@@ -1678,8 +1678,8 @@ final readonly class BusinessSchemaExecutor
         if ($operation->before === null || $operation->after === null) {
             return false;
         }
-        $before = \Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->before);
-        $after = \Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->after);
+        $before = \Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->before);
+        $after = \Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->after);
         if (
             $before->logicalName !== $after->logicalName
             || $before->physicalName !== $after->physicalName
@@ -1733,7 +1733,7 @@ final readonly class BusinessSchemaExecutor
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor
      *          that capability on this site.
      *
      * @since   2.0.0

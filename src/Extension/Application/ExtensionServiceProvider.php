@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Extension\Application;
+namespace Kumwe\App\Extension\Application;
 
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
 
 /**
  * The single entry point an extension package exposes to Kumwe.

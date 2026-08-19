@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Http\Middleware;
+namespace Kumwe\App\Tests\Unit\Http\Middleware;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired;
-use Kumwe\CMS\Http\Middleware\BodyLimitMiddleware;
-use Kumwe\CMS\Http\Middleware\ProblemDetailsMiddleware;
-use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
-use Kumwe\CMS\Http\Middleware\SecurityHeadersMiddleware;
-use Kumwe\CMS\Http\Middleware\TrustedHostMiddleware;
-use Kumwe\CMS\Http\Security\TrustedHostMatcher;
-use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
-use Kumwe\CMS\Infrastructure\Observability\CorrelationContext;
+use Kumwe\App\Application\Security\HighImpactAuthenticationRequired;
+use Kumwe\App\Http\Middleware\BodyLimitMiddleware;
+use Kumwe\App\Http\Middleware\ProblemDetailsMiddleware;
+use Kumwe\App\Http\Middleware\RequestIdMiddleware;
+use Kumwe\App\Http\Middleware\SecurityHeadersMiddleware;
+use Kumwe\App\Http\Middleware\TrustedHostMiddleware;
+use Kumwe\App\Http\Security\TrustedHostMatcher;
+use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;

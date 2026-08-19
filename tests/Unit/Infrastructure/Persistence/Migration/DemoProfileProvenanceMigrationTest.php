@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
+namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
@@ -12,9 +12,9 @@ use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\BigIntType;
 use Doctrine\DBAL\Types\IntegerType;
 use Doctrine\DBAL\Types\JsonType;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\DemoProfileProvenanceMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\RepeatableMigration;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\Migration\DemoProfileProvenanceMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\RepeatableMigration;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;

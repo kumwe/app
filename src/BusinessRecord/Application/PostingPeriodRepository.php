@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Application;
+namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\CMS\BusinessRecord\Domain\PostingPeriod;
+use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
 
 /**
  * Store the posting-period declarations live in, serving both their administration and the lock.

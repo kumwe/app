@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\OpenApi\Application;
+namespace Kumwe\App\OpenApi\Application;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
-use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
-use Kumwe\CMS\OpenApi\Infrastructure\CanonicalOpenApiJson;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\App\OpenApi\Infrastructure\CanonicalOpenApiJson;
 
 /**
  * Deterministically assembles the OpenAPI 3.1 contract for generated business resources.

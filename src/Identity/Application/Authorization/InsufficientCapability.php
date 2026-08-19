@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Identity\Application\Authorization;
+namespace Kumwe\App\Identity\Application\Authorization;
 
 use DomainException;
 

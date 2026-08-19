@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSecurity\Policy;
+namespace Kumwe\App\BusinessSecurity\Policy;
 
 /**
  * One typed node in the declarative record-policy language.

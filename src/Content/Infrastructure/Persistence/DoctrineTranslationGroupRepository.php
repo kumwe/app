@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Content\Infrastructure\Persistence;
+namespace Kumwe\App\Content\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use JsonException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Content\Application\TranslationGroupRepository;
-use Kumwe\CMS\Content\Domain\InvalidTranslationGroup;
-use Kumwe\CMS\Content\Domain\PublicationWindow;
-use Kumwe\CMS\Content\Domain\TranslationGroup;
-use Kumwe\CMS\Content\Domain\TranslationGroupMember;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Localization\Domain\InvalidLocaleTag;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
+use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\Content\Application\TranslationGroupRepository;
+use Kumwe\App\Content\Domain\InvalidTranslationGroup;
+use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\App\Content\Domain\TranslationGroup;
+use Kumwe\App\Content\Domain\TranslationGroupMember;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Localization\Domain\InvalidLocaleTag;
+use Kumwe\App\Localization\Domain\LocaleTag;
 use RuntimeException;
 
 /**

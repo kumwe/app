@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Localization\Http;
+namespace Kumwe\App\Tests\Unit\Localization\Http;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Localization\Application\ActiveLocale;
-use Kumwe\CMS\Localization\Application\SupportedLocales;
-use Kumwe\CMS\Localization\Application\TranslationScope;
-use Kumwe\CMS\Localization\Domain\LocaleTag;
-use Kumwe\CMS\Localization\Http\Middleware\TranslationScopeMiddleware;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Localization\Application\SupportedLocales;
+use Kumwe\App\Localization\Application\TranslationScope;
+use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\App\Localization\Http\Middleware\TranslationScopeMiddleware;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

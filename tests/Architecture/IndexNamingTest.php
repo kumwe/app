@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Architecture;
+namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\CMS\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\IndexNameIsolationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\NumberSequenceIdentityMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\IndexNameIsolationMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\NumberSequenceIdentityMigration;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -164,7 +164,7 @@ final class IndexNamingTest extends TestCase
     {
         /** @var array<string, string> $inventory */
         $inventory = (new ReflectionClass(
-            \Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration\IndexNameIsolationMigrationTest::class,
+            \Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration\IndexNameIsolationMigrationTest::class,
         ))->getConstant('SHIPPED_LITERALS');
 
         return $inventory;

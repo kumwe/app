@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Presentation\Infrastructure;
+namespace Kumwe\App\Presentation\Infrastructure;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
-use Kumwe\CMS\Extension\Domain\ThemeSurface;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Presentation\Application\ThemeMutationAuthorizer;
+use Kumwe\App\Extension\Domain\ThemeSurface;
 
 /**
  * Authorizes a theme mutation for one surface, confirming the decision against a freshly read grant row.
@@ -61,7 +61,7 @@ final readonly class DoctrineThemeMutationAuthorizer implements ThemeMutationAut
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the gateway refuses the
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the gateway refuses the
      *          capability for this context and resource.
      * @throws  InsufficientCapability  When the gateway allowed it but no live grant backs it, because
      *          the grant was revoked or the user is no longer active.

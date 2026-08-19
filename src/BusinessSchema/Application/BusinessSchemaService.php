@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessSchema\Application;
+namespace Kumwe\App\BusinessSchema\Application;
 
 use DateInterval;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
-use Kumwe\CMS\Application\Persistence\TransactionManager;
-use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Domain\AuditEvent;
-use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaOperationKind;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaRecoveryEvidence;
-use Kumwe\CMS\BusinessSchema\Domain\SchemaRisk;
-use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\App\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\App\BusinessSchema\Domain\SchemaRecoveryEvidence;
+use Kumwe\App\BusinessSchema\Domain\SchemaRisk;
+use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -97,7 +97,7 @@ final readonly class BusinessSchemaService
      *
      * @return  list<SchemaPlan>  Plans of that site, most recently created first.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
      *          refused.
      *
      * @since   2.0.0
@@ -117,7 +117,7 @@ final readonly class BusinessSchemaService
      *
      * @return  SchemaPlan  The plan, including its immutable operations and current status.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
      *          refused.
      * @throws  BusinessSchemaNotFound  When the actor's site holds no plan under that identifier.
      *
@@ -141,7 +141,7 @@ final readonly class BusinessSchemaService
      *
      * @return  list<SchemaPlanStep>  One entry per plan operation, in ordinal order.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
      *          refused.
      * @throws  BusinessSchemaNotFound  When the actor's site holds no plan under that identifier.
      *
@@ -165,7 +165,7 @@ final readonly class BusinessSchemaService
      *
      * @return  ?SchemaInstallation  The installed blueprint and its status, or null when this site has none.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
      *          refused.
      *
      * @since   2.0.0
@@ -191,7 +191,7 @@ final readonly class BusinessSchemaService
      *
      * @return  ?SchemaRecoveryEvidence  The drill record, or null when this site holds none under that id.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
      *          refused.
      *
      * @since   2.0.0
@@ -217,7 +217,7 @@ final readonly class BusinessSchemaService
      *
      * @return  list<array{id: string, handle: string, version: int, owner: string}>
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
      *          refused.
      *
      * @since   2.0.0
@@ -253,7 +253,7 @@ final readonly class BusinessSchemaService
      *
      * @return  SchemaPlan  The proposed plan, carrying the checksum an approver must quote back.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.plan` is
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.plan` is
      *          refused.
      * @throws  BusinessSchemaNotFound  When the site has no published definition under that identifier.
      * @throws  BusinessSchemaConflict  When the installed schema is not older than the published
@@ -278,7 +278,7 @@ final readonly class BusinessSchemaService
      *
      * @return  SchemaPlan  A destructive plan awaiting its own approval and recovery evidence.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When
      *          `business.schema.destructive` is refused.
      * @throws  BusinessSchemaNotFound  When this site has nothing installed, or no published definition,
      *          under that identifier.
@@ -311,7 +311,7 @@ final readonly class BusinessSchemaService
      *
      * @return  SchemaPlan  The plan in its approved state, at the revision the approval wrote.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.approve`
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.approve`
      *          or, for a destructive plan, `business.schema.destructive` is refused.
      * @throws  BusinessSchemaNotFound  When the site holds no such plan, or no such recovery evidence.
      * @throws  BusinessSchemaConflict  When the plan changed after inspection, the confirmation is
@@ -436,7 +436,7 @@ final readonly class BusinessSchemaService
      *
      * @return  SchemaExecutionOutcome  Fence, completed and skipped step counts, and the resulting checksum.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.execute`
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.execute`
      *          or, for a destructive plan, `business.schema.destructive` is refused.
      * @throws  BusinessSchemaNotFound  When the site holds no such plan, or a connected peer disappeared
      *          mid-graph.
@@ -507,7 +507,7 @@ final readonly class BusinessSchemaService
      *
      * @return  SchemaExecutionOutcome  The same outcome shape as a first run, marked as resumed.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.recover`
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.recover`
      *          is refused.
      * @throws  BusinessSchemaNotFound  When the actor's site holds no plan under that identifier.
      * @throws  BusinessSchemaConflict  When the plan was never interrupted, or its journal disagrees
@@ -533,7 +533,7 @@ final readonly class BusinessSchemaService
      *
      * @return  SchemaRecoveryEvidence  The same evidence, once stored and audited under its identifier.
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `business.schema.recover`
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.recover`
      *          is refused.
      * @throws  BusinessSchemaConflict  When the drill does not match this environment or this actor, is
      *          missing a required proof, or is dated in the future.
@@ -633,7 +633,7 @@ final readonly class BusinessSchemaService
      *
      * @return  void
      *
-     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor
      *          that capability.
      *
      * @since   2.0.0

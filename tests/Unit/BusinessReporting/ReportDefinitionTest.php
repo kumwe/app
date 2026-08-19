@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\BusinessReporting;
+namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
 use InvalidArgumentException;
-use Kumwe\CMS\BusinessReporting\Domain\ReportColumnDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportFilterDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportFilterOperator;
-use Kumwe\CMS\BusinessReporting\Domain\ReportParameterDefinition;
-use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportFilterDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportFilterOperator;
+use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
+use Kumwe\App\BusinessReporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

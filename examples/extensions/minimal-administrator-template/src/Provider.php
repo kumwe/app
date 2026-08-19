@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\MinimalAdministratorTemplate;
 
-use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
 
 /**
  * Registers the minimal administrator template package without adding runtime services.

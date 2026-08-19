@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Infrastructure\Mcp;
+namespace Kumwe\App\Infrastructure\Mcp;
 
 /**
  * Single declaration of the MCP surface a Kumwe release publishes.
@@ -1535,7 +1535,7 @@ final class McpCapabilityCatalog
         }
 
         return [
-            'product' => 'Kumwe CMS',
+            'product' => 'Kumwe App',
             'mode' => 'capability_protected_read_write',
             'tools' => $names,
             'resources' => array_column($this->resources(), 'uri'),

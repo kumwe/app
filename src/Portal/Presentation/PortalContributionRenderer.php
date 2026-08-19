@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Portal\Presentation;
+namespace Kumwe\App\Portal\Presentation;
 
-use Kumwe\CMS\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Application\PortalSession;
 
 /**
  * Object-capability renderer fixed to one contributed route's owner and declared portal template.

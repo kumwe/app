@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\BusinessRecord\Domain;
+namespace Kumwe\App\BusinessRecord\Domain;
 
 use InvalidArgumentException;
-use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
+use Kumwe\App\Extension\Contribution\ContributionDefinition;
 
 /**
  * What a package declares before any of its code is allowed to supply an exchange rate.

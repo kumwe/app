@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace KumweContract\ManifestOne;
 
-use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
-use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
-use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
+use Kumwe\App\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Runtime\ExtensionRouteRegistrar;
+use Kumwe\App\Extension\Runtime\RuntimeExtension;
 
 /**
  * Compatibility provider for the manifest-1 generation of the extension contract.
