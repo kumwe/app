@@ -100,11 +100,11 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 | State | Count |
 |---|---|
 | `accepted_for_implementation` | 10 |
-| `reproduced` | 13 |
+| `reproduced` | 12 |
 | `open` | 23 |
 | `conditional` | 6 |
 | `decision_required` | 0 |
-| `in_progress` | 2 |
+| `in_progress` | 3 |
 | `verified` | 0 |
 | `external` | 0 |
 | `closed` | **not an allowed state** — see [`CHANGELOG.md`](../../CHANGELOG.md) |
