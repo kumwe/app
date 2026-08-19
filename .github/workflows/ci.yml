@@ -346,6 +346,9 @@ jobs:
           git diff --exit-code -- src
           php tools/verify-docblocks.php src
 
+      - name: Verify the reproducible baseline
+        run: composer baseline:check
+
       - name: Verify test-method documentation baseline
         run: composer docs:tests
 

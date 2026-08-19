@@ -10,6 +10,17 @@
     "mezzio"
   ],
   "homepage": "https://github.com/kumwe/app",
+  "authors": [
+    {
+      "name": "Kumwe",
+      "homepage": "https://github.com/kumwe"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/kumwe/app/issues",
+    "source": "https://github.com/kumwe/app",
+    "docs": "https://github.com/kumwe/app/blob/master/README.md"
+  },
   "license": "GPL-2.0-only",
   "require": {
     "php": "^8.5",
@@ -85,6 +96,8 @@
     "security:audit": "composer audit --locked --abandoned=fail",
     "security:secrets": "bash tools/scan-secrets.sh",
     "cs": "phpcs -q",
+    "baseline:record": "php tools/record-baseline.php --emit",
+    "baseline:check": "php tools/record-baseline.php --check",
     "docs:api": "php tools/verify-docblocks.php src",
     "docs:tests": "php tools/verify-docblocks.php --baseline=docs/quality/test-docblock-baseline.json tests",
     "docs:format": "php tools/format-docblocks.php src",
@@ -111,6 +124,7 @@
     "test:unit": "phpunit --testsuite unit --colors=always",
     "qa": [
       "@architecture:policy",
+      "@baseline:check",
       "@quality:contract",
       "@docs:api",
       "@docs:tests",

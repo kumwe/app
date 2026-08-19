@@ -290,6 +290,32 @@
       }
     },
     {
+      "id": "reproducible-baseline",
+      "title": "The reproducible baseline is current",
+      "purpose": "Hold docs/quality/baseline.json to the tree it describes (P0-A). Every figure is derived, so a route, command, migration, OpenAPI operation, recorded exemption or skip that appears or disappears without the record moving fails the build. A baseline nobody regenerates is a baseline nobody can trust; the hand-written one drifted nine hundred commits.",
+      "owner": "quality-engineering",
+      "runner": "composer",
+      "composer_script": "baseline:check",
+      "command": "composer baseline:check",
+      "artifact": "docs/quality/baseline.json",
+      "in_qa": true,
+      "cadence": [
+        "local",
+        "ci",
+        "nightly",
+        "release"
+      ],
+      "maximum_interval": "per-change",
+      "engines": [],
+      "workflows": {
+        "ci": {
+          "file": ".github/workflows/ci.yml",
+          "job": "quality",
+          "contains": "composer baseline:check"
+        }
+      }
+    },
+    {
       "id": "test-documentation-blocks",
       "title": "Documentation-block record for tests/",
       "purpose": "Hold tests/ to the documentation standard src/ is held to, against a shrinking record of the debt that existed when the gate was armed (V2-QA-010). Every rule the tool checks is covered except line width, which phpcs.xml already enforces in tests/ at the same 120 characters. Entries are keyed by file, code and class-qualified member, so the recorded count is a burn-down rather than a number that can be edited down.",
