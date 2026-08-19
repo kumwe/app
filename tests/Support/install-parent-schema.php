@@ -13,7 +13,7 @@ use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 
 require dirname(__DIR__, 2) . '/vendor/autoload.php';
 
-const EXPECTED_CORE_CHECKSUM = '69741c8e3fc14a1a0e318a643deb3fa7901685ba8f534a1782917839ad1f0b57';
+const EXPECTED_CORE_CHECKSUM = '40bf9c3fa708f153453cfbd6caf93c9cef806052eabb6a1bb8ad7a4b71e7dddf';
 
 $configuration = (new ConfigurationFactory())->create(Environment::fromGlobals());
 $database = (new DoctrineConnectionFactory($configuration->database))->create();
