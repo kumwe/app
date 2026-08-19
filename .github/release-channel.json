@@ -1,0 +1,5 @@
+{
+  "base": "2.0.0",
+  "channel": "alpha",
+  "note": "The continuous release lane cuts <base>-<channel>.<n> on every green master build. Move the channel to beta or rc, or clear it to stop cutting pre-releases and tag stable versions by hand."
+}

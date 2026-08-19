@@ -1,0 +1,565 @@
+{
+    "baseline": "kumwe-reproducible-baseline",
+    "work_package": "P0-A",
+    "authority": "docs/roadmap/README.md",
+    "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
+    "commit": "c07e179816bb08341fe7cd3c41393cba05b33770",
+    "recorded_at": "2026-08-19",
+    "recorded_from": [
+        "https://github.com/kumwe/app/actions/runs/32266343903"
+    ],
+    "toolchain": {
+        "php": "^8.5",
+        "required_extensions": [
+            "ext-ctype",
+            "ext-fileinfo",
+            "ext-filter",
+            "ext-intl",
+            "ext-json",
+            "ext-mbstring",
+            "ext-openssl",
+            "ext-pdo",
+            "ext-redis",
+            "ext-sodium",
+            "ext-zip"
+        ],
+        "composer_lock_sha256": "52bc25ec500ef38fd5e115b071da738e52b2d860c015439a93e86924217fa001",
+        "package_lock_sha256": "ccdf34d2e25d4025a8ffe1029461a45f156de3bb9a4cb7d5fa7e25f6b124e0d8"
+    },
+    "tests": {
+        "architecture": {
+            "files": 42,
+            "test_methods": 220
+        },
+        "functional": {
+            "files": 7,
+            "test_methods": 26
+        },
+        "integration": {
+            "files": 94,
+            "test_methods": 374
+        },
+        "unit": {
+            "files": 380,
+            "test_methods": 2012
+        }
+    },
+    "coverage": {
+        "canonical_engine": "mariadb",
+        "ratchets": 3,
+        "recorded_line_coverage_percent": 55.44,
+        "reasoned_attribution_rules": 10,
+        "tests_owing_attribution": 0
+    },
+    "surfaces": {
+        "http_routes": [
+            {
+                "method": "GET",
+                "path": "/administrator/access",
+                "name": "administrator.access-control"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/automation",
+                "name": "administrator.automation"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/business-definitions",
+                "name": "administrator.business-definitions"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/business-schema-plans",
+                "name": "administrator.business-schema-plans"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/business-security",
+                "name": "administrator.business-security"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/business/{definition}/{record}/views/{view}",
+                "name": "administrator.business.custom-record-view"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/business/{definition}/views/{view}",
+                "name": "administrator.business.custom-view"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/business/operations/{operation}",
+                "name": "administrator.business.operation"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/business/{definition}/{record}/relationships/{business_relationship}",
+                "name": "administrator.business.relationship"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/content",
+                "name": "administrator.content"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/content-models",
+                "name": "administrator.content-models"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/content/{id}/edit",
+                "name": "administrator.content.edit"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/content/new",
+                "name": "administrator.content.new"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/extensions",
+                "name": "administrator.extensions"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator",
+                "name": "administrator.index"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/interface-standard",
+                "name": "administrator.interface-standard"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/media",
+                "name": "administrator.media"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/navigation",
+                "name": "administrator.navigation"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/reports/exports/{artifact}/download",
+                "name": "administrator.report-exports.download"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/reports/exports/{artifact}",
+                "name": "administrator.report-exports.read"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/reports",
+                "name": "administrator.reports"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/settings",
+                "name": "administrator.settings"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/wording",
+                "name": "administrator.wording"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business-definitions",
+                "name": "api.v1.business-definitions.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business-periods",
+                "name": "api.v1.business-periods.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business-schema-plans",
+                "name": "api.v1.business-schema-plans.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business-schema-plans/{planId}",
+                "name": "api.v1.business-schema-plans.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business-schema-definitions",
+                "name": "api.v1.business-schema.definitions"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/approvals",
+                "name": "api.v1.business.approvals"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/approvals/{approval}",
+                "name": "api.v1.business.approvals.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/definitions",
+                "name": "api.v1.business.definitions"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/definitions/{definition}",
+                "name": "api.v1.business.definitions.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/operations/{operation}",
+                "name": "api.v1.business.operations.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/records/{definition}",
+                "name": "api.v1.business.records.browse"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/business/views/{definition}/{record}/{view}",
+                "name": "api.v1.business.records.custom_record_view"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/business/views/{definition}/{view}",
+                "name": "api.v1.business.records.custom_view"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/records/{definition}/{record}/history",
+                "name": "api.v1.business.records.history"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/records/{definition}/{record}",
+                "name": "api.v1.business.records.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/records/{definition}/{record}/relations/{relation}",
+                "name": "api.v1.business.records.relation.read"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/business/records/{definition}/search",
+                "name": "api.v1.business.records.search"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/report-exports/{artifact}/download",
+                "name": "api.v1.business.report-exports.download"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/report-exports/{artifact}",
+                "name": "api.v1.business.report-exports.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/business/reports",
+                "name": "api.v1.business.reports"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/business/reports/{report}",
+                "name": "api.v1.business.reports.execute"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/content",
+                "name": "api.v1.content.collection"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/content/{id}",
+                "name": "api.v1.content.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/extension-trust-keys",
+                "name": "api.v1.extension-trust-keys.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/extensions",
+                "name": "api.v1.extensions.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1",
+                "name": "api.v1.index"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/jobs",
+                "name": "api.v1.jobs.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/menus/{menuId}/items",
+                "name": "api.v1.menu-items.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/menu-items/{id}",
+                "name": "api.v1.menu-items.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/menus",
+                "name": "api.v1.menus.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/menus/{id}",
+                "name": "api.v1.menus.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/openapi.json",
+                "name": "api.v1.openapi"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/schedules",
+                "name": "api.v1.schedules.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/schedules/{id}",
+                "name": "api.v1.schedules.read"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/settings",
+                "name": "api.v1.settings.read"
+            },
+            {
+                "method": "GET",
+                "path": "/health/live",
+                "name": "health.live"
+            },
+            {
+                "method": "GET",
+                "path": "/health/ready",
+                "name": "health.ready"
+            },
+            {
+                "method": "GET",
+                "path": "/metrics",
+                "name": "observability.metrics"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/approvals",
+                "name": "portal.approvals"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/approvals/{id}",
+                "name": "portal.approvals.detail"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/business/{definition}/{record}/views/{view}",
+                "name": "portal.business.custom-record-view"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/business/{definition}/views/{view}",
+                "name": "portal.business.custom-view"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/business/operations/{operation}",
+                "name": "portal.business.operation"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/business/{definition}/{record}/relationships/{business_relationship}",
+                "name": "portal.business.relationship"
+            },
+            {
+                "method": "GET",
+                "path": "/portal",
+                "name": "portal.index"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/reports/exports/{artifact}/download",
+                "name": "portal.report-exports.download"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/reports/exports/{artifact}",
+                "name": "portal.report-exports.read"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/reports",
+                "name": "portal.reports"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/security",
+                "name": "portal.security"
+            },
+            {
+                "method": "GET",
+                "path": "/pages/{slug}",
+                "name": "site.content.page"
+            },
+            {
+                "method": "GET",
+                "path": "/{path:.+}",
+                "name": "site.content.path"
+            },
+            {
+                "method": "GET",
+                "path": "/assets/extensions/{path:.+}",
+                "name": "site.extension.asset"
+            },
+            {
+                "method": "GET",
+                "path": "/",
+                "name": "site.home"
+            },
+            {
+                "method": "GET",
+                "path": "/media/{id}/{name}",
+                "name": "site.media.asset"
+            },
+            {
+                "method": "GET",
+                "path": "/robots.txt",
+                "name": "site.robots"
+            }
+        ],
+        "console_commands": [
+            "access",
+            "app:health",
+            "audit:export",
+            "audit:verify",
+            "automation",
+            "business-definition",
+            "business-periods",
+            "business-record",
+            "business-record-rekey",
+            "business-report",
+            "business-schema",
+            "content",
+            "content-model",
+            "database:migrate",
+            "database:recover-lock",
+            "database:status",
+            "demo:export-profile",
+            "demo:install",
+            "demo:install-examples",
+            "demo:provision-access",
+            "extension:activate",
+            "extension:build",
+            "extension:conformance",
+            "extension:disable",
+            "extension:inspect",
+            "extension:install",
+            "extension:list",
+            "extension:runtime:materialize",
+            "extension:runtime:watch",
+            "extension:scaffold",
+            "extension:sign",
+            "extension:trust",
+            "extension:uninstall",
+            "integration:manage",
+            "integration:work",
+            "mcp:serve",
+            "navigation",
+            "queue:work",
+            "schedule:run",
+            "settings",
+            "theme:administrator:recover",
+            "token:create",
+            "user:create-admin",
+            "user:recover-credentials"
+        ],
+        "openapi": {
+            "title": "Kumwe CMS API",
+            "version": "1.0.0",
+            "paths": 84,
+            "operations": 112
+        },
+        "migrations": [
+            "20260807170000_database_driven_presentation",
+            "20260807190000_extension_contribution_catalog",
+            "20260807200000_business_definition_catalog",
+            "20260808010000_business_transactional_runtime",
+            "20260808120000_business_record_idempotency_retention",
+            "20260809010000_business_security_portal",
+            "20260810010000_business_integration_sdk",
+            "20260811010000_demo_profile_provenance",
+            "20260811020000_content_model_identifier_collations",
+            "20260811140000_interface_presentation_preferences",
+            "20260812010000_document_content_types",
+            "20260812120000_menu_presentation_binding",
+            "20260813010000_audit_tamper_evidence",
+            "20260813020000_credential_lifecycle",
+            "20260813020000_record_encryption_key_ring",
+            "20260814010000_business_number_sequence",
+            "20260814010000_extension_supply_chain",
+            "20260815010000_resource_ownership_portability",
+            "20260815020000_business_record_history_window",
+            "20260816010000_resource_ownership_scope",
+            "20260817010000_interface_message_overrides",
+            "20260818010000_schema_global_constraint_names",
+            "20260819010000_multilingual_content",
+            "20260819020000_translation_group_site_ownership",
+            "20260820010000_constraint_name_isolation_portability",
+            "20260821010000_period_posting_lock",
+            "20260822010000_number_sequence_identity",
+            "20260823010000_schema_global_index_names"
+        ]
+    },
+    "quarantine": {
+        "skip_sites_by_file": {
+            "tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php": 1,
+            "tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php": 1,
+            "tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php": 1,
+            "tests/Integration/BusinessRecord/AggregateDocumentConcurrencyIntegrationTest.php": 1,
+            "tests/Integration/BusinessRecord/BusinessNumberSequenceContentionIntegrationTest.php": 2,
+            "tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php": 1,
+            "tests/Integration/BusinessRecord/BusinessRecordDeadlockIntegrationTest.php": 2,
+            "tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php": 1,
+            "tests/Integration/Content/MultilingualContentIntegrationTest.php": 1,
+            "tests/Integration/Extension/RuntimeMaterializationContentionIntegrationTest.php": 2,
+            "tests/Integration/Extension/TrustLifecycleIntegrationTest.php": 1,
+            "tests/Integration/Identity/AccessControlIntegrationTest.php": 2,
+            "tests/Integration/Infrastructure/UnwritableStorageIntegrationTest.php": 2,
+            "tests/Integration/Mcp/McpTrustLifecycleIntegrationTest.php": 2,
+            "tests/Integration/Persistence/ConstraintNameIsolationIntegrationTest.php": 1,
+            "tests/Integration/Persistence/ConstraintNameIsolationPortabilityIntegrationTest.php": 4,
+            "tests/Integration/Persistence/ContentModelIdentifierCollationMigrationIntegrationTest.php": 1,
+            "tests/Integration/Persistence/CrashResumableMigrationIntegrationTest.php": 2,
+            "tests/Integration/Persistence/IndexNameIsolationCoexistenceIntegrationTest.php": 1,
+            "tests/Integration/Persistence/MigrationIntegrationTest.php": 1,
+            "tests/Integration/Persistence/MultilingualContentMigrationIntegrationTest.php": 1,
+            "tests/Integration/Persistence/PeriodPostingLockMigrationIntegrationTest.php": 1,
+            "tests/Integration/Persistence/ResourceOwnershipPortabilityIntegrationTest.php": 1,
+            "tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php": 1,
+            "tests/Integration/Presentation/PresentationAccessGroupRepositoryIntegrationTest.php": 1,
+            "tests/Unit/Extension/Infrastructure/Trust/FilesystemExtensionArtifactVerifierTest.php": 2
+        },
+        "recorded_exemptions": {
+            "dependency-graph": 99,
+            "idempotency": 0,
+            "test-documentation": 3829
+        }
+    }
+}

@@ -1,0 +1,88 @@
+name: Kumwe continuous release
+
+# Every green master build publishes the next pre-release. Releasing is not a decision anyone has to
+# remember to make: the project ships continuously, and the version number counts the builds that
+# earned it. Stable versions are still tagged by hand -- this lane only ever cuts the channel named in
+# .github/release-channel.json, and the release workflow already withholds the moving `latest`, `2` and
+# minor tags from anything that is not a stable version.
+
+on:
+  workflow_run:
+    workflows: ['Kumwe CI']
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: continuous-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Cut the next pre-release
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'master' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the commit that passed
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Decide the next tag
+        id: decide
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          channel_file='.github/release-channel.json'
+          if [[ ! -f "$channel_file" ]]; then
+            echo "No release channel is declared; nothing to cut."
+            echo 'tag=' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base="$(jq -r '.base // empty' "$channel_file")"
+          channel="$(jq -r '.channel // empty' "$channel_file")"
+          if [[ -z "$base" || -z "$channel" ]]; then
+            echo "The release channel is cleared; stable versions are tagged by hand."
+            echo 'tag=' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ ! "$base" =~ ^2\.[0-9]+\.[0-9]+$ || ! "$channel" =~ ^[0-9A-Za-z.-]+$ ]]; then
+            echo "::error::The declared base or channel is malformed: $base / $channel"
+            exit 1
+          fi
+          # A commit is released once. Re-running CI on an already-tagged commit must not cut a second.
+          if git tag --points-at "$HEAD_SHA" | grep -q '^v2\.'; then
+            echo "$HEAD_SHA is already released as $(git tag --points-at "$HEAD_SHA" | tr '\n' ' ')"
+            echo 'tag=' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          highest=0
+          while read -r existing; do
+            [[ -z "$existing" ]] && continue
+            suffix="${existing##*.}"
+            if [[ "$suffix" =~ ^[0-9]+$ ]] && (( suffix > highest )); then
+              highest="$suffix"
+            fi
+          done < <(git tag --list "v${base}-${channel}.*")
+          echo "tag=v${base}-${channel}.$(( highest + 1 ))" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the tag
+        if: steps.decide.outputs.tag != ''
+        env:
+          RELEASE_TAG: ${{ steps.decide.outputs.tag }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          git config user.name 'kumwe-release'
+          git config user.email 'release@kumwe.invalid'
+          git tag -a "$RELEASE_TAG" "$HEAD_SHA" -m "$RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
+          echo "Cut $RELEASE_TAG at $HEAD_SHA; the release workflow takes it from here." >> "$GITHUB_STEP_SUMMARY"
