@@ -291,8 +291,8 @@
     },
     {
       "id": "test-documentation-blocks",
-      "title": "Test-method documentation-block baseline",
-      "purpose": "Cover tests/ with the same documentation standard as src/, against a shrinking baseline of pre-existing undocumented methods (V2-QA-010).",
+      "title": "Documentation-block record for tests/",
+      "purpose": "Hold tests/ to the documentation standard src/ is held to, against a shrinking record of the debt that existed when the gate was armed (V2-QA-010). Every rule the tool checks is covered except line width, which phpcs.xml already enforces in tests/ at the same 120 characters. Entries are keyed by file, code and class-qualified member, so the recorded count is a burn-down rather than a number that can be edited down.",
       "owner": "quality-engineering",
       "runner": "composer",
       "composer_script": "docs:tests",
