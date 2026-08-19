@@ -1030,6 +1030,12 @@ final class DocBlockAuditor
     }
 }
 
+// The suite includes this file to exercise the gate itself; the same guard the interface-programme
+// verifier uses keeps the command line from running when it does.
+if (defined('KUMWE_DOCBLOCKS_LIBRARY_ONLY')) {
+    return;
+}
+
 $root = dirname(__DIR__);
 $arguments = array_slice($argv, 1);
 $summaryOnly = in_array('--summary', $arguments, true);
@@ -1096,14 +1102,23 @@ if ($emitBaseline) {
     }
     fwrite(
         STDOUT,
-        emitDocblockBaseline($auditor->violations(), $root, $expires, $recordedAt, $sources) . "\n",
+        emitDocblockBaseline($auditor->violations(), $root, $paths, $expires, $recordedAt, $sources) . "\n",
     );
 
     exit(0);
 }
 
 if ($baselinePath !== null) {
-    exit(compareDocblockBaseline($auditor->violations(), $baselinePath, $root, $today, $summaryOnly, $asJson, $limit));
+    exit(compareDocblockBaseline(
+        $auditor->violations(),
+        $baselinePath,
+        $root,
+        $paths,
+        $today,
+        $summaryOnly,
+        $asJson,
+        $limit,
+    ));
 }
 
 exit($auditor->report($summaryOnly, $asJson, $limit));
@@ -1129,6 +1144,32 @@ function docblockRelativePath(string $file, string $root): string
 }
 
 /**
+ * Decide whether a repository-relative path sits inside one of the scanned scopes.
+ *
+ * The baselined scope is whatever the caller asked to scan rather than a directory name written into
+ * the tool, so the gate covers exactly what it was pointed at and can be exercised against a fixture
+ * tree of its own.
+ *
+ * @param   string        $relative  Repository-relative path.
+ * @param   list<string>  $scopes    Scanned paths, repository-relative.
+ *
+ * @return  bool  True when the path is inside one of them.
+ *
+ * @since   2.0.0
+ */
+function docblockWithinScope(string $relative, array $scopes): bool
+{
+    foreach ($scopes as $scope) {
+        $scope = trim(str_replace('\\', '/', $scope), '/');
+        if ($scope === '' || $relative === $scope || str_starts_with($relative, $scope . '/')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Emit the shrinking baseline document for the documentation debt currently under `tests/`.
  *
  * Every violation that names a member is baseline-managed. A violation that names none — the line-width
@@ -1137,6 +1178,7 @@ function docblockRelativePath(string $file, string $root): string
  *
  * @param   list<DocBlockViolation>  $violations  Findings from the most recent scan.
  * @param   string                   $root        Repository root for relative paths.
+ * @param   list<string>             $scopes      Scanned paths the record covers.
  * @param   string                   $expires     Expiry stamped on every recorded entry.
  * @param   string                   $recordedAt  Date the record was taken.
  * @param   list<string>             $sources     Verification runs the record was taken from.
@@ -1148,6 +1190,7 @@ function docblockRelativePath(string $file, string $root): string
 function emitDocblockBaseline(
     array $violations,
     string $root,
+    array $scopes,
     string $expires,
     string $recordedAt,
     array $sources,
@@ -1158,7 +1201,7 @@ function emitDocblockBaseline(
             continue;
         }
         $file = docblockRelativePath($violation->file, $root);
-        if (!str_starts_with($file, 'tests/')) {
+        if (!docblockWithinScope($file, $scopes)) {
             continue;
         }
         $entries[] = [
@@ -1194,8 +1237,8 @@ function emitDocblockBaseline(
                 . 'fails when two entries share one key. Entries are keyed by file, code and '
                 . 'class-qualified member, so deleting one without doing the work fails the build and '
                 . 'the count is a burn-down rather than a number anyone can edit.',
-            'scope' => 'tests/ — src/ carries no debt and is held to the standard directly by '
-                . 'composer docs:api.',
+            'scope' => implode(', ', $scopes) . ' — src/ carries no debt and is held to the standard '
+                . 'directly by composer docs:api.',
             'recorded_at' => $recordedAt,
             'recorded_from' => $sources,
             'entry_count' => count($entries),
@@ -1293,6 +1336,7 @@ function readDocblockBaseline(array $rawEntries, string $today): array
  * @param   list<DocBlockViolation>  $violations    Findings from the most recent scan.
  * @param   string                   $baselinePath  Path to the baseline JSON document.
  * @param   string                   $root          Repository root for relative paths.
+ * @param   list<string>             $scopes        Scanned paths the record covers.
  * @param   string                   $today         ISO date used for expiry checks.
  * @param   bool                     $summaryOnly   Suppress individual hard-fail lines.
  * @param   bool                     $asJson        Emit machine-readable JSON.
@@ -1306,6 +1350,7 @@ function compareDocblockBaseline(
     array $violations,
     string $baselinePath,
     string $root,
+    array $scopes,
     string $today,
     bool $summaryOnly,
     bool $asJson,
@@ -1350,7 +1395,7 @@ function compareDocblockBaseline(
 
     foreach ($violations as $violation) {
         $relative = docblockRelativePath($violation->file, $root);
-        if (!str_starts_with($relative, 'tests/') || $violation->member === '') {
+        if (!docblockWithinScope($relative, $scopes) || $violation->member === '') {
             // Outside the baselined tree, or a file-level finding the record cannot key. Either way it
             // is held to the standard directly, exactly as src/ is.
             $hardFails[] = $violation;

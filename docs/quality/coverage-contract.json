@@ -58,6 +58,10 @@
         "reason": "The subject is tools/verify-interface-programme.php, which is not under src/ and is not part of the released package."
       },
       {
+        "path": "tests/Unit/DocumentationBaseline/",
+        "reason": "The subject is tools/verify-docblocks.php, which is not under src/ and is not part of the released package. The gate it verifies shipped without tests and a keying defect shipped with it, so these cases exist to hold the gate itself."
+      },
+      {
         "path": "tests/Unit/Infrastructure/Persistence/Migration/PublishedMigrationIntegrityTest.php",
         "reason": "The subject is the bytes of published migrations, whose immutability is the contract; executing them is what the integration suite does."
       },
