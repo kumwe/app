@@ -281,7 +281,11 @@ carries the description.
 - Every behaviour-bearing class gets focused unit tests; every infrastructure boundary gets integration
   tests against real services.
 - Test classes and test methods carry documentation blocks under the same rules. A test block says what
-  behaviour is pinned, which is the part a future reader needs.
+  behaviour is pinned, which is the part a future reader needs. `composer docs:tests` enforces this
+  against a shrinking record of the debt that existed when the gate was armed
+  ([`docs/quality/test-docblock-baseline.json`](quality/test-docblock-baseline.json)): anything the
+  record does not carry fails, and an entry cannot be deleted until the member it names is documented.
+  New tests are held to the rule in full.
 - Security-sensitive changes — authentication, authorization, session, archive, extension, token,
   upload, MCP writes — carry adversarial tests alongside the happy path.
 
