@@ -290,6 +290,32 @@
       }
     },
     {
+      "id": "test-documentation-blocks",
+      "title": "Test-method documentation-block baseline",
+      "purpose": "Cover tests/ with the same documentation standard as src/, against a shrinking baseline of pre-existing undocumented methods (V2-QA-010).",
+      "owner": "quality-engineering",
+      "runner": "composer",
+      "composer_script": "docs:tests",
+      "command": "composer docs:tests",
+      "artifact": "console",
+      "in_qa": true,
+      "cadence": [
+        "local",
+        "ci",
+        "nightly",
+        "release"
+      ],
+      "maximum_interval": "per-change",
+      "engines": [],
+      "workflows": {
+        "ci": {
+          "file": ".github/workflows/ci.yml",
+          "job": "quality",
+          "contains": "composer docs:tests"
+        }
+      }
+    },
+    {
       "id": "documentation-format",
       "title": "Documentation-block alignment is committed, not pending",
       "purpose": "Apply the house alignment rules and fail when the result differs from what is committed.",
