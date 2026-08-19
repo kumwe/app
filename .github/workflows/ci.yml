@@ -346,6 +346,9 @@ jobs:
           git diff --exit-code -- src
           php tools/verify-docblocks.php src
 
+      - name: Verify test-method documentation baseline
+        run: composer docs:tests
+
   database:
     name: PHP 8.5 / ${{ matrix.database.name }}
     runs-on: ubuntu-24.04

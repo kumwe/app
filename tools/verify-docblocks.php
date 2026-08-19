@@ -10,6 +10,12 @@
  *
  * Usage:
  *   php tools/verify-docblocks.php [--summary] [--json] [--limit=N] [path ...]
+ *   php tools/verify-docblocks.php --emit-baseline tests
+ *   php tools/verify-docblocks.php --baseline=docs/quality/test-docblock-baseline.json tests
+ *
+ * `--emit-baseline` prints the shrinking record of undocumented test methods (V2-QA-010). It never
+ * writes the file itself. `--baseline=` arms the gate: new MISSING_DOC methods under tests/ fail,
+ * stale baseline entries fail, and expired entries fail so the list only ever shrinks.
  *
  * @since  2.0.0
  */
@@ -50,6 +56,7 @@ final class DocBlockViolation
      * @param  int     $line     One-based line the violation anchors to.
      * @param  string  $code     Machine-readable violation code, for example `MISSING_DOC`.
      * @param  string  $message  Human-readable explanation of what is missing or wrong.
+     * @param  string  $member   Stable member label used by the shrinking baseline (empty when not applicable).
      *
      * @since  2.0.0
      */
@@ -58,7 +65,28 @@ final class DocBlockViolation
         public readonly int $line,
         public readonly string $code,
         public readonly string $message,
+        public readonly string $member = '',
     ) {
+    }
+
+    /**
+     * Stable key for baseline comparison: relative file, code, and member label.
+     *
+     * @param   string  $root  Repository root used to relativise absolute paths.
+     *
+     * @return  string  Deterministic baseline key.
+     *
+     * @since   2.0.0
+     */
+    public function baselineKey(string $root): string
+    {
+        $file = $this->file;
+        $prefix = rtrim($root, '/') . '/';
+        if (str_starts_with($file, $prefix)) {
+            $file = substr($file, strlen($prefix));
+        }
+
+        return $file . "\0" . $this->code . "\0" . $this->member;
     }
 }
 
@@ -156,6 +184,18 @@ final class DocBlockAuditor
         foreach ($files as $file) {
             $this->auditFile($file);
         }
+    }
+
+    /**
+     * Return every violation discovered by the most recent scan.
+     *
+     * @return  list<DocBlockViolation>  Ordered list of findings.
+     *
+     * @since   2.0.0
+     */
+    public function violations(): array
+    {
+        return $this->violations;
     }
 
     /**
@@ -284,7 +324,8 @@ final class DocBlockAuditor
     private function checkLineLengths(string $file, string $source): void
     {
         foreach (explode("\n", $source) as $index => $line) {
-            $width = mb_strlen(rtrim($line, "\r"));
+            $trimmed = rtrim($line, "\r");
+            $width = function_exists('mb_strlen') ? mb_strlen($trimmed) : strlen($trimmed);
 
             if ($width > $this->maximumLineLength) {
                 $this->violations[] = new DocBlockViolation(
@@ -543,6 +584,7 @@ final class DocBlockAuditor
                 $line,
                 'MISSING_DOC',
                 sprintf('Method %s() has no documentation block.', $name),
+                $name . '()',
             );
 
             return;
@@ -899,14 +941,27 @@ final class DocBlockAuditor
     }
 }
 
+$root = dirname(__DIR__);
 $arguments = array_slice($argv, 1);
 $summaryOnly = in_array('--summary', $arguments, true);
 $asJson = in_array('--json', $arguments, true);
+$emitBaseline = in_array('--emit-baseline', $arguments, true);
+$baselinePath = null;
+$today = date('Y-m-d');
 $limit = 0;
 
 foreach ($arguments as $argument) {
     if (str_starts_with($argument, '--limit=')) {
         $limit = (int) substr($argument, 8);
+        continue;
+    }
+    if (str_starts_with($argument, '--baseline=')) {
+        $baselinePath = substr($argument, strlen('--baseline='));
+        continue;
+    }
+    if (str_starts_with($argument, '--today=')) {
+        $today = substr($argument, strlen('--today='));
+        continue;
     }
 }
 
@@ -922,4 +977,245 @@ foreach ($paths as $path) {
     $auditor->scan($path);
 }
 
+if ($emitBaseline) {
+    fwrite(STDOUT, emitDocblockBaseline($auditor->violations(), $root) . "\n");
+    exit(0);
+}
+
+if ($baselinePath !== null) {
+    exit(compareDocblockBaseline($auditor->violations(), $baselinePath, $root, $today, $summaryOnly, $asJson, $limit));
+}
+
 exit($auditor->report($summaryOnly, $asJson, $limit));
+
+/**
+ * Emit the shrinking baseline document for currently undocumented methods under tests/.
+ *
+ * Only `MISSING_DOC` method violations are baseline-managed. Every other code fails immediately when
+ * the gate is armed, matching the acceptance test for `V2-QA-010`.
+ *
+ * @param   list<DocBlockViolation>  $violations  Findings from the most recent scan.
+ * @param   string                   $root        Repository root for relative paths.
+ *
+ * @return  string  Pretty-printed JSON baseline document.
+ *
+ * @since   2.0.0
+ */
+function emitDocblockBaseline(array $violations, string $root): string
+{
+    $entries = [];
+    foreach ($violations as $violation) {
+        if ($violation->code !== 'MISSING_DOC' || $violation->member === '') {
+            continue;
+        }
+        $file = $violation->file;
+        $prefix = rtrim($root, '/') . '/';
+        if (str_starts_with($file, $prefix)) {
+            $file = substr($file, strlen($prefix));
+        }
+        if (!str_starts_with($file, 'tests/')) {
+            continue;
+        }
+        $entries[] = [
+            'file' => $file,
+            'line' => $violation->line,
+            'member' => $violation->member,
+            'code' => $violation->code,
+            'owner' => 'quality-engineering',
+            'finding' => 'V2-QA-010',
+            'expires' => '2027-06-30',
+            'justification' => 'Pre-existing test method without a documentation block; the '
+                . 'baseline only ever shrinks.',
+        ];
+    }
+
+    usort(
+        $entries,
+        static function (array $left, array $right): int {
+            return [$left['file'], $left['member'], $left['line']]
+                <=> [$right['file'], $right['member'], $right['line']];
+        },
+    );
+
+    return json_encode(
+        [
+            'baseline' => 'kumwe-test-docblock-methods',
+            'finding' => 'V2-QA-010',
+            'authority' => 'docs/coding-standard.md',
+            'note' => 'Every test method that lacked a documentation block when the gate was armed. '
+                . 'It is a record, not a permission: tools/verify-docblocks.php fails on any MISSING_DOC '
+                . 'method under tests/ that is not listed here, fails when a listed entry is no longer '
+                . 'missing so the entry must be deleted, and fails when an entry passes its expiry. '
+                . 'The list only ever shrinks.',
+            'recorded_at' => date('Y-m-d'),
+            'entries' => $entries,
+        ],
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+    );
+}
+
+/**
+ * Compare scan results with the recorded test-docblock baseline.
+ *
+ * @param   list<DocBlockViolation>  $violations    Findings from the most recent scan.
+ * @param   string                   $baselinePath  Path to the baseline JSON document.
+ * @param   string                   $root          Repository root for relative paths.
+ * @param   string                   $today         ISO date used for expiry checks.
+ * @param   bool                     $summaryOnly   Suppress individual hard-fail lines.
+ * @param   bool                     $asJson        Emit machine-readable JSON.
+ * @param   int                      $limit         Cap on printed hard-fail lines; zero prints all.
+ *
+ * @return  int  Process exit status.
+ *
+ * @since   2.0.0
+ */
+function compareDocblockBaseline(
+    array $violations,
+    string $baselinePath,
+    string $root,
+    string $today,
+    bool $summaryOnly,
+    bool $asJson,
+    int $limit,
+): int {
+    if (!is_file($baselinePath)) {
+        fwrite(STDERR, sprintf("%s is missing.\n", $baselinePath));
+
+        return 1;
+    }
+    $raw = file_get_contents($baselinePath);
+    if ($raw === false) {
+        fwrite(STDERR, sprintf("%s could not be read.\n", $baselinePath));
+
+        return 1;
+    }
+    /** @var mixed $document */
+    $document = json_decode($raw, true);
+    if (!is_array($document) || !isset($document['entries']) || !is_array($document['entries'])) {
+        fwrite(STDERR, sprintf("%s must declare an entries array.\n", basename($baselinePath)));
+
+        return 1;
+    }
+
+    /** @var array<string, array<string, mixed>> $baselineByKey */
+    $baselineByKey = [];
+    foreach ($document['entries'] as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+        $file = is_string($entry['file'] ?? null) ? $entry['file'] : '';
+        $code = is_string($entry['code'] ?? null) ? $entry['code'] : '';
+        $member = is_string($entry['member'] ?? null) ? $entry['member'] : '';
+        if ($file === '' || $code === '' || $member === '') {
+            continue;
+        }
+        $baselineByKey[$file . "\0" . $code . "\0" . $member] = $entry;
+    }
+
+    $hardFails = [];
+    $matchedKeys = [];
+
+    foreach ($violations as $violation) {
+        $relative = $violation->file;
+        $prefix = rtrim($root, '/') . '/';
+        if (str_starts_with($relative, $prefix)) {
+            $relative = substr($relative, strlen($prefix));
+        }
+        $relative = str_replace('\\', '/', $relative);
+        $underTests = str_starts_with($relative, 'tests/');
+
+        // V2-QA-010 arms only undocumented test methods. Class, constant, property and incomplete-block
+        // debt under tests/ is pre-existing and is not part of this baseline; it is left for a later pass.
+        if ($underTests && !($violation->code === 'MISSING_DOC' && $violation->member !== '')) {
+            continue;
+        }
+
+        $isBaselineManaged = $underTests
+            && $violation->code === 'MISSING_DOC'
+            && $violation->member !== '';
+
+        if (!$isBaselineManaged) {
+            $hardFails[] = $violation;
+            continue;
+        }
+
+        $key = $violation->baselineKey($root);
+        if (!isset($baselineByKey[$key])) {
+            $hardFails[] = $violation;
+            continue;
+        }
+        $matchedKeys[$key] = true;
+        $expires = is_string($baselineByKey[$key]['expires'] ?? null) ? $baselineByKey[$key]['expires'] : '';
+        if ($expires !== '' && $expires < $today) {
+            $hardFails[] = new DocBlockViolation(
+                $violation->file,
+                $violation->line,
+                'BASELINE_EXPIRED',
+                sprintf(
+                    'Baseline entry for %s in %s expired on %s and must be documented or removed.',
+                    $violation->member,
+                    $relative,
+                    $expires,
+                ),
+                $violation->member,
+            );
+        }
+    }
+
+    $stale = [];
+    foreach ($baselineByKey as $key => $entry) {
+        if (!isset($matchedKeys[$key])) {
+            $stale[] = sprintf(
+                '%s %s (%s)',
+                is_string($entry['file'] ?? null) ? $entry['file'] : '?',
+                is_string($entry['member'] ?? null) ? $entry['member'] : '?',
+                is_string($entry['code'] ?? null) ? $entry['code'] : '?',
+            );
+        }
+    }
+
+    if ($asJson) {
+        echo json_encode([
+            'hard_fails' => array_map(
+                static fn (DocBlockViolation $v): array => [
+                    'file' => $v->file,
+                    'line' => $v->line,
+                    'code' => $v->code,
+                    'message' => $v->message,
+                    'member' => $v->member,
+                ],
+                $hardFails,
+            ),
+            'stale_baseline_entries' => $stale,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), PHP_EOL;
+    } else {
+        if (!$summaryOnly) {
+            $shown = $limit > 0 ? array_slice($hardFails, 0, $limit) : $hardFails;
+            foreach ($shown as $violation) {
+                printf(
+                    "%s:%d: [%s] %s%s",
+                    $violation->file,
+                    $violation->line,
+                    $violation->code,
+                    $violation->message,
+                    PHP_EOL,
+                );
+            }
+        }
+        if ($stale !== []) {
+            fwrite(
+                STDERR,
+                'These baseline entries no longer violate anything and must be deleted '
+                . "so the baseline only ever shrinks:\n",
+            );
+            foreach ($stale as $entry) {
+                fwrite(STDERR, '  - ' . $entry . "\n");
+            }
+        }
+        if ($hardFails !== []) {
+            fwrite(STDERR, sprintf("%d documentation violation(s) outside the baseline.\n", count($hardFails)));
+        }
+    }
+
+    return ($hardFails === [] && $stale === []) ? 0 : 1;
+}
