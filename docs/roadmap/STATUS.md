@@ -2,7 +2,7 @@
 
 Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
-**Updated at** `df715e39c6269c50c6f4c73d6fb32d1570917945`
+**Updated at** `f7317d384e4c1efcdd6f61d7a69300c1275158f4`
 
 > **Open work is here. Finished work is in [`CHANGELOG.md`](../../CHANGELOG.md).** Two paths, and both end in
 > the changelog. **Planned work** lives here while it is open and its entry is deleted from this directory
@@ -20,29 +20,29 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
 | | |
 |---|---|
-| **Current phase** | Phase 0 — Truth, contracts and decisions |
-| **In flight** | Phase 3's business-group ownership model has landed ahead of its phase; `P3-F` is reduced to its three-engine proof. `P3-B` is complete and `P3-A` is reduced to its three-engine proof, so the aggregate command's persistence seams now point inward. Phase 2's gate work is part delivered: `P2-A` complete, `P2-C`'s semantic checker complete, `P2-G`'s deployed-artifact lane complete. Phase 0 work packages remain unassigned. |
-| **Next** | `P0-A` reproducible baseline, `P0-B` claim ledger, `P0-C` public contract classification and compatibility fixtures. These three are independent and may run in parallel. `P0-E` architecture and security decisions follows them, because several decisions depend on what the inventories find. |
+| **Current phase** | Phase 0 residual truth work + Gate A formal close |
+| **In flight** | Gate A criteria are substantially met (12 Yes, criterion 5 Partly). Phase E (enterprise document primitives) is Delivered. S-A (composition contribution contract) is complete. Language extraction, multi-currency, atomic aggregates, business-group ownership, offline-numbering decision, and the majority of quality and layering work have landed and are recorded in [`CHANGELOG.md`](../../CHANGELOG.md). Remaining open Phase 0 packages are the formal baseline, claim ledger and residual decision records. |
+| **Next** | Complete the residual Phase 0 packages (`P0-A`–`P0-E`) that still appear in the open-work table, close the Partly quality-gate items under criterion 5, then formally assess Gate A. After Gate A the programme moves to Phase 5 scale engineering (including V2-SCL-001) and the Gate B path. |
 | **Open decisions** | None in `decision_required`. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
-| **Gate A** | Not started. 13 exit criteria, 12 met; criterion 13 is the composition contribution contract added by decision D16. The enterprise document primitives, the offline-numbering decision, the three-engine seam and ownership proofs and the PostgreSQL index isolation all landed in the ERP-primitives wave. |
-| **Gate B** | Not started. Blocked on Gate A. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
+| **Gate A** | Ready for formal assessment. 13 exit criteria: 12 Yes, criterion 5 Partly (remaining quality-gate enforcement items). Criterion 13 (composition contribution contract) is Yes. Enterprise document primitives, offline-numbering decision, three-engine seam and ownership proofs, PostgreSQL index isolation, language extraction and the composition declaration contract have all landed. |
+| **Gate B** | Not started. Blocked on Gate A formal close. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
 
 ## Phase board
 
 | Phase | Gate | State | Blocked on |
 |---|---|---|---|
-| 0 — Truth, contracts and decisions | A | Not started | — |
-| 1 — Correctness, security, data entry | A | Not started | Phase 0 decisions 3, 5, 6 |
-| 2 — Truthful gates | A | In progress — one quality contract, semantic dependency checking and the deployed-artifact lane are delivered | Phase 0 decisions 1, 7, 8 |
-| 3 — Seams and the ownership model | A | In progress — the business-group ownership model and the inward persistence seams have landed; `P3-A` and `P3-F` now only owe their three-engine proofs | Phases 1 and 2 |
-| 4 — Atomic aggregate documents | A | Not started | Phase 3; phase 0 decision 2 |
-| E — Enterprise document primitives | A | Delivered — every package complete; two follow-up findings remain | Phase 3. The offline-numbering choice is decided and implemented (ADR 0008). |
-| L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A` and `PL-B` delivered, `PL-C`, `PL-E` and `PL-F` part delivered | `PL-F`'s screenshots and `PL-G` need phase 2's `P2-E` matrix; the language axis they run on is built. Otherwise parallel to 3, 4 and E. |
-| **Gate A** | | **Not assessed** | **Phases 4, E and L, and phase S's Gate A half** |
+| 0 — Truth, contracts and decisions | A | In progress — residual packages and formal baseline still open; substantial delivered work already recorded in CHANGELOG | — |
+| 1 — Correctness, security, data entry | A | Substantially complete (data-entry integrity, security contradictions closed) | Residual Phase 0 |
+| 2 — Truthful gates | A | In progress — one quality contract, semantic dependency checking and the deployed-artifact lane are delivered; reverse-order and remaining matrix items outstanding | Residual Phase 0 |
+| 3 — Seams and the ownership model | A | In progress — the business-group ownership model and the inward persistence seams have landed; `P3-A` and `P3-F` three-engine proofs largely evidenced | Residual quality gates |
+| 4 — Atomic aggregate documents | A | Delivered (command and aggregate invariants exist and are recorded) | — |
+| E — Enterprise document primitives | A | Delivered — every package complete; two follow-up findings remain | — |
+| L — Language, locale and multilingual content | A, with a B tail | Gate A half substantially complete (`PL-A`–`PL-F` delivered); Gate B tail (`PL-G` catalogues + per-locale qualification) remains | — |
+| **Gate A** | | **Ready for formal assessment** | Residual Phase 0 packages and criterion 5 Partly items |
 | 5 — Enterprise scale | B | Not started | Gate A |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
 | 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
-| S — Studio visual composition | A, with a B integration | Not started | The Gate A half needs `P0-C`'s classification machinery; the Gate B half needs Gate A. Decision D16 and ADR 0007 accepted |
+| S — Studio visual composition | A, with a B integration | Gate A half complete (`S-A` composition contribution contract frozen); Gate B half not started | Gate A formal close |
 | **Gate B** | | **Not assessed** | **Phases 7 and S** |
 | M — Maintainability | — | Not started | Phase 3 seams settled. Blocks nothing. |
 | N — Native client platform contracts | — | Version 3 seed — not started | Nothing in Version 2; blocks nothing. Decision D17, [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md). |
