@@ -960,6 +960,11 @@
           "file": "src/OpenApi/Application/OpenApiComponentClaimAdmission.php",
           "symbol": "admit",
           "note": "Uninstall preserves published definitions by design and each integration run installs roughly one hundred and sixty fixture definitions, so MAX_DEFINITIONS = 256 is exhausted around the third consecutive run against one database. This does not threaten the enforced two-run idempotency property, but it blocks enforcing the reverse pass as an appended same-database pass and will bite any long-lived integration database."
+        },
+        {
+          "file": "src/BusinessRecord/Application/InstalledBusinessRecordDefinitionResolver.php",
+          "symbol": "activeInstalled",
+          "note": "Rejecting the published version is not on its own a way to withdraw a fixture definition, and an attempt on this branch had to be withdrawn for it. BusinessDefinitionService::reject flips the catalog head's publication_state, but catalog() selects every row for the site with no filter on that column, and this resolver then throws BusinessRecordSchemaUnavailable on any Active schema installation whose version reads Rejected. Withdrawing a definition therefore has to retire the schema installation in the same step, or the accounting has to change instead; rejection alone breaks definition resolution for the whole site rather than excluding one definition from it."
         }
       ],
       "acceptance_test": "Either fixture definitions are retired with the run that made them, or the ceiling's accounting distinguishes live definitions from preserved-but-withdrawn ones; three consecutive full-suite runs against one database stay green.",
