@@ -27,6 +27,14 @@ use ReflectionMethod;
 #[CoversClass(ApiIndexHandler::class)]
 final class KernelTest extends TestCase
 {
+    /**
+     * Configuration as the application resolves it, read once and reused across this case.
+     *
+     * @var    Environment|null
+     * @since  2.0.0
+     */
+    private ?Environment $configured = null;
+
     public function testContainerReturnsOneConfiguredApplication(): void
     {
         $container = (new ContainerFactory())->create(Environment::fromGlobals());
@@ -201,11 +209,26 @@ final class KernelTest extends TestCase
         ];
     }
 
+    /**
+     * Read one configuration value the way the container reads it.
+     *
+     * A raw `getenv()` sees only the process environment, so an installation that configures through
+     * `.env` answered nothing here and these values fell back to a PostgreSQL that need not exist —
+     * three of this case's tests then errored on any host without one. `Environment` sees the dotenv
+     * file as well, and is the one class the standard permits to read configuration at all.
+     *
+     * @param   string  $name      Configuration key to read.
+     * @param   string  $fallback  Value to use where the installation configures none.
+     *
+     * @return  string  The configured value, or the fallback.
+     *
+     * @since   2.0.0
+     */
     private function environment(string $name, string $fallback): string
     {
-        $value = getenv($name);
+        $this->configured ??= Environment::fromGlobals();
 
-        return is_string($value) && $value !== '' ? $value : $fallback;
+        return $this->configured->optionalString($name, $fallback) ?? $fallback;
     }
 
     private function routeCacheFile(Container $container): string

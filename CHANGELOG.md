@@ -1055,6 +1055,12 @@ development programme, from the architecture decision that opened it to the curr
   unrelated local installations meet each other's residue in one Redis namespace. They now resolve through
   `ApplicationConfiguration` and `Environment`, and a new boundary test refuses a named raw read, so the
   pattern cannot return. Closes `V2-QA-009`. (#92)
+- **The configuration boundary now covers the functional tree, not just the integration one.** The kernel
+  case read `getenv()` directly and fell back to a PostgreSQL at `127.0.0.1:5432`, so on a host running any
+  other engine three of its tests errored on a server nothing had asked for. It resolves through
+  `Environment` like the integration suite does, and the boundary test scans `tests/Functional` beside
+  `tests/Integration` — a gate that reads one tree only leaves the defect free to live in the next one.
+  Closes `V2-QA-011`. (#92)
 
 
 - **Every non-primary index name a second prefixed installation could collide with is isolated on

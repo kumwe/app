@@ -13,7 +13,7 @@ use SplFileInfo;
 
 #[CoversNothing]
 /**
- * Holds every integration test to the configuration boundary the application itself is held to.
+ * Holds every integration and functional test to the configuration boundary the application obeys.
  *
  * `Environment` is the one first-party class permitted to read the process environment or the dotenv
  * file, and the container's `ApplicationConfiguration` is what everything else receives. An integration
@@ -21,13 +21,14 @@ use SplFileInfo;
  * deployment configures through `.env` — which is how four tests silently fell back to shared defaults:
  * one shared Redis namespace between installations, a relay pointed at a database nothing was using, a
  * fingerprint keyed on a secret the container never held, and a matrix test rebuilt on SQLite while the
- * suite ran on the configured server (V2-QA-009). This gate keeps the class of defect from returning: no
- * integration test may read a named environment variable raw, and the zero-argument forwarding read is
- * allowed only where the allowlist records why.
+ * suite ran on the configured server (V2-QA-009), and how the kernel case defaulted to a PostgreSQL that
+ * need not exist (V2-QA-011). Scanning one tree left the pattern free to live in the next one, so both
+ * are held: no test in either may read a named environment variable raw, and the zero-argument
+ * forwarding read is allowed only where the allowlist records why.
  *
  * @since  2.0.0
  */
-final class IntegrationConfigurationBoundaryTest extends TestCase
+final class SuiteConfigurationBoundaryTest extends TestCase
 {
     /**
      * The zero-argument `getenv()` reads that are allowed to remain, each with the reason it is one.
@@ -47,21 +48,21 @@ final class IntegrationConfigurationBoundaryTest extends TestCase
     ];
 
     /**
-     * No integration test may read a named environment variable with raw `getenv()`.
+     * No integration or functional test may read a named environment variable with raw `getenv()`.
      *
      * Connection and namespace configuration reaches a test through the container's
      * `ApplicationConfiguration`, or through `Environment::fromGlobals()` where no container is booted
      * — both of which see the dotenv file. A raw named read sees only the process environment, and its
-     * fallback value is what one installation silently shares with another.
+     * fallback value is what one installation silently shares with another, or a server nothing runs.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testNoIntegrationTestReadsANamedEnvironmentVariableRaw(): void
+    public function testNoSuiteTestReadsANamedEnvironmentVariableRaw(): void
     {
         $violations = [];
-        foreach ($this->integrationFiles() as $relative => $contents) {
+        foreach ($this->suiteFiles() as $relative => $contents) {
             foreach ($this->readsOf($contents) as $line => $argument) {
                 if ($argument === '') {
                     continue;
@@ -74,7 +75,7 @@ final class IntegrationConfigurationBoundaryTest extends TestCase
         self::assertSame(
             [],
             $violations,
-            "Integration tests read configuration through ApplicationConfiguration or Environment, "
+            "Suite tests read configuration through ApplicationConfiguration or Environment, "
                 . "never with raw getenv():\n - " . implode("\n - ", $violations),
         );
     }
@@ -92,7 +93,7 @@ final class IntegrationConfigurationBoundaryTest extends TestCase
     public function testTheForwardingAllowlistIsExactAndOnlyEverShrinks(): void
     {
         $found = [];
-        foreach ($this->integrationFiles() as $relative => $contents) {
+        foreach ($this->suiteFiles() as $relative => $contents) {
             foreach ($this->readsOf($contents) as $line => $argument) {
                 if ($argument !== '') {
                     continue;
@@ -122,30 +123,32 @@ final class IntegrationConfigurationBoundaryTest extends TestCase
     }
 
     /**
-     * Read every integration test file, keyed by repository-relative path.
+     * Read every integration and functional test file, keyed by repository-relative path.
      *
      * @return  array<string, string>  File contents by path, sorted by path.
      *
      * @since   2.0.0
      */
-    private function integrationFiles(): array
+    private function suiteFiles(): array
     {
         $root = dirname(__DIR__, 2);
         $files = [];
-        $tree = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($root . '/tests/Integration', FilesystemIterator::SKIP_DOTS),
-        );
-        foreach ($tree as $file) {
-            self::assertInstanceOf(SplFileInfo::class, $file);
-            if ($file->getExtension() !== 'php') {
-                continue;
+        foreach (['tests/Integration', 'tests/Functional'] as $tree) {
+            $walk = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($root . '/' . $tree, FilesystemIterator::SKIP_DOTS),
+            );
+            foreach ($walk as $file) {
+                self::assertInstanceOf(SplFileInfo::class, $file);
+                if ($file->getExtension() !== 'php') {
+                    continue;
+                }
+                $contents = file_get_contents($file->getPathname());
+                self::assertIsString($contents);
+                $files[substr($file->getPathname(), strlen($root) + 1)] = $contents;
             }
-            $contents = file_get_contents($file->getPathname());
-            self::assertIsString($contents);
-            $files[substr($file->getPathname(), strlen($root) + 1)] = $contents;
         }
         ksort($files, SORT_STRING);
-        self::assertNotSame([], $files, 'The integration tree is expected to hold test files.');
+        self::assertNotSame([], $files, 'Both trees are expected to hold test files.');
 
         return $files;
     }
