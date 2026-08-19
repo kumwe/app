@@ -162,8 +162,9 @@ final class BusinessCustomViewRequestTest extends TestCase
     {
         $projection = (new BusinessCustomViewPresenter(InterfaceTranslation::translator()))->present([
             'title' => 'Northern summary',
-            'items' => [['label' => 'Windhoek', 'ready' => true]],
+            'items' => [['label' => 'Windhoek', 'ready' => true, 'closed' => false]],
             'count' => 1,
+            'reviewed_at' => null,
         ]);
 
         self::assertSame('object', $projection['kind']);
@@ -173,7 +174,12 @@ final class BusinessCustomViewRequestTest extends TestCase
             'Yes',
             $projection['entries'][1]['value']['items'][0]['value']['entries'][1]['value']['value'],
         );
+        self::assertSame(
+            'No',
+            $projection['entries'][1]['value']['items'][0]['value']['entries'][2]['value']['value'],
+        );
         self::assertSame('1', $projection['entries'][2]['value']['value']);
+        self::assertSame('Not set', $projection['entries'][3]['value']['value']);
     }
 
     /**
