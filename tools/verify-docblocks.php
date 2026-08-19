@@ -10,12 +10,16 @@
  *
  * Usage:
  *   php tools/verify-docblocks.php [--summary] [--json] [--limit=N] [path ...]
- *   php tools/verify-docblocks.php --emit-baseline tests
- *   php tools/verify-docblocks.php --baseline=docs/quality/test-docblock-baseline.json tests
+ *   php tools/verify-docblocks.php --emit-baseline --expires=YYYY-MM-DD --recorded-at=YYYY-MM-DD \
+ *       [--recorded-from=URL ...] tests
+ *   php tools/verify-docblocks.php --baseline=docs/quality/test-docblock-baseline.json [--today=DATE] tests
  *
- * `--emit-baseline` prints the shrinking record of undocumented test methods (V2-QA-010). It never
- * writes the file itself. `--baseline=` arms the gate: new MISSING_DOC methods under tests/ fail,
- * stale baseline entries fail, and expired entries fail so the list only ever shrinks.
+ * `--emit-baseline` prints the shrinking record of documentation debt under tests/ (V2-QA-010). It
+ * never writes the file itself, and it takes its dates as arguments so an unchanged tree re-emits
+ * byte-identically. `--baseline=` arms the gate: any violation under tests/ that the record does not
+ * carry fails, a recorded entry that no longer matches anything fails, and a record that is itself
+ * malformed — a missing owner, finding, justification or expiry, an expired entry, a duplicated key,
+ * or a count that disagrees with the entries — fails. `--today=` moves the clock for testing.
  *
  * @since  2.0.0
  */
@@ -325,7 +329,12 @@ final class DocBlockAuditor
     {
         foreach (explode("\n", $source) as $index => $line) {
             $trimmed = rtrim($line, "\r");
-            $width = function_exists('mb_strlen') ? mb_strlen($trimmed) : strlen($trimmed);
+            // ext-mbstring is required by composer.json, but this tool runs without vendor/ and the
+            // fallback must count characters rather than bytes: this codebase's blocks are full of
+            // em-dashes, and counting their three bytes each would fail lines that are within the limit.
+            $width = function_exists('mb_strlen')
+                ? mb_strlen($trimmed)
+                : (int) preg_match_all('/./u', $trimmed);
 
             if ($width > $this->maximumLineLength) {
                 $this->violations[] = new DocBlockViolation(
@@ -353,6 +362,7 @@ final class DocBlockAuditor
         $depth = 0;
         $parenthesis = 0;
         $classStack = [];
+        $anonymous = 0;
         $lastDoc = null;
         $count = count($tokens);
 
@@ -418,15 +428,39 @@ final class DocBlockAuditor
             }
 
             if (in_array($id, [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true)) {
-                if ($this->isAnonymousOrConstantFetch($tokens, $i)) {
+                $kind = $this->classDeclarationKind($tokens, $i);
+                if ($kind === 'constant-fetch') {
+                    $lastDoc = null;
+
+                    continue;
+                }
+                if ($kind === 'anonymous') {
+                    // Not documented as a declaration, but its members are still recorded, so it needs
+                    // an identity of its own. The ordinal is by order of appearance in the file, which
+                    // is stable for as long as the file is.
+                    $anonymous++;
+                    $classStack[] = [
+                        'depth' => $depth + 1,
+                        'kind' => strtolower($text),
+                        'name' => sprintf('class@%d', $anonymous),
+                    ];
                     $lastDoc = null;
 
                     continue;
                 }
 
                 $name = $this->nextName($tokens, $i);
-                $this->record('class', $file, $line, $lastDoc, sprintf('%s %s', strtolower($text), $name), true, false);
-                $classStack[] = ['depth' => $depth + 1, 'kind' => strtolower($text)];
+                $this->record(
+                    'class',
+                    $file,
+                    $line,
+                    $lastDoc,
+                    sprintf('%s %s', strtolower($text), $name),
+                    true,
+                    false,
+                    $name,
+                );
+                $classStack[] = ['depth' => $depth + 1, 'kind' => strtolower($text), 'name' => $name];
                 $lastDoc = null;
 
                 continue;
@@ -442,7 +476,7 @@ final class DocBlockAuditor
                 }
 
                 $signature = $this->readSignature($tokens, $i);
-                $this->recordMethod($file, $line, $lastDoc, $name, $signature);
+                $this->recordMethod($file, $line, $lastDoc, $name, $signature, end($classStack)['name']);
                 $lastDoc = null;
 
                 continue;
@@ -450,7 +484,7 @@ final class DocBlockAuditor
 
             if ($id === T_CONST && $classStack !== []) {
                 $name = $this->nextConstantName($tokens, $i);
-                $this->record('constant', $file, $line, $lastDoc, $name, true, true);
+                $this->record('constant', $file, $line, $lastDoc, $name, true, true, end($classStack)['name']);
                 $lastDoc = null;
 
                 continue;
@@ -458,7 +492,7 @@ final class DocBlockAuditor
 
             if ($id === T_CASE && $classStack !== [] && end($classStack)['kind'] === 'enum') {
                 $name = $this->nextName($tokens, $i);
-                $this->record('enum case', $file, $line, $lastDoc, $name, true, false);
+                $this->record('enum case', $file, $line, $lastDoc, $name, true, false, end($classStack)['name']);
 
                 // PHPStan rejects a `@var` that names no variable outside a property or constant, so a
                 // case block carrying one fails `composer analyse` with varTag.noVariable.
@@ -468,6 +502,7 @@ final class DocBlockAuditor
                         $line,
                         'ENUM_CASE_VAR',
                         sprintf('Enum case %s must not carry an `@var` tag; PHPStan rejects it.', $name),
+                        end($classStack)['name'] . '::' . $name,
                     );
                 }
 
@@ -482,7 +517,7 @@ final class DocBlockAuditor
                 && $classStack !== []
                 && $this->isPropertyDeclaration($tokens, $i, $depth, $classStack)
             ) {
-                $this->record('property', $file, $line, $lastDoc, $text, true, true);
+                $this->record('property', $file, $line, $lastDoc, $text, true, true, end($classStack)['name']);
                 $lastDoc = null;
 
                 continue;
@@ -502,6 +537,7 @@ final class DocBlockAuditor
      * @param   string       $label       Human-readable member label used in messages.
      * @param   bool         $needsSince  Whether the member must carry a `@since` tag.
      * @param   bool         $needsVar    Whether the member must carry a `@var` tag.
+     * @param   string       $declaring   Name of the class, interface, trait or enum that declares it.
      *
      * @return  void
      *
@@ -515,7 +551,11 @@ final class DocBlockAuditor
         string $label,
         bool $needsSince,
         bool $needsVar,
+        string $declaring,
     ): void {
+        // A test file may declare several classes — phpcs.xml exempts tests/ from one-class-per-file —
+        // so a bare member name is not unique within a file and cannot key a baseline on its own.
+        $member = $kind === 'class' ? $declaring : $declaring . '::' . $label;
         $this->coverage[$kind]['total'] = ($this->coverage[$kind]['total'] ?? 0) + 1;
         $this->coverage[$kind]['documented'] = $this->coverage[$kind]['documented'] ?? 0;
 
@@ -525,6 +565,7 @@ final class DocBlockAuditor
                 $line,
                 'MISSING_DOC',
                 sprintf('%s %s has no documentation block.', ucfirst($kind), $label),
+                $member,
             );
 
             return;
@@ -538,6 +579,7 @@ final class DocBlockAuditor
                 $line,
                 'MISSING_SUMMARY',
                 sprintf('%s %s has no description.', ucfirst($kind), $label),
+                $member,
             );
         }
 
@@ -547,6 +589,7 @@ final class DocBlockAuditor
                 $line,
                 'MISSING_SINCE',
                 sprintf('%s %s is missing `@since %s`.', ucfirst($kind), $label, $this->requiredSince),
+                $member,
             );
         }
 
@@ -556,6 +599,7 @@ final class DocBlockAuditor
                 $line,
                 'MISSING_VAR',
                 sprintf('%s %s needs an `@var` tag carrying a type.', ucfirst($kind), $label),
+                $member,
             );
         }
     }
@@ -568,13 +612,22 @@ final class DocBlockAuditor
      * @param string|null $doc Documentation block attached to the method, when present.
      * @param   string                                           $name       Method name.
      * @param   array{parameters: list<string>, return: string}  $signature  Parsed signature details.
+     * @param   string                                           $declaring  Declaring class, interface,
+     *          trait or enum name, which qualifies the member label the baseline keys on.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    private function recordMethod(string $file, int $line, ?string $doc, string $name, array $signature): void
-    {
+    private function recordMethod(
+        string $file,
+        int $line,
+        ?string $doc,
+        string $name,
+        array $signature,
+        string $declaring,
+    ): void {
+        $member = $declaring . '::' . $name . '()';
         $this->coverage['method']['total'] = ($this->coverage['method']['total'] ?? 0) + 1;
         $this->coverage['method']['documented'] = $this->coverage['method']['documented'] ?? 0;
 
@@ -584,7 +637,7 @@ final class DocBlockAuditor
                 $line,
                 'MISSING_DOC',
                 sprintf('Method %s() has no documentation block.', $name),
-                $name . '()',
+                $member,
             );
 
             return;
@@ -598,6 +651,7 @@ final class DocBlockAuditor
                 $line,
                 'MISSING_SUMMARY',
                 sprintf('Method %s() has no description.', $name),
+                $member,
             );
         }
 
@@ -607,6 +661,7 @@ final class DocBlockAuditor
                 $line,
                 'MISSING_SINCE',
                 sprintf('Method %s() is missing `@since %s`.', $name, $this->requiredSince),
+                $member,
             );
         }
 
@@ -625,6 +680,7 @@ final class DocBlockAuditor
                     $line,
                     'MISSING_PARAM',
                     sprintf('Method %s() does not document parameter %s.', $name, $parameter),
+                    $member . ' ' . $parameter,
                 );
             }
         }
@@ -636,6 +692,7 @@ final class DocBlockAuditor
                     $line,
                     'EXTRA_PARAM',
                     sprintf('Method %s() documents unknown parameter %s.', $name, $parameter),
+                    $member . ' ' . $parameter,
                 );
             }
         }
@@ -649,6 +706,7 @@ final class DocBlockAuditor
                 $line,
                 'MISSING_RETURN',
                 sprintf('Method %s() is missing an `@return` tag.', $name),
+                $member,
             );
         }
 
@@ -658,6 +716,7 @@ final class DocBlockAuditor
                 $line,
                 'EXTRA_RETURN',
                 'Constructors must not carry an `@return` tag.',
+                $member,
             );
         }
     }
@@ -715,6 +774,25 @@ final class DocBlockAuditor
      */
     private function isAnonymousOrConstantFetch(array $tokens, int $index): bool
     {
+        return $this->classDeclarationKind($tokens, $index) !== 'named';
+    }
+
+    /**
+     * Tell a named declaration, an anonymous class and a `::class` fetch apart.
+     *
+     * Anonymous classes matter to the baseline: a test file often builds several, each with a `handle()`
+     * or an `up()`, and attributing all of them to the enclosing test class gives them one key between
+     * them — which is a free pass for whichever comes second.
+     *
+     * @param   list<array{0: int, 1: string, 2: int}|string>  $tokens  Token stream.
+     * @param   int                                            $index   Index of the declaration keyword.
+     *
+     * @return  string  One of `named`, `anonymous` or `constant-fetch`.
+     *
+     * @since   2.0.0
+     */
+    private function classDeclarationKind(array $tokens, int $index): string
+    {
         for ($i = $index - 1; $i >= 0; $i--) {
             $token = $tokens[$i];
 
@@ -722,14 +800,18 @@ final class DocBlockAuditor
                 continue;
             }
 
-            if (is_array($token) && in_array($token[0], [T_NEW, T_DOUBLE_COLON], true)) {
-                return true;
+            if (is_array($token) && $token[0] === T_DOUBLE_COLON) {
+                return 'constant-fetch';
+            }
+
+            if (is_array($token) && $token[0] === T_NEW) {
+                return 'anonymous';
             }
 
             break;
         }
 
-        return $this->nextName($tokens, $index) === '';
+        return $this->nextName($tokens, $index) === '' ? 'anonymous' : 'named';
     }
 
     /**
@@ -776,7 +858,14 @@ final class DocBlockAuditor
         for ($i = $index + 1, $count = count($tokens); $i < $count; $i++) {
             $token = $tokens[$i];
 
-            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_STRING], true)) {
+            if (is_string($token) && ($token === '?' || $token === '|')) {
+                continue; // Nullable or union constant type.
+            }
+
+            if (
+                is_array($token)
+                && in_array($token[0], [T_WHITESPACE, T_STRING, T_ARRAY, T_CALLABLE, T_NS_SEPARATOR], true)
+            ) {
                 if ($token[0] === T_STRING) {
                     // A typed constant places the type before the name; keep scanning for the `=`.
                     $next = $this->peekSignificant($tokens, $i);
@@ -949,6 +1038,9 @@ $emitBaseline = in_array('--emit-baseline', $arguments, true);
 $baselinePath = null;
 $today = date('Y-m-d');
 $limit = 0;
+$expires = '';
+$recordedAt = '';
+$sources = [];
 
 foreach ($arguments as $argument) {
     if (str_starts_with($argument, '--limit=')) {
@@ -961,6 +1053,18 @@ foreach ($arguments as $argument) {
     }
     if (str_starts_with($argument, '--today=')) {
         $today = substr($argument, strlen('--today='));
+        continue;
+    }
+    if (str_starts_with($argument, '--expires=')) {
+        $expires = substr($argument, strlen('--expires='));
+        continue;
+    }
+    if (str_starts_with($argument, '--recorded-at=')) {
+        $recordedAt = substr($argument, strlen('--recorded-at='));
+        continue;
+    }
+    if (str_starts_with($argument, '--recorded-from=')) {
+        $sources[] = substr($argument, strlen('--recorded-from='));
         continue;
     }
 }
@@ -978,7 +1082,23 @@ foreach ($paths as $path) {
 }
 
 if ($emitBaseline) {
-    fwrite(STDOUT, emitDocblockBaseline($auditor->violations(), $root) . "\n");
+    // Dates are arguments, never date(): re-emitting an unchanged tree has to produce a byte-identical
+    // document, or the record cannot be diffed against the one in the repository.
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $expires) !== 1) {
+        fwrite(STDERR, "--emit-baseline needs --expires=YYYY-MM-DD.\n");
+
+        exit(1);
+    }
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $recordedAt) !== 1) {
+        fwrite(STDERR, "--emit-baseline needs --recorded-at=YYYY-MM-DD.\n");
+
+        exit(1);
+    }
+    fwrite(
+        STDOUT,
+        emitDocblockBaseline($auditor->violations(), $root, $expires, $recordedAt, $sources) . "\n",
+    );
+
     exit(0);
 }
 
@@ -989,30 +1109,55 @@ if ($baselinePath !== null) {
 exit($auditor->report($summaryOnly, $asJson, $limit));
 
 /**
- * Emit the shrinking baseline document for currently undocumented methods under tests/.
+ * Relativise an absolute path against the repository root.
  *
- * Only `MISSING_DOC` method violations are baseline-managed. Every other code fails immediately when
- * the gate is armed, matching the acceptance test for `V2-QA-010`.
+ * @param   string  $file  Absolute or already-relative path.
+ * @param   string  $root  Repository root.
+ *
+ * @return  string  Repository-relative path with forward slashes.
+ *
+ * @since   2.0.0
+ */
+function docblockRelativePath(string $file, string $root): string
+{
+    $prefix = rtrim($root, '/') . '/';
+    if (str_starts_with($file, $prefix)) {
+        $file = substr($file, strlen($prefix));
+    }
+
+    return str_replace('\\', '/', $file);
+}
+
+/**
+ * Emit the shrinking baseline document for the documentation debt currently under `tests/`.
+ *
+ * Every violation that names a member is baseline-managed. A violation that names none — the line-width
+ * check is the only one — is never recorded, because `phpcs.xml` already holds `tests/` to the same
+ * 120-character limit and the tree carries no such debt to record.
  *
  * @param   list<DocBlockViolation>  $violations  Findings from the most recent scan.
  * @param   string                   $root        Repository root for relative paths.
+ * @param   string                   $expires     Expiry stamped on every recorded entry.
+ * @param   string                   $recordedAt  Date the record was taken.
+ * @param   list<string>             $sources     Verification runs the record was taken from.
  *
  * @return  string  Pretty-printed JSON baseline document.
  *
  * @since   2.0.0
  */
-function emitDocblockBaseline(array $violations, string $root): string
-{
+function emitDocblockBaseline(
+    array $violations,
+    string $root,
+    string $expires,
+    string $recordedAt,
+    array $sources,
+): string {
     $entries = [];
     foreach ($violations as $violation) {
-        if ($violation->code !== 'MISSING_DOC' || $violation->member === '') {
+        if ($violation->member === '') {
             continue;
         }
-        $file = $violation->file;
-        $prefix = rtrim($root, '/') . '/';
-        if (str_starts_with($file, $prefix)) {
-            $file = substr($file, strlen($prefix));
-        }
+        $file = docblockRelativePath($violation->file, $root);
         if (!str_starts_with($file, 'tests/')) {
             continue;
         }
@@ -1023,31 +1168,37 @@ function emitDocblockBaseline(array $violations, string $root): string
             'code' => $violation->code,
             'owner' => 'quality-engineering',
             'finding' => 'V2-QA-010',
-            'expires' => '2027-06-30',
-            'justification' => 'Pre-existing test method without a documentation block; the '
-                . 'baseline only ever shrinks.',
+            'expires' => $expires,
+            'justification' => 'Pre-existing documentation debt under tests/ recorded when the gate was '
+                . 'armed; the record only ever shrinks.',
         ];
     }
 
     usort(
         $entries,
         static function (array $left, array $right): int {
-            return [$left['file'], $left['member'], $left['line']]
-                <=> [$right['file'], $right['member'], $right['line']];
+            return [$left['file'], $left['member'], $left['code'], $left['line']]
+                <=> [$right['file'], $right['member'], $right['code'], $right['line']];
         },
     );
 
     return json_encode(
         [
-            'baseline' => 'kumwe-test-docblock-methods',
+            'baseline' => 'kumwe-test-documentation-blocks',
             'finding' => 'V2-QA-010',
             'authority' => 'docs/coding-standard.md',
-            'note' => 'Every test method that lacked a documentation block when the gate was armed. '
-                . 'It is a record, not a permission: tools/verify-docblocks.php fails on any MISSING_DOC '
-                . 'method under tests/ that is not listed here, fails when a listed entry is no longer '
-                . 'missing so the entry must be deleted, and fails when an entry passes its expiry. '
-                . 'The list only ever shrinks.',
-            'recorded_at' => date('Y-m-d'),
+            'note' => 'Every documentation violation under tests/ that existed when the gate was armed. '
+                . 'It is a record, not a permission: tools/verify-docblocks.php fails on any violation '
+                . 'under tests/ that is not listed here, fails when a listed entry no longer violates '
+                . 'anything so the entry must be deleted, fails when an entry passes its expiry, and '
+                . 'fails when two entries share one key. Entries are keyed by file, code and '
+                . 'class-qualified member, so deleting one without doing the work fails the build and '
+                . 'the count is a burn-down rather than a number anyone can edit.',
+            'scope' => 'tests/ — src/ carries no debt and is held to the standard directly by '
+                . 'composer docs:api.',
+            'recorded_at' => $recordedAt,
+            'recorded_from' => $sources,
+            'entry_count' => count($entries),
             'entries' => $entries,
         ],
         JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
@@ -1055,7 +1206,89 @@ function emitDocblockBaseline(array $violations, string $root): string
 }
 
 /**
- * Compare scan results with the recorded test-docblock baseline.
+ * Read and validate the recorded baseline document.
+ *
+ * An exemption nobody owns is a permission, so every entry must name its owner, the finding that
+ * removes it, a justification and a well-formed expiry — the same four an exemption in
+ * `tools/verify-dependency-graph.php` must carry. A malformed entry is an error rather than something
+ * to skip: silently dropping it would quietly widen the gate.
+ *
+ * @param   array<int, mixed>  $rawEntries  Entries as read from the document.
+ * @param   string             $today       ISO date used for expiry checks.
+ *
+ * @return  array{entries: array<string, array<string, mixed>>, errors: list<string>}  Entries by key,
+ *          and every structural complaint found while reading them.
+ *
+ * @since   2.0.0
+ */
+function readDocblockBaseline(array $rawEntries, string $today): array
+{
+    $entries = [];
+    $errors = [];
+
+    foreach ($rawEntries as $index => $entry) {
+        if (!is_array($entry)) {
+            $errors[] = sprintf('Baseline entry at position %d is not an object.', $index);
+            continue;
+        }
+        $file = $entry['file'] ?? null;
+        $code = $entry['code'] ?? null;
+        $member = $entry['member'] ?? null;
+        if (
+            !is_string($file) || $file === ''
+            || !is_string($code) || $code === ''
+            || !is_string($member) || $member === ''
+        ) {
+            $errors[] = sprintf('Baseline entry at position %d needs "file", "code" and "member".', $index);
+            continue;
+        }
+        $key = $file . "\0" . $code . "\0" . $member;
+        $label = sprintf('%s %s (%s)', $file, $member, $code);
+        if (isset($entries[$key])) {
+            $errors[] = sprintf(
+                'Baseline entry %s is recorded twice. Two entries sharing one key make the second '
+                . 'a free pass for anything that collides with it.',
+                $label,
+            );
+            continue;
+        }
+        $owner = $entry['owner'] ?? null;
+        $finding = $entry['finding'] ?? null;
+        $justification = $entry['justification'] ?? null;
+        if (
+            !is_string($owner) || trim($owner) === '' || $owner === 'UNASSIGNED'
+            || !is_string($finding) || trim($finding) === '' || $finding === 'UNASSIGNED'
+            || !is_string($justification) || trim($justification) === ''
+        ) {
+            $errors[] = sprintf(
+                'Baseline entry %s needs a named owner, the finding that removes it, and a '
+                . 'justification. An exemption nobody owns is a permission.',
+                $label,
+            );
+        }
+        $expires = $entry['expires'] ?? null;
+        if (!is_string($expires) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $expires) !== 1) {
+            $errors[] = sprintf('Baseline entry %s needs an expiry date as YYYY-MM-DD.', $label);
+        } elseif ($expires < $today) {
+            $errors[] = sprintf(
+                'Baseline entry %s expired on %s. Document the member or record a new decision; an '
+                . 'exemption does not outlive the work that justified it.',
+                $label,
+                $expires,
+            );
+        }
+        $entries[$key] = $entry;
+    }
+
+    return ['entries' => $entries, 'errors' => $errors];
+}
+
+/**
+ * Compare scan results with the recorded documentation baseline for `tests/`.
+ *
+ * Three things fail the build: a violation under `tests/` that the record does not carry, a recorded
+ * entry that no longer matches anything, and a record that is itself malformed. Together they make the
+ * entry count a burn-down: it cannot be lowered except by documenting the member the entry names.
  *
  * @param   list<DocBlockViolation>  $violations    Findings from the most recent scan.
  * @param   string                   $baselinePath  Path to the baseline JSON document.
@@ -1097,44 +1330,29 @@ function compareDocblockBaseline(
         return 1;
     }
 
+    $read = readDocblockBaseline(array_values($document['entries']), $today);
     /** @var array<string, array<string, mixed>> $baselineByKey */
-    $baselineByKey = [];
-    foreach ($document['entries'] as $entry) {
-        if (!is_array($entry)) {
-            continue;
-        }
-        $file = is_string($entry['file'] ?? null) ? $entry['file'] : '';
-        $code = is_string($entry['code'] ?? null) ? $entry['code'] : '';
-        $member = is_string($entry['member'] ?? null) ? $entry['member'] : '';
-        if ($file === '' || $code === '' || $member === '') {
-            continue;
-        }
-        $baselineByKey[$file . "\0" . $code . "\0" . $member] = $entry;
+    $baselineByKey = $read['entries'];
+    $structural = $read['errors'];
+
+    $declared = $document['entry_count'] ?? null;
+    if (!is_int($declared) || $declared !== count($document['entries'])) {
+        $structural[] = sprintf(
+            'The recorded entry_count must equal the number of entries; the document says %s and '
+            . 'carries %d. The count is the burn-down number, so it is not allowed to drift.',
+            is_int($declared) ? (string) $declared : 'nothing',
+            count($document['entries']),
+        );
     }
 
     $hardFails = [];
     $matchedKeys = [];
 
     foreach ($violations as $violation) {
-        $relative = $violation->file;
-        $prefix = rtrim($root, '/') . '/';
-        if (str_starts_with($relative, $prefix)) {
-            $relative = substr($relative, strlen($prefix));
-        }
-        $relative = str_replace('\\', '/', $relative);
-        $underTests = str_starts_with($relative, 'tests/');
-
-        // V2-QA-010 arms only undocumented test methods. Class, constant, property and incomplete-block
-        // debt under tests/ is pre-existing and is not part of this baseline; it is left for a later pass.
-        if ($underTests && !($violation->code === 'MISSING_DOC' && $violation->member !== '')) {
-            continue;
-        }
-
-        $isBaselineManaged = $underTests
-            && $violation->code === 'MISSING_DOC'
-            && $violation->member !== '';
-
-        if (!$isBaselineManaged) {
+        $relative = docblockRelativePath($violation->file, $root);
+        if (!str_starts_with($relative, 'tests/') || $violation->member === '') {
+            // Outside the baselined tree, or a file-level finding the record cannot key. Either way it
+            // is held to the standard directly, exactly as src/ is.
             $hardFails[] = $violation;
             continue;
         }
@@ -1145,21 +1363,6 @@ function compareDocblockBaseline(
             continue;
         }
         $matchedKeys[$key] = true;
-        $expires = is_string($baselineByKey[$key]['expires'] ?? null) ? $baselineByKey[$key]['expires'] : '';
-        if ($expires !== '' && $expires < $today) {
-            $hardFails[] = new DocBlockViolation(
-                $violation->file,
-                $violation->line,
-                'BASELINE_EXPIRED',
-                sprintf(
-                    'Baseline entry for %s in %s expired on %s and must be documented or removed.',
-                    $violation->member,
-                    $relative,
-                    $expires,
-                ),
-                $violation->member,
-            );
-        }
     }
 
     $stale = [];
@@ -1187,35 +1390,44 @@ function compareDocblockBaseline(
                 $hardFails,
             ),
             'stale_baseline_entries' => $stale,
+            'structural_errors' => $structural,
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), PHP_EOL;
-    } else {
-        if (!$summaryOnly) {
-            $shown = $limit > 0 ? array_slice($hardFails, 0, $limit) : $hardFails;
-            foreach ($shown as $violation) {
-                printf(
-                    "%s:%d: [%s] %s%s",
-                    $violation->file,
-                    $violation->line,
-                    $violation->code,
-                    $violation->message,
-                    PHP_EOL,
-                );
-            }
-        }
-        if ($stale !== []) {
-            fwrite(
-                STDERR,
-                'These baseline entries no longer violate anything and must be deleted '
-                . "so the baseline only ever shrinks:\n",
-            );
-            foreach ($stale as $entry) {
-                fwrite(STDERR, '  - ' . $entry . "\n");
-            }
-        }
-        if ($hardFails !== []) {
-            fwrite(STDERR, sprintf("%d documentation violation(s) outside the baseline.\n", count($hardFails)));
-        }
+
+        return ($hardFails === [] && $stale === [] && $structural === []) ? 0 : 1;
     }
 
-    return ($hardFails === [] && $stale === []) ? 0 : 1;
+    if (!$summaryOnly) {
+        $shown = $limit > 0 ? array_slice($hardFails, 0, $limit) : $hardFails;
+        foreach ($shown as $violation) {
+            printf(
+                "%s:%d: [%s] %s%s",
+                $violation->file,
+                $violation->line,
+                $violation->code,
+                $violation->message,
+                PHP_EOL,
+            );
+        }
+    }
+    if ($structural !== []) {
+        fwrite(STDERR, "The baseline document itself is not valid:\n");
+        foreach ($structural as $error) {
+            fwrite(STDERR, '  - ' . $error . "\n");
+        }
+    }
+    if ($stale !== []) {
+        fwrite(
+            STDERR,
+            'These baseline entries no longer violate anything and must be deleted '
+            . "so the baseline only ever shrinks:\n",
+        );
+        foreach ($stale as $entry) {
+            fwrite(STDERR, '  - ' . $entry . "\n");
+        }
+    }
+    if ($hardFails !== []) {
+        fwrite(STDERR, sprintf("%d documentation violation(s) outside the baseline.\n", count($hardFails)));
+    }
+
+    return ($hardFails === [] && $stale === [] && $structural === []) ? 0 : 1;
 }
