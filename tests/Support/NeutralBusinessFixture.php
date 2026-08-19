@@ -1213,40 +1213,6 @@ final class NeutralBusinessFixture
     }
 
     /**
-     * Withdraw a fixture definition so it no longer counts against the live OpenAPI component ceiling.
-     *
-     * Published definitions are preserved on uninstall by design. Integration runs that install roughly
-     * one hundred and sixty fixture definitions therefore exhaust `MAX_DEFINITIONS = 256` by the third
-     * consecutive suite against one database (`V2-QA-008`). Rejection keeps the version on record for
-     * history while excluding it from the live component admission set, which is exactly what lets
-     * reverse-order idempotency (`V2-QA-004`) run as a third same-database pass without a dedicated
-     * database of its own.
-     *
-     * @param   Container             $container   Kernel that owns the definition service.
-     * @param   ExecutionContext      $context     Actor and site the withdrawal runs for.
-     * @param   EntityTypeDefinition  $definition  Published fixture definition to withdraw.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public static function retire(
-        Container $container,
-        ExecutionContext $context,
-        EntityTypeDefinition $definition,
-    ): void {
-        $definitions = $container->get(BusinessDefinitionService::class);
-        if (!$definitions instanceof BusinessDefinitionService) {
-            throw new RuntimeException('The business-definition runtime fixture service is unavailable.');
-        }
-        if ($definition->definitionVersion < 1) {
-            throw new RuntimeException('Only a published fixture definition can be retired.');
-        }
-        $definitions->reject($context, $definition->id, $definition->definitionVersion);
-        self::removeRecordAccess($container, $definition->id);
-    }
-
-    /**
      * Derive explicit legacy field and action grants from the published fixture definition.
      *
      * @param   EntityTypeDefinition  $definition  Definition whose immutable field flags are honored.
