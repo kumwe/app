@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Identity\Application\Authentication;
 
 use InvalidArgumentException;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\PrincipalGrant;
 use Kumwe\App\Identity\Domain\Capability;
@@ -15,7 +18,10 @@ use PHPUnit\Framework\TestCase;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AuthenticatedPrincipal::class)]
+#[UsesClass(AuthenticationStrength::class)]
 #[UsesClass(Capability::class)]
+#[UsesClass(ExecutionContext::class)]
+#[UsesClass(SiteContext::class)]
 #[UsesClass(GrantScope::class)]
 #[UsesClass(PrincipalGrant::class)]
 final class AuthenticatedPrincipalTest extends TestCase
@@ -148,5 +154,35 @@ final class AuthenticatedPrincipalTest extends TestCase
                 'scope_identifier' => null,
             ],
         ]);
+    }
+
+    /**
+     * The context a principal issues carries that principal, its site, and the strength it was asked for.
+     *
+     * Every authorization decision downstream reads the context rather than the principal, so a context
+     * that lost the principal it came from would be authority with no one behind it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testIssuesAHumanExecutionContextCarryingItsOwnAuthority(): void
+    {
+        $principal = AuthorizationContext::principal(['content.read'], self::SUBJECT);
+
+        $context = $principal->context(
+            SiteContext::fromString(SiteContext::DEFAULT),
+            AuthenticationStrength::BearerToken,
+            'request-0001',
+            'correlation-0001',
+        );
+
+        self::assertInstanceOf(ExecutionContext::class, $context);
+        self::assertSame($principal, $context->principal());
+        self::assertSame(self::SUBJECT, $context->actorId());
+        self::assertSame(SiteContext::DEFAULT, $context->site()->identifier());
+        self::assertSame(AuthenticationStrength::BearerToken, $context->authenticationStrength());
+        self::assertSame('request-0001', $context->requestId());
+        self::assertSame('correlation-0001', $context->correlationId());
     }
 }

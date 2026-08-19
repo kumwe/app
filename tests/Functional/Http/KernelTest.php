@@ -72,6 +72,36 @@ final class KernelTest extends TestCase
         self::assertSame(405, $unsafeApi->getStatusCode());
     }
 
+    /**
+     * The API root answers its discovery document to an anonymous GET.
+     *
+     * A client holding nothing but the base URL starts here, so this is also the cheapest proof that the
+     * routing table and the middleware in front of the API are intact: the answer is a constant, and it
+     * arrives without a credential or a single row being read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testApiRootAnswersDiscoveryWithoutStorageOrCredentials(): void
+    {
+        $container = (new ContainerFactory())->create(Environment::fromGlobals());
+        $application = $container->get(Application::class);
+        $factory = new ServerRequestFactory();
+
+        $response = $application->handle(
+            $factory->createServerRequest('GET', 'https://kumwe.test/api/v1')->withHeader('Host', 'kumwe.test'),
+        );
+
+        self::assertSame(200, $response->getStatusCode());
+        $document = json_decode((string) $response->getBody(), true);
+        self::assertIsArray($document);
+        self::assertSame(
+            ['product' => 'Kumwe App', 'api_version' => 'v1', 'status' => 'available'],
+            $document,
+        );
+    }
+
     public function testTrustedProxyNormalizationPrecedesHostAndTransportSecurity(): void
     {
         $values = $this->productionValues();

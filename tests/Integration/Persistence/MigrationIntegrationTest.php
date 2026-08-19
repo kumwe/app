@@ -522,6 +522,51 @@ final class MigrationIntegrationTest extends TestCase
         }
     }
 
+    /**
+     * The homepage the migration seeds validates against the page schema the same migration publishes.
+     *
+     * Both halves are written by hand in one file, so nothing but this check keeps them in step: a key
+     * added to the seed but not to the schema, or a string grown past a declared bound, would install a
+     * homepage the content model itself rejects the moment an editor opens and saves it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheSeededHomepageSatisfiesThePageSchemaTheSameMigrationPublishes(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(TableNames::class, $tables);
+        $migration = new DynamicSiteContentMigration($tables);
+
+        /** @var array<string, mixed> $schema */
+        $schema = (new ReflectionMethod($migration, 'pageSchema'))->invoke($migration);
+        /** @var array<string, mixed> $data */
+        $data = (new ReflectionMethod($migration, 'homepageData'))->invoke($migration);
+
+        /** @var array<string, mixed> $properties */
+        $properties = $schema['properties'] ?? [];
+        /** @var list<string> $required */
+        $required = $schema['required'] ?? [];
+        self::assertFalse($schema['additionalProperties'] ?? true);
+        self::assertSame([], array_diff(array_keys($data), array_keys($properties)));
+        self::assertSame([], array_diff($required, array_keys($data)));
+
+        foreach ($properties as $key => $property) {
+            if (!is_array($property) || !isset($data[$key], $property['maxLength'])) {
+                continue;
+            }
+            $value = $data[$key];
+            self::assertIsString($value);
+            self::assertLessThanOrEqual(
+                $property['maxLength'],
+                mb_strlen($value),
+                sprintf('The seeded homepage overflows the declared bound for %s.', $key),
+            );
+        }
+    }
+
     public function testBusinessSecuritySiteForeignKeyUsesTheExistingMariaDbCollation(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
