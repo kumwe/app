@@ -1158,6 +1158,24 @@
       "acceptance_test": "Every generation's recorded key lists match what its parser accepts, proven by a check that derives the lists from the parser rather than trusting the record, so a surface added after a freeze cannot go unrecorded again.",
       "owner": "UNASSIGNED",
       "closure_sha": null
+    },
+    {
+      "id": "V2-DEMO-001",
+      "title": "The business projection can still build a manifest the demo-profile envelope forbids",
+      "severity": "low",
+      "state": "reproduced",
+      "phase": "2",
+      "origin": "new",
+      "source_anchors": [
+        {
+          "file": "src/Demo/Infrastructure/DemoBusinessProfileExporter.php",
+          "symbol": "documents()",
+          "note": "The write-then-refuse defect is closed at the boundary: DemoExportCommand refuses beyond the envelope before writePackage runs, and it is the only production caller. The projection itself is still unbounded, so a future writer could reintroduce the same failure. It was left unbounded deliberately: DemoBusinessProfileExporterTest inspects the unfiltered document set, and it cannot bound its own installation because an administrator may only edit definitions owned by the current site, so it cannot install a fixture into a site it alone fills."
+        }
+      ],
+      "acceptance_test": "documents() refuses beyond the envelope itself, so no caller can obtain a manifest the catalogue would reject, and the exporter's integration test proves the round-trip against an installation it bounds — which needs a way for a test to own a site's definitions, the same gap that stops it today.",
+      "owner": "UNASSIGNED",
+      "closure_sha": null
     }
   ]
 }

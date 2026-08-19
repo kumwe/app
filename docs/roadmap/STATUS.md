@@ -56,7 +56,7 @@ table when it completes, in the same change that writes it into the changelog.
 |---|---|---|
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-DOC-002`, `V2-ERP-007` |
 | 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
-| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-010`, `V2-DB-001`, `V2-DOC-003`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
+| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-010`, `V2-DB-001`, `V2-DEMO-001`, `V2-DOC-003`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
 | 3 | `P3-A`, `P3-C` … `P3-F` (`P3-B` complete) | — |
 | 4 | `P4-A` … `P4-D` | — |
 | E | All packages complete (`PE-A` … `PE-G`) | `V2-ERP-008`, `V2-ERP-009` |
@@ -95,12 +95,12 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 
 ## Ledger snapshot
 
-**53 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**54 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
 | `accepted_for_implementation` | 10 |
-| `reproduced` | 12 |
+| `reproduced` | 13 |
 | `open` | 23 |
 | `conditional` | 6 |
 | `decision_required` | 0 |
@@ -113,7 +113,7 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 |---|---|
 | 0 | 3 |
 | 1 | 0 |
-| 2 | 9 |
+| 2 | 10 |
 | 3 | 0 |
 | 4 | 0 |
 | E | 2 |
@@ -130,10 +130,10 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 |---|---|
 | A | 4 |
 | B | 22 |
-| none | 27 |
+| none | 28 |
 
-By severity: 0 critical, 21 high, 23 medium, 9 low.
-By origin: 14 from the independent review, 12 still-open entries from the executed gap matrix, 27 discovered
+By severity: 0 critical, 21 high, 23 medium, 10 low.
+By origin: 14 from the independent review, 12 still-open entries from the executed gap matrix, 28 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
 D16 and D17.
 

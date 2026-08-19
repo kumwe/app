@@ -14,6 +14,7 @@ use Kumwe\CMS\Demo\Infrastructure\DemoProfileExporter;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -119,6 +120,7 @@ final readonly class DemoExportCommand implements Command
                     $documents[sprintf('business/%s/access.json', $profile)] = $business['access'];
                 }
             }
+            $this->refuseBeyondEnvelope($business);
             $checksums = $this->exporter->writePackage($directory, $profile, $documents);
             $catalog = new FilesystemDemoManifestCatalog($directory);
             $verified = $catalog->content($profile);
@@ -146,6 +148,52 @@ final readonly class DemoExportCommand implements Command
             $output->error($exception->getMessage());
 
             return 1;
+        }
+    }
+
+    /**
+     * Refuse an installation the demo-profile envelope cannot carry, before anything is written.
+     *
+     * The catalogue and the installer both bound what a business profile may declare, and the projector
+     * bounds nothing: it answers with every published definition the site owns. An installation past the
+     * bound therefore used to be written to disk in full and refused by this command's own re-validation
+     * on the next line — the operator got a package, a non-zero status, and `definition order is invalid`
+     * to explain it. Asking the question here means nothing is written and the message names the actual
+     * count and the actual bound.
+     *
+     * @param   array{
+     *              profile: array<string, mixed>,
+     *              definitions: array<string, array<string, mixed>>,
+     *              records: array<string, mixed>,
+     *              access: array<string, mixed>,
+     *              withheld_identities: int
+     *          }  $business  Documents the business exporter produced.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the projected documents exceed a declared envelope bound.
+     *
+     * @since   2.0.0
+     */
+    private function refuseBeyondEnvelope(array $business): void
+    {
+        $order = $business['profile']['installation_order'] ?? [];
+        if (is_array($order) && count($order) > FilesystemDemoManifestCatalog::MAXIMUM_INSTALLATION_ORDER) {
+            throw new RuntimeException(sprintf(
+                'The site publishes %d business definitions, which exceeds the demo-profile envelope '
+                    . 'of %d; nothing was written.',
+                count($order),
+                FilesystemDemoManifestCatalog::MAXIMUM_INSTALLATION_ORDER,
+            ));
+        }
+        $roles = $business['access']['roles'] ?? [];
+        if (is_array($roles) && count($roles) > FilesystemDemoManifestCatalog::MAXIMUM_ROLES) {
+            throw new RuntimeException(sprintf(
+                'The exported identities reference %d roles, which exceeds the demo-profile envelope '
+                    . 'of %d; nothing was written.',
+                count($roles),
+                FilesystemDemoManifestCatalog::MAXIMUM_ROLES,
+            ));
         }
     }
 

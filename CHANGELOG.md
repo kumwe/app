@@ -1061,6 +1061,28 @@ development programme, from the architecture decision that opened it to the curr
   `Environment` like the integration suite does, and the boundary test scans `tests/Functional` beside
   `tests/Integration` — a gate that reads one tree only leaves the defect free to live in the next one.
   Closes `V2-QA-011`. (#92)
+- **`demo:export-profile` can no longer write a package its own catalogue refuses.** The projector
+  answered with every published business definition the site owns, while the catalogue and the installer
+  both bound an `installation_order` at 64. Past that bound the command wrote the whole package, printed
+  `Exported 84 content entries and 2 menus as profile …`, re-validated what it had just written, and
+  failed with `definition order is invalid` — an operator left holding a half-announced export and a
+  message about a file they had not written. The command now asks before it writes: on a site publishing
+  124 definitions it says `The site publishes 124 business definitions, which exceeds the demo-profile
+  envelope of 64; nothing was written.`, and nothing is. The envelope's five bounds — 64 definitions, 64
+  staff, 32 organizations, 16 members, 32 roles — were five literals repeated across three classes and
+  are now named constants on the catalogue that the installer and the exporter both read, so the writer
+  and the reader cannot drift apart again. Recorded in `docs/demo-profiles.md`; the residual projection
+  bound is `V2-DEMO-001`. (#92)
+- **The console wording cases stop depending on what the rest of the suite installed.** Six assertions in
+  the new functional case were pinned to accumulated fixture state rather than to behaviour, and one of
+  them could hang a lane: the queue worker was driven with `--max-jobs=1` and no `--once`, and that budget
+  only stops the loop *after* a job has been handled, so on an idle queue the worker sleeps and loops
+  forever — the case terminated only while some other test happened to leave work behind. It asks for
+  `--once` now. The rest pin the shape of the catalogue sentence instead of a count the installation
+  decides, and the two branches that were guarded behind an exit status are both asserted, so a failure
+  is loud rather than skipped. A magic `assertCount(44, …)` over the test's own hardcoded list is replaced
+  by a check that derives the command set from the source tree, so a new command cannot escape the
+  name and description contracts by being left out of a list. (#92)
 
 
 - **Every non-primary index name a second prefixed installation could collide with is isolated on

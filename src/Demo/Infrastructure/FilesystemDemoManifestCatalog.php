@@ -48,6 +48,53 @@ final readonly class FilesystemDemoManifestCatalog
     private const string PROFILE_NAME_PATTERN = '/^[a-z][a-z0-9-]{0,62}$/D';
 
     /**
+     * Most definitions one business profile's installation order may carry.
+     *
+     * The bounds below are the demo-profile envelope: what a manifest may hold before it stops being a
+     * demonstration dataset. They are public because the reader is not the only party that must respect
+     * them — the installer refuses beyond them and the exporter must refuse to emit beyond them, and a
+     * bound repeated as a literal in three classes is a bound that drifts. `V2-DEMO-001` is what that
+     * drift already cost: the exporter wrote an order of every published definition, and this reader
+     * then refused the package the same command had just written.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_INSTALLATION_ORDER = 64;
+
+    /**
+     * Most staff identities one access manifest may declare.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_STAFF = 64;
+
+    /**
+     * Most portal organizations one access manifest may declare.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_ORGANIZATIONS = 32;
+
+    /**
+     * Most members one declared portal organization may carry.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_ORGANIZATION_MEMBERS = 16;
+
+    /**
+     * Most roles one access manifest may declare.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_ROLES = 32;
+
+    /**
      * Discover the site-content profiles shipped with this release.
      *
      * A site-content profile is one `resources/demo/content/<name>.json` manifest. Discovery keeps the
@@ -167,7 +214,12 @@ final readonly class FilesystemDemoManifestCatalog
             );
         }
         $order = $manifest['installation_order'] ?? null;
-        if (!is_array($order) || !array_is_list($order) || $order === [] || count($order) > 64) {
+        if (
+            !is_array($order)
+            || !array_is_list($order)
+            || $order === []
+            || count($order) > self::MAXIMUM_INSTALLATION_ORDER
+        ) {
             throw new RuntimeException(
                 sprintf('The %s business demo definition order is invalid.', $profile),
             );
@@ -254,14 +306,18 @@ final readonly class FilesystemDemoManifestCatalog
         $roles = $this->accessRoles($manifest, $profile);
         $emails = [];
         $staff = $manifest['staff'] ?? null;
-        if (!is_array($staff) || !array_is_list($staff) || count($staff) > 64) {
+        if (!is_array($staff) || !array_is_list($staff) || count($staff) > self::MAXIMUM_STAFF) {
             throw new RuntimeException(sprintf('The %s demo staff list is invalid.', $profile));
         }
         foreach ($staff as $person) {
             $this->assertAccessIdentity($person, $roles, 'administrator', $emails, $profile);
         }
         $organizations = $manifest['organizations'] ?? null;
-        if (!is_array($organizations) || !array_is_list($organizations) || count($organizations) > 32) {
+        if (
+            !is_array($organizations)
+            || !array_is_list($organizations)
+            || count($organizations) > self::MAXIMUM_ORGANIZATIONS
+        ) {
             throw new RuntimeException(sprintf('The %s demo organization list is invalid.', $profile));
         }
         $identifiers = [];
@@ -286,7 +342,12 @@ final readonly class FilesystemDemoManifestCatalog
             }
             $identifiers[$identifier] = true;
             $members = $organization['members'] ?? null;
-            if (!is_array($members) || !array_is_list($members) || $members === [] || count($members) > 16) {
+            if (
+                !is_array($members)
+                || !array_is_list($members)
+                || $members === []
+                || count($members) > self::MAXIMUM_ORGANIZATION_MEMBERS
+            ) {
                 throw new RuntimeException(sprintf(
                     'Demo organization %s must declare between one and sixteen members.',
                     $identifier,
@@ -315,7 +376,12 @@ final readonly class FilesystemDemoManifestCatalog
     private function accessRoles(array $manifest, string $profile): array
     {
         $entries = $manifest['roles'] ?? null;
-        if (!is_array($entries) || !array_is_list($entries) || $entries === [] || count($entries) > 32) {
+        if (
+            !is_array($entries)
+            || !array_is_list($entries)
+            || $entries === []
+            || count($entries) > self::MAXIMUM_ROLES
+        ) {
             throw new RuntimeException(sprintf('The %s demo role list is invalid.', $profile));
         }
         $roles = [];

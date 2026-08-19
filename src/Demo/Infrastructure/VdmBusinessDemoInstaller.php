@@ -138,7 +138,11 @@ final readonly class VdmBusinessDemoInstaller
         $records = $this->requiredMap($manifest, 'records_document');
         $operations = $this->operations->validate($records, $assets);
         $documents = $this->requiredMap($manifest, 'definition_documents');
-        $order = $this->requiredList($manifest, 'installation_order', 64);
+        $order = $this->requiredList(
+            $manifest,
+            'installation_order',
+            FilesystemDemoManifestCatalog::MAXIMUM_INSTALLATION_ORDER,
+        );
         $this->preflightDefinitionsAndPolicies($context, $documents, $order, $operations, $assets, $profile, $modes);
     }
 
@@ -164,7 +168,11 @@ final readonly class VdmBusinessDemoInstaller
             $this->ledger->assets($context->site()->identifier(), self::DATASET),
         );
         $documents = $this->requiredMap($manifest, 'definition_documents');
-        $order = $this->requiredList($manifest, 'installation_order', 64);
+        $order = $this->requiredList(
+            $manifest,
+            'installation_order',
+            FilesystemDemoManifestCatalog::MAXIMUM_INSTALLATION_ORDER,
+        );
         $installed = [];
         $installedModes = [];
         $messages = [];
@@ -643,7 +651,12 @@ final readonly class VdmBusinessDemoInstaller
     private function recordAccessModes(array $manifest): array
     {
         $modes = [];
-        foreach ($this->requiredList($manifest, 'installation_order', 64) as $candidate) {
+        $declared = $this->requiredList(
+            $manifest,
+            'installation_order',
+            FilesystemDemoManifestCatalog::MAXIMUM_INSTALLATION_ORDER,
+        );
+        foreach ($declared as $candidate) {
             $entry = $this->map($candidate, 'definition installation entry');
             $fixtureKey = $this->requiredString($entry, 'fixture_key');
             $mode = $entry['record_access'] ?? 'open';

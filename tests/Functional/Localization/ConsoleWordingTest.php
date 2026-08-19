@@ -66,8 +66,15 @@ final class ConsoleWordingTest extends TestCase
         foreach ($output->lines as $line) {
             self::assertStringNotContainsString('core.console.', $line);
         }
+        // Both branches are pinned. Guarding the only real assertion on a status the shared kernel
+        // decides is how a case stops proving anything the day the installation changes.
         if ($status === 0) {
             self::assertSame(['Database schema is current.'], $output->lines);
+
+            return;
+        }
+        foreach ($output->lines as $line) {
+            self::assertMatchesRegularExpression('/^Pending [0-9a-z_]+$/', $line);
         }
     }
 
@@ -108,13 +115,29 @@ final class ConsoleWordingTest extends TestCase
         }
 
         $narration = implode("\n", [...$output->lines, ...$output->errors]);
+        self::assertNotSame('', $narration);
         self::assertStringNotContainsString('core.console.', $narration);
-        self::assertStringContainsString('Exported 80 content entries', $narration);
-        self::assertStringContainsString('as profile wordingcheck.', $narration);
-        self::assertFileExists($directory . '/resources/demo/content/wordingcheck.json');
         if ($status === 0) {
-            self::assertStringContainsString('Catalog re-validation checksum', $narration);
+            self::assertMatchesRegularExpression(
+                '/^Exported \d+ content entries and \d+ menus as profile wordingcheck\.$/m',
+                $narration,
+            );
+            self::assertMatchesRegularExpression(
+                '/^Catalog re-validation checksum [0-9a-f]+\.$/m',
+                $narration,
+            );
             self::assertStringContainsString($directory, $narration);
+            self::assertFileExists($directory . '/resources/demo/content/wordingcheck.json');
+        } else {
+            // The shared installation publishes far more business definitions than a demo profile
+            // carries, and the refusal is as much a narration contract as the success is: it must be a
+            // finished English sentence, and nothing may have been written.
+            self::assertMatchesRegularExpression(
+                '/^The site publishes \d+ business definitions, which exceeds the demo-profile '
+                    . 'envelope of \d+; nothing was written\.$/m',
+                $narration,
+            );
+            self::assertDirectoryDoesNotExist($directory);
         }
         $this->removeTree($directory);
     }
@@ -141,7 +164,7 @@ final class ConsoleWordingTest extends TestCase
 
         $narration = implode("\n", $output->lines);
         self::assertStringNotContainsString('core.console.', $narration);
-        self::assertStringContainsString('Materialized extension runtime generation', $narration);
+        self::assertMatchesRegularExpression('/^Materialized extension runtime generation \d+$/m', $narration);
     }
 
     /**
@@ -162,7 +185,10 @@ final class ConsoleWordingTest extends TestCase
 
         $narration = implode("\n", $output->lines);
         self::assertStringNotContainsString('core.console.', $narration);
-        self::assertStringContainsString('Materialized', $narration);
+        self::assertMatchesRegularExpression(
+            '/^Materialized trusted extension runtime generation \d+\.$/m',
+            $narration,
+        );
     }
 
     /**
@@ -183,7 +209,10 @@ final class ConsoleWordingTest extends TestCase
             self::assertInstanceOf($class, $command);
             $output = new RecordingConsoleOutput();
 
-            $status = $command->execute($class === QueueWorkCommand::class ? ['--max-jobs=1'] : [], $output);
+            // --once, not --max-jobs=1: the job budget only stops the loop after a job has been
+            // handled, so on an idle queue the worker sleeps and loops forever and this case passes
+            // only while some other test happens to leave work behind.
+            $status = $command->execute($class === QueueWorkCommand::class ? ['--once'] : [], $output);
 
             self::assertSame(0, $status, implode("\n", $output->errors));
             foreach ([...$output->lines, ...$output->errors] as $line) {

@@ -165,7 +165,44 @@ final class CommandDescriptionTest extends TestCase
             $names[$name] = true;
         }
 
-        self::assertCount(44, $names);
+        self::assertCount(count(self::commands()), $names);
+    }
+
+    /**
+     * The declared command set is every command the source tree actually ships.
+     *
+     * A hardcoded list checked against a hardcoded count proves nothing: it can only fail when someone
+     * edits the list. What matters is that a command added to `src/` cannot escape the checks above by
+     * being left out of the list, so the set is derived from the tree and compared.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheDeclaredSetIsEveryCommandTheSourceTreeShips(): void
+    {
+        $root = dirname(__DIR__, 4);
+        $found = [];
+        $trees = [
+            '/src/Delivery/Console/Command' => 'Kumwe\\CMS\\Delivery\\Console\\Command\\',
+            '/src/BusinessReporting/Delivery/Console' => 'Kumwe\\CMS\\BusinessReporting\\Delivery\\Console\\',
+        ];
+        foreach ($trees as $relative => $namespace) {
+            $entries = glob($root . $relative . '/*.php');
+            self::assertIsArray($entries);
+            foreach ($entries as $file) {
+                $class = $namespace . basename($file, '.php');
+                if (!class_exists($class) || !is_subclass_of($class, Command::class)) {
+                    continue;
+                }
+                $found[] = $class;
+            }
+        }
+
+        sort($found, SORT_STRING);
+        $declared = self::commands();
+        sort($declared, SORT_STRING);
+        self::assertSame($declared, $found);
     }
 
     /**
