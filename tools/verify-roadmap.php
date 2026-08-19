@@ -53,6 +53,7 @@ foreach (array_slice($argv, 1) as $argument) {
 
 $findings = readLedger($ledgerPath, $errors);
 readLedger($root . '/docs/roadmap/capacity-contract.json', $errors);
+verifyStatusSelfConsistency($root . '/docs/roadmap/STATUS.md', $errors);
 
 if (!is_file($changelogPath)) {
     $errors[] = 'CHANGELOG.md is missing. It is where completed work goes when it leaves the roadmap.';
@@ -153,6 +154,131 @@ exit(0);
  *
  * @since   2.0.0
  */
+/**
+ * Hold `STATUS.md` to its own tables.
+ *
+ * The page carries the same facts three times over — a phase board, a table of open work packages and
+ * the Gate A criteria — and nothing ever checked that the three agreed. They stopped agreeing: a phase
+ * read `Delivered` while all four of its packages sat in a table whose own preamble defines listing as
+ * open, a lane named packages as delivered that the same table listed as open, and the gate read ready
+ * for assessment with one criterion unmet. None of that is catchable by reading the ledger, because
+ * none of it is in the ledger. It is catchable here.
+ *
+ * @param   string        $path    Path to the status page.
+ * @param   list<string>  $errors  Collected failures, appended to in place.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function verifyStatusSelfConsistency(string $path, array &$errors): void
+{
+    if (!is_file($path)) {
+        $errors[] = 'docs/roadmap/STATUS.md is missing. It is the page the phase board is read from.';
+
+        return;
+    }
+    $source = file_get_contents($path);
+    if ($source === false) {
+        $errors[] = 'docs/roadmap/STATUS.md could not be read.';
+
+        return;
+    }
+
+    $board = [];
+    if (preg_match('/^## Phase board$(.*?)^## /ms', $source, $section) === 1) {
+        foreach (explode("\n", $section[1]) as $line) {
+            if (preg_match('/^\|\s*\**([0-9A-Z]+)\**\s*(?:—[^|]*)?\|([^|]*)\|([^|]*)\|/u', $line, $row) === 1) {
+                $board[trim($row[1])] = trim($row[3]);
+            }
+        }
+    }
+
+    $open = [];
+    if (preg_match('/^## Open work packages by phase$(.*?)^## /ms', $source, $section) === 1) {
+        foreach (explode("\n", $section[1]) as $line) {
+            if (preg_match('/^\|\s*([0-9A-Z]+)\s*\|([^|]*)\|/u', $line, $row) === 1) {
+                $open[trim($row[1])] = trim($row[2]);
+            }
+        }
+    }
+
+    if ($board === [] || $open === []) {
+        $errors[] = 'docs/roadmap/STATUS.md must carry a phase board and an open-work table; one of '
+            . 'them could not be read, so neither can be checked against the other.';
+
+        return;
+    }
+
+    foreach ($board as $phase => $state) {
+        $packages = $open[$phase] ?? null;
+        if ($packages === null) {
+            continue;
+        }
+        $hasOpenPackages = preg_match('/`[A-Z]+[0-9A-Z]*-[A-Z]`/', explode('(', $packages)[0]) === 1;
+        // Only a state that opens by calling the phase delivered is a claim about the phase; prose
+        // naming which pieces are delivered while the row also says what is open is exactly right.
+        if ($hasOpenPackages && preg_match('/^\**delivered\b/i', $state) === 1) {
+            $errors[] = sprintf(
+                'STATUS.md phase %s reads "%s" while the open-work table still lists %s. The table '
+                . 'holds only what is outstanding, so a phase with packages in it is not delivered.',
+                $phase,
+                $state,
+                $packages,
+            );
+        }
+
+        // Within one row, a package cannot be open and complete at the same time.
+        if (preg_match('/\(([^)]*)\)/u', $packages, $parenthetical) === 1) {
+            preg_match_all('/`([A-Z]+[0-9A-Z]*-[A-Z])`/', explode('(', $packages)[0], $openIds);
+            preg_match_all('/`([A-Z]+[0-9A-Z]*-[A-Z])`/', $parenthetical[1], $doneIds);
+            $both = array_intersect($openIds[1], $doneIds[1]);
+            if ($both !== []) {
+                $errors[] = sprintf(
+                    'STATUS.md lists %s as both open and complete in phase %s.',
+                    implode(', ', $both),
+                    $phase,
+                );
+            }
+        }
+    }
+
+    $unmet = [];
+    if (preg_match('/^## Gate A criteria$(.*?)^## /ms', $source, $section) === 1) {
+        foreach (explode("\n", $section[1]) as $line) {
+            if (preg_match('/^\|\s*(\d+)\s*\|([^|]*)\|([^|]*)\|/u', $line, $row) === 1) {
+                if (!str_starts_with(ltrim($row[3]), 'Yes')) {
+                    $unmet[] = trim($row[1]);
+                }
+            }
+        }
+    }
+    if ($unmet === []) {
+        $errors[] = 'STATUS.md must carry a Gate A criteria table with a Met column for each criterion; '
+            . 'none was read, so the gate\'s readiness cannot be checked against it.';
+
+        return;
+    }
+
+    // Gate A is described in more than one table, and each of them is a claim. Any row whose first
+    // cell names the gate is checked, wherever on the page it sits.
+    foreach (explode("\n", $source) as $line) {
+        if (preg_match('/^\|\s*\**Gate A\**\s*\|(.*)$/u', $line, $row) !== 1) {
+            continue;
+        }
+        if (preg_match('/\bready\b/i', $row[1]) !== 1) {
+            continue;
+        }
+        $errors[] = sprintf(
+            'STATUS.md says Gate A is ready while criteria %s are not met in its own criteria table. '
+            . 'A gate with an outstanding criterion is not ready; it is ready to fail one.',
+            implode(', ', $unmet),
+        );
+
+        break;
+    }
+}
+
 function verifyChangelogCitations(string $path, string $root, array &$errors): void
 {
     $contents = file_get_contents($path);

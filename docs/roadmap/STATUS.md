@@ -20,29 +20,29 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
 | | |
 |---|---|
-| **Current phase** | Phase 0 residual truth work + Gate A formal close |
-| **In flight** | Gate A criteria are substantially met (12 Yes, criterion 5 Partly). Phase E (enterprise document primitives) is Delivered. S-A (composition contribution contract) is complete. Language extraction, multi-currency, atomic aggregates, business-group ownership, offline-numbering decision, and the majority of quality and layering work have landed and are recorded in [`CHANGELOG.md`](../../CHANGELOG.md). Remaining open Phase 0 packages are the formal baseline, claim ledger and residual decision records. |
-| **Next** | Complete the residual Phase 0 packages (`P0-A`–`P0-E`) that still appear in the open-work table, close the Partly quality-gate items under criterion 5, then formally assess Gate A. After Gate A the programme moves to Phase 5 scale engineering (including V2-SCL-001) and the Gate B path. |
+| **Current phase** | Phase 0 residual truth work, and the last two Gate A criteria |
+| **In flight** | Eleven of Gate A's thirteen criteria are met. Criterion 5 is partly met and names what is outstanding; criterion 12 is assessable on every merge run and is asserted at a commit only once that run is green and the commit is recorded here, which no commit yet is. Phase E is delivered, `S-A` is complete, and language extraction, multi-currency, atomic aggregates, business-group ownership, the offline-numbering decision and most of the quality and layering work are recorded in [`CHANGELOG.md`](../../CHANGELOG.md). |
+| **Next** | The open packages in the table below, in the order the table lists them: the residual Phase 0 set, criterion 5's outstanding quality-gate items, and a recorded green merge run for criterion 12. Gate A is assessed after those, not before. |
 | **Open decisions** | None in `decision_required`. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
-| **Gate A** | Ready for formal assessment. 13 exit criteria: 12 Yes, criterion 5 Partly (remaining quality-gate enforcement items). Criterion 13 (composition contribution contract) is Yes. Enterprise document primitives, offline-numbering decision, three-engine seam and ownership proofs, PostgreSQL index isolation, language extraction and the composition declaration contract have all landed. |
-| **Gate B** | Not started. Blocked on Gate A formal close. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
+| **Gate A** | Not assessed. 13 exit criteria, 11 met; criterion 5 is partly met and criterion 12 is not yet asserted at a commit. A gate is not assessed while a criterion is outstanding, so the two are what stand between here and the assessment. Enterprise document primitives, the offline-numbering decision, the three-engine seam and ownership proofs, PostgreSQL index isolation, language extraction and the composition declaration contract have all landed. |
+| **Gate B** | Not started. Blocked on Gate A. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
 
 ## Phase board
 
 | Phase | Gate | State | Blocked on |
 |---|---|---|---|
-| 0 — Truth, contracts and decisions | A | In progress — residual packages and formal baseline still open; substantial delivered work already recorded in CHANGELOG | — |
-| 1 — Correctness, security, data entry | A | Substantially complete (data-entry integrity, security contradictions closed) | Residual Phase 0 |
-| 2 — Truthful gates | A | In progress — one quality contract, semantic dependency checking and the deployed-artifact lane are delivered; reverse-order and remaining matrix items outstanding | Residual Phase 0 |
-| 3 — Seams and the ownership model | A | In progress — the business-group ownership model and the inward persistence seams have landed; `P3-A` and `P3-F` three-engine proofs largely evidenced | Residual quality gates |
-| 4 — Atomic aggregate documents | A | Delivered (command and aggregate invariants exist and are recorded) | — |
+| 0 — Truth, contracts and decisions | A | In progress — `P0-A` … `P0-E` all open | — |
+| 1 — Correctness, security, data entry | A | In progress — data-entry integrity and the security contradictions are closed (Gate A criteria 3 and 4); `P1-B`, `P1-C`, `P1-E` and `P1-F` open | Phase 0 decisions 3, 5, 6 |
+| 2 — Truthful gates | A | In progress — the one quality contract, semantic dependency checking, the deployed-artifact lane and the tests/ documentation gate are delivered; `P2-B` … `P2-I` otherwise open | Phase 0 decisions 1, 7, 8 |
+| 3 — Seams and the ownership model | A | In progress — the business-group ownership model and the inward persistence seams have landed, `P3-B` and `P3-C` are complete; `P3-A` and `P3-F` owe their three-engine proofs | Phases 1 and 2 |
+| 4 — Atomic aggregate documents | A | In progress — the command and its recorded shape are delivered (Gate A criterion 2); `P4-A` … `P4-D` open | Phase 3; phase 0 decision 2 |
 | E — Enterprise document primitives | A | Delivered — every package complete; two follow-up findings remain | — |
-| L — Language, locale and multilingual content | A, with a B tail | Gate A half substantially complete (`PL-A`–`PL-F` delivered); Gate B tail (`PL-G` catalogues + per-locale qualification) remains | — |
-| **Gate A** | | **Ready for formal assessment** | Residual Phase 0 packages and criterion 5 Partly items |
+| L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A`, `PL-B`, `PL-C`, `PL-E` and `PL-F` complete; `PL-D` and `PL-G` open | `PL-G` needs phase 2's `P2-E` matrix; otherwise parallel to 3, 4 and E |
+| **Gate A** | | **Not assessed** | Criterion 5's outstanding items and a recorded green merge run for criterion 12 |
 | 5 — Enterprise scale | B | Not started | Gate A |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
 | 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
-| S — Studio visual composition | A, with a B integration | Gate A half complete (`S-A` composition contribution contract frozen); Gate B half not started | Gate A formal close |
+| S — Studio visual composition | A, with a B integration | In progress — `S-A` complete, the Gate A declaration contract is frozen; `S-B` … `S-G` open | Gate A |
 | **Gate B** | | **Not assessed** | **Phases 7 and S** |
 | M — Maintainability | — | Not started | Phase 3 seams settled. Blocks nothing. |
 | N — Native client platform contracts | — | Version 3 seed — not started | Nothing in Version 2; blocks nothing. Decision D17, [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md). |
@@ -57,7 +57,7 @@ table when it completes, in the same change that writes it into the changelog.
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-DOC-002`, `V2-ERP-007` |
 | 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
 | 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-010`, `V2-DB-001`, `V2-DEMO-001`, `V2-DOC-003`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
-| 3 | `P3-A`, `P3-C` … `P3-F` (`P3-B` complete) | — |
+| 3 | `P3-A`, `P3-D` … `P3-F` (`P3-B` and `P3-C` complete) | — |
 | 4 | `P4-A` … `P4-D` | — |
 | E | All packages complete (`PE-A` … `PE-G`) | `V2-ERP-008`, `V2-ERP-009` |
 | L | `PL-D`, `PL-G` (`PL-A`, `PL-B`, `PL-C`, `PL-E` and `PL-F` complete) | `V2-LNG-010`, `V2-LNG-013` |
@@ -175,7 +175,13 @@ were added:
 | 11 | All nine languages ship and each is qualified in its own right | No | `V2-LNG-010` |
 | 12 | The visual composition integration ships and is qualified | No | `V2-STU-002` – `V2-STU-007` |
 
-## Baseline health at this revision
+## Baseline health at `7a83c295`
+
+This is a historical snapshot, kept because it is the last full-programme measurement recorded here, and
+it no longer describes the head: the ledger above holds 54 findings against its 44, recorded dependency
+exemptions have fallen from 115 to 99, and the message catalogue has grown from 117 to 2,099. Read it as
+the record of that revision and nothing else; the current figures are the ledger snapshot above and the
+merge run named against Gate A criterion 12.
 
 **Verified at `7a83c295bce6c23f250384ba787dd5e4595fff0e`.** CI run `31902616995`, security run
 `31902616730` and Development Compose run `31902616751` all completed successfully.
