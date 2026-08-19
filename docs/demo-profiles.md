@@ -46,6 +46,14 @@ Profile names must match `^[a-z][a-z0-9-]{0,62}$`; the manifest's own `profile` 
 file or directory name. Every manifest is bounded (2 MB per file, JSON depth 64) and carries an integer
 `version` that must be raised whenever any byte of the profile changes.
 
+The envelope also bounds how much a profile may declare: at most **64 definitions** in a business
+profile's `installation_order`, and in an access manifest at most **64 staff**, **32 organizations**,
+**16 members** per organization and **32 roles**. These are the demo-profile envelope — what a manifest
+may hold before it stops being a demonstration dataset — and they are named once, as constants on
+`FilesystemDemoManifestCatalog`, because the reader, the installer and the exporter must all agree on
+them. An installation larger than the envelope is not exportable as a demo profile; the export command
+says so and writes nothing.
+
 ## Site-content manifests
 
 A site-content manifest declares the managed site, its settings (including presentation), content pages,
@@ -124,6 +132,10 @@ profile document, one canonical definition document per published definition in 
 records document with every record, relation, workflow action, and archive, and the demonstration
 access manifest. Beside the tree the command writes `export.json`, an integrity index repeating each
 document's canonical checksum so a recipient can verify the package without trusting its transport.
+
+A site that publishes more definitions — or references more roles — than the envelope carries is
+refused before anything is written, naming the count it found and the bound it exceeded. A demonstration
+dataset is not a backup: exporting a fully populated production site is outside what the format is for.
 Copying `<output>/resources/demo` over an installation's `resources/demo` makes the profile selectable.
 
 Resources installed from a profile keep their ledgered fixture keys, idempotency keys, and applied

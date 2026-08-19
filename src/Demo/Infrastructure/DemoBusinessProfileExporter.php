@@ -1269,7 +1269,8 @@ final readonly class DemoBusinessProfileExporter
             $members = [];
             foreach ($memberships[$identifier] ?? [] as $membership) {
                 $member = $this->exportIdentity($membership, $roles, 'portal', $emails, $referenced, $withheld);
-                if ($member === null || count($members) >= 16) {
+                $full = count($members) >= FilesystemDemoManifestCatalog::MAXIMUM_ORGANIZATION_MEMBERS;
+                if ($member === null || $full) {
                     continue;
                 }
                 $members[] = $member;
@@ -1281,7 +1282,7 @@ final readonly class DemoBusinessProfileExporter
                     }
                 }
             }
-            if ($members === [] || count($organizations) >= 32) {
+            if ($members === [] || count($organizations) >= FilesystemDemoManifestCatalog::MAXIMUM_ORGANIZATIONS) {
                 continue;
             }
             $organizations[] = [
@@ -1330,7 +1331,7 @@ final readonly class DemoBusinessProfileExporter
                 continue;
             }
             $person = $this->exportIdentity($user, $roles, 'administrator', $emails, $referenced, $withheld);
-            if ($person !== null && count($staff) < 64) {
+            if ($person !== null && count($staff) < FilesystemDemoManifestCatalog::MAXIMUM_STAFF) {
                 $staff[] = $person;
             }
         }
