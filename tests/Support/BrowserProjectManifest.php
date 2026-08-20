@@ -17,7 +17,9 @@ use RuntimeException;
  * provisioned only for exactly `all`, so a misspelling ran the maker-checker journey on a project with
  * no identity — recreating the once-per-account TOTP refusal the manifest was introduced to prevent,
  * and doing it while every guard still passed. The refusals here mirror `tests/Browser/manifest.mjs`
- * exactly, which is what makes the mismatch unrepresentable rather than merely unlikely.
+ * exactly, which is what makes the mismatch unrepresentable rather than merely unlikely. Both readers
+ * are held to one corpus, `tests/Browser/manifest-cases.json`, which carries raw sources rather than
+ * structured documents so the forms the two languages read differently survive into the cases.
  *
  * @since  2.0.0
  */
@@ -30,6 +32,20 @@ final readonly class BrowserProjectManifest
      * @since  2.0.0
      */
     public const array SPEC_SCOPES = ['all', 'right-to-left'];
+
+    /**
+     * The largest retry budget the manifest may declare.
+     *
+     * The ceiling is a correctness device, not a preference. Above it the two languages stop agreeing:
+     * `9007199254740993` is held exactly here and rounded by JavaScript, and `1e21` is a float to
+     * `is_int` but an integer to `Number.isInteger`. Refusing every such magnitude keeps the two
+     * readings identical for every document either side accepts, and no real matrix reruns a journey a
+     * hundred times.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAX_RETRIES = 100;
 
     /**
      * Read and validate a manifest, or fail naming the first thing wrong with it.
@@ -55,12 +71,15 @@ final readonly class BrowserProjectManifest
             throw new RuntimeException(sprintf('%s must be a JSON object.', $origin));
         }
 
-        $retries = $raw['retries'] ?? null;
-        if (!is_int($retries) || $retries < 0) {
+        /** @var mixed $declaredRetries */
+        $declaredRetries = $raw['retries'] ?? null;
+        $retries = self::retryBudget($declaredRetries);
+        if ($retries === null) {
             throw new RuntimeException(sprintf(
-                '%s needs "retries" as a non-negative integer; found %s.',
+                '%s needs "retries" as a whole number from 0 to %d; found %s.',
                 $origin,
-                json_encode($retries),
+                self::MAX_RETRIES,
+                json_encode($declaredRetries),
             ));
         }
         $projects = $raw['projects'] ?? null;
@@ -107,6 +126,35 @@ final readonly class BrowserProjectManifest
         }
 
         return ['retries' => $retries, 'projects' => $validated];
+    }
+
+    /**
+     * Read a declared retry budget both consumers agree on, or nothing if there is no such reading.
+     *
+     * JSON has one number type, so `1`, `1.0` and `1e0` are the same value written three ways. PHP can
+     * tell them apart after decoding and JavaScript cannot, which makes a rule keyed on the written
+     * form one the two sides cannot both implement. The rule is therefore keyed on the value, and
+     * `-0` — which decodes to zero here and to negative zero there — is read as zero on both sides.
+     *
+     * @param   mixed  $value  Decoded `retries` value.
+     *
+     * @return  int|null  The budget, or null when the value is not one both consumers read alike.
+     *
+     * @since   2.0.0
+     */
+    private static function retryBudget(mixed $value): ?int
+    {
+        if (is_int($value)) {
+            return $value >= 0 && $value <= self::MAX_RETRIES ? $value : null;
+        }
+        if (!is_float($value) || !is_finite($value) || floor($value) !== $value) {
+            return null;
+        }
+        if ($value < 0.0 || $value > (float) self::MAX_RETRIES) {
+            return null;
+        }
+
+        return (int) $value;
     }
 
     /**

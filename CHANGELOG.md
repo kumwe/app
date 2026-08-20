@@ -1131,9 +1131,25 @@ development programme, from the architecture decision that opened it to the curr
   the journey waited on an element that would never appear until its ninety-second budget expired,
   reporting nothing but a bare timeout. Identities are keyed on the project now and seeded per project,
   the device family stays a separate value because it still drives mobile emulation, and the enrollment
-  helper asserts the panel it needs so a refusal fails in ten seconds naming the step that refused.
-  `BrowserApprovalIdentityParityTest` holds the seeder to the configuration, because the two name their
-  projects in different languages and nothing else connects them.
+  helper asserts the panel it needs so a refusal fails in ten seconds naming the step that refused. The
+  matrix itself is now declared once, in `tests/Browser/projects.json`: the Playwright configuration maps
+  over it and the seeder provisions from it, so a project cannot exist in one and be missing from the
+  other, and an unknown project throws rather than running with no emulation at all. Both sides read that
+  file through a validating reader — `tests/Browser/manifest.mjs` and its PHP twin
+  `BrowserProjectManifest` — which refuses rather than interprets a `specs` outside `all | right-to-left`,
+  a duplicated or blank project name, a retry budget that is not a whole number from 0 to 100, an empty
+  project list or a document that is not an object. Unchecked reads were the whole exposure: Playwright
+  treated every `specs` that was not `right-to-left` as "run everything" while the seeder provisioned only
+  for exactly `all`, so one misspelled word ran the maker-checker journey on a project with no approval
+  identity and every guard stayed green. The two readers are held to one corpus,
+  `tests/Browser/manifest-cases.json`, which carries **raw sources** rather than structured documents, and
+  states the reading each accepted document must produce as well as the verdict. That is what caught the
+  last disagreement: a budget written `1.0` was accepted by JavaScript, where `Number.isInteger` sees the
+  parsed value, and refused by PHP, where `json_decode` yields a float — two hand-copied case lists could
+  not see it. The rule is now keyed on the value rather than the spelling, because JSON has one number
+  type and only one of the two languages can tell `1` from `1.0` after parsing; the ceiling of 100 is what
+  keeps that agreement total, since every magnitude the two read differently, or hold at different
+  precision, sits above it and is refused before the difference can be observed.
 - **A correct credential that may not administer is now refused on the sign-in form, not as a raw
   document.** `/administrator/login` is exempt from both the session and the authorization middleware,
   so the themed denial those render could never fire for it and the handler owns every refusal on that

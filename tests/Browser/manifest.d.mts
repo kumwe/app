@@ -8,6 +8,9 @@
 /** Every value `specs` may take. */
 export declare const specScopes: readonly string[];
 
+/** The largest retry budget the manifest may declare. */
+export declare const maxRetries: number;
+
 /** A validated project entry. */
 export interface BrowserProject {
   readonly name: string;

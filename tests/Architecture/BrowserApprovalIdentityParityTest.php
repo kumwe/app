@@ -21,8 +21,10 @@ use PHPUnit\Framework\TestCase;
  * miss the drift it existed to catch — a project declared without a spec filter runs every journey by
  * default and matched no pattern at all. Both sides now derive from `tests/Browser/projects.json`, which
  * makes the mismatch unrepresentable rather than merely detected. What remains worth asserting is that
- * they still do, and that a project added to the manifest cannot arrive without the emulation options
- * that decide what it actually renders.
+ * they still do, that a project added to the manifest cannot arrive without the emulation options that
+ * decide what it actually renders, and that the two readers are held to one corpus rather than to two
+ * hand-copied lists — which is how `{"retries":1.0}` came to be accepted by one and refused by the
+ * other with both guards green.
  *
  * @since  2.0.0
  */
@@ -129,5 +131,49 @@ final class BrowserApprovalIdentityParityTest extends TestCase
             'The attempts the seeder provisions must come from the manifest retry budget, not a literal.',
         );
         self::assertGreaterThanOrEqual(1, $this->matrix()['retries']);
+    }
+
+    /**
+     * Neither refusal guard owns a case; both answer the shared corpus.
+     *
+     * Two hand-copied lists are free to drift apart in exactly the way the manifest exists to stop, and
+     * they did: a retry budget written `1.0` was accepted by the JavaScript half, because
+     * `Number.isInteger` sees the parsed value, and refused by the PHP half, because `json_decode`
+     * yields a float. Neither list could see the other, so both passed. A case restated in either file
+     * is that shape returning, which is why its absence is what this asserts.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBothRefusalGuardsAnswerTheOneSharedCorpus(): void
+    {
+        $corpus = dirname(__DIR__) . '/Browser/manifest-cases.json';
+        self::assertFileExists($corpus, 'The shared manifest corpus is missing.');
+        /** @var array{cases: list<array{label: string, source: string, outcome: string}>} $document */
+        $document = json_decode((string) file_get_contents($corpus), true, 512, JSON_THROW_ON_ERROR);
+        self::assertNotSame([], $document['cases'], 'The shared corpus declares no cases.');
+
+        $guards = [
+            'tools/verify-browser-manifest.mjs',
+            'tests/Unit/Support/BrowserProjectManifestTest.php',
+        ];
+        foreach ($guards as $guard) {
+            $source = (string) file_get_contents(dirname(__DIR__, 2) . '/' . $guard);
+            self::assertStringContainsString(
+                'manifest-cases.json',
+                $source,
+                sprintf('%s must take its cases from the shared corpus.', $guard),
+            );
+            self::assertDoesNotMatchRegularExpression(
+                '/["\']?projects["\']?\s*:\s*\[/',
+                $source,
+                sprintf(
+                    '%s restates a manifest the corpus already carries; a case in one guard alone is the '
+                    . 'drift the corpus exists to make impossible.',
+                    $guard,
+                ),
+            );
+        }
     }
 }

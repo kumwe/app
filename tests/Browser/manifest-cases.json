@@ -1,0 +1,269 @@
+{
+    "corpus": "kumwe-browser-manifest-cases",
+    "note": "The one corpus both manifest readers are held to. Each case is the raw manifest source, so a lexical form one language normalises and the other does not — 1.0, 1e0, -0, 9007199254740993 — survives into the case rather than being erased by writing the document as structured data. Accepted cases carry the exact reading both consumers must produce, because agreeing to accept a document while reading it differently is the same defect as disagreeing about whether to accept it. tools/verify-browser-manifest.mjs and tests/Unit/Support/BrowserProjectManifestTest.php both run every case here and neither carries a case of its own.",
+    "rule": "retries is a JSON number with no fractional part, at least 0 and at most 100. The value is what counts, not how it is written: JSON has one number type, and JavaScript cannot tell 1 from 1.0 after parsing while PHP can. A rule keyed on the written form is therefore one the two consumers cannot both implement, so 1.0 and 1e0 are read as 1 on both sides. The ceiling is what keeps that agreement total: every magnitude the two languages read differently, or hold at different precision, is above it and refused before the difference can be observed.",
+    "cases": [
+        {
+            "label": "a document that is not JSON",
+            "source": "{\"retries\":1,",
+            "outcome": "refused"
+        },
+        {
+            "label": "a document that is not an object",
+            "source": "[{\"name\":\"a\",\"specs\":\"all\"}]",
+            "outcome": "refused"
+        },
+        {
+            "label": "a document that is JSON null",
+            "source": "null",
+            "outcome": "refused"
+        },
+        {
+            "label": "a document that is a bare number",
+            "source": "7",
+            "outcome": "refused"
+        },
+        {
+            "label": "a projects value that is absent",
+            "source": "{\"retries\":1}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a projects value that is not an array",
+            "source": "{\"retries\":1,\"projects\":{}}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a projects value that is a string",
+            "source": "{\"retries\":1,\"projects\":\"all\"}",
+            "outcome": "refused"
+        },
+        {
+            "label": "an empty project list",
+            "source": "{\"retries\":1,\"projects\":[]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a project entry that is not an object",
+            "source": "{\"retries\":1,\"projects\":[\"a\"]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a project entry that is a JSON array",
+            "source": "{\"retries\":1,\"projects\":[[\"a\",\"all\"]]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a project name that is absent",
+            "source": "{\"retries\":1,\"projects\":[{\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a project name that is not a string",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":7,\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a project name that is only spaces",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"   \",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a duplicated project name",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"},{\"name\":\"a\",\"specs\":\"right-to-left\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a specs value that is neither scope",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":\"al\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a specs value that is absent",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a specs value that is not a string",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":true}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a specs value differing from a scope only in case",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":\"All\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a specs value padded with a space",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":\" all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a retry budget that is absent",
+            "source": "{\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a retry budget that is null",
+            "source": "{\"retries\":null,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a retry budget written as a string",
+            "source": "{\"retries\":\"1\",\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a retry budget written as a boolean",
+            "source": "{\"retries\":true,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a negative retry budget",
+            "source": "{\"retries\":-1,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a fractional retry budget",
+            "source": "{\"retries\":1.5,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a fractional retry budget in exponent form",
+            "source": "{\"retries\":1.5e0,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a retry budget one past the ceiling",
+            "source": "{\"retries\":101,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a retry budget larger than either language holds exactly",
+            "source": "{\"retries\":9007199254740993,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a retry budget written as a magnitude no double holds exactly",
+            "source": "{\"retries\":1e21,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a retry budget that overflows to infinity",
+            "source": "{\"retries\":1e400,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "refused"
+        },
+        {
+            "label": "a retry budget written as a plain integer",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "accepted",
+            "expected": {
+                "retries": 1,
+                "projects": [
+                    {
+                        "name": "a",
+                        "specs": "all"
+                    }
+                ]
+            }
+        },
+        {
+            "label": "a retry budget written as a whole decimal",
+            "source": "{\"retries\":1.0,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "accepted",
+            "expected": {
+                "retries": 1,
+                "projects": [
+                    {
+                        "name": "a",
+                        "specs": "all"
+                    }
+                ]
+            }
+        },
+        {
+            "label": "a retry budget written in exponent form",
+            "source": "{\"retries\":1e0,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "accepted",
+            "expected": {
+                "retries": 1,
+                "projects": [
+                    {
+                        "name": "a",
+                        "specs": "all"
+                    }
+                ]
+            }
+        },
+        {
+            "label": "a retry budget of zero",
+            "source": "{\"retries\":0,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "accepted",
+            "expected": {
+                "retries": 0,
+                "projects": [
+                    {
+                        "name": "a",
+                        "specs": "all"
+                    }
+                ]
+            }
+        },
+        {
+            "label": "a retry budget written as negative zero",
+            "source": "{\"retries\":-0,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "accepted",
+            "expected": {
+                "retries": 0,
+                "projects": [
+                    {
+                        "name": "a",
+                        "specs": "all"
+                    }
+                ]
+            }
+        },
+        {
+            "label": "a retry budget at the ceiling",
+            "source": "{\"retries\":100,\"projects\":[{\"name\":\"a\",\"specs\":\"all\"}]}",
+            "outcome": "accepted",
+            "expected": {
+                "retries": 100,
+                "projects": [
+                    {
+                        "name": "a",
+                        "specs": "all"
+                    }
+                ]
+            }
+        },
+        {
+            "label": "a project confined to the right-to-left journeys",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":\"right-to-left\"}]}",
+            "outcome": "accepted",
+            "expected": {
+                "retries": 1,
+                "projects": [
+                    {
+                        "name": "a",
+                        "specs": "right-to-left"
+                    }
+                ]
+            }
+        },
+        {
+            "label": "a project carrying keys neither consumer reads",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":\"all\",\"note\":\"kept\"}]}",
+            "outcome": "accepted",
+            "expected": {
+                "retries": 1,
+                "projects": [
+                    {
+                        "name": "a",
+                        "specs": "all"
+                    }
+                ]
+            }
+        }
+    ]
+}
