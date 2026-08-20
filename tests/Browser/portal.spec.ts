@@ -69,6 +69,10 @@ function authenticatorCode(provisioningUri: string): string {
 async function enrollPortalAuthenticator(page: Page): Promise<string> {
   await page.goto('/portal/security');
   await page.getByRole('button', { name: 'Start setup' }).click();
+  // A refused enrollment renders a notice and no URI element, so waiting on `.portal-uri` alone waits
+  // for something that will never appear and reports nothing but the test budget running out. Naming
+  // the panel first turns that into a ten-second failure that says which step refused.
+  await expect(page.getByRole('heading', { name: 'Connect your authenticator' })).toBeVisible();
   const provisioningUri = await page.locator('.portal-uri').textContent();
   if (!provisioningUri) {
     throw new Error('The portal did not disclose its one-time authenticator URI.');
@@ -1067,7 +1071,12 @@ test('portal maker-checker approval requires a distinct step-up identity', async
 }, testInfo) => {
   // KIS-EVIDENCE-BEGIN p6-001-maker-checker
   test.setTimeout(90_000);
-  const project = testInfo.project.name.startsWith('mobile-') ? 'mobile' : 'desktop';
+  // The identity key must be the project, not the device family: the nightly runs desktop-firefox and
+  // desktop-webkit in one invocation, against one server and one database seeded once before the run,
+  // and TOTP enrollment is a once-per-account operation. Two projects sharing an account leave the
+  // second unable to enroll. The device family stays a separate value because it still drives emulation.
+  const project = testInfo.project.name;
+  const isMobileProject = testInfo.project.name.startsWith('mobile-');
   const retry = Math.min(testInfo.retry, 1);
   const makerEmail = `browser-maker-${project}-${retry}@kumwe.test`;
   const makerPassword = `browser ${project} maker password ${retry}`;
@@ -1095,8 +1104,8 @@ test('portal maker-checker approval requires a distinct step-up identity', async
   const approverContext = await browser.newContext({
     baseURL: process.env.KUMWE_BROWSER_BASE_URL ?? 'http://127.0.0.1:8080',
     viewport: viewport ?? { width: 1280, height: 720 },
-    isMobile: project === 'mobile',
-    hasTouch: project === 'mobile',
+    isMobile: isMobileProject,
+    hasTouch: isMobileProject,
   });
   const approverPage = await approverContext.newPage();
   try {
