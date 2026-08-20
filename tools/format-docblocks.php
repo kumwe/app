@@ -139,13 +139,25 @@ final class DocBlockFormatter
     /**
      * Report how many files were inspected and changed.
      *
-     * @return  int  Process exit status; always zero.
+     * @param   bool  $dryRun  Whether this run only reported what it would change.
+     *
+     * @return  int  Process exit status; non-zero when a check run found work still to do.
      *
      * @since   2.0.0
      */
-    public function report(): int
+    public function report(bool $dryRun): int
     {
         printf('%sInspected %d files, formatted %d.%s', PHP_EOL, $this->inspected, $this->changed, PHP_EOL);
+
+        if ($dryRun && $this->changed > 0) {
+            fwrite(
+                STDERR,
+                'Documentation blocks are not in their canonical form. Run composer docs:format and commit '
+                . 'the result.' . PHP_EOL,
+            );
+
+            return 1;
+        }
 
         return 0;
     }
@@ -603,4 +615,4 @@ foreach ($paths as $path) {
     $formatter->run($path, $dryRun);
 }
 
-exit($formatter->report());
+exit($formatter->report($dryRun));

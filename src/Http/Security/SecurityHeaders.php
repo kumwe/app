@@ -34,10 +34,10 @@ final readonly class SecurityHeaders
      * the upgrade directive asks only whether this response travelled over TLS, which a staging or
      * development site served over HTTPS answers yes to just as truthfully.
      *
-     * @param  bool  $enableHsts                Whether to emit `Strict-Transport-Security`; enable only on
-     *                                          production HTTPS.
-     * @param  bool  $upgradeInsecureRequests   Whether the response is served over TLS, and so whether the
-     *                                          browser may be told to upgrade the subresources it fetches.
+     * @param  bool  $enableHsts               Whether to emit `Strict-Transport-Security`; enable only on
+     *         production HTTPS.
+     * @param  bool  $upgradeInsecureRequests  Whether the response is served over TLS, and so whether the
+     *         browser may be told to upgrade the subresources it fetches.
      *
      * @since  2.0.0
      */
@@ -65,7 +65,7 @@ final readonly class SecurityHeaders
      * @param   ?string  $scriptNonce  Nonce that admits matching inline scripts, or null to allow none.
      *
      * @return  array<string, string>  Header name to value; `Strict-Transport-Security` and the
-     *                                 `upgrade-insecure-requests` directive only when enabled.
+     *          `upgrade-insecure-requests` directive only when enabled.
      *
      * @since   2.0.0
      */
