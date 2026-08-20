@@ -92,6 +92,10 @@
             {
                 "path": "tests/Unit/BusinessSurface/Presentation/SeverityFieldPresenterTest.php",
                 "reason": "The subject is an example package's presenter under examples/, deliberately outside the released source tree."
+            },
+            {
+                "path": "tests/Unit/Support/BrowserProjectManifestTest.php",
+                "reason": "The subject is tests/Support/BrowserProjectManifest, the test-infrastructure reader for the browser matrix manifest. It is not under src/ and is not part of the released package, so PHPUnit refuses it as a coverage target outright \u2014 naming it in #[CoversClass] emitted a warning per case and, with failOnWarning, failed the canonical engine's own run. The answer is to attribute nothing, not to widen the measured source tree: coverage exists to describe the product, and admitting tests/Support to it would credit the harness for the product's lines."
             }
         ],
         "pending": [],
