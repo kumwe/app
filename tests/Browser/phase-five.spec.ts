@@ -139,35 +139,16 @@ test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, mot
   isMobile,
 }) => {
   // KIS-EVIDENCE-BEGIN p6-004-presentation-matrix
-  // prefers-color-scheme and forced-colors are not independent features in every engine. Under forced
-  // colours the used scheme belongs to the forced palette: Gecko keeps its light high-contrast palette
-  // and reports prefers-color-scheme: light whatever scheme was requested, while Blink and WebKit swap
-  // to a dark forced palette and go on reporting dark. Neither is a product defect, so the colour-scheme
-  // contract and the forced-colours contract are proven in two emulations rather than demanded at once.
-  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce', forcedColors: 'none' });
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce', forcedColors: 'active' });
   await signInAdministrator(page);
   await page.goto('/administrator/settings');
 
-  const colorSchemeContract = await page.evaluate(() => ({
+  const modeContract = await page.evaluate(() => ({
     dark: matchMedia('(prefers-color-scheme: dark)').matches,
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     forcedColors: matchMedia('(forced-colors: active)').matches,
   }));
-  expect(colorSchemeContract).toEqual({ dark: true, reducedMotion: true, forcedColors: false });
-  // Stronger than the flag alone: this proves the document actually resolves dark, not merely that the
-  // emulation was accepted.
-  await expect
-    .poll(async () => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme))
-    .toContain('dark');
-
-  // Only forced colours change; colorScheme and reducedMotion keep the values set above, so the focus,
-  // zoom, overflow and print checks below still run in high contrast exactly as they did before.
-  await page.emulateMedia({ forcedColors: 'active' });
-  const forcedColorsContract = await page.evaluate(() => ({
-    reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-    forcedColors: matchMedia('(forced-colors: active)').matches,
-  }));
-  expect(forcedColorsContract).toEqual({ reducedMotion: true, forcedColors: true });
+  expect(modeContract).toEqual({ dark: true, reducedMotion: true, forcedColors: true });
 
   const firstSectionLink = page.locator('.kis-phase-five-section-nav a').first();
   await firstSectionLink.focus();

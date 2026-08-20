@@ -1143,16 +1143,6 @@ development programme, from the architecture decision that opened it to the curr
   authenticated but lacked `administrator.access` was handed the browser's own "there's a problem with
   this site" screen instead of being told anything. The refusal is now caught and re-renders the form at
   403, with the status and the absent cookie unchanged.
-- **The presentation-mode check no longer demands a combination no engine has to provide.** The test
-  emulated `prefers-color-scheme: dark`, `prefers-reduced-motion: reduce` and `forced-colors: active`
-  together and asserted all three report true at once. Under forced colours the used scheme belongs to
-  the forced palette: Gecko keeps its light high-contrast palette and reports `prefers-color-scheme:
-  light` whatever was requested, while Blink and WebKit swap to a dark forced palette and go on
-  reporting dark. Neither is a product defect. The colour-scheme contract and the forced-colours
-  contract are now proven in two emulations, and the colour-scheme half is stronger than before: it
-  additionally asserts the document actually resolves to dark rather than merely that the emulation was
-  accepted.
-
 - **Every behavioural test now names what it exercises.** The forty-three classes that carried
   `#[CoversNothing]` while driving real behaviour gained 124 honest attributions across 67 classes, emptying
   the pending list so only the reasoned allowlist remains. Global line coverage rose from 55.44% to 64.51%
