@@ -10,6 +10,7 @@ use DateTimeImmutable;
 use Kumwe\App\Administrator\Http\Handler\AdministratorLoginHandler;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -116,19 +117,65 @@ final class AdministratorLoginHandlerTest extends TestCase
     }
 
     /**
+     * A correct credential whose identity may not administer is refused on the form, not as a document.
+     *
+     * `/administrator/login` is exempt from both the session and the authorization middleware, so the
+     * themed denial those render can never fire for it and the handler owns every refusal on this route.
+     * The session store's contract says opening a session may be denied; letting that escape produced a
+     * bare `application/problem+json` body, which Firefox refuses to render as a page — the visitor was
+     * shown the browser's own "there's a problem with this site" screen instead of being told anything.
+     * The status stays 403 and no cookie is set; only the body becomes a page a person can read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testACredentialWithoutAdministratorAccessIsRefusedOnTheFormRatherThanAsAProblemDocument(): void
+    {
+        $identities = $this->createStub(AdministratorIdentityGateway::class);
+        $identities->method('authenticate')->willReturn(AuthorizationContext::principal(['content.read']));
+        $sessions = $this->createStub(AdministratorSessionStore::class);
+        $sessions->method('create')->willThrowException(
+            new AuthorizationDenied(
+                AuthorizationContext::SUBJECT,
+                'administrator.access',
+                'administrator',
+                '*',
+                'corporate',
+                'core.scoped-grants.v1',
+                'no_matching_grant',
+            ),
+        );
+
+        $response = $this->handler($identities, $sessions)->handle($this->submission());
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertSame('', $response->getHeaderLine('Set-Cookie'));
+        $body = (string) $response->getBody();
+        self::assertStringContainsString('This account is not permitted to use the administrator.', $body);
+        self::assertStringContainsString('owner@example.test', $body);
+        self::assertStringNotContainsString('wrong password', $body);
+    }
+
+    /**
      * Build the sign-in handler over a template that renders only the rejection and the address.
      *
-     * @param   AdministratorIdentityGateway  $identities  Gateway deciding the credential's fate.
+     * @param   AdministratorIdentityGateway    $identities  Gateway deciding the credential's fate.
+     * @param   ?AdministratorSessionStore      $sessions    Store deciding whether a session may open,
+     *                                                       or null for one that always succeeds.
      *
      * @return  AdministratorLoginHandler  The handler as the container composes it.
      *
      * @since   2.0.0
      */
-    private function handler(AdministratorIdentityGateway $identities): AdministratorLoginHandler
-    {
+    private function handler(
+        AdministratorIdentityGateway $identities,
+        ?AdministratorSessionStore $sessions = null,
+    ): AdministratorLoginHandler {
         return new AdministratorLoginHandler(
             $identities,
-            $this->createStub(AdministratorSessionStore::class),
+            $sessions ?? $this->createStub(AdministratorSessionStore::class),
             new AdministratorRenderer(
                 new AdministratorTwigEnvironment(new ArrayLoader([
                     'login.twig' => '{{ error }}|{{ email }}',
