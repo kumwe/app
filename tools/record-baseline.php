@@ -13,7 +13,8 @@
  * rather than to the tree — the runs that produced the evidence — arrive as arguments.
  *
  * Usage:
- *   php tools/record-baseline.php --emit [--commit=SHA] [--recorded-at=YYYY-MM-DD] [--run=URL ...]
+ *   php tools/record-baseline.php --emit --commit=SHA --recorded-at=YYYY-MM-DD [--run=URL ...]
+ *       [--write]
  *   php tools/record-baseline.php --check
  *
  * @since  2.0.0
@@ -353,6 +354,7 @@ $root = dirname(__DIR__);
 $arguments = array_slice($argv, 1);
 $emit = in_array('--emit', $arguments, true);
 $check = in_array('--check', $arguments, true);
+$write = in_array('--write', $arguments, true);
 $recordedAt = '';
 $commit = '';
 $runs = [];
@@ -427,20 +429,48 @@ if ($check) {
     exit(0);
 }
 
+// Provenance is never inherited. Carrying the previous commit, date or run forward is how a record
+// came to describe a revision it had not been generated from: the figures were re-derived correctly and
+// the three fields that say where they came from kept pointing at an older tree, through a rebase that
+// replayed cleanly because a data file always does. `--check` still carries them over, because the tree
+// genuinely cannot know them; recording is the one moment they are known, so they are demanded here.
 if ($commit === '') {
-    $commit = is_string($recorded['commit'] ?? null) ? $recorded['commit'] : '';
+    fwrite(STDERR, "--emit needs --commit=SHA naming the revision these figures were derived from.\n");
+
+    exit(1);
 }
 if ($recordedAt === '') {
-    $recordedAt = is_string($recorded['recorded_at'] ?? null) ? $recorded['recorded_at'] : '';
-}
-if ($runs === [] && is_array($recorded['recorded_from'] ?? null)) {
-    /** @var list<string> $runs */
-    $runs = array_values($recorded['recorded_from']);
+    fwrite(STDERR, "--emit needs --recorded-at=YYYY-MM-DD.\n");
+
+    exit(1);
 }
 
-fwrite(STDOUT, json_encode(
+$document = json_encode(
     baselineDocument($root, $commit, $recordedAt, $runs),
     JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
-) . "\n");
+) . "\n";
+
+if (!$write) {
+    fwrite(STDOUT, $document);
+
+    exit(0);
+}
+
+// Written through a neighbouring temporary file and renamed over the record, so an interrupted run
+// leaves the previous document intact rather than a truncated one. A shell redirect cannot do this: it
+// empties the target before this process starts, which is why `--write` exists at all.
+$temporary = $path . '.tmp';
+if (file_put_contents($temporary, $document) === false) {
+    fwrite(STDERR, sprintf("%s could not be written.\n", $temporary));
+
+    exit(1);
+}
+if (!rename($temporary, $path)) {
+    @unlink($temporary);
+    fwrite(STDERR, sprintf("%s could not be replaced.\n", $path));
+
+    exit(1);
+}
+fwrite(STDOUT, sprintf("Recorded %s at %s.\n", $path, $commit));
 
 exit(0);
