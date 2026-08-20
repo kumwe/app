@@ -1074,6 +1074,56 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **A plaintext origin no longer tells the browser to upgrade what it cannot serve.**
+  `upgrade-insecure-requests` sat in the Content-Security-Policy unconditionally while HSTS, immediately
+  below it, was already gated on production HTTPS. On an origin not served over TLS the directive hardens
+  nothing — the document itself arrived in the clear — while instructing the browser to fetch every
+  stylesheet and script, and to submit every form, over an `https://` port nothing is listening on.
+  Chromium and Firefox mask that by exempting loopback; WebKit honours it, so an HTTP-only deployment lost
+  its stylesheets, its scripts and its ability to sign anyone in, in Safari and in no other browser. The
+  directive is now gated on the transport, separately from HSTS, because the two answer different
+  questions: HSTS asks whether this deployment may pin a browser to TLS for a year, which only production
+  should answer yes to, while the upgrade directive asks only whether this response arrived over TLS — so
+  a staging site served over HTTPS now receives it where it previously did not. The whole 66-test security
+  suite passed with the directive wrong; `SecurityHeadersTest` and `SecurityMiddlewareTest` now pin both
+  directions, at the policy builder and at the middleware.
+- **The rich-text editor no longer discards text Firefox and WebKit leave unwrapped.** `toSource()` walked
+  `editor.children`, so only elements were serialized. Chromium wraps text typed into an empty
+  `contenteditable` in a `<div>`; Firefox and WebKit leave a bare text node, which was dropped. The
+  `required` backing textarea stayed empty, native validation refused the form, and Create draft did
+  nothing while the editor looked full — no page could be authored in Safari or Firefox. The walk is now
+  over `childNodes`, gathering runs of top-level inline nodes into the one implicit block they render as.
+  `data-entry-integrity.spec.ts` forces that DOM shape rather than relying on an engine to produce it, so
+  every engine exercises the path.
+- **The reproducible baseline describes the tree it was generated from, and its remedy runs.** The record
+  landed describing commit `c07e1798` while sitting on a tree five commits later: both branches were cut
+  from that base, and the rebase moved the document rather than the figures inside it. Because the check
+  carries the `local`, `ci`, `nightly` and `release` cadences, one stale document failed the merge lane,
+  failed the nightly and would have failed the release — which is why nothing shipped. Provenance is no
+  longer inherited: `--emit` demands `--commit` and `--recorded-at` and validates their shape, and writes
+  through a temporary file and a rename so an interrupted run cannot truncate the record. `composer
+  baseline:record` supplies both from the checkout, and a test asks the generator what it requires and
+  holds that published command to it — the tool had tests, its entry point had none, which is how a
+  remedy that exits immediately was published as the fix.
+- **The local gate asks the question the merge lane asks.** CI runs the documentation formatter over
+  `src/` and refuses any diff it produces, but no local check did, so a complete block in non-canonical
+  alignment passed a full local gate and failed CI on whitespace. The formatter's `--dry-run` could not
+  fail anything because its report always returned zero; it now exits non-zero when a check run still
+  finds work, and `composer docs:format:check` runs inside `composer qa`.
+- **Pre-releases are published as pre-releases.** `gh release create` was called without `--prerelease`
+  or `--latest`, and GitHub infers neither from the tag: the API defaults `prerelease` to false and marks
+  whatever it published most recently as Latest, so the first `v2.0.0-alpha.N` would have sat on the
+  repository front page as the release to download. Both flags are now stated explicitly, in both
+  directions, decided by the same stability test that already governs the moving `latest`, `2` and minor
+  image tags.
+- **Deployment acceptance no longer re-contacts the registry on every lifecycle recreation.** The
+  acceptance environment set `KUMWE_INFRASTRUCTURE_PULL_POLICY=always`, so each of the several
+  `--force-recreate` cycles that prove restart, persistence and restore asked Docker Hub for the manifest
+  again; a single registry `500` mid-run failed all three database jobs within two seconds of each other,
+  after the images had already been pulled successfully. The images are now fetched once, with bounded
+  retries, and the deployment uses what is cached. Only the acceptance environment overrides the policy —
+  `compose.production.yaml` keeps `always`, which is the right default for a real deployment.
+
 - **Every behavioural test now names what it exercises.** The forty-three classes that carried
   `#[CoversNothing]` while driving real behaviour gained 124 honest attributions across 67 classes, emptying
   the pending list so only the reasoned allowlist remains. Global line coverage rose from 55.44% to 64.51%

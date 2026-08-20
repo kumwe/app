@@ -436,11 +436,26 @@ if ($check) {
 // genuinely cannot know them; recording is the one moment they are known, so they are demanded here.
 if ($commit === '') {
     fwrite(STDERR, "--emit needs --commit=SHA naming the revision these figures were derived from.\n");
+    fwrite(STDERR, "composer baseline:record supplies it, and the date, from the checkout.\n");
+
+    exit(1);
+}
+if (preg_match('/^[0-9a-f]{40}$/D', $commit) !== 1) {
+    // A short or malformed SHA reads as provenance while naming nothing that can be resolved later,
+    // which is the same failure as carrying an older one forward: the record looks sourced and is not.
+    fwrite(STDERR, "--commit must be a full 40-character commit SHA.\n");
 
     exit(1);
 }
 if ($recordedAt === '') {
     fwrite(STDERR, "--emit needs --recorded-at=YYYY-MM-DD.\n");
+    fwrite(STDERR, "composer baseline:record supplies it, and the commit, from the checkout.\n");
+
+    exit(1);
+}
+$recordedDate = DateTimeImmutable::createFromFormat('!Y-m-d', $recordedAt);
+if ($recordedDate === false || $recordedDate->format('Y-m-d') !== $recordedAt) {
+    fwrite(STDERR, "--recorded-at must be a calendar date as YYYY-MM-DD.\n");
 
     exit(1);
 }

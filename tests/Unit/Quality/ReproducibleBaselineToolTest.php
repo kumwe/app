@@ -152,6 +152,69 @@ final class ReproducibleBaselineToolTest extends TestCase
     }
 
     /**
+     * The documented recording command supplies every flag the generator demands of it.
+     *
+     * `baseline:check` tells a failing build to run `composer baseline:record`, so that command is the
+     * remedy the project publishes. It stopped working the moment the generator began demanding its
+     * provenance: the composer script still called `--emit --write`, the tool exited on the first
+     * missing flag, and the only advice the gate offers failed immediately. The tool had tests; its
+     * published entry point had none, which is exactly how that shipped.
+     *
+     * Rather than pin the command as a literal, this asks the generator what it requires -- so adding a
+     * required flag makes it named here -- and then holds the published command to it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheDocumentedRecordingCommandSuppliesEveryFlagTheGeneratorDemands(): void
+    {
+        $samples = ['--commit' => str_repeat('0', 40), '--recorded-at' => '2026-01-01'];
+        $supplied = [];
+        $required = [];
+
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $result = $this->generate(array_merge(['--emit'], $supplied));
+            if ($result['status'] === 0) {
+                break;
+            }
+            self::assertSame(
+                1,
+                preg_match('/--emit needs (--[a-z-]+)=/', $result['stderr'], $matches),
+                sprintf('The generator refused --emit without naming a missing flag: %s', $result['stderr']),
+            );
+            $flag = $matches[1];
+            self::assertArrayHasKey(
+                $flag,
+                $samples,
+                sprintf('%s is newly required; give this test a valid sample value for it.', $flag),
+            );
+            $required[] = $flag;
+            $supplied[] = $flag . '=' . $samples[$flag];
+        }
+
+        self::assertNotSame([], $required, 'The generator no longer demands any provenance.');
+
+        /** @var array{scripts?: array<string, mixed>} $manifest */
+        $manifest = json_decode(
+            (string) file_get_contents(dirname(__DIR__, 3) . '/composer.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+        $record = $manifest['scripts']['baseline:record'] ?? null;
+        self::assertIsString($record, 'composer.json declares no baseline:record script.');
+
+        foreach ($required as $flag) {
+            self::assertStringContainsString(
+                $flag . '=',
+                $record,
+                sprintf('composer baseline:record does not supply %s, so the published remedy fails.', $flag),
+            );
+        }
+    }
+
+    /**
      * Run the generator against the scratch record.
      *
      * @param   list<string>  $arguments  Flags to pass, excluding the record path.
