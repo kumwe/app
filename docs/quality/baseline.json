@@ -3,11 +3,9 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "4073ef8c588ff3dd075413ddd3fddc550d4e639b",
+    "commit": "3ad1fcf1f36e0fc88ad59b32dc40faa3425ebcb2",
     "recorded_at": "2026-08-20",
-    "recorded_from": [
-        "https://github.com/kumwe/app/actions/runs/32408091964"
-    ],
+    "recorded_from": [],
     "toolchain": {
         "php": "^8.5",
         "required_extensions": [
@@ -40,8 +38,8 @@
             "test_methods": 376
         },
         "unit": {
-            "files": 383,
-            "test_methods": 2031
+            "files": 384,
+            "test_methods": 2033
         }
     },
     "coverage": {
