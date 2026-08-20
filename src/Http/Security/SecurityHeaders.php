@@ -13,6 +13,15 @@ namespace Kumwe\App\Http\Security;
  * from a development host, or from a plain HTTP request, locks visitors out of a site that cannot
  * serve it; the caller decides, this class only spells the policy out.
  *
+ * `upgrade-insecure-requests` is gated for the same reason and answers the same question, which is why
+ * both are decided by the caller rather than here. On an HTTPS origin the directive is real hardening:
+ * a stylesheet or image a template still names over `http://` is fetched over TLS instead of being
+ * blocked or, worse, loaded in the clear. On an origin that is not served over TLS at all it hardens
+ * nothing — the document itself already arrived in the clear — while instructing the browser to fetch
+ * every subresource, and to send every form submission, to an `https://` port that is not listening.
+ * Chromium and Firefox mask that by exempting loopback; WebKit does not, so an HTTP-only deployment
+ * loses its stylesheets, its scripts and its sign-in form in Safari and in no other browser.
+ *
  * @since  2.0.0
  */
 final readonly class SecurityHeaders
@@ -20,11 +29,19 @@ final readonly class SecurityHeaders
     /**
      * Fix the transport policy for the header sets this instance builds.
      *
-     * @param  bool  $enableHsts  Whether to emit `Strict-Transport-Security`; enable only on production HTTPS.
+     * The two flags are separate because they answer different questions. HSTS asks whether this
+     * deployment may pin a browser to TLS for a year, which only a production site should ever do;
+     * the upgrade directive asks only whether this response travelled over TLS, which a staging or
+     * development site served over HTTPS answers yes to just as truthfully.
+     *
+     * @param  bool  $enableHsts                Whether to emit `Strict-Transport-Security`; enable only on
+     *                                          production HTTPS.
+     * @param  bool  $upgradeInsecureRequests   Whether the response is served over TLS, and so whether the
+     *                                          browser may be told to upgrade the subresources it fetches.
      *
      * @since  2.0.0
      */
-    public function __construct(private bool $enableHsts)
+    public function __construct(private bool $enableHsts, private bool $upgradeInsecureRequests = false)
     {
     }
 
@@ -47,7 +64,8 @@ final readonly class SecurityHeaders
      *
      * @param   ?string  $scriptNonce  Nonce that admits matching inline scripts, or null to allow none.
      *
-     * @return  array<string, string>  Header name to value; `Strict-Transport-Security` only when enabled.
+     * @return  array<string, string>  Header name to value; `Strict-Transport-Security` and the
+     *                                 `upgrade-insecure-requests` directive only when enabled.
      *
      * @since   2.0.0
      */
@@ -68,7 +86,6 @@ final readonly class SecurityHeaders
                 "style-src 'self'",
                 "style-src-attr 'unsafe-inline'",
                 "style-src-elem 'self'",
-                'upgrade-insecure-requests',
             ]),
             'Cross-Origin-Opener-Policy' => 'same-origin',
             'Permissions-Policy' => 'camera=(), geolocation=(), microphone=(), payment=(), usb=()',
@@ -77,6 +94,9 @@ final readonly class SecurityHeaders
             'X-Frame-Options' => 'DENY',
         ];
 
+        if ($this->upgradeInsecureRequests) {
+            $headers['Content-Security-Policy'] .= '; upgrade-insecure-requests';
+        }
         if ($this->enableHsts) {
             $headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
         }

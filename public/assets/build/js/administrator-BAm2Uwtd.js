@@ -393,10 +393,41 @@ var KumweJobFields = class KumweJobFields extends i {
 KumweJobFields = __decorate([t("kumwe-job-fields")], KumweJobFields);
 //#endregion
 //#region assets/administrator/components/rich-text.ts
+var _KumweRichText;
 var KumweRichText = class KumweRichText extends i {
+	static {
+		_KumweRichText = this;
+	}
 	createRenderRoot() {
 		return this;
 	}
+	/** Tags a browser uses as its own block inside a `contenteditable`; everything else is inline. */
+	static blockTags = /* @__PURE__ */ new Set([
+		"ADDRESS",
+		"ARTICLE",
+		"ASIDE",
+		"BLOCKQUOTE",
+		"DIV",
+		"DL",
+		"FIGURE",
+		"FOOTER",
+		"H1",
+		"H2",
+		"H3",
+		"H4",
+		"H5",
+		"H6",
+		"HEADER",
+		"HR",
+		"MAIN",
+		"NAV",
+		"OL",
+		"P",
+		"PRE",
+		"SECTION",
+		"TABLE",
+		"UL"
+	]);
 	firstUpdated() {
 		const source = this.querySelector("textarea");
 		const editor = this.querySelector("[data-rich-text-editor]");
@@ -461,16 +492,46 @@ var KumweRichText = class KumweRichText extends i {
 	inlineToHtml(source) {
 		return source.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/\[([^\]]+)]\((https?:\/\/[^\s)]+|mailto:[^\s)]+|\/(?!\/)[^\s)]*|#[^\s)]+)\)/g, "<a href=\"$2\">$1</a>");
 	}
+	/**
+	* Serialize the editor back to the source the backing textarea submits.
+	*
+	* The walk is over `childNodes` rather than `children` because what a browser leaves at the top level
+	* of a `contenteditable` is not agreed between engines. Chromium wraps text typed into an empty editor
+	* in a `<div>`; Firefox and WebKit leave a bare text node. Reading elements only dropped that text, so
+	* the `required` textarea stayed empty and native validation refused the form — the editor looked full
+	* and the page would not submit. Runs of top-level inline nodes are gathered into one implicit block,
+	* which is what they render as, and block elements keep being serialized one block each.
+	*/
 	toSource(editor) {
-		return Array.from(editor.children).map((element) => this.blockToSource(element)).filter((value, index, all) => value !== "" || index > 0 && all[index - 1] !== "").join("\n");
+		const blocks = [];
+		let inline = [];
+		const flushInline = () => {
+			if (inline.length === 0) return;
+			blocks.push(this.inlineNodesToSource(inline).trimEnd());
+			inline = [];
+		};
+		editor.childNodes.forEach((node) => {
+			if (node instanceof Element && _KumweRichText.blockTags.has(node.tagName)) {
+				flushInline();
+				blocks.push(this.blockToSource(node));
+				return;
+			}
+			inline.push(node);
+		});
+		flushInline();
+		return blocks.filter((value, index, all) => value !== "" || index > 0 && all[index - 1] !== "").join("\n");
 	}
 	blockToSource(element) {
 		if (element.tagName === "UL" || element.tagName === "OL") return Array.from(element.children).map((item) => `- ${this.inlineToSource(item)}`).join("\n");
 		return `${/^H[1-6]$/.test(element.tagName) ? "## " : ""}${this.inlineToSource(element)}`.trimEnd();
 	}
 	inlineToSource(element) {
+		return this.inlineNodesToSource(Array.from(element.childNodes));
+	}
+	/** Serialize a run of inline nodes, wherever in the tree they were found. */
+	inlineNodesToSource(nodes) {
 		let output = "";
-		element.childNodes.forEach((node) => {
+		nodes.forEach((node) => {
 			if (node.nodeType === Node.TEXT_NODE) output += node.textContent ?? "";
 			else if (node instanceof HTMLBRElement) output += "\n";
 			else if (node instanceof HTMLAnchorElement) output += `[${this.inlineToSource(node)}](${node.href})`;
@@ -480,7 +541,7 @@ var KumweRichText = class KumweRichText extends i {
 		return output;
 	}
 };
-KumweRichText = __decorate([t("kumwe-rich-text")], KumweRichText);
+KumweRichText = _KumweRichText = __decorate([t("kumwe-rich-text")], KumweRichText);
 //#endregion
 //#region assets/administrator/components/presentation-schemes.ts
 var KumwePresentationSchemes = class KumwePresentationSchemes extends i {
