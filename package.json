@@ -8,7 +8,8 @@
   },
   "scripts": {
     "build": "vite build",
-    "check": "npm run check:types && npm run check:schemas",
+    "check": "npm run check:types && npm run check:schemas && npm run check:manifest",
+    "check:manifest": "node tools/verify-browser-manifest.mjs",
     "check:types": "tsc --noEmit",
     "check:schemas": "node tools/verify-interface-schemas.mjs",
     "test:browser": "playwright test --project=desktop-chromium --project=mobile-chromium --project=desktop-chromium-he --project=desktop-chromium-ar --project=mobile-chromium-he --project=mobile-chromium-ar",

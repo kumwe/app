@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+import { parseBrowserMatrix } from './tests/Browser/manifest.mjs';
 
 /**
  * The browser matrix has two axes: the device a page is drawn on, and the language it is drawn in.
@@ -26,14 +27,8 @@ const rightToLeftSpec = /right-to-left\.spec\.ts/;
  * ninety-second timeout. Deriving both from one file is what makes that unrepresentable rather than
  * merely tested for.
  */
-interface BrowserProject {
-  readonly name: string;
-  readonly specs: 'all' | 'right-to-left';
-}
-
-const matrix = JSON.parse(
-  readFileSync(new URL('./tests/Browser/projects.json', import.meta.url), 'utf8'),
-) as { readonly retries: number; readonly projects: readonly BrowserProject[] };
+const matrixUrl = new URL('./tests/Browser/projects.json', import.meta.url);
+const matrix = parseBrowserMatrix(readFileSync(matrixUrl, 'utf8'), 'tests/Browser/projects.json');
 
 /** Emulation and comparison options per project; the manifest decides which projects exist. */
 const projectOptions: Record<string, Record<string, unknown>> = {
@@ -52,6 +47,31 @@ const projectOptions: Record<string, Record<string, unknown>> = {
 };
 
 const snapshotIgnoringProjects = new Set(['desktop-firefox', 'desktop-webkit']);
+
+/**
+ * Answer the emulation a project runs under, or refuse a project nothing describes.
+ *
+ * Falling back to an empty option set was the one way deriving the matrix from the manifest could still
+ * be silently wrong: a name the table does not know would have run with no emulation at all, so a mobile
+ * project would assert its touch targets and overflow against a desktop render and pass. A project that
+ * exists must be described, or the run stops here rather than reporting a green lie.
+ *
+ * @param   name  Project name taken from the manifest.
+ *
+ * @returns The emulation and comparison options for that project.
+ */
+function emulationFor(name: string): Record<string, unknown> {
+  const options = projectOptions[name];
+  if (options === undefined) {
+    throw new Error(
+      `tests/Browser/projects.json declares "${name}", which playwright.config.ts has no emulation for. `
+      + 'Add its options beside the others; a project with none would run unemulated and assert against '
+      + 'the wrong render.',
+    );
+  }
+
+  return options;
+}
 
 export default defineConfig({
   testDir: './tests/Browser',
@@ -107,6 +127,6 @@ export default defineConfig({
       ? { testMatch: rightToLeftSpec }
       : { testIgnore: rightToLeftSpec }),
     ...(snapshotIgnoringProjects.has(project.name) ? { ignoreSnapshots: true } : {}),
-    use: projectOptions[project.name] ?? {},
+    use: emulationFor(project.name),
   })),
 });
