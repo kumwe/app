@@ -20,6 +20,7 @@ use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Tests\Support\BrowserProjectManifest;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
 use Ramsey\Uuid\Uuid;
@@ -396,13 +397,7 @@ try {
     // the maker-checker journey -- the right-to-left projects are confined to a spec that never enrolls
     // an authenticator. TOTP enrollment is a once-per-account operation, so each project needs its own
     // pair, and each attempt of a project needs one the previous attempt has not already consumed.
-    $matrixPath = dirname(__DIR__) . '/Browser/projects.json';
-    $matrixJson = file_get_contents($matrixPath);
-    if (!is_string($matrixJson)) {
-        throw new RuntimeException('The browser project manifest cannot be read.');
-    }
-    /** @var array{retries: int, projects: list<array{name: string, specs: string}>} $matrix */
-    $matrix = json_decode($matrixJson, true, 512, JSON_THROW_ON_ERROR);
+    $matrix = BrowserProjectManifest::read(dirname(__DIR__) . '/Browser/projects.json');
     $approvalProjects = [];
     foreach ($matrix['projects'] as $matrixProject) {
         if ($matrixProject['specs'] === 'all') {
