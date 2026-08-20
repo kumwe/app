@@ -1,853 +1,879 @@
 {
-  "contract": "kumwe-quality-contract",
-  "version": "2.0.0",
-  "authority": "docs/roadmap/README.md",
-  "note": "One data-driven definition of every check this repository runs, and of the lane each one runs in. `composer qa` is still the human entry point, but the set it executes is derived from this file rather than restated beside it: tools/quality-contract.php --check fails when a check declared for the local lane is missing from the qa script, when the qa script runs a check this file does not declare, when a check names a workflow or job that does not exist, or when the workflow that declares a check no longer contains the command. Nightly and release execute manifest-owned checks through tools/quality-contract.php --run and delegate a check that has an explicit binding for that lane to the named, provisioned workflow job. A check that cannot run in a lane says so here, with the reason, rather than being quietly dropped or duplicated.",
-  "cadences": [
-    "local",
-    "ci",
-    "nightly",
-    "release"
-  ],
-  "intervals": [
-    "per-change",
-    "daily",
-    "weekly",
-    "per-release"
-  ],
-  "owners": [
-    "platform-architecture",
-    "quality-engineering",
-    "release-engineering",
-    "security-engineering",
-    "interface-programme",
-    "localization",
-    "frontend"
-  ],
-  "lane_bindings": {
-    "local": {
-      "entry": "composer qa",
-      "note": "The human entry point. Its member set is this file's local lane, proven equal in both directions by tools/quality-contract.php --check."
+    "contract": "kumwe-quality-contract",
+    "version": "2.0.0",
+    "authority": "docs/roadmap/README.md",
+    "note": "One data-driven definition of every check this repository runs, and of the lane each one runs in. `composer qa` is still the human entry point, but the set it executes is derived from this file rather than restated beside it: tools/quality-contract.php --check fails when a check declared for the local lane is missing from the qa script, when the qa script runs a check this file does not declare, when a check names a workflow or job that does not exist, or when the workflow that declares a check no longer contains the command. Nightly and release execute manifest-owned checks through tools/quality-contract.php --run and delegate a check that has an explicit binding for that lane to the named, provisioned workflow job. A check that cannot run in a lane says so here, with the reason, rather than being quietly dropped or duplicated.",
+    "cadences": [
+        "local",
+        "ci",
+        "nightly",
+        "release"
+    ],
+    "intervals": [
+        "per-change",
+        "daily",
+        "weekly",
+        "per-release"
+    ],
+    "owners": [
+        "platform-architecture",
+        "quality-engineering",
+        "release-engineering",
+        "security-engineering",
+        "interface-programme",
+        "localization",
+        "frontend"
+    ],
+    "lane_bindings": {
+        "local": {
+            "entry": "composer qa",
+            "note": "The human entry point. Its member set is this file's local lane, proven equal in both directions by tools/quality-contract.php --check."
+        },
+        "ci": {
+            "entry": "per-job steps",
+            "note": "The merge lane keeps its steps written out so a reader of the workflow can see what runs, and every one of them is bound to this file: a check declaring the ci cadence must name the workflow and job that carries it, and the check fails when that job no longer contains the command."
+        },
+        "nightly": {
+            "entry": "php tools/quality-contract.php --run --cadence=nightly",
+            "file": ".github/workflows/nightly.yml",
+            "job": "quality-contract",
+            "contains": "--cadence=nightly",
+            "note": "Nightly executes manifest-owned checks here and delegates explicitly bound checks to their named workflow jobs, so browser requirements stay with the job that provisions them."
+        },
+        "release": {
+            "entry": "php tools/quality-contract.php --run --cadence=release",
+            "file": ".github/workflows/release.yml",
+            "job": "release",
+            "contains": "--cadence=release",
+            "note": "The release lane executes manifest-owned checks here and reports explicitly bound checks as delegated. Before this file existed the release job carried its own shorter list, which is exactly the drift this contract removes."
+        }
     },
-    "ci": {
-      "entry": "per-job steps",
-      "note": "The merge lane keeps its steps written out so a reader of the workflow can see what runs, and every one of them is bound to this file: a check declaring the ci cadence must name the workflow and job that carries it, and the check fails when that job no longer contains the command."
-    },
-    "nightly": {
-      "entry": "php tools/quality-contract.php --run --cadence=nightly",
-      "file": ".github/workflows/nightly.yml",
-      "job": "quality-contract",
-      "contains": "--cadence=nightly",
-      "note": "Nightly executes manifest-owned checks here and delegates explicitly bound checks to their named workflow jobs, so browser requirements stay with the job that provisions them."
-    },
-    "release": {
-      "entry": "php tools/quality-contract.php --run --cadence=release",
-      "file": ".github/workflows/release.yml",
-      "job": "release",
-      "contains": "--cadence=release",
-      "note": "The release lane executes manifest-owned checks here and reports explicitly bound checks as delegated. Before this file existed the release job carried its own shorter list, which is exactly the drift this contract removes."
-    }
-  },
-  "engines": [
-    {
-      "id": "mariadb",
-      "name": "MariaDB LTS",
-      "driver": "mariadb",
-      "image": "mariadb:lts",
-      "role": "primary",
-      "canonical_coverage": true,
-      "note": "The canonical engine. The full suite, the coverage measurement and the browser journeys all run here, and the coverage ratchet reads this leg."
-    },
-    {
-      "id": "mysql",
-      "name": "MySQL 8.4 LTS",
-      "driver": "mysql",
-      "image": "mysql:8.4",
-      "role": "primary",
-      "canonical_coverage": false,
-      "note": "Primary alongside MariaDB. Receives the same suite and the same browser journeys at merge."
-    },
-    {
-      "id": "postgresql",
-      "name": "PostgreSQL 17",
-      "driver": "pgsql",
-      "image": "postgres:17-alpine",
-      "role": "release-blocking",
-      "canonical_coverage": false,
-      "note": "Not optional and not reduced: the full suite and the browser journeys run here at merge, and a failure blocks the release."
-    }
-  ],
-  "regression_matrix": {
-    "statement": "Nothing regressed on three engines.",
-    "criterion": "Gate A exit criterion 12",
     "engines": [
-      "mariadb",
-      "mysql",
-      "postgresql"
+        {
+            "id": "mariadb",
+            "name": "MariaDB LTS",
+            "driver": "mariadb",
+            "image": "mariadb:lts",
+            "role": "primary",
+            "canonical_coverage": true,
+            "note": "The canonical engine. The full suite, the coverage measurement and the browser journeys all run here, and the coverage ratchet reads this leg."
+        },
+        {
+            "id": "mysql",
+            "name": "MySQL 8.4 LTS",
+            "driver": "mysql",
+            "image": "mysql:8.4",
+            "role": "primary",
+            "canonical_coverage": false,
+            "note": "Primary alongside MariaDB. Receives the same suite and the same browser journeys at merge."
+        },
+        {
+            "id": "postgresql",
+            "name": "PostgreSQL 17",
+            "driver": "pgsql",
+            "image": "postgres:17-alpine",
+            "role": "release-blocking",
+            "canonical_coverage": false,
+            "note": "Not optional and not reduced: the full suite and the browser journeys run here at merge, and a failure blocks the release."
+        }
     ],
-    "suites": [
-      "unit",
-      "integration",
-      "functional",
-      "architecture"
-    ],
-    "workflow": ".github/workflows/ci.yml",
-    "job": "database",
-    "full_suite_commands": [
-      "composer test",
-      "vendor/bin/phpunit --colors=always \\"
-    ],
-    "note": "The criterion is assessable because this block names what has to be true and tools/quality-contract.php --check proves the workflow does it: the database job's matrix carries all three declared engines, and every leg runs the complete suite — the legs without coverage through `composer test`, the canonical leg through the coverage invocation of the same suite. Assessing the criterion is then reading the run, not inspecting the workflow."
-  },
-  "checks": [
-    {
-      "id": "lockfile-integrity",
-      "title": "Composer metadata and lockfile are immutable and resolvable",
-      "purpose": "Prove the committed dependency graph installs exactly as locked and that no step rewrote composer.json or composer.lock.",
-      "owner": "release-engineering",
-      "runner": "shell",
-      "command": "composer install --no-interaction --prefer-dist --dry-run",
-      "artifact": "console",
-      "in_qa": false,
-      "excluded_from_qa_reason": "The dry run resolves against the network; qa is documented as running inside the application container.",
-      "cadence": [
-        "ci",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "lockfile",
-          "contains": "composer install --no-interaction --prefer-dist --dry-run"
+    "regression_matrix": {
+        "statement": "Nothing regressed on three engines.",
+        "criterion": "Gate A exit criterion 12",
+        "engines": [
+            "mariadb",
+            "mysql",
+            "postgresql"
+        ],
+        "suites": [
+            "unit",
+            "integration",
+            "functional",
+            "architecture"
+        ],
+        "workflow": ".github/workflows/ci.yml",
+        "job": "database",
+        "full_suite_commands": [
+            "composer test",
+            "vendor/bin/phpunit --colors=always \\"
+        ],
+        "note": "The criterion is assessable because this block names what has to be true and tools/quality-contract.php --check proves the workflow does it: the database job's matrix carries all three declared engines, and every leg runs the complete suite \u2014 the legs without coverage through `composer test`, the canonical leg through the coverage invocation of the same suite. Assessing the criterion is then reading the run, not inspecting the workflow."
+    },
+    "checks": [
+        {
+            "id": "lockfile-integrity",
+            "title": "Composer metadata and lockfile are immutable and resolvable",
+            "purpose": "Prove the committed dependency graph installs exactly as locked and that no step rewrote composer.json or composer.lock.",
+            "owner": "release-engineering",
+            "runner": "shell",
+            "command": "composer install --no-interaction --prefer-dist --dry-run",
+            "artifact": "console",
+            "in_qa": false,
+            "excluded_from_qa_reason": "The dry run resolves against the network; qa is documented as running inside the application container.",
+            "cadence": [
+                "ci",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "lockfile",
+                    "contains": "composer install --no-interaction --prefer-dist --dry-run"
+                },
+                "release": {
+                    "file": ".github/workflows/release.yml",
+                    "job": "release",
+                    "contains": "composer install --no-interaction --prefer-dist --dry-run"
+                }
+            }
         },
-        "release": {
-          "file": ".github/workflows/release.yml",
-          "job": "release",
-          "contains": "composer install --no-interaction --prefer-dist --dry-run"
-        }
-      }
-    },
-    {
-      "id": "dependency-audit",
-      "title": "Locked dependencies carry no advisory and no abandoned package",
-      "purpose": "Fail the build on a known vulnerability or an abandoned package in the locked graph.",
-      "owner": "security-engineering",
-      "runner": "composer",
-      "composer_script": "security:audit",
-      "command": "composer security:audit",
-      "artifact": "console",
-      "in_qa": false,
-      "excluded_from_qa_reason": "The audit resolves advisories over the network, which the application container does not reach.",
-      "cadence": [
-        "ci",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer audit --locked --abandoned=fail"
+        {
+            "id": "dependency-audit",
+            "title": "Locked dependencies carry no advisory and no abandoned package",
+            "purpose": "Fail the build on a known vulnerability or an abandoned package in the locked graph.",
+            "owner": "security-engineering",
+            "runner": "composer",
+            "composer_script": "security:audit",
+            "command": "composer security:audit",
+            "artifact": "console",
+            "in_qa": false,
+            "excluded_from_qa_reason": "The audit resolves advisories over the network, which the application container does not reach.",
+            "cadence": [
+                "ci",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer audit --locked --abandoned=fail"
+                },
+                "release": {
+                    "file": ".github/workflows/release.yml",
+                    "job": "release",
+                    "contains": "composer audit --locked --abandoned=fail"
+                }
+            }
         },
-        "release": {
-          "file": ".github/workflows/release.yml",
-          "job": "release",
-          "contains": "composer audit --locked --abandoned=fail"
-        }
-      }
-    },
-    {
-      "id": "secret-scan",
-      "title": "No secret-shaped literal enters the history",
-      "purpose": "Scan the branch history, not the working tree, so a literal introduced by an earlier commit is caught before the push.",
-      "owner": "security-engineering",
-      "runner": "composer",
-      "composer_script": "security:secrets",
-      "command": "composer security:secrets",
-      "artifact": "build/security/gitleaks.json",
-      "in_qa": false,
-      "excluded_from_qa_reason": "It needs a Docker daemon, and qa is documented as running inside the application container where there is none.",
-      "cadence": [
-        "ci"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/security.yml",
-          "job": "source-and-image",
-          "contains": "detect --source=/repo --no-banner --redact"
-        }
-      }
-    },
-    {
-      "id": "architecture-policy",
-      "title": "Architecture policy: textual predicates and the semantic dependency graph",
-      "purpose": "Refuse the product-name transcription error, forbidden direct dependencies, forbidden framework imports and static service location, and then evaluate every dependency edge in src/ against the declared layer graph.",
-      "owner": "platform-architecture",
-      "runner": "composer",
-      "composer_script": "architecture:policy",
-      "command": "composer architecture:policy",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer architecture:policy"
-        }
-      }
-    },
-    {
-      "id": "dependency-direction",
-      "title": "Semantic dependency direction with an expiring violation baseline",
-      "purpose": "Resolve every symbol reference in src/ to its layer and fail any edge the layer graph forbids; existing violations are held in a baseline with an owner and an expiry, and a new one fails immediately.",
-      "owner": "platform-architecture",
-      "runner": "composer",
-      "composer_script": "architecture:dependencies",
-      "command": "composer architecture:dependencies",
-      "artifact": "console",
-      "in_qa": false,
-      "excluded_from_qa_reason": "It runs inside composer architecture:policy, which qa executes; the separate script exists so it can be run and read on its own.",
-      "invoked_by": "architecture-policy",
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer architecture:policy"
-        }
-      }
-    },
-    {
-      "id": "quality-contract",
-      "title": "The quality contract matches what is executed",
-      "purpose": "Fail when this manifest and the qa script disagree in either direction, when a declared workflow or job is missing, or when a workflow no longer carries the command it is declared to run.",
-      "owner": "quality-engineering",
-      "runner": "composer",
-      "composer_script": "quality:contract",
-      "command": "composer quality:contract",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer quality:contract"
-        }
-      }
-    },
-    {
-      "id": "documentation-blocks",
-      "title": "Documentation-block completeness",
-      "purpose": "Refuse a documentable member without a block, a summary, a @since, a @param, or a @return.",
-      "owner": "platform-architecture",
-      "runner": "composer",
-      "composer_script": "docs:api",
-      "command": "composer docs:api",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "php tools/verify-docblocks.php src"
-        }
-      }
-    },
-    {
-      "id": "reproducible-baseline",
-      "title": "The reproducible baseline is current",
-      "purpose": "Hold docs/quality/baseline.json to the tree it describes (P0-A). Every figure is derived, so a route, command, migration, OpenAPI operation, recorded exemption or skip that appears or disappears without the record moving fails the build. A baseline nobody regenerates is a baseline nobody can trust; the hand-written one drifted nine hundred commits.",
-      "owner": "quality-engineering",
-      "runner": "composer",
-      "composer_script": "baseline:check",
-      "command": "composer baseline:check",
-      "artifact": "docs/quality/baseline.json",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer baseline:check"
-        }
-      }
-    },
-    {
-      "id": "test-documentation-blocks",
-      "title": "Documentation-block record for tests/",
-      "purpose": "Hold tests/ to the documentation standard src/ is held to, against a shrinking record of the debt that existed when the gate was armed (V2-QA-010). Every rule the tool checks is covered except line width, which phpcs.xml already enforces in tests/ at the same 120 characters. Entries are keyed by file, code and class-qualified member, so the recorded count is a burn-down rather than a number that can be edited down.",
-      "owner": "quality-engineering",
-      "runner": "composer",
-      "composer_script": "docs:tests",
-      "command": "composer docs:tests",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer docs:tests"
-        }
-      }
-    },
-    {
-      "id": "documentation-format",
-      "title": "Documentation-block alignment is committed, not pending",
-      "purpose": "Apply the house alignment rules and fail when the result differs from what is committed.",
-      "owner": "platform-architecture",
-      "runner": "shell",
-      "command": "php tools/format-docblocks.php src",
-      "artifact": "console",
-      "in_qa": false,
-      "excluded_from_qa_reason": "It rewrites files; qa must not mutate the working tree, so the clean-tree assertion lives in the workflow that can make it.",
-      "cadence": [
-        "ci"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "php tools/format-docblocks.php src"
-        }
-      }
-    },
-    {
-      "id": "interface-programme",
-      "title": "Interface programme coherence",
-      "purpose": "Prove every declared surface, journey and work item still resolves to something the application registers.",
-      "owner": "interface-programme",
-      "runner": "composer",
-      "composer_script": "interface:programme",
-      "command": "composer interface:programme",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer interface:programme"
-        }
-      }
-    },
-    {
-      "id": "roadmap-lifecycle",
-      "title": "The roadmap ledger and changelog retain truthful lifecycle evidence",
-      "purpose": "Fail when a finished finding is left behind in the ledger instead of moving to the changelog, or when a changelog citation no longer resolves after history is rewritten.",
-      "owner": "quality-engineering",
-      "runner": "composer",
-      "composer_script": "roadmap:check",
-      "command": "composer roadmap:check",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer roadmap:check"
-        }
-      }
-    },
-    {
-      "id": "extension-contract-freeze",
-      "title": "The public extension contract is frozen and every promised generation still installs",
-      "purpose": "Fail when the classified public surface changes without a deliberate generation bump, or when a promised manifest or SPI generation stops satisfying its signed compatibility fixture.",
-      "owner": "platform-architecture",
-      "runner": "composer",
-      "composer_script": "extension:contract",
-      "command": "composer extension:contract",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer extension:contract"
-        }
-      }
-    },
-    {
-      "id": "openapi-drift",
-      "title": "The generated OpenAPI document matches the routes that exist",
-      "purpose": "Regenerate the contract and fail when it differs from the committed artifact.",
-      "owner": "interface-programme",
-      "runner": "composer",
-      "composer_script": "openapi:check",
-      "command": "composer openapi:check",
-      "artifact": "api/openapi.json",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer openapi:check"
-        }
-      }
-    },
-    {
-      "id": "translation-catalogue",
-      "title": "Compiled message catalogues match their XLIFF source",
-      "purpose": "Fail when the committed compiled catalogue is not what the source compiles to.",
-      "owner": "localization",
-      "runner": "composer",
-      "composer_script": "translation:check",
-      "command": "composer translation:check",
-      "artifact": "resources/localization/compiled",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer translation:check"
-        }
-      }
-    },
-    {
-      "id": "translation-strings",
-      "title": "No enforced surface carries user-facing text inline",
-      "purpose": "Fail the build when a new hardcoded user-facing string is introduced.",
-      "owner": "localization",
-      "runner": "composer",
-      "composer_script": "translation:strings",
-      "command": "composer translation:strings",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer translation:strings"
-        }
-      }
-    },
-    {
-      "id": "stylesheet-direction",
-      "title": "No stylesheet pins a rule to one writing direction",
-      "purpose": "Keep the right-to-left conversion from regressing one physical declaration at a time.",
-      "owner": "localization",
-      "runner": "composer",
-      "composer_script": "assets:direction",
-      "command": "composer assets:direction",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer assets:direction"
-        }
-      }
-    },
-    {
-      "id": "coverage-attribution",
-      "title": "Behavioural tests attribute the classes they exercise",
-      "purpose": "Hold #[CoversNothing] to the reasoned allowlist in docs/quality/coverage-contract.json so a behavioural test cannot execute real code and contribute nothing to attribution.",
-      "owner": "quality-engineering",
-      "runner": "composer",
-      "composer_script": "coverage:attribution",
-      "command": "composer coverage:attribution",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer coverage:attribution"
-        }
-      }
-    },
-    {
-      "id": "coverage-ratchet",
-      "title": "Coverage does not fall, measured on the canonical engine",
-      "purpose": "Read the clover report from the canonical MariaDB leg and fail a global decrease beyond the declared tolerance.",
-      "owner": "quality-engineering",
-      "runner": "composer",
-      "composer_script": "coverage:ratchet",
-      "command": "composer coverage:ratchet",
-      "artifact": "build/coverage/attribution.json",
-      "in_qa": false,
-      "excluded_from_qa_reason": "It reads a clover report produced by a coverage-instrumented full-suite run against a live database, which a local qa invocation does not produce.",
-      "cadence": [
-        "ci"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [
-        "mariadb"
-      ],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "database",
-          "contains": "composer coverage:ratchet"
-        }
-      }
-    },
-    {
-      "id": "integration-idempotency",
-      "title": "The integration suite against a reused database, judged against a shrinking baseline",
-      "purpose": "Run the integration suite a second time against the database the first run left behind and fail on any test that is not in the pass-aware record in docs/quality/idempotency-baseline.json. The suite was not idempotent when V2-QA-004 was recorded; the baseline was that finding's reproduction, it only ever shrinks, and it is empty now that every recorded test rolls its installation-global state back or mints per-run identities. Reverse class order remains an explicitly pending measurement available through --pass=reverse, not a property this per-change lane claims to enforce.",
-      "owner": "quality-engineering",
-      "runner": "composer",
-      "command": "composer test:idempotency -- --engine=ID",
-      "artifact": "build/idempotency/*.junit.xml",
-      "in_qa": false,
-      "excluded_from_qa_reason": "It needs a live database that has already carried one full integration run, which a local qa invocation does not produce.",
-      "cadence": [
-        "ci"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "database",
-          "contains": "composer test:idempotency"
-        }
-      },
-      "composer_script": "test:idempotency"
-    },
-    {
-      "id": "deployed-artifact",
-      "title": "The deployed artifact runs its own regression cases",
-      "purpose": "Exercise the production autoloader, the --no-dev dependency set, a read-only tree and the real console binary early enough to fail before a deployment is stood up, and reproduce the four defects the last programme found only in deployment acceptance.",
-      "owner": "quality-engineering",
-      "runner": "composer",
-      "composer_script": "test:artifact",
-      "command": "composer test:artifact",
-      "artifact": "build/deployed-artifact/report.json",
-      "in_qa": false,
-      "excluded_from_qa_reason": "It builds a separate --no-dev installation of the archived artifact, which takes minutes and needs the network; qa stays the fast local gate.",
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "artifact",
-          "contains": "composer test:artifact"
-        }
-      }
-    },
-    {
-      "id": "coding-standard",
-      "title": "PSR-12 layout and the 120-column limit",
-      "purpose": "Keep the tree in one shape so a diff shows meaning rather than formatting.",
-      "owner": "platform-architecture",
-      "runner": "composer",
-      "composer_script": "cs",
-      "command": "composer cs",
-      "artifact": "phpcbf.patch",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer cs"
-        }
-      }
-    },
-    {
-      "id": "static-analysis",
-      "title": "PHPStan at level max",
-      "purpose": "Refuse a type error, a widened array shape or an impossible condition before it reaches a test.",
-      "owner": "platform-architecture",
-      "runner": "composer",
-      "composer_script": "analyse",
-      "command": "composer analyse",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "quality",
-          "contains": "composer analyse"
-        }
-      }
-    },
-    {
-      "id": "test-suite",
-      "title": "The complete PHPUnit suite on every declared engine",
-      "purpose": "Run unit, integration, functional and architecture suites against MariaDB, MySQL and PostgreSQL, which is the evidence Gate A exit criterion 12 is assessed on.",
-      "owner": "quality-engineering",
-      "runner": "composer",
-      "composer_script": "test",
-      "command": "composer test",
-      "artifact": "console",
-      "in_qa": true,
-      "cadence": [
-        "local",
-        "ci",
-        "nightly",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "database",
-          "contains": "composer test"
-        }
-      }
-    },
-    {
-      "id": "frontend-build",
-      "title": "Administrator frontend type-checks and rebuilds to the committed bytes",
-      "purpose": "Fail when the committed browser assets are not what the locked toolchain produces.",
-      "owner": "frontend",
-      "runner": "npm",
-      "command": "npm run check",
-      "artifact": "public/assets/build",
-      "in_qa": false,
-      "excluded_from_qa_reason": "It is the frontend contract and runs under Node, not under the PHP entry point. It is a merge and nightly gate rather than a release one because the artifact it guards — public/assets/build — is committed, verified byte for byte at merge, and travels into the release archive unchanged.",
-      "cadence": [
-        "ci",
-        "nightly"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "frontend",
-          "contains": "npm run check"
+        {
+            "id": "secret-scan",
+            "title": "No secret-shaped literal enters the history",
+            "purpose": "Scan the branch history, not the working tree, so a literal introduced by an earlier commit is caught before the push.",
+            "owner": "security-engineering",
+            "runner": "composer",
+            "composer_script": "security:secrets",
+            "command": "composer security:secrets",
+            "artifact": "build/security/gitleaks.json",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It needs a Docker daemon, and qa is documented as running inside the application container where there is none.",
+            "cadence": [
+                "ci"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/security.yml",
+                    "job": "source-and-image",
+                    "contains": "detect --source=/repo --no-banner --redact"
+                }
+            }
         },
-        "nightly": {
-          "file": ".github/workflows/nightly.yml",
-          "job": "browser",
-          "contains": "npm run check"
-        }
-      }
-    },
-    {
-      "id": "browser-matrix",
-      "title": "Browser, accessibility and visual journeys on every declared engine",
-      "purpose": "Run the critical administrator, portal, generated-business, owned-line, maker-checker, step-up, policy-denial, no-JavaScript and website journeys against all three engines at merge, and report first-attempt results separately from retried ones. The two further browser engines are the nightly breadth check, declared separately.",
-      "owner": "frontend",
-      "runner": "npm",
-      "command": "npm run test:browser",
-      "artifact": "test-results/browser-attempts.json",
-      "in_qa": false,
-      "excluded_from_qa_reason": "It needs a browser runtime, a live database and a running web server.",
-      "cadence": [
-        "ci"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "browser",
-          "contains": "npm run test:browser"
-        }
-      }
-    },
-    {
-      "id": "browser-engine-breadth",
-      "title": "Firefox and WebKit journeys, nightly",
-      "purpose": "Carry the same behavioural and accessibility journeys onto the two engines merge does not have time for; pixel baselines stay with Chromium and these projects declare that they ignore snapshots rather than comparing against a baseline that was never theirs.",
-      "owner": "frontend",
-      "runner": "npm",
-      "command": "npm run test:browser:breadth",
-      "artifact": "test-results/browser-attempts.json",
-      "in_qa": false,
-      "excluded_from_qa_reason": "Two further browser engines do not fit the merge budget, which is why they are nightly.",
-      "cadence": [
-        "nightly"
-      ],
-      "maximum_interval": "daily",
-      "engines": [
-        "mariadb"
-      ],
-      "workflows": {
-        "nightly": {
-          "file": ".github/workflows/nightly.yml",
-          "job": "browser",
-          "contains": "npm run test:browser:breadth"
-        }
-      }
-    },
-    {
-      "id": "deployment-acceptance",
-      "title": "Complete deployment acceptance against the built images",
-      "purpose": "Stand the deployment up on every supported engine and both distribution formats and probe it.",
-      "owner": "release-engineering",
-      "runner": "workflow",
-      "command": ".github/workflows/deployment-acceptance.yml",
-      "artifact": "deployment evidence",
-      "in_qa": false,
-      "excluded_from_qa_reason": "It builds and runs containers; qa runs inside one.",
-      "cadence": [
-        "ci",
-        "release"
-      ],
-      "maximum_interval": "per-change",
-      "engines": [
-        "mariadb",
-        "mysql",
-        "postgresql"
-      ],
-      "workflows": {
-        "ci": {
-          "file": ".github/workflows/ci.yml",
-          "job": "deployment",
-          "contains": "uses: ./.github/workflows/deployment-acceptance.yml"
+        {
+            "id": "architecture-policy",
+            "title": "Architecture policy: textual predicates and the semantic dependency graph",
+            "purpose": "Refuse the product-name transcription error, forbidden direct dependencies, forbidden framework imports and static service location, and then evaluate every dependency edge in src/ against the declared layer graph.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "architecture:policy",
+            "command": "composer architecture:policy",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer architecture:policy"
+                }
+            }
         },
-        "release": {
-          "file": ".github/workflows/release.yml",
-          "job": "acceptance",
-          "contains": "uses: ./.github/workflows/deployment-acceptance.yml"
+        {
+            "id": "dependency-direction",
+            "title": "Semantic dependency direction with an expiring violation baseline",
+            "purpose": "Resolve every symbol reference in src/ to its layer and fail any edge the layer graph forbids; existing violations are held in a baseline with an owner and an expiry, and a new one fails immediately.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "architecture:dependencies",
+            "command": "composer architecture:dependencies",
+            "artifact": "console",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It runs inside composer architecture:policy, which qa executes; the separate script exists so it can be run and read on its own.",
+            "invoked_by": "architecture-policy",
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer architecture:policy"
+                }
+            }
+        },
+        {
+            "id": "quality-contract",
+            "title": "The quality contract matches what is executed",
+            "purpose": "Fail when this manifest and the qa script disagree in either direction, when a declared workflow or job is missing, or when a workflow no longer carries the command it is declared to run.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "quality:contract",
+            "command": "composer quality:contract",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer quality:contract"
+                }
+            }
+        },
+        {
+            "id": "documentation-blocks",
+            "title": "Documentation-block completeness",
+            "purpose": "Refuse a documentable member without a block, a summary, a @since, a @param, or a @return.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "docs:api",
+            "command": "composer docs:api",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "php tools/verify-docblocks.php src"
+                }
+            }
+        },
+        {
+            "id": "documentation-block-formatting",
+            "title": "Documentation blocks are in their canonical form",
+            "purpose": "Run the formatter in check mode and fail when it would still change a block. CI already formats src/ and refuses any resulting diff, but nothing local did, so a hand-aligned block passed composer qa and failed the merge lane on alignment alone. Declaring it here makes the local lane answer the same question as CI rather than a weaker one.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "docs:format:check",
+            "command": "composer docs:format:check",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "php tools/format-docblocks.php src"
+                }
+            }
+        },
+        {
+            "id": "reproducible-baseline",
+            "title": "The reproducible baseline is current",
+            "purpose": "Hold docs/quality/baseline.json to the tree it describes (P0-A). Every figure is derived, so a route, command, migration, OpenAPI operation, recorded exemption or skip that appears or disappears without the record moving fails the build. A baseline nobody regenerates is a baseline nobody can trust; the hand-written one drifted nine hundred commits.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "baseline:check",
+            "command": "composer baseline:check",
+            "artifact": "docs/quality/baseline.json",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer baseline:check"
+                }
+            }
+        },
+        {
+            "id": "test-documentation-blocks",
+            "title": "Documentation-block record for tests/",
+            "purpose": "Hold tests/ to the documentation standard src/ is held to, against a shrinking record of the debt that existed when the gate was armed (V2-QA-010). Every rule the tool checks is covered except line width, which phpcs.xml already enforces in tests/ at the same 120 characters. Entries are keyed by file, code and class-qualified member, so the recorded count is a burn-down rather than a number that can be edited down.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "docs:tests",
+            "command": "composer docs:tests",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer docs:tests"
+                }
+            }
+        },
+        {
+            "id": "documentation-format",
+            "title": "Documentation-block alignment is committed, not pending",
+            "purpose": "Apply the house alignment rules and fail when the result differs from what is committed.",
+            "owner": "platform-architecture",
+            "runner": "shell",
+            "command": "php tools/format-docblocks.php src",
+            "artifact": "console",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It rewrites files; qa must not mutate the working tree, so the clean-tree assertion lives in the workflow that can make it.",
+            "cadence": [
+                "ci"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "php tools/format-docblocks.php src"
+                }
+            }
+        },
+        {
+            "id": "interface-programme",
+            "title": "Interface programme coherence",
+            "purpose": "Prove every declared surface, journey and work item still resolves to something the application registers.",
+            "owner": "interface-programme",
+            "runner": "composer",
+            "composer_script": "interface:programme",
+            "command": "composer interface:programme",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer interface:programme"
+                }
+            }
+        },
+        {
+            "id": "roadmap-lifecycle",
+            "title": "The roadmap ledger and changelog retain truthful lifecycle evidence",
+            "purpose": "Fail when a finished finding is left behind in the ledger instead of moving to the changelog, or when a changelog citation no longer resolves after history is rewritten.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "roadmap:check",
+            "command": "composer roadmap:check",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer roadmap:check"
+                }
+            }
+        },
+        {
+            "id": "extension-contract-freeze",
+            "title": "The public extension contract is frozen and every promised generation still installs",
+            "purpose": "Fail when the classified public surface changes without a deliberate generation bump, or when a promised manifest or SPI generation stops satisfying its signed compatibility fixture.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "extension:contract",
+            "command": "composer extension:contract",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer extension:contract"
+                }
+            }
+        },
+        {
+            "id": "openapi-drift",
+            "title": "The generated OpenAPI document matches the routes that exist",
+            "purpose": "Regenerate the contract and fail when it differs from the committed artifact.",
+            "owner": "interface-programme",
+            "runner": "composer",
+            "composer_script": "openapi:check",
+            "command": "composer openapi:check",
+            "artifact": "api/openapi.json",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer openapi:check"
+                }
+            }
+        },
+        {
+            "id": "translation-catalogue",
+            "title": "Compiled message catalogues match their XLIFF source",
+            "purpose": "Fail when the committed compiled catalogue is not what the source compiles to.",
+            "owner": "localization",
+            "runner": "composer",
+            "composer_script": "translation:check",
+            "command": "composer translation:check",
+            "artifact": "resources/localization/compiled",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer translation:check"
+                }
+            }
+        },
+        {
+            "id": "translation-strings",
+            "title": "No enforced surface carries user-facing text inline",
+            "purpose": "Fail the build when a new hardcoded user-facing string is introduced.",
+            "owner": "localization",
+            "runner": "composer",
+            "composer_script": "translation:strings",
+            "command": "composer translation:strings",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer translation:strings"
+                }
+            }
+        },
+        {
+            "id": "stylesheet-direction",
+            "title": "No stylesheet pins a rule to one writing direction",
+            "purpose": "Keep the right-to-left conversion from regressing one physical declaration at a time.",
+            "owner": "localization",
+            "runner": "composer",
+            "composer_script": "assets:direction",
+            "command": "composer assets:direction",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer assets:direction"
+                }
+            }
+        },
+        {
+            "id": "coverage-attribution",
+            "title": "Behavioural tests attribute the classes they exercise",
+            "purpose": "Hold #[CoversNothing] to the reasoned allowlist in docs/quality/coverage-contract.json so a behavioural test cannot execute real code and contribute nothing to attribution.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "coverage:attribution",
+            "command": "composer coverage:attribution",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer coverage:attribution"
+                }
+            }
+        },
+        {
+            "id": "coverage-ratchet",
+            "title": "Coverage does not fall, measured on the canonical engine",
+            "purpose": "Read the clover report from the canonical MariaDB leg and fail a global decrease beyond the declared tolerance.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "coverage:ratchet",
+            "command": "composer coverage:ratchet",
+            "artifact": "build/coverage/attribution.json",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It reads a clover report produced by a coverage-instrumented full-suite run against a live database, which a local qa invocation does not produce.",
+            "cadence": [
+                "ci"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [
+                "mariadb"
+            ],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "database",
+                    "contains": "composer coverage:ratchet"
+                }
+            }
+        },
+        {
+            "id": "integration-idempotency",
+            "title": "The integration suite against a reused database, judged against a shrinking baseline",
+            "purpose": "Run the integration suite a second time against the database the first run left behind and fail on any test that is not in the pass-aware record in docs/quality/idempotency-baseline.json. The suite was not idempotent when V2-QA-004 was recorded; the baseline was that finding's reproduction, it only ever shrinks, and it is empty now that every recorded test rolls its installation-global state back or mints per-run identities. Reverse class order remains an explicitly pending measurement available through --pass=reverse, not a property this per-change lane claims to enforce.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "command": "composer test:idempotency -- --engine=ID",
+            "artifact": "build/idempotency/*.junit.xml",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It needs a live database that has already carried one full integration run, which a local qa invocation does not produce.",
+            "cadence": [
+                "ci"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [
+                "mariadb",
+                "mysql",
+                "postgresql"
+            ],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "database",
+                    "contains": "composer test:idempotency"
+                }
+            },
+            "composer_script": "test:idempotency"
+        },
+        {
+            "id": "deployed-artifact",
+            "title": "The deployed artifact runs its own regression cases",
+            "purpose": "Exercise the production autoloader, the --no-dev dependency set, a read-only tree and the real console binary early enough to fail before a deployment is stood up, and reproduce the four defects the last programme found only in deployment acceptance.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "test:artifact",
+            "command": "composer test:artifact",
+            "artifact": "build/deployed-artifact/report.json",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It builds a separate --no-dev installation of the archived artifact, which takes minutes and needs the network; qa stays the fast local gate.",
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "artifact",
+                    "contains": "composer test:artifact"
+                }
+            }
+        },
+        {
+            "id": "coding-standard",
+            "title": "PSR-12 layout and the 120-column limit",
+            "purpose": "Keep the tree in one shape so a diff shows meaning rather than formatting.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "cs",
+            "command": "composer cs",
+            "artifact": "phpcbf.patch",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer cs"
+                }
+            }
+        },
+        {
+            "id": "static-analysis",
+            "title": "PHPStan at level max",
+            "purpose": "Refuse a type error, a widened array shape or an impossible condition before it reaches a test.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "analyse",
+            "command": "composer analyse",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer analyse"
+                }
+            }
+        },
+        {
+            "id": "test-suite",
+            "title": "The complete PHPUnit suite on every declared engine",
+            "purpose": "Run unit, integration, functional and architecture suites against MariaDB, MySQL and PostgreSQL, which is the evidence Gate A exit criterion 12 is assessed on.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "test",
+            "command": "composer test",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [
+                "mariadb",
+                "mysql",
+                "postgresql"
+            ],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "database",
+                    "contains": "composer test"
+                }
+            }
+        },
+        {
+            "id": "frontend-build",
+            "title": "Administrator frontend type-checks and rebuilds to the committed bytes",
+            "purpose": "Fail when the committed browser assets are not what the locked toolchain produces.",
+            "owner": "frontend",
+            "runner": "npm",
+            "command": "npm run check",
+            "artifact": "public/assets/build",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It is the frontend contract and runs under Node, not under the PHP entry point. It is a merge and nightly gate rather than a release one because the artifact it guards \u2014 public/assets/build \u2014 is committed, verified byte for byte at merge, and travels into the release archive unchanged.",
+            "cadence": [
+                "ci",
+                "nightly"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "frontend",
+                    "contains": "npm run check"
+                },
+                "nightly": {
+                    "file": ".github/workflows/nightly.yml",
+                    "job": "browser",
+                    "contains": "npm run check"
+                }
+            }
+        },
+        {
+            "id": "browser-matrix",
+            "title": "Browser, accessibility and visual journeys on every declared engine",
+            "purpose": "Run the critical administrator, portal, generated-business, owned-line, maker-checker, step-up, policy-denial, no-JavaScript and website journeys against all three engines at merge, and report first-attempt results separately from retried ones. The two further browser engines are the nightly breadth check, declared separately.",
+            "owner": "frontend",
+            "runner": "npm",
+            "command": "npm run test:browser",
+            "artifact": "test-results/browser-attempts.json",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It needs a browser runtime, a live database and a running web server.",
+            "cadence": [
+                "ci"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [
+                "mariadb",
+                "mysql",
+                "postgresql"
+            ],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "browser",
+                    "contains": "npm run test:browser"
+                }
+            }
+        },
+        {
+            "id": "browser-engine-breadth",
+            "title": "Firefox and WebKit journeys, nightly",
+            "purpose": "Carry the same behavioural and accessibility journeys onto the two engines merge does not have time for; pixel baselines stay with Chromium and these projects declare that they ignore snapshots rather than comparing against a baseline that was never theirs.",
+            "owner": "frontend",
+            "runner": "npm",
+            "command": "npm run test:browser:breadth",
+            "artifact": "test-results/browser-attempts.json",
+            "in_qa": false,
+            "excluded_from_qa_reason": "Two further browser engines do not fit the merge budget, which is why they are nightly.",
+            "cadence": [
+                "nightly"
+            ],
+            "maximum_interval": "daily",
+            "engines": [
+                "mariadb"
+            ],
+            "workflows": {
+                "nightly": {
+                    "file": ".github/workflows/nightly.yml",
+                    "job": "browser",
+                    "contains": "npm run test:browser:breadth"
+                }
+            }
+        },
+        {
+            "id": "deployment-acceptance",
+            "title": "Complete deployment acceptance against the built images",
+            "purpose": "Stand the deployment up on every supported engine and both distribution formats and probe it.",
+            "owner": "release-engineering",
+            "runner": "workflow",
+            "command": ".github/workflows/deployment-acceptance.yml",
+            "artifact": "deployment evidence",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It builds and runs containers; qa runs inside one.",
+            "cadence": [
+                "ci",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [
+                "mariadb",
+                "mysql",
+                "postgresql"
+            ],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "deployment",
+                    "contains": "uses: ./.github/workflows/deployment-acceptance.yml"
+                },
+                "release": {
+                    "file": ".github/workflows/release.yml",
+                    "job": "acceptance",
+                    "contains": "uses: ./.github/workflows/deployment-acceptance.yml"
+                }
+            }
         }
-      }
-    }
-  ]
+    ]
 }
