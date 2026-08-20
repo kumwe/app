@@ -390,15 +390,28 @@ try {
             $at,
         );
     });
-    // One approval identity per Playwright project, not per device family. TOTP enrollment is a
-    // once-per-account operation, and the nightly runs desktop-firefox and desktop-webkit in one
-    // invocation against one database, so two projects sharing an account leave the second unable to
-    // enroll -- which showed up only as a bare ninety-second timeout. The retry index gives each attempt
-    // of a project its own untouched identity. This list must gain any new project that runs
-    // portal.spec.ts; the four right-to-left projects are absent because `testMatch` confines them to
-    // right-to-left.spec.ts, which never enrolls an authenticator.
-    foreach (['desktop-chromium', 'mobile-chromium', 'desktop-firefox', 'desktop-webkit'] as $project) {
-        foreach ([0, 1] as $retry) {
+    // The projects and the retry budget come from tests/Browser/projects.json, the same file
+    // playwright.config.ts builds its matrix from, so a project cannot run the portal journeys without
+    // an approval identity: adding it to the manifest is what creates both. Only `all` projects reach
+    // the maker-checker journey -- the right-to-left projects are confined to a spec that never enrolls
+    // an authenticator. TOTP enrollment is a once-per-account operation, so each project needs its own
+    // pair, and each attempt of a project needs one the previous attempt has not already consumed.
+    $matrixPath = dirname(__DIR__) . '/Browser/projects.json';
+    $matrixJson = file_get_contents($matrixPath);
+    if (!is_string($matrixJson)) {
+        throw new RuntimeException('The browser project manifest cannot be read.');
+    }
+    /** @var array{retries: int, projects: list<array{name: string, specs: string}>} $matrix */
+    $matrix = json_decode($matrixJson, true, 512, JSON_THROW_ON_ERROR);
+    $approvalProjects = [];
+    foreach ($matrix['projects'] as $matrixProject) {
+        if ($matrixProject['specs'] === 'all') {
+            $approvalProjects[] = $matrixProject['name'];
+        }
+    }
+    $approvalAttempts = range(0, $matrix['retries']);
+    foreach ($approvalProjects as $project) {
+        foreach ($approvalAttempts as $retry) {
             foreach (['maker', 'approver'] as $approvalActor) {
                 $approvalUser = $access->createUser(
                     $context,

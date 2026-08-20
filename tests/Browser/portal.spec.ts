@@ -1082,7 +1082,10 @@ test('portal maker-checker approval requires a distinct step-up identity', async
   // second unable to enroll. The device family stays a separate value because it still drives emulation.
   const project = testInfo.project.name;
   const isMobileProject = testInfo.project.name.startsWith('mobile-');
-  const retry = Math.min(testInfo.retry, 1);
+  // The seeder provisions one identity per attempt from tests/Browser/projects.json's retry budget,
+  // and Playwright's retry index is bounded by that same number, so the attempt needs no clamp of
+  // its own -- a clamp here would silently reuse a consumed enrollment if the budget ever rose.
+  const retry = testInfo.retry;
   const makerEmail = `browser-maker-${project}-${retry}@kumwe.test`;
   const makerPassword = `browser ${project} maker password ${retry}`;
   await signIn(page, makerEmail, makerPassword);
