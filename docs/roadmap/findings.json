@@ -1,1193 +1,1243 @@
 {
-  "ledger": "kumwe-consolidated-findings",
-  "version": "2.0.0",
-  "verified_at_sha": "7a83c295bce6c23f250384ba787dd5e4595fff0e",
-  "authority": "docs/roadmap/README.md",
-  "completed_work": "CHANGELOG.md",
-  "note": "This ledger holds open work only. A finding that reaches 'closed' leaves this file in the same change that closes it, and its substance becomes an entry in CHANGELOG.md under the category it belongs to; the roadmap therefore shrinks as the programme advances instead of accumulating a tail of finished items. 'closed' is deliberately absent from states for that reason, and tools/verify-roadmap.php fails the build when an entry carries it. Every source anchor in this file was resolved against the repository at verified_at_sha. The 56 entries closed before this rule was introduced were moved to CHANGELOG.md with the commits that closed them.",
-  "states": [
-    "open",
-    "reproduced",
-    "decision_required",
-    "accepted_for_implementation",
-    "in_progress",
-    "verified",
-    "conditional",
-    "external"
-  ],
-  "owner_placeholder": "UNASSIGNED",
-  "findings": [
-    {
-      "id": "V2-ARC-002",
-      "title": "BusinessRecordService owns too many use cases",
-      "severity": "medium",
-      "state": "open",
-      "phase": "M",
-      "gate": null,
-      "origin": "review",
-      "source_anchors": [
+    "ledger": "kumwe-consolidated-findings",
+    "version": "2.0.0",
+    "verified_at_sha": "7a83c295bce6c23f250384ba787dd5e4595fff0e",
+    "authority": "docs/roadmap/README.md",
+    "completed_work": "CHANGELOG.md",
+    "note": "This ledger holds open work only. A finding that reaches 'closed' leaves this file in the same change that closes it, and its substance becomes an entry in CHANGELOG.md under the category it belongs to; the roadmap therefore shrinks as the programme advances instead of accumulating a tail of finished items. 'closed' is deliberately absent from states for that reason, and tools/verify-roadmap.php fails the build when an entry carries it. Every source anchor in this file was resolved against the repository at verified_at_sha. The 56 entries closed before this rule was introduced were moved to CHANGELOG.md with the commits that closed them.",
+    "states": [
+        "open",
+        "reproduced",
+        "decision_required",
+        "accepted_for_implementation",
+        "in_progress",
+        "verified",
+        "conditional",
+        "external"
+    ],
+    "owner_placeholder": "UNASSIGNED",
+    "findings": [
         {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "BusinessRecordService",
-          "note": "3,673 lines on the verified SHA, unchanged since the review's pinned revision."
-        }
-      ],
-      "acceptance_test": "Each extracted collaborator owns a coherent invariant, has explicit typed input and output, and is independently testable without duplicating application authorization or transaction policy. The facade's method signatures, errors, audit actions and event semantics are unchanged, proven by the existing cross-surface parity suite.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "Removed from the critical path. Only the seams the aggregate command and the scale work require are extracted, in phase 3. The remainder runs in lane M, parallel to or after scale work, and never blocks a gate."
-    },
-    {
-      "id": "V2-SCL-001",
-      "title": "The definition-wide exclusive mutation fence serializes writes to unrelated records",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "5",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
-          "symbol": "DoctrineBusinessRecordMutationFence::lock()",
-          "note": "Line 76. Acquires the schema-installation row with FOR UPDATE and holds it for the caller's whole record transaction."
+            "id": "V2-ARC-002",
+            "title": "BusinessRecordService owns too many use cases",
+            "severity": "medium",
+            "state": "open",
+            "phase": "M",
+            "gate": null,
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "src/BusinessRecord/Application/BusinessRecordService.php",
+                    "symbol": "BusinessRecordService",
+                    "note": "3,673 lines on the verified SHA, unchanged since the review's pinned revision."
+                }
+            ],
+            "acceptance_test": "Each extracted collaborator owns a coherent invariant, has explicit typed input and output, and is independently testable without duplicating application authorization or transaction policy. The facade's method signatures, errors, audit actions and event semantics are unchanged, proven by the existing cross-surface parity suite.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "Removed from the critical path. Only the seams the aggregate command and the scale work require are extracted, in phase 3. The remainder runs in lane M, parallel to or after scale work, and never blocks a gate."
         },
         {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "mutationFence->lock() call sites",
-          "note": "Lines 1341, 1504, 1659, 2042, 2173, 2286, 2723 and 3614 — every write path."
+            "id": "V2-SCL-001",
+            "title": "The definition-wide exclusive mutation fence serializes writes to unrelated records",
+            "severity": "high",
+            "state": "reproduced",
+            "phase": "5",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
+                    "symbol": "DoctrineBusinessRecordMutationFence::lock()",
+                    "note": "Line 76. Acquires the schema-installation row with FOR UPDATE and holds it for the caller's whole record transaction."
+                },
+                {
+                    "file": "src/BusinessRecord/Application/BusinessRecordService.php",
+                    "symbol": "mutationFence->lock() call sites",
+                    "note": "Lines 1341, 1504, 1659, 2042, 2173, 2286, 2723 and 3614 — every write path."
+                },
+                {
+                    "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
+                    "symbol": "DoctrineBusinessRecordMutationFence::shared()",
+                    "note": "Line 110. A shared fence already exists (LOCK IN SHARE MODE on MySQL, FOR SHARE on PostgreSQL) and is used by read paths only. It is the natural seam for the generation-aware protocol."
+                }
+            ],
+            "acceptance_test": "Two writers on unrelated records under one definition demonstrably overlap. Two writes to the same expected record version produce one winner and one stable stale-version error. A schema transition waits for in-flight writers and blocks new writers on the old generation. Rollback or crash releases or safely expires authority. Disable and trust revocation win without executing stale extension code. Success is measured as reduced lock-wait and transaction time at target load, not as different SQL text.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
-          "symbol": "DoctrineBusinessRecordMutationFence::shared()",
-          "note": "Line 110. A shared fence already exists (LOCK IN SHARE MODE on MySQL, FOR SHARE on PostgreSQL) and is used by read paths only. It is the natural seam for the generation-aware protocol."
-        }
-      ],
-      "acceptance_test": "Two writers on unrelated records under one definition demonstrably overlap. Two writes to the same expected record version produce one winner and one stable stale-version error. A schema transition waits for in-flight writers and blocks new writers on the old generation. Rollback or crash releases or safely expires authority. Disable and trust revocation win without executing stale extension code. Success is measured as reduced lock-wait and transaction time at target load, not as different SQL text.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-SCL-002",
-      "title": "A singleton projection event head is locked and updated inside the authoritative business transaction",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "5",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/BusinessIntegration/Infrastructure/DoctrineOutboxStore.php",
-          "symbol": "the business_projection_event_head read and update",
-          "note": "Lines 140-181. A locking read of singleton_id = 1, then a guarded UPDATE of last_sequence, both inside the caller's transaction. Every event-producing commit contends on one installation-wide row."
-        }
-      ],
-      "acceptance_test": "Concurrent commits do not contend on the head row. A transaction that allocates then rolls back creates no visible event. A sequencer crash before or after range allocation is replay-safe and leaves no permanently missing event. Concurrent sequencers cannot duplicate or skip source rows. The sequence is monotonic and no projection checkpoint passes an unsequenced committed event in scope. Backlog sequencing reaches at least twice peak ingest with observable age and rate.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-SCL-004",
-      "title": "The seeded idempotency purge ceiling is two orders of magnitude below enterprise ingress",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "5",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
-          "symbol": "the seeded schedule row",
-          "note": "Line 60 seeds cron_expression '43 * * * *' and line 65 seeds payload {\"batch_size\": 500, \"maximum_batches\": 10}. That is 5,000 rows per hour, 120,000 per day."
+            "id": "V2-SCL-002",
+            "title": "A singleton projection event head is locked and updated inside the authoritative business transaction",
+            "severity": "high",
+            "state": "reproduced",
+            "phase": "5",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "src/BusinessIntegration/Infrastructure/DoctrineOutboxStore.php",
+                    "symbol": "the business_projection_event_head read and update",
+                    "note": "Lines 140-181. A locking read of singleton_id = 1, then a guarded UPDATE of last_sequence, both inside the caller's transaction. Every event-producing commit contends on one installation-wide row."
+                }
+            ],
+            "acceptance_test": "Concurrent commits do not contend on the head row. A transaction that allocates then rolls back creates no visible event. A sequencer crash before or after range allocation is replay-safe and leaves no permanently missing event. Concurrent sequencers cannot duplicate or skip source rows. The sequence is monotonic and no projection checkpoint passes an unsequenced committed event in scope. Backlog sequencing reaches at least twice peak ingest with observable age and rate.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php",
-          "symbol": "BusinessRecordIdempotencyPurger::purge()",
-          "note": "Line 57. The batch is bounded to 1 to 1000 entries per call."
-        }
-      ],
-      "acceptance_test": "Maintenance throughput sustains at least twice the peak expiry rate while the ordinary workload continues, measured at the enterprise profile. Ingest rate, expiry rate, drain rate, backlog, oldest age and forecast-to-capacity are exposed as metrics. Enterprise readiness warns or fails when a required retention setting is absent or the drain slope predicts exhaustion.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-SCL-005",
-      "title": "Durable gauges compute exact aggregates on the primary at scrape time",
-      "severity": "medium",
-      "state": "open",
-      "phase": "5",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Observability/RuntimeMetricCollector.php",
-          "symbol": "the durable gauge queries",
-          "note": "COUNT(*) at lines 208 and 227, MIN() at line 270 and MAX() at line 289. The statement count is bounded; the work of an exact count is not bounded by it."
-        }
-      ],
-      "acceptance_test": "Every durable gauge query is benchmarked at representative table size on all three engines. Any gauge exceeding its budget is replaced by a sharded incremental counter or an asynchronously reconciled snapshot, exposed as approximate while durable rows remain authoritative, with an operator-only exact diagnostic carrying an explicit cost and timeout.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-SCL-006",
-      "title": "Integration fan-out executes every consumer and webhook serially in the dispatcher path",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "5",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransport.php",
-          "symbol": "RuntimeIntegrationEventTransport::publish()",
-          "note": "Line 91. Iterates executable event-consumer entries at line 106 and webhook entries at line 132 in the calling path."
+            "id": "V2-SCL-004",
+            "title": "The seeded idempotency purge ceiling is two orders of magnitude below enterprise ingress",
+            "severity": "high",
+            "state": "reproduced",
+            "phase": "5",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
+                    "symbol": "the seeded schedule row",
+                    "note": "Line 60 seeds cron_expression '43 * * * *' and line 65 seeds payload {\"batch_size\": 500, \"maximum_batches\": 10}. That is 5,000 rows per hour, 120,000 per day."
+                },
+                {
+                    "file": "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php",
+                    "symbol": "BusinessRecordIdempotencyPurger::purge()",
+                    "note": "Line 57. The batch is bounded to 1 to 1000 entries per call."
+                }
+            ],
+            "acceptance_test": "Maintenance throughput sustains at least twice the peak expiry rate while the ordinary workload continues, measured at the enterprise profile. Ingest rate, expiry rate, drain rate, backlog, oldest age and forecast-to-capacity are exposed as metrics. Enterprise readiness warns or fails when a required retention setting is absent or the drain slope predicts exhaustion.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "src/BusinessIntegration/Application/IntegrationEventConsumerDispatcher.php",
-          "symbol": "IntegrationEventConsumerDispatcher",
-          "note": "The dispatcher the serial loop drives."
-        }
-      ],
-      "acceptance_test": "Independent (consumer, event) receipt rows are materialised in one short transaction and claimed in batches by worker pools. A slow, failing or rate-limited consumer does not delay unrelated consumers. Scenarios: fan-out 3 and 10, one hung consumer, poison payload, crash between claim and effect and settlement, generation change with queued work, retry storm, rate limit, downstream outage, and backlog recovery while new traffic continues.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-SCL-007",
-      "title": "Declared-queue claims take a policy-row mutex and count live leases on the hot path",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "5",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Automation/DoctrineJobQueue.php",
-          "symbol": "the queue-policy lock and live-lease count",
-          "note": "Line 968 takes the queue_policy row with FOR UPDATE; lines 985 and 990 then run COUNT(*) over reserved rows with unexpired leases. The ordinary claim at line 270 already uses FOR UPDATE SKIP LOCKED, so the mutex is specific to contributed queues with a declared ceiling."
-        }
-      ],
-      "acceptance_test": "A configured queue owns durable concurrency slots claimed with portable leasing. One claim transaction may lease a batch where ordering permits. Completion, expiry, cancellation and recovery release the slot safely. No over-claim beyond declared tolerance, no starvation, bounded recovery after SIGKILL, and no site or organization able to monopolise worker capacity.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-SCL-008",
-      "title": "Hot correctness ledgers have no enterprise hot-and-cold retention budget",
-      "severity": "high",
-      "state": "open",
-      "phase": "5",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
-          "symbol": "the only shipped record-side retention schedule",
-          "note": "Business command idempotency is the only business ledger with a seeded purge. Audit retention exists but is seeded disabled with a zero window (GM-AUD-07); revisions, outbox source events, sequenced journals, inbox receipts and job attempts have no declared budget."
-        }
-      ],
-      "acceptance_test": "Every hot store declares authoritative purpose, minimum retention, immutability, expiry index or partition strategy, hot and warm and archived state, batch and time and lock and replication budgets, its six retention metrics, backup and restore and legal-hold behaviour, and its failure and reconciliation procedure. Audit pruning happens only after a verifiable anchor is committed and the off-host archive is proven restorable.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-QA-004",
-      "title": "The integration suite is not idempotent against a reused database, and six tests prove it",
-      "severity": "medium",
-      "state": "reproduced",
-      "phase": "2",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "docs/quality/idempotency-baseline.json",
-          "symbol": "entries",
-          "note": "Six tests across four classes fail when the integration suite runs a second time against the database the first run left behind. Identical set on MySQL 8.4 and PostgreSQL 17 in run 31876448442. Three are GeneratedBusinessBrowserIntegrationTest methods meeting a schema installation the previous run left; one is AssetInspectionCustomViewIntegrationTest meeting its own contribution; one is ExtensionContributionLifecycleIntegrationTest meeting an extension it left installed and trusted; and one is RedisOutageIntegrationTest::testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone, which is not database state at all but a process-global cache diagnostic that is never cleared, so its assertion is only true the first time."
+            "id": "V2-SCL-005",
+            "title": "Durable gauges compute exact aggregates on the primary at scrape time",
+            "severity": "medium",
+            "state": "open",
+            "phase": "5",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "src/Infrastructure/Observability/RuntimeMetricCollector.php",
+                    "symbol": "the durable gauge queries",
+                    "note": "COUNT(*) at lines 208 and 227, MIN() at line 270 and MAX() at line 289. The statement count is bounded; the work of an exact count is not bounded by it."
+                }
+            ],
+            "acceptance_test": "Every durable gauge query is benchmarked at representative table size on all three engines. Any gauge exceeding its budget is replaced by a sharded incremental counter or an asynchronously reconciled snapshot, exposed as approximate while durable rows remain authoritative, with an operator-only exact diagnostic carrying an explicit cost and timeout.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "docs/quality/idempotency-baseline.json",
-          "symbol": "scope.not_yet_enforced",
-          "note": "The other half of the acceptance — the same result in a different class order — is measured by nothing. The first attempt used PHPUnit's --order-by=reverse, which also reverses the tests inside each class, and reported 38 failures across roughly 21 classes in run 31877919073: seven methods of BusinessRecordPolicyEnforcementIntegrationTest, five of BusinessRecordPolicyCompilerIntegrationTest, three of BusinessRecordHistoryPagingIntegrationTest. That distribution is intra-class ordering, not database residue, so the measurement was of the wrong property. The corrected mechanism generates a configuration listing the classes in reverse with method order untouched, verified to collect the same 283 tests, and is run with --pass=reverse."
+            "id": "V2-SCL-006",
+            "title": "Integration fan-out executes every consumer and webhook serially in the dispatcher path",
+            "severity": "high",
+            "state": "reproduced",
+            "phase": "5",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "src/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransport.php",
+                    "symbol": "RuntimeIntegrationEventTransport::publish()",
+                    "note": "Line 91. Iterates executable event-consumer entries at line 106 and webhook entries at line 132 in the calling path."
+                },
+                {
+                    "file": "src/BusinessIntegration/Application/IntegrationEventConsumerDispatcher.php",
+                    "symbol": "IntegrationEventConsumerDispatcher",
+                    "note": "The dispatcher the serial loop drives."
+                }
+            ],
+            "acceptance_test": "Independent (consumer, event) receipt rows are materialised in one short transaction and claimed in batches by worker pools. A slow, failing or rate-limited consumer does not delay unrelated consumers. Scenarios: fan-out 3 and 10, one hung consumer, poison payload, crash between claim and effect and settlement, generation change with queued work, retry storm, rate limit, downstream outage, and backlog recovery while new traffic continues.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": ".github/workflows/ci.yml",
-          "symbol": "Prove the integration suite is idempotent against a reused database",
-          "note": "The step enforces the repeat pass on all three engines against the baseline: a test outside the record fails, an entry whose test now passes fails as stale, an entry past its expiry fails. It does not enforce the reverse pass, and the baseline records why rather than leaving the narrower claim unstated."
-        }
-      ],
-      "acceptance_test": "docs/quality/idempotency-baseline.json is empty and its enforced_passes carries both passes: every recorded test passes when the integration suite runs a second time against the same database, and the suite gives the same result when its classes run in a different order, on MariaDB, MySQL and PostgreSQL. Any class that mutates installation-global state declares and executes its own rollback, as RecordSecretRotationIntegrationTest does.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "progress": "Delivered: the repeat pass enforced on all three engines; the six recorded non-idempotent tests fixed at their real mechanisms (fixed idempotency keys and fixed definition identities minted per run; the Redis outage drill scoped to the installation's own namespace and rolled back) and the record emptied; the corrected reverse-order pass executed once on MariaDB, green, 340 tests in reversed class order against the emptied record. Outstanding: the reverse pass enforced in CI beside the repeat pass on all three engines, which the per-site OpenAPI definition ceiling currently blocks as an appended same-database pass - see V2-QA-008."
-    },
-    {
-      "id": "V2-DB-001",
-      "title": "The nightly browser matrix covers two more engines and not yet the remaining dimensions",
-      "severity": "high",
-      "state": "in_progress",
-      "phase": "2",
-      "gate": "A",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": ".github/workflows/ci.yml",
-          "symbol": "the browser job",
-          "note": "The journeys now run on MariaDB, MySQL and PostgreSQL at merge, desktop and mobile Chromium, with first-attempt results summarized separately from retried ones."
+            "id": "V2-SCL-007",
+            "title": "Declared-queue claims take a policy-row mutex and count live leases on the hot path",
+            "severity": "high",
+            "state": "reproduced",
+            "phase": "5",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "src/Infrastructure/Automation/DoctrineJobQueue.php",
+                    "symbol": "the queue-policy lock and live-lease count",
+                    "note": "Line 968 takes the queue_policy row with FOR UPDATE; lines 985 and 990 then run COUNT(*) over reserved rows with unexpired leases. The ordinary claim at line 270 already uses FOR UPDATE SKIP LOCKED, so the mutex is specific to contributed queues with a declared ceiling."
+                }
+            ],
+            "acceptance_test": "A configured queue owns durable concurrency slots claimed with portable leasing. One claim transaction may lease a batch where ordering permits. Completion, expiry, cancellation and recovery release the slot safely. No over-claim beyond declared tolerance, no starvation, bounded recovery after SIGKILL, and no site or organization able to monopolise worker capacity.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": ".github/workflows/nightly.yml",
-          "symbol": "the browser job",
-          "note": "Nightly adds desktop Firefox and desktop WebKit on MariaDB, both declaring ignoreSnapshots because pixel baselines belong to the browser that recorded them. It does not yet add mobile on those engines, nor the keyboard, touch, high-contrast, zoom and reflow dimensions."
-        }
-      ],
-      "acceptance_test": "Nightly exercises Firefox and WebKit on desktop and mobile, and adds keyboard and focus, touch, high contrast, zoom and reflow, with the acceptance figures the roadmap states: zero serious or critical accessibility violation, zero horizontal overflow, zero inaccessible critical control, and an overall first-attempt pass rate at or above 99%.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "progress": "Delivered: the three-engine merge matrix that was the finding's substance, the two further browser engines nightly, and first-attempt reporting separated from retries."
-    },
-    {
-      "id": "V2-REL-001",
-      "title": "Release and distribution artifacts are not proven by one exact-SHA build-once chain",
-      "severity": "high",
-      "state": "open",
-      "phase": "2",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": ".github/workflows/release.yml",
-          "symbol": "the release job",
-          "note": "Artifacts are produced and scanned, but the published subject is not proven to be the identical digest that was tested."
-        }
-      ],
-      "acceptance_test": "The candidate SHA is proven to belong to the protected branch; each artifact is built exactly once; those exact digests are scanned, installed into empty directories, probed on all three engines and run together in the tested topology; and a signed qualification manifest contains every published digest, with published digests equal to tested digests.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-DR-001",
-      "title": "Point-in-time recovery is adopted as a platform-supported, operator-configured capability",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "6",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "tools/backup.sh",
-          "symbol": "the database dump leg",
-          "note": "Line 161 passes --set-gtid-purged=OFF on the MySQL leg, which strips the position marker replay needs. The MariaDB leg at lines 165-193 passes no --source-data or --master-data, so it records no binary-log coordinate at all. The PostgreSQL leg at line 149 uses pg_dump --format=custom, a logical dump that carries no write-ahead-log location and cannot be a base backup for replay."
+            "id": "V2-SCL-008",
+            "title": "Hot correctness ledgers have no enterprise hot-and-cold retention budget",
+            "severity": "high",
+            "state": "open",
+            "phase": "5",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
+                    "symbol": "the only shipped record-side retention schedule",
+                    "note": "Business command idempotency is the only business ledger with a seeded purge. Audit retention exists but is seeded disabled with a zero window (GM-AUD-07); revisions, outbox source events, sequenced journals, inbox receipts and job attempts have no declared budget."
+                }
+            ],
+            "acceptance_test": "Every hot store declares authoritative purpose, minimum retention, immutability, expiry index or partition strategy, hot and warm and archived state, batch and time and lock and replication budgets, its six retention metrics, backup and restore and legal-hold behaviour, and its failure and reconciliation procedure. Audit pruning happens only after a verifiable anchor is committed and the off-host archive is proven restorable.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "docs/operations/backup-restore.md",
-          "symbol": "Point-in-time recovery is a database-layer responsibility",
-          "note": "The Wave 8 position, merged in 687707c: PITR is documented as the database administrator's and explicitly not owned by this repository."
-        }
-      ],
-      "acceptance_test": "Kumwe captures the backup coordinate on every engine (binary-log file and position plus GTID set on MariaDB and MySQL; write-ahead-log location and timeline against a physical base backup on PostgreSQL), records it in the backup manifest, ships restore-with-replay tooling that consumes an operator-configured archive, documents the procedure per engine, executes a drill that restores to a chosen point before and after a selected transaction, and enforces the media-versus-database ordering rule. The archive destination stays operator-owned.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "Decision D3. The Wave 8 position — PITR disowned as a database-layer responsibility — is superseded. Kumwe owns coordinate capture, restore-with-replay tooling, per-engine documentation, the drill and the ordering rule. The operator owns the archive destination. Restic is the documented reference off-site transport; Kumwe takes no dependency on it."
-    },
-    {
-      "id": "V2-DR-002",
-      "title": "Key-restoration order and encrypted-envelope restore proof",
-      "severity": "high",
-      "state": "conditional",
-      "phase": "6",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "docs/operations/backup-restore.md",
-          "symbol": "Restore keys first",
-          "note": "The documented eight-step order, the four excluded secrets and the permanence of each loss."
+            "id": "V2-QA-004",
+            "title": "The integration suite is not idempotent against a reused database, and six tests prove it",
+            "severity": "medium",
+            "state": "reproduced",
+            "phase": "2",
+            "gate": "A",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "docs/quality/idempotency-baseline.json",
+                    "symbol": "entries",
+                    "note": "Six tests across four classes fail when the integration suite runs a second time against the database the first run left behind. Identical set on MySQL 8.4 and PostgreSQL 17 in run 31876448442. Three are GeneratedBusinessBrowserIntegrationTest methods meeting a schema installation the previous run left; one is AssetInspectionCustomViewIntegrationTest meeting its own contribution; one is ExtensionContributionLifecycleIntegrationTest meeting an extension it left installed and trusted; and one is RedisOutageIntegrationTest::testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone, which is not database state at all but a process-global cache diagnostic that is never cleared, so its assertion is only true the first time."
+                },
+                {
+                    "file": "docs/quality/idempotency-baseline.json",
+                    "symbol": "scope.not_yet_enforced",
+                    "note": "The other half of the acceptance — the same result in a different class order — is measured by nothing. The first attempt used PHPUnit's --order-by=reverse, which also reverses the tests inside each class, and reported 38 failures across roughly 21 classes in run 31877919073: seven methods of BusinessRecordPolicyEnforcementIntegrationTest, five of BusinessRecordPolicyCompilerIntegrationTest, three of BusinessRecordHistoryPagingIntegrationTest. That distribution is intra-class ordering, not database residue, so the measurement was of the wrong property. The corrected mechanism generates a configuration listing the classes in reverse with method order untouched, verified to collect the same 283 tests, and is run with --pass=reverse."
+                },
+                {
+                    "file": ".github/workflows/ci.yml",
+                    "symbol": "Prove the integration suite is idempotent against a reused database",
+                    "note": "The step enforces the repeat pass on all three engines against the baseline: a test outside the record fails, an entry whose test now passes fails as stale, an entry past its expiry fails. It does not enforce the reverse pass, and the baseline records why rather than leaving the narrower claim unstated."
+                }
+            ],
+            "acceptance_test": "docs/quality/idempotency-baseline.json is empty and its enforced_passes carries both passes: every recorded test passes when the integration suite runs a second time against the same database, and the suite gives the same result when its classes run in a different order, on MariaDB, MySQL and PostgreSQL. Any class that mutates installation-global state declares and executes its own rollback, as RecordSecretRotationIntegrationTest does.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "progress": "Delivered: the repeat pass enforced on all three engines; the six recorded non-idempotent tests fixed at their real mechanisms (fixed idempotency keys and fixed definition identities minted per run; the Redis outage drill scoped to the installation's own namespace and rolled back) and the record emptied; the corrected reverse-order pass executed once on MariaDB, green, 340 tests in reversed class order against the emptied record. Outstanding: the reverse pass enforced in CI beside the repeat pass on all three engines, which the per-site OpenAPI definition ceiling currently blocks as an appended same-database pass - see V2-QA-008."
         },
         {
-          "file": "tests/Support/RestoreSecurityAcceptance.php",
-          "symbol": "RestoreSecurityAcceptance",
-          "note": "Added by 687707c. A restored operator authenticates, is allowed a read and denied an update, its session is accepted for its own user agent and refused for another, its restored TOTP credential passes a live challenge and is refused on replay, and recovery codes are reissued and spent."
-        }
-      ],
-      "acceptance_test": "The remaining open halves: approval spent state after restore, which needs an approval-rule administration surface first, and an HTTP replay of one login and one Idempotency-Key mutation against the restored container.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
-      "correction_to_review": "The review, pinned at 309db888, listed key-restoration order and post-restore proofs as incomplete. Wave 8 closed both — the documented order and an end-to-end envelope decryption through the production cipher — after that revision. Only the two named residuals remain.",
-      "cross_reference": [
-        "GM-BAK-04"
-      ],
-      "completed_reference": "GM-BAK-02 and GM-BAK-03 closed in 687707c; their substance is in CHANGELOG.md."
-    },
-    {
-      "id": "V2-DR-003",
-      "title": "The backup artifact is shaped so that off-site deduplication cannot work",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "6",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "tools/backup.sh",
-          "symbol": "the archive creation block",
-          "note": "Lines 198-202 create four gzip-compressed tarballs: media.tar.gz, private.tar.gz, extensions.tar.gz and extension-assets.tar.gz. Compression randomises the byte stream, so a content-defined chunker sees almost entirely new chunks after any change and an hourly off-site snapshot re-stores nearly the whole payload."
+            "id": "V2-DB-001",
+            "title": "The nightly browser matrix covers two more engines and not yet the remaining dimensions",
+            "severity": "high",
+            "state": "in_progress",
+            "phase": "2",
+            "gate": "A",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": ".github/workflows/ci.yml",
+                    "symbol": "the browser job",
+                    "note": "The journeys now run on MariaDB, MySQL and PostgreSQL at merge, desktop and mobile Chromium, with first-attempt results summarized separately from retried ones."
+                },
+                {
+                    "file": ".github/workflows/nightly.yml",
+                    "symbol": "the browser job",
+                    "note": "Nightly adds desktop Firefox and desktop WebKit on MariaDB, both declaring ignoreSnapshots because pixel baselines belong to the browser that recorded them. It does not yet add mobile on those engines, nor the keyboard, touch, high-contrast, zoom and reflow dimensions."
+                }
+            ],
+            "acceptance_test": "Nightly exercises Firefox and WebKit on desktop and mobile, and adds keyboard and focus, touch, high contrast, zoom and reflow, with the acceptance figures the roadmap states: zero serious or critical accessibility violation, zero horizontal overflow, zero inaccessible critical control, and an overall first-attempt pass rate at or above 99%.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "progress": "Delivered: the three-engine merge matrix that was the finding's substance, the two further browser engines nightly, and first-attempt reporting separated from retries."
         },
         {
-          "file": "tools/backup.sh",
-          "symbol": "the PostgreSQL dump",
-          "note": "Line 149 uses pg_dump --format=custom, which compresses by default. The MySQL and MariaDB dumps at lines 182-193 are already plain SQL text and need no change."
+            "id": "V2-REL-001",
+            "title": "Release and distribution artifacts are not proven by one exact-SHA build-once chain",
+            "severity": "high",
+            "state": "open",
+            "phase": "2",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": ".github/workflows/release.yml",
+                    "symbol": "the release job",
+                    "note": "Artifacts are produced and scanned, but the published subject is not proven to be the identical digest that was tested."
+                }
+            ],
+            "acceptance_test": "The candidate SHA is proven to belong to the protected branch; each artifact is built exactly once; those exact digests are scanned, installed into empty directories, probed on all three engines and run together in the tested topology; and a signed qualification manifest contains every published digest, with published digests equal to tested digests.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "tools/restore.sh",
-          "symbol": "the payload restore leg",
-          "note": "Restores the four archives and must follow the artifact shape change; the completion manifest and the .partial claim it writes are part of the contract that must survive."
-        }
-      ],
-      "acceptance_test": "Media, private, extension and extension-asset payloads are snapshotted as plain directory trees rather than compressed tarballs, and the PostgreSQL dump is taken uncompressed, leaving compression and deduplication to the transport. The existing sixteen fail-closed refusals in tests/Support/backup-tamper-drill.sh still pass, unchanged in meaning. A measured demonstration shows the stored delta of a second hourly snapshot after a small change is proportional to the change rather than to the payload.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "Decision D4."
-    },
-    {
-      "id": "V2-DR-004",
-      "title": "The media-versus-database restore ordering rule is stated as a trap, not enforced as a rule",
-      "severity": "medium",
-      "state": "open",
-      "phase": "6",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "docs/operations/backup-restore.md",
-          "symbol": "Point-in-time recovery is a database-layer responsibility",
-          "note": "Records the fact that no log covers the filesystem payloads, so a database rolled forward past the snapshot references media and export objects that are not there. It is documented as a fact to be aware of, with no rule the tooling applies."
+            "id": "V2-DR-001",
+            "title": "Point-in-time recovery is adopted as a platform-supported, operator-configured capability",
+            "severity": "high",
+            "state": "accepted_for_implementation",
+            "phase": "6",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "tools/backup.sh",
+                    "symbol": "the database dump leg",
+                    "note": "Line 161 passes --set-gtid-purged=OFF on the MySQL leg, which strips the position marker replay needs. The MariaDB leg at lines 165-193 passes no --source-data or --master-data, so it records no binary-log coordinate at all. The PostgreSQL leg at line 149 uses pg_dump --format=custom, a logical dump that carries no write-ahead-log location and cannot be a base backup for replay."
+                },
+                {
+                    "file": "docs/operations/backup-restore.md",
+                    "symbol": "Point-in-time recovery is a database-layer responsibility",
+                    "note": "The Wave 8 position, merged in 687707c: PITR is documented as the database administrator's and explicitly not owned by this repository."
+                }
+            ],
+            "acceptance_test": "Kumwe captures the backup coordinate on every engine (binary-log file and position plus GTID set on MariaDB and MySQL; write-ahead-log location and timeline against a physical base backup on PostgreSQL), records it in the backup manifest, ships restore-with-replay tooling that consumes an operator-configured archive, documents the procedure per engine, executes a drill that restores to a chosen point before and after a selected transaction, and enforces the media-versus-database ordering rule. The archive destination stays operator-owned.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "Decision D3. The Wave 8 position — PITR disowned as a database-layer responsibility — is superseded. Kumwe owns coordinate capture, restore-with-replay tooling, per-engine documentation, the drill and the ordering rule. The operator owns the archive destination. Restic is the documented reference off-site transport; Kumwe takes no dependency on it."
         },
         {
-          "file": "tools/restore.sh",
-          "symbol": "the completion manifest",
-          "note": "kumwe-restore-manifest.json records per-tree path, file count and digests, which is the natural place to carry the payload snapshot instant that a replay target must not exceed."
-        }
-      ],
-      "acceptance_test": "The restore tooling refuses, or loudly records, a replay target later than the filesystem payload snapshot instant, and the drill exercises both the permitted and the refused case. The rule is stated once, in the operator documentation and in the tool, with the same wording.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-OPS-001",
-      "title": "No runtime operational introspection: operators can see that the system is unhealthy but not where it is struggling",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "6",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Infrastructure/Observability/MetricCatalog.php",
-          "symbol": "the declared metric set",
-          "note": "Wave 7 shipped monitoring: is it up, is it slow, is it erroring, is a queue deep. It did not ship diagnostics: which definition or policy is slow, which rows are contended, which queue is ageing and by how much, which retention stream is falling behind."
+            "id": "V2-DR-002",
+            "title": "Key-restoration order and encrypted-envelope restore proof",
+            "severity": "high",
+            "state": "conditional",
+            "phase": "6",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "docs/operations/backup-restore.md",
+                    "symbol": "Restore keys first",
+                    "note": "The documented eight-step order, the four excluded secrets and the permanence of each loss."
+                },
+                {
+                    "file": "tests/Support/RestoreSecurityAcceptance.php",
+                    "symbol": "RestoreSecurityAcceptance",
+                    "note": "Added by 687707c. A restored operator authenticates, is allowed a read and denied an update, its session is accepted for its own user agent and refused for another, its restored TOTP credential passes a live challenge and is refused on replay, and recovery codes are reissued and spent."
+                }
+            ],
+            "acceptance_test": "The remaining open halves: approval spent state after restore, which needs an approval-rule administration surface first, and an HTTP replay of one login and one Idempotency-Key mutation against the restored container.",
+            "owner": "UNASSIGNED",
+            "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
+            "correction_to_review": "The review, pinned at 309db888, listed key-restoration order and post-restore proofs as incomplete. Wave 8 closed both — the documented order and an end-to-end envelope decryption through the production cipher — after that revision. Only the two named residuals remain.",
+            "cross_reference": [
+                "GM-BAK-04"
+            ],
+            "completed_reference": "GM-BAK-02 and GM-BAK-03 closed in 687707c; their substance is in CHANGELOG.md."
         },
         {
-          "file": "docs/operations/monitoring.md",
-          "symbol": "the signal list",
-          "note": "The monitoring contract the diagnostics must sit beside without duplicating."
-        }
-      ],
-      "acceptance_test": "An operator-facing diagnostic surface, distinct from monitoring, answering: lock waits and contention hotspots by table and statement class; queue depth and oldest age by queue; slowest definitions and policies by measured cost class; backlog build-up by stream with its drain slope; and whether retention is keeping pace. Bounded by the same cardinality discipline Wave 7 established: never labelled by site, user, record, event or document identifier, or raw route. Every diagnostic states its cost and carries a timeout.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "Decision D6."
-    },
-    {
-      "id": "V2-UX-001",
-      "title": "Accountable human acceptance of the interface standard remains unexecuted",
-      "severity": "medium",
-      "state": "open",
-      "phase": "7",
-      "gate": "B",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "docs/interface-standard",
-          "symbol": "the programme ledger",
-          "note": "composer interface:programme reports 42 surfaces, 85 templates, 23 navigation entries, 19 generated instances, 16 actors, 27 tasks, 13 journeys, 60 work items, 8 findings and 3 verification reports. The human gate is not among the executed evidence."
-        }
-      ],
-      "acceptance_test": "Named accountable reviewers complete the five archetype task journeys with task-based evidence. Automated Playwright, axe and visual results are necessary and not sufficient. Accessibility evidence covers WCAG 2.2 AA, keyboard and focus and screen-reader semantics, touch targets, zoom and reflow, high contrast, loading and empty and error and denied and confirmation states, essential no-JavaScript flows, and reviewed visual regression on desktop and mobile.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-UX-002",
-      "title": "Role dashboard preference editing conflates the editor's visibility with the role's catalogue",
-      "severity": "medium",
-      "state": "open",
-      "phase": "7",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php",
-          "symbol": "liveIdentifiers",
-          "note": "Role (access-group) preference forms prune stored selections against the editing administrator's capability-filtered catalogue, so an administrator with narrower visibility silently drops valid entries from a role's stored selection on save, and cannot restore them because delivery validates submissions against the editor's own catalogue."
-        }
-      ],
-      "acceptance_test": "An administrator holding users.manage but lacking a capability required by one widget stored in a role's dashboard selection opens and saves that role's preference form; the stored selection retains the invisible widget, the form discloses it as outside the editor's visibility, and members of the role keep the widget. A submission naming an identifier outside the role's own catalogue is still refused.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-DOC-001",
-      "title": "Programme state was spread across competing documents",
-      "severity": "medium",
-      "state": "in_progress",
-      "phase": "0",
-      "gate": "A",
-      "origin": "review",
-      "source_anchors": [
-        {
-          "file": "docs/qualification/gap-matrix.md",
-          "symbol": "the whole file",
-          "note": "322 lines mixing an opening analysis, eight wave outcomes and per-entry closure prose. Its header still reads 'Gap totals: 0 critical, 13 high, 27 medium, 21 low' as an opening statement, which is no longer the current state of the programme."
-        }
-      ],
-      "acceptance_test": "docs/roadmap/ is the single authority for programme sequencing. The gap matrix is retained unmodified as executed evidence and says so in its own header. No second state database is created.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-ERP-007",
-      "title": "No offline-tolerant capture primitive for point-of-sale-style surfaces",
-      "severity": "low",
-      "state": "conditional",
-      "phase": "0",
-      "gate": null,
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/",
-          "symbol": "absence",
-          "note": "No offline queue, no client-side durable store, no reconciliation or conflict-resolution primitive exists anywhere under src/. Client-supplied operation identifiers and the idempotency ledger give a retried command a stable outcome, which is the foundation an offline client needs but is not itself offline support."
-        }
-      ],
-      "acceptance_test": "Nothing is built for this in Version 2. What must hold is that Version 2 does not foreclose it. Three of the four constraints are settled and recorded in CHANGELOG.md: the caller-minted operation identifier now replays over a declared, bounded, configurable window and a repeat arriving after it is refused by name rather than applied twice; a client-asserted capture instant has a declared home beside the server's own and is proved unreachable from every ordering, expiry, period and numbering path; and the deferrable and non-deferrable validation split is written into the extension-facing contract with the non-deferrable half held by an architecture test. This entry stays open on the one that remains, V2-POS-002, because the deferral is only a decision somebody owns once the numbering shape under disconnection is chosen. The reviewer of any Gate A contract change asks whether it makes an offline terminal impossible; if it does, this entry is the place that objection is raised.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "Decision D14 — deferred beyond Version 2 as a product. Offline point of sale will be a separate long-standing application talking to the platform over the API. Version 2 does not build it and must not design in a way that forecloses it.",
-      "residual": "The platform must remain positioned to accommodate an offline terminal. Three of the four constraints that carry that positioning are delivered; V2-POS-002 alone remains, and it is the product owner's decision rather than an implementation task. This entry is the standing reminder that the deferral has a cost somebody is paying attention to.",
-      "forward_reference": "V2-POS-002"
-    },
-    {
-      "id": "V2-LNG-010",
-      "title": "The eight non-source catalogues and per-locale qualification are unbuilt",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "L",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "docs/roadmap/decisions/0002-interface-translation-architecture.md",
-          "symbol": "the Version 2 language set",
-          "note": "Nine: en-GB (source), en-US, af, de, he, ar, es, pt-BR, zh-Hans. Traditional Chinese (zh-Hant) is not in Version 2 scope."
-        }
-      ],
-      "acceptance_test": "All nine catalogues are complete with no identifier missing that the source catalogue declares, and the browser, accessibility and visual matrix runs per locale with right-to-left carrying its own baselines. Zero horizontal overflow and zero inaccessible critical control in any of the nine. The proof-set sequencing is the point: en-GB, af, de and he first, because together they stress every hard axis — source extraction at scale, a smaller language with a thin tooling ecosystem, a layout-stressing language of long compounds, and a right-to-left script. After those four the remaining five are translation work rather than engineering work, and are scheduled and resourced as translation.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "PL-G",
-      "product_owner_decision": "Decision D11 — the translated catalogues for the nine languages and per-locale visual qualification are Gate B; everything that shapes a contract is Gate A.",
-      "enforcing_check": "A catalogue-completeness check failing when any of the nine is missing an identifier the source catalogue declares, so 'we shipped eight and a half languages' is not a state the build permits."
-    },
-    {
-      "id": "GM-AUD-02",
-      "title": "Append-only held only by application discipline",
-      "severity": "high",
-      "state": "conditional",
-      "phase": "evidence",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "src/Audit/Infrastructure/Persistence/AuditAppendOnlyGuard.php",
-          "symbol": "AuditAppendOnlyGuard"
-        }
-      ],
-      "acceptance_test": "Triggers install where the server grants the privilege; where it refuses, audit:verify exits 2 and reports append_only_enforcement: not_installed, observed from the server catalog on every run.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "ae4b92bbfb64906bb42de08fdbfacbef2464c7cd",
-      "residual": "On a managed service that withholds CREATE TRIGGER there is no database-level prevention of UPDATE or DELETE on audit_events. Tamper evidence, which is what the domain claims, holds unconditionally."
-    },
-    {
-      "id": "GM-AUD-08",
-      "title": "Audit-metadata redaction is a write-time convention with no runtime guard",
-      "severity": "low",
-      "state": "open",
-      "phase": "7",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "src/Audit/Domain/AuditEvent.php",
-          "symbol": "the metadata property",
-          "note": "Stored verbatim; enforcement is per-service discipline. src/Audit/Application/AuditMetadataRedactor.php redacts on the way out of an export only."
-        }
-      ],
-      "acceptance_test": "A denylist decorator around AuditRecorder, or a constructor check, rejecting credential-shaped metadata keys and values, plus unit assertions on each writing service's recorded metadata.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "GM-IDN-04",
-      "title": "The administrator login form has no login-CSRF protection",
-      "severity": "low",
-      "state": "open",
-      "phase": "7",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "src/Administrator/Http/Handler/AdministratorLoginHandler.php",
-          "symbol": "handle()",
-          "note": "Reads only email, password and User-Agent. The portal login already implements the pre-session double-submit token."
-        }
-      ],
-      "acceptance_test": "Mirror the portal pattern: set a path-scoped HttpOnly SameSite=Strict CSRF cookie on GET, render it as a hidden field, and hash_equals-compare and rotate on POST before authenticating.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "GM-IDN-05",
-      "title": "The session cookie Secure attribute has no production fail-closed guard, and there is no idle timeout",
-      "severity": "low",
-      "state": "open",
-      "phase": "7",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "src/Kernel/Configuration/ApplicationConfiguration.php",
-          "symbol": "the production assertions",
-          "note": "Secure is derived solely from the configured base-URL scheme. last_seen_at is stamped but never used in the resolve predicate."
-        }
-      ],
-      "acceptance_test": "Production configuration refuses a base URL that would serve session cookies without Secure. An idle-window predicate is added to the resolve path or its absence is stated as a deliberate, documented property.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "GM-IDN-06",
-      "title": "Qualification evidence has session and CSRF test blind spots",
-      "severity": "medium",
-      "state": "open",
-      "phase": "7",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "src/Administrator/Http/Middleware/",
-          "symbol": "AdministratorCsrfMiddleware",
-          "note": "No dedicated comparison or rejection tests. No test anywhere asserts the session cookie attribute string."
-        }
-      ],
-      "acceptance_test": "Dedicated tests for both CSRF middlewares, the Redis rate-limiter window arithmetic, the portal session store find and rotate rejection matrix, the logout handlers, and the session cookie attribute string.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "GM-IDN-07",
-      "title": "Self-service credential rotation is reachable only by holders of users.manage",
-      "severity": "medium",
-      "state": "open",
-      "phase": "7",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "src/Kernel/ContainerFactory.php",
-          "symbol": "the /administrator/access route registration",
-          "note": "Both verbs are gated on users.manage. The portal has a security screen but no password path at all."
-        }
-      ],
-      "acceptance_test": "An ordinary portal member and a narrowly scoped administrator can rotate their own password without an identity administrator performing a reset.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "GM-SUP-05",
-      "title": "Out-of-process execution for untrusted code is a documented invariant without a shipped runtime",
-      "severity": "medium",
-      "state": "open",
-      "phase": "7",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "src/Extension/Runtime/RestrictedExtensionContainer.php",
-          "symbol": "RestrictedExtensionContainer",
-          "note": "Curation covers service resolution only. Admitted PHP executes with the ambient authority of the process. That authority is now inventoried in docs/architecture/extensions.md beside the deployment control bounding each part of it, and every surface says so; what is absent is a runtime that enforces any of it."
-        }
-      ],
-      "acceptance_test": "Narrowed: the wording and inventory half is delivered and recorded in CHANGELOG.md, so what remains cannot be closed by repository-owned code at all. Closing it needs a shipped runtime in which a signed extension's filesystem, network and database authority is granted explicitly rather than inherited, with the host addressable only through an authenticated adapter contract. Until then, installing an extension means trusting its publisher with the application process, and every surface must go on saying exactly that.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "GM-SUP-08",
-      "title": "Content-Security-Policy admitted unsafe-inline for styles on every response",
-      "severity": "low",
-      "state": "conditional",
-      "phase": "7",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "src/Http/Security/SecurityHeaders.php",
-          "symbol": "the style directives",
-          "note": "Now style-src 'self', style-src-elem 'self' and style-src-attr 'unsafe-inline' in place of one permissive directive."
-        }
-      ],
-      "acceptance_test": "The exfiltration class is removed. The narrowed residual — inline style attributes — is named and owned.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
-    },
-    {
-      "id": "GM-SUP-09",
-      "title": "The per-commit source SBOM is short-retention CI evidence nothing consumes",
-      "severity": "low",
-      "state": "open",
-      "phase": "2",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": ".github/workflows/security.yml",
-          "symbol": "the SBOM upload",
-          "note": "14-day artifact retention; no workflow step reads it."
-        }
-      ],
-      "acceptance_test": "A license-and-policy evaluation over the CycloneDX output, and publication as a build attestation or with longer retention. Blocked on a license policy nobody has agreed; a gate over an undecided policy would be scanning theatre.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "forward_reference": "V2-REL-001 is the natural home for this once the build-once chain exists."
-    },
-    {
-      "id": "GM-OBS-05",
-      "title": "No distributed tracing and no trace exporter",
-      "severity": "medium",
-      "state": "open",
-      "phase": "7",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "config/observability.php",
-          "symbol": "the tracing block",
-          "note": "Exporter none, sampling declared. W3C trace-context propagation exists and must not be overstated as distributed tracing."
-        }
-      ],
-      "acceptance_test": "Open by decision. Adopting an exporter is a separately reviewed dependency and configuration decision. Until then, documentation states propagation, never tracing.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "GM-BAK-04",
-      "title": "Post-restore identity and security acceptance was manual",
-      "severity": "medium",
-      "state": "conditional",
-      "phase": "6",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "tests/Support/RestoreSecurityAcceptance.php",
-          "symbol": "RestoreSecurityAcceptance"
-        }
-      ],
-      "acceptance_test": "Still open: approval spent state, which needs an approval-rule administration surface first, and an HTTP replay of one login and one Idempotency-Key mutation against the restored container.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
-      "cross_reference": "V2-DR-002"
-    },
-    {
-      "id": "GM-BAK-08",
-      "title": "Backup scheduling, retention and off-host copy are operator-owned, and whole-table parity is not asserted",
-      "severity": "low",
-      "state": "conditional",
-      "phase": "6",
-      "origin": "gap-matrix",
-      "source_anchors": [
-        {
-          "file": "docs/operations/backup-restore.md",
-          "symbol": "Scheduling, retention, and off-host copies"
-        }
-      ],
-      "acceptance_test": "Documented: a reference hourly timer and unit, the four-step cycle, a retention prune that refuses to empty the directory, and an explicit list of what stays operator-owned. Open by choice: whole-table row-count parity is not in the acceptance manifest.",
-      "owner": "UNASSIGNED",
-      "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
-      "forward_reference": "V2-DR-003 changes the artifact this section documents; the reference schedule and the off-host step must be restated for the reshaped payload and the reference transport."
-    },
-    {
-      "id": "V2-STU-002",
-      "title": "The Studio contract is not pinned or replayed, so a composition integration would build against a moving draft",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "S",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "package.json",
-          "symbol": "the dependency set",
-          "note": "The administrator build declares lit as its single runtime dependency and no @kumwe/studio package of any kind. Nothing pins a contract version and nothing fails when one moves."
+            "id": "V2-DR-003",
+            "title": "The backup artifact is shaped so that off-site deduplication cannot work",
+            "severity": "high",
+            "state": "reproduced",
+            "phase": "6",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "tools/backup.sh",
+                    "symbol": "the archive creation block",
+                    "note": "Lines 198-202 create four gzip-compressed tarballs: media.tar.gz, private.tar.gz, extensions.tar.gz and extension-assets.tar.gz. Compression randomises the byte stream, so a content-defined chunker sees almost entirely new chunks after any change and an hourly off-site snapshot re-stores nearly the whole payload."
+                },
+                {
+                    "file": "tools/backup.sh",
+                    "symbol": "the PostgreSQL dump",
+                    "note": "Line 149 uses pg_dump --format=custom, which compresses by default. The MySQL and MariaDB dumps at lines 182-193 are already plain SQL text and need no change."
+                },
+                {
+                    "file": "tools/restore.sh",
+                    "symbol": "the payload restore leg",
+                    "note": "Restores the four archives and must follow the artifact shape change; the completion manifest and the .partial claim it writes are part of the contract that must survive."
+                }
+            ],
+            "acceptance_test": "Media, private, extension and extension-asset payloads are snapshotted as plain directory trees rather than compressed tarballs, and the PostgreSQL dump is taken uncompressed, leaving compression and deduplication to the transport. The existing sixteen fail-closed refusals in tests/Support/backup-tamper-drill.sh still pass, unchanged in meaning. A measured demonstration shows the stored delta of a second hourly snapshot after a small change is proportional to the change rather than to the payload.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "Decision D4."
         },
         {
-          "file": "docs/roadmap/studio-integration.md",
-          "symbol": "the published package table",
-          "note": "Seven packages publish on a prerelease dist-tag under a 0.1-draft contract, so an inexact specifier would take a contract change silently."
-        }
-      ],
-      "acceptance_test": "The administrator build declares every Studio package at an exact version, the published schema and fixture corpus is vendored into the test fixtures at those exact versions, and a conformance suite validates every corpus document against its schema and recomputes the published digest manifest. A dependency check fails the build on a non-exact specifier for any Studio package, and the corpus check fails when the vendored fixtures and the pinned release disagree.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "S-B",
-      "product_owner_decision": "Decision D16."
-    },
-    {
-      "id": "V2-STU-003",
-      "title": "No host adapter implements the identity and policy ports, and no session generation invalidates a composition session",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "S",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Kernel/ContainerFactory.php",
-          "symbol": "administratorRoute() and the container host-service allowlist",
-          "note": "Administrator routes are capability-gated and the extension container exposes five host services, none of them identity, policy, media, preview, localization or telemetry. There is no port surface a composition client could negotiate against."
+            "id": "V2-DR-004",
+            "title": "The media-versus-database restore ordering rule is stated as a trap, not enforced as a rule",
+            "severity": "medium",
+            "state": "open",
+            "phase": "6",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "docs/operations/backup-restore.md",
+                    "symbol": "Point-in-time recovery is a database-layer responsibility",
+                    "note": "Records the fact that no log covers the filesystem payloads, so a database rolled forward past the snapshot references media and export objects that are not there. It is documented as a fact to be aware of, with no rule the tooling applies."
+                },
+                {
+                    "file": "tools/restore.sh",
+                    "symbol": "the completion manifest",
+                    "note": "kumwe-restore-manifest.json records per-tree path, file count and digests, which is the natural place to carry the payload snapshot instant that a replay target must not exceed."
+                }
+            ],
+            "acceptance_test": "The restore tooling refuses, or loudly records, a replay target later than the filesystem payload snapshot instant, and the drill exercises both the permitted and the refused case. The rule is stated once, in the operator documentation and in the tool, with the same wording.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "src/Identity/",
-          "symbol": "the security epoch and grant resolution",
-          "note": "Grants are re-read on every session resolve and an epoch advance retires sessions and step-up proofs. A composition session must inherit that invalidation rather than cache an authorization decision."
-        }
-      ],
-      "acceptance_test": "Each implemented port resolves the actor's effective capabilities through the existing deny-by-default gateway and refuses a caller lacking each required capability, proven one capability at a time. Advancing the security epoch or revoking a grant mid-session invalidates the composition session generation, and every subsequent port call is refused with the canonical stale-generation category rather than applied. A client-asserted capability or generation is never trusted.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "S-C",
-      "product_owner_decision": "Decision D16."
-    },
-    {
-      "id": "V2-STU-004",
-      "title": "Composition documents have no versioned artifact store, so there is no conflict, replay or refusal contract for them",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "S",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "docs/rest-api.md",
-          "symbol": "the retry and concurrency contract",
-          "note": "Mutations require a caller-generated Idempotency-Key with a 24-hour replay window, and versioned resources require the current ETag in If-Match. A composition artifact must inherit exactly this discipline rather than invent a second one."
+            "id": "V2-OPS-001",
+            "title": "No runtime operational introspection: operators can see that the system is unhealthy but not where it is struggling",
+            "severity": "high",
+            "state": "accepted_for_implementation",
+            "phase": "6",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Infrastructure/Observability/MetricCatalog.php",
+                    "symbol": "the declared metric set",
+                    "note": "Wave 7 shipped monitoring: is it up, is it slow, is it erroring, is a queue deep. It did not ship diagnostics: which definition or policy is slow, which rows are contended, which queue is ageing and by how much, which retention stream is falling behind."
+                },
+                {
+                    "file": "docs/operations/monitoring.md",
+                    "symbol": "the signal list",
+                    "note": "The monitoring contract the diagnostics must sit beside without duplicating."
+                }
+            ],
+            "acceptance_test": "An operator-facing diagnostic surface, distinct from monitoring, answering: lock waits and contention hotspots by table and statement class; queue depth and oldest age by queue; slowest definitions and policies by measured cost class; backlog build-up by stream with its drain slope; and whether retention is keeping pace. Bounded by the same cardinality discipline Wave 7 established: never labelled by site, user, record, event or document identifier, or raw route. Every diagnostic states its cost and carries a timeout.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "Decision D6."
         },
         {
-          "file": "src/Content/",
-          "symbol": "ContentService and the content revision path",
-          "note": "Content carries versions, revisions and a workflow. Composition documents are a different artifact kind and no store, revision path or refusal boundary exists for them."
-        }
-      ],
-      "acceptance_test": "A composition document is stored as a versioned artifact: a write carrying a stale expected revision is refused with the safe current revision and its diagnostics and never overwrites, an identical replay under the same idempotency key returns the recorded outcome once, and the revision history is readable. A document carrying markup, a style declaration, executable content or a URL outside a schema-defined field is refused at the boundary rather than stored and sanitized afterwards. Stored bytes validate against the published schema and round-trip unchanged on MariaDB, MySQL and PostgreSQL.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "S-D",
-      "product_owner_decision": "Decision D16."
-    },
-    {
-      "id": "V2-STU-005",
-      "title": "The media port and the external-source obligations the composition contract names have no host implementation",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "S",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Media/",
-          "symbol": "MediaService and the storage adapter",
-          "note": "Media exists as a module with its own storage and serving path, but nothing implements the canonical upload session state machine the composition contract negotiates, and no test proves the module's real limits agree with the contract's declared rejections."
+            "id": "V2-UX-001",
+            "title": "Accountable human acceptance of the interface standard remains unexecuted",
+            "severity": "medium",
+            "state": "open",
+            "phase": "7",
+            "gate": "B",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "docs/interface-standard",
+                    "symbol": "the programme ledger",
+                    "note": "composer interface:programme reports 42 surfaces, 85 templates, 23 navigation entries, 19 generated instances, 16 actors, 27 tasks, 13 journeys, 60 work items, 8 findings and 3 verification reports. The human gate is not among the executed evidence."
+                }
+            ],
+            "acceptance_test": "Named accountable reviewers complete the five archetype task journeys with task-based evidence. Automated Playwright, axe and visual results are necessary and not sufficient. Accessibility evidence covers WCAG 2.2 AA, keyboard and focus and screen-reader semantics, touch targets, zoom and reflow, high contrast, loading and empty and error and denied and confirmation states, essential no-JavaScript flows, and reviewed visual regression on desktop and mobile.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "docs/roadmap/studio-integration.md",
-          "symbol": "the external-source obligations",
-          "note": "The contract's URL policy is lexical by construction. Redirect re-validation, response verification and defence against a host resolving differently between check and fetch are stated as host runtime obligations and cannot be discharged by it."
-        }
-      ],
-      "acceptance_test": "The media port drives the existing media module through the canonical upload session state machine, and every published media policy vector replays against it to the declared accepted plan or stable rejection, so the platform's real limits and the contract agree. Every external media or embed source passes the URL policy before any fetch, and a hardened fetcher refuses a redirect that leaves the policy, a response whose type contradicts its declaration, and a host that resolves to a refused address after the check, each asserted per category and never disclosing the candidate address.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "S-E",
-      "product_owner_decision": "Decision D16."
-    },
-    {
-      "id": "V2-STU-006",
-      "title": "There is no authenticated preview endpoint, so unpublished composition cannot be rendered without exposing it",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "S",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Kernel/ContainerFactory.php",
-          "symbol": "the published content route",
-          "note": "Published rendering is a public route by slug and the administrator editor links to the public address in a new tab. Nothing renders an unpublished document for an authorized actor."
+            "id": "V2-UX-002",
+            "title": "Role dashboard preference editing conflates the editor's visibility with the role's catalogue",
+            "severity": "medium",
+            "state": "open",
+            "phase": "7",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php",
+                    "symbol": "liveIdentifiers",
+                    "note": "Role (access-group) preference forms prune stored selections against the editing administrator's capability-filtered catalogue, so an administrator with narrower visibility silently drops valid entries from a role's stored selection on save, and cannot restore them because delivery validates submissions against the editor's own catalogue."
+                }
+            ],
+            "acceptance_test": "An administrator holding users.manage but lacking a capability required by one widget stored in a role's dashboard selection opens and saves that role's preference form; the stored selection retains the invisible widget, the form discloses it as outside the editor's visibility, and members of the role keep the widget. A submission naming an identifier outside the role's own catalogue is still refused.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "src/Http/Security/SecurityHeaders.php",
-          "symbol": "the administrator content-security policy",
-          "note": "The policy sends frame-ancestors none with a self-only script source. An embedded preview frame is the one deliberate change the integration requires, and it must be bounded to that route."
-        }
-      ],
-      "acceptance_test": "An authenticated, capability-gated, short-lived preview endpoint renders an unpublished composition document through the same template and theme path published output uses, so preview and publication cannot diverge. The preview channel is origin-pinned and replay-resistant on both ends: a foreign origin, a replayed sequence and a wrong channel identifier are each refused. The administrator content-security policy is otherwise byte-identical to its current value, with no inline script or style allowance introduced, proven by a policy test.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "S-F",
-      "product_owner_decision": "Decision D16."
-    },
-    {
-      "id": "V2-STU-007",
-      "title": "No administrator surface embeds a composition editor, and none is declared, localized or qualified",
-      "severity": "medium",
-      "state": "accepted_for_implementation",
-      "phase": "S",
-      "gate": "B",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "templates/administrator/content-form.twig",
-          "symbol": "the content editor surface",
-          "note": "Content is authored through a server-rendered form with retained input, optimistic version and CSRF. It stays, and the composition surface is an additional capability-gated surface rather than its replacement."
+            "id": "V2-DOC-001",
+            "title": "Programme state was spread across competing documents",
+            "severity": "medium",
+            "state": "in_progress",
+            "phase": "0",
+            "gate": "A",
+            "origin": "review",
+            "source_anchors": [
+                {
+                    "file": "docs/qualification/gap-matrix.md",
+                    "symbol": "the whole file",
+                    "note": "322 lines mixing an opening analysis, eight wave outcomes and per-entry closure prose. Its header still reads 'Gap totals: 0 critical, 13 high, 27 medium, 21 low' as an opening statement, which is no longer the current state of the programme."
+                }
+            ],
+            "acceptance_test": "docs/roadmap/ is the single authority for programme sequencing. The gap matrix is retained unmodified as executed evidence and says so in its own header. No second state database is created.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "docs/interface-standard/schemas/surface-declaration.schema.json",
-          "symbol": "the closed surface declaration",
-          "note": "Every administrator surface declares area, actor, intent, resource, purpose, pattern, capabilities, states, customization and responsive behaviour. An embedded composition surface is declared the same way or it is outside the standard."
-        }
-      ],
-      "acceptance_test": "The composition surface is declared through the interface standard, gated by capability, and reachable only by an actor holding it. Its message catalog resolves through the compiled localization chain so site and organization wording overrides reach it, and its locale and direction come from the same per-request negotiation every other surface uses. Every authoring operation is achievable by keyboard, the surface passes the browser, accessibility and visual matrix including one right-to-left locale with zero violations and no horizontal overflow, and the existing server-rendered content editor and its no-JavaScript paths are unchanged.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "work_package": "S-G",
-      "product_owner_decision": "Decision D16."
-    },
-    {
-      "id": "V2-ERP-008",
-      "title": "A non-site-scoped counter keys on the definition's owning site, which ownership widening can silently change",
-      "severity": "medium",
-      "state": "open",
-      "phase": "E",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "allocateNumbers",
-          "note": "Falls back to the definition's owning site for the counter's site coordinate when the record scope carries no site. Under ADR 0001 ownership can widen, so an ownership change would alter the counter identity of every non-site-scoped sequence on that definition and restart its runs at one. A stable sentinel coordinate, or a rule freezing owning-site changes for sequence-bearing definitions, needs deciding."
-        }
-      ],
-      "acceptance_test": "A definition whose ownership widens or moves keeps every existing counter identity and every run's continuity, proven by a test that widens ownership around a definition with allocated numbers.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-ERP-009",
-      "title": "The hard-delete set-null sweep rewrites referencing records without a posting-period evaluation",
-      "severity": "medium",
-      "state": "open",
-      "phase": "E",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-          "symbol": "clearInboundSetNull",
-          "note": "The posting-period lock judges the addressed record, and the immutability guard already fences this sweep, but a record dated in a closed period can still be re-versioned by deleting an undated record it references set-null. Whether the sweep should refuse, skip, or be judged like any mutation is a decision the lock's addressed-record rule deliberately left open."
-        }
-      ],
-      "acceptance_test": "Deleting a record referenced set-null by a closed-period record either refuses by name or provably leaves the closed-period record's version and audit history untouched, and the chosen rule is stated on the lock.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-UX-003",
-      "title": "Closed and immutable records still render edit affordances, and the definition editor cannot declare immutable states",
-      "severity": "medium",
-      "state": "open",
-      "phase": "7",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/BusinessRecord/Presentation/",
-          "symbol": "generated browser surface",
-          "note": "The generated browser catches only validation and version-conflict problems on submit, so an immutable or closed-period refusal lands on the global error boundary, and generated forms render edit affordances for records the service will refuse because catalog metadata does not expose immutable states or the posting-date declaration."
+            "id": "V2-ERP-007",
+            "title": "No offline-tolerant capture primitive for point-of-sale-style surfaces",
+            "severity": "low",
+            "state": "conditional",
+            "phase": "0",
+            "gate": null,
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/",
+                    "symbol": "absence",
+                    "note": "No offline queue, no client-side durable store, no reconciliation or conflict-resolution primitive exists anywhere under src/. Client-supplied operation identifiers and the idempotency ledger give a retried command a stable outcome, which is the foundation an offline client needs but is not itself offline support."
+                }
+            ],
+            "acceptance_test": "Nothing is built for this in Version 2. What must hold is that Version 2 does not foreclose it. Three of the four constraints are settled and recorded in CHANGELOG.md: the caller-minted operation identifier now replays over a declared, bounded, configurable window and a repeat arriving after it is refused by name rather than applied twice; a client-asserted capture instant has a declared home beside the server's own and is proved unreachable from every ordering, expiry, period and numbering path; and the deferrable and non-deferrable validation split is written into the extension-facing contract with the non-deferrable half held by an architecture test. This entry stays open on the one that remains, V2-POS-002, because the deferral is only a decision somebody owns once the numbering shape under disconnection is chosen. The reviewer of any Gate A contract change asks whether it makes an offline terminal impossible; if it does, this entry is the place that objection is raised.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "Decision D14 — deferred beyond Version 2 as a product. Offline point of sale will be a separate long-standing application talking to the platform over the API. Version 2 does not build it and must not design in a way that forecloses it.",
+            "residual": "The platform must remain positioned to accommodate an offline terminal. Three of the four constraints that carry that positioning are delivered; V2-POS-002 alone remains, and it is the product owner's decision rather than an implementation task. This entry is the standing reminder that the deferral has a cost somebody is paying attention to.",
+            "forward_reference": "V2-POS-002"
         },
         {
-          "file": "src/BusinessDefinition/Presentation/",
-          "symbol": "definition editor form mapper",
-          "note": "The administrator definition editor cannot yet declare workflow immutable_states; the declaration is reachable only through canonical documents or an extension contribution."
-        }
-      ],
-      "acceptance_test": "A record in an immutable state or a closed period renders read-only affordances with the refusal's own wording, and the definition editor can declare and remove immutable states with validation.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-QA-007",
-      "title": "pdo_pgsql under PHP 8.5 answers a stale empty result when one prepared statement is re-executed many times in one transaction",
-      "severity": "high",
-      "state": "reproduced",
-      "phase": "2",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php",
-          "symbol": "testEachIdentityCoordinateIsolatesItsOwnContiguousRun",
-          "note": "Reproduction: fresh PostgreSQL database, parent schema plus migrate, then this test's choreography - the allocator's identical five-parameter SELECT FOR UPDATE re-executed nine times inside one transaction - reads the first run at one where three were allocated. The backend session never changes, the unique index is valid and live, the committed state is correct whenever any other statement interleaves, and interleaving any statement makes the same sequence answer correctly. MariaDB and MySQL are unaffected. The real write path always interleaves record writes between allocations, so the product is not known to be exposed; the test's PostgreSQL leg skips naming this finding until the driver is cleared or pinned."
-        }
-      ],
-      "acceptance_test": "A minimal PDO-only reproduction either confirms the driver fault upstream (and the toolchain pins or patches pdo_pgsql, after which the skip is removed) or finds the true mechanism in this stack and fixes it; either way the allocator-seam test runs on PostgreSQL again.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-QA-008",
-      "title": "Accumulating fixture definitions hit the per-site OpenAPI component ceiling by the third suite run against one database",
-      "severity": "medium",
-      "state": "reproduced",
-      "phase": "2",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/OpenApi/Application/OpenApiComponentClaimAdmission.php",
-          "symbol": "admit",
-          "note": "Uninstall preserves published definitions by design and each integration run installs roughly one hundred and sixty fixture definitions, so MAX_DEFINITIONS = 256 is exhausted around the third consecutive run against one database. This does not threaten the enforced two-run idempotency property, but it blocks enforcing the reverse pass as an appended same-database pass and will bite any long-lived integration database."
+            "id": "V2-LNG-010",
+            "title": "The eight non-source catalogues and per-locale qualification are unbuilt",
+            "severity": "medium",
+            "state": "accepted_for_implementation",
+            "phase": "L",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "docs/roadmap/decisions/0002-interface-translation-architecture.md",
+                    "symbol": "the Version 2 language set",
+                    "note": "Nine: en-GB (source), en-US, af, de, he, ar, es, pt-BR, zh-Hans. Traditional Chinese (zh-Hant) is not in Version 2 scope."
+                }
+            ],
+            "acceptance_test": "All nine catalogues are complete with no identifier missing that the source catalogue declares, and the browser, accessibility and visual matrix runs per locale with right-to-left carrying its own baselines. Zero horizontal overflow and zero inaccessible critical control in any of the nine. The proof-set sequencing is the point: en-GB, af, de and he first, because together they stress every hard axis — source extraction at scale, a smaller language with a thin tooling ecosystem, a layout-stressing language of long compounds, and a right-to-left script. After those four the remaining five are translation work rather than engineering work, and are scheduled and resourced as translation.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "work_package": "PL-G",
+            "product_owner_decision": "Decision D11 — the translated catalogues for the nine languages and per-locale visual qualification are Gate B; everything that shapes a contract is Gate A.",
+            "enforcing_check": "A catalogue-completeness check failing when any of the nine is missing an identifier the source catalogue declares, so 'we shipped eight and a half languages' is not a state the build permits."
         },
         {
-          "file": "src/BusinessRecord/Application/InstalledBusinessRecordDefinitionResolver.php",
-          "symbol": "activeInstalled",
-          "note": "Rejecting the published version is not on its own a way to withdraw a fixture definition, and an attempt on this branch had to be withdrawn for it. BusinessDefinitionService::reject flips the catalog head's publication_state, but catalog() selects every row for the site with no filter on that column, and this resolver then throws BusinessRecordSchemaUnavailable on any Active schema installation whose version reads Rejected. Withdrawing a definition therefore has to retire the schema installation in the same step, or the accounting has to change instead; rejection alone breaks definition resolution for the whole site rather than excluding one definition from it."
-        }
-      ],
-      "acceptance_test": "Either fixture definitions are retired with the run that made them, or the ceiling's accounting distinguishes live definitions from preserved-but-withdrawn ones; three consecutive full-suite runs against one database stay green.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-REL-002",
-      "title": "The verification pipeline fetches toolchain from public infrastructure at run time",
-      "severity": "high",
-      "state": "accepted_for_implementation",
-      "phase": "2",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": ".github/workflows/ci.yml",
-          "symbol": "toolchain provisioning",
-          "note": "One review day lost four lanes to runtime provisioning and none to code: a rate-limited archive host mid composer install, a registry gateway error resolving a build image, a stalled OS mirror that held a browser lane silent for forty-four minutes, and the recovery-client apt install consumed by a job budget. Each got a tactical repair - download caches, digest pins with bounded retries, the Chromium apt step removed outright because the runner image provably ships the libraries - but the architecture still lets public mirrors decide whether verification finishes. The database lane still apt-installs its recovery client and signing tool at run time, and the nightly browser lane still apt-installs WebKit dependencies."
-        }
-      ],
-      "acceptance_test": "A verification run performs no unpinned network fetch: every tool it executes arrives from a digest-pinned image, a lockfile-keyed cache, or the runner image itself, enumerated in the quality contract so a new workflow step that fetches at run time fails review by construction. A cold cache may download; only through a pinned, bounded, announced path.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V3-NC-001",
-      "title": "No native application sign-in exists; the decided flow is the authentication link",
-      "severity": "high",
-      "state": "open",
-      "phase": "N",
-      "gate": null,
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Identity/Infrastructure/Authentication/DoctrineAccessTokenVerifier.php",
-          "symbol": "DoctrineAccessTokenVerifier",
-          "note": "The single verifier every token-bearing surface uses admits only pre-issued, administrator- or CLI-created tokens; no anonymous path mints a credential, no refresh grant exists, and there is no /api/v1/native/ route family."
+            "id": "GM-AUD-02",
+            "title": "Append-only held only by application discipline",
+            "severity": "high",
+            "state": "conditional",
+            "phase": "evidence",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "src/Audit/Infrastructure/Persistence/AuditAppendOnlyGuard.php",
+                    "symbol": "AuditAppendOnlyGuard"
+                }
+            ],
+            "acceptance_test": "Triggers install where the server grants the privilege; where it refuses, audit:verify exits 2 and reports append_only_enforcement: not_installed, observed from the server catalog on every run.",
+            "owner": "UNASSIGNED",
+            "closure_sha": "ae4b92bbfb64906bb42de08fdbfacbef2464c7cd",
+            "residual": "On a managed service that withholds CREATE TRIGGER there is no database-level prevention of UPDATE or DELETE on audit_events. Tamper evidence, which is what the domain claims, holds unconditionally."
         },
         {
-          "file": "src/Administrator/Http/Handler/AdministratorLoginHandler.php",
-          "symbol": "AdministratorLoginHandler",
-          "note": "People authenticate on the web with a password into area-separated cookie sessions (the portal twin is src/Portal/Http/Handler/PortalLoginHandler.php); the decided native flow bypasses password entry in clients while leaving these handlers exactly as they are."
-        }
-      ],
-      "acceptance_test": "When the Version 3 programme opens, core adopts a descendant of the kumwe/dart-sdk native-authorization proposal: an anonymous link-request resource that answers identically for known and unknown addresses, an emailed single-use S256 proof-key-bound link code, a token endpoint honouring the authentication_link and refresh grants with rotating families, area-bound issuance (administrator or portal), revocation and logout, all under a versioned public contract with compatibility fixtures. Until then this entry records that no such surface exists and that Version 2 identity and token changes must not foreclose it.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "Decision D17, ADR 0009. The authentication link is the native sign-in; the web keeps password login; nothing in this entry is Version 2 scope."
-    },
-    {
-      "id": "V3-NC-002",
-      "title": "No pre-authentication native discovery document exists for self-hosted deployment bootstrap",
-      "severity": "medium",
-      "state": "open",
-      "phase": "N",
-      "gate": null,
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "docs/rest-api.md",
-          "symbol": "the API identity document",
-          "note": "GET /api/v1 returns a constant product/version/status object. A native client that holds nothing but an entered deployment URL needs the proposed closed discovery document - installation identity, exact allowed origins, compatibility window, advertised authorization profiles and sign-in areas - before it can offer sign-in or manage several deployments side by side."
-        }
-      ],
-      "acceptance_test": "When the Version 3 programme opens, core serves an anonymous, non-secret, ETag-cacheable native discovery document (a descendant of the kumwe/dart-sdk native-discovery proposal) identical for every caller, never disclosing sites, users or policies, and advertising exactly the authorization profiles and areas the deployment enables.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "Decision D17, ADR 0009."
-    },
-    {
-      "id": "V3-NC-003",
-      "title": "No guest arrival lifecycle exists: unknown addresses cannot arrive, and no mailer exists to notify anyone",
-      "severity": "medium",
-      "state": "open",
-      "phase": "N",
-      "gate": null,
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Identity/Domain/UserStatus.php",
-          "symbol": "Pending",
-          "note": "Pending is a starting state that cannot authenticate - the natural seed of the decided guest state, which signs in with a minimal arrival-only capability set instead. docs/getting-started.md's rule that public registration cannot claim an installation stays true: a guest can never claim ownership."
+            "id": "GM-AUD-08",
+            "title": "Audit-metadata redaction is a write-time convention with no runtime guard",
+            "severity": "low",
+            "state": "open",
+            "phase": "7",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "src/Audit/Domain/AuditEvent.php",
+                    "symbol": "the metadata property",
+                    "note": "Stored verbatim; enforcement is per-service discipline. src/Audit/Application/AuditMetadataRedactor.php redacts on the way out of an export only."
+                }
+            ],
+            "acceptance_test": "A denylist decorator around AuditRecorder, or a constructor check, rejecting credential-shaped metadata keys and values, plus unit assertions on each writing service's recorded metadata.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "src/",
-          "symbol": "absence",
-          "note": "No mailer exists anywhere under src/ (only the EmailAddress value object); the authentication link, the steward arrival notification and the positioning-complete notification all require one, making a reviewed mail path a Version 3 prerequisite."
-        }
-      ],
-      "acceptance_test": "When the Version 3 programme opens, requesting an authentication link for an unknown address creates a pending guest account behind an unchanged response shape, notifies designated stewards, signs the guest in to a minimal arrival context reported as account state pending, and emails the person when an administrator has positioned the account - with rate limits and non-enumeration proven by fixtures.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "Decision D17, ADR 0009. Guests can never claim installation ownership; positioning stays an administrator act in core's own UI."
-    },
-    {
-      "id": "V3-NC-004",
-      "title": "No path exchanges a native credential for a web session, so a client cannot open the website signed in",
-      "severity": "low",
-      "state": "open",
-      "phase": "N",
-      "gate": null,
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Http/Middleware/BearerAuthenticationMiddleware.php",
-          "symbol": "BearerAuthenticationMiddleware",
-          "note": "Bearer credentials and the two cookie-session boundaries never meet: only the password login handlers mint web sessions, and a handoff-minted session would need its own provenance semantics beside AuthenticationStrength::Password before step-up policy can reason about it."
-        }
-      ],
-      "acceptance_test": "When the Version 3 programme opens, a bearer-authenticated resource mints a single-use HTTPS handoff URL, bounded to roughly a minute, that signs the same subject into the same area's web session with a recorded non-password provenance; the URL is served no-store, dies on first use or expiry, cannot broaden authority, and never carries the bearer token itself.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "Decision D17, ADR 0009. A browser-only outcome still cannot satisfy native parity; the handoff is a convenience bridge, not parity evidence."
-    },
-    {
-      "id": "V2-DOC-002",
-      "title": "The outward identity now reads Kumwe App, and the wire value it emits is not yet coordinated with the SDK that parses it",
-      "severity": "medium",
-      "state": "in_progress",
-      "phase": "0",
-      "gate": null,
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "src/Http/Handler/ApiIndexHandler.php",
-          "symbol": "ApiIndexHandler",
-          "note": "The anonymous /api/v1 identity document reports product 'Kumwe App', as does the liveness document; the Dart SDK's discovery client pins that observed value, so the wire string cannot change without a coordinated SDK release."
+            "id": "GM-IDN-04",
+            "title": "The administrator login form has no login-CSRF protection",
+            "severity": "low",
+            "state": "open",
+            "phase": "7",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "src/Administrator/Http/Handler/AdministratorLoginHandler.php",
+                    "symbol": "handle()",
+                    "note": "Reads only email, password and User-Agent. The portal login already implements the pre-session double-submit token."
+                }
+            ],
+            "acceptance_test": "Mirror the portal pattern: set a path-scoped HttpOnly SameSite=Strict CSRF cookie on GET, render it as a hidden field, and hash_equals-compare and rotate on POST before authenticating.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "api/openapi/kumwe-v1.json",
-          "symbol": "info.title",
-          "note": "The canonical contract is titled 'Kumwe App API' now, and the documentation headings follow it. The composer and npm package names moved with the repository rename, and the PSR-4 namespace moved to Kumwe\\App\\ under the product owner's decision that the core is called app. What remains is the SDK side of the wire value, not the core side."
+            "id": "GM-IDN-05",
+            "title": "The session cookie Secure attribute has no production fail-closed guard, and there is no idle timeout",
+            "severity": "low",
+            "state": "open",
+            "phase": "7",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "src/Kernel/Configuration/ApplicationConfiguration.php",
+                    "symbol": "the production assertions",
+                    "note": "Secure is derived solely from the configured base-URL scheme. last_seen_at is stamped but never used in the resolve predicate."
+                }
+            ],
+            "acceptance_test": "Production configuration refuses a base URL that would serve session cookies without Secure. An idle-window predicate is added to the resolve path or its absence is stated as a deliberate, documented property.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": ".github/workflows/release.yml",
-          "symbol": "the release artifact name",
-          "note": "The published archive is still built, checksummed, attested and documented as kumwe-app-${version}.zip, beside an already-renamed dist/kumwe-app.cdx.json; deployment-acceptance.yml repeats the name four times and docs/operations/install.md twice. The name is consumer-visible - it is the release asset people download and the provenance subject - so all nine references move together and deliberately, or none do."
-        }
-      ],
-      "acceptance_test": "The wire identity is coordinated rather than merely changed: kumwe/dart-sdk's discovery and liveness parsers accept 'Kumwe App' in a released version before core emits it, and the compatibility note recording the change is published with it. Core already emits the new value from ApiIndexHandler and LivenessHandler, so until the SDK release lands, any deployed native client that pins the old product string refuses the response. Nothing in the Version 3 native programme has started, so the exposure is believed to be nil, but believed is not verified and the SDK release closes this either way.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "product_owner_decision": "The core is called app — Kumwe core app; the repository is renamed kumwe/cms to kumwe/app and every cross-repository reference follows it. The wire identity value is changed deliberately and in coordination with the SDK's pinned discovery contract, never silently.",
-      "progress": "Delivered: the PSR-4 namespace moved from Kumwe\\CMS\\ to Kumwe\\App\\ across 2,021 files, and the product name moved from 'Kumwe CMS' to 'Kumwe App' across every documentation heading, the composer description, the OpenAPI info.title and description, the MCP server name and capability catalogue, the site footer and demo content, and the release artifact, which is now kumwe-app-${version}.zip across release.yml, deployment-acceptance.yml and docs/operations/install.md. Three frozen SPI generation digests were re-recorded because the public type names moved, every published migration checksum was regenerated, and the two runtime checksum pins in DoctrineNonTransactionalMigrationRecovery were recomputed. All of it was free only because no version has been tagged: the migration checksums are the hash of each file's own bytes, so after a release the same rename would read as tampering on every installation and refuse to migrate. It was proven locally -- a database migrated before the rename answered 'Migration checksum drift detected' until it was rebuilt."
-    },
-    {
-      "id": "V2-QA-010",
-      "title": "The standard asks every test method for a documentation block and no gate has ever checked",
-      "severity": "medium",
-      "state": "in_progress",
-      "phase": "2",
-      "origin": "new",
-      "source_anchors": [
-        {
-          "file": "docs/coding-standard.md",
-          "symbol": "section 7, Tests",
-          "note": "States plainly that test classes and test methods carry documentation blocks under the same rules as src/, and that a test block says what behaviour is pinned - the part a future reader needs."
+            "id": "GM-IDN-06",
+            "title": "Qualification evidence has session and CSRF test blind spots",
+            "severity": "medium",
+            "state": "open",
+            "phase": "7",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "src/Administrator/Http/Middleware/",
+                    "symbol": "AdministratorCsrfMiddleware",
+                    "note": "No dedicated comparison or rejection tests. No test anywhere asserts the session cookie attribute string."
+                }
+            ],
+            "acceptance_test": "Dedicated tests for both CSRF middlewares, the Redis rate-limiter window arithmetic, the portal session store find and rotate rejection matrix, the logout handlers, and the session cookie attribute string.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
         },
         {
-          "file": "composer.json",
-          "symbol": "docs:api",
-          "note": "Ran tools/verify-docblocks.php against src/ only, so the rule for tests/ was written and unenforced from the day it was set down. The originally recorded figure counted test methods: 1,193 of 2,586 carried no block. Measured across every member the standard covers, tests/ owed 3,829 findings when the gate was armed. Each new test written beside an undocumented neighbour inherited the habit, which is how the drift compounded."
-        }
-      ],
-      "acceptance_test": "The recorded entries reach zero and the baseline document is deleted with the change that empties it, the way docs/quality/idempotency-baseline.json was emptied. The gate itself is delivered; what remains is the burn-down, taken in its own changes rather than inside a delivery wave.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null,
-      "progress": "Delivered: the gate exists and is enforced. composer docs:tests runs in composer qa and in the CI quality job, and tools/verify-docblocks.php holds tests/ to every documentation rule it checks -- not undocumented methods alone, but classes, summaries, @since, @param and @return -- against a record of 3,829 entries keyed by file, code and class-qualified member. Line width is the one rule left out, because phpcs.xml already holds tests/ to the same 120 characters and the tree owes nothing there. A violation the record does not carry fails, an entry that no longer matches fails, and the record is refused outright if an entry lacks an owner, a finding, a justification or a well-formed expiry, if two entries share a key, or if the declared count disagrees with the entries. Seven cases in tests/Unit/DocumentationBaseline pin each of those, including the keying defect the first attempt shipped with. Outstanding: the 3,829 recorded entries, of which 1,215 are test methods and the rest constructors, helpers and providers, burned down in their own changes."
-    },
-    {
-      "id": "V2-LNG-013",
-      "title": "Two vite stylesheet inputs sit outside the direction gate and pin physical sides in right-to-left",
-      "severity": "medium",
-      "state": "reproduced",
-      "phase": "L",
-      "gate": "A",
-      "origin": "new",
-      "source_anchors": [
+            "id": "GM-IDN-07",
+            "title": "Self-service credential rotation is reachable only by holders of users.manage",
+            "severity": "medium",
+            "state": "open",
+            "phase": "7",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "src/Kernel/ContainerFactory.php",
+                    "symbol": "the /administrator/access route registration",
+                    "note": "Both verbs are gated on users.manage. The portal has a security screen but no password path at all."
+                }
+            ],
+            "acceptance_test": "An ordinary portal member and a narrowly scoped administrator can rotate their own password without an identity administrator performing a reset.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
         {
-          "file": "public/assets/portal.css",
-          "symbol": "physical inline-axis declarations",
-          "note": "portal.css and administrator.css are vite build inputs but live outside composer assets:direction's assets/ scan root, so their physical declarations were never checked. Visibly: .portal-brand { margin-right: auto } pins the portal brand to the left under right-to-left, captured honestly in the committed portal-login baselines; also border-right on .portal-navigation, border-left on alerts and notices, and margin-left in the administrator styles."
-        }
-      ],
-      "acceptance_test": "composer assets:direction scans every stylesheet the build consumes, not one directory; the physical declarations become logical properties, and the right-to-left baselines are re-recorded showing the brand and the borders on the correct side.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-DOC-003",
-      "title": "A frozen manifest generation's recorded key lists omit two surfaces its parser accepts",
-      "severity": "low",
-      "state": "reproduced",
-      "phase": "2",
-      "origin": "new",
-      "source_anchors": [
+            "id": "GM-SUP-05",
+            "title": "Out-of-process execution for untrusted code is a documented invariant without a shipped runtime",
+            "severity": "medium",
+            "state": "open",
+            "phase": "7",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "src/Extension/Runtime/RestrictedExtensionContainer.php",
+                    "symbol": "RestrictedExtensionContainer",
+                    "note": "Curation covers service resolution only. Admitted PHP executes with the ambient authority of the process. That authority is now inventoried in docs/architecture/extensions.md beside the deployment control bounding each part of it, and every surface says so; what is absent is a runtime that enforces any of it."
+                }
+            ],
+            "acceptance_test": "Narrowed: the wording and inventory half is delivered and recorded in CHANGELOG.md, so what remains cannot be closed by repository-owned code at all. Closing it needs a shipped runtime in which a signed extension's filesystem, network and database authority is granted explicitly rather than inherited, with the host addressable only through an authenticated adapter contract. Until then, installing an extension means trusting its publisher with the application process, and every surface must go on saying exactly that.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
         {
-          "file": "docs/extension-contract/generations.json",
-          "symbol": "manifest-4",
-          "note": "Its frozen entry omits content from contribution_keys and unit_converters from integration_keys, though schema-4 parsing accepts both: surfaces added after the generation was frozen were never recorded against it. The record and the parser disagree about what a manifest-4 package may declare, which is the one thing a frozen generation exists to settle."
-        }
-      ],
-      "acceptance_test": "Every generation's recorded key lists match what its parser accepts, proven by a check that derives the lists from the parser rather than trusting the record, so a surface added after a freeze cannot go unrecorded again.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    },
-    {
-      "id": "V2-DEMO-001",
-      "title": "The business projection can still build a manifest the demo-profile envelope forbids",
-      "severity": "low",
-      "state": "reproduced",
-      "phase": "2",
-      "origin": "new",
-      "source_anchors": [
+            "id": "GM-SUP-08",
+            "title": "Content-Security-Policy admitted unsafe-inline for styles on every response",
+            "severity": "low",
+            "state": "conditional",
+            "phase": "7",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "src/Http/Security/SecurityHeaders.php",
+                    "symbol": "the style directives",
+                    "note": "Now style-src 'self', style-src-elem 'self' and style-src-attr 'unsafe-inline' in place of one permissive directive."
+                }
+            ],
+            "acceptance_test": "The exfiltration class is removed. The narrowed residual — inline style attributes — is named and owned.",
+            "owner": "UNASSIGNED",
+            "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
+        },
         {
-          "file": "src/Demo/Infrastructure/DemoBusinessProfileExporter.php",
-          "symbol": "documents()",
-          "note": "The write-then-refuse defect is closed at the boundary: DemoExportCommand refuses beyond the envelope before writePackage runs, and it is the only production caller. The projection itself is still unbounded, so a future writer could reintroduce the same failure. It was left unbounded deliberately: DemoBusinessProfileExporterTest inspects the unfiltered document set, and it cannot bound its own installation because an administrator may only edit definitions owned by the current site, so it cannot install a fixture into a site it alone fills."
+            "id": "GM-SUP-09",
+            "title": "The per-commit source SBOM is short-retention CI evidence nothing consumes",
+            "severity": "low",
+            "state": "open",
+            "phase": "2",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": ".github/workflows/security.yml",
+                    "symbol": "the SBOM upload",
+                    "note": "14-day artifact retention; no workflow step reads it."
+                }
+            ],
+            "acceptance_test": "A license-and-policy evaluation over the CycloneDX output, and publication as a build attestation or with longer retention. Blocked on a license policy nobody has agreed; a gate over an undecided policy would be scanning theatre.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "forward_reference": "V2-REL-001 is the natural home for this once the build-once chain exists."
+        },
+        {
+            "id": "GM-OBS-05",
+            "title": "No distributed tracing and no trace exporter",
+            "severity": "medium",
+            "state": "open",
+            "phase": "7",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "config/observability.php",
+                    "symbol": "the tracing block",
+                    "note": "Exporter none, sampling declared. W3C trace-context propagation exists and must not be overstated as distributed tracing."
+                }
+            ],
+            "acceptance_test": "Open by decision. Adopting an exporter is a separately reviewed dependency and configuration decision. Until then, documentation states propagation, never tracing.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "GM-BAK-04",
+            "title": "Post-restore identity and security acceptance was manual",
+            "severity": "medium",
+            "state": "conditional",
+            "phase": "6",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "tests/Support/RestoreSecurityAcceptance.php",
+                    "symbol": "RestoreSecurityAcceptance"
+                }
+            ],
+            "acceptance_test": "Still open: approval spent state, which needs an approval-rule administration surface first, and an HTTP replay of one login and one Idempotency-Key mutation against the restored container.",
+            "owner": "UNASSIGNED",
+            "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
+            "cross_reference": "V2-DR-002"
+        },
+        {
+            "id": "GM-BAK-08",
+            "title": "Backup scheduling, retention and off-host copy are operator-owned, and whole-table parity is not asserted",
+            "severity": "low",
+            "state": "conditional",
+            "phase": "6",
+            "origin": "gap-matrix",
+            "source_anchors": [
+                {
+                    "file": "docs/operations/backup-restore.md",
+                    "symbol": "Scheduling, retention, and off-host copies"
+                }
+            ],
+            "acceptance_test": "Documented: a reference hourly timer and unit, the four-step cycle, a retention prune that refuses to empty the directory, and an explicit list of what stays operator-owned. Open by choice: whole-table row-count parity is not in the acceptance manifest.",
+            "owner": "UNASSIGNED",
+            "closure_sha": "687707cfd8c4e42154b2a8d2f60bbd8ca165a09e",
+            "forward_reference": "V2-DR-003 changes the artifact this section documents; the reference schedule and the off-host step must be restated for the reshaped payload and the reference transport."
+        },
+        {
+            "id": "V2-STU-002",
+            "title": "The Studio contract is not pinned or replayed, so a composition integration would build against a moving draft",
+            "severity": "high",
+            "state": "accepted_for_implementation",
+            "phase": "S",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "package.json",
+                    "symbol": "the dependency set",
+                    "note": "The administrator build declares lit as its single runtime dependency and no @kumwe/studio package of any kind. Nothing pins a contract version and nothing fails when one moves."
+                },
+                {
+                    "file": "docs/roadmap/studio-integration.md",
+                    "symbol": "the published package table",
+                    "note": "Seven packages publish on a prerelease dist-tag under a 0.1-draft contract, so an inexact specifier would take a contract change silently."
+                }
+            ],
+            "acceptance_test": "The administrator build declares every Studio package at an exact version, the published schema and fixture corpus is vendored into the test fixtures at those exact versions, and a conformance suite validates every corpus document against its schema and recomputes the published digest manifest. A dependency check fails the build on a non-exact specifier for any Studio package, and the corpus check fails when the vendored fixtures and the pinned release disagree.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "work_package": "S-B",
+            "product_owner_decision": "Decision D16."
+        },
+        {
+            "id": "V2-STU-003",
+            "title": "No host adapter implements the identity and policy ports, and no session generation invalidates a composition session",
+            "severity": "high",
+            "state": "accepted_for_implementation",
+            "phase": "S",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Kernel/ContainerFactory.php",
+                    "symbol": "administratorRoute() and the container host-service allowlist",
+                    "note": "Administrator routes are capability-gated and the extension container exposes five host services, none of them identity, policy, media, preview, localization or telemetry. There is no port surface a composition client could negotiate against."
+                },
+                {
+                    "file": "src/Identity/",
+                    "symbol": "the security epoch and grant resolution",
+                    "note": "Grants are re-read on every session resolve and an epoch advance retires sessions and step-up proofs. A composition session must inherit that invalidation rather than cache an authorization decision."
+                }
+            ],
+            "acceptance_test": "Each implemented port resolves the actor's effective capabilities through the existing deny-by-default gateway and refuses a caller lacking each required capability, proven one capability at a time. Advancing the security epoch or revoking a grant mid-session invalidates the composition session generation, and every subsequent port call is refused with the canonical stale-generation category rather than applied. A client-asserted capability or generation is never trusted.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "work_package": "S-C",
+            "product_owner_decision": "Decision D16."
+        },
+        {
+            "id": "V2-STU-004",
+            "title": "Composition documents have no versioned artifact store, so there is no conflict, replay or refusal contract for them",
+            "severity": "high",
+            "state": "accepted_for_implementation",
+            "phase": "S",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "docs/rest-api.md",
+                    "symbol": "the retry and concurrency contract",
+                    "note": "Mutations require a caller-generated Idempotency-Key with a 24-hour replay window, and versioned resources require the current ETag in If-Match. A composition artifact must inherit exactly this discipline rather than invent a second one."
+                },
+                {
+                    "file": "src/Content/",
+                    "symbol": "ContentService and the content revision path",
+                    "note": "Content carries versions, revisions and a workflow. Composition documents are a different artifact kind and no store, revision path or refusal boundary exists for them."
+                }
+            ],
+            "acceptance_test": "A composition document is stored as a versioned artifact: a write carrying a stale expected revision is refused with the safe current revision and its diagnostics and never overwrites, an identical replay under the same idempotency key returns the recorded outcome once, and the revision history is readable. A document carrying markup, a style declaration, executable content or a URL outside a schema-defined field is refused at the boundary rather than stored and sanitized afterwards. Stored bytes validate against the published schema and round-trip unchanged on MariaDB, MySQL and PostgreSQL.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "work_package": "S-D",
+            "product_owner_decision": "Decision D16."
+        },
+        {
+            "id": "V2-STU-005",
+            "title": "The media port and the external-source obligations the composition contract names have no host implementation",
+            "severity": "high",
+            "state": "accepted_for_implementation",
+            "phase": "S",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Media/",
+                    "symbol": "MediaService and the storage adapter",
+                    "note": "Media exists as a module with its own storage and serving path, but nothing implements the canonical upload session state machine the composition contract negotiates, and no test proves the module's real limits agree with the contract's declared rejections."
+                },
+                {
+                    "file": "docs/roadmap/studio-integration.md",
+                    "symbol": "the external-source obligations",
+                    "note": "The contract's URL policy is lexical by construction. Redirect re-validation, response verification and defence against a host resolving differently between check and fetch are stated as host runtime obligations and cannot be discharged by it."
+                }
+            ],
+            "acceptance_test": "The media port drives the existing media module through the canonical upload session state machine, and every published media policy vector replays against it to the declared accepted plan or stable rejection, so the platform's real limits and the contract agree. Every external media or embed source passes the URL policy before any fetch, and a hardened fetcher refuses a redirect that leaves the policy, a response whose type contradicts its declaration, and a host that resolves to a refused address after the check, each asserted per category and never disclosing the candidate address.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "work_package": "S-E",
+            "product_owner_decision": "Decision D16."
+        },
+        {
+            "id": "V2-STU-006",
+            "title": "There is no authenticated preview endpoint, so unpublished composition cannot be rendered without exposing it",
+            "severity": "high",
+            "state": "accepted_for_implementation",
+            "phase": "S",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Kernel/ContainerFactory.php",
+                    "symbol": "the published content route",
+                    "note": "Published rendering is a public route by slug and the administrator editor links to the public address in a new tab. Nothing renders an unpublished document for an authorized actor."
+                },
+                {
+                    "file": "src/Http/Security/SecurityHeaders.php",
+                    "symbol": "the administrator content-security policy",
+                    "note": "The policy sends frame-ancestors none with a self-only script source. An embedded preview frame is the one deliberate change the integration requires, and it must be bounded to that route."
+                }
+            ],
+            "acceptance_test": "An authenticated, capability-gated, short-lived preview endpoint renders an unpublished composition document through the same template and theme path published output uses, so preview and publication cannot diverge. The preview channel is origin-pinned and replay-resistant on both ends: a foreign origin, a replayed sequence and a wrong channel identifier are each refused. The administrator content-security policy is otherwise byte-identical to its current value, with no inline script or style allowance introduced, proven by a policy test.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "work_package": "S-F",
+            "product_owner_decision": "Decision D16."
+        },
+        {
+            "id": "V2-STU-007",
+            "title": "No administrator surface embeds a composition editor, and none is declared, localized or qualified",
+            "severity": "medium",
+            "state": "accepted_for_implementation",
+            "phase": "S",
+            "gate": "B",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "templates/administrator/content-form.twig",
+                    "symbol": "the content editor surface",
+                    "note": "Content is authored through a server-rendered form with retained input, optimistic version and CSRF. It stays, and the composition surface is an additional capability-gated surface rather than its replacement."
+                },
+                {
+                    "file": "docs/interface-standard/schemas/surface-declaration.schema.json",
+                    "symbol": "the closed surface declaration",
+                    "note": "Every administrator surface declares area, actor, intent, resource, purpose, pattern, capabilities, states, customization and responsive behaviour. An embedded composition surface is declared the same way or it is outside the standard."
+                }
+            ],
+            "acceptance_test": "The composition surface is declared through the interface standard, gated by capability, and reachable only by an actor holding it. Its message catalog resolves through the compiled localization chain so site and organization wording overrides reach it, and its locale and direction come from the same per-request negotiation every other surface uses. Every authoring operation is achievable by keyboard, the surface passes the browser, accessibility and visual matrix including one right-to-left locale with zero violations and no horizontal overflow, and the existing server-rendered content editor and its no-JavaScript paths are unchanged.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "work_package": "S-G",
+            "product_owner_decision": "Decision D16."
+        },
+        {
+            "id": "V2-ERP-008",
+            "title": "A non-site-scoped counter keys on the definition's owning site, which ownership widening can silently change",
+            "severity": "medium",
+            "state": "open",
+            "phase": "E",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/BusinessRecord/Application/BusinessRecordService.php",
+                    "symbol": "allocateNumbers",
+                    "note": "Falls back to the definition's owning site for the counter's site coordinate when the record scope carries no site. Under ADR 0001 ownership can widen, so an ownership change would alter the counter identity of every non-site-scoped sequence on that definition and restart its runs at one. A stable sentinel coordinate, or a rule freezing owning-site changes for sequence-bearing definitions, needs deciding."
+                }
+            ],
+            "acceptance_test": "A definition whose ownership widens or moves keeps every existing counter identity and every run's continuity, proven by a test that widens ownership around a definition with allocated numbers.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "V2-ERP-009",
+            "title": "The hard-delete set-null sweep rewrites referencing records without a posting-period evaluation",
+            "severity": "medium",
+            "state": "open",
+            "phase": "E",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/BusinessRecord/Application/BusinessRecordService.php",
+                    "symbol": "clearInboundSetNull",
+                    "note": "The posting-period lock judges the addressed record, and the immutability guard already fences this sweep, but a record dated in a closed period can still be re-versioned by deleting an undated record it references set-null. Whether the sweep should refuse, skip, or be judged like any mutation is a decision the lock's addressed-record rule deliberately left open."
+                }
+            ],
+            "acceptance_test": "Deleting a record referenced set-null by a closed-period record either refuses by name or provably leaves the closed-period record's version and audit history untouched, and the chosen rule is stated on the lock.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "V2-UX-003",
+            "title": "Closed and immutable records still render edit affordances, and the definition editor cannot declare immutable states",
+            "severity": "medium",
+            "state": "open",
+            "phase": "7",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/BusinessRecord/Presentation/",
+                    "symbol": "generated browser surface",
+                    "note": "The generated browser catches only validation and version-conflict problems on submit, so an immutable or closed-period refusal lands on the global error boundary, and generated forms render edit affordances for records the service will refuse because catalog metadata does not expose immutable states or the posting-date declaration."
+                },
+                {
+                    "file": "src/BusinessDefinition/Presentation/",
+                    "symbol": "definition editor form mapper",
+                    "note": "The administrator definition editor cannot yet declare workflow immutable_states; the declaration is reachable only through canonical documents or an extension contribution."
+                }
+            ],
+            "acceptance_test": "A record in an immutable state or a closed period renders read-only affordances with the refusal's own wording, and the definition editor can declare and remove immutable states with validation.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "V2-QA-007",
+            "title": "pdo_pgsql under PHP 8.5 answers a stale empty result when one prepared statement is re-executed many times in one transaction",
+            "severity": "high",
+            "state": "reproduced",
+            "phase": "2",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php",
+                    "symbol": "testEachIdentityCoordinateIsolatesItsOwnContiguousRun",
+                    "note": "Reproduction: fresh PostgreSQL database, parent schema plus migrate, then this test's choreography - the allocator's identical five-parameter SELECT FOR UPDATE re-executed nine times inside one transaction - reads the first run at one where three were allocated. The backend session never changes, the unique index is valid and live, the committed state is correct whenever any other statement interleaves, and interleaving any statement makes the same sequence answer correctly. MariaDB and MySQL are unaffected. The real write path always interleaves record writes between allocations, so the product is not known to be exposed; the test's PostgreSQL leg skips naming this finding until the driver is cleared or pinned."
+                }
+            ],
+            "acceptance_test": "A minimal PDO-only reproduction either confirms the driver fault upstream (and the toolchain pins or patches pdo_pgsql, after which the skip is removed) or finds the true mechanism in this stack and fixes it; either way the allocator-seam test runs on PostgreSQL again.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "V2-QA-008",
+            "title": "Accumulating fixture definitions hit the per-site OpenAPI component ceiling by the third suite run against one database",
+            "severity": "medium",
+            "state": "reproduced",
+            "phase": "2",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/OpenApi/Application/OpenApiComponentClaimAdmission.php",
+                    "symbol": "admit",
+                    "note": "Uninstall preserves published definitions by design and each integration run installs roughly one hundred and sixty fixture definitions, so MAX_DEFINITIONS = 256 is exhausted around the third consecutive run against one database. This does not threaten the enforced two-run idempotency property, but it blocks enforcing the reverse pass as an appended same-database pass and will bite any long-lived integration database."
+                },
+                {
+                    "file": "src/BusinessRecord/Application/InstalledBusinessRecordDefinitionResolver.php",
+                    "symbol": "activeInstalled",
+                    "note": "Rejecting the published version is not on its own a way to withdraw a fixture definition, and an attempt on this branch had to be withdrawn for it. BusinessDefinitionService::reject flips the catalog head's publication_state, but catalog() selects every row for the site with no filter on that column, and this resolver then throws BusinessRecordSchemaUnavailable on any Active schema installation whose version reads Rejected. Withdrawing a definition therefore has to retire the schema installation in the same step, or the accounting has to change instead; rejection alone breaks definition resolution for the whole site rather than excluding one definition from it."
+                }
+            ],
+            "acceptance_test": "Either fixture definitions are retired with the run that made them, or the ceiling's accounting distinguishes live definitions from preserved-but-withdrawn ones; three consecutive full-suite runs against one database stay green.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "V2-REL-002",
+            "title": "The verification pipeline fetches toolchain from public infrastructure at run time",
+            "severity": "high",
+            "state": "accepted_for_implementation",
+            "phase": "2",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": ".github/workflows/ci.yml",
+                    "symbol": "toolchain provisioning",
+                    "note": "One review day lost four lanes to runtime provisioning and none to code: a rate-limited archive host mid composer install, a registry gateway error resolving a build image, a stalled OS mirror that held a browser lane silent for forty-four minutes, and the recovery-client apt install consumed by a job budget. Each got a tactical repair - download caches, digest pins with bounded retries, the Chromium apt step removed outright because the runner image provably ships the libraries - but the architecture still lets public mirrors decide whether verification finishes. The database lane still apt-installs its recovery client and signing tool at run time, and the nightly browser lane still apt-installs WebKit dependencies."
+                }
+            ],
+            "acceptance_test": "A verification run performs no unpinned network fetch: every tool it executes arrives from a digest-pinned image, a lockfile-keyed cache, or the runner image itself, enumerated in the quality contract so a new workflow step that fetches at run time fails review by construction. A cold cache may download; only through a pinned, bounded, announced path.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "V3-NC-001",
+            "title": "No native application sign-in exists; the decided flow is the authentication link",
+            "severity": "high",
+            "state": "open",
+            "phase": "N",
+            "gate": null,
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Identity/Infrastructure/Authentication/DoctrineAccessTokenVerifier.php",
+                    "symbol": "DoctrineAccessTokenVerifier",
+                    "note": "The single verifier every token-bearing surface uses admits only pre-issued, administrator- or CLI-created tokens; no anonymous path mints a credential, no refresh grant exists, and there is no /api/v1/native/ route family."
+                },
+                {
+                    "file": "src/Administrator/Http/Handler/AdministratorLoginHandler.php",
+                    "symbol": "AdministratorLoginHandler",
+                    "note": "People authenticate on the web with a password into area-separated cookie sessions (the portal twin is src/Portal/Http/Handler/PortalLoginHandler.php); the decided native flow bypasses password entry in clients while leaving these handlers exactly as they are."
+                }
+            ],
+            "acceptance_test": "When the Version 3 programme opens, core adopts a descendant of the kumwe/dart-sdk native-authorization proposal: an anonymous link-request resource that answers identically for known and unknown addresses, an emailed single-use S256 proof-key-bound link code, a token endpoint honouring the authentication_link and refresh grants with rotating families, area-bound issuance (administrator or portal), revocation and logout, all under a versioned public contract with compatibility fixtures. Until then this entry records that no such surface exists and that Version 2 identity and token changes must not foreclose it.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "Decision D17, ADR 0009. The authentication link is the native sign-in; the web keeps password login; nothing in this entry is Version 2 scope."
+        },
+        {
+            "id": "V3-NC-002",
+            "title": "No pre-authentication native discovery document exists for self-hosted deployment bootstrap",
+            "severity": "medium",
+            "state": "open",
+            "phase": "N",
+            "gate": null,
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "docs/rest-api.md",
+                    "symbol": "the API identity document",
+                    "note": "GET /api/v1 returns a constant product/version/status object. A native client that holds nothing but an entered deployment URL needs the proposed closed discovery document - installation identity, exact allowed origins, compatibility window, advertised authorization profiles and sign-in areas - before it can offer sign-in or manage several deployments side by side."
+                }
+            ],
+            "acceptance_test": "When the Version 3 programme opens, core serves an anonymous, non-secret, ETag-cacheable native discovery document (a descendant of the kumwe/dart-sdk native-discovery proposal) identical for every caller, never disclosing sites, users or policies, and advertising exactly the authorization profiles and areas the deployment enables.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "Decision D17, ADR 0009."
+        },
+        {
+            "id": "V3-NC-003",
+            "title": "No guest arrival lifecycle exists: unknown addresses cannot arrive, and no mailer exists to notify anyone",
+            "severity": "medium",
+            "state": "open",
+            "phase": "N",
+            "gate": null,
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Identity/Domain/UserStatus.php",
+                    "symbol": "Pending",
+                    "note": "Pending is a starting state that cannot authenticate - the natural seed of the decided guest state, which signs in with a minimal arrival-only capability set instead. docs/getting-started.md's rule that public registration cannot claim an installation stays true: a guest can never claim ownership."
+                },
+                {
+                    "file": "src/",
+                    "symbol": "absence",
+                    "note": "No mailer exists anywhere under src/ (only the EmailAddress value object); the authentication link, the steward arrival notification and the positioning-complete notification all require one, making a reviewed mail path a Version 3 prerequisite."
+                }
+            ],
+            "acceptance_test": "When the Version 3 programme opens, requesting an authentication link for an unknown address creates a pending guest account behind an unchanged response shape, notifies designated stewards, signs the guest in to a minimal arrival context reported as account state pending, and emails the person when an administrator has positioned the account - with rate limits and non-enumeration proven by fixtures.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "Decision D17, ADR 0009. Guests can never claim installation ownership; positioning stays an administrator act in core's own UI."
+        },
+        {
+            "id": "V3-NC-004",
+            "title": "No path exchanges a native credential for a web session, so a client cannot open the website signed in",
+            "severity": "low",
+            "state": "open",
+            "phase": "N",
+            "gate": null,
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Http/Middleware/BearerAuthenticationMiddleware.php",
+                    "symbol": "BearerAuthenticationMiddleware",
+                    "note": "Bearer credentials and the two cookie-session boundaries never meet: only the password login handlers mint web sessions, and a handoff-minted session would need its own provenance semantics beside AuthenticationStrength::Password before step-up policy can reason about it."
+                }
+            ],
+            "acceptance_test": "When the Version 3 programme opens, a bearer-authenticated resource mints a single-use HTTPS handoff URL, bounded to roughly a minute, that signs the same subject into the same area's web session with a recorded non-password provenance; the URL is served no-store, dies on first use or expiry, cannot broaden authority, and never carries the bearer token itself.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "Decision D17, ADR 0009. A browser-only outcome still cannot satisfy native parity; the handoff is a convenience bridge, not parity evidence."
+        },
+        {
+            "id": "V2-DOC-002",
+            "title": "The outward identity now reads Kumwe App, and the wire value it emits is not yet coordinated with the SDK that parses it",
+            "severity": "medium",
+            "state": "in_progress",
+            "phase": "0",
+            "gate": null,
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Http/Handler/ApiIndexHandler.php",
+                    "symbol": "ApiIndexHandler",
+                    "note": "The anonymous /api/v1 identity document reports product 'Kumwe App', as does the liveness document; the Dart SDK's discovery client pins that observed value, so the wire string cannot change without a coordinated SDK release."
+                },
+                {
+                    "file": "api/openapi/kumwe-v1.json",
+                    "symbol": "info.title",
+                    "note": "The canonical contract is titled 'Kumwe App API' now, and the documentation headings follow it. The composer and npm package names moved with the repository rename, and the PSR-4 namespace moved to Kumwe\\App\\ under the product owner's decision that the core is called app. What remains is the SDK side of the wire value, not the core side."
+                },
+                {
+                    "file": ".github/workflows/release.yml",
+                    "symbol": "the release artifact name",
+                    "note": "The published archive is still built, checksummed, attested and documented as kumwe-app-${version}.zip, beside an already-renamed dist/kumwe-app.cdx.json; deployment-acceptance.yml repeats the name four times and docs/operations/install.md twice. The name is consumer-visible - it is the release asset people download and the provenance subject - so all nine references move together and deliberately, or none do."
+                }
+            ],
+            "acceptance_test": "The wire identity is coordinated rather than merely changed: kumwe/dart-sdk's discovery and liveness parsers accept 'Kumwe App' in a released version before core emits it, and the compatibility note recording the change is published with it. Core already emits the new value from ApiIndexHandler and LivenessHandler, so until the SDK release lands, any deployed native client that pins the old product string refuses the response. Nothing in the Version 3 native programme has started, so the exposure is believed to be nil, but believed is not verified and the SDK release closes this either way.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "product_owner_decision": "The core is called app — Kumwe core app; the repository is renamed kumwe/cms to kumwe/app and every cross-repository reference follows it. The wire identity value is changed deliberately and in coordination with the SDK's pinned discovery contract, never silently.",
+            "progress": "Delivered: the PSR-4 namespace moved from Kumwe\\CMS\\ to Kumwe\\App\\ across 2,021 files, and the product name moved from 'Kumwe CMS' to 'Kumwe App' across every documentation heading, the composer description, the OpenAPI info.title and description, the MCP server name and capability catalogue, the site footer and demo content, and the release artifact, which is now kumwe-app-${version}.zip across release.yml, deployment-acceptance.yml and docs/operations/install.md. Three frozen SPI generation digests were re-recorded because the public type names moved, every published migration checksum was regenerated, and the two runtime checksum pins in DoctrineNonTransactionalMigrationRecovery were recomputed. All of it was free only because no version has been tagged: the migration checksums are the hash of each file's own bytes, so after a release the same rename would read as tampering on every installation and refuse to migrate. It was proven locally -- a database migrated before the rename answered 'Migration checksum drift detected' until it was rebuilt."
+        },
+        {
+            "id": "V2-QA-010",
+            "title": "The standard asks every test method for a documentation block and no gate has ever checked",
+            "severity": "medium",
+            "state": "in_progress",
+            "phase": "2",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "docs/coding-standard.md",
+                    "symbol": "section 7, Tests",
+                    "note": "States plainly that test classes and test methods carry documentation blocks under the same rules as src/, and that a test block says what behaviour is pinned - the part a future reader needs."
+                },
+                {
+                    "file": "composer.json",
+                    "symbol": "docs:api",
+                    "note": "Ran tools/verify-docblocks.php against src/ only, so the rule for tests/ was written and unenforced from the day it was set down. The originally recorded figure counted test methods: 1,193 of 2,586 carried no block. Measured across every member the standard covers, tests/ owed 3,829 findings when the gate was armed. Each new test written beside an undocumented neighbour inherited the habit, which is how the drift compounded."
+                }
+            ],
+            "acceptance_test": "The recorded entries reach zero and the baseline document is deleted with the change that empties it, the way docs/quality/idempotency-baseline.json was emptied. The gate itself is delivered; what remains is the burn-down, taken in its own changes rather than inside a delivery wave.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "progress": "Delivered: the gate exists and is enforced. composer docs:tests runs in composer qa and in the CI quality job, and tools/verify-docblocks.php holds tests/ to every documentation rule it checks -- not undocumented methods alone, but classes, summaries, @since, @param and @return -- against a record of 3,829 entries keyed by file, code and class-qualified member. Line width is the one rule left out, because phpcs.xml already holds tests/ to the same 120 characters and the tree owes nothing there. A violation the record does not carry fails, an entry that no longer matches fails, and the record is refused outright if an entry lacks an owner, a finding, a justification or a well-formed expiry, if two entries share a key, or if the declared count disagrees with the entries. Seven cases in tests/Unit/DocumentationBaseline pin each of those, including the keying defect the first attempt shipped with. Outstanding: the 3,829 recorded entries, of which 1,215 are test methods and the rest constructors, helpers and providers, burned down in their own changes."
+        },
+        {
+            "id": "V2-LNG-013",
+            "title": "Two vite stylesheet inputs sit outside the direction gate and pin physical sides in right-to-left",
+            "severity": "medium",
+            "state": "reproduced",
+            "phase": "L",
+            "gate": "A",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "public/assets/portal.css",
+                    "symbol": "physical inline-axis declarations",
+                    "note": "portal.css and administrator.css are vite build inputs but live outside composer assets:direction's assets/ scan root, so their physical declarations were never checked. Visibly: .portal-brand { margin-right: auto } pins the portal brand to the left under right-to-left, captured honestly in the committed portal-login baselines; also border-right on .portal-navigation, border-left on alerts and notices, and margin-left in the administrator styles."
+                }
+            ],
+            "acceptance_test": "composer assets:direction scans every stylesheet the build consumes, not one directory; the physical declarations become logical properties, and the right-to-left baselines are re-recorded showing the brand and the borders on the correct side.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "V2-DOC-003",
+            "title": "A frozen manifest generation's recorded key lists omit two surfaces its parser accepts",
+            "severity": "low",
+            "state": "reproduced",
+            "phase": "2",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "docs/extension-contract/generations.json",
+                    "symbol": "manifest-4",
+                    "note": "Its frozen entry omits content from contribution_keys and unit_converters from integration_keys, though schema-4 parsing accepts both: surfaces added after the generation was frozen were never recorded against it. The record and the parser disagree about what a manifest-4 package may declare, which is the one thing a frozen generation exists to settle."
+                }
+            ],
+            "acceptance_test": "Every generation's recorded key lists match what its parser accepts, proven by a check that derives the lists from the parser rather than trusting the record, so a surface added after a freeze cannot go unrecorded again.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "V2-DEMO-001",
+            "title": "The business projection can still build a manifest the demo-profile envelope forbids",
+            "severity": "low",
+            "state": "reproduced",
+            "phase": "2",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "src/Demo/Infrastructure/DemoBusinessProfileExporter.php",
+                    "symbol": "documents()",
+                    "note": "The write-then-refuse defect is closed at the boundary: DemoExportCommand refuses beyond the envelope before writePackage runs, and it is the only production caller. The projection itself is still unbounded, so a future writer could reintroduce the same failure. It was left unbounded deliberately: DemoBusinessProfileExporterTest inspects the unfiltered document set, and it cannot bound its own installation because an administrator may only edit definitions owned by the current site, so it cannot install a fixture into a site it alone fills."
+                }
+            ],
+            "acceptance_test": "documents() refuses beyond the envelope itself, so no caller can obtain a manifest the catalogue would reject, and the exporter's integration test proves the round-trip against an installation it bounds — which needs a way for a test to own a site's definitions, the same gap that stops it today.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null
+        },
+        {
+            "id": "V2-QA-011",
+            "title": "WebKit keeps a stale background-color after a live colour-scheme change, and nobody knows whether real Safari does",
+            "severity": "medium",
+            "state": "decision_required",
+            "phase": "2",
+            "gate": "A",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "tests/Browser/interface-standard.spec.ts",
+                    "symbol": "KIS production component gallery",
+                    "note": "Line 136 flips prefers-color-scheme to dark on an already-rendered page. On desktop-webkit the following axe scan reports color-contrast 1.1:1 on .button[href$=\"administrator\"], foreground #eef5fb over background #ffffff. Those are the endpoints of two different token generations: #eef5fb is --kumwe-text from the dark block, #ffffff is --kumwe-surface from the light one, and a single rule paints both, so no settled render can produce that pair."
+                },
+                {
+                    "file": "assets/administrator/styles.css",
+                    "symbol": "line 550",
+                    "note": "An in-flight transition is ruled out: the same emulateMedia call sets reducedMotion reduce, and this rule forces transition-duration to .01ms !important for every element. The reported #ffffff is also exactly the pre-flip value rather than an interpolated midpoint, and axe samples hundreds of milliseconds later. The value is stuck, not settling, so no change to the transition list can reach it."
+                }
+            ],
+            "acceptance_test": "Someone determines on real Safari, not an emulated media override, whether changing the operating system appearance while an administrator page is open leaves background-color at its previous value. If it does, this is a user-facing theming defect and the fix is to stop expressing the theme only as root custom properties consumed through var() -- light-dark(), or real declarations inside the media block, so a media change re-runs the cascade for the non-inherited property. If it does not, the finding belongs to Playwright's setEmulatedMedia path, the assertion is rewritten to emulate before load rather than after, and the browser behaviour is reported upstream with the reproducer.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "progress": "Reproduced and diagnosed; deliberately not patched. The first proposed fix -- removing background and border-color from the .button transition list -- was refuted as inert under the reduced motion the test itself emulates, so applying it would have left the nightly failing while looking addressed. What is open is not the mechanism but its blast radius: whether it reaches a person using Safari, or only the emulation path. Until that is answered no CSS is changed and the nightly stays red here rather than being quieted."
+        },
+        {
+            "id": "V2-QA-012",
+            "title": "A content-sized grid track lets the schema-plan sidebar overflow its column in WebKit",
+            "severity": "low",
+            "state": "reproduced",
+            "phase": "2",
+            "gate": "A",
+            "origin": "new",
+            "source_anchors": [
+                {
+                    "file": "assets/administrator/styles.css",
+                    "symbol": ".stack",
+                    "note": "Declares display grid and a gap but no grid-template-columns, so its single implicit column is a content-sized auto track. Every other grid in the sheet that can hold content-sized children pins its columns; .stack and .stack-compact are the two that rely on the engine clamping an auto track to a definite container."
+                },
+                {
+                    "file": "tests/Browser/interface-integrity.spec.ts",
+                    "symbol": "administrator landing routes emit complete interface baselines",
+                    "note": "On desktop-webkit, aside.stack on /administrator/business-schema-plans reports a 500px component overflow while neither of its section.panel.stack children is flagged -- the track inflated, not the contents. The sidebar's own overflow-x absorbs the spill, so the viewport reports none and only the component diagnostic sees it."
+                }
+            ],
+            "acceptance_test": "The persisted-plan catalog and its comparison form render inside the sidebar column on all three engines, with no component-overflow finding on that surface, verified by the nightly breadth lane rather than by Chromium alone. The fix must be shown not to relocate the finding onto a child, and the same latent declaration in the portal and site sheets is corrected with it.",
+            "owner": "UNASSIGNED",
+            "closure_sha": null,
+            "progress": "Mechanism identified and a one-property fix proposed, held back deliberately. It ships with the WebKit engine available to verify it -- the finding is engine-specific, so a green Chromium lane cannot show either that it is fixed or that it merely moved onto a child element."
         }
-      ],
-      "acceptance_test": "documents() refuses beyond the envelope itself, so no caller can obtain a manifest the catalogue would reject, and the exporter's integration test proves the round-trip against an installation it bounds — which needs a way for a test to own a site's definitions, the same gap that stops it today.",
-      "owner": "UNASSIGNED",
-      "closure_sha": null
-    }
-  ]
+    ]
 }
