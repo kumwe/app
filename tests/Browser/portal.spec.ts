@@ -703,7 +703,12 @@ test('portal shell keeps sessions isolated and protects mutations', async ({ pag
   await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
   expect((await administratorDenial).status()).toBe(403);
   await expect(page).toHaveURL(/\/administrator\/login$/);
-  await expect(page.locator('body')).toContainText('not authorized for this operation');
+  // The refusal is a rendered page, not a raw payload. It used to leave as application/problem+json,
+  // which Firefox will not render as a document at all -- the person who typed the right password but
+  // holds no administrator capability was shown the browser's own error page. Asserting the form is
+  // present alongside the message is what pins that: a problem document carries neither.
+  await expect(page.locator('body')).toContainText('This account is not permitted to use the administrator.');
+  await expect(page.getByRole('button', { name: 'Sign in to Kumwe' })).toBeVisible();
   expect((await page.context().cookies())
     .find((cookie) => cookie.name === 'kumwe_administrator')).toBeUndefined();
   await page.goto('/portal');
