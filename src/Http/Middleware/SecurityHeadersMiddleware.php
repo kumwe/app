@@ -15,10 +15,12 @@ use Psr\Http\Server\RequestHandlerInterface;
  *
  * Applying the policy at the boundary rather than in each handler means a newly added route cannot
  * ship without it. `SecurityHeaders` owns the policy itself; this middleware decides only the two
- * things that depend on the live request — whether HSTS may be asserted, and whether the response is
- * an SVG. HSTS is withheld outside production and off plain HTTP so a development host is never pinned
- * to TLS, and an `image/svg+xml` response is additionally sandboxed because an SVG is an active
- * document the browser would otherwise run with the site's own origin.
+ * things that depend on the live request — what the transport allows, and whether the response is an
+ * SVG. HSTS is withheld outside production and off plain HTTP so a development host is never pinned to
+ * TLS. `upgrade-insecure-requests` is withheld off plain HTTP alone, because a site served without TLS
+ * cannot honour it: the browser would be told to fetch every subresource, and to submit every form,
+ * over a scheme nothing is listening on. An `image/svg+xml` response is additionally sandboxed because
+ * an SVG is an active document the browser would otherwise run with the site's own origin.
  *
  * @since  2.0.0
  */
@@ -42,7 +44,7 @@ final readonly class SecurityHeadersMiddleware implements MiddlewareInterface
      * value first. The SVG lock-down runs last and deliberately replaces the site policy with
      * `default-src 'none'` plus `sandbox`, which is stricter than the policy it overwrites.
      *
-     * @param   ServerRequestInterface   $request  Request whose scheme decides whether HSTS is asserted.
+     * @param   ServerRequestInterface   $request  Request whose scheme decides what the transport allows.
      * @param   RequestHandlerInterface  $handler  Rest of the pipeline, which produces the response.
      *
      * @return  ResponseInterface  The handler's response with the security headers applied.
@@ -54,7 +56,7 @@ final readonly class SecurityHeadersMiddleware implements MiddlewareInterface
         $response = $handler->handle($request);
         $secure = $request->getUri()->getScheme() === 'https';
 
-        foreach ((new SecurityHeaders($this->production && $secure))->values() as $name => $value) {
+        foreach ((new SecurityHeaders($this->production && $secure, $secure))->values() as $name => $value) {
             $response = $response->withHeader($name, $value);
         }
         if (str_starts_with(strtolower($response->getHeaderLine('Content-Type')), 'image/svg+xml')) {

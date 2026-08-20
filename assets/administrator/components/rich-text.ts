@@ -5,6 +5,13 @@ import { customElement } from 'lit/decorators.js';
 export class KumweRichText extends LitElement {
   override createRenderRoot(): HTMLElement { return this; }
 
+  /** Tags a browser uses as its own block inside a `contenteditable`; everything else is inline. */
+  private static readonly blockTags = new Set([
+    'ADDRESS', 'ARTICLE', 'ASIDE', 'BLOCKQUOTE', 'DIV', 'DL', 'FIGURE', 'FOOTER',
+    'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HEADER', 'HR', 'MAIN', 'NAV', 'OL', 'P',
+    'PRE', 'SECTION', 'TABLE', 'UL',
+  ]);
+
   override firstUpdated(): void {
     const source = this.querySelector<HTMLTextAreaElement>('textarea');
     const editor = this.querySelector<HTMLElement>('[data-rich-text-editor]');
@@ -84,9 +91,36 @@ export class KumweRichText extends LitElement {
       .replace(/\[([^\]]+)]\((https?:\/\/[^\s)]+|mailto:[^\s)]+|\/(?!\/)[^\s)]*|#[^\s)]+)\)/g, '<a href="$2">$1</a>');
   }
 
+  /**
+   * Serialize the editor back to the source the backing textarea submits.
+   *
+   * The walk is over `childNodes` rather than `children` because what a browser leaves at the top level
+   * of a `contenteditable` is not agreed between engines. Chromium wraps text typed into an empty editor
+   * in a `<div>`; Firefox and WebKit leave a bare text node. Reading elements only dropped that text, so
+   * the `required` textarea stayed empty and native validation refused the form — the editor looked full
+   * and the page would not submit. Runs of top-level inline nodes are gathered into one implicit block,
+   * which is what they render as, and block elements keep being serialized one block each.
+   */
   private toSource(editor: HTMLElement): string {
-    return Array.from(editor.children)
-      .map((element) => this.blockToSource(element))
+    const blocks: string[] = [];
+    let inline: Node[] = [];
+    const flushInline = (): void => {
+      if (inline.length === 0) return;
+      blocks.push(this.inlineNodesToSource(inline).trimEnd());
+      inline = [];
+    };
+
+    editor.childNodes.forEach((node) => {
+      if (node instanceof Element && KumweRichText.blockTags.has(node.tagName)) {
+        flushInline();
+        blocks.push(this.blockToSource(node));
+        return;
+      }
+      inline.push(node);
+    });
+    flushInline();
+
+    return blocks
       .filter((value, index, all) => value !== '' || (index > 0 && all[index - 1] !== ''))
       .join('\n');
   }
@@ -102,8 +136,13 @@ export class KumweRichText extends LitElement {
   }
 
   private inlineToSource(element: Element): string {
+    return this.inlineNodesToSource(Array.from(element.childNodes));
+  }
+
+  /** Serialize a run of inline nodes, wherever in the tree they were found. */
+  private inlineNodesToSource(nodes: readonly Node[]): string {
     let output = '';
-    element.childNodes.forEach((node) => {
+    nodes.forEach((node) => {
       if (node.nodeType === Node.TEXT_NODE) output += node.textContent ?? '';
       else if (node instanceof HTMLBRElement) output += '\n';
       else if (node instanceof HTMLAnchorElement) output += `[${this.inlineToSource(node)}](${node.href})`;

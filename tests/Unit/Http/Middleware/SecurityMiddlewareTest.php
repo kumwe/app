@@ -240,4 +240,55 @@ final class SecurityMiddlewareTest extends TestCase
             }
         };
     }
+
+    /**
+     * The transport the request arrived on decides whether subresources are told to upgrade.
+     *
+     * This is the end of the path the defect travelled: the policy builder is gated correctly only if
+     * the middleware hands it the live scheme. Pinning both directions here means a future refactor that
+     * drops the argument, or passes the production flag by mistake, fails rather than silently returning
+     * an HTTP-only deployment to a policy Safari cannot honour.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSubresourceUpgradeFollowsTheRequestTransport(): void
+    {
+        $middleware = new SecurityHeadersMiddleware(false);
+        $handler = new class implements RequestHandlerInterface {
+            /**
+             * Answer with a bare response for the middleware to stamp.
+             *
+             * @param   ServerRequestInterface  $request  Request the middleware passed through.
+             *
+             * @return  ResponseInterface  An empty text response.
+             *
+             * @since   2.0.0
+             */
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                return new TextResponse('');
+            }
+        };
+        $factory = new ServerRequestFactory();
+
+        $overHttp = $middleware->process(
+            $factory->createServerRequest('GET', 'http://kumwe.test/administrator/login'),
+            $handler,
+        );
+        $overHttps = $middleware->process(
+            $factory->createServerRequest('GET', 'https://kumwe.test/administrator/login'),
+            $handler,
+        );
+
+        self::assertStringNotContainsString(
+            'upgrade-insecure-requests',
+            $overHttp->getHeaderLine('Content-Security-Policy'),
+        );
+        self::assertStringContainsString(
+            'upgrade-insecure-requests',
+            $overHttps->getHeaderLine('Content-Security-Policy'),
+        );
+    }
 }

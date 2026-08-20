@@ -244,4 +244,26 @@ test.describe('data-entry integrity', () => {
     await expect(page.getByLabel('Title')).toHaveValue(rewrittenTitle);
     await expect(page.locator('textarea[name="field__body"]')).toHaveValue(rewrittenBody);
   });
+
+  test('text the browser leaves unwrapped still reaches the required backing field', async ({ page }) => {
+    // Engines disagree about what they leave at the top level of a contenteditable. Chromium wraps text
+    // typed into an empty editor in a <div>; Firefox and WebKit leave a bare text node. Serializing only
+    // element children dropped that text, so the required textarea stayed empty, native validation
+    // refused the form, and the editor looked full while Create draft did nothing. Forcing the shape
+    // here rather than typing means every engine exercises the path, not only the ones that produce it.
+    await signInToAdministrator(page);
+    await page.goto('/administrator/content/new');
+    await expect(page.getByRole('textbox', { name: 'Rich text editor' }).first()).toBeVisible();
+
+    const serialized = await page.evaluate(() => {
+      const editor = document.querySelector('[data-rich-text-editor]');
+      if (!(editor instanceof HTMLElement)) return '<no editor>';
+      editor.replaceChildren(document.createTextNode('Left unwrapped by the browser'));
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+      const field = editor.closest('kumwe-rich-text')?.querySelector('textarea');
+      return field instanceof HTMLTextAreaElement ? field.value : '<no textarea>';
+    });
+
+    expect(serialized).toBe('Left unwrapped by the browser');
+  });
 });
