@@ -110,11 +110,17 @@ jobs:
           web_image="$REGISTRY/$repository/web"
           app_tags="$(printf '%s\n%s' "$app_image:$image_version" "$app_image:${GITHUB_SHA}")"
           web_tags="$(printf '%s\n%s' "$web_image:$image_version" "$web_image:${GITHUB_SHA}")"
+          # One stability test, used twice: it decides the moving image tags below and, further down,
+          # whether the GitHub release is published as a prerelease. A tag carrying any suffix -- the
+          # alpha, beta and rc channels the continuous lane cuts -- is not stable.
+          stable=false
           if [[ "$release_tag" =~ ^v2\.[0-9]+\.[0-9]+$ ]]; then
+            stable=true
             minor="${version%.*}"
             app_tags="$(printf '%s\n%s\n%s\n%s' "$app_tags" "$app_image:$minor" "$app_image:2" "$app_image:latest")"
             web_tags="$(printf '%s\n%s\n%s\n%s' "$web_tags" "$web_image:$minor" "$web_image:2" "$web_image:latest")"
           fi
+          echo "stable=$stable" >> "$GITHUB_OUTPUT"
           {
             echo 'app_tags<<KUMWE_TAGS'
             echo "$app_tags"
@@ -294,14 +300,29 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: >-
-          gh release create '${{ steps.release.outputs.tag }}'
-          dist/SHA256SUMS
-          dist/SHA256SUMS.cosign.bundle
-          dist/kumwe-app.cdx.json
-          dist/kumwe-archive.cdx.json
-          dist/kumwe-app-${{ steps.release.outputs.version }}.zip
-          dist/kumwe-web.cdx.json
-          --generate-notes
-          --title 'Kumwe App ${{ steps.release.outputs.version }}'
-          --verify-tag
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_STABLE: ${{ steps.release.outputs.stable }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # GitHub never infers prerelease status from the tag. The API defaults prerelease to false and
+          # marks whatever was published most recently as Latest, so an alpha cut by the continuous lane
+          # would sit on the repository front page as the release to download. Both flags are stated
+          # explicitly, in both directions, so the answer never depends on publication order.
+          if [[ "$RELEASE_STABLE" == 'true' ]]; then
+            channel=(--latest)
+          else
+            channel=(--prerelease --latest=false)
+          fi
+          gh release create "$RELEASE_TAG" \
+            dist/SHA256SUMS \
+            dist/SHA256SUMS.cosign.bundle \
+            dist/kumwe-app.cdx.json \
+            dist/kumwe-archive.cdx.json \
+            "dist/kumwe-app-${RELEASE_VERSION}.zip" \
+            dist/kumwe-web.cdx.json \
+            --generate-notes \
+            --title "Kumwe App ${RELEASE_VERSION}" \
+            --verify-tag \
+            "${channel[@]}"

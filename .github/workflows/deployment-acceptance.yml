@@ -304,7 +304,7 @@ jobs:
             echo 'KUMWE_APP_IMAGE_REF=kumwe-app:acceptance'
             echo 'KUMWE_WEB_IMAGE_REF=kumwe-web:acceptance'
             echo 'KUMWE_APPLICATION_PULL_POLICY=never'
-            echo 'KUMWE_INFRASTRUCTURE_PULL_POLICY=always'
+            echo 'KUMWE_INFRASTRUCTURE_PULL_POLICY=never'
             echo 'KUMWE_BASE_URL=https://kumwe.test'
             echo 'KUMWE_TRUSTED_HOSTS=kumwe.test,127.0.0.1,localhost'
             echo 'KUMWE_TRUSTED_PROXIES=172.16.0.0/12,192.168.0.0/16'
@@ -329,6 +329,40 @@ jobs:
             echo "KUMWE_DB_PASSWORD_FILE=$database_password_file"
             echo "KUMWE_REDIS_PASSWORD_FILE=$redis_password_file"
           } >> "$GITHUB_ENV"
+
+      # The acceptance script recreates the topology several times to prove restart, persistence and
+      # restore. With the infrastructure pull policy set to `always`, every one of those recreations
+      # asked Docker Hub for the manifest again, so a single registry 500 anywhere in a twenty-minute
+      # run failed the job -- as one did, on all three engines within two seconds of each other, after
+      # the images had already been pulled successfully. The images are fetched once here, with bounded
+      # retries, and the deployment then uses what is cached. `never` without this pull would fail on a
+      # clean runner, and only the acceptance environment overrides the policy: compose.production.yaml
+      # keeps `always` for real deployments, where fetching the current image is the right default.
+      - name: Pull the infrastructure images once
+        shell: bash
+        env:
+          DATABASE_IMAGE: ${{ matrix.database.image }}
+          REDIS_IMAGE: redis:8-alpine
+        run: |
+          set -euo pipefail
+          pull_with_retry() {
+            local image="$1"
+            local attempt
+            for attempt in 1 2 3 4; do
+              if docker pull "$image"; then
+                return 0
+              fi
+              if (( attempt == 4 )); then
+                echo "Unable to pull ${image} after four attempts." >&2
+
+                return 1
+              fi
+              sleep $(( attempt * 5 ))
+            done
+          }
+          pull_with_retry "$DATABASE_IMAGE"
+          pull_with_retry "$REDIS_IMAGE"
+          docker image inspect "$DATABASE_IMAGE" "$REDIS_IMAGE" >/dev/null
 
       - name: Validate Compose model
         run: docker compose --file compose.production.yaml config --quiet
