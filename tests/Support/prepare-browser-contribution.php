@@ -390,13 +390,20 @@ try {
             $at,
         );
     });
-    foreach (['desktop', 'mobile'] as $project) {
+    // One approval identity per Playwright project, not per device family. TOTP enrollment is a
+    // once-per-account operation, and the nightly runs desktop-firefox and desktop-webkit in one
+    // invocation against one database, so two projects sharing an account leave the second unable to
+    // enroll -- which showed up only as a bare ninety-second timeout. The retry index gives each attempt
+    // of a project its own untouched identity. This list must gain any new project that runs
+    // portal.spec.ts; the four right-to-left projects are absent because `testMatch` confines them to
+    // right-to-left.spec.ts, which never enrolls an authenticator.
+    foreach (['desktop-chromium', 'mobile-chromium', 'desktop-firefox', 'desktop-webkit'] as $project) {
         foreach ([0, 1] as $retry) {
             foreach (['maker', 'approver'] as $approvalActor) {
                 $approvalUser = $access->createUser(
                     $context,
                     sprintf('browser-%s-%s-%d@kumwe.test', $approvalActor, $project, $retry),
-                    sprintf('Browser %s %s %d', ucfirst($project), $approvalActor, $retry),
+                    sprintf('Browser %s %s %d', ucwords($project, '-'), $approvalActor, $retry),
                     sprintf('browser %s %s password %d', $project, $approvalActor, $retry),
                 );
                 $approvalMembership = Uuid::uuid7()->toString();

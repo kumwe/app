@@ -1123,6 +1123,17 @@ development programme, from the architecture decision that opened it to the curr
   after the images had already been pulled successfully. The images are now fetched once, with bounded
   retries, and the deployment uses what is cached. Only the acceptance environment overrides the policy —
   `compose.production.yaml` keeps `always`, which is the right default for a real deployment.
+- **Two browser projects no longer compete for one approval identity.** The maker-checker journey keyed
+  its fixture accounts on device family, so `desktop-firefox` and `desktop-webkit` — which the nightly
+  runs in one invocation, against one server and one database seeded once before the run — both resolved
+  to the same maker and approver. TOTP enrollment is a once-per-account operation, so whichever project
+  ran second could not enroll; the refused enrollment renders a notice and no provisioning element, and
+  the journey waited on an element that would never appear until its ninety-second budget expired,
+  reporting nothing but a bare timeout. Identities are keyed on the project now and seeded per project,
+  the device family stays a separate value because it still drives mobile emulation, and the enrollment
+  helper asserts the panel it needs so a refusal fails in ten seconds naming the step that refused.
+  `BrowserApprovalIdentityParityTest` holds the seeder to the configuration, because the two name their
+  projects in different languages and nothing else connects them.
 - **A correct credential that may not administer is now refused on the sign-in form, not as a raw
   document.** `/administrator/login` is exempt from both the session and the authorization middleware,
   so the themed denial those render could never fire for it and the handler owns every refusal on that
