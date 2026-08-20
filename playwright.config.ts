@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 
 /**
@@ -14,12 +15,50 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const rightToLeftSpec = /right-to-left\.spec\.ts/;
 
+/**
+ * The browser matrix is defined once, in tests/Browser/projects.json, because two languages read it.
+ *
+ * This file builds its projects from that manifest and tests/Support/prepare-browser-contribution.php
+ * seeds its fixtures from the same file, so a project cannot exist in one and be missing from the other.
+ * It used to be possible: the maker-checker journey needs an approval identity per project, the seeder
+ * named its projects in PHP, and nothing connected the two — two projects silently shared one account,
+ * and because TOTP enrollment cannot be repeated the second met a refusal that surfaced only as a
+ * ninety-second timeout. Deriving both from one file is what makes that unrepresentable rather than
+ * merely tested for.
+ */
+interface BrowserProject {
+  readonly name: string;
+  readonly specs: 'all' | 'right-to-left';
+}
+
+const matrix = JSON.parse(
+  readFileSync(new URL('./tests/Browser/projects.json', import.meta.url), 'utf8'),
+) as { readonly retries: number; readonly projects: readonly BrowserProject[] };
+
+/** Emulation and comparison options per project; the manifest decides which projects exist. */
+const projectOptions: Record<string, Record<string, unknown>> = {
+  'desktop-chromium': { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 960 } },
+  'mobile-chromium': { ...devices['Pixel 7'] },
+  'desktop-chromium-he': { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 960 }, locale: 'he-IL' },
+  'desktop-chromium-ar': { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 960 }, locale: 'ar-EG' },
+  'mobile-chromium-he': { ...devices['Pixel 7'], locale: 'he-IL' },
+  'mobile-chromium-ar': { ...devices['Pixel 7'], locale: 'ar-EG' },
+  // `ignoreSnapshots` on the breadth projects is deliberate and is not a weakening: a pixel baseline
+  // belongs to the browser that recorded it, so comparing a Firefox or WebKit render against a Chromium
+  // baseline reports font hinting rather than the product. Behaviour and accessibility are asserted
+  // identically on all three engines; only the pixel comparison stays with the browser that owns them.
+  'desktop-firefox': { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 960 } },
+  'desktop-webkit': { ...devices['Desktop Safari'], viewport: { width: 1440, height: 960 } },
+};
+
+const snapshotIgnoringProjects = new Set(['desktop-firefox', 'desktop-webkit']);
+
 export default defineConfig({
   testDir: './tests/Browser',
   outputDir: './test-results/browser',
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 1 : 0,
+  retries: process.env.CI ? matrix.retries : 0,
   workers: 1,
   // The JSON report is what tools/summarize-browser-attempts.mjs reads to separate a journey that passed
   // on its first attempt from one that only passed on a retry. Reporting the two together hides the
@@ -62,52 +101,12 @@ export default defineConfig({
       ? { launchOptions: { executablePath: process.env.KUMWE_BROWSER_CHROMIUM } }
       : {}),
   },
-  projects: [
-    {
-      name: 'desktop-chromium',
-      testIgnore: rightToLeftSpec,
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 960 } },
-    },
-    {
-      name: 'mobile-chromium',
-      testIgnore: rightToLeftSpec,
-      use: { ...devices['Pixel 7'] },
-    },
-    {
-      name: 'desktop-chromium-he',
-      testMatch: rightToLeftSpec,
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 960 }, locale: 'he-IL' },
-    },
-    {
-      name: 'desktop-chromium-ar',
-      testMatch: rightToLeftSpec,
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 960 }, locale: 'ar-EG' },
-    },
-    {
-      name: 'mobile-chromium-he',
-      testMatch: rightToLeftSpec,
-      use: { ...devices['Pixel 7'], locale: 'he-IL' },
-    },
-    {
-      name: 'mobile-chromium-ar',
-      testMatch: rightToLeftSpec,
-      use: { ...devices['Pixel 7'], locale: 'ar-EG' },
-    },
-    // The nightly breadth projects. `ignoreSnapshots` is deliberate and is not a weakening: a pixel
-    // baseline belongs to the browser that recorded it, so comparing a Firefox or WebKit render against a
-    // Chromium baseline reports font hinting rather than the product. Behaviour and accessibility are
-    // asserted identically here; only the pixel comparison stays with the browser that owns the baselines.
-    {
-      name: 'desktop-firefox',
-      testIgnore: rightToLeftSpec,
-      ignoreSnapshots: true,
-      use: { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 960 } },
-    },
-    {
-      name: 'desktop-webkit',
-      testIgnore: rightToLeftSpec,
-      ignoreSnapshots: true,
-      use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 960 } },
-    },
-  ],
+  projects: matrix.projects.map((project) => ({
+    name: project.name,
+    ...(project.specs === 'right-to-left'
+      ? { testMatch: rightToLeftSpec }
+      : { testIgnore: rightToLeftSpec }),
+    ...(snapshotIgnoringProjects.has(project.name) ? { ignoreSnapshots: true } : {}),
+    use: projectOptions[project.name] ?? {},
+  })),
 });

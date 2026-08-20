@@ -858,14 +858,41 @@ PHP;
             self::assertStringContainsString('--project=' . $project, $merge);
         }
 
+        // The breadth projects run every journey except the right-to-left spec, and compare no pixels.
+        // Both facts now live in structure rather than in adjacent lines of the configuration: the
+        // manifest decides which spec set a project runs, and the configuration names the projects whose
+        // snapshots are ignored. Asserting the structure keeps the guarantee while letting the matrix be
+        // defined in one place — the literal-adjacency form could only ever be read from one file.
         $configuration = $this->contents('playwright.config.ts');
+        $matrix = json_decode(
+            $this->contents('tests/Browser/projects.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+        self::assertIsArray($matrix);
+        $specsByProject = [];
+        foreach ($matrix['projects'] as $matrixProject) {
+            $specsByProject[$matrixProject['name']] = $matrixProject['specs'];
+        }
+        self::assertMatchesRegularExpression(
+            "/snapshotIgnoringProjects = new Set\(\[([^\]]*)\]\)/",
+            $configuration,
+        );
+        self::assertSame(
+            1,
+            preg_match("/snapshotIgnoringProjects = new Set\(\[([^\]]*)\]\)/", $configuration, $ignored),
+        );
         foreach (['desktop-firefox', 'desktop-webkit'] as $project) {
-            self::assertMatchesRegularExpression(
-                sprintf(
-                    "/name: '%s',\\n\\s+testIgnore: rightToLeftSpec,\\n\\s+ignoreSnapshots: true/",
-                    preg_quote($project, '/'),
-                ),
-                $configuration,
+            self::assertSame(
+                'all',
+                $specsByProject[$project] ?? null,
+                sprintf('%s must run every journey except the right-to-left spec.', $project),
+            );
+            self::assertStringContainsString(
+                sprintf("'%s'", $project),
+                $ignored[1],
+                sprintf('%s compares against baselines it does not own unless its snapshots are ignored.', $project),
             );
         }
     }
