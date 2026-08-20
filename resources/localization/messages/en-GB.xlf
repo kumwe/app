@@ -739,6 +739,14 @@
         <source>Return to Kumwe</source>
       </segment>
     </unit>
+    <unit id="core.administrator.login.access_denied">
+      <notes>
+        <note category="context">Shown on the administrator sign-in form when the credential is correct but the identity may not hold an administrator session. Signing in again cannot change that, so it does not invite a retry.</note>
+      </notes>
+      <segment>
+        <source>This account is not permitted to use the administrator.</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.login.invalid_credentials">
       <notes>
         <note category="context">Rejection shown on the administrator sign-in form. Deliberately does not say which field was wrong.</note>

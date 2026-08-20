@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2099 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2100 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1584,6 +1584,7 @@ return [
     'core.administrator.layout.sign_out' => 'Sign out',
     'core.administrator.layout.skip_to_content' => 'Skip to content',
     'core.administrator.layout.view_website' => 'View website',
+    'core.administrator.login.access_denied' => 'This account is not permitted to use the administrator.',
     'core.administrator.login.document_title' => 'Sign in · Kumwe',
     'core.administrator.login.email_label' => 'Email address',
     'core.administrator.login.eyebrow' => 'Welcome back',

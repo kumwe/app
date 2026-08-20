@@ -8,6 +8,7 @@ use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
+use Kumwe\App\Application\Authorization\AuthorizationDenied;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -71,13 +72,16 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
      * publishes and never from a header here, so a forwarded header cannot be used to escape the
      * throttle; an unusable value degrades to `unknown` rather than skipping the count. A wrong
      * credential and a throttled one both re-render the form, at 401 and 429, and the rejection message
-     * deliberately does not say which of the two fields was wrong. Success binds the new session to the
-     * pipeline's request identifier — or to a freshly generated one when the pipeline published none —
-     * so the sign-in can be correlated in the audit trail.
+     * deliberately does not say which of the two fields was wrong. A credential that is valid but whose
+     * identity may not hold an administrator session re-renders it at 403, because signing in again
+     * would not change that decision. Success binds the new session to the pipeline's request identifier
+     * — or to a freshly generated one when the pipeline published none — so the sign-in can be
+     * correlated in the audit trail.
      *
      * @param   ServerRequestInterface  $request  Sign-in request; `GET` renders the form, `POST` submits it.
      *
-     * @return  ResponseInterface  The rendered form, or a 303 to `/administrator` carrying the session cookie.
+     * @return  ResponseInterface  The rendered form, at 200, 401, 403 or 429, or a 303 to
+     *          `/administrator` carrying the session cookie.
      *
      * @since   2.0.0
      */
@@ -115,11 +119,25 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
         }
 
         $requestId = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE);
-        $created = $this->sessions->create($principal->context(
-            $this->site ?? SiteContext::default(),
-            AuthenticationStrength::Password,
-            is_string($requestId) && $requestId !== '' ? $requestId : 'login-' . bin2hex(random_bytes(16)),
-        ), $request->getHeaderLine('User-Agent'));
+
+        // The store's contract says opening a session may be denied, and this route is exempt from the
+        // middleware that renders the themed denial: both the session and the authorization middleware
+        // return early for `/administrator/login`. Letting the refusal escape produced a bare
+        // `application/problem+json` document, which Firefox will not render as a page at all -- the
+        // visitor was handed the browser's own "there's a problem with this site" screen. It is answered
+        // here, on the form, exactly as the wrong-credential and throttled arms already are.
+        try {
+            $created = $this->sessions->create($principal->context(
+                $this->site ?? SiteContext::default(),
+                AuthenticationStrength::Password,
+                is_string($requestId) && $requestId !== '' ? $requestId : 'login-' . bin2hex(random_bytes(16)),
+            ), $request->getHeaderLine('User-Agent'));
+        } catch (AuthorizationDenied) {
+            return new HtmlResponse($this->renderer->render('login', [
+                'error' => $this->translator->translate('core.administrator.login.access_denied'),
+                'email' => $form['email'] ?? '',
+            ]), 403, ['Cache-Control' => 'no-store']);
+        }
 
         return new RedirectResponse('/administrator', 303, [
             'Cache-Control' => 'no-store',

@@ -1123,6 +1123,24 @@ development programme, from the architecture decision that opened it to the curr
   after the images had already been pulled successfully. The images are now fetched once, with bounded
   retries, and the deployment uses what is cached. Only the acceptance environment overrides the policy —
   `compose.production.yaml` keeps `always`, which is the right default for a real deployment.
+- **A correct credential that may not administer is now refused on the sign-in form, not as a raw
+  document.** `/administrator/login` is exempt from both the session and the authorization middleware,
+  so the themed denial those render could never fire for it and the handler owns every refusal on that
+  route. It answered two of the three — a wrong credential at 401 and a throttled address at 429 — while
+  the session store's documented `AuthorizationDenied` escaped uncaught and became a bare
+  `application/problem+json` body. Firefox will not render that as a page, so an identity that
+  authenticated but lacked `administrator.access` was handed the browser's own "there's a problem with
+  this site" screen instead of being told anything. The refusal is now caught and re-renders the form at
+  403, with the status and the absent cookie unchanged.
+- **The presentation-mode check no longer demands a combination no engine has to provide.** The test
+  emulated `prefers-color-scheme: dark`, `prefers-reduced-motion: reduce` and `forced-colors: active`
+  together and asserted all three report true at once. Under forced colours the used scheme belongs to
+  the forced palette: Gecko keeps its light high-contrast palette and reports `prefers-color-scheme:
+  light` whatever was requested, while Blink and WebKit swap to a dark forced palette and go on
+  reporting dark. Neither is a product defect. The colour-scheme contract and the forced-colours
+  contract are now proven in two emulations, and the colour-scheme half is stronger than before: it
+  additionally asserts the document actually resolves to dark rather than merely that the emulation was
+  accepted.
 
 - **Every behavioural test now names what it exercises.** The forty-three classes that carried
   `#[CoversNothing]` while driving real behaviour gained 124 honest attributions across 67 classes, emptying
