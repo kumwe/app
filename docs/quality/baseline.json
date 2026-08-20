@@ -3,10 +3,10 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "c07e179816bb08341fe7cd3c41393cba05b33770",
-    "recorded_at": "2026-08-19",
+    "commit": "fda912f71af0eba625141c40491e09a5cc84fa0f",
+    "recorded_at": "2026-08-20",
     "recorded_from": [
-        "https://github.com/kumwe/app/actions/runs/32266343903"
+        "https://github.com/kumwe/app/actions/runs/32292058221"
     ],
     "toolchain": {
         "php": "^8.5",
@@ -33,15 +33,15 @@
         },
         "functional": {
             "files": 7,
-            "test_methods": 26
+            "test_methods": 27
         },
         "integration": {
-            "files": 94,
-            "test_methods": 374
+            "files": 95,
+            "test_methods": 376
         },
         "unit": {
-            "files": 380,
-            "test_methods": 2012
+            "files": 382,
+            "test_methods": 2025
         }
     },
     "coverage": {
@@ -491,7 +491,7 @@
             "user:recover-credentials"
         ],
         "openapi": {
-            "title": "Kumwe CMS API",
+            "title": "Kumwe App API",
             "version": "1.0.0",
             "paths": 84,
             "operations": 112
@@ -559,7 +559,7 @@
         "recorded_exemptions": {
             "dependency-graph": 99,
             "idempotency": 0,
-            "test-documentation": 3829
+            "test-documentation": 3685
         }
     }
 }

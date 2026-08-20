@@ -13,7 +13,7 @@
  * rather than to the tree — the runs that produced the evidence — arrive as arguments.
  *
  * Usage:
- *   php tools/record-baseline.php --emit [--recorded-at=YYYY-MM-DD] [--run=URL ...]
+ *   php tools/record-baseline.php --emit [--commit=SHA] [--recorded-at=YYYY-MM-DD] [--run=URL ...]
  *   php tools/record-baseline.php --check
  *
  * @since  2.0.0
@@ -382,7 +382,11 @@ if (!$emit && !$check) {
     exit(1);
 }
 
-$recorded = is_file($path) ? baselineJson($path) : [];
+// `--emit` is documented as writing to the record's own path, and a shell redirect truncates that file
+// before this process starts. Reading it back would then fail on a document the redirect emptied, so an
+// empty file is treated as no record at all — exactly as a missing one is. A file with bytes in it that
+// are not a JSON object is still an error, because that is corruption rather than a redirect in flight.
+$recorded = is_file($path) && trim(baselineRead($path)) !== '' ? baselineJson($path) : [];
 
 if ($check) {
     // The committed record carries its own commit, date and runs; the check re-derives everything else
