@@ -103,6 +103,13 @@
     overflow-wrap: anywhere;
   }
 
+  [data-kis-surface="core.administrator.settings"]
+    :is(kumwe-presentation-schemes, [data-presentation-scheme-rows], .builder-row, .builder-row > *,
+    .three-column, .three-column > *, .presentation-color-grid, .presentation-color-grid > *) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .kis-phase-five-status-line {
     display: flex;
     flex-wrap: wrap;
@@ -385,6 +392,10 @@
   }
 
   @media (max-width: 48rem) {
+    [data-kis-surface="core.administrator.settings"] .presentation-color-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     [data-kis-surface="core.administrator.business-security"] :is(.section-heading, .panel-header) {
       display: grid;
       align-items: stretch;

@@ -8,7 +8,8 @@ name: Refresh browser baselines
 # The dispatch API only registers workflows present on the default branch, so a branch introducing
 # this lane could never call it. Pushing a change to this file therefore also runs the refresh, with
 # the selection below; the refreshed images are printed base64-encoded at the end of the job log so a
-# session without artifact egress can still retrieve, decode, and commit them.
+# session without artifact egress can still retrieve, decode, and commit them. Reflow repairs update
+# this explanation so the exact repaired source commit rebuilds its assets and exercises all six projects.
 on:
   workflow_dispatch:
     inputs:
@@ -160,11 +161,11 @@ jobs:
           REFRESH_ARGUMENTS: ${{ inputs.arguments }}
         run: |
           set -euo pipefail
-          # The default selection mirrors the full six-project Chromium verification matrix: both
-          # source-language projects plus the four locale-owned RTL projects. It re-runs geometry,
-          # forced-colour and intermediate-width reflow contracts before evidence can be committed.
-          # A manually narrowed mobile selection is primed with the desktop project because the
-          # verification lane runs desktop first and its persisted state is part of the mobile context.
+          # The default selection mirrors the complete Chromium verification matrix: both source-
+          # language projects plus the four locale-owned RTL projects. This keeps every baseline
+          # affected by a shared stylesheet change in one environment-owned refresh. A manually
+          # narrowed mobile selection is primed with the desktop project because the verification
+          # lane runs desktop first and its persisted state is part of the mobile rendering context.
           # The selection intentionally word-splits: it carries test locations and --project flags.
           arguments="${REFRESH_ARGUMENTS:-}"
           if [ -z "$arguments" ]; then

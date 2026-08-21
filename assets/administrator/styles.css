@@ -194,6 +194,8 @@
   .full-row { grid-column: 1 / -1; }
   .check { display: flex; align-items: flex-start; gap: .55rem; font-weight: 540; }
   .check input { margin-top: .16rem; flex: 0 0 auto; }
+  .check > span { min-width: 0; overflow-wrap: anywhere; }
+  .check > span > small { display: block; }
   .input-prefix { display: flex; align-items: stretch; }
   .input-prefix > span { display: flex; align-items: center; padding-inline: .72rem; border: 1px solid var(--kumwe-border-strong); border-inline-end: 0; border-start-start-radius: var(--kumwe-radius-sm); border-end-start-radius: var(--kumwe-radius-sm); border-start-end-radius: 0; border-end-end-radius: 0; background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); font-size: .78rem; font-weight: 520; }
   .input-prefix input { border-start-start-radius: 0; border-end-start-radius: 0; border-start-end-radius: var(--kumwe-radius-sm); border-end-end-radius: var(--kumwe-radius-sm); }
@@ -437,6 +439,18 @@
     .kis-access-control :is(.section-heading, .panel-header) { display: grid; align-items: stretch; }
     .kis-access-control .page-actions { width: auto; align-items: flex-start; }
     .kis-access-control .page-actions :is(.button, button) { max-width: 100%; flex: 0 1 auto; }
+    .kis-access-control form.stack > .page-actions {
+      display: grid;
+      width: 100%;
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: start;
+    }
+    .kis-access-control form.stack > .page-actions :is(.button, button) {
+      min-width: 0;
+      max-width: 100%;
+      justify-self: start;
+      white-space: normal;
+    }
     .kis-access-control [aria-labelledby="role-review-heading"] > .role-card { grid-template-columns: minmax(0, 1fr); }
     .kis-access-control .field-group .two-column { grid-template-columns: minmax(0, 1fr); }
   }
