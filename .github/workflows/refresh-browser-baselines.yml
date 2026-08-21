@@ -1,8 +1,8 @@
 # Visual baselines are evidence, and evidence must come from the environment that judges it: a baseline
 # rendered on a workstation carries that workstation's fonts and wrapping, and the browser lanes then
-# fail on pixels no code change produced. This manually dispatched workflow re-renders the requested
-# screenshots inside the same runner image, service topology and font set the verification lanes use,
-# and commits the refreshed baselines back to the dispatched branch.
+# fail on pixels no code change produced. This manually dispatched workflow rebuilds immutable assets,
+# re-renders the requested screenshots inside the same runner image, service topology and font set the
+# verification lanes use, and commits both forms of evidence back to the dispatched branch.
 name: Refresh browser baselines
 
 # The dispatch API only registers workflows present on the default branch, so a branch introducing
