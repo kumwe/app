@@ -4,7 +4,7 @@
   <testsuite name="integration" tests="1" assertions="1" errors="0" failures="0" time="1.000000">
     <testcase name="testAnIdempotentNeighbourStillPasses"
               class="Kumwe\App\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
               time="1.000000"/>
   </testsuite>
 </testsuites>

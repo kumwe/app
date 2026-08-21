@@ -859,6 +859,13 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **The remaining live core identity now reads Kumwe App.** Fresh clones enter the canonical `app`
+  checkout directory, quality-fixture metadata uses the `Kumwe.App` test namespace, and the default Redis
+  key prefix changes from `kumwe.cms` to `kumwe.app` through `REDIS_NAMESPACE`. Existing deployments must
+  pin `REDIS_NAMESPACE=kumwe.cms` throughout a rolling upgrade while old processes and leases drain. To
+  adopt the new default later, stop the remaining processes, deliberately migrate only ephemeral state that
+  must survive or flush/expire the old rate-limit and cache keys, then restart every process with
+  `REDIS_NAMESPACE=kumwe.app`. Running both prefixes concurrently would split coordination rather than rename it.
 - **The core is called App.** The PSR-4 namespace moved from `Kumwe\CMS\` to `Kumwe\App\` across 2,021
   files, and the product name moved from "Kumwe CMS" to "Kumwe App" everywhere it is written: the
   documentation headings, the composer description, the OpenAPI `info.title`, the MCP server name and
