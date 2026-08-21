@@ -164,7 +164,7 @@ final readonly class AdministratorRenderer
             'business-definitions' => 'core.business-definitions',
             'business-schema-plans' => 'core.business-schema-plans',
             'business-index', 'business-list', 'business-detail', 'business-document', 'business-form',
-            'business-history', 'business-confirm', 'business-bulk-confirm',
+            'business-history', 'business-confirm', 'business-bulk-confirm', 'business-unavailable',
             'business-status' => 'core.business-records',
             'business-report' => 'core.business-reports',
             'navigation' => 'core.navigation',

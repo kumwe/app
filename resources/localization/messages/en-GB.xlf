@@ -1226,6 +1226,16 @@
         <source>If your work needs this screen, ask an administrator with user management access to grant the &lt;code&gt;{capability}&lt;/code&gt; capability to your role.</source>
       </segment>
     </unit>
+    <unit id="core.administrator.business_unavailable.explanation">
+      <segment>
+        <source>The requested business workspace does not exist or is not available to your account.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_unavailable.request_access">
+      <segment>
+        <source>If your work needs this workspace, ask an administrator with user management access to review your business-record permissions.</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.extension_error.document_title">
       <segment>
         <source>Extension unavailable · Kumwe</source>

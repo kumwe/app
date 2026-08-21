@@ -184,6 +184,7 @@ jobs:
           context: .
           file: docker/php/Dockerfile
           target: runtime
+          pull: true
           push: true
           tags: ${{ steps.release.outputs.app_tags }}
           build-args: KUMWE_RELEASE=${{ steps.release.outputs.version }}
@@ -195,6 +196,7 @@ jobs:
           context: .
           file: docker/php/Dockerfile
           target: web
+          pull: true
           push: true
           tags: ${{ steps.release.outputs.web_tags }}
           build-args: KUMWE_RELEASE=${{ steps.release.outputs.version }}

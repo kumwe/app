@@ -737,7 +737,7 @@
   .button:not(.primary), .link-button { color: var(--site-accent-strong); background: var(--site-surface); }
   .link-button { width: auto; padding: .25rem; border: 0; text-decoration: underline; }
   .page-actions { display: flex; flex-wrap: wrap; gap: .8rem; }
-  .stack { display: grid; gap: 1rem; }
+  .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
   .panel { border: 1px solid var(--site-border); border-radius: var(--site-radius); background: var(--site-surface); }
   .count-badge { display: inline-flex; padding: .25rem .45rem; border-radius: 999px; background: var(--site-accent-soft); }
   .notice { margin-bottom: 1rem; padding: .85rem 1rem; border-inline-start: .3rem solid var(--site-accent); background: var(--site-accent-soft); }

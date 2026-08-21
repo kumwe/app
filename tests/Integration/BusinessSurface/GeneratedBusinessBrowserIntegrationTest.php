@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\BusinessSurface;
 
 use DateTimeImmutable;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
@@ -105,6 +107,71 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
         self::assertStringContainsString('<html lang="de" dir="ltr">', $body);
         self::assertStringContainsString('Übersetzte Datensätze', $body);
         self::assertStringContainsString('Übersetzter Name', $body);
+    }
+
+    /**
+     * A browser denial remains a page while a machine caller keeps the non-enumerating problem document.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnavailableGeneratedAdministratorDefinitionNegotiatesTheDenialRepresentation(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $administrator = TestKernelFactory::administratorContext($container);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -10));
+        $definition = NeutralBusinessFixture::install(
+            $container,
+            $administrator,
+            NeutralBusinessFixture::document('denial' . $suffix, Uuid::uuid7()->toString()),
+        );
+        $limitedSource = TestKernelFactory::contextFromGrantRows($container, [[
+            'capability' => 'administrator.access',
+            'scope_type' => 'global',
+            'scope_identifier' => null,
+        ]]);
+        $principal = $limitedSource->principal();
+        self::assertInstanceOf(AuthenticatedPrincipal::class, $principal);
+        $limited = $principal->context(
+            $limitedSource->site(),
+            AuthenticationStrength::Password,
+            'integration-generated-denial-' . bin2hex(random_bytes(8)),
+            surface: AuthenticatedSurface::Administrator,
+            sessionId: '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
+        );
+        $handler = $container->get(AdministratorBusinessSurfaceHandler::class);
+        self::assertInstanceOf(AdministratorBusinessSurfaceHandler::class, $handler);
+        $request = (new ServerRequestFactory())
+            ->createServerRequest(
+                'GET',
+                'https://kumwe.test/administrator/business/' . rawurlencode($definition->handle),
+            )
+            ->withHeader('Accept', 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8')
+            ->withAttribute('definition', $definition->handle)
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $limited)
+            ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, new AdministratorSession(
+                '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
+                $principal,
+                'generated-denial-csrf',
+                new DateTimeImmutable('+1 hour'),
+            ));
+
+        $page = $handler->handle($request);
+        $pageBody = (string) $page->getBody();
+        self::assertSame(403, $page->getStatusCode());
+        self::assertStringContainsString('text/html', $page->getHeaderLine('Content-Type'));
+        self::assertSame('no-store', $page->getHeaderLine('Cache-Control'));
+        self::assertStringContainsString('The requested business workspace does not exist', $pageBody);
+        self::assertStringNotContainsString($definition->handle, $pageBody);
+
+        $problem = $handler->handle($request->withHeader('Accept', 'application/json'));
+        $problemBody = json_decode((string) $problem->getBody(), true, 8, JSON_THROW_ON_ERROR);
+        self::assertSame(403, $problem->getStatusCode());
+        self::assertSame('application/problem+json', $problem->getHeaderLine('Content-Type'));
+        self::assertSame('no-store', $problem->getHeaderLine('Cache-Control'));
+        self::assertSame('urn:kumwe:problem:authorization-denied', $problemBody['type'] ?? null);
+        self::assertStringNotContainsString($definition->handle, (string) $problem->getBody());
     }
 
     /**

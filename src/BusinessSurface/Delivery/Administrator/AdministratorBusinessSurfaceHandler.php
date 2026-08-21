@@ -72,7 +72,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
      *
      * @param   ServerRequestInterface  $request  Authenticated, authorized and CSRF-checked administrator request.
      *
-     * @return  ResponseInterface  No-store HTML page or 303 redirect.
+     * @return  ResponseInterface  No-store HTML page, problem document, or 303 redirect.
      *
      * @since   2.0.0
      */
@@ -81,13 +81,44 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
         try {
             return $this->availableResponse($request);
         } catch (BusinessRecordDefinitionUnavailable) {
-            return new JsonResponse([
-                'type' => 'urn:kumwe:problem:authorization-denied',
-                'title' => 'Forbidden',
-                'status' => 403,
-                'detail' => 'The authenticated identity is not authorized for this operation.',
-            ], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
+            return $this->unavailableResponse($request);
         }
+    }
+
+    /**
+     * Refuse an unavailable definition in the representation the caller can consume.
+     *
+     * A generated definition is intentionally non-enumerating: absence and policy denial raise the same
+     * exception, so this response must not name the handle or guess which capability hid it. Browser
+     * navigations receive the protected administrator shell and their own filtered navigation. Machine
+     * callers and mutations retain the stable problem document they can branch on.
+     *
+     * @param   ServerRequestInterface  $request  Request refused before a generated surface could render.
+     *
+     * @return  ResponseInterface  Themed no-store HTML for a navigation, or a no-store problem document.
+     *
+     * @since   2.0.0
+     */
+    private function unavailableResponse(ServerRequestInterface $request): ResponseInterface
+    {
+        if (
+            in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'], true)
+            && str_contains(strtolower($request->getHeaderLine('Accept')), 'text/html')
+        ) {
+            $session = AdministratorRequest::session($request);
+
+            return new HtmlResponse($this->renderer->render('business-unavailable', [
+                'csrf' => $session->csrfToken,
+                'capabilities' => AdministratorRequest::capabilityMap($request),
+            ]), 403, ['Cache-Control' => 'no-store']);
+        }
+
+        return new JsonResponse([
+            'type' => 'urn:kumwe:problem:authorization-denied',
+            'title' => 'Forbidden',
+            'status' => 403,
+            'detail' => 'The authenticated identity is not authorized for this operation.',
+        ], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
     }
 
     /**

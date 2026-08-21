@@ -96,6 +96,7 @@ jobs:
       - name: Build production runtime image
         run: >-
           docker build
+          --pull
           --file docker/php/Dockerfile
           --target runtime
           --tag kumwe-security:${GITHUB_SHA}
@@ -109,6 +110,24 @@ jobs:
           "$TRIVY_IMAGE"
           image --exit-code 1 --ignore-unfixed
           --severity HIGH,CRITICAL kumwe-security:${GITHUB_SHA}
+
+      - name: Build production web image
+        run: >-
+          docker build
+          --pull
+          --file docker/php/Dockerfile
+          --target web
+          --tag kumwe-web-security:${GITHUB_SHA}
+          --build-arg KUMWE_RELEASE=2.0.0-security-scan
+          .
+
+      - name: Scan production web image
+        run: >-
+          docker run --rm
+          --volume /var/run/docker.sock:/var/run/docker.sock
+          "$TRIVY_IMAGE"
+          image --exit-code 1 --ignore-unfixed
+          --severity HIGH,CRITICAL kumwe-web-security:${GITHUB_SHA}
 
       - name: Generate source SBOM
         run: |
