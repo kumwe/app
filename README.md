@@ -29,7 +29,7 @@ installs both.
 
 ```bash
 git clone https://github.com/kumwe/app.git
-cd cms
+cd app
 cp .env.example .env
 docker compose run --rm app composer install --no-interaction --prefer-dist
 docker compose run --rm app php bin/kumwe database:migrate

@@ -11,31 +11,31 @@
   <testsuite name="integration" tests="7" assertions="6" errors="0" failures="0" skipped="1" time="1.000000">
     <testcase name="testArchiveAndDeleteRedirectToLifecycleReadableDestinations"
               class="Kumwe\App\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
               time="1.000000"/>
     <testcase name="testGraphicalQueryControlsSurviveOpaqueCursorPagination"
               class="Kumwe\App\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
               time="1.000000"/>
     <testcase name="testWorkflowActionConfirmationExecutesWithoutJavascript"
               class="Kumwe\App\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
               time="1.000000"/>
     <testcase name="testSummaryUsesCanonicalBrowsePolicyAndOmitsRestrictedFields"
               class="Kumwe\App\Tests\Integration\Extension\AssetInspectionCustomViewIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.Extension.AssetInspectionCustomViewIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.Extension.AssetInspectionCustomViewIntegrationTest"
               time="1.000000"/>
     <testcase name="testSignedContributionLifecycleIsPermissionAwareTrustBoundAndDataPreserving"
               class="Kumwe\App\Tests\Integration\Extension\ExtensionContributionLifecycleIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.Extension.ExtensionContributionLifecycleIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.Extension.ExtensionContributionLifecycleIntegrationTest"
               time="1.000000"/>
     <testcase name="testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone"
               class="Kumwe\App\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
               time="1.000000"/>
     <testcase name="testAnIdempotentNeighbourStillPasses"
               class="Kumwe\App\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
               time="1.000000">
       <skipped/>
     </testcase>

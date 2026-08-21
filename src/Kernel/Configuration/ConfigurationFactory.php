@@ -100,7 +100,7 @@ final class ConfigurationFactory
                 port: $environment->positiveInteger('REDIS_PORT', 6379),
                 password: $environment->optionalString('REDIS_PASSWORD'),
                 database: $environment->nonNegativeInteger('REDIS_DATABASE', 0, 15),
-                namespace: $environment->string('REDIS_NAMESPACE', 'kumwe.cms'),
+                namespace: $environment->string('REDIS_NAMESPACE', 'kumwe.app'),
             ),
             recordEncryption: $this->recordEncryption($environment),
             packageConformanceAdmission: $this->packageConformanceAdmission($environment),

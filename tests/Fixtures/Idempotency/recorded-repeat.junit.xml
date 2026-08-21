@@ -11,43 +11,43 @@
   <testsuite name="integration" tests="7" assertions="7" errors="5" failures="1" time="1.000000">
     <testcase name="testArchiveAndDeleteRedirectToLifecycleReadableDestinations"
               class="Kumwe\App\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
               time="1.000000">
       <error type="RuntimeException">A schema installation for this definition already exists.</error>
     </testcase>
     <testcase name="testGraphicalQueryControlsSurviveOpaqueCursorPagination"
               class="Kumwe\App\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
               time="1.000000">
       <error type="RuntimeException">A schema installation for this definition already exists.</error>
     </testcase>
     <testcase name="testWorkflowActionConfirmationExecutesWithoutJavascript"
               class="Kumwe\App\Tests\Integration\BusinessSurface\GeneratedBusinessBrowserIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.BusinessSurface.GeneratedBusinessBrowserIntegrationTest"
               time="1.000000">
       <error type="RuntimeException">A schema installation for this definition already exists.</error>
     </testcase>
     <testcase name="testSummaryUsesCanonicalBrowsePolicyAndOmitsRestrictedFields"
               class="Kumwe\App\Tests\Integration\Extension\AssetInspectionCustomViewIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.Extension.AssetInspectionCustomViewIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.Extension.AssetInspectionCustomViewIntegrationTest"
               time="1.000000">
       <error type="RuntimeException">The contribution is already registered.</error>
     </testcase>
     <testcase name="testSignedContributionLifecycleIsPermissionAwareTrustBoundAndDataPreserving"
               class="Kumwe\App\Tests\Integration\Extension\ExtensionContributionLifecycleIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.Extension.ExtensionContributionLifecycleIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.Extension.ExtensionContributionLifecycleIntegrationTest"
               time="1.000000">
       <error type="RuntimeException">The extension is already installed and trusted.</error>
     </testcase>
     <testcase name="testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone"
               class="Kumwe\App\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
               time="1.000000">
       <failure type="PHPUnit\Framework\ExpectationFailedException">A healthy cache records no degradation.</failure>
     </testcase>
     <testcase name="testAnIdempotentNeighbourStillPasses"
               class="Kumwe\App\Tests\Integration\Infrastructure\RedisOutageIntegrationTest"
-              classname="Kumwe.CMS.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
+              classname="Kumwe.App.Tests.Integration.Infrastructure.RedisOutageIntegrationTest"
               time="1.000000"/>
   </testsuite>
 </testsuites>

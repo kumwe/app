@@ -38,7 +38,7 @@ final class ConfigurationFactoryTest extends TestCase
         self::assertSame('kumwe_', $configuration->database->tablePrefix);
         self::assertSame('pgsql', $configuration->database->driver);
         self::assertSame('redis', $configuration->redis->host);
-        self::assertSame('kumwe.cms', $configuration->redis->namespace);
+        self::assertSame('kumwe.app', $configuration->redis->namespace);
     }
 
     public function testProductionRequiresHttps(): void

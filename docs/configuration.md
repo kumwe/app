@@ -146,7 +146,7 @@ server-administration privileges.
 | `REDIS_PORT` | Redis port, normally `6379` |
 | `REDIS_PASSWORD` | Redis authentication secret; use `REDIS_PASSWORD_FILE` in containers |
 | `REDIS_DATABASE` | Logical database number, `0` by default |
-| `REDIS_NAMESPACE` | Installation-specific key prefix, `kumwe.cms` by default |
+| `REDIS_NAMESPACE` | Installation-specific key prefix, `kumwe.app` by default |
 | `KUMWE_REDIS_IMAGE` | Redis image reference used by Compose |
 
 The supplied Compose deployment tracks the supported Redis 8 line for easy updates. Production change control should resolve and record the tested digest before rollout. Redis backs administrator-login throttling and supplies the shared runtime primitives for disposable caches and distributed locks; the selected relational database remains authoritative. Use a distinct namespace for installations that share a Redis endpoint.
