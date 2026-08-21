@@ -110,6 +110,13 @@
     max-width: 100%;
   }
 
+  [data-kis-surface="core.administrator.settings"]
+    .builder-row-heading h3[data-presentation-scheme-heading] {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
   .kis-phase-five-status-line {
     display: flex;
     flex-wrap: wrap;

@@ -374,6 +374,8 @@
   .kis-access-control :is(h2, h3, p, code, small, td, th) { overflow-wrap: anywhere; }
   .kis-access-control section.panel > form { width: min(100%, 56rem); }
   .kis-access-control .field-group { min-width: 0; max-width: 100%; padding: clamp(.75rem, 2vw, 1rem); }
+  .kis-access-control form.stack > .field-group { width: 100%; }
+  .kis-access-control .field-group > legend { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
   .kis-access-control [aria-labelledby="groups-heading"] > .role-card { gap: .5rem; padding: .7rem .8rem; }
   .kis-access-control [aria-labelledby="groups-heading"] > .role-card + .role-card { margin-top: .5rem; }
   .kis-access-control [aria-labelledby="groups-heading"] > .role-card :is(h3, p) { margin-bottom: 0; }
@@ -439,18 +441,6 @@
     .kis-access-control :is(.section-heading, .panel-header) { display: grid; align-items: stretch; }
     .kis-access-control .page-actions { width: auto; align-items: flex-start; }
     .kis-access-control .page-actions :is(.button, button) { max-width: 100%; flex: 0 1 auto; }
-    .kis-access-control form.stack > .page-actions {
-      display: grid;
-      width: 100%;
-      grid-template-columns: minmax(0, 1fr);
-      justify-items: start;
-    }
-    .kis-access-control form.stack > .page-actions :is(.button, button) {
-      min-width: 0;
-      max-width: 100%;
-      justify-self: start;
-      white-space: normal;
-    }
     .kis-access-control [aria-labelledby="role-review-heading"] > .role-card { grid-template-columns: minmax(0, 1fr); }
     .kis-access-control .field-group .two-column { grid-template-columns: minmax(0, 1fr); }
   }
