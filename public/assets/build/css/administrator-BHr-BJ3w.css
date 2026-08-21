@@ -421,7 +421,7 @@
   .kis-copy-value { min-height: 1.75rem; flex: 0 0 auto; font-size: .72rem; }
 
   .kis-drawer-panel { width: 100%; overflow-y: auto; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-lg); background: var(--kumwe-surface); box-shadow: var(--kumwe-shadow-sm); }
-  kumwe-drawer[data-enhanced] .kis-drawer-panel { position: fixed; z-index: var(--kis-layer-drawer); inset: 0 0 0 auto; width: min(100%, var(--kis-drawer-width)); height: 100vh; border-width: 0 0 0 1px; border-radius: 0; box-shadow: var(--kumwe-shadow-xl); }
+  kumwe-drawer[data-enhanced] .kis-drawer-panel { position: fixed; z-index: var(--kis-layer-drawer); inset-block: 0; inset-inline-end: 0; width: min(100%, var(--kis-drawer-width)); height: 100vh; border-width: 0; border-inline-start-width: 1px; border-radius: 0; box-shadow: var(--kumwe-shadow-xl); }
   .kis-drawer-panel > header { position: sticky; z-index: 1; top: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: var(--kis-space-4); padding: var(--kis-space-5); border-bottom: 1px solid var(--kumwe-border); background: var(--kumwe-surface); }
   .kis-drawer-panel > header h2, .kis-drawer-panel > header p { margin-bottom: 0; }
   .kis-drawer-panel > header p { margin-top: var(--kis-space-1); color: var(--kumwe-text-muted); }
@@ -1669,6 +1669,9 @@
   textarea { min-height: 7.5rem; resize: vertical; }
   input:hover, select:hover, textarea:hover { border-color: color-mix(in srgb, var(--kumwe-border-strong), var(--kumwe-accent) 28%); }
   input:focus, select:focus, textarea:focus { outline: 0; border-color: var(--kumwe-accent); box-shadow: var(--kumwe-focus); }
+  /* WebKit does not expose the focus shadow of a paint-contained native select. Keep the shadow as an
+     enhancement, and restore the shared keyboard-focus outline with enough specificity to beat :focus. */
+  select:focus-visible { outline: 2px solid var(--kumwe-accent); outline-offset: 2px; }
   input[type="checkbox"], input[type="radio"] { width: 1.5rem; height: 1.5rem; min-height: 1.5rem; accent-color: var(--kumwe-accent); }
   input[readonly], input:disabled, select:disabled, textarea:disabled { background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); cursor: not-allowed; }
   label { display: grid; gap: .38rem; color: var(--kumwe-text); font-size: .88rem; font-weight: 650; }
@@ -1676,10 +1679,10 @@
 }
 
 @layer components {
-  .skip-link { position: fixed; z-index: 1000; inset: .75rem auto auto .75rem; transform: translateY(-180%); padding: .65rem .85rem; border-radius: .5rem; background: var(--kumwe-navy-950); color: #fff; }
+  .skip-link { position: fixed; z-index: 1000; inset-block-start: .75rem; inset-inline-start: .75rem; transform: translateY(-180%); padding: .65rem .85rem; border-radius: .5rem; background: var(--kumwe-navy-950); color: #fff; }
   .skip-link:focus { transform: none; }
   .administrator-shell { display: grid; min-height: 100vh; grid-template: "sidebar topbar" var(--kumwe-topbar-height) "sidebar main" 1fr / var(--kumwe-sidebar-width) minmax(0, 1fr); }
-  .administrator-sidebar { grid-area: sidebar; position: fixed; z-index: 40; inset: 0 auto 0 0; display: flex; width: var(--kumwe-sidebar-width); flex-direction: column; overflow: hidden; background: linear-gradient(160deg, var(--kumwe-navy-950), var(--kumwe-navy-900) 62%, #0b2944); color: #dce8f2; }
+  .administrator-sidebar { grid-area: sidebar; position: fixed; z-index: 40; inset-block: 0; inset-inline-start: 0; display: flex; width: var(--kumwe-sidebar-width); flex-direction: column; overflow: hidden; background: linear-gradient(160deg, var(--kumwe-navy-950), var(--kumwe-navy-900) 62%, #0b2944); color: #dce8f2; }
   .administrator-brand { display: flex; align-items: center; gap: .8rem; min-height: var(--kumwe-topbar-height); padding: 0 1.25rem; border-bottom: 1px solid rgb(255 255 255 / .1); color: #fff; text-decoration: none; }
   .administrator-brand:hover { color: #fff; }
   .brand-mark { display: grid; width: 2.35rem; height: 2.35rem; flex: 0 0 2.35rem; place-items: center; }

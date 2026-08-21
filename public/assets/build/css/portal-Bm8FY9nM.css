@@ -18,7 +18,7 @@ button { min-height: 2.75rem; padding: .6rem 1rem; border: 0; border-radius: .35
 input, select { width: 100%; min-height: 2.75rem; padding: .55rem .7rem; border: 1px solid var(--portal-line); border-radius: .35rem; color: var(--portal-ink); background: var(--portal-panel); }
 textarea { width: 100%; min-height: 7rem; padding: .55rem .7rem; border: 1px solid var(--portal-line); border-radius: .35rem; background: var(--portal-panel); }
 :focus-visible { outline: .2rem solid var(--portal-focus); outline-offset: .15rem; }
-.skip-link { position: fixed; inset: .5rem auto auto .5rem; z-index: 10; padding: .5rem .75rem; transform: translateY(-200%); background: var(--portal-panel); }
+.skip-link { position: fixed; inset-block-start: .5rem; inset-inline-start: .5rem; z-index: 10; padding: .5rem .75rem; transform: translateY(-200%); background: var(--portal-panel); }
 .skip-link:focus { transform: none; }
 .portal-header { display: flex; gap: 1rem; align-items: center; min-height: 4.5rem; padding: .75rem clamp(1rem, 3vw, 2rem); color: white; background: #0e332b; }
 .portal-brand { margin-inline-end: auto; color: white; font-size: 1.2rem; font-weight: 750; text-decoration: none; }
@@ -578,7 +578,7 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
   .kis-copy-value { min-height: 1.75rem; flex: 0 0 auto; font-size: .72rem; }
 
   .kis-drawer-panel { width: 100%; overflow-y: auto; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-lg); background: var(--kumwe-surface); box-shadow: var(--kumwe-shadow-sm); }
-  kumwe-drawer[data-enhanced] .kis-drawer-panel { position: fixed; z-index: var(--kis-layer-drawer); inset: 0 0 0 auto; width: min(100%, var(--kis-drawer-width)); height: 100vh; border-width: 0 0 0 1px; border-radius: 0; box-shadow: var(--kumwe-shadow-xl); }
+  kumwe-drawer[data-enhanced] .kis-drawer-panel { position: fixed; z-index: var(--kis-layer-drawer); inset-block: 0; inset-inline-end: 0; width: min(100%, var(--kis-drawer-width)); height: 100vh; border-width: 0; border-inline-start-width: 1px; border-radius: 0; box-shadow: var(--kumwe-shadow-xl); }
   .kis-drawer-panel > header { position: sticky; z-index: 1; top: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: var(--kis-space-4); padding: var(--kis-space-5); border-bottom: 1px solid var(--kumwe-border); background: var(--kumwe-surface); }
   .kis-drawer-panel > header h2, .kis-drawer-panel > header p { margin-bottom: 0; }
   .kis-drawer-panel > header p { margin-top: var(--kis-space-1); color: var(--kumwe-text-muted); }
