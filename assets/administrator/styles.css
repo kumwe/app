@@ -197,8 +197,8 @@
   .input-prefix { display: flex; align-items: stretch; }
   .input-prefix > span { display: flex; align-items: center; padding-inline: .72rem; border: 1px solid var(--kumwe-border-strong); border-inline-end: 0; border-start-start-radius: var(--kumwe-radius-sm); border-end-start-radius: var(--kumwe-radius-sm); border-start-end-radius: 0; border-end-end-radius: 0; background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); font-size: .78rem; font-weight: 520; }
   .input-prefix input { border-start-start-radius: 0; border-end-start-radius: 0; border-start-end-radius: var(--kumwe-radius-sm); border-end-end-radius: var(--kumwe-radius-sm); }
-  .media-input { display: flex; gap: .5rem; align-items: stretch; }
-  .media-input input { min-width: 0; }
+  .media-input { display: grid; min-width: 0; max-width: 100%; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; align-items: stretch; }
+  .media-input input { width: 100%; min-width: 0; }
   .media-input button { flex: 0 0 auto; white-space: nowrap; }
   .dashboard-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(17rem, .6fr); gap: 1rem; overflow: hidden; margin-bottom: 1.25rem; padding: clamp(1.35rem, 3vw, 2.25rem); border: 0; background: linear-gradient(135deg, var(--kumwe-navy-900), #0b2944 58%, #174f73); color: #fff; box-shadow: var(--kumwe-shadow-md); }
   .dashboard-hero::after { position: absolute; width: 24rem; height: 24rem; inset-inline-end: -11rem; bottom: -15rem; border: 1px solid rgb(255 255 255 / .12); border-radius: 50%; box-shadow: 0 0 0 3rem rgb(255 255 255 / .025), 0 0 0 7rem rgb(255 255 255 / .02); content: ""; }
@@ -307,6 +307,7 @@
   .builder-options { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
   .remove-row { align-self: end; min-width: 2.75rem; padding-inline: .7rem !important; color: var(--kumwe-danger) !important; }
   .presentation-scheme-row { display: grid; grid-template-columns: 1fr; align-items: stretch; padding: 1rem; }
+  kumwe-presentation-schemes { display: block; min-width: 0; max-width: 100%; }
   .builder-row-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
   .builder-row-heading h3 { margin: 0; }
   .builder-row-heading .remove-row { align-self: start; }
@@ -359,7 +360,10 @@
   .grant-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .5rem; border: 1px solid var(--kumwe-border); border-radius: 999px; background: var(--kumwe-surface); font-size: .72rem; }
   .kis-access-control { width: 100%; min-width: 0; max-width: 100%; container: kis-access-control / inline-size; }
   .kis-access-control > *, .kis-access-control :is(form, fieldset, .section-heading, .panel-header) > * { min-width: 0; }
-  .kis-access-control :is(input, select, textarea) { min-width: 0; max-width: 100%; }
+  .kis-access-control :is(input, textarea) { min-width: 0; max-width: 100%; }
+  /* Keep the native WebKit selector from deriving an intrinsic width from its longest option. This
+     declaration must live in the same, later cascade layer as the access-control component rules. */
+  .kis-access-control select { width: 0; min-width: 100%; max-width: 100%; }
   .kis-access-control > nav.panel { margin-bottom: 1rem; padding: .5rem; }
   .kis-access-control > nav .actions { display: flex; max-width: 100%; flex-wrap: wrap; gap: .4rem; }
   .kis-access-control > nav .button,
@@ -551,6 +555,30 @@
     .topbar-context span { display: none; }
     .topbar-action[data-secondary-action] { display: none; }
     .metric-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (forced-colors: active) {
+    .administrator-sidebar {
+      border-inline-end: 1px solid CanvasText;
+      background: Canvas;
+      color: CanvasText;
+    }
+    .administrator-brand,
+    .administrator-brand:hover,
+    .administrator-navigation a,
+    .administrator-navigation a:hover {
+      background: Canvas;
+      color: CanvasText;
+    }
+    .brand-copy span,
+    .navigation-group-title,
+    .administrator-navigation svg { color: CanvasText; }
+    .administrator-navigation a[aria-current="page"] {
+      background: Highlight;
+      color: HighlightText;
+      box-shadow: none;
+    }
+    .administrator-navigation a[aria-current="page"] svg { color: HighlightText; }
   }
 
   @media (prefers-reduced-motion: reduce) {

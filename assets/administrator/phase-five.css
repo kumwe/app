@@ -317,6 +317,41 @@
 
     .kis-phase-five .media-input {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kis-phase-five .media-input button {
+      max-width: 100%;
+      justify-self: start;
+      white-space: normal;
+    }
+
+    [data-kis-surface="core.administrator.settings"] .builder-row-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    [data-kis-surface="core.administrator.settings"] .builder-row-heading > * {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    [data-kis-surface="core.administrator.settings"] .builder-row-heading .remove-row {
+      max-width: 100%;
+      justify-self: start;
+      white-space: normal;
+    }
+
+    [data-kis-surface="core.administrator.navigation"]
+      :is(.form-grid, .menu-item-grid) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    [data-kis-surface="core.administrator.navigation"]
+      :is(form, article, .panel-body, .kis-master-detail-grid, .kis-master-detail-content) {
+      min-width: 0;
+      max-width: 100%;
     }
 
     .kis-phase-five .presentation-color-grid {

@@ -79,6 +79,7 @@ test('component diagnostics expose the Business Definition failure without a doc
       .diagnostic-component { position: relative; width: 15rem; height: 8rem; overflow: hidden; }
       .diagnostic-child { width: 30rem; height: 2rem; }
       .diagnostic-action { position: absolute; left: 1rem; top: 4rem; width: 8rem; height: 2rem; }
+      .below-fold-diagnostic { margin-top: 120vh; }
       @media print { details > * { display: block !important; } }
     </style>
     <form id="business-definition-form" class="diagnostic-component">
@@ -93,6 +94,9 @@ test('component diagnostics expose the Business Definition failure without a doc
         <section class="diagnostic-child">Intentionally undisclosed content</section>
       </form>
     </details>
+    <section id="below-fold-component" class="diagnostic-component below-fold-diagnostic">
+      <section class="diagnostic-child">Below-fold clipped content</section>
+    </section>
   `);
 
   const report = await collectInterfaceDiagnostics(page);
@@ -112,6 +116,10 @@ test('component diagnostics expose the Business Definition failure without a doc
       kind: 'control-overlap',
       selector: '[data-interface-id="first-action"]',
       relatedSelector: '[data-interface-id="second-action"]',
+    }),
+    expect.objectContaining({
+      kind: 'component-overflow',
+      selector: '#below-fold-component',
     }),
   ]));
   expect(report.findings).not.toEqual(expect.arrayContaining([
