@@ -478,6 +478,9 @@ final class InterfaceTranslationGateTest extends TestCase
         foreach (['templates', 'assets', 'resources/localization', 'tools', 'src'] as $directory) {
             $this->copyTree($this->root . '/' . $directory, $tree . '/' . $directory);
         }
+        $publicAssets = $tree . '/public/assets';
+        mkdir($publicAssets, 0o775, true);
+        copy($this->root . '/public/assets/portal.css', $publicAssets . '/portal.css');
         register_shutdown_function(function () use ($tree): void {
             $this->removeTree($tree);
         });

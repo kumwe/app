@@ -22,6 +22,7 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 - [Business groups](business-groups.md): several related businesses on one installation, declared groups, shared master data, isolated accounting, and consolidated reporting.
 - [Business security](business-security.md): typed policy, field disclosure, record encryption keys, memberships, approvals, step-up, and tokens.
 - [Generated business surfaces](architecture/generated-business-surfaces.md): shared UI, REST/OpenAPI, CLI, MCP, and custom-handler runtime.
+- [Machine-contract boundaries](machine-contract/README.md): extension SDK versus Dart client SDK, REST/CLI/MCP ownership, and the production `app`/`web` split.
 - [Ordinary-user portal](portal.md): isolated sessions, account security, approvals, and trusted contributions.
 - [Command-line interface](cli.md): installation, health, tokens, extensions, workers, schedules, and MCP stdio.
 - [Workers and scheduler](automation.md): durable jobs, retries, recurring work, and worker operation.

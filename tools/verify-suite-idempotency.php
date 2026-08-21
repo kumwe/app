@@ -1,30 +1,29 @@
 <?php
 
 /**
- * Run the integration suite again against a used database, and judge the result against the baseline.
+ * Repeat the integration suite in ordinary and reverse class order against one used database.
  *
- * The suite is not idempotent: run it a second time against the database the first run left behind and
- * tests fail because state a previous class installed is still there. That is `V2-QA-004`, and this check
- * is its reproduction rather than its fix.
+ * The suite was not idempotent: running it again against the database the first run left behind exposed
+ * state a previous class installed. That was `V2-QA-004`. The recorded reproductions are now removed, the
+ * baseline is empty, and this check enforces the repaired property on every change.
  *
  * A reproduction that simply fails is useless — it blocks every pull request and reports the same thing
- * every time — and a reproduction that is allowed to fail is not a gate. So the currently non-idempotent
- * tests are recorded in `docs/quality/idempotency-baseline.json` with the pass that observed them, an owner,
- * an expiry and what removing each one takes. This tool fails on anything outside that pass-aware record: a
- * test that starts failing, an entry whose test now passes in its recorded pass, or an entry that has
- * outlived its expiry. The list only ever shrinks. It is the same shape the dependency baseline uses, for
- * the same reason.
+ * every time — and a reproduction that is allowed to fail is not a gate. Any future exception would have to
+ * be recorded in `docs/quality/idempotency-baseline.json` with the pass that observed it, an owner, an expiry
+ * and a removal condition. This tool fails on anything outside that pass-aware record, on a stale entry and
+ * on an entry that outlives its expiry. Gate A requires the record to remain empty.
  *
- * Which passes are enforced is declared in the baseline rather than here, so turning one on is a recorded
- * decision. Today that is the `repeat` pass. The `reverse` pass — the suite run with its classes in a
- * different order — is described in the baseline as not yet enforced, with the reason: the first attempt at
- * it used `--order-by=reverse`, which reverses the tests inside each class as well and therefore measured
- * something other than the stated property. `--pass=reverse` runs it on demand so it can be measured before
- * anything claims it holds.
+ * Which passes are enforced is declared in the baseline rather than here, so changing the sequence is a
+ * recorded decision. The ordinary gate runs `repeat` and then `reverse`; the latter uses a generated PHPUnit
+ * configuration that reverses class files while leaving declaration order inside each class alone. Together
+ * with the complete suite run that precedes this tool in CI, they prove three consecutive runs against one
+ * database. Integration fixture shutdown withdraws each process's run-unique definitions and installations
+ * before the next pass starts, retaining only a bounded explicit set of shared replay fixtures and diagnostic
+ * history.
  *
  * Usage:
  *   php tools/verify-suite-idempotency.php --engine=mariadb|mysql|pgsql|postgresql
- *   php tools/verify-suite-idempotency.php --engine=ID --pass=reverse
+ *   php tools/verify-suite-idempotency.php --engine=ID --pass=repeat|reverse
  *   php tools/verify-suite-idempotency.php --engine=ID --expected-tests=COUNT \
  *       --junit=repeat:PATH --status=repeat:STATUS
  *
@@ -139,14 +138,14 @@ $declaredPasses = declaredPasses($baseline);
 $knownPasses = knownPasses($baseline, $declaredPasses);
 if ($only !== null && !in_array($only, $knownPasses, true)) {
     reportIdempotencyFailure([sprintf(
-        'Pass "%s" is neither enforced nor declared as the pending measurement in the baseline.',
+        'Pass "%s" is not declared by the idempotency baseline.',
         $only,
     )]);
 }
 $entries = readIdempotencyEntries($baseline, $engine, $today, $knownPasses);
 // The enforced passes come from the baseline, so turning one on is a decision recorded there rather than a
-// flag somebody remembered to add. --pass runs one that is not yet enforced, which is how the next one gets
-// its first measurement without the gate claiming it already holds.
+// flag somebody remembered to add. --pass narrows an investigative run to one declared pass without changing
+// what the ordinary gate enforces.
 $passes = $only === null ? $declaredPasses : [$only];
 
 $observed = $supplied === []
@@ -225,10 +224,11 @@ function declaredPasses(array $baseline): array
 }
 
 /**
- * Read every pass the baseline recognizes, including the explicitly pending measurement.
+ * Read every pass the baseline recognizes, including an explicitly pending measurement when one exists.
  *
- * An exploratory pass is not enforced by the ordinary gate, but it still needs a declared identity so a
- * misspelled `--pass` cannot silently execute the ordinary suite order under a name nobody governs.
+ * A pending exploratory pass still needs a declared identity so a misspelled `--pass` cannot silently execute
+ * the ordinary suite order under a name nobody governs. Once no pending pass remains, this returns only the
+ * enforced sequence.
  *
  * @param   array<string, mixed>  $baseline  Decoded baseline.
  * @param   list<string>          $enforced  Validated enforced passes.
@@ -383,8 +383,8 @@ function engineList(array $entry, string $field): array
 /**
  * Run every selected pass and collect the tests that failed in each.
  *
- * The enforced `repeat` pass runs by default; the pending `reverse` measurement runs only when selected.
- * Once selected, every pass runs even after an earlier one fails so the resulting evidence is complete.
+ * Every enforced pass runs by default, and `--pass` narrows an investigative execution to one of them. Every
+ * selected pass runs even after an earlier one fails so the resulting evidence is complete.
  *
  * @param   string        $root    Repository root.
  * @param   list<string>  $passes  Declared pass names.

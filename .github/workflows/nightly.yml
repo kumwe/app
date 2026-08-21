@@ -9,6 +9,17 @@ on:
   schedule:
     - cron: '23 2 * * *'
   workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/nightly.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright.config.ts'
+      - 'tests/Browser/**'
+      - 'tests/Support/BrowserProjectManifest.php'
+      - 'tests/Support/prepare-browser-contribution.php'
+      - 'tools/summarize-browser-attempts.mjs'
+      - 'tools/verify-browser-attempt-summary.mjs'
 
 permissions:
   contents: read
@@ -262,18 +273,53 @@ jobs:
           echo 'The Firefox and WebKit test runtimes could not be installed after four bounded attempts.' >&2
           exit 1
 
-      # These two projects declare ignoreSnapshots, and that is deliberate rather than a weakening: pixel
-      # baselines belong to the browser that recorded them, and comparing a Firefox render against a
-      # Chromium baseline produces a failure about font hinting rather than about the product. Behaviour
-      # and accessibility are asserted identically on all three engines; only the pixels stay with Chromium.
-      - name: Exercise the journeys on Firefox and WebKit
+      # All four breadth projects declare ignoreSnapshots, and that is deliberate rather than a weakening:
+      # pixel baselines belong to the browser that recorded them, and comparing a Firefox or WebKit render
+      # against a Chromium baseline produces a failure about font hinting rather than about the product.
+      # Desktop carries the complete journey set; the bounded mobile cells prove the responsive touch,
+      # keyboard, focus, forced-colour, zoom and reflow contract without doubling the nightly job budget.
+      - name: Exercise desktop and mobile breadth on Firefox and WebKit
         run: npm run test:browser:breadth
 
       - name: Summarize first-attempt and retried results
         if: always()
         env:
           KUMWE_BROWSER_ENGINE: ${{ matrix.database.driver }}
-        run: node tools/summarize-browser-attempts.mjs
+        run: >-
+          node tools/summarize-browser-attempts.mjs
+          --critical=tests/Browser/nightly-critical-journeys.json
+
+      - name: Enforce the nightly browser acceptance figures
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          report='test-results/browser-attempts.json'
+          if [ ! -f "$report" ]; then
+            echo 'The browser attempt report is missing, so the nightly acceptance cannot be assessed.' >&2
+            exit 1
+          fi
+          if ! jq -e '
+            .total > 0
+            and ((.projects | sort) == [
+              "desktop-firefox",
+              "desktop-webkit",
+              "mobile-firefox",
+              "mobile-webkit"
+            ])
+            and .firstAttemptPassRatePercent >= 99
+            and (.failed | length) == 0
+            and .critical.totalExpected > 0
+            and (.critical.missing | length) == 0
+            and (.critical.failed | length) == 0
+            and (.critical.passedOnlyAfterRetry | length) == 0
+          ' "$report" >/dev/null; then
+            echo 'Nightly browser acceptance failed: require all four declared projects, >=99% first-attempt' >&2
+            echo 'overall, no final failure, and every manifest-owned critical journey present and green' >&2
+            echo 'on its first attempt.' >&2
+            cat "$report" >&2
+            exit 1
+          fi
 
       - name: Upload browser evidence
         if: always()

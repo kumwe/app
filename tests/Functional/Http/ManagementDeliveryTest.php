@@ -11,8 +11,8 @@ use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
 use Kumwe\App\Http\Middleware\BearerAuthenticationMiddleware;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\ConsoleApplication;
+use Kumwe\App\Delivery\Console\Contract\CliV1MachineContract;
 use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\AuthorizationContext;
@@ -273,20 +273,22 @@ final class ManagementDeliveryTest extends TestCase
         }
     }
 
-    public function testBusinessConsoleCommandsAreRegisteredOnTheRealApplication(): void
+    /**
+     * Prove the real composition root registers exactly the retained CLI command generation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRealConsoleRegistrationExactlyMatchesTheRetainedMachineContract(): void
     {
         $container = (new ContainerFactory())->create(Environment::fromGlobals());
         $console = $container->get(ConsoleApplication::class);
         self::assertInstanceOf(ConsoleApplication::class, $console);
 
-        $property = new \ReflectionProperty(ConsoleApplication::class, 'commands');
-        $commands = $property->getValue($console);
-        self::assertIsArray($commands);
-        $names = [];
-        foreach ($commands as $command) {
-            self::assertInstanceOf(Command::class, $command);
-            $names[] = $command->name();
-        }
+        $names = $console->commandNames();
+        self::assertSame(CliV1MachineContract::contract()->commandNames(), $names);
+        self::assertCount(44, $names);
 
         // Every business feature reachable over REST is reachable from a shell too.
         self::assertContains('business-definition', $names);

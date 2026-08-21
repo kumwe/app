@@ -5768,6 +5768,7 @@ final class ContainerFactory
             new KumweMcpServerFactory(
                 self::service($container, McpCapabilityCatalog::class),
                 sessions: self::service($container, SessionStoreInterface::class),
+                logger: self::service($container, LoggerInterface::class),
             ), true);
     }
 

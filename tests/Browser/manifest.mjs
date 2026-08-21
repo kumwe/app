@@ -15,7 +15,7 @@
  */
 
 /** Every value `specs` may take. Anything else is refused rather than interpreted. */
-export const specScopes = ['all', 'right-to-left'];
+export const specScopes = ['all', 'right-to-left', 'breadth'];
 
 /**
  * The largest retry budget the manifest may declare.

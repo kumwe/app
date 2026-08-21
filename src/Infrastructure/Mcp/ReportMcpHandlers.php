@@ -142,7 +142,10 @@ final readonly class ReportMcpHandlers
         $download = $this->exports->download($context, $artifact);
         if ($download->size > self::MAX_INLINE_DOWNLOAD_BYTES) {
             fclose($download->stream);
-            throw new RuntimeException('The export is too large for bounded MCP download.');
+            throw new McpToolRefusal(
+                'result.too_large',
+                'The result is too large for bounded MCP delivery.',
+            );
         }
         $bytes = stream_get_contents($download->stream, self::MAX_INLINE_DOWNLOAD_BYTES + 1);
         fclose($download->stream);

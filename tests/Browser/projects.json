@@ -1,5 +1,5 @@
 {
-    "note": "The one definition of the browser matrix. playwright.config.ts builds its projects from this file and tests/Support/prepare-browser-contribution.php seeds from it, so a project cannot exist in one and be missing from the other. Adding a project here is what makes it run and what makes its fixtures exist; nothing else needs editing. `specs` is `all` for a project that runs every journey, or `right-to-left` for one confined to that spec. Only `all` projects reach the maker-checker journey, and only they need approval identities.",
+    "note": "The one definition of the browser matrix. playwright.config.ts builds its projects from this file and tests/Support/prepare-browser-contribution.php seeds from it, so a project cannot exist in one and be missing from the other. Adding a project here is what makes it run and makes fixture selection see it; its browser/device emulation must also be declared deliberately in playwright.config.ts. `specs` is `all` for a project that runs every journey, `right-to-left` for one confined to the locale-direction proof, or `breadth` for one confined to the bounded nightly keyboard, focus, touch, high-contrast, zoom and reflow proof. tests/Browser/nightly-critical-journeys.json separately owns the exact project/title pairs that may never rely on a retry. Only `all` projects reach the maker-checker journey, and only they need approval identities.",
     "retries": 1,
     "projects": [
         { "name": "desktop-chromium", "specs": "all" },
@@ -9,6 +9,8 @@
         { "name": "mobile-chromium-he", "specs": "right-to-left" },
         { "name": "mobile-chromium-ar", "specs": "right-to-left" },
         { "name": "desktop-firefox", "specs": "all" },
-        { "name": "desktop-webkit", "specs": "all" }
+        { "name": "mobile-firefox", "specs": "breadth" },
+        { "name": "desktop-webkit", "specs": "all" },
+        { "name": "mobile-webkit", "specs": "breadth" }
     ]
 }

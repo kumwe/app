@@ -105,6 +105,11 @@ jobs:
           composer install --no-interaction --prefer-dist
           npm ci
 
+      - name: Type-check and build immutable browser assets
+        run: |
+          npm run check
+          npm run build
+
       - name: Migrate and create the browser-test administrator
         shell: bash
         run: |
@@ -184,12 +189,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git add tests/Browser/screenshots
+          git add public/assets/build tests/Browser/screenshots
           if git diff --cached --quiet; then
             echo 'Every selected baseline already matches this environment; nothing to commit.'
             exit 0
           fi
           git config user.name 'Lemuel'
           git config user.email 'lemuel@vdm.to'
-          git commit -m 'Refresh browser baselines from the verification environment'
+          git commit -m 'Refresh browser artifacts from the verification environment'
           git push origin "HEAD:${GITHUB_REF_NAME}"

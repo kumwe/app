@@ -22,6 +22,6 @@ theme owns carries a `horizon-` prefix — a theme must not reuse host-owned cla
 Build and statically inspect the package from the repository root:
 
 ```bash
-php bin/kumwe extension:build examples/extensions/horizon-theme --output=/tmp/horizon-theme.zip
+php bin/kumwe extension:build "$PWD/examples/extensions/horizon-theme" --output=/tmp/horizon-theme.zip
 php bin/kumwe extension:conformance /tmp/horizon-theme.zip
 ```

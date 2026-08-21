@@ -27,9 +27,9 @@ development programme, from the architecture decision that opened it to the curr
   [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7)
   passed the complete quality, MariaDB LTS, MySQL 8.4, PostgreSQL 17, browser, deployment, security and
   Development Compose workflows. Continuous-release run
-  [`32472051532`](https://github.com/kumwe/app/actions/runs/32472051532) cut
+  [run 32472051532](https://github.com/kumwe/app/actions/runs/32472051532) cut
   [`v2.0.0-alpha.4`](https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.4), and release run
-  [`32472065990`](https://github.com/kumwe/app/actions/runs/32472065990) built, signed/attested and published
+  [run 32472065990](https://github.com/kumwe/app/actions/runs/32472065990) built, signed/attested and published
   the Composer-project archive, checksums, SBOMs and signed checksum bundle from those exact bytes. This is
   the executable evidence Gate A criterion 12
   required; the alpha label does not turn Gate A into a release claim or replace its remaining truthful-gate

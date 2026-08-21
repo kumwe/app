@@ -1,0 +1,20 @@
+{
+    "current": "1.0.0",
+    "format": "kumwe-rest-machine-contract-generations-v1",
+    "generations": [
+        {
+            "artifact": "api/openapi/kumwe-v1.json",
+            "artifact_sha256": "7e18419ca02ec8b131531643b60219e4dbd0c5e316ae46772b3e93cf33aa11c0",
+            "compatibility_fixture": "api/openapi/compatibility/v1.json",
+            "compatibility_fixture_sha256": "e4ad525f5cfe4ec4d665a5e97f364c51f8b08f871e3129e33396391390c51daf",
+            "compiler_generation_sha256": "486d910d02f356ae2d7a869a0a5bdf1e9a6229286a0caee05c3acbc066fc8609",
+            "core": "api/openapi/core-v1.json",
+            "core_sha256": "e1b9b72db7271a6f64fca9570970f3979e93cbc52cee2e7b0bb7f5893f0b2356",
+            "generation": "1.0.0",
+            "problem_registry": "api/problem-details/kumwe-v1.json",
+            "problem_registry_sha256": "7715276508a830c4459eaa1f4df82d83daf48b1ea37f268bb90487a2a52a8a80",
+            "route_exclusions": "api/openapi/route-exclusions.json",
+            "route_exclusions_sha256": "59ac6b7a4f3e038918982a16c22d4d6869e76ab041a6a0d516be959ef3563f16"
+        }
+    ]
+}

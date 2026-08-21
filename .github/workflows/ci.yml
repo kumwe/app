@@ -291,6 +291,11 @@ jobs:
       - name: Verify the frozen extension contract
         run: composer extension:contract
 
+      - name: Verify the retained CLI and MCP machine contracts
+        run: |
+          composer cli:contract
+          composer mcp:contract
+
       - name: Verify the interface programme and the roadmap ledger
         run: |
           composer interface:programme
@@ -548,21 +553,19 @@ jobs:
           tail -n +1 build/coverage/summary.txt
 
       # The integration suite has to be idempotent against a database another run already used, because
-      # that is what CI, a developer's container and a release rehearsal all do. This runs it a second time
-      # against the database the first run left behind.
+      # that is what CI, a developer's container and a release rehearsal all do. The complete suite above
+      # is the first pass; this gate appends the enforced repeat and reverse-class-order passes, giving all
+      # three database engines three consecutive integration runs against the same schema and data.
       #
-      # It is not idempotent today — that is V2-QA-004, and the first execution of this step reproduced it
-      # exactly. The six tests that fail are recorded in docs/quality/idempotency-baseline.json with an
-      # owner, an expiry and what removing each one takes, and the step fails on anything outside that
-      # record: a test that starts failing, an entry whose test now passes, or an entry past its expiry.
-      # The record only ever shrinks. A permanently red gate would have been worse than the defect it
-      # reports, and an advisory one would not be a gate at all.
+      # V2-QA-004's six-test record is empty, and the step fails on anything new, an exemption that has
+      # become stale, or one past its expiry. The process-scoped fixture lifecycle snapshots the migrated
+      # definition catalog and, before each PHPUnit process exits, atomically withholds every run-unique
+      # fixture's schema installation and rejects its current definition version. A bounded explicit set of
+      # replay fixtures remains live; the next pass sees retained history but not a growing contract set.
       #
-      # The suite's behaviour under a different class order is the other half of V2-QA-004 and is not
-      # enforced here. The baseline says so, and says why: the first attempt used --order-by=reverse, which
-      # also reverses the tests inside each class, so it measured something other than the stated property.
-      # The corrected mechanism is in the tool and is run with --pass=reverse.
-      - name: Prove the integration suite is idempotent against a reused database
+      # Reverse order is generated as an explicit reverse list of class files; method declaration order is
+      # unchanged, so this measures inter-class residue rather than undocumented ordering inside a class.
+      - name: Prove three integration passes and reverse class order on one database
         run: composer test:idempotency -- --engine=${{ matrix.database.driver }}
 
       - name: Upload the idempotency evidence

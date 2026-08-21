@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Delivery\Http\Api;
 
 use InvalidArgumentException;
+use Kumwe\App\OpenApi\Application\ProblemDetailsRegistry;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 
@@ -14,15 +15,25 @@ use Psr\Http\Message\ResponseInterface;
  * Handlers and middleware across the API surface send their refusals through here instead of assembling
  * a body each, so a client sees one media type, one member set and one status convention whatever
  * rejected the request. The factory also refuses to emit a document that would not be a valid problem:
- * a status outside the failure ranges, a blank title or detail, a `type` that is neither `about:blank`
- * nor an absolute URI, and an extension member that would shadow a reserved member are all caller
- * mistakes, and it is better to fail the request loudly than to answer with a document a client cannot
- * interpret.
+ * a status outside the failure ranges, a blank title or detail, a type outside the retained registry,
+ * and an extension member outside that type's closed schema are all caller mistakes. It is better to fail
+ * the request loudly than to answer with a document a client cannot interpret.
  *
  * @since  2.0.0
  */
 final class ProblemDetailsResponseFactory
 {
+    /**
+     * Bind response validation to the finite public problem registry.
+     *
+     * @param  ProblemDetailsRegistry  $registry  Stable core status, retry and extension contracts.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private readonly ProblemDetailsRegistry $registry = new ProblemDetailsRegistry())
+    {
+    }
+
     /**
      * Render one refusal as a problem document, with the status repeated in the body.
      *
@@ -48,8 +59,8 @@ final class ProblemDetailsResponseFactory
      *          supplied status.
      *
      * @throws  InvalidArgumentException  When the status is outside 400 to 599, the title or detail is blank
-     *          once trimmed, the type is neither `about:blank` nor an absolute URI, or an extension member
-     *          is named after an RFC 9457 reserved member.
+     *          once trimmed, the type is neither `about:blank` nor a retained registry type, or an extension
+     *          member falls outside that type's closed schema.
      *
      * @since   2.0.0
      */
@@ -79,6 +90,13 @@ final class ProblemDetailsResponseFactory
             }
         }
 
+        if ($type === 'about:blank') {
+            $this->registry->validateAboutBlankExtensions($extensions);
+            $definition = null;
+        } else {
+            $definition = $this->registry->require($type, $status, $extensions);
+        }
+
         $body = [
             'type' => $type,
             'title' => $title,
@@ -90,10 +108,15 @@ final class ProblemDetailsResponseFactory
             $body['instance'] = $instance;
         }
 
-        return new JsonResponse(
+        $response = new JsonResponse(
             [...$body, ...$extensions],
             $status,
             ['Content-Type' => 'application/problem+json'],
         );
+        if ($definition?->retryAfterSeconds !== null) {
+            $response = $response->withHeader('Retry-After', (string) $definition->retryAfterSeconds);
+        }
+
+        return $response;
     }
 }

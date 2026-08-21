@@ -20,6 +20,6 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-final class HighImpactAuthenticationRequired extends RuntimeException
+final class HighImpactAuthenticationRequired extends RuntimeException implements StepUpAuthorizationRequired
 {
 }

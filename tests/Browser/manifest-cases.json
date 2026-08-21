@@ -252,6 +252,20 @@
             }
         },
         {
+            "label": "a project confined to the bounded nightly breadth journey",
+            "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":\"breadth\"}]}",
+            "outcome": "accepted",
+            "expected": {
+                "retries": 1,
+                "projects": [
+                    {
+                        "name": "a",
+                        "specs": "breadth"
+                    }
+                ]
+            }
+        },
+        {
             "label": "a project carrying keys neither consumer reads",
             "source": "{\"retries\":1,\"projects\":[{\"name\":\"a\",\"specs\":\"all\",\"note\":\"kept\"}]}",
             "outcome": "accepted",

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Presentation\Application;
 
 use DomainException;
+use Kumwe\App\Application\Security\StepUpAuthorizationRequired;
 
 /**
  * Signals that a theme change was refused because the actor did not re-prove who they are.
@@ -18,6 +19,6 @@ use DomainException;
  *
  * @since  2.0.0
  */
-final class StepUpAuthenticationRequired extends DomainException
+final class StepUpAuthenticationRequired extends DomainException implements StepUpAuthorizationRequired
 {
 }

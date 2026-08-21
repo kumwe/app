@@ -110,10 +110,14 @@ final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
             throw $failure;
         }
 
-        self::assertSame(1, $this->stored($container, $invoice, 'document_number', '-', '2027'));
-        self::assertSame(3, $this->stored($container, $invoice, 'document_number', '-', '2026'));
-        self::assertSame(1, $this->stored($container, $credit, 'document_number', '-', '2026'));
-        self::assertSame(1, $this->stored($container, $invoice, 'document_number', 'north-branch', '2026'));
+        self::assertSame(1, $this->stored($container, 'default', $invoice, 'document_number', '-', '2027'));
+        self::assertSame(3, $this->stored($container, 'default', $invoice, 'document_number', '-', '2026'));
+        self::assertSame(1, $this->stored($container, 'entity-b', $invoice, 'document_number', '-', '2026'));
+        self::assertSame(1, $this->stored($container, 'default', $credit, 'document_number', '-', '2026'));
+        self::assertSame(
+            1,
+            $this->stored($container, 'default', $invoice, 'document_number', 'north-branch', '2026'),
+        );
     }
 
     /**
@@ -237,8 +241,8 @@ final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
             self::assertSame(sprintf('SEQ-%s-%04d', $year, $index), $view->values['document_number'] ?? null);
             self::assertSame(sprintf('VCH-%s-%03d', $month, $index), $view->values['voucher_number'] ?? null);
         }
-        self::assertSame(2, $this->stored($container, $definition->id, 'document_number', '-', $year));
-        self::assertSame(2, $this->stored($container, $definition->id, 'voucher_number', '-', $month));
+        self::assertSame(2, $this->stored($container, 'default', $definition->id, 'document_number', '-', $year));
+        self::assertSame(2, $this->stored($container, 'default', $definition->id, 'voucher_number', '-', $month));
     }
 
     /**
@@ -284,11 +288,12 @@ final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
     /**
      * Read the committed value one counter identity stands at, or zero when it has no row.
      *
-     * @param   Container  $container     Integration container holding the connection and table map.
-     * @param   string     $definitionId  Definition coordinate of the counter.
-     * @param   string     $fieldHandle   Field-handle coordinate of the counter.
-     * @param   string     $scopeKey      Scope-key coordinate of the counter.
-     * @param   string     $periodKey     Period-key coordinate of the counter.
+     * @param   Container  $container       Integration container holding the connection and table map.
+     * @param   string     $siteIdentifier  Site or legal-entity coordinate of the counter.
+     * @param   string     $definitionId    Definition coordinate of the counter.
+     * @param   string     $fieldHandle     Field-handle coordinate of the counter.
+     * @param   string     $scopeKey        Scope-key coordinate of the counter.
+     * @param   string     $periodKey       Period-key coordinate of the counter.
      *
      * @return  int  The stored `current_value`, or zero when the identity names no row yet.
      *
@@ -296,16 +301,17 @@ final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
      */
     private function stored(
         Container $container,
+        string $siteIdentifier,
         string $definitionId,
         string $fieldHandle,
         string $scopeKey,
         string $periodKey,
     ): int {
         $stored = $this->connection($container)->fetchOne(sprintf(
-            'SELECT current_value FROM %s WHERE definition_id = ? AND field_handle = ? '
+            'SELECT current_value FROM %s WHERE site_identifier = ? AND definition_id = ? AND field_handle = ? '
             . 'AND scope_key = ? AND period_key = ?',
             $this->tables($container)->quoted('business_number_sequences'),
-        ), [$definitionId, $fieldHandle, $scopeKey, $periodKey]);
+        ), [$siteIdentifier, $definitionId, $fieldHandle, $scopeKey, $periodKey]);
 
         return $stored === false ? 0 : (int) $stored;
     }
