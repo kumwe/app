@@ -1088,10 +1088,14 @@ development programme, from the architecture decision that opened it to the curr
 - **The Firefox/WebKit breadth gate now tests the contracts each browser can actually render.** A generated
   business denial negotiates a themed, non-enumerating HTML 403 for browser navigation while preserving the
   problem document for machine callers; one-column stacks explicitly clamp their track, access form controls
-  cannot inherit a native select's intrinsic width, and the two user-task links carry 32-pixel targets. The
+  cannot inherit a native select's intrinsic width, the desktop shell cannot resurrect its responsive
+  navigation toggle through a later selector, and the two
+  user-task links carry 32-pixel targets. The
   presentation journey proves dark colour and reduced motion before entering Firefox's independent forced-colour
   phase, and WebKit's dark gallery is loaded under the emulation instead of scanning its stale live-override
-  state. Closes `V2-QA-012` and `V2-QA-013`; the real-Safari live-switch question in `V2-QA-014` remains open.
+  state. Environment-owned baseline refreshes cover both source-language Chromium projects and every locale-owned
+  RTL project together, so a shared stylesheet change cannot update one visual axis while leaving another stale.
+  Closes `V2-QA-012` and `V2-QA-013`; the real-Safari live-switch question in `V2-QA-014` remains open. (#102)
 - **A plaintext origin no longer tells the browser to upgrade what it cannot serve.**
   `upgrade-insecure-requests` sat in the Content-Security-Policy unconditionally while HSTS, immediately
   below it, was already gated on production HTTPS. On an origin not served over TLS the directive hardens

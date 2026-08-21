@@ -19,6 +19,7 @@ use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
 use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
 use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
 use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\App\BusinessIntegration\Infrastructure\ContributedQueueRuntimePolicyCatalog;
 use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Identity\Domain\Capability;
@@ -54,7 +55,7 @@ use ReflectionProperty;
 #[CoversClass(JobHandlerRegistry::class)]
 #[CoversClass(PayloadSchemaValidator::class)]
 #[CoversClass(PortalNavigationRegistry::class)]
-#[CoversClass(QueueRuntimePolicyCatalog::class)]
+#[CoversClass(ContributedQueueRuntimePolicyCatalog::class)]
 final class LiveSurfaceContractParityTest extends TestCase
 {
     /**

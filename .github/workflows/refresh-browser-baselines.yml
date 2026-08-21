@@ -16,7 +16,8 @@ on:
         description: >-
           Playwright selection passed through verbatim, for example
           "tests/Browser/administrator.spec.ts:505 --project=mobile-chromium".
-        required: true
+        required: false
+        default: ''
         type: string
   push:
     paths:
@@ -159,17 +160,19 @@ jobs:
           REFRESH_ARGUMENTS: ${{ inputs.arguments }}
         run: |
           set -euo pipefail
-          # The verification lanes run the desktop project before the mobile one, so a mobile
-          # screenshot captures whatever state the whole desktop pass left behind. A baseline
-          # re-rendered without that pass would encode a state the verification lane never sees;
-          # the state-building pass therefore runs first, and only the selection is re-captured.
+          # The default selection mirrors the complete Chromium verification matrix: both source-
+          # language projects plus the four locale-owned RTL projects. This keeps every baseline
+          # affected by a shared stylesheet change in one environment-owned refresh. A manually
+          # narrowed mobile selection is primed with the desktop project because the verification
+          # lane runs desktop first and its persisted state is part of the mobile rendering context.
           # The selection intentionally word-splits: it carries test locations and --project flags.
           arguments="${REFRESH_ARGUMENTS:-}"
           if [ -z "$arguments" ]; then
-            npx playwright test --project=desktop-chromium || true
-            arguments='tests/Browser/right-to-left.spec.ts'
+            arguments='--project=desktop-chromium --project=mobile-chromium'
             arguments="$arguments --project=desktop-chromium-he --project=desktop-chromium-ar"
             arguments="$arguments --project=mobile-chromium-he --project=mobile-chromium-ar"
+          else
+            npx playwright test --project=desktop-chromium || true
           fi
           npx playwright test $arguments --update-snapshots
 

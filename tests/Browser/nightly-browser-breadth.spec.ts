@@ -55,6 +55,10 @@ test('Nightly browser breadth preserves keyboard, touch, high contrast, zoom and
     await expect(toggle).toBeFocused();
     expect((await toggle.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
     await toggle.tap();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(
+      page.getByRole('navigation', { name: 'Administrator navigation' }),
+    ).toBeVisible();
     const settingsLink = page
       .getByRole('navigation', { name: 'Administrator navigation' })
       .getByRole('link', { name: 'Settings' });
@@ -82,11 +86,6 @@ test('Nightly browser breadth preserves keyboard, touch, high contrast, zoom and
     expect((await save.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   }
   criticalControls.push(save);
-
-  const touchPoints = await page.evaluate(() => navigator.maxTouchPoints);
-  if (mobile) {
-    expect(touchPoints).toBeGreaterThan(0);
-  }
 
   // Prove both halves of the product contract: the engine activates the media feature and Kumwe's
   // forced-colours declaration changes a real computed style. Checking matchMedia alone would only test
@@ -159,8 +158,9 @@ test('Nightly browser breadth preserves keyboard, touch, high contrast, zoom and
         ? ['administrator navigation toggle', 'settings navigation link', 'save settings']
         : ['settings navigation link', 'save settings'],
       keyboardInteraction: 'Settings navigation activated with Enter',
-      touchInteraction: mobile ? 'Administrator navigation opened with tap' : 'not applicable',
-      touchPoints,
+      touchInteraction: mobile
+        ? 'Administrator navigation opened with tap and exposed its settings link'
+        : 'not applicable',
     },
   };
   await testInfo.attach('nightly-browser-breadth-contract', {

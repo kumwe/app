@@ -4228,9 +4228,15 @@ final class ContainerFactory
                 ['/administrator/business/{definition}/{record}', 'administrator.business.record'],
             ] as [$path, $name]
         ) {
+            $getCapabilities = ['administrator.access'];
+
+            if ($path === '/administrator/business') {
+                $getCapabilities[] = 'business.record.browse';
+            }
+
             self::administratorRoute(
                 $application->get($path, AdministratorBusinessSurfaceHandler::class, $name),
-                'administrator.access',
+                ...$getCapabilities,
             );
             self::administratorRoute($application->post(
                 $path,

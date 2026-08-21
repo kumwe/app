@@ -117,7 +117,9 @@
   }
   /* WebKit otherwise derives the native select's minimum from its longest option, escaping narrow
      catalog columns and zoomed forms even when the control has an explicit percentage width. */
-  select { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  select {
+    width: 0; min-width: 100%; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   textarea { min-height: 7.5rem; resize: vertical; }
   input:hover, select:hover, textarea:hover { border-color: color-mix(in srgb, var(--kumwe-border-strong), var(--kumwe-accent) 28%); }
   input:focus, select:focus, textarea:focus { outline: 0; border-color: var(--kumwe-accent); box-shadow: var(--kumwe-focus); }
@@ -150,7 +152,7 @@
   .administrator-navigation svg { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; color: #8ba5b8; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
   .administrator-navigation a[aria-current="page"] svg { color: var(--kumwe-blue-200); }
   .administrator-topbar { grid-area: topbar; position: sticky; z-index: 30; top: 0; display: flex; min-width: 0; align-items: center; gap: .75rem; padding: .6rem clamp(1rem, 2.5vw, 2rem); border-bottom: 1px solid var(--kumwe-border); background: color-mix(in srgb, var(--kumwe-surface) 89%, transparent); backdrop-filter: blur(15px); }
-  .navigation-toggle { display: none; }
+  .administrator-topbar .navigation-toggle { display: none; }
   .topbar-context { min-width: 0; margin-inline-end: auto; }
   .topbar-context strong { display: block; overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
   .topbar-context span { display: block; color: var(--kumwe-text-muted); font-size: .72rem; }
@@ -505,7 +507,7 @@
     .administrator-shell { grid-template: "topbar" var(--kumwe-topbar-height) "main" 1fr / minmax(0, 1fr); }
     .administrator-sidebar { transform: translateX(-102%); transition: transform .2s ease; box-shadow: var(--kumwe-shadow-xl); }
     .administrator-shell[data-navigation-open] .administrator-sidebar { transform: none; }
-    .navigation-toggle { display: grid; }
+    .administrator-topbar .navigation-toggle { display: grid; }
     .navigation-backdrop { position: fixed; z-index: 35; inset: 0; border: 0; background: rgb(4 12 24 / .58); backdrop-filter: blur(2px); }
     .administrator-shell[data-navigation-open] .navigation-backdrop { display: block; }
     .navigation-locked { overflow: hidden; }
