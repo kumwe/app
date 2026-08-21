@@ -23,6 +23,14 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **Gate A's three-engine regression criterion has exact released evidence.** Commit
+  [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7)
+  passed the complete quality, MariaDB LTS, MySQL 8.4, PostgreSQL 17, browser, deployment, security and
+  Development Compose workflows. The continuous-release workflow then published those exact bytes as
+  [`v2.0.0-alpha.4`](https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.4), carrying the Composer-project
+  archive, checksums, SBOMs and signed checksum bundle. This is the executable evidence Gate A criterion 12
+  required; the alpha label does not turn Gate A into a release claim or replace its remaining truthful-gate
+  criterion.
 - **The documentation rule for `tests/` is enforced, not merely written down.** `docs/coding-standard.md`
   has asked for a documentation block on every test class and test method since it was written, and
   `composer docs:api` scanned `src/` only, so the rule had never once been checked. `composer docs:tests`

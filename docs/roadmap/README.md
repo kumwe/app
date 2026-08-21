@@ -1082,9 +1082,15 @@ and phase S's Gate A half complete.
     numbering shape is decided and recorded. Three of the four are delivered and recorded in
     [`CHANGELOG.md`](../../CHANGELOG.md). The criterion is **not yet met**: it waits on `V2-POS-002`,
     which is the product owner's decision and not an implementation task.
-12. **Nothing regressed.** The full suite is green on MariaDB, MySQL and PostgreSQL. No supported
-    compatibility fixture is broken except the approved model-context security correction, which ships with
-    migration guidance and a stable error.
+12. **Nothing regressed.** Met at
+    [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7).
+    [Merge run `32469278190`](https://github.com/kumwe/app/actions/runs/32469278190) passed the quality,
+    unit, architecture, integration, functional, browser and complete production-deployment suites on
+    MariaDB LTS, MySQL 8.4 and PostgreSQL 17. The security and Development Compose workflows passed on the
+    same commit, and the continuous-release workflow published that exact source as
+    [`v2.0.0-alpha.4`](https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.4) with checksums, SBOMs and a
+    signed checksum bundle. No supported compatibility fixture is broken except the approved model-context
+    security correction, which ships with migration guidance and a stable error.
 13. **The composition contribution contract is frozen.** An extension declares a composition block with
     its bounded property schema, slots and renderer binding, a pattern, an inspector or field control,
     design vocabulary including size roles, and a composition migration, through classified contribution
