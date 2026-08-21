@@ -1147,6 +1147,20 @@
     overflow-wrap: anywhere;
   }
 
+  [data-kis-surface="core.administrator.settings"]
+    :is(kumwe-presentation-schemes, [data-presentation-scheme-rows], .builder-row, .builder-row > *,
+    .three-column, .three-column > *, .presentation-color-grid, .presentation-color-grid > *) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  [data-kis-surface="core.administrator.settings"]
+    .builder-row-heading h3[data-presentation-scheme-heading] {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
   .kis-phase-five-status-line {
     display: flex;
     flex-wrap: wrap;
@@ -1315,6 +1329,19 @@
 }
 
 @layer overrides {
+  @container kis-phase-five (max-width: 72em) {
+    [data-kis-surface="core.administrator.navigation"]
+      :is(.form-grid, .menu-item-grid) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    [data-kis-surface="core.administrator.navigation"]
+      :is(form, article, .panel-body, .kis-master-detail-grid, .kis-master-detail-content) {
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
+
   @container kis-phase-five (max-width: 62em) {
     .kis-phase-five .editor-grid {
       grid-template-columns: minmax(0, 1fr);
@@ -1361,6 +1388,41 @@
 
     .kis-phase-five .media-input {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kis-phase-five .media-input button {
+      max-width: 100%;
+      justify-self: start;
+      white-space: normal;
+    }
+
+    [data-kis-surface="core.administrator.settings"] .builder-row-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    [data-kis-surface="core.administrator.settings"] .builder-row-heading > * {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    [data-kis-surface="core.administrator.settings"] .builder-row-heading .remove-row {
+      max-width: 100%;
+      justify-self: start;
+      white-space: normal;
+    }
+
+    [data-kis-surface="core.administrator.navigation"]
+      :is(.form-grid, .menu-item-grid) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    [data-kis-surface="core.administrator.navigation"]
+      :is(form, article, .panel-body, .kis-master-detail-grid, .kis-master-detail-content) {
+      min-width: 0;
+      max-width: 100%;
     }
 
     .kis-phase-five .presentation-color-grid {
@@ -1381,6 +1443,10 @@
   }
 
   @media (max-width: 48rem) {
+    [data-kis-surface="core.administrator.settings"] .presentation-color-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     [data-kis-surface="core.administrator.business-security"] :is(.section-heading, .panel-header) {
       display: grid;
       align-items: stretch;
@@ -1597,7 +1663,9 @@
   }
   /* WebKit otherwise derives the native select's minimum from its longest option, escaping narrow
      catalog columns and zoomed forms even when the control has an explicit percentage width. */
-  select { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  select {
+    width: 0; min-width: 100%; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   textarea { min-height: 7.5rem; resize: vertical; }
   input:hover, select:hover, textarea:hover { border-color: color-mix(in srgb, var(--kumwe-border-strong), var(--kumwe-accent) 28%); }
   input:focus, select:focus, textarea:focus { outline: 0; border-color: var(--kumwe-accent); box-shadow: var(--kumwe-focus); }
@@ -1630,11 +1698,11 @@
   .administrator-navigation svg { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; color: #8ba5b8; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
   .administrator-navigation a[aria-current="page"] svg { color: var(--kumwe-blue-200); }
   .administrator-topbar { grid-area: topbar; position: sticky; z-index: 30; top: 0; display: flex; min-width: 0; align-items: center; gap: .75rem; padding: .6rem clamp(1rem, 2.5vw, 2rem); border-bottom: 1px solid var(--kumwe-border); background: color-mix(in srgb, var(--kumwe-surface) 89%, transparent); backdrop-filter: blur(15px); }
-  .navigation-toggle { display: none; }
+  .administrator-topbar .navigation-toggle { display: none; }
   .topbar-context { min-width: 0; margin-inline-end: auto; }
   .topbar-context strong { display: block; overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
-  .topbar-context span { display: block; color: var(--kumwe-text-muted); font-size: .72rem; }
-  .command-trigger { display: flex; min-width: min(22rem, 34vw); align-items: center; gap: .55rem; padding: .52rem .65rem; border: 1px solid var(--kumwe-border); border-radius: .65rem; background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); font-size: .8rem; text-align: start; }
+  .topbar-context span { display: block; overflow: hidden; color: var(--kumwe-text-muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+  .command-trigger { display: flex; width: min(22rem, 34vw); min-width: max(2.75rem, var(--kis-touch-target)); align-items: center; gap: .55rem; padding: .52rem .65rem; border: 1px solid var(--kumwe-border); border-radius: .65rem; background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); font-size: .8rem; text-align: start; }
   .command-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .command-trigger kbd { margin-inline-start: auto; padding: .12rem .35rem; border: 1px solid var(--kumwe-border-strong); border-radius: .3rem; background: var(--kumwe-surface); color: var(--kumwe-text-subtle); font: 600 .68rem/1.25 var(--kumwe-font-sans); }
   .topbar-action { display: grid; width: max(2.75rem, var(--kis-touch-target)); min-width: max(2.75rem, var(--kis-touch-target)); height: max(2.75rem, var(--kis-touch-target)); min-height: max(2.75rem, var(--kis-touch-target)); place-items: center; border: 1px solid var(--kumwe-border); border-radius: .62rem; background: var(--kumwe-surface); color: var(--kumwe-text-muted); }
@@ -1672,11 +1740,13 @@
   .full-row { grid-column: 1 / -1; }
   .check { display: flex; align-items: flex-start; gap: .55rem; font-weight: 540; }
   .check input { margin-top: .16rem; flex: 0 0 auto; }
+  .check > span { min-width: 0; overflow-wrap: anywhere; }
+  .check > span > small { display: block; }
   .input-prefix { display: flex; align-items: stretch; }
   .input-prefix > span { display: flex; align-items: center; padding-inline: .72rem; border: 1px solid var(--kumwe-border-strong); border-inline-end: 0; border-start-start-radius: var(--kumwe-radius-sm); border-end-start-radius: var(--kumwe-radius-sm); border-start-end-radius: 0; border-end-end-radius: 0; background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); font-size: .78rem; font-weight: 520; }
   .input-prefix input { border-start-start-radius: 0; border-end-start-radius: 0; border-start-end-radius: var(--kumwe-radius-sm); border-end-end-radius: var(--kumwe-radius-sm); }
-  .media-input { display: flex; gap: .5rem; align-items: stretch; }
-  .media-input input { min-width: 0; }
+  .media-input { display: grid; min-width: 0; max-width: 100%; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; align-items: stretch; }
+  .media-input input { width: 100%; min-width: 0; }
   .media-input button { flex: 0 0 auto; white-space: nowrap; }
   .dashboard-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(17rem, .6fr); gap: 1rem; overflow: hidden; margin-bottom: 1.25rem; padding: clamp(1.35rem, 3vw, 2.25rem); border: 0; background: linear-gradient(135deg, var(--kumwe-navy-900), #0b2944 58%, #174f73); color: #fff; box-shadow: var(--kumwe-shadow-md); }
   .dashboard-hero::after { position: absolute; width: 24rem; height: 24rem; inset-inline-end: -11rem; bottom: -15rem; border: 1px solid rgb(255 255 255 / .12); border-radius: 50%; box-shadow: 0 0 0 3rem rgb(255 255 255 / .025), 0 0 0 7rem rgb(255 255 255 / .02); content: ""; }
@@ -1785,6 +1855,7 @@
   .builder-options { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
   .remove-row { align-self: end; min-width: 2.75rem; padding-inline: .7rem !important; color: var(--kumwe-danger) !important; }
   .presentation-scheme-row { display: grid; grid-template-columns: 1fr; align-items: stretch; padding: 1rem; }
+  kumwe-presentation-schemes { display: block; min-width: 0; max-width: 100%; }
   .builder-row-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
   .builder-row-heading h3 { margin: 0; }
   .builder-row-heading .remove-row { align-self: start; }
@@ -1837,7 +1908,10 @@
   .grant-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .5rem; border: 1px solid var(--kumwe-border); border-radius: 999px; background: var(--kumwe-surface); font-size: .72rem; }
   .kis-access-control { width: 100%; min-width: 0; max-width: 100%; container: kis-access-control / inline-size; }
   .kis-access-control > *, .kis-access-control :is(form, fieldset, .section-heading, .panel-header) > * { min-width: 0; }
-  .kis-access-control :is(input, select, textarea) { min-width: 0; max-width: 100%; }
+  .kis-access-control :is(input, textarea) { min-width: 0; max-width: 100%; }
+  /* Keep the native WebKit selector from deriving an intrinsic width from its longest option. This
+     declaration must live in the same, later cascade layer as the access-control component rules. */
+  .kis-access-control select { width: 0; min-width: 100%; max-width: 100%; }
   .kis-access-control > nav.panel { margin-bottom: 1rem; padding: .5rem; }
   .kis-access-control > nav .actions { display: flex; max-width: 100%; flex-wrap: wrap; gap: .4rem; }
   .kis-access-control > nav .button,
@@ -1846,6 +1920,8 @@
   .kis-access-control :is(h2, h3, p, code, small, td, th) { overflow-wrap: anywhere; }
   .kis-access-control section.panel > form { width: min(100%, 56rem); }
   .kis-access-control .field-group { min-width: 0; max-width: 100%; padding: clamp(.75rem, 2vw, 1rem); }
+  .kis-access-control form.stack > .field-group { width: 100%; }
+  .kis-access-control .field-group > legend { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
   .kis-access-control [aria-labelledby="groups-heading"] > .role-card { gap: .5rem; padding: .7rem .8rem; }
   .kis-access-control [aria-labelledby="groups-heading"] > .role-card + .role-card { margin-top: .5rem; }
   .kis-access-control [aria-labelledby="groups-heading"] > .role-card :is(h3, p) { margin-bottom: 0; }
@@ -1985,7 +2061,7 @@
     .administrator-shell { grid-template: "topbar" var(--kumwe-topbar-height) "main" 1fr / minmax(0, 1fr); }
     .administrator-sidebar { transform: translateX(-102%); transition: transform .2s ease; box-shadow: var(--kumwe-shadow-xl); }
     .administrator-shell[data-navigation-open] .administrator-sidebar { transform: none; }
-    .navigation-toggle { display: grid; }
+    .administrator-topbar .navigation-toggle { display: grid; }
     .navigation-backdrop { position: fixed; z-index: 35; inset: 0; border: 0; background: rgb(4 12 24 / .58); backdrop-filter: blur(2px); }
     .administrator-shell[data-navigation-open] .navigation-backdrop { display: block; }
     .navigation-locked { overflow: hidden; }
@@ -2029,6 +2105,30 @@
     .topbar-context span { display: none; }
     .topbar-action[data-secondary-action] { display: none; }
     .metric-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (forced-colors: active) {
+    .administrator-sidebar {
+      border-inline-end: 1px solid CanvasText;
+      background: Canvas;
+      color: CanvasText;
+    }
+    .administrator-brand,
+    .administrator-brand:hover,
+    .administrator-navigation a,
+    .administrator-navigation a:hover {
+      background: Canvas;
+      color: CanvasText;
+    }
+    .brand-copy span,
+    .navigation-group-title,
+    .administrator-navigation svg { color: CanvasText; }
+    .administrator-navigation a[aria-current="page"] {
+      background: Highlight;
+      color: HighlightText;
+      box-shadow: none;
+    }
+    .administrator-navigation a[aria-current="page"] svg { color: HighlightText; }
   }
 
   @media (prefers-reduced-motion: reduce) {

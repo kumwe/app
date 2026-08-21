@@ -4,7 +4,7 @@
     "name": "reveal-validation"
   },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-5DEsTNz4.js",
+    "file": "js/administrator-2tVKIIYi.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
@@ -12,7 +12,7 @@
       "_reveal-validation-DkoA-GGU.js"
     ],
     "css": [
-      "css/administrator-8LLUUDzc.css"
+      "css/administrator-CiLQUntu.css"
     ]
   },
   "assets/portal/main.ts": {
