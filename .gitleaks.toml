@@ -37,9 +37,11 @@ useDefault = true
 # identities whose retained 64-hex value is a contract checksum.
 # Any new identity must be reviewed and added deliberately; arbitrary JSON keys and arbitrary hex values stay
 # scanned by every default rule.
-[[allowlists]]
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
 description = "Retained machine-contract SHA-256 fields"
-targetRules = ["generic-api-key"]
 regexTarget = "match"
 regexes = [
   '''^[a-z][a-z0-9_]*_sha256"\s*:\s*"[a-f0-9]{64}"$''',
