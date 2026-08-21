@@ -1661,10 +1661,10 @@
     width: 100%; min-width: 0; max-width: 100%; min-height: 2.75rem; border: 1px solid var(--kumwe-border-strong); border-radius: var(--kumwe-radius-sm);
     background: var(--kumwe-surface); color: var(--kumwe-text); padding: .62rem .75rem; transition: border-color .15s ease, box-shadow .15s ease;
   }
-  /* WebKit otherwise derives the native select's minimum from its longest option, escaping narrow
-     catalog columns and zoomed forms even when the control has an explicit percentage width. */
+  /* WebKit otherwise derives the native select's minimum and scrollable paint overflow from its longest
+     option, escaping narrow catalog columns and zoomed forms even at an explicit percentage width. */
   select {
-    inline-size: 100%; min-inline-size: 0; max-inline-size: 100%; contain: inline-size; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    inline-size: 100%; min-inline-size: 0; max-inline-size: 100%; contain: inline-size paint; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   textarea { min-height: 7.5rem; resize: vertical; }
   input:hover, select:hover, textarea:hover { border-color: color-mix(in srgb, var(--kumwe-border-strong), var(--kumwe-accent) 28%); }
@@ -1699,12 +1699,13 @@
   .administrator-navigation a[aria-current="page"] svg { color: var(--kumwe-blue-200); }
   .administrator-topbar { grid-area: topbar; position: sticky; z-index: 30; top: 0; display: flex; min-width: 0; align-items: center; gap: .75rem; padding: .6rem clamp(1rem, 2.5vw, 2rem); border-bottom: 1px solid var(--kumwe-border); background: color-mix(in srgb, var(--kumwe-surface) 89%, transparent); backdrop-filter: blur(15px); }
   .administrator-topbar .navigation-toggle { display: none; }
-  .topbar-context { min-width: 0; margin-inline-end: auto; }
+  .topbar-context { min-width: 0; flex: 1 1 0; overflow: hidden; margin-inline-end: auto; }
   .topbar-context strong { display: block; overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
   .topbar-context span { display: block; overflow: hidden; color: var(--kumwe-text-muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
   .command-trigger { display: flex; width: min(22rem, 34vw); min-width: max(2.75rem, var(--kis-touch-target)); align-items: center; gap: .55rem; padding: .52rem .65rem; border: 1px solid var(--kumwe-border); border-radius: .65rem; background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); font-size: .8rem; text-align: start; }
   .command-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .command-trigger kbd { margin-inline-start: auto; padding: .12rem .35rem; border: 1px solid var(--kumwe-border-strong); border-radius: .3rem; background: var(--kumwe-surface); color: var(--kumwe-text-subtle); font: 600 .68rem/1.25 var(--kumwe-font-sans); }
+  .administrator-topbar > form { flex: 0 0 auto; }
   .topbar-action { display: grid; width: max(2.75rem, var(--kis-touch-target)); min-width: max(2.75rem, var(--kis-touch-target)); height: max(2.75rem, var(--kis-touch-target)); min-height: max(2.75rem, var(--kis-touch-target)); place-items: center; border: 1px solid var(--kumwe-border); border-radius: .62rem; background: var(--kumwe-surface); color: var(--kumwe-text-muted); }
   .topbar-action:hover { border-color: var(--kumwe-accent); color: var(--kumwe-accent-strong); }
   .topbar-action svg { width: 1.05rem; height: 1.05rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
