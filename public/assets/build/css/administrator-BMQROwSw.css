@@ -1664,7 +1664,7 @@
   /* WebKit otherwise derives the native select's minimum from its longest option, escaping narrow
      catalog columns and zoomed forms even when the control has an explicit percentage width. */
   select {
-    width: 0; min-width: 100%; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    inline-size: 100%; min-inline-size: 0; max-inline-size: 100%; contain: inline-size; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   textarea { min-height: 7.5rem; resize: vertical; }
   input:hover, select:hover, textarea:hover { border-color: color-mix(in srgb, var(--kumwe-border-strong), var(--kumwe-accent) 28%); }
@@ -1817,8 +1817,8 @@
   .editor-main { min-width: 0; }
   .editor-sidebar { position: sticky; top: calc(var(--kumwe-topbar-height) + 1rem); }
   .editor-form { padding: clamp(1rem, 2.5vw, 1.5rem); }
-  .field-group { margin: 0; padding: 1rem; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); }
-  .field-group legend { padding-inline: .4rem; font-weight: 720; }
+  .field-group { inline-size: 100%; min-inline-size: 0; max-inline-size: 100%; margin: 0; padding: 1rem; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); }
+  .field-group legend { max-inline-size: 100%; padding-inline: .4rem; overflow-wrap: anywhere; font-weight: 720; white-space: normal; }
   .repeatable-row { position: relative; padding: 1rem; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); background: var(--kumwe-surface-raised); }
   .repeatable-row-title { margin: 0; color: var(--kumwe-text-muted); font-size: .8rem; font-weight: 720; letter-spacing: .06em; text-transform: uppercase; }
   .repeatable-remove { justify-self: start; }
@@ -1909,9 +1909,6 @@
   .kis-access-control { width: 100%; min-width: 0; max-width: 100%; container: kis-access-control / inline-size; }
   .kis-access-control > *, .kis-access-control :is(form, fieldset, .section-heading, .panel-header) > * { min-width: 0; }
   .kis-access-control :is(input, textarea) { min-width: 0; max-width: 100%; }
-  /* Keep the native WebKit selector from deriving an intrinsic width from its longest option. This
-     declaration must live in the same, later cascade layer as the access-control component rules. */
-  .kis-access-control select { width: 0; min-width: 100%; max-width: 100%; }
   .kis-access-control > nav.panel { margin-bottom: 1rem; padding: .5rem; }
   .kis-access-control > nav .actions { display: flex; max-width: 100%; flex-wrap: wrap; gap: .4rem; }
   .kis-access-control > nav .button,
@@ -1919,9 +1916,7 @@
   .kis-access-control .actions > form button { max-width: 100%; overflow-wrap: anywhere; text-align: center; }
   .kis-access-control :is(h2, h3, p, code, small, td, th) { overflow-wrap: anywhere; }
   .kis-access-control section.panel > form { width: min(100%, 56rem); }
-  .kis-access-control .field-group { min-width: 0; max-width: 100%; padding: clamp(.75rem, 2vw, 1rem); }
-  .kis-access-control form.stack > .field-group { width: 100%; }
-  .kis-access-control .field-group > legend { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+  .kis-access-control .field-group { padding: clamp(.75rem, 2vw, 1rem); }
   .kis-access-control [aria-labelledby="groups-heading"] > .role-card { gap: .5rem; padding: .7rem .8rem; }
   .kis-access-control [aria-labelledby="groups-heading"] > .role-card + .role-card { margin-top: .5rem; }
   .kis-access-control [aria-labelledby="groups-heading"] > .role-card :is(h3, p) { margin-bottom: 0; }
