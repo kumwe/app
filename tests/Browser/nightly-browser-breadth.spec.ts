@@ -99,11 +99,16 @@ test('Nightly browser breadth preserves keyboard, touch, high contrast, zoom and
     return {
       boxShadow: style.boxShadow,
       containment: style.contain,
+      focusVisible: element.matches(':focus-visible'),
+      outlineStyle: style.outlineStyle,
+      outlineWidth: style.outlineWidth,
     };
   });
   expect(nativeSelectFocusEvidence.containment).toContain('inline-size');
   expect(nativeSelectFocusEvidence.containment).toContain('paint');
-  expect(nativeSelectFocusEvidence.boxShadow).not.toBe('none');
+  expect(nativeSelectFocusEvidence.focusVisible).toBe(true);
+  expect(nativeSelectFocusEvidence.outlineStyle).toBe('solid');
+  expect(nativeSelectFocusEvidence.outlineWidth).toBe('2px');
   criticalControls.push(nativeSelect);
 
   // Prove both halves of the product contract: the engine activates the media feature and Kumwe's

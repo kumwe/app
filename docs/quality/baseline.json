@@ -27,7 +27,7 @@
     "tests": {
         "architecture": {
             "files": 43,
-            "test_methods": 227
+            "test_methods": 245
         },
         "functional": {
             "files": 9,
@@ -35,11 +35,11 @@
         },
         "integration": {
             "files": 96,
-            "test_methods": 379
+            "test_methods": 381
         },
         "unit": {
-            "files": 393,
-            "test_methods": 2087
+            "files": 394,
+            "test_methods": 2093
         }
     },
     "coverage": {

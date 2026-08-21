@@ -153,7 +153,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @param  ClockInterface                         $clock           Supplies the one instant stamped on
      *         every row a mutation touches.
      * @param  PostingPeriodLock                      $postingPeriods  Declarative temporal lock evaluated
-     *         before the mutation fence on every mutation path.
+     *         before the mutation fence for an addressed record and immediately before any source record
+     *         an inbound set-null delete sweep would rewrite.
      * @param  PostingPeriodCalendar                  $periodCalendar  Containment seam a `fiscal-period`
      *         number sequence resolves its counter's period key through, from the record's declared
      *         posting date.
@@ -2867,7 +2868,10 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * first. Every active installed definition on the site is scanned for declared relationships aimed at
      * this one whose target column sits directly on the referencing record's own table; each match is
      * fenced, re-pinned to the version its rows were written under, and unrelated one row at a time so
-     * that every source is re-versioned and audited in its own right. What the declared delete behaviour
+     * that every source is re-versioned and audited in its own right. A source's posting period is judged
+     * immediately before that rewrite inside the deleting transaction; a closed source therefore refuses
+     * the delete by name and rolls back every earlier source version, revision and audit entry in the same
+     * sweep. What the declared delete behaviour
      * decides is which of three things happens: a cascading relationship is refused outright — whether or
      * not any row currently uses it — because non-owned cascade deletion needs a bounded workflow this
      * path does not provide, a restricting one is detected through a one-row internal integrity probe, and
@@ -2888,6 +2892,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @throws  BusinessRecordImmutable  When a record holding a set-null reference to the one being
      *          deleted is closed by its workflow state, because clearing the reference would rewrite a
      *          closed document's own fields.
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When a
+     *          record holding a set-null reference is dated in a closed posting period; the whole delete
+     *          transaction, including earlier source rewrites, is rolled back.
      * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When a
      *          referencing definition or the version one of its rows was written under cannot be resolved.
      * @throws  BusinessRecordSchemaUnavailable  When an active installation disagrees with the definition
@@ -2960,6 +2967,11 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $source->definitionVersion,
                     );
                     $generation->assertMatches($sourceResolved);
+                    $this->postingPeriods->assertMutationOpen(
+                        $sourceResolved->definition,
+                        $source->scope,
+                        $source,
+                    );
                     $this->assertRecordMutable($sourceResolved, $source);
                     $write = $this->writes->unrelate(
                         $sourceResolved,
@@ -3554,6 +3566,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * reset instead reads the record's declared posting date and resolves the declared posting period
      * containing it through the `PostingPeriodCalendar` seam, because a fiscal period is about when the
      * document is posted and not about when the command happens to run.
+     *
+     * A record mode without a site dimension deliberately falls back to the definition's catalog site.
+     * That coordinate is stable rather than mutable ownership state: `business_definition` and
+     * `business_record` are site-only resource categories, and the catalog repository refuses any change
+     * to a definition's identity, site, handle or owner. An attempted widening or move therefore fails
+     * before allocation and cannot restart an existing run under another site coordinate.
      *
      * @param   ResolvedBusinessDefinition  $resolved         Definition and installed schema the record is
      *          being created against.

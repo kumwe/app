@@ -18,7 +18,7 @@ button { min-height: 2.75rem; padding: .6rem 1rem; border: 0; border-radius: .35
 input, select { width: 100%; min-height: 2.75rem; padding: .55rem .7rem; border: 1px solid var(--portal-line); border-radius: .35rem; color: var(--portal-ink); background: var(--portal-panel); }
 textarea { width: 100%; min-height: 7rem; padding: .55rem .7rem; border: 1px solid var(--portal-line); border-radius: .35rem; background: var(--portal-panel); }
 :focus-visible { outline: .2rem solid var(--portal-focus); outline-offset: .15rem; }
-.skip-link { position: fixed; inset: .5rem auto auto .5rem; z-index: 10; padding: .5rem .75rem; transform: translateY(-200%); background: var(--portal-panel); }
+.skip-link { position: fixed; inset-block-start: .5rem; inset-inline-start: .5rem; z-index: 10; padding: .5rem .75rem; transform: translateY(-200%); background: var(--portal-panel); }
 .skip-link:focus { transform: none; }
 .portal-header { display: flex; gap: 1rem; align-items: center; min-height: 4.5rem; padding: .75rem clamp(1rem, 3vw, 2rem); color: white; background: #0e332b; }
 .portal-brand { margin-inline-end: auto; color: white; font-size: 1.2rem; font-weight: 750; text-decoration: none; }

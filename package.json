@@ -7,10 +7,11 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "build": "vite build",
-    "check": "npm run check:types && npm run check:schemas && npm run check:manifest && npm run check:browser-report",
+    "build": "vite build && node tools/refresh-site-fallback.mjs",
+    "check": "npm run check:types && npm run check:schemas && npm run check:manifest && npm run check:site-fallback && npm run check:browser-report",
     "check:browser-report": "node tools/verify-browser-attempt-summary.mjs",
     "check:manifest": "node tools/verify-browser-manifest.mjs",
+    "check:site-fallback": "node tools/refresh-site-fallback.mjs --check",
     "check:types": "tsc --noEmit",
     "check:schemas": "node tools/verify-interface-schemas.mjs",
     "test:browser": "playwright test --project=desktop-chromium --project=mobile-chromium --project=desktop-chromium-he --project=desktop-chromium-ar --project=mobile-chromium-he --project=mobile-chromium-ar",

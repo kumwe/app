@@ -201,9 +201,17 @@ jobs:
           npm ci
 
       - name: Type-check and build immutable browser assets
+        shell: bash
         run: |
+          set -euo pipefail
           npm run check
           npm run build
+          generated_status="$(git status --porcelain=v1 --untracked-files=all -- public/assets/build public/assets/site.css)"
+          if [ -n "$generated_status" ]; then
+            echo 'The committed browser build or site fallback is stale:' >&2
+            printf '%s\n' "$generated_status" >&2
+            exit 1
+          fi
 
       - name: Migrate and create the browser-test administrator
         shell: bash

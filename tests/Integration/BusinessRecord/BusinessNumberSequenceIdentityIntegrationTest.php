@@ -9,9 +9,21 @@ use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Joomla\DI\Container;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\OwnershipScope;
+use Kumwe\App\Application\Authorization\OwnershipScopeNotPermitted;
+use Kumwe\App\Application\Authorization\OwnershipScopeRule;
+use Kumwe\App\Application\Authorization\ResourceOwnership;
+use Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy;
 use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessDefinition\Domain\NumberSequenceFormat;
 use Kumwe\App\BusinessDefinition\Domain\NumberSequenceScope;
+use Kumwe\App\BusinessDefinition\Infrastructure\Persistence\DoctrineBusinessDefinitionRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessNumberSequenceAllocator;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
@@ -24,6 +36,7 @@ use Kumwe\App\Tests\Support\TestKernelFactory;
 use Pdo\Pgsql;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -41,6 +54,8 @@ use RuntimeException;
  * @since  2.0.0
  */
 #[CoversClass(DoctrineBusinessNumberSequenceAllocator::class)]
+#[CoversClass(DoctrineBusinessDefinitionRepository::class)]
+#[CoversClass(BusinessDefinitionCompatibilityAnalyzer::class)]
 #[CoversClass(NumberSequenceFormat::class)]
 #[CoversClass(NumberSequenceScope::class)]
 final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
@@ -243,6 +258,139 @@ final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
         }
         self::assertSame(2, $this->stored($container, 'default', $definition->id, 'document_number', '-', $year));
         self::assertSame(2, $this->stored($container, 'default', $definition->id, 'voucher_number', '-', $month));
+    }
+
+    /**
+     * A non-site record keeps its run on the definition's immutable catalog-site coordinate.
+     *
+     * The ownership model first proves that neither the definition nor its records can be widened beyond
+     * a site. The repository then refuses a whole catalog-tuple move of the same UUID while saving and an
+     * isolated site move at its lower-level publication seam. A second installation-scoped record must
+     * continue at two on the original site and no counter may appear under the refused site, proving the
+     * fallback coordinate is stable without a sentinel or migration.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testNonSiteSequenceCoordinateSurvivesRefusedOwnershipWideningAndCatalogMove(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $this->records($container);
+        $policy = $container->get(ResourceOwnershipScopePolicy::class);
+        $repository = $container->get(BusinessDefinitionRepository::class);
+        $transactions = $container->get(TransactionManager::class);
+        $clock = $container->get(ClockInterface::class);
+        self::assertInstanceOf(ResourceOwnershipScopePolicy::class, $policy);
+        self::assertInstanceOf(BusinessDefinitionRepository::class, $repository);
+        self::assertInstanceOf(TransactionManager::class, $transactions);
+        self::assertInstanceOf(ClockInterface::class, $clock);
+
+        $suffix = $this->suffix();
+        $document = NeutralBusinessFixture::document($suffix, Uuid::uuid7()->toString());
+        $document['scope'] = 'installation';
+        $document['fields'][] = $this->sequenceField('document_number', 'never', 'IMM-', 4);
+        $definition = NeutralBusinessFixture::install($container, $context, $document);
+
+        $firstId = Uuid::uuid7()->toString();
+        $records->create(new CreateRecordCommand(
+            $context,
+            $definition->id,
+            NeutralBusinessFixture::recordValues('Immutable counter owner one'),
+            IdempotencyKey::fromString('sequence-site-invariant-' . Uuid::uuid7()->toString()),
+            recordId: $firstId,
+        ));
+        $first = $records->read(new ReadRecordQuery($context, $definition->id, $firstId));
+        self::assertSame('IMM-0001', $first->values['document_number'] ?? null);
+        self::assertSame(1, $this->stored($container, 'default', $definition->id, 'document_number', '-', ''));
+
+        $siteOnlyResources = [
+            'business_definition' => $definition->id,
+            'business_record' => $first->recordKey,
+        ];
+        foreach ($siteOnlyResources as $category => $id) {
+            self::assertSame(OwnershipScopeRule::SiteOnly, $policy->rule($category));
+            try {
+                ResourceOwnership::of(
+                    AuthorizationResource::item($category, $id),
+                    OwnershipScope::installation(),
+                    $policy,
+                );
+                self::fail(sprintf('%s ownership must not widen beyond its catalog site.', $category));
+            } catch (OwnershipScopeNotPermitted) {
+                // The typed owner cannot be assembled, so no registry write can widen this category.
+            }
+        }
+
+        $movedSite = 'moved' . $suffix;
+        $movedDocument = $definition->toArray();
+        $movedDocument['status'] = 'draft';
+        $movedDocument['definition_version'] = 0;
+        $movedDocument['site'] = $movedSite;
+        $movedDocument['owner'] = ['type' => 'site', 'identifier' => $movedSite];
+        $movedDocument['handle'] = 'site.' . $movedSite . '.sequence_owner';
+        $moved = EntityTypeDefinition::fromArray($movedDocument);
+        try {
+            $transactions->transactional(static fn () => $repository->saveDraft(
+                $moved,
+                $context->actorId(),
+                $clock->now(),
+                null,
+            ));
+            self::fail('A definition UUID must not be moved to another catalog site or owner.');
+        } catch (InvalidBusinessDefinition $refused) {
+            self::assertSame(
+                'A business-definition identity, catalog site, handle or owner cannot be changed.',
+                $refused->getMessage(),
+            );
+        }
+
+        $draftDocument = $definition->toArray();
+        $draftDocument['status'] = 'draft';
+        $draftDocument['definition_version'] = 0;
+        $draft = EntityTypeDefinition::fromArray($draftDocument);
+        $storedDraft = $transactions->transactional(static fn () => $repository->saveDraft(
+            $draft,
+            $context->actorId(),
+            $clock->now(),
+            0,
+        ));
+        $movedPublicationDocument = $draft->toArray();
+        $movedPublicationDocument['site'] = $movedSite;
+        $movedDraft = EntityTypeDefinition::fromArray($movedPublicationDocument);
+        $movedPublished = $movedDraft->published($definition->definitionVersion + 1);
+        $movedPlan = (new BusinessDefinitionCompatibilityAnalyzer())->analyze($definition, $movedDraft);
+        try {
+            $transactions->transactional(static fn () => $repository->publish(
+                $movedPublished,
+                $movedPlan,
+                $context->actorId(),
+                $clock->now(),
+                $storedDraft->revision,
+            ));
+            self::fail('Publication must not move a definition UUID to another catalog site.');
+        } catch (InvalidBusinessDefinition $refused) {
+            self::assertSame(
+                'A business-definition identity, catalog site, handle or owner cannot be changed.',
+                $refused->getMessage(),
+            );
+        }
+
+        self::assertSame(1, $this->stored($container, 'default', $definition->id, 'document_number', '-', ''));
+        self::assertSame(0, $this->stored($container, $movedSite, $definition->id, 'document_number', '-', ''));
+        $secondId = Uuid::uuid7()->toString();
+        $records->create(new CreateRecordCommand(
+            $context,
+            $definition->id,
+            NeutralBusinessFixture::recordValues('Immutable counter owner two'),
+            IdempotencyKey::fromString('sequence-site-invariant-' . Uuid::uuid7()->toString()),
+            recordId: $secondId,
+        ));
+        $second = $records->read(new ReadRecordQuery($context, $definition->id, $secondId));
+        self::assertSame('IMM-0002', $second->values['document_number'] ?? null);
+        self::assertSame(2, $this->stored($container, 'default', $definition->id, 'document_number', '-', ''));
+        self::assertSame(0, $this->stored($container, $movedSite, $definition->id, 'document_number', '-', ''));
     }
 
     /**

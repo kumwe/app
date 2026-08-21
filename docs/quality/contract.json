@@ -815,14 +815,14 @@
         },
         {
             "id": "frontend-build",
-            "title": "Administrator frontend type-checks and rebuilds to the committed bytes",
-            "purpose": "Fail when the committed browser assets are not what the locked toolchain produces.",
+            "title": "Frontend type-checks and every generated frontend asset reproduces committed bytes",
+            "purpose": "Fail when the locked source graph does not reproduce the Vite build tree and generated site runtime fallback.",
             "owner": "frontend",
             "runner": "npm",
-            "command": "npm run check",
-            "artifact": "public/assets/build",
+            "command": "bash -euo pipefail -c 'npm run check; npm run build; generated_status=\"$(git status --porcelain=v1 --untracked-files=all -- public/assets/build public/assets/site.css)\"; test -z \"$generated_status\"'",
+            "artifact": "public/assets/build and public/assets/site.css",
             "in_qa": false,
-            "excluded_from_qa_reason": "It is the frontend contract and runs under Node, not under the PHP entry point. It is a merge and nightly gate rather than a release one because the artifact it guards \u2014 public/assets/build \u2014 is committed, verified byte for byte at merge, and travels into the release archive unchanged.",
+            "excluded_from_qa_reason": "It is the frontend contract and runs under Node, not under the PHP entry point. It is a merge and nightly gate rather than a release one because both generated artifacts \u2014 public/assets/build and public/assets/site.css \u2014 are committed, verified byte for byte at merge, and travel into the release archive unchanged.",
             "cadence": [
                 "ci",
                 "nightly"
@@ -833,12 +833,12 @@
                 "ci": {
                     "file": ".github/workflows/ci.yml",
                     "job": "frontend",
-                    "contains": "npm run check"
+                    "contains": "git status --porcelain=v1 --untracked-files=all -- public/assets/build public/assets/site.css"
                 },
                 "nightly": {
                     "file": ".github/workflows/nightly.yml",
                     "job": "browser",
-                    "contains": "npm run check"
+                    "contains": "git status --porcelain=v1 --untracked-files=all -- public/assets/build public/assets/site.css"
                 }
             }
         },
