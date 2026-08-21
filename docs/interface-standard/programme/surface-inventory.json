@@ -1389,6 +1389,7 @@
     {"path": "templates/administrator/business-schema-plans.twig", "kind": "surface", "surface_ids": ["core.administrator.schema-plans"]},
     {"path": "templates/administrator/business-security.twig", "kind": "surface", "surface_ids": ["core.administrator.business-security"]},
     {"path": "templates/administrator/business-status.twig", "kind": "surface", "surface_ids": ["core.administrator.generated-operation"]},
+    {"path": "templates/administrator/business-unavailable.twig", "kind": "error-state", "surface_ids": []},
     {"path": "templates/administrator/content-form.twig", "kind": "surface", "surface_ids": ["core.administrator.content-editor"]},
     {"path": "templates/administrator/content-list.twig", "kind": "surface", "surface_ids": ["core.administrator.content-collection"]},
     {"path": "templates/administrator/content-models.twig", "kind": "surface", "surface_ids": ["core.administrator.content-models"]},
