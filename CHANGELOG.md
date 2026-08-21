@@ -1091,7 +1091,7 @@ development programme, from the architecture decision that opened it to the curr
   cannot inherit a native select's intrinsic width, and the two user-task links carry 32-pixel targets. The
   presentation journey proves dark colour and reduced motion before entering Firefox's independent forced-colour
   phase, and WebKit's dark gallery is loaded under the emulation instead of scanning its stale live-override
-  state. Closes `V2-QA-012` and `V2-QA-013`; the real-Safari live-switch question in `V2-QA-011` remains open.
+  state. Closes `V2-QA-012` and `V2-QA-013`; the real-Safari live-switch question in `V2-QA-014` remains open.
 - **A plaintext origin no longer tells the browser to upgrade what it cannot serve.**
   `upgrade-insecure-requests` sat in the Content-Security-Policy unconditionally while HSTS, immediately
   below it, was already gated on production HTTPS. On an origin not served over TLS the directive hardens

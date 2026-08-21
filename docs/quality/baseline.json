@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "dddd85e05e66fcd3b31811ad634f1c9f935c2696",
+    "commit": "3ade5e82fad1cfe456d962ab5197556d8665383e",
     "recorded_at": "2026-08-21",
     "recorded_from": [],
     "toolchain": {
@@ -27,26 +27,26 @@
     "tests": {
         "architecture": {
             "files": 43,
-            "test_methods": 224
+            "test_methods": 226
         },
         "functional": {
-            "files": 7,
-            "test_methods": 27
+            "files": 8,
+            "test_methods": 28
         },
         "integration": {
-            "files": 95,
-            "test_methods": 378
+            "files": 96,
+            "test_methods": 379
         },
         "unit": {
-            "files": 384,
-            "test_methods": 2035
+            "files": 392,
+            "test_methods": 2083
         }
     },
     "coverage": {
         "canonical_engine": "mariadb",
         "ratchets": 3,
         "recorded_line_coverage_percent": 55.44,
-        "reasoned_attribution_rules": 12,
+        "reasoned_attribution_rules": 13,
         "tests_owing_attribution": 0
     },
     "surfaces": {
@@ -557,7 +557,7 @@
         "recorded_exemptions": {
             "dependency-graph": 99,
             "idempotency": 0,
-            "test-documentation": 3685
+            "test-documentation": 3679
         }
     }
 }

@@ -4631,10 +4631,7 @@ final class ContainerFactory
             ContentCollectionHandler::class,
             'api.v1.content.collection',
         );
-        $contentCollection->setOptions([
-            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
-        ]);
+        self::apiRoute($contentCollection, 'content.read');
         $contentCreate = $application->post(
             '/api/v1/content',
             [
@@ -4644,19 +4641,13 @@ final class ContainerFactory
             ],
             'api.v1.content.create',
         );
-        $contentCreate->setOptions([
-            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.create'],
-        ]);
+        self::apiRoute($contentCreate, 'content.create');
         $contentItem = $application->get(
             '/api/v1/content/{id}',
             ContentItemHandler::class,
             'api.v1.content.read',
         );
-        $contentItem->setOptions([
-            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
-        ]);
+        self::apiRoute($contentItem, 'content.read');
         $contentUpdate = $application->patch(
             '/api/v1/content/{id}',
             [
@@ -4667,10 +4658,7 @@ final class ContainerFactory
             ],
             'api.v1.content.update',
         );
-        $contentUpdate->setOptions([
-            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.update'],
-        ]);
+        self::apiRoute($contentUpdate, 'content.update');
         $contentDelete = $application->delete(
             '/api/v1/content/{id}',
             [
@@ -4681,10 +4669,7 @@ final class ContainerFactory
             ],
             'api.v1.content.trash',
         );
-        $contentDelete->setOptions([
-            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.delete'],
-        ]);
+        self::apiRoute($contentDelete, 'content.delete');
         $contentTransition = $application->post(
             '/api/v1/content/{id}/transition',
             [
@@ -4695,10 +4680,7 @@ final class ContainerFactory
             ],
             'api.v1.content.transition',
         );
-        $contentTransition->setOptions([
-            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
-        ]);
+        self::apiRoute($contentTransition, 'content.read');
         $contentRestore = $application->post(
             '/api/v1/content/{id}/restore',
             [
@@ -4709,10 +4691,7 @@ final class ContainerFactory
             ],
             'api.v1.content.restore',
         );
-        $contentRestore->setOptions([
-            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.restore'],
-        ]);
+        self::apiRoute($contentRestore, 'content.restore');
 
         foreach (
             [
@@ -5111,10 +5090,7 @@ final class ContainerFactory
             [RequireIdempotencyKeyMiddleware::class, PlanPreviewHandler::class],
             'api.v1.plans.preview',
         );
-        $planRoute->setOptions([
-            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
-        ]);
+        self::apiRoute($planRoute, 'content.read');
 
         $mcpRoute = $application->route('/mcp', McpHttpHandler::class, ['GET', 'POST', 'DELETE'], 'mcp');
         self::apiRoute($mcpRoute);

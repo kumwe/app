@@ -2092,7 +2092,7 @@ lag, disk forecast, extension trust and security events; synthetic probes; dashb
 operations from transport retries; and operator drills confirming each critical alert is actionable and
 clears after recovery. Closes `GM-OBS-05` by decision or by implementation, never by silence.
 
-**P7-E — Accountable human interface acceptance.** Findings: `V2-UX-001`. Named accountable reviewers
+**P7-E — Accountable human interface acceptance.** Findings: `V2-UX-001`, `V2-QA-014`. Named accountable reviewers
 complete five archetype task journeys with task-based evidence: content authoring and media and navigation
 and workflow and publication; an exact-value thousand-line document drafted, reviewed, approved, posted,
 inspected in history and exported; a relationship and self-service portal flow; a mobile assignment flow
@@ -2102,6 +2102,11 @@ error recovery, confirmation, policy denial, concurrency and stale state, long-f
 ergonomics and assistive technology. Fix the known generic debt: detached required markers, raw technical
 labels and defaults, extremely long ungrouped mobile forms, insufficient progressive disclosure, and raw
 platform terminology presented as a business-user workflow.
+
+On real Safari, a reviewer also changes the operating-system appearance while an administrator page remains
+open and records whether the rendered background follows it. That experiment closes `V2-QA-014` either with
+a cascade-level product repair or with an upstream Playwright report and a settled-render assertion; emulated
+WebKit alone cannot stand in for accountable human acceptance on the native browser.
 
 Two journeys are additionally run in a non-source language, one of them right-to-left: terminology,
 truncation, line wrapping, form-label alignment, date and number rendering and assistive-technology
@@ -2304,6 +2309,10 @@ registrars, if change-frequency data shows benefit, in one fixed reviewed order 
 second root, no domain rules inside a registrar, and recovery composition still incapable of executing
 extension code. Other hotspots only after measuring coupling, churn, reasons to change, test isolation,
 query complexity and incident risk.
+
+This lane also owns `V2-QA-010`, the legacy test-documentation burn-down. Its executable gate is already in
+place and refuses new, stale, malformed or expired baseline entries; reducing the retained record to zero is
+maintenance work and blocks no product gate.
 
 **Rules.** No hotspot is refactored because it exceeds a line count. Every candidate records its concrete
 maintenance or correctness problem, its public and internal contract, its proposed seam and invariant

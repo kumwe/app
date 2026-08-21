@@ -153,6 +153,29 @@ final class CliMachineContractTest extends TestCase
     }
 
     /**
+     * The first system administrator is global bootstrap state, not a tenant-scoped mutation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdministratorBootstrapRejectsTenantScope(): void
+    {
+        $contract = CliV1MachineContract::contract();
+        $arguments = [
+            '--email=administrator@example.test',
+            '--name=Administrator',
+            '--password-file=/run/secrets/kumwe-administrator-password',
+        ];
+
+        self::assertSame($arguments, $contract->validateInvocation('user:create-admin', $arguments));
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageIsOrContains('The --site option is unknown');
+        $contract->validateInvocation('user:create-admin', ['--site=default', ...$arguments]);
+    }
+
+    /**
      * Runtime validation enforces conditional and file-backed credential requirements.
      *
      * @return  void

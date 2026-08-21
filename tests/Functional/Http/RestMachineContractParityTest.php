@@ -73,6 +73,11 @@ final class RestMachineContractParityTest extends TestCase
                     $options[BearerAuthenticationMiddleware::OPTION_TOKEN_AUDIENCE] ?? null,
                     $key . ' token audience drifted.',
                 );
+                self::assertSame(
+                    'api',
+                    $options[BearerAuthenticationMiddleware::OPTION_TOKEN_PURPOSE] ?? null,
+                    $key . ' token purpose drifted.',
+                );
             }
 
             $middleware = $this->middlewareNames($route->getMiddleware());

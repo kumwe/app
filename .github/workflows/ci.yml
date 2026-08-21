@@ -192,7 +192,6 @@ jobs:
           printf %s "$KUMWE_BROWSER_ADMIN_PASSWORD" > "$password_file"
           php bin/kumwe database:migrate
           php bin/kumwe user:create-admin \
-            --site=default \
             --email="$KUMWE_BROWSER_ADMIN_EMAIL" \
             --name="Browser Administrator" \
             --password-file="$password_file"

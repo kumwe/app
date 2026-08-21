@@ -23,7 +23,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | **Current phase** | Phase 0 residual truth work, and the last Gate A criterion |
 | **In flight** | Twelve of Gate A's thirteen criteria are met. Criterion 5 is partly met and names what is outstanding. Criterion 12 is proven at `2adb2ebe` by the complete green three-engine merge run and the released `v2.0.0-alpha.4` artifact set. Phase E is delivered, `S-A` is complete, and language extraction, multi-currency, atomic aggregates, business-group ownership, the offline-numbering decision and most of the quality and layering work are recorded in [`CHANGELOG.md`](../../CHANGELOG.md). |
 | **Next** | Complete criterion 5's outstanding quality-gate items and assess Gate A at the exact green commit that contains them. |
-| **Open decisions** | `V2-QA-011` needs a real-Safari appearance-switch result before the stale WebKit background can be classified as a product defect or a Playwright-only emulation defect. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
+| **Open decisions** | `V2-QA-014` needs a real-Safari appearance-switch result before the stale WebKit background can be classified as a product defect or a Playwright-only emulation defect. It belongs to Gate B's accountable human-interface acceptance and does not block Gate A. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
 | **Gate A** | Not assessed. 13 exit criteria, 12 met; criterion 5 is partly met. A gate is not assessed while a criterion is outstanding, so truthful quality gates are the one remaining condition. Enterprise document primitives, the offline-numbering decision, the three-engine seam and ownership proofs, PostgreSQL index isolation, language extraction, the composition declaration contract and the exact green regression/release evidence have all landed. |
 | **Gate B** | Not started. Blocked on Gate A. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
 
@@ -56,7 +56,7 @@ table when it completes, in the same change that writes it into the changelog.
 |---|---|---|
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-DOC-002`, `V2-ERP-007` |
 | 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
-| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-010`, `V2-QA-011`, `V2-DB-001`, `V2-DEMO-001`, `V2-DOC-003`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
+| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-DB-001`, `V2-DEMO-001`, `V2-DOC-003`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
 | 3 | `P3-A`, `P3-D` … `P3-F` (`P3-B` and `P3-C` complete) | — |
 | 4 | `P4-A` … `P4-D` | — |
 | E | All packages complete (`PE-A` … `PE-G`) | `V2-ERP-008`, `V2-ERP-009` |
@@ -64,8 +64,8 @@ table when it completes, in the same change that writes it into the changelog.
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
 | S | `S-B` … `S-G` (`S-A` complete — the Gate A declaration contract is frozen) | `V2-STU-002` – `V2-STU-007` |
-| 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
-| M | Lane M, no packages assigned yet | `V2-ARC-002` |
+| 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `V2-QA-014`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
+| M | Lane M maintainability backlog | `V2-ARC-002`, `V2-QA-010` |
 | N | Lane N, no packages assigned yet | `V3-NC-001` – `V3-NC-004` |
 
 ## Decisions
@@ -113,23 +113,23 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 |---|---|
 | 0 | 3 |
 | 1 | 0 |
-| 2 | 11 |
+| 2 | 9 |
 | 3 | 0 |
 | 4 | 0 |
 | E | 2 |
 | L | 2 |
 | 5 | 7 |
 | 6 | 7 |
-| 7 | 11 |
+| 7 | 12 |
 | S | 6 |
-| M | 1 |
+| M | 2 |
 | N | 4 |
 | evidence (`GM-AUD-02`, conditional residual) | 1 |
 
 | Gate | Findings |
 |---|---|
-| A | 5 |
-| B | 22 |
+| A | 4 |
+| B | 23 |
 | none | 28 |
 
 By severity: 0 critical, 21 high, 24 medium, 10 low.
@@ -155,7 +155,7 @@ PostgreSQL's separate schema-global non-primary-index namespace is closed: migra
 | 2 | Atomic aggregate command exists and matches the recorded shape | Yes | Recorded in [`CHANGELOG.md`](../../CHANGELOG.md); [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) |
 | 3 | Data-entry integrity holds on all three browser surfaces | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
 | 4 | Correctness and security contradictions fixed | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
-| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute and delegates specially provisioned checks to their named jobs; semantic dependency checking handles mixed grouped imports against a shrinking baseline; supplied idempotency evidence must cover every declared pass and agree with independent collection and runner status; changelog citations must resolve in current history; the deployed-artifact lane reproduces all four production-only defects; and the browser matrix runs its locale projects only where their locale contract is defined. Outstanding: the reverse-order pass enforced in CI beside the repeat pass (its first corrected run is green and the record is empty), the remaining nightly browser dimensions, the pdo_pgsql stale-result anomaly and the fixture-accumulation ceiling it exposed | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-010`, `V2-QA-011`, `V2-DB-001` |
+| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute and delegates specially provisioned checks to their named jobs; semantic dependency checking handles mixed grouped imports against a shrinking baseline; supplied idempotency evidence must cover every declared pass and agree with independent collection and runner status; changelog citations must resolve in current history; the deployed-artifact lane reproduces all four production-only defects; and the browser matrix runs its locale projects only where their locale contract is defined. Outstanding: the reverse-order pass enforced in CI beside the repeat pass (its first corrected run is green and the record is empty), the remaining nightly browser dimensions, the pdo_pgsql stale-result anomaly and the fixture-accumulation ceiling it exposed | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-DB-001` |
 | 6 | Aggregate seams are clean | Yes — the transaction abstraction is inward with its three-engine proof, the automation adapters sit behind ports, and `P3-C`'s three leaks (the idempotency middleware's Doctrine write, business-surface rendering, Twig imported into theme validation) are closed with boundary tests enforcing each; recorded exemptions fell 115 → 99 | — |
 | 7 | Business-group ownership model in place | Yes — the three-engine proof landed with the ERP-primitives wave, demand by demand against the four-business installation, and it caught and fixed a real PostgreSQL narrowing crash | — |
 | 8 | Enterprise document primitives exist and are enforced | Yes — immutable correction by linked reversal, the posting-period lock, the proven counter identity with its fiscal-period reset, the aggregate invariant and the unit-conversion contract are all delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); two follow-up findings cover the owning-site counter coordinate and the set-null sweep | — |

@@ -14,7 +14,7 @@
  * because repository ancestry rather than the local object cache decides whether a citation survives.
  *
  * Usage:
- *   php tools/verify-roadmap.php [--findings=PATH] [--changelog=PATH] [--repository=PATH]
+ *   php tools/verify-roadmap.php [--findings=PATH] [--changelog=PATH] [--repository=PATH] [--status=PATH]
  *
  * `--findings` exists so the architecture suite can prove the check fails in the right direction against a
  * ledger with a closed entry reintroduced, without writing that entry into the committed one.
@@ -29,6 +29,7 @@ $errors = [];
 $ledgerPath = $root . '/docs/roadmap/findings.json';
 $changelogPath = $root . '/CHANGELOG.md';
 $repositoryRoot = $root;
+$statusPath = $root . '/docs/roadmap/STATUS.md';
 
 foreach (array_slice($argv, 1) as $argument) {
     if (str_starts_with($argument, '--findings=')) {
@@ -43,17 +44,21 @@ foreach (array_slice($argv, 1) as $argument) {
         $repositoryRoot = substr($argument, strlen('--repository='));
         continue;
     }
+    if (str_starts_with($argument, '--status=')) {
+        $statusPath = substr($argument, strlen('--status='));
+        continue;
+    }
 
     $errors[] = sprintf(
         'Unknown argument %s. Usage: php tools/verify-roadmap.php [--findings=PATH] [--changelog=PATH] '
-        . '[--repository=PATH]',
+        . '[--repository=PATH] [--status=PATH]',
         $argument,
     );
 }
 
 $findings = readLedger($ledgerPath, $errors);
 readLedger($root . '/docs/roadmap/capacity-contract.json', $errors);
-verifyStatusSelfConsistency($root . '/docs/roadmap/STATUS.md', $errors);
+verifyStatusSelfConsistency($statusPath, $errors);
 
 if (!is_file($changelogPath)) {
     $errors[] = 'CHANGELOG.md is missing. It is where completed work goes when it leaves the roadmap.';
@@ -243,19 +248,28 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
         }
     }
 
+    $criteria = [];
     $unmet = [];
     if (preg_match('/^## Gate A criteria$(.*?)^## /ms', $source, $section) === 1) {
         foreach (explode("\n", $section[1]) as $line) {
             if (preg_match('/^\|\s*(\d+)\s*\|([^|]*)\|([^|]*)\|/u', $line, $row) === 1) {
+                $criterion = trim($row[1]);
+                $criteria[] = $criterion;
                 if (!str_starts_with(ltrim($row[3]), 'Yes')) {
-                    $unmet[] = trim($row[1]);
+                    $unmet[] = $criterion;
                 }
             }
         }
     }
-    if ($unmet === []) {
-        $errors[] = 'STATUS.md must carry a Gate A criteria table with a Met column for each criterion; '
-            . 'none was read, so the gate\'s readiness cannot be checked against it.';
+    $expectedCriteria = array_map(
+        static fn (int $criterion): string => (string) $criterion,
+        range(1, 13),
+    );
+    if ($criteria !== $expectedCriteria) {
+        $errors[] = sprintf(
+            'STATUS.md must carry exactly Gate A criteria 1 through 13 in order; found: %s.',
+            $criteria === [] ? 'none' : implode(', ', $criteria),
+        );
 
         return;
     }
