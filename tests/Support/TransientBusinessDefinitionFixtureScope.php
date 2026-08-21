@@ -98,6 +98,13 @@ final readonly class TransientBusinessDefinitionFixtureScope
      */
     public function withdraw(): void
     {
+        // Database-loss drills deliberately terminate every session except their own. The process-wide
+        // fixture scope may have been created by an earlier container, so its otherwise idle DBAL session
+        // can be one of those victims. Cleanup owns no transaction yet: discard that possibly stale session
+        // before the first read and let DBAL establish one fresh connection for the complete atomic withdrawal.
+        // A failure after work begins is still surfaced; this is a lifecycle boundary, not a retry loop.
+        $this->database->close();
+
         /** @var list<array{id: string, site: string, version: int, status: DefinitionStatus}> $created */
         $created = [];
         /** @var array<string, true> $persistent */

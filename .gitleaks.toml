@@ -40,10 +40,10 @@ useDefault = true
 [[allowlists]]
 description = "Retained machine-contract SHA-256 fields"
 targetRules = ["generic-api-key"]
-regexTarget = "line"
+regexTarget = "match"
 regexes = [
-  '''(?i)^\s*"[a-z][a-z0-9_]*_sha256"\s*:\s*"[a-f0-9]{64}",?\s*$''',
-  '''^\s*"(?:ApiDiscovery|ExtensionCredentialRequest|ExtensionTrustKey|ExtensionTrustKeyCollection|ExtensionTrustKeyCreate|ExtensionTrustKeyRevoke|ExtensionTrustKeyRotate|IssuedToken|OpenApiDocument|TokenCollection|TokenCreate|TokenRecord|TokenRevocationRequest|TokenRevocationResult|TokenRotate)"\s*:\s*"[a-f0-9]{64}",?\s*$''',
+  '''^[a-z][a-z0-9_]*_sha256"\s*:\s*"[a-f0-9]{64}"$''',
+  '''^(?:ApiDiscovery|ExtensionCredentialRequest|ExtensionTrustKey|ExtensionTrustKeyCollection|ExtensionTrustKeyCreate|ExtensionTrustKeyRevoke|ExtensionTrustKeyRotate|IssuedToken|OpenApiDocument|TokenCollection|TokenCreate|TokenRecord|TokenRevocationRequest|TokenRevocationResult|TokenRotate)"\s*:\s*"[a-f0-9]{64}"$''',
 ]
 
 [[rules]]

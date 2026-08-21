@@ -51,6 +51,7 @@ final class TransientBusinessDefinitionFixtureScopeTest extends TestCase
             ->method('fetchFirstColumn')
             ->with('SELECT id FROM kumwe_business_definitions ORDER BY id')
             ->willReturn([$baselineId]);
+        $database->expects(self::once())->method('close');
         $database->expects(self::once())
             ->method('fetchAllAssociative')
             ->with(
