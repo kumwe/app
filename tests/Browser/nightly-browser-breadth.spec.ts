@@ -87,6 +87,25 @@ test('Nightly browser breadth preserves keyboard, touch, high contrast, zoom and
   }
   criticalControls.push(save);
 
+  // WebKit exposes long native option paint through ancestor scroll extents unless the select itself
+  // owns that paint. Keep the platform picker, and prove the containment does not erase Kumwe's visible
+  // keyboard-focus treatment before the forced-colour pass changes how focus is rendered.
+  const nativeSelect = page.locator('select[name="homepage_content_id"]');
+  await nativeSelect.focus();
+  await expect(nativeSelect).toBeFocused();
+  const nativeSelectFocusEvidence = await nativeSelect.evaluate((element) => {
+    const style = getComputedStyle(element);
+
+    return {
+      boxShadow: style.boxShadow,
+      containment: style.contain,
+    };
+  });
+  expect(nativeSelectFocusEvidence.containment).toContain('inline-size');
+  expect(nativeSelectFocusEvidence.containment).toContain('paint');
+  expect(nativeSelectFocusEvidence.boxShadow).not.toBe('none');
+  criticalControls.push(nativeSelect);
+
   // Prove both halves of the product contract: the engine activates the media feature and Kumwe's
   // forced-colours declaration changes a real computed style. Checking matchMedia alone would only test
   // Playwright. This focused section-navigation link has no border in ordinary rendering and receives a
@@ -155,8 +174,9 @@ test('Nightly browser breadth preserves keyboard, touch, high contrast, zoom and
       horizontalOverflowFindings: reflow.findings.length,
       inaccessibleCriticalControls: 0,
       criticalControlsChecked: mobile
-        ? ['administrator navigation toggle', 'settings navigation link', 'save settings']
-        : ['settings navigation link', 'save settings'],
+        ? ['administrator navigation toggle', 'settings navigation link', 'save settings', 'homepage select']
+        : ['settings navigation link', 'save settings', 'homepage select'],
+      nativeSelectFocus: nativeSelectFocusEvidence,
       keyboardInteraction: 'Settings navigation activated with Enter',
       touchInteraction: mobile
         ? 'Administrator navigation opened with tap and exposed its settings link'
