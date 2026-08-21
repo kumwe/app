@@ -21,6 +21,7 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Pdo\Pgsql;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -61,14 +62,6 @@ final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
         $container = TestKernelFactory::create(Environment::fromGlobals());
         $allocator = $this->allocator($container);
         $database = $this->connection($container);
-        if ($database->getDatabasePlatform() instanceof PostgreSQLPlatform) {
-            // Not a product gap: pdo_pgsql under PHP 8.5 has been observed answering a stale empty result
-            // when this test re-executes the allocator's identical locking statement many times in one
-            // transaction, a pattern the real write path never produces because record writes interleave
-            // every allocation. The identity partition stays enforced on PostgreSQL by the create-path
-            // test below; the ledger's driver finding carries the reproduction recipe and the evidence.
-            self::markTestSkipped('The allocator-seam choreography trips a pdo_pgsql stale-result anomaly.');
-        }
         $invoice = Uuid::uuid7()->toString();
         $credit = Uuid::uuid7()->toString();
         $now = new DateTimeImmutable('2026-08-18T09:00:00', new DateTimeZone('UTC'));
@@ -106,20 +99,6 @@ final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
                 $allocator->allocate('default', $invoice, 'document_number', '-', '2027', $now),
                 'A new period starts a new run without touching the old one.',
             );
-            // Read the first run's stored value back through the database before advancing it again. This
-            // asserts server-side that no neighbouring allocation touched it — and the interleaved read is
-            // load-bearing on PostgreSQL under PHP 8.5, where re-executing the allocator's identical
-            // prepared statement many times consecutively in one transaction has been observed to answer
-            // a stale empty result; the recipe and evidence live in the roadmap ledger.
-            self::assertSame(
-                '2',
-                (string) $database->fetchOne(sprintf(
-                    'SELECT current_value FROM %s WHERE site_identifier = ? AND definition_id = ? AND '
-                    . "field_handle = ? AND scope_key = ? AND period_key = ?",
-                    $this->tables($container)->quoted('business_number_sequences'),
-                ), ['default', $invoice, 'document_number', '-', '2026']),
-                'The first run still stands at two: no neighbouring counter consumed from it.',
-            );
             self::assertSame(
                 3,
                 $allocator->allocate('default', $invoice, 'document_number', '-', '2026', $now),
@@ -135,6 +114,90 @@ final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
         self::assertSame(3, $this->stored($container, $invoice, 'document_number', '-', '2026'));
         self::assertSame(1, $this->stored($container, $credit, 'document_number', '-', '2026'));
         self::assertSame(1, $this->stored($container, $invoice, 'document_number', 'north-branch', '2026'));
+    }
+
+    /**
+     * PostgreSQL's one-shot statement policy keeps an identical locking read current on every execution.
+     *
+     * This is the minimal PDO-only form of the allocator choreography that exposed a stale empty result
+     * with native prepared statements under PHP 8.5. The production connection deliberately asks
+     * pdo_pgsql to send each one-shot query with its parameters in a single call; nine executions of the
+     * same five-coordinate statement must therefore observe every update without an unrelated statement
+     * being interleaved as a cache-breaking workaround.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPostgreSqlOneShotStatementsDoNotReturnAStaleCounter(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $this->connection($container);
+        if (!$database->getDatabasePlatform() instanceof PostgreSQLPlatform) {
+            self::markTestSkipped('The pdo_pgsql statement-policy reproduction applies only to PostgreSQL.');
+        }
+        $driverOptions = $database->getParams()['driverOptions'] ?? null;
+        self::assertIsArray($driverOptions);
+        self::assertTrue($driverOptions[Pgsql::ATTR_DISABLE_PREPARES] ?? false);
+        $pdo = $database->getNativeConnection();
+        self::assertInstanceOf(Pgsql::class, $pdo);
+
+        $table = 'kumwe_pdo_sequence_reproduction';
+        $pdo->beginTransaction();
+        try {
+            $pdo->exec(sprintf(
+                'CREATE TEMPORARY TABLE %s ('
+                . 'site_identifier TEXT NOT NULL, definition_id TEXT NOT NULL, field_handle TEXT NOT NULL, '
+                . 'scope_key TEXT NOT NULL, period_key TEXT NOT NULL, current_value BIGINT NOT NULL, '
+                . 'PRIMARY KEY (site_identifier, definition_id, field_handle, scope_key, period_key)'
+                . ') ON COMMIT DROP',
+                $table,
+            ));
+            $select = $pdo->prepare(sprintf(
+                'SELECT current_value FROM %s WHERE site_identifier = ? AND definition_id = ? '
+                . 'AND field_handle = ? AND scope_key = ? AND period_key = ? FOR UPDATE',
+                $table,
+            ));
+            $insert = $pdo->prepare(sprintf(
+                'INSERT INTO %s '
+                . '(site_identifier, definition_id, field_handle, scope_key, period_key, current_value) '
+                . 'VALUES (?, ?, ?, ?, ?, 0)',
+                $table,
+            ));
+            $update = $pdo->prepare(sprintf(
+                'UPDATE %s SET current_value = ? WHERE site_identifier = ? AND definition_id = ? '
+                . 'AND field_handle = ? AND scope_key = ? AND period_key = ? AND current_value = ?',
+                $table,
+            ));
+            $first = ['default', 'invoice', 'document_number', '-', '2026'];
+            $runs = [
+                [$first, 1],
+                [$first, 2],
+                [['default', 'credit', 'document_number', '-', '2026'], 1],
+                [['default', 'invoice', 'voucher_number', '-', '2026'], 1],
+                [['entity-b', 'invoice', 'document_number', '-', '2026'], 1],
+                [['default', 'invoice', 'document_number', 'north-branch', '2026'], 1],
+                [['default', 'invoice', 'document_number', 'south-branch', '2026'], 1],
+                [['default', 'invoice', 'document_number', '-', '2027'], 1],
+                [$first, 3],
+            ];
+            foreach ($runs as [$coordinates, $expected]) {
+                $select->execute($coordinates);
+                $stored = $select->fetchColumn();
+                $select->closeCursor();
+                if ($stored === false) {
+                    self::assertTrue($insert->execute($coordinates));
+                    $current = 0;
+                } else {
+                    $current = (int) $stored;
+                }
+                self::assertTrue($update->execute([$current + 1, ...$coordinates, $current]));
+                self::assertSame(1, $update->rowCount());
+                self::assertSame($expected, $current + 1);
+            }
+        } finally {
+            $pdo->rollBack();
+        }
     }
 
     /**

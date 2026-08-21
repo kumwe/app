@@ -35,7 +35,7 @@
         },
         "integration": {
             "files": 95,
-            "test_methods": 377
+            "test_methods": 378
         },
         "unit": {
             "files": 384,

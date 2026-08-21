@@ -361,6 +361,13 @@ final class InterfaceTranslationGateTest extends TestCase
         self::assertStringContainsString('the source catalogue does not carry', $output);
     }
 
+    /**
+     * The committed source stylesheets stay independent of the active writing direction.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testTheStylesheetDirectionGatePassesOnTheCommittedTree(): void
     {
         [$status, $output] = $this->execute('tools/verify-stylesheet-direction.php', [], $this->root);
@@ -369,10 +376,20 @@ final class InterfaceTranslationGateTest extends TestCase
         self::assertStringContainsString('direction independent', $output);
     }
 
+    /**
+     * A physical declaration in a directly served stylesheet fails the direction gate.
+     *
+     * The public source is deliberately used because it previously sat outside the scan even though
+     * the portal renderer and Vite both consume it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testTheStylesheetDirectionGateFailsOnAReintroducedPhysicalDeclaration(): void
     {
         $tree = $this->treeCopy();
-        $stylesheet = $tree . '/assets/site/styles.css';
+        $stylesheet = $tree . '/public/assets/portal.css';
         $contents = file_get_contents($stylesheet);
         self::assertIsString($contents);
         file_put_contents($stylesheet, $contents . "\n.reintroduced { margin-left: 1rem; text-align: left; }\n");
@@ -380,7 +397,7 @@ final class InterfaceTranslationGateTest extends TestCase
         [$status, $output] = $this->execute('tools/verify-stylesheet-direction.php', [], $tree);
 
         self::assertSame(1, $status, $output);
-        self::assertStringContainsString('assets/site/styles.css', $output);
+        self::assertStringContainsString('public/assets/portal.css', $output);
         self::assertStringContainsString('margin-inline-start', $output);
         self::assertStringContainsString('text-align: start', $output);
     }

@@ -80,15 +80,26 @@ foreach ($register['allowed_declarations'] as $entry) {
 }
 
 $stylesheets = [];
-$iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
-    $root . '/assets',
-    FilesystemIterator::SKIP_DOTS,
-));
-foreach ($iterator as $file) {
-    if ($file instanceof SplFileInfo && $file->isFile() && $file->getExtension() === 'css') {
-        $stylesheets[] = substr($file->getPathname(), strlen($root) + 1);
+foreach ([$root . '/assets', $root . '/public/assets'] as $directory) {
+    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
+        $directory,
+        FilesystemIterator::SKIP_DOTS,
+    ));
+    foreach ($iterator as $file) {
+        if (!$file instanceof SplFileInfo || !$file->isFile() || $file->getExtension() !== 'css') {
+            continue;
+        }
+        $relative = substr($file->getPathname(), strlen($root) + 1);
+        if (str_starts_with($relative, 'public/assets/build/')) {
+            continue;
+        }
+        if (str_starts_with($relative, 'public/assets/extensions/')) {
+            continue;
+        }
+        $stylesheets[$relative] = true;
     }
 }
+$stylesheets = array_keys($stylesheets);
 sort($stylesheets, SORT_STRING);
 if ($stylesheets === []) {
     fwrite(STDERR, "No stylesheet was found to check.\n");
