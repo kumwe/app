@@ -161,8 +161,8 @@ jobs:
         run: |
           set -euo pipefail
           # The default selection mirrors the full six-project Chromium verification matrix: both
-          # source-language projects plus the four locale-owned RTL projects. It re-runs geometry and
-          # forced-colour contracts before shared stylesheet or shell-control evidence can be committed.
+          # source-language projects plus the four locale-owned RTL projects. It re-runs geometry,
+          # forced-colour and intermediate-width reflow contracts before evidence can be committed.
           # A manually narrowed mobile selection is primed with the desktop project because the
           # verification lane runs desktop first and its persisted state is part of the mobile context.
           # The selection intentionally word-splits: it carries test locations and --project flags.

@@ -271,6 +271,19 @@
 }
 
 @layer overrides {
+  @container kis-phase-five (max-width: 72em) {
+    [data-kis-surface="core.administrator.navigation"]
+      :is(.form-grid, .menu-item-grid) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    [data-kis-surface="core.administrator.navigation"]
+      :is(form, article, .panel-body, .kis-master-detail-grid, .kis-master-detail-content) {
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
+
   @container kis-phase-five (max-width: 62em) {
     .kis-phase-five .editor-grid {
       grid-template-columns: minmax(0, 1fr);
