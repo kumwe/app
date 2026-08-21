@@ -23,7 +23,7 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 | **Current phase** | Phase 0 residual truth work, and the last two Gate A criteria |
 | **In flight** | Eleven of Gate A's thirteen criteria are met. Criterion 5 is partly met and names what is outstanding; criterion 12 is assessable on every merge run and is asserted at a commit only once that run is green and the commit is recorded here, which no commit yet is. Phase E is delivered, `S-A` is complete, and language extraction, multi-currency, atomic aggregates, business-group ownership, the offline-numbering decision and most of the quality and layering work are recorded in [`CHANGELOG.md`](../../CHANGELOG.md). |
 | **Next** | The open packages in the table below, in the order the table lists them: the residual Phase 0 set, criterion 5's outstanding quality-gate items, and a recorded green merge run for criterion 12. Gate A is assessed after those, not before. |
-| **Open decisions** | None in `decision_required`. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
+| **Open decisions** | `V2-QA-011` needs a real-Safari appearance-switch result before the stale WebKit background can be classified as a product defect or a Playwright-only emulation defect. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
 | **Gate A** | Not assessed. 13 exit criteria, 11 met; criterion 5 is partly met and criterion 12 is not yet asserted at a commit. A gate is not assessed while a criterion is outstanding, so the two are what stand between here and the assessment. Enterprise document primitives, the offline-numbering decision, the three-engine seam and ownership proofs, PostgreSQL index isolation, language extraction and the composition declaration contract have all landed. |
 | **Gate B** | Not started. Blocked on Gate A. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
 
@@ -56,7 +56,7 @@ table when it completes, in the same change that writes it into the changelog.
 |---|---|---|
 | 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-DOC-002`, `V2-ERP-007` |
 | 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
-| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-010`, `V2-DB-001`, `V2-DEMO-001`, `V2-DOC-003`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
+| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-010`, `V2-QA-011`, `V2-DB-001`, `V2-DEMO-001`, `V2-DOC-003`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
 | 3 | `P3-A`, `P3-D` … `P3-F` (`P3-B` and `P3-C` complete) | — |
 | 4 | `P4-A` … `P4-D` | — |
 | E | All packages complete (`PE-A` … `PE-G`) | `V2-ERP-008`, `V2-ERP-009` |
@@ -95,16 +95,16 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 
 ## Ledger snapshot
 
-**54 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**55 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
 | `accepted_for_implementation` | 10 |
 | `reproduced` | 12 |
-| `open` | 23 |
+| `open` | 22 |
 | `conditional` | 6 |
-| `decision_required` | 0 |
-| `in_progress` | 3 |
+| `decision_required` | 1 |
+| `in_progress` | 4 |
 | `verified` | 0 |
 | `external` | 0 |
 | `closed` | **not an allowed state** — see [`CHANGELOG.md`](../../CHANGELOG.md) |
@@ -113,7 +113,7 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 |---|---|
 | 0 | 3 |
 | 1 | 0 |
-| 2 | 10 |
+| 2 | 11 |
 | 3 | 0 |
 | 4 | 0 |
 | E | 2 |
@@ -128,12 +128,12 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 
 | Gate | Findings |
 |---|---|
-| A | 4 |
+| A | 5 |
 | B | 22 |
 | none | 28 |
 
-By severity: 0 critical, 21 high, 23 medium, 10 low.
-By origin: 14 from the independent review, 12 still-open entries from the executed gap matrix, 28 discovered
+By severity: 0 critical, 21 high, 24 medium, 10 low.
+By origin: 14 from the independent review, 12 still-open entries from the executed gap matrix, 29 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
 D16 and D17.
 
@@ -155,7 +155,7 @@ PostgreSQL's separate schema-global non-primary-index namespace is closed: migra
 | 2 | Atomic aggregate command exists and matches the recorded shape | Yes | Recorded in [`CHANGELOG.md`](../../CHANGELOG.md); [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) |
 | 3 | Data-entry integrity holds on all three browser surfaces | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
 | 4 | Correctness and security contradictions fixed | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
-| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute and delegates specially provisioned checks to their named jobs; semantic dependency checking handles mixed grouped imports against a shrinking baseline; supplied idempotency evidence must cover every declared pass and agree with independent collection and runner status; changelog citations must resolve in current history; the deployed-artifact lane reproduces all four production-only defects; and the browser matrix runs its locale projects only where their locale contract is defined. Outstanding: the reverse-order pass enforced in CI beside the repeat pass (its first corrected run is green and the record is empty), the remaining nightly browser dimensions, the pdo_pgsql stale-result anomaly and the fixture-accumulation ceiling it exposed | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-010`, `V2-DB-001` |
+| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute and delegates specially provisioned checks to their named jobs; semantic dependency checking handles mixed grouped imports against a shrinking baseline; supplied idempotency evidence must cover every declared pass and agree with independent collection and runner status; changelog citations must resolve in current history; the deployed-artifact lane reproduces all four production-only defects; and the browser matrix runs its locale projects only where their locale contract is defined. Outstanding: the reverse-order pass enforced in CI beside the repeat pass (its first corrected run is green and the record is empty), the remaining nightly browser dimensions, the pdo_pgsql stale-result anomaly and the fixture-accumulation ceiling it exposed | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-QA-010`, `V2-QA-011`, `V2-DB-001` |
 | 6 | Aggregate seams are clean | Yes — the transaction abstraction is inward with its three-engine proof, the automation adapters sit behind ports, and `P3-C`'s three leaks (the idempotency middleware's Doctrine write, business-surface rendering, Twig imported into theme validation) are closed with boundary tests enforcing each; recorded exemptions fell 115 → 99 | — |
 | 7 | Business-group ownership model in place | Yes — the three-engine proof landed with the ERP-primitives wave, demand by demand against the four-business installation, and it caught and fixed a real PostgreSQL narrowing crash | — |
 | 8 | Enterprise document primitives exist and are enforced | Yes — immutable correction by linked reversal, the posting-period lock, the proven counter identity with its fiscal-period reset, the aggregate invariant and the unit-conversion contract are all delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); two follow-up findings cover the owning-site counter coordinate and the set-null sweep | — |
@@ -178,8 +178,8 @@ were added:
 ## Baseline health at `7a83c295`
 
 This is a historical snapshot, kept because it is the last full-programme measurement recorded here, and
-it no longer describes the head: the ledger above holds 54 findings against its 44, recorded dependency
-exemptions have fallen from 115 to 99, and the message catalogue has grown from 117 to 2,099. Read it as
+it no longer describes the head: the ledger above holds 55 findings against its 44, recorded dependency
+exemptions have fallen from 115 to 99, and the message catalogue has grown from 117 to 2,102. Read it as
 the record of that revision and nothing else; the current figures are the ledger snapshot above and the
 merge run named against Gate A criterion 12.
 

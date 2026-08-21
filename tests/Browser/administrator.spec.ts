@@ -1895,6 +1895,10 @@ test.describe('authenticated administrator', () => {
       `/administrator/business/${businessDefinitionHandle}`,
     );
     expect(generatedBusinessResponse?.status()).toBe(403);
+    expect(generatedBusinessResponse?.headers()['content-type'] ?? '').toContain('text/html');
+    await expect(
+      page.getByRole('heading', { name: 'You do not have access to this screen' }),
+    ).toBeVisible();
     await expect(page.getByText('Windhoek order', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Walvis Bay order', { exact: true })).toHaveCount(0);
     const response = await page.goto('/administrator/extensions/kumwe/announcements-example');

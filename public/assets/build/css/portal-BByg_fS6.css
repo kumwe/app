@@ -1382,7 +1382,7 @@ code, pre { font-family: var(--kumwe-font-mono); }
 .button:not(.primary), .link-button { color: var(--portal-accent); background: var(--portal-panel); }
 .link-button { width: auto; padding: .25rem; border: 0; text-decoration: underline; }
 .page-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
-.stack { display: grid; gap: 1rem; }
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .panel { border: 1px solid var(--portal-line); border-radius: .6rem; background: var(--portal-panel); }
 .eyebrow { color: var(--portal-accent); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .count-badge { display: inline-flex; padding: .25rem .45rem; border-radius: 999px; background: var(--kumwe-accent-soft); }

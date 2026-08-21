@@ -1,0 +1,13 @@
+{% extends "layout.twig" %}
+{% block title %}{{ t('core.administrator.access_denied.document_title') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.access_denied.context_title') }}{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">{{ t('core.administrator.access_denied.eyebrow') }}</p><h1>{{ t('core.administrator.access_denied.heading') }}</h1><p>{{ t('core.administrator.business_unavailable.explanation') }}</p></div></div>
+  <section class="panel">
+    <header class="panel-header"><div><h2>{{ t('core.administrator.access_denied.next_heading') }}</h2><p>{{ t('core.administrator.access_denied.next_explanation') }}</p></div></header>
+    <div class="panel-body">
+      <p><a class="button primary" href="/administrator">{{ t('core.administrator.access_denied.dashboard_action') }}</a></p>
+      <p>{{ t('core.administrator.business_unavailable.request_access') }}</p>
+    </div>
+  </section>
+{% endblock %}

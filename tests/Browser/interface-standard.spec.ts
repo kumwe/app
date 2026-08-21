@@ -134,6 +134,11 @@ test.describe('KIS production component gallery', () => {
     await expect(conflict.getByRole('button', { name: 'Reapply my changes' })).toBeVisible();
 
     await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    // WebKit's emulation can leave non-inherited backgrounds stale after a live flip. Reload so this
+    // gallery contract measures one settled dark render; the real-Safari live-switch finding stays open.
+    await page.reload();
+    await expect(page.getByRole('tab', { name: 'Safety and states' }))
+      .toHaveAttribute('aria-selected', 'true');
     await expect.poll(async () => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme))
       .toContain('dark');
     const report = await expectNoDocumentOverflow(page, { root: '#administrator-content' });

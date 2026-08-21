@@ -2,7 +2,7 @@
 
 ARG PHP_IMAGE=php:8.5-fpm-alpine
 ARG COMPOSER_IMAGE=composer:2
-ARG NGINX_IMAGE=nginx:1.28-alpine
+ARG NGINX_IMAGE=nginx:1.30.4-alpine3.24
 
 FROM ${COMPOSER_IMAGE} AS composer
 
@@ -202,6 +202,7 @@ COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=vendor --chown=nginx:nginx /var/www/kumwe/public /var/www/kumwe/public
 
 RUN set -eux; \
+    apk upgrade --no-cache; \
     sed -i 's#^pid .*#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf; \
     sed -i '/http {/a\    client_body_temp_path /tmp/client_temp;\n    proxy_temp_path /tmp/proxy_temp;\n    fastcgi_temp_path /tmp/fastcgi_temp;\n    uwsgi_temp_path /tmp/uwsgi_temp;\n    scgi_temp_path /tmp/scgi_temp;' /etc/nginx/nginx.conf
 

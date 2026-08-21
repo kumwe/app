@@ -139,16 +139,23 @@ test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, mot
   isMobile,
 }) => {
   // KIS-EVIDENCE-BEGIN p6-004-presentation-matrix
-  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce', forcedColors: 'active' });
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   await signInAdministrator(page);
   await page.goto('/administrator/settings');
 
   const modeContract = await page.evaluate(() => ({
     dark: matchMedia('(prefers-color-scheme: dark)').matches,
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-    forcedColors: matchMedia('(forced-colors: active)').matches,
   }));
-  expect(modeContract).toEqual({ dark: true, reducedMotion: true, forcedColors: true });
+  expect(modeContract).toEqual({ dark: true, reducedMotion: true });
+  await expect.poll(async () => page.evaluate(
+    () => getComputedStyle(document.documentElement).colorScheme,
+  )).toContain('dark');
+
+  // Gecko forces a light scheme when forcedColors is set to either explicit value, so prove this
+  // independent contract only after the dark and reduced-motion phase has passed with it omitted.
+  await page.emulateMedia({ forcedColors: 'active' });
+  expect(await page.evaluate(() => matchMedia('(forced-colors: active)').matches)).toBe(true);
 
   const firstSectionLink = page.locator('.kis-phase-five-section-nav a').first();
   await firstSectionLink.focus();

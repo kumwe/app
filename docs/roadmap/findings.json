@@ -1201,7 +1201,7 @@
                 {
                     "file": "tests/Browser/interface-standard.spec.ts",
                     "symbol": "KIS production component gallery",
-                    "note": "Line 136 flips prefers-color-scheme to dark on an already-rendered page. On desktop-webkit the following axe scan reports color-contrast 1.1:1 on .button[href$=\"administrator\"], foreground #eef5fb over background #ffffff. Those are the endpoints of two different token generations: #eef5fb is --kumwe-text from the dark block, #ffffff is --kumwe-surface from the light one, and a single rule paints both, so no settled render can produce that pair."
+                    "note": "Run 32443342932 flipped prefers-color-scheme to dark on an already-rendered page. Desktop-webkit then reported color-contrast 1.1:1 on .button[href$=\"administrator\"], foreground #eef5fb over background #ffffff. The breadth journey now sets the emulation before reloading and scans one settled dark document, while this finding continues to track the unanswered real-Safari live-switch behaviour."
                 },
                 {
                     "file": "assets/administrator/styles.css",
@@ -1212,62 +1212,7 @@
             "acceptance_test": "Someone determines on real Safari, not an emulated media override, whether changing the operating system appearance while an administrator page is open leaves background-color at its previous value. If it does, this is a user-facing theming defect and the fix is to stop expressing the theme only as root custom properties consumed through var() -- light-dark(), or real declarations inside the media block, so a media change re-runs the cascade for the non-inherited property. If it does not, the finding belongs to Playwright's setEmulatedMedia path, the assertion is rewritten to emulate before load rather than after, and the browser behaviour is reported upstream with the reproducer.",
             "owner": "UNASSIGNED",
             "closure_sha": null,
-            "progress": "Reproduced and diagnosed; deliberately not patched. The first proposed fix -- removing background and border-color from the .button transition list -- was refuted as inert under the reduced motion the test itself emulates, so applying it would have left the nightly failing while looking addressed. What is open is not the mechanism but its blast radius: whether it reaches a person using Safari, or only the emulation path. Until that is answered no CSS is changed and the nightly stays red here rather than being quieted."
-        },
-        {
-            "id": "V2-QA-012",
-            "title": "A content-sized grid track lets the schema-plan sidebar overflow its column in WebKit",
-            "severity": "low",
-            "state": "reproduced",
-            "phase": "2",
-            "gate": "A",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "assets/administrator/styles.css",
-                    "symbol": ".stack",
-                    "note": "Declares display grid and a gap but no grid-template-columns, so its single implicit column is a content-sized auto track. Every other grid in the sheet that can hold content-sized children pins its columns; .stack and .stack-compact are the two that rely on the engine clamping an auto track to a definite container."
-                },
-                {
-                    "file": "tests/Browser/interface-integrity.spec.ts",
-                    "symbol": "administrator landing routes emit complete interface baselines",
-                    "note": "On desktop-webkit, aside.stack on /administrator/business-schema-plans reports a 500px component overflow while neither of its section.panel.stack children is flagged -- the track inflated, not the contents. The sidebar's own overflow-x absorbs the spill, so the viewport reports none and only the component diagnostic sees it."
-                }
-            ],
-            "acceptance_test": "The persisted-plan catalog and its comparison form render inside the sidebar column on all three engines, with no component-overflow finding on that surface, verified by the nightly breadth lane rather than by Chromium alone. The fix must be shown not to relocate the finding onto a child, and the same latent declaration in the portal and site sheets is corrected with it.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "progress": "Mechanism identified and a one-property fix proposed, held back deliberately. It ships with the WebKit engine available to verify it -- the finding is engine-specific, so a green Chromium lane cannot show either that it is fixed or that it merely moved onto a child element."
-        },
-        {
-            "id": "V2-QA-013",
-            "title": "Firefox answers prefers-color-scheme: light whenever forced-colors emulation is set, at either value",
-            "severity": "low",
-            "state": "reproduced",
-            "phase": "2",
-            "gate": "A",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "tests/Browser/phase-five.spec.ts",
-                    "symbol": "Phase 5 presentation modes preserve focus, touch, zoom, high contrast, motion, and print",
-                    "note": "Emulates prefers-color-scheme dark, prefers-reduced-motion reduce and forced-colors in one page.emulateMedia call, then asserts all three report true together. On desktop-firefox the colour-scheme half answers false while reduced motion, set in the same call, answers true -- so the call is honoured and only the scheme is not."
-                },
-                {
-                    "file": "tests/Browser/phase-five.spec.ts",
-                    "symbol": "modeContract",
-                    "note": "Reads matchMedia('(prefers-color-scheme: dark)'), '(prefers-reduced-motion: reduce)' and '(forced-colors: active)' from the page. The forced-colors reading is what rules out the original explanation: it answered false in the run that still reported dark: false, so the forced palette was not active and cannot be what overrode the requested scheme."
-                }
-            ],
-            "acceptance_test": "On desktop-firefox, with forced-colors left unset rather than emulated at any value, prefers-color-scheme: dark is requested and the document resolves to dark. The reduced-motion and forced-colours contracts are each proven in whatever emulation each needs, and the whole journey passes on desktop-firefox and desktop-webkit in the nightly breadth lane -- Chromium alone cannot show it, because Chromium never reproduced the finding.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "progress": "Reproduced twice, and the first explanation is ruled out by its own evidence. Run 32327454830 emulated forced-colors: active and Firefox answered dark: false; run 32408091964 emulated forced-colors: none, Firefox reported forcedColors: false, and it still answered dark: false. The proposed fix rested on Gecko reporting the forced palette's scheme while forced colours were active, which the second run contradicts, so that fix was withdrawn rather than shipped. What both runs share is that forced colours were emulated at all; the untested case is leaving them unset, and that is the next experiment rather than a fix to write now. Held open deliberately: a second guess with no more evidence than the first would have put the two proven engine-parity fixes in the same category as this one.",
-            "summary": "The presentation-mode journey emulates a colour scheme and asserts the document reports it. On desktop-firefox the emulation is not honoured: matchMedia reports dark: false while reducedMotion, set in the same call, reports true. The first explanation -- that the used scheme belongs to the forced palette while forced colours are active -- is now ruled out by evidence. Two breadth runs disagree with it: run 32327454830 emulated forcedColors: active and got dark: false, and run 32408091964 emulated forcedColors: none and got dark: false again, with forcedColors correctly reporting false. What both share is that forcedColors was emulated explicitly at all. The untested case, and the next experiment, is leaving forcedColors unset in the colour-scheme phase so Gecko is never put into that mode. A fix built on the ruled-out explanation was written and reverted rather than shipped: it changed the assertion to the split emulation above and the journey still failed, which is how the second data point was obtained. Blink and WebKit honour the emulation in every combination, so this is Gecko-specific and no product defect is implicated -- what is at stake is whether the journey can assert the colour-scheme contract on Firefox at all.",
-            "evidence": [
-                "https://github.com/kumwe/app/actions/runs/32327454830",
-                "https://github.com/kumwe/app/actions/runs/32408091964"
-            ]
+            "progress": "Run 32443342932 reproduced the Playwright WebKit path. The breadth journey now reloads after setting the media override, so it validates a settled dark render without pretending to answer live Safari behaviour. The proposed transition-list change remains refuted and no product CSS is guessed. What stays open is the real-Safari experiment and, depending on that result, either a cascade-level product fix or an upstream Playwright report."
         }
     ]
 }

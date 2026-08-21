@@ -1074,6 +1074,13 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **The Firefox/WebKit breadth gate now tests the contracts each browser can actually render.** A generated
+  business denial negotiates a themed, non-enumerating HTML 403 for browser navigation while preserving the
+  problem document for machine callers; one-column stacks explicitly clamp their track, access form controls
+  cannot inherit a native select's intrinsic width, and the two user-task links carry 32-pixel targets. The
+  presentation journey proves dark colour and reduced motion before entering Firefox's independent forced-colour
+  phase, and WebKit's dark gallery is loaded under the emulation instead of scanning its stale live-override
+  state. Closes `V2-QA-012` and `V2-QA-013`; the real-Safari live-switch question in `V2-QA-011` remains open.
 - **A plaintext origin no longer tells the browser to upgrade what it cannot serve.**
   `upgrade-insecure-requests` sat in the Content-Security-Policy unconditionally while HSTS, immediately
   below it, was already gated on production HTTPS. On an origin not served over TLS the directive hardens
@@ -1514,6 +1521,13 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Security
 
+- **The release web image no longer carries the stale Alpine package set that failed the high/critical gate.**
+  The web stage moves from the floating, retired `nginx:1.28-alpine` line to the current stable
+  `nginx:1.30.4-alpine3.24` image, refreshes installed packages as part of the web stage, and makes both
+  release builds pull their declared bases. The regular security workflow now builds and scans the web target
+  beside the PHP runtime, so the release is no longer the first gate to inspect it. The Trivy threshold stays
+  unchanged at fixed high and critical findings, so the release succeeds by removing the vulnerable packages
+  rather than weakening the scan.
 - **Administered wording is validated before it can become stored executable markup or a render-time failure.**
   Every override must compile as ICU MessageFormat for its locale and may contain only balanced, attribute-free
   `code`, `em`, `span` and `strong` markup; active elements, attributes, malformed nesting and markup inside ICU

@@ -153,7 +153,7 @@
                     <th scope="row" data-label="User">{{ item.display_name }}<br><small>{{ item.email }}</small></th>
                     <td data-label="Status"><span class="status status-{{ item.status }}">{{ item.status|title }}</span><br><small>{{ t('core.administrator.access_control.version_2', {version: item.version}) }}</small></td>
                     <td data-label="Groups and roles">{% for role in item.roles %}<span class="status">{{ role.name }}</span> {% else %}<span class="text-muted">{{ t('core.administrator.access_control.no_direct_role') }}</span>{% endfor %}</td>
-                    <td data-label="Tasks"><a href="/administrator/access?section=users&amp;mode=edit&amp;id={{ item.id|url_encode }}">{{ t('core.administrator.access_control.edit_user') }}</a><br><a href="/administrator/access?section=users&amp;mode=review&amp;id={{ item.id|url_encode }}">{{ t('core.administrator.access_control.review_access') }}</a></td>
+                    <td data-label="Tasks"><a class="link-button" href="/administrator/access?section=users&amp;mode=edit&amp;id={{ item.id|url_encode }}">{{ t('core.administrator.access_control.edit_user') }}</a><br><a class="link-button" href="/administrator/access?section=users&amp;mode=review&amp;id={{ item.id|url_encode }}">{{ t('core.administrator.access_control.review_access') }}</a></td>
                   </tr>
                 {% endfor %}
               </tbody>
