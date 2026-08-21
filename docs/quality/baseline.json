@@ -46,7 +46,7 @@
         "canonical_engine": "mariadb",
         "ratchets": 3,
         "recorded_line_coverage_percent": 55.44,
-        "reasoned_attribution_rules": 13,
+        "reasoned_attribution_rules": 15,
         "tests_owing_attribution": 0
     },
     "surfaces": {

@@ -30,7 +30,7 @@ use Laminas\Diactoros\ServerRequestFactory;
 use Mezzio\Application;
 use Mezzio\Router\Route;
 use Mezzio\Router\RouterInterface;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 
@@ -44,7 +44,17 @@ use ReflectionProperty;
  *
  * @since  2.0.0
  */
-#[CoversNothing]
+#[CoversClass(AdministratorNavigationRegistry::class)]
+#[CoversClass(AuthorizationPolicyRegistry::class)]
+#[CoversClass(ContainerFactory::class)]
+#[CoversClass(EventContractRegistry::class)]
+#[CoversClass(ExtensionContributionRegistrySet::class)]
+#[CoversClass(FieldTypeRegistry::class)]
+#[CoversClass(JobExecutionScope::class)]
+#[CoversClass(JobHandlerRegistry::class)]
+#[CoversClass(PayloadSchemaValidator::class)]
+#[CoversClass(PortalNavigationRegistry::class)]
+#[CoversClass(QueueRuntimePolicyCatalog::class)]
 final class LiveSurfaceContractParityTest extends TestCase
 {
     /**
