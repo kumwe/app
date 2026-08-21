@@ -8,8 +8,8 @@ name: Refresh browser baselines
 # The dispatch API only registers workflows present on the default branch, so a branch introducing
 # this lane could never call it. Pushing a change to this file therefore also runs the refresh, with
 # the selection below; the refreshed images are printed base64-encoded at the end of the job log so a
-# session without artifact egress can still retrieve, decode, and commit them. The final reflow repair
-# constrains form legends and dynamic scheme headings, then exercises that exact source across all six projects.
+# session without artifact egress can still retrieve, decode, and commit them. The native-control reflow repair
+# isolates option intrinsic widths, then exercises that exact source across all six Chromium projects.
 on:
   workflow_dispatch:
     inputs:
