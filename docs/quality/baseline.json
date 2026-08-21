@@ -27,19 +27,19 @@
     "tests": {
         "architecture": {
             "files": 43,
-            "test_methods": 226
+            "test_methods": 227
         },
         "functional": {
-            "files": 8,
-            "test_methods": 28
+            "files": 9,
+            "test_methods": 31
         },
         "integration": {
             "files": 96,
             "test_methods": 379
         },
         "unit": {
-            "files": 392,
-            "test_methods": 2083
+            "files": 393,
+            "test_methods": 2087
         }
     },
     "coverage": {
@@ -555,7 +555,7 @@
             "tests/Unit/Extension/Infrastructure/Trust/FilesystemExtensionArtifactVerifierTest.php": 2
         },
         "recorded_exemptions": {
-            "dependency-graph": 99,
+            "dependency-graph": 91,
             "idempotency": 0,
             "test-documentation": 3679
         }

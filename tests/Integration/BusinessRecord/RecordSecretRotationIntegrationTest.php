@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Types\Types;
 use Joomla\DI\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
@@ -38,6 +41,14 @@ use RuntimeException;
 #[CoversClass(KeyRingSecretKeyProvider::class)]
 final class RecordSecretRotationIntegrationTest extends TestCase
 {
+    /**
+     * Run-unique site that keeps the rotation campaign independent of durable fixtures from earlier processes.
+     *
+     * @var    SiteContext|null
+     * @since  2.0.0
+     */
+    private static ?SiteContext $rotationSite = null;
+
     /**
      * Readable stem the rotated deployment's record secret is assembled from.
      *
@@ -82,15 +93,13 @@ final class RecordSecretRotationIntegrationTest extends TestCase
     }
 
     /**
-     * Hand the shared installation back sealed under the key an unconfigured deployment holds.
+     * Hand the isolated fixture site back sealed under the key an unconfigured deployment holds.
      *
-     * A pass covers every installation of the caller's site, so this class does not move its own
-     * fixture rows alone: it moves every stored record secret this database holds, including the rows
-     * the rest of the suite and the deployment-acceptance drill share it with. The dedicated key
-     * material exists only inside this process, so a rotation left behind strands all of them for
-     * everything that runs afterwards — silently, because a key that is merely absent leaves the
-     * ciphertext intact and only makes it useless, which is how a stranded fixture database once
-     * reached the backup drill as a restore failure.
+     * A pass covers every installation of the caller's site. These tests therefore create one
+     * run-unique site and keep both scenarios there: durable withdrawn definitions from an earlier
+     * idempotency pass cannot be mistaken for unfinished work, while every record created by this
+     * class still participates in the same site-wide campaign. The dedicated key material exists only
+     * inside this process, so a rotation left behind would strand this class's fixture records.
      *
      * Rolling it back is the same supported operation in the other direction, and is worth proving in
      * its own right: with no active key configured the ring makes `application-secret-v1` active again
@@ -109,6 +118,9 @@ final class RecordSecretRotationIntegrationTest extends TestCase
     {
         putenv('RECORD_ENCRYPTION_KEY');
         putenv('RECORD_ENCRYPTION_KEY_ID');
+        if (self::$rotationSite === null) {
+            return;
+        }
         // Both halves are fixture literals drawn from `[A-Za-z0-9-]`, so the object needs no escaping.
         putenv(sprintf(
             'RECORD_ENCRYPTION_PREVIOUS_KEYS={"%s":"%s"}',
@@ -122,7 +134,7 @@ final class RecordSecretRotationIntegrationTest extends TestCase
             if (!$rotation instanceof RecordSecretRotation) {
                 throw new RuntimeException('The record secret rotation port is unavailable.');
             }
-            $context = TestKernelFactory::administratorContext($container);
+            $context = self::administratorContextForSite($container, self::$rotationSite);
             for ($pass = 0; $pass < self::ROLLBACK_PASSES; $pass++) {
                 if ($rotation->rotate($context, 500)->complete) {
                     return;
@@ -150,12 +162,12 @@ final class RecordSecretRotationIntegrationTest extends TestCase
     public function testStoredSecretsMoveOntoTheActiveKeyWithoutBecomingUnreadable(): void
     {
         $legacy = TestKernelFactory::create(Environment::fromGlobals());
-        $context = TestKernelFactory::administratorContext($legacy);
+        $context = $this->rotationContext($legacy);
         $suffix = $this->suffix();
         $definition = NeutralBusinessFixture::install(
             $legacy,
             $context,
-            NeutralBusinessFixture::document($suffix, Uuid::uuid7()->toString()),
+            $this->rotationDocument($suffix),
         );
         $recordKey = $this->createRecord($legacy, $context, $definition, $suffix, 'first');
 
@@ -167,7 +179,7 @@ final class RecordSecretRotationIntegrationTest extends TestCase
         $sealed = $this->storedEnvelope($legacy, $definition, $recordKey);
 
         $rotated = $this->rotatedContainer();
-        $rotatedContext = TestKernelFactory::administratorContext($rotated);
+        $rotatedContext = $this->rotationContext($rotated);
         $provider = $rotated->get(SecretKeyProvider::class);
         self::assertInstanceOf(SecretKeyProvider::class, $provider);
         self::assertSame(self::ROTATED_KEY_ID, $provider->activeKeyId());
@@ -223,12 +235,12 @@ final class RecordSecretRotationIntegrationTest extends TestCase
     public function testAnInterruptedRotationResumesWithoutLosingOrDoublingWork(): void
     {
         $legacy = TestKernelFactory::create(Environment::fromGlobals());
-        $context = TestKernelFactory::administratorContext($legacy);
+        $context = $this->rotationContext($legacy);
         $suffix = $this->suffix();
         $definition = NeutralBusinessFixture::install(
             $legacy,
             $context,
-            NeutralBusinessFixture::document($suffix, Uuid::uuid7()->toString()),
+            $this->rotationDocument($suffix),
         );
         $keys = [];
         foreach (['alpha', 'beta', 'gamma'] as $name) {
@@ -236,7 +248,7 @@ final class RecordSecretRotationIntegrationTest extends TestCase
         }
 
         $rotated = $this->rotatedContainer();
-        $rotatedContext = TestKernelFactory::administratorContext($rotated);
+        $rotatedContext = $this->rotationContext($rotated);
         $rotation = $rotated->get(RecordSecretRotation::class);
         self::assertInstanceOf(RecordSecretRotation::class, $rotation);
 
@@ -278,6 +290,86 @@ final class RecordSecretRotationIntegrationTest extends TestCase
         putenv('RECORD_ENCRYPTION_KEY_ID=' . self::ROTATED_KEY_ID);
 
         return TestKernelFactory::create(Environment::fromGlobals());
+    }
+
+    /**
+     * Resolve an administrator context for this process's isolated rotation site, creating the site once.
+     *
+     * The row is deliberately retained with the rest of the shared integration fixture history. Its
+     * collision-resistant identifier prevents a later PHPUnit process from inheriting its definition
+     * catalogue, which is the isolation property this test needs to remain repeatable.
+     *
+     * @param   Container  $container  Booted kernel container sharing the integration database.
+     *
+     * @return  ExecutionContext  Production-authenticated administrator scoped to the rotation site.
+     *
+     * @since   2.0.0
+     */
+    private function rotationContext(Container $container): ExecutionContext
+    {
+        if (self::$rotationSite === null) {
+            $site = SiteContext::fromString('record-secret-rotation-' . $this->suffix());
+            $this->database($container)->insert($this->tables($container)->raw('sites'), [
+                'identifier' => $site->identifier(),
+                'name' => 'Record secret rotation integration site',
+                'created_at' => new DateTimeImmutable(),
+            ], ['created_at' => Types::DATETIME_IMMUTABLE]);
+            self::$rotationSite = $site;
+        }
+
+        return self::administratorContextForSite($container, self::$rotationSite);
+    }
+
+    /**
+     * Re-scope the production-authenticated integration administrator without manufacturing authority.
+     *
+     * @param   Container    $container  Booted kernel container whose identity gateway authenticates the actor.
+     * @param   SiteContext  $site       Existing site the rotation campaign owns.
+     *
+     * @return  ExecutionContext  Administrator context carrying the gateway-issued principal and grants.
+     *
+     * @throws  RuntimeException  When production authentication did not yield a human principal.
+     *
+     * @since   2.0.0
+     */
+    private static function administratorContextForSite(Container $container, SiteContext $site): ExecutionContext
+    {
+        $administrator = TestKernelFactory::administratorContext($container);
+        $principal = $administrator->principal();
+        if ($principal === null) {
+            throw new RuntimeException('The integration administrator principal is unavailable.');
+        }
+
+        return $principal->context(
+            $site,
+            $administrator->authenticationStrength(),
+            'record-secret-rotation-' . bin2hex(random_bytes(16)),
+        );
+    }
+
+    /**
+     * Project the neutral secret-bearing definition into the isolated site's ownership namespace.
+     *
+     * @param   string  $suffix  Run-unique suffix keeping the definition and its physical table distinct.
+     *
+     * @return  array<string, mixed>  Neutral fixture document owned by the rotation site.
+     *
+     * @throws  RuntimeException  When the site context has not been established first.
+     *
+     * @since   2.0.0
+     */
+    private function rotationDocument(string $suffix): array
+    {
+        if (self::$rotationSite === null) {
+            throw new RuntimeException('The record secret rotation site is unavailable.');
+        }
+        $site = self::$rotationSite->identifier();
+        $document = NeutralBusinessFixture::document($suffix, Uuid::uuid7()->toString());
+        $document['owner'] = ['type' => 'site', 'identifier' => $site];
+        $document['site'] = $site;
+        $document['handle'] = sprintf('site.%s.neutral_business_record_%s', $site, $suffix);
+
+        return $document;
     }
 
     /**

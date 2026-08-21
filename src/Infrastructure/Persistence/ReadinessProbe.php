@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
+use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;

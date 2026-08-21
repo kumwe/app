@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Tools;
 use Kumwe\App\Delivery\Console\Contract\CliV1MachineContract;
 use Kumwe\App\Tools\RetainedMachineContractWriter;
 use LogicException;
-use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -15,8 +15,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @since  2.0.0
  */
-#[CoversClass(RetainedMachineContractWriter::class)]
-#[CoversClass(CliV1MachineContract::class)]
+#[CoversNothing]
 final class RetainedMachineContractWriterTest extends TestCase
 {
     /**

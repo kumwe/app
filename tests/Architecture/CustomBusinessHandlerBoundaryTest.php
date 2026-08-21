@@ -4,10 +4,20 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
+use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionClass;
+use ReflectionMethod;
+use ReflectionNamedType;
 use SplFileInfo;
 
 /**
@@ -55,25 +65,26 @@ final class CustomBusinessHandlerBoundaryTest extends TestCase
      */
     public function testHandlerInterfacesExposeOnlyTheTypedApplicationBoundary(): void
     {
-        $views = $this->source('CustomBusinessViewHandler.php');
-        $actions = $this->source('CustomBusinessActionHandler.php');
+        foreach (
+            [
+                CustomBusinessViewHandler::class => [CustomBusinessViewQuery::class, CustomBusinessViewResult::class],
+                CustomBusinessActionHandler::class => [
+                    CustomBusinessActionCommand::class,
+                    CustomBusinessActionResult::class,
+                ],
+            ] as $handler => [$request, $result]
+        ) {
+            $method = new ReflectionMethod($handler, 'handle');
+            self::assertTrue($method->isPublic());
+            $parameters = $method->getParameters();
+            self::assertCount(1, $parameters);
+            self::assertSame($request, $this->namedType($parameters[0]->getType()));
+            self::assertSame($result, $this->namedType($method->getReturnType()));
 
-        self::assertStringContainsString(
-            'handle(CustomBusinessViewQuery $query): CustomBusinessViewResult',
-            $views,
-        );
-        self::assertStringContainsString(
-            'handle(CustomBusinessActionCommand $command): CustomBusinessActionResult',
-            $actions,
-        );
-        self::assertStringContainsString(
-            'public ExecutionContext $context',
-            $this->source('CustomBusinessViewQuery.php'),
-        );
-        self::assertStringContainsString(
-            'public ExecutionContext $context',
-            $this->source('CustomBusinessActionCommand.php'),
-        );
+            $context = (new ReflectionClass($request))->getProperty('context');
+            self::assertTrue($context->isPublic());
+            self::assertSame(ExecutionContext::class, $this->namedType($context->getType()));
+        }
     }
 
     /**
@@ -191,19 +202,21 @@ final class CustomBusinessHandlerBoundaryTest extends TestCase
     }
 
     /**
-     * Read one custom application source file.
+     * Resolve one non-built-in reflected type without comparing its source spelling.
      *
-     * @param   string  $file  Basename inside the custom application directory.
+     * @param   ?\ReflectionType  $type  Runtime type declaration to inspect.
      *
-     * @return  string  Complete PHP source text.
+     * @return  class-string  Declared application contract.
      *
      * @since   2.0.0
      */
-    private function source(string $file): string
+    private function namedType(?\ReflectionType $type): string
     {
-        $path = dirname(__DIR__, 2) . '/src/BusinessSurface/Application/Custom/' . $file;
-        $contents = file_get_contents($path);
-        self::assertIsString($contents, 'Could not read ' . $path . '.');
-        return $contents;
+        self::assertInstanceOf(ReflectionNamedType::class, $type);
+        self::assertFalse($type->isBuiltin());
+
+        /** @var class-string $name */
+        $name = $type->getName();
+        return $name;
     }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Support;
 
 use Kumwe\App\Tests\Support\ProcessOwnedShutdown;
-use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @since  2.0.0
  */
-#[CoversClass(ProcessOwnedShutdown::class)]
+#[CoversNothing]
 final class ProcessOwnedShutdownTest extends TestCase
 {
     /**

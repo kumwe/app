@@ -6,6 +6,7 @@ namespace Kumwe\App\Tests\Integration\Infrastructure;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
+use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Kumwe\App\Http\Handler\MetricsHandler;
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
 use Kumwe\App\Infrastructure\Observability\MetricRecorder;
@@ -14,7 +15,6 @@ use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
 use Kumwe\App\Infrastructure\Observability\PrometheusExposition;
 use Kumwe\App\Infrastructure\Observability\RedisMetricRecorder;
 use Kumwe\App\Infrastructure\Observability\RuntimeMetricCollector;
-use Kumwe\App\Infrastructure\Persistence\ReadinessStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Infrastructure\Redis\RedisRuntime;
 use Kumwe\App\Infrastructure\Time\SystemClock;

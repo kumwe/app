@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Console\Command;
 
+use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
-use Kumwe\App\Infrastructure\Persistence\ReadinessProbe;
 
 /**
  * Console command that answers the readiness question from inside the application process.
@@ -26,13 +26,12 @@ final readonly class HealthCheckCommand implements Command
     /**
      * Wire the probe whose verdict this command reports.
      *
-     * @param  ReadinessProbe  $probe  Aggregate check over the database connection, the migration
-     *         ledger, and whichever of Redis, the trust store and the
-     *         compiled runtime map this installation wired up.
+     * @param  ReadinessStatus  $probe  Aggregate check over the database connection, the migration
+     *         ledger, and whichever optional dependencies this installation wired up.
      *
      * @since  2.0.0
      */
-    public function __construct(private ReadinessProbe $probe)
+    public function __construct(private ReadinessStatus $probe)
     {
     }
 

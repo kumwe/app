@@ -22,6 +22,11 @@
       "reason": "Adapters. Doctrine, Redis and sodium bindings behind the application contracts."
     },
     {
+      "prefix": "Kumwe\\App\\Extension\\Domain\\Internal\\",
+      "visibility": "internal",
+      "reason": "Parser grammar control used to keep retained manifest generations aligned with runtime acceptance."
+    },
+    {
       "prefix": "Kumwe\\App\\Extension\\Application\\Install\\",
       "visibility": "internal",
       "reason": "The install plan and its states belong to the platform; a package never drives them."

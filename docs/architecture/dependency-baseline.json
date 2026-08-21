@@ -5,58 +5,8 @@
   "recorded_at": "2026-08-15",
   "violations": [
     {
-      "from": "Kumwe\\App\\Audit\\Domain\\AuditAnchorDigest",
-      "to": "Kumwe\\App\\Application\\Automation\\CanonicalJson",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\Audit\\Domain\\AuditEventDigest",
-      "to": "Kumwe\\App\\Application\\Automation\\CanonicalJson",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\BusinessIntegration\\Domain\\EventEnvelope",
-      "to": "Kumwe\\App\\Application\\Automation\\CanonicalJson",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
       "from": "Kumwe\\App\\BusinessIntegration\\Domain\\IntegrationContract",
       "to": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\BusinessIntegration\\Domain\\IntegrationContractValidator",
-      "to": "Kumwe\\App\\Application\\Automation\\CanonicalJson",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\BusinessIntegration\\Domain\\ScheduleContributionDefinition",
-      "to": "Kumwe\\App\\Application\\Automation\\CronExpression",
       "from_layer": "domain",
       "to_layer": "application",
       "owner": "platform-architecture",
@@ -243,16 +193,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-D: the console command receives its typed configuration through its constructor rather than importing the composition root's own type."
-    },
-    {
-      "from": "Kumwe\\App\\Delivery\\Console\\Command\\HealthCheckCommand",
-      "to": "Kumwe\\App\\Infrastructure\\Persistence\\ReadinessProbe",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
     },
     {
       "from": "Kumwe\\App\\Delivery\\Console\\Command\\McpServeCommand",
@@ -615,16 +555,6 @@
       "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
-      "from": "Kumwe\\App\\Extension\\Runtime\\LocalRuntimeReadinessProbe",
-      "to": "Kumwe\\App\\Infrastructure\\Persistence\\ReadinessStatus",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
       "from": "Kumwe\\App\\Extension\\Runtime\\RuntimeLeaseWriter",
       "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "application",
@@ -687,16 +617,6 @@
     {
       "from": "Kumwe\\App\\Http\\Handler\\MetricsHandler",
       "to": "Kumwe\\App\\Infrastructure\\Observability\\PrometheusExposition",
-      "from_layer": "delivery",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C puts delivery persistence and presentation leakage behind typed ports, so a delivery entry point depends on the port and not on the adapter."
-    },
-    {
-      "from": "Kumwe\\App\\Http\\Handler\\ReadinessHandler",
-      "to": "Kumwe\\App\\Infrastructure\\Persistence\\ReadinessStatus",
       "from_layer": "delivery",
       "to_layer": "infrastructure",
       "owner": "platform-architecture",
