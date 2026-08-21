@@ -163,7 +163,9 @@ jobs:
           arguments="${REFRESH_ARGUMENTS:-}"
           if [ -z "$arguments" ]; then
             npx playwright test --project=desktop-chromium || true
-            arguments='tests/Browser/administrator.spec.ts:505 --project=mobile-chromium'
+            arguments='tests/Browser/right-to-left.spec.ts'
+            arguments="$arguments --project=desktop-chromium-he --project=desktop-chromium-ar"
+            arguments="$arguments --project=mobile-chromium-he --project=mobile-chromium-ar"
           fi
           npx playwright test $arguments --update-snapshots
 
@@ -177,8 +179,8 @@ jobs:
             echo "===== BASELINE-END ${image} ====="
           done
 
-      - name: Commit refreshed baselines to the dispatched branch
-        if: github.event_name == 'workflow_dispatch'
+      - name: Commit refreshed baselines to the source branch
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         shell: bash
         run: |
           set -euo pipefail
