@@ -162,7 +162,7 @@ jobs:
           set -euo pipefail
           # The default selection mirrors the complete Chromium verification matrix: both source-
           # language projects plus the four locale-owned RTL projects. This keeps every baseline
-          # affected by a shared stylesheet change in one environment-owned refresh. A manually
+          # affected by shared stylesheet and shell-control changes in one environment-owned refresh. A manually
           # narrowed mobile selection is primed with the desktop project because the verification
           # lane runs desktop first and its persisted state is part of the mobile rendering context.
           # The selection intentionally word-splits: it carries test locations and --project flags.

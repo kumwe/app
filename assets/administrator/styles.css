@@ -155,8 +155,8 @@
   .administrator-topbar .navigation-toggle { display: none; }
   .topbar-context { min-width: 0; margin-inline-end: auto; }
   .topbar-context strong { display: block; overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
-  .topbar-context span { display: block; color: var(--kumwe-text-muted); font-size: .72rem; }
-  .command-trigger { display: flex; min-width: min(22rem, 34vw); align-items: center; gap: .55rem; padding: .52rem .65rem; border: 1px solid var(--kumwe-border); border-radius: .65rem; background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); font-size: .8rem; text-align: start; }
+  .topbar-context span { display: block; overflow: hidden; color: var(--kumwe-text-muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+  .command-trigger { display: flex; width: min(22rem, 34vw); min-width: max(2.75rem, var(--kis-touch-target)); align-items: center; gap: .55rem; padding: .52rem .65rem; border: 1px solid var(--kumwe-border); border-radius: .65rem; background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); font-size: .8rem; text-align: start; }
   .command-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .command-trigger kbd { margin-inline-start: auto; padding: .12rem .35rem; border: 1px solid var(--kumwe-border-strong); border-radius: .3rem; background: var(--kumwe-surface); color: var(--kumwe-text-subtle); font: 600 .68rem/1.25 var(--kumwe-font-sans); }
   .topbar-action { display: grid; width: max(2.75rem, var(--kis-touch-target)); min-width: max(2.75rem, var(--kis-touch-target)); height: max(2.75rem, var(--kis-touch-target)); min-height: max(2.75rem, var(--kis-touch-target)); place-items: center; border: 1px solid var(--kumwe-border); border-radius: .62rem; background: var(--kumwe-surface); color: var(--kumwe-text-muted); }
