@@ -5,6 +5,11 @@ and [Ordinary-user portal](../portal.md).
 
 This section records the boundaries that must remain stable as Kumwe grows. It is for maintainers, extension authors, and automated coding agents that need to change the system without reconstructing its intent from implementation details.
 
+Start with the [folder map](map.md) when the question is "which directory owns this?". Start with
+[principles](principles.md) when the question is "which layer may this depend on?". The operator
+checklist that sequences a change is [`AGENTS.md`](../../AGENTS.md).
+
+- [Folder map](map.md) — if you want to touch X, that is where Y lives
 - [Principles and ownership](principles.md)
 - [Persistence and database portability](persistence.md)
 - [Delivery surfaces and authorization](delivery.md)
