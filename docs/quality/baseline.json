@@ -27,7 +27,7 @@
     "tests": {
         "architecture": {
             "files": 43,
-            "test_methods": 253
+            "test_methods": 254
         },
         "functional": {
             "files": 9,
