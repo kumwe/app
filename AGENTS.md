@@ -9,30 +9,32 @@ the one place they live so the standard stays unified.
 | Document | What it governs |
 | --- | --- |
 | [`docs/coding-standard.md`](docs/coding-standard.md) | **Normative.** Documentation blocks, types, naming, structure, errors, tests. |
-| [`docs/roadmap/`](docs/roadmap/README.md) | **Authoritative for programme sequencing.** What to build next, in what order, and what must be true before each gate. Start at [`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md). |
+| [`docs/roadmap/`](docs/roadmap/README.md) | **Authoritative programme specification.** Objectives, gates, decisions and durable package definitions. Start at [`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md) for live work. |
 | [`CHANGELOG.md`](CHANGELOG.md) | **Authoritative for what is already done.** Every completed work package, grouped and citing its commits. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution workflow, commit structure, required checks. |
 | [`docs/architecture/principles.md`](docs/architecture/principles.md) | Dependency direction and layer boundaries. |
 | [`docs/development.md`](docs/development.md) | Local checks, database matrix, release gates. |
 
-**Two places, and only two.** `docs/roadmap/` holds **forward work only** — objectives, gates, work packages
-and every open finding in `docs/roadmap/findings.json`, which is also where a new idea or objective is
-added. `CHANGELOG.md` holds what is finished.
+**Three views, one unambiguous state.** `docs/roadmap/README.md` is the durable programme specification;
+completed package definitions remain there because their contracts still govern the product.
+`docs/roadmap/STATUS.md` and `docs/roadmap/findings.json` are the live forward-work indexes.
+`CHANGELOG.md` is the completed-work authority.
 
 Work reaches the changelog by one of two paths, and both are normal:
 
-1. **Planned work.** It sits in the roadmap while it is open. **When it completes, its entry is deleted from
-   the roadmap and written into `CHANGELOG.md` in the same pull request that completes it.** A finding is
-   never marked done in place; it is removed from there and recorded here.
+1. **Planned work.** Its identifier sits in the STATUS open-work table or findings ledger while it is open.
+   **When it completes, that live-index entry is removed and the result is written into `CHANGELOG.md` in
+   the same pull request.** Its normative package definition remains in the programme specification. A
+   finding is never marked done in place; it is removed from the live ledger and recorded in the changelog.
 2. **Unplanned work.** Not everything done to this project was planned — things come up, get fixed, and
    never had a roadmap entry. That work is **written straight into `CHANGELOG.md`** when it completes. There
    is nothing to remove, because it was never in the roadmap, and that is not a reason to leave it out of
    the changelog.
 
-**The changelog is the single record of what has been done; the roadmap is the single record of what has
-not.** Nothing in the roadmap is ticked off — an item still written there is still outstanding. The roadmap
-therefore shrinks as the programme advances and never accumulates a tail of finished items. `findings.json`
-does not admit the `closed` state, and `composer roadmap:check` fails the build if one appears. A change
+**The changelog is the single record of what has been done; the STATUS open-work table and findings ledger
+are the single indexes of what has not.** A package specification's presence in README is not a state claim.
+`findings.json` does not admit the `closed` state, the open-work table admits no completion marker, and
+`composer roadmap:check` fails the build if either appears. A change
 cites the finding identifiers it addresses and updates both files in that same change.
 
 [`docs/qualification/gap-matrix.md`](docs/qualification/gap-matrix.md) is retained as the executed evidence

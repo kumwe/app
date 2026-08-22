@@ -220,9 +220,16 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
         if ($packages === null) {
             continue;
         }
-        $hasOpenPackages = preg_match('/`[A-Z]+[0-9A-Z]*-[A-Z]`/', explode('(', $packages)[0]) === 1;
-        // Only a state that opens by calling the phase delivered is a claim about the phase; prose
-        // naming which pieces are delivered while the row also says what is open is exactly right.
+        $hasOpenPackages = preg_match('/`[A-Z]+[0-9A-Z]*-[A-Z]`/', $packages) === 1;
+        if (preg_match('/\b(?:complete|completed|delivered)\b/i', $packages) === 1) {
+            $errors[] = sprintf(
+                'STATUS.md open-work row for phase %s carries a completion marker. Completed package '
+                . 'identifiers belong in CHANGELOG.md and the phase board, not this table.',
+                $phase,
+            );
+        }
+
+        // Only a state that opens by calling the phase delivered is a claim about the phase.
         if ($hasOpenPackages && preg_match('/^\**delivered\b/i', $state) === 1) {
             $errors[] = sprintf(
                 'STATUS.md phase %s reads "%s" while the open-work table still lists %s. The table '
@@ -231,20 +238,6 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
                 $state,
                 $packages,
             );
-        }
-
-        // Within one row, a package cannot be open and complete at the same time.
-        if (preg_match('/\(([^)]*)\)/u', $packages, $parenthetical) === 1) {
-            preg_match_all('/`([A-Z]+[0-9A-Z]*-[A-Z])`/', explode('(', $packages)[0], $openIds);
-            preg_match_all('/`([A-Z]+[0-9A-Z]*-[A-Z])`/', $parenthetical[1], $doneIds);
-            $both = array_intersect($openIds[1], $doneIds[1]);
-            if ($both !== []) {
-                $errors[] = sprintf(
-                    'STATUS.md lists %s as both open and complete in phase %s.',
-                    implode(', ', $both),
-                    $phase,
-                );
-            }
         }
     }
 
@@ -255,7 +248,7 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
             if (preg_match('/^\|\s*(\d+)\s*\|([^|]*)\|([^|]*)\|/u', $line, $row) === 1) {
                 $criterion = trim($row[1]);
                 $criteria[] = $criterion;
-                if (!str_starts_with(ltrim($row[3]), 'Yes')) {
+                if (preg_match('/^Yes(?:\s|$)/u', ltrim($row[3])) !== 1) {
                     $unmet[] = $criterion;
                 }
             }
@@ -280,7 +273,12 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
         if (preg_match('/^\|\s*\**Gate A\**\s*\|(.*)$/u', $line, $row) !== 1) {
             continue;
         }
-        if (preg_match('/\bready\b/i', $row[1]) !== 1) {
+        $statusCells = array_values(array_filter(
+            array_map('trim', explode('|', $row[1])),
+            static fn (string $cell): bool => $cell !== '',
+        ));
+        $gateStatus = $statusCells[0] ?? '';
+        if ($unmet === [] || preg_match('/^\**Ready\b/i', $gateStatus) !== 1) {
             continue;
         }
         $errors[] = sprintf(

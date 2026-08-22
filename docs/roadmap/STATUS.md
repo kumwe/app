@@ -2,17 +2,15 @@
 
 Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
-**Updated at** `2adb2ebe0cfa95a1aa2953db944479aaa65c30a7`
+**Machine evidence candidate** [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
 
-> **Open work is here. Finished work is in [`CHANGELOG.md`](../../CHANGELOG.md).** Two paths, and both end in
-> the changelog. **Planned work** lives here while it is open and its entry is deleted from this directory
-> and written into the changelog in the pull request that completes it. **Unplanned work** — the things that
-> come up, get fixed, and never had a roadmap entry — goes straight into the changelog, with nothing to
-> remove because it was never here. Either way, **the changelog is the single record of what has been done
-> and this directory is the single record of what has not.** See
-> [How this document moves](README.md#how-this-document-moves). Nothing here is ticked off: an item that is
-> still written down is still outstanding. `findings.json` does not admit the `closed` state and
-> `composer roadmap:check` fails if one appears.
+> **Live open work is indexed here and in [`findings.json`](findings.json). Finished work is in
+> [`CHANGELOG.md`](../../CHANGELOG.md); durable package definitions remain in [`README.md`](README.md).**
+> Planned work leaves this page's open-work table or the findings ledger and enters the changelog in the
+> same pull request that completes it. Unplanned work goes directly to the changelog. See
+> [How this document moves](README.md#how-this-document-moves). An identifier in either live index is
+> outstanding: `findings.json` admits no `closed` state, the open-work table admits no completion marker,
+> and `composer roadmap:check` fails if either appears.
 
 ---
 
@@ -20,25 +18,25 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
 | | |
 |---|---|
-| **Current phase** | Phase 0 residual truth work, and the last Gate A criterion |
-| **In flight** | Twelve of Gate A's thirteen criteria are met. Criterion 5 is partly met and names what is outstanding. Criterion 12 is proven at `2adb2ebe` by the complete green three-engine merge run and the released `v2.0.0-alpha.4` artifact set. Phase E is delivered, `S-A` is complete, and language extraction, multi-currency, atomic aggregates, business-group ownership, the offline-numbering decision and most of the quality and layering work are recorded in [`CHANGELOG.md`](../../CHANGELOG.md). |
-| **Next** | Complete criterion 5's outstanding quality-gate items and assess Gate A at the exact green commit that contains them. |
+| **Current phase** | Gate A closeout: all 13 executable criteria are met; formal assessment awaits governance alignment and owner sign-offs. |
+| **In flight** | All thirteen executable Gate A criteria are verified at `df861cbe` by exact-candidate CI, Nightly, Security and Development Compose. Criteria 5 and 12 therefore have current-source machine proof; criterion 12's released-artifact evidence remains `2adb2ebe` and `v2.0.0-alpha.4`. Phase E is delivered, `P0-C`, `P2-F`, `P2-G` and `S-A` are complete, and the remaining open work is explicitly outside the thirteen-criterion Gate A evidence set. |
+| **Next** | Reconcile section 8's phase-completion entry condition with its thirteen executable criteria, record the product owner's approval of the exact evidence commit and obtain the required invariant-owner review sign-offs; then record the formal Gate A assessment. |
 | **Open decisions** | `V2-QA-014` needs a real-Safari appearance-switch result before the stale WebKit background can be classified as a product defect or a Playwright-only emulation defect. It belongs to Gate B's accountable human-interface acceptance and does not block Gate A. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
-| **Gate A** | Not assessed. 13 exit criteria, 12 met; criterion 5 is partly met. A gate is not assessed while a criterion is outstanding, so truthful quality gates are the one remaining condition. Enterprise document primitives, the offline-numbering decision, the three-engine seam and ownership proofs, PostgreSQL index isolation, language extraction, the composition declaration contract and the exact green regression/release evidence have all landed. |
+| **Gate A** | Not assessed. All 13 executable exit criteria are met. Formal assessment remains pending because section 8's phase-completion entry condition and its criterion-defined evidence set need one governing interpretation; passage is not asserted until that decision, product-owner approval of the exact evidence commit and the required invariant-owner review sign-offs are recorded. |
 | **Gate B** | Not started. Blocked on Gate A. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
 
 ## Phase board
 
 | Phase | Gate | State | Blocked on |
 |---|---|---|---|
-| 0 — Truth, contracts and decisions | A | In progress — `P0-A` … `P0-E` all open | — |
-| 1 — Correctness, security, data entry | A | In progress — data-entry integrity and the security contradictions are closed (Gate A criteria 3 and 4); `P1-B`, `P1-C`, `P1-E` and `P1-F` open | Phase 0 decisions 3, 5, 6 |
-| 2 — Truthful gates | A | In progress — the one quality contract, semantic dependency checking, the deployed-artifact lane and the tests/ documentation gate are delivered; `P2-B` … `P2-I` otherwise open | Phase 0 decisions 1, 7, 8 |
-| 3 — Seams and the ownership model | A | In progress — the business-group ownership model and the inward persistence seams have landed, `P3-B` and `P3-C` are complete; `P3-A` and `P3-F` owe their three-engine proofs | Phases 1 and 2 |
-| 4 — Atomic aggregate documents | A | In progress — the command and its recorded shape are delivered (Gate A criterion 2); `P4-A` … `P4-D` open | Phase 3; phase 0 decision 2 |
-| E — Enterprise document primitives | A | Delivered — every package complete; two follow-up findings remain | — |
-| L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A`, `PL-B`, `PL-C`, `PL-E` and `PL-F` complete; `PL-D` and `PL-G` open | `PL-G` needs phase 2's `P2-E` matrix; otherwise parallel to 3, 4 and E |
-| **Gate A** | | **Not assessed** | Criterion 5's outstanding items |
+| 0 — Truth, contracts and decisions | A | In progress — `P0-C` complete; `P0-A`, `P0-B`, `P0-D` and `P0-E` open | — |
+| 1 — Correctness, security, data entry | A | Delivered — every package complete, including resident extension withdrawal and stale-generation fencing | — |
+| 2 — Truthful gates | A | In progress — `P2-A`, `P2-F` and `P2-G` complete; the Gate A slices of `P2-D` and `P2-E` are delivered; broader `P2-B`, `P2-C`, `P2-D`, `P2-E`, `P2-H` and `P2-I` work remains | Phase 0 decisions 1, 7, 8 |
+| 3 — Seams and the ownership model | A | In progress — transaction proof, delivery boundaries, the two aggregate seams and business-group ownership are delivered; only `P3-D` remains | Phases 1 and 2 |
+| 4 — Atomic aggregate documents | A | In progress — `P4-A` and `P4-D` delivered with the command and bounded invariant; `P4-B` and `P4-C` remain | Phase 3; phase 0 decision 2 |
+| E — Enterprise document primitives | A | Delivered — every package and follow-up finding complete | — |
+| L — Language, locale and multilingual content | A, with a B tail | Gate A half delivered — `PL-A` … `PL-F` complete; only the `PL-G` Gate B translation tail remains open | `PL-G` needs phase 2's broader `P2-E` matrix; otherwise parallel to 3, 4 and E |
+| **Gate A** | | **Not assessed — 13/13 executable criteria met** | Governance alignment, product-owner approval and invariant-owner sign-offs |
 | 5 — Enterprise scale | B | Not started | Gate A |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
 | 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
@@ -49,21 +47,20 @@ Read this first. Then read [`README.md`](README.md) for the phase you are in.
 
 ## Open work packages by phase
 
-The roadmap holds only what is outstanding, so every package listed here is open. A package leaves this
-table when it completes, in the same change that writes it into the changelog.
+This table holds only what is outstanding, so every package listed here is open. A package leaves this
+table when it completes, in the same change that writes it into the changelog; its normative definition
+remains in README.
 
 | Phase | Packages | Findings |
 |---|---|---|
-| 0 | `P0-A` … `P0-E` | `V2-DOC-001`, `V2-DOC-002`, `V2-ERP-007` |
-| 1 | `P1-B`, `P1-C`, `P1-E`, `P1-F` | — |
-| 2 | `P2-B` … `P2-I` (`P2-A` complete; `P2-C` and `P2-G` part delivered) | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-DB-001`, `V2-DEMO-001`, `V2-DOC-003`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
-| 3 | `P3-A`, `P3-D` … `P3-F` (`P3-B` and `P3-C` complete) | — |
-| 4 | `P4-A` … `P4-D` | — |
-| E | All packages complete (`PE-A` … `PE-G`) | `V2-ERP-008`, `V2-ERP-009` |
-| L | `PL-D`, `PL-G` (`PL-A`, `PL-B`, `PL-C`, `PL-E` and `PL-F` complete) | `V2-LNG-010`, `V2-LNG-013` |
+| 0 | `P0-A`, `P0-B`, `P0-D`, `P0-E` | `V2-DOC-002`, `V2-ERP-007` |
+| 2 | `P2-B`, `P2-C`, `P2-D`, `P2-E`, `P2-H`, `P2-I` | `V2-DEMO-001`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
+| 3 | `P3-D` | — |
+| 4 | `P4-B`, `P4-C` | — |
+| L | `PL-G` | `V2-LNG-010` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
-| S | `S-B` … `S-G` (`S-A` complete — the Gate A declaration contract is frozen) | `V2-STU-002` – `V2-STU-007` |
+| S | `S-B` … `S-G` | `V2-STU-002` – `V2-STU-007` |
 | 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `V2-QA-014`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
 | M | Lane M maintainability backlog | `V2-ARC-002`, `V2-QA-010` |
 | N | Lane N, no packages assigned yet | `V3-NC-001` – `V3-NC-004` |
@@ -95,29 +92,28 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 
 ## Ledger snapshot
 
-**55 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**46 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
 | `accepted_for_implementation` | 10 |
-| `reproduced` | 12 |
-| `open` | 22 |
+| `reproduced` | 7 |
+| `open` | 20 |
 | `conditional` | 6 |
 | `decision_required` | 1 |
-| `in_progress` | 4 |
+| `in_progress` | 2 |
 | `verified` | 0 |
 | `external` | 0 |
 | `closed` | **not an allowed state** — see [`CHANGELOG.md`](../../CHANGELOG.md) |
 
 | Phase | Findings |
 |---|---|
-| 0 | 3 |
+| 0 | 2 |
 | 1 | 0 |
-| 2 | 9 |
+| 2 | 4 |
 | 3 | 0 |
 | 4 | 0 |
-| E | 2 |
-| L | 2 |
+| L | 1 |
 | 5 | 7 |
 | 6 | 7 |
 | 7 | 12 |
@@ -128,12 +124,12 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 
 | Gate | Findings |
 |---|---|
-| A | 4 |
+| A | 0 |
 | B | 23 |
-| none | 28 |
+| none | 23 |
 
-By severity: 0 critical, 21 high, 24 medium, 10 low.
-By origin: 14 from the independent review, 12 still-open entries from the executed gap matrix, 29 discovered
+By severity: 0 critical, 19 high, 18 medium, 9 low.
+By origin: 12 from the independent review, 12 still-open entries from the executed gap matrix, 22 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
 D16 and D17.
 
@@ -155,14 +151,14 @@ PostgreSQL's separate schema-global non-primary-index namespace is closed: migra
 | 2 | Atomic aggregate command exists and matches the recorded shape | Yes | Recorded in [`CHANGELOG.md`](../../CHANGELOG.md); [ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) |
 | 3 | Data-entry integrity holds on all three browser surfaces | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
 | 4 | Correctness and security contradictions fixed | Yes | — (recorded in [`CHANGELOG.md`](../../CHANGELOG.md)) |
-| 5 | Quality gates are truthful | Partly — one manifest defines what local, CI, nightly and release execute and delegates specially provisioned checks to their named jobs; semantic dependency checking handles mixed grouped imports against a shrinking baseline; supplied idempotency evidence must cover every declared pass and agree with independent collection and runner status; changelog citations must resolve in current history; the deployed-artifact lane reproduces all four production-only defects; and the browser matrix runs its locale projects only where their locale contract is defined. Outstanding: the reverse-order pass enforced in CI beside the repeat pass (its first corrected run is green and the record is empty), the remaining nightly browser dimensions, the pdo_pgsql stale-result anomaly and the fixture-accumulation ceiling it exposed | `V2-QA-004`, `V2-QA-007`, `V2-QA-008`, `V2-DB-001` |
-| 6 | Aggregate seams are clean | Yes — the transaction abstraction is inward with its three-engine proof, the automation adapters sit behind ports, and `P3-C`'s three leaks (the idempotency middleware's Doctrine write, business-surface rendering, Twig imported into theme validation) are closed with boundary tests enforcing each; recorded exemptions fell 115 → 99 | — |
+| 5 | Quality gates are truthful | Yes — one manifest defines local, CI, nightly and release execution; semantic dependency checking, coverage and dependency ratchets, retained-contract parity and the deployed-artifact lane all fail closed. Exact candidate [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1) passed [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541) with ordinary, repeat and reverse-order integration passes on MariaDB, MySQL and PostgreSQL, an empty idempotency record, the PostgreSQL allocator proof without a skip, bounded fixture withdrawal and three-engine Chromium; [Nightly run `32579525381`](https://github.com/kumwe/app/actions/runs/32579525381) passed the Firefox/WebKit desktop/mobile breadth set first attempt, including keyboard/focus, touch, forced colours, 200% text zoom and reflow. [Security run `32579525379`](https://github.com/kumwe/app/actions/runs/32579525379) and [Development Compose run `32579525390`](https://github.com/kumwe/app/actions/runs/32579525390) passed on the same commit | — |
+| 6 | Aggregate seams are clean | Yes — verified at [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1) by [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541). The transaction abstraction is inward with its three-engine proof, the automation adapters sit behind ports, and `P3-C`'s three leaks are closed with boundary tests enforcing each. Relationship/owned-line policy is centralized in `BusinessRecordRelationshipCoordinator`; revision/audit/event publication is centralized in `BusinessRecordMutationPublication`; the facade retains the one transaction and no duplicate policy copy. Recorded exemptions fell 115 → 99 | — |
 | 7 | Business-group ownership model in place | Yes — the three-engine proof landed with the ERP-primitives wave, demand by demand against the four-business installation, and it caught and fixed a real PostgreSQL narrowing crash | — |
-| 8 | Enterprise document primitives exist and are enforced | Yes — immutable correction by linked reversal, the posting-period lock, the proven counter identity with its fiscal-period reset, the aggregate invariant and the unit-conversion contract are all delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md); two follow-up findings cover the owning-site counter coordinate and the set-null sweep | — |
+| 8 | Enterprise document primitives exist and are enforced | Yes — immutable correction by linked reversal, the posting-period lock, the proven counter identity with its fiscal-period reset, the aggregate invariant and the unit-conversion contract are delivered. Definition/catalogue coordinates are immutable so a non-site sequence identity cannot move, and a hard-delete set-null sweep evaluates every source record's posting period and atomically rolls back the entire delete when any source is closed | — |
 | 9 | Multi-currency contract holds, with conversion provenance everywhere | Yes — contract, port, pipeline, reports, exports and the rendering half all delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | — |
-| 10 | Language contract and machinery in place, `en-GB` extracted | Yes — every template, all 44 currently registered console commands and the user-facing error paths resolve from a 2,102-message catalogue, the hardcoded-string gate covers all three surfaces with reasoned exemptions, right-to-left carries committed baselines, and extension-contributed items bind to declared translation sets | `V2-LNG-013` (a stylesheet direction defect the baselines caught) |
+| 10 | Language contract and machinery in place, `en-GB` extracted | Yes — every template, all 44 currently registered console commands and the user-facing error paths resolve from a 2,102-message catalogue; the hardcoded-string gate covers all three surfaces with reasoned exemptions; the direction gate scans every Vite-consumed stylesheet and enforces logical properties; corrected right-to-left baselines are committed; and extension-contributed items bind to declared translation sets. `V2-LNG-010` is the non-gating Gate B translation tail | — |
 | 11 | Point of sale not foreclosed | Yes — the replay window, the client-asserted instant, late arrival, the deferrable-validation split and now the synchronisation-time numbering decision ([ADR 0008](decisions/0008-numbering-under-disconnection.md)) with its client-reference uniqueness are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md) | — |
-| 12 | Nothing regressed on three engines | Yes — `regression_matrix` in [`docs/quality/contract.json`](../quality/contract.json) names the three engines, the four suites and the commands, and `composer quality:contract` fails when the merge workflow stops running the complete suite on any of them. Commit [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7) passed [merge run `32469278190`](https://github.com/kumwe/app/actions/runs/32469278190): quality, unit, architecture, integration, functional, browser and complete production deployment acceptance were green on MariaDB LTS, MySQL 8.4 and PostgreSQL 17. Security run `32469277904` and Development Compose run `32469277903` were green on the same commit. Continuous-release run `32472051532` cut [`v2.0.0-alpha.4`](https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.4); release run `32472065990` built, signed/attested and published the checksums, SBOMs and signed checksum bundle from that exact source | — |
+| 12 | Nothing regressed on three engines | Yes — current-source regression proof is exact candidate [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1): [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541), [Nightly run `32579525381`](https://github.com/kumwe/app/actions/runs/32579525381), [Security run `32579525379`](https://github.com/kumwe/app/actions/runs/32579525379) and [Development Compose run `32579525390`](https://github.com/kumwe/app/actions/runs/32579525390). `regression_matrix` in [`docs/quality/contract.json`](../quality/contract.json) names the three engines, four suites and commands, and `composer quality:contract` fails when the merge workflow stops running the complete suite on any engine. Released-artifact proof remains commit [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7), [merge run `32469278190`](https://github.com/kumwe/app/actions/runs/32469278190), green Security run `32469277904` and Development Compose run `32469277903`, continuous-release run `32472051532` that cut [`v2.0.0-alpha.4`](https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.4), and release run `32472065990` that built, signed/attested and published its checksums, SBOMs and signed checksum bundle | — |
 | 13 | Composition contribution contract frozen with a passing compatibility fixture | Yes — nine classified public types in one additive generation, validated at admission and install, with a signed fixture proving the full lifecycle | — |
 
 ## Gate B criteria that moved
@@ -178,10 +174,11 @@ were added:
 ## Baseline health at `7a83c295`
 
 This is a historical snapshot, kept because it is the last full-programme measurement recorded here, and
-it no longer describes the head: the ledger above holds 55 findings against its 44, recorded dependency
+it no longer describes the head: the ledger above holds 46 findings against its 44, recorded dependency
 exemptions have fallen from 115 to 99, and the message catalogue has grown from 117 to 2,102. Read it as
-the record of that revision and nothing else; the current figures are the ledger snapshot above and the
-merge run `32469278190` named against Gate A criterion 12.
+the record of that revision and nothing else. Current programme figures are in the ledger above;
+current-source workflow evidence is `df861cbe` / run `32579525541` above, while run `32469278190` remains
+historical released-candidate evidence.
 
 **Verified at `7a83c295bce6c23f250384ba787dd5e4595fff0e`.** CI run `31902616995`, security run
 `31902616730` and Development Compose run `31902616751` all completed successfully.

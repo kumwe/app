@@ -1,6 +1,7 @@
 # Kumwe App consolidated roadmap
 
-**Verified against** `7a83c295bce6c23f250384ba787dd5e4595fff0e`
+**Original consolidation baseline** `7a83c295bce6c23f250384ba787dd5e4595fff0e`
+**Current machine-evidence candidate** [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
 **Machine-readable companions** [`findings.json`](findings.json), [`capacity-contract.json`](capacity-contract.json)
 **Current position** [`STATUS.md`](STATUS.md)
 **Work already finished** [`CHANGELOG.md`](../../CHANGELOG.md)
@@ -9,40 +10,42 @@
 
 ## How this document moves
 
-> **This directory holds forward work only. Completed work leaves it and lands in
+> **This directory is the durable programme specification. Live forward work is indexed in
+> [`STATUS.md`](STATUS.md) and [`findings.json`](findings.json); completed work is recorded in
 > [`CHANGELOG.md`](../../CHANGELOG.md).**
 >
-> There are exactly two places, and an agent must never confuse them:
+> There are three views, and an agent must never confuse their authority:
 >
 > | | |
 > |---|---|
-> | **`docs/roadmap/`** | What is **still to do**. Objectives, gates, phases, work packages, and every open finding in [`findings.json`](findings.json). New ideas and new objectives are added **here** — this is where forward work lives, so nothing scatters into a sixth plan again. |
+> | **This README** | The normative programme: objectives, gates, decisions, phases and durable package definitions. A completed definition remains here because its contract and non-goals still govern the product; its presence is not an open-state claim. |
+> | **[`STATUS.md`](STATUS.md) and [`findings.json`](findings.json)** | What is **still to do**. The STATUS open-work table indexes open packages and the findings ledger indexes open findings. New work is added to the appropriate live index and specified here. |
 > | **[`CHANGELOG.md`](../../CHANGELOG.md)** | What is **done**. Every completed work package, written for a reader of the product, grouped under Added, Changed, Fixed, Security, Deprecated and Removed, citing the commits that carried it. |
 >
 > **The rule, and it has two halves, because not everything done to this project was planned.**
 >
-> 1. **Planned work.** It lives here while it is open. When it completes, its entry is **deleted from this
->    directory and written into `CHANGELOG.md` in the same pull request that completes it**. A finding is
->    never "closed here"; it is *removed from here and recorded there*.
+> 1. **Planned work.** Its identifier lives in the STATUS open-work table or findings ledger while it is
+>    open. When it completes, that live-index entry is **removed and written into `CHANGELOG.md` in the same
+>    pull request**. The normative package definition remains here. A finding is never "closed here"; it is
+>    *removed from the live ledger and recorded in the changelog*.
 > 2. **Unplanned work.** Things come up, get fixed, and never had a roadmap entry at all. That work is
 >    written **straight into `CHANGELOG.md`** when it completes. There is nothing to remove from here,
 >    because it was never here — and its absence from the roadmap is not a reason to leave it out of the
 >    changelog.
 >
-> **Either way: the changelog is the single record of what has been done, and the roadmap is the single
-> record of what has not.** Read that sentence once and the direction of every entry follows from it. The
-> roadmap therefore shrinks as the programme advances and never accumulates a growing tail of finished
-> items, and nothing that was ever done goes unrecorded because it happened not to be planned.
+> **Either way: the changelog is the single record of what has been done, and the STATUS open-work table
+> plus findings ledger are the single indexes of what has not.** The durable specification records the
+> contract in either state, so no architecture is erased merely because its implementation completed.
 >
-> Because presence in the roadmap *is* the open state, nothing here is ticked off. There are no completion
-> markers to maintain and none are wanted: an item that is still written down is still outstanding, and an
-> item that is done is somewhere else.
+> Presence in the STATUS open-work table or findings ledger *is* the open state. Those live indexes carry
+> no completion markers: an identifier listed there is outstanding. Completion language may remain in the
+> phase board and normative specification, where it describes history rather than live work.
 >
 > **It is enforced, not merely stated.** `findings.json` no longer admits the `closed` state, and
 > [`tools/verify-roadmap.php`](../../tools/verify-roadmap.php) — run as `composer roadmap:check`, inside
-> `composer qa`, and again by `tests/Architecture/RoadmapLifecycleTest.php` — fails the build if an entry
-> carries it, naming the entry and telling the author to move it to the changelog. This is deliberate: the
-> gap matrix rotted into a forward plan precisely because nothing mechanical stopped it.
+> `composer qa`, and again by `tests/Architecture/RoadmapLifecycleTest.php` — fails the build if a finding
+> carries it or an open-work row carries a completion marker, naming what must move to the changelog. This
+> is deliberate: the gap matrix rotted into a forward plan precisely because nothing mechanical stopped it.
 >
 > The one exception is [`docs/qualification/gap-matrix.md`](../qualification/gap-matrix.md), retained
 > unchanged as the historical evidence record of the executed qualification programme. Do not plan from it,
@@ -252,25 +255,24 @@ The implementation is chosen, not open. Recorded in
 - **Enforcement.** A check fails the build when a new hardcoded user-facing string is introduced. A
   convention without a gate is a suggestion.
 
-**What is built, and what the ledger still holds.** The foundation is in: the XLIFF source catalogue and
-its deterministic compiled form, the ICU formatter, the frozen message-identifier grammar, the four-layer
-resolver, per-request locale negotiation consuming `default_locale`, and the hardcoded-string gate over
-`templates/`. The chain's two upper layers are now real rather than resolved-but-unreachable: site and
-organization wording is stored, administered at `/administrator/wording` under
-`localization.overrides.manage`, and an extension contributes its compiled catalogues through the ordinary
-package path. It is described in [`docs/interface-translation.md`](../interface-translation.md). What
-remains is recorded in `V2-LNG-001`, `V2-LNG-007`, `V2-LNG-008`, `V2-LNG-009` and `V2-LNG-010`: the bulk of
-`en-GB` extraction across the record surfaces, the console and the error paths; widening the gate to console
-output and error paths; the right-to-left screenshot baselines behind the matrix's new language axis; and
-the eight translated catalogues.
+**What is built, and what the ledger still holds.** The Gate A language programme is delivered: the XLIFF
+source catalogue and deterministic compiled form, ICU formatter, frozen message-identifier grammar,
+four-layer resolver, per-request locale negotiation, administered site and organization overrides, and
+extension-contributed catalogues all run through the ordinary package path. Every template, registered
+console command and user-facing source error resolves from the extracted `en-GB` catalogue, and the
+hardcoded-string gate scans all three surfaces. Extension-contributed items bind to declared translation
+sets through the additive contribution generation. The runtime and authoring contract is described in
+[`docs/interface-translation.md`](../interface-translation.md). Only `V2-LNG-010` remains: the Gate B work
+to complete and qualify the eight non-source catalogues.
 
 **Right-to-left.** Hebrew and Arabic are both in scope and their layout work is the same work, so they were
 done together. The conversion is complete: every inline-axis declaration across `assets/` is now logical —
 96 of them, and none physical — the three layouts emit `dir` from the resolved locale, and
-`composer assets:direction` fails the build on a new physical declaration. The browser matrix now carries a
+`composer assets:direction` fails the build on a new physical declaration. The browser matrix carries a
 language axis as well as a device axis, so `he` and `ar` file their baselines under their own projects
-instead of sharing a left-to-right one. What remains under `V2-LNG-009` is the screenshots themselves and
-the `P2-E` matrix leg that compares them.
+instead of sharing a left-to-right one. Twelve corrected right-to-left screenshots are committed and the
+Gate A slice of `P2-E` validates their browser-owned baselines; per-locale qualification of all nine
+languages remains with Gate B package `PL-G`.
 
 **The Version 2 language set is nine**: `en-GB` (source), `en-US`, `af`, `de`, `he`, `ar`, `es`, `pt-BR`,
 `zh-Hans`. The proof set is sequenced first — `en-GB`, `af`, `de`, `he` — because together they stress
@@ -295,9 +297,10 @@ locale variants inside the document `CanonicalDefinitionJson` checksums. Canonic
 order irrelevant, and omitting translations preserves the former bytes. A published definition version remains
 immutable.
 
-Because extension-contributed content needs locale variants, translation-set inventory belongs in the
-**extension contribution contract**. That declaration is delivered, but the frozen item-to-set association is
-not; `V2-LNG-012` requires an additive contract generation rather than reinterpretation of an existing one.
+Because extension-contributed content needs locale variants, translation-set inventory and the frozen
+item-to-set association belong in the **extension contribution contract**. Both are delivered through an
+additive generation, with admission, lifecycle and runtime-resolution evidence; no published generation was
+reinterpreted.
 
 **The gate split.** The **contract, the machinery, the override chain, the right-to-left conversion, the
 content model and the enforcement** are Gate A, plus **`en-GB` extracted** to prove extraction works at
@@ -546,9 +549,10 @@ model and the administered override layers have since been delivered and have le
 the money work did not cover and has since been delivered too, together with `V2-POS-001`, `V2-POS-003`
 and `V2-POS-004`; of the four point-of-sale constraints only `V2-POS-002` remains, and it is a decision
 rather than work. Later verification added narrowly anchored findings as delivered claims were exercised;
-the ledger therefore carries **44 open entries** at the revision named above. The newest entry,
-`V2-DB-004`, separates the delivered foreign-key isolation contract from PostgreSQL's still-open
-schema-wide non-primary-index namespace contract.
+the ledger therefore carries **44 open entries** at the revision named above. The later `V2-DB-004` entry
+separated the delivered foreign-key isolation contract from PostgreSQL's schema-wide non-primary-index
+namespace contract. It has since been closed by the append-only index-isolation migration and the two-prefix
+full-plan proof, with the completed work recorded in `CHANGELOG.md`.
 
 ---
 
@@ -611,7 +615,6 @@ residuals.
 | `V2-SCL-006` | `RuntimeIntegrationEventTransport::publish()` 91, 106, 132 | Consumers and webhooks iterate serially in the publishing path. |
 | `V2-SCL-007` | `DoctrineJobQueue` 968, 985, 990 | A contributed queue with a declared ceiling locks its policy row `FOR UPDATE` and counts live leases before claiming. The ordinary claim at line 270 already uses `FOR UPDATE SKIP LOCKED`. |
 | `V2-QA-001` | `ci.yml` database matrix 267–272, coverage setup 330–334, baseline publication 425–438 | Coverage is collected only on PostgreSQL; CI says explicitly that no threshold is enforced and publishes only a trend line. No attribution contract or ratchet exists. |
-| `V2-DB-001` | `ci.yml` browser job 63–171 and relational matrix 262–449 | The relational suite runs on three engines, but browser proof is one PostgreSQL/Chromium job and no nightly workflow exists. Firefox, WebKit and the wider mobile, keyboard, touch, contrast, zoom and reflow dimensions are absent. |
 | `V2-DB-003` | `ApplicationAuthorizationMigration` 106; `ApplicationAuthorizationMigrationRecovery` 443 | The primary migration names the constraint literally `fk_resource_site`; the recovery path already derives a hashed unique name. Foreign-key names are schema-global on MySQL and MariaDB. |
 | `V2-DR-003` | `tools/backup.sh` 149, 161, 198–202 | Four gzip tarballs; `pg_dump --format=custom` compresses by default; `--set-gtid-purged=OFF` on MySQL; no coordinate at all on MariaDB. |
 | Fence partitioning (positive) | `DoctrineBusinessRecordMutationFence::acquire()`; `BusinessTransactionalRuntimeMigration::installations()` 122–147 | The fence selects with `WHERE h.site_identifier = ?` on the site-scoped `business_definitions` table joined to `business_schema_installations`, and re-checks the installation's own site on the joined row. Four businesses running the same logical definition hold four definition rows and four installation rows, so a group **partitions** the `V2-SCL-001` hot spot rather than concentrating it. |
@@ -776,7 +779,7 @@ answer.
 | Server-computed derived values | Provided | `core.computed`; `ComputationMode`; `Expression` |
 | Encrypted secret fields with key rotation | Provided | `core.secret`; `SecretKeyRing`; `business-record-rekey` |
 | Attachments and media on records | Provided | `core.media_reference` and the media module |
-| Portable relational schema with planned, recoverable migration | Provided | `BusinessSchema`, schema plan and apply and recovery, three engines. This business-schema primitive does not assert that two complete prefixed core plans coexist in one PostgreSQL schema; core non-primary-index namespace isolation remains `V2-DB-004` |
+| Portable relational schema with planned, recoverable migration | Provided | `BusinessSchema`, schema plan and apply and recovery on three engines; the append-only index-isolation migration additionally proves that two complete prefixed core plans coexist in one PostgreSQL schema with schema-wide non-primary-index names and shapes intact |
 | Bounded escape hatch for irregular data | Provided | `core.bounded_json` with a declared byte ceiling |
 
 #### Document lifecycle
@@ -1030,59 +1033,78 @@ and phase S's Gate A half complete.
    physical-table-derived name, with two-prefix foreign-key-shape evidence on all three engines and the
    MySQL/MariaDB schema-global collision reproduced and repaired; and the trusted-extension boundary is
    described the same honest way on every surface, with the ambient authority an admitted extension inherits
-   inventoried beside the deployment control that bounds it. That focused foreign-key evidence is not a claim
-   that two complete prefixed core plans coexist in one PostgreSQL schema; `V2-DB-004` holds the remaining
-   non-primary-index namespace work. Record-history generation ambiguity and the unpinned ownership collation
-   were already recorded there.
-5. **The gates are truthful.** Coverage attribution is real and ratcheted, semantic dependency checking
-   fails new violations, the browser and coverage matrix covers the primary engines, and one manifest
-   defines what local, CI, nightly and release runs execute.
-6. **The seams the aggregate command needs are clean.** Two of the three hold and are recorded in
-   [`CHANGELOG.md`](../../CHANGELOG.md): the transaction abstraction is inward, owned by Application and
-   adapted by Doctrine in Infrastructure, and the automation Doctrine adapters sit in Infrastructure behind
-   application ports. Both are now rules the architecture gate enforces rather than conventions, so the
-   layering cannot regress unnoticed. `V2-ARC-003` closed. What remains for the gate is `P3-C`'s delivery
-   and presentation leakage — the idempotency middleware writing Doctrine state from the HTTP layer, the
-   business-surface application code that renders, and theme validation importing Twig inward — and
-   `P3-A`'s three-engine proof of the transaction boundary's semantics.
-7. **The business-group ownership model is in place.** Built: ownership resolves at site, group and
-   installation scope with the fail-closed contract unchanged, the existing isolation tests pass
-   unmodified, site-owned-only categories refuse a group scope, and consolidated reporting is a
-   group-scoped read. The per-category scope table and the non-atomic inter-business rule are both in the
-   frozen contract. What remains for the gate is the three-engine run of the four-business installation,
-   which belongs to phase 2's engine matrix rather than to the model itself.
-8. **The enterprise document primitives exist and are enforced.** An approved document refuses mutation and
-   is corrected by a linked reversal; a closed period refuses a mutation dated inside it; a sequence is
-   scoped by document type and legal entity and resets on a fiscal period; and a quantity and a money
-   amount each convert through the core contract against an extension-held table. Each rule has a named
-   check that fails the build when it is violated. The conversion half is met and recorded in
-   [`CHANGELOG.md`](../../CHANGELOG.md). `V2-ERP-002`, `V2-ERP-003` and `V2-ERP-005` remain open for
-   numbering scope, period close and linked reversal respectively. The aggregate
-   invariant half — a rule that sums a thousand-line document's lines and rejects a violating document
-   atomically — is met and recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
-9. **The multi-currency contract holds.** A converted amount is marked as converted and carries its rate
-   and as-at instant on every surface that renders it, no write path accepts a converted amount as a stored
-   value, and a rate provider is an extension. **Met.** The contract, the port, the pipeline, the report and
-   export carriage and the rendering half are all delivered and recorded in
-   [`CHANGELOG.md`](../../CHANGELOG.md); `ConvertedMoneySurface` enumerates the surfaces and its coverage
-   test fails the build when a renderer is added without provenance.
-10. **The language contract and machinery are in place, and `en-GB` is extracted.** Messages resolve by
-    stable semantic identifier through the core → extension → site → organization chain; ICU MessageFormat
-    handles plurals, gender, ordinals, numbers and dates; a new hardcoded user-facing string fails the
-    build; the layouts emit `lang` and `dir` from the resolved locale and right-to-left has its own visual
-    baselines; content is a translation group with per-locale slugs, per-locale publication state, a
-    declared fallback, automatic `hreflang` and a shipped language selector; definition labels carry
-    locales; extension-contributed content declares translation-set inventory, while its frozen item-to-set
-    association remains open. The delivered content half is recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
-    Gate A remains on exactly `V2-LNG-001`, `V2-LNG-007`, `V2-LNG-008`, `V2-LNG-009` and `V2-LNG-012`;
-    `V2-LNG-010` is the Gate B translation and visual-qualification tail.
-11. **Point of sale is not foreclosed.** The idempotency contract states who mints the operation identifier
-    and for how long a replay is honoured; a client-asserted occurrence instant has a declared place to
-    live and is never authoritative; late and out-of-order arrival is accepted; and the disconnected
-    numbering shape is decided and recorded. Three of the four are delivered and recorded in
-    [`CHANGELOG.md`](../../CHANGELOG.md). The criterion is **not yet met**: it waits on `V2-POS-002`,
-    which is the product owner's decision and not an implementation task.
-12. **Nothing regressed.** Met at
+   inventoried beside the deployment control that bounds it. PostgreSQL's separate schema-global
+   non-primary-index namespace is also isolated by an append-only migration, proved by installing two
+   complete prefixed core plans into one schema and checking every resulting index shape. The completed
+   work is recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
+5. **The gates are truthful.** **Machine evidence verified at exact candidate
+   [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1).**
+   One manifest defines local, CI, nightly and release execution; coverage attribution and ratchets are
+   enforced; semantic dependency checking fails new violations; and retained REST, CLI, MCP and live-registry
+   contracts are checked against production registrations. The integration suite runs ordinarily, repeats
+   against the same database and then runs in reverse class order on MariaDB, MySQL and PostgreSQL, with an
+   empty idempotency record and process-owned fixture retirement between passes. Merge browser proof covers
+   desktop and mobile Chromium on all three engines, while
+   [Nightly run `32579525381`](https://github.com/kumwe/app/actions/runs/32579525381) covers desktop and mobile
+   Firefox and WebKit, keyboard and focus, touch, forced colours, 200% zoom, reflow and accessibility.
+   [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541) carries the exact candidate's
+   quality, frontend, relational, browser and deployed-artifact evidence; [Security run
+   `32579525379`](https://github.com/kumwe/app/actions/runs/32579525379) and [Development Compose run
+   `32579525390`](https://github.com/kumwe/app/actions/runs/32579525390) passed the same source. This satisfies
+   executable criterion 5 at the machine-evidence commit. Gate A remains **Not assessed** pending the section
+   8 governance interpretation, product-owner approval of that exact commit and invariant-owner sign-offs.
+6. **The seams the aggregate command needs are clean.** **Met and verified at
+   [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1) by
+   [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541);** recorded in
+   [`CHANGELOG.md`](../../CHANGELOG.md). The transaction abstraction is inward, owned by Application and
+   adapted by Doctrine in Infrastructure, with its semantics proved on all three engines. Automation Doctrine
+   adapters sit in Infrastructure behind application ports. The idempotency middleware no longer writes
+   Doctrine state from Delivery, business-surface application code no longer renders, and theme validation no
+   longer imports Twig inward. `BusinessRecordService` delegates all relationship/owned-line decisions and
+   revision/audit/event publication to the two named collaborators while retaining the authoritative
+   transaction. Architecture tests enforce each boundary so the layering cannot regress silently.
+7. **The business-group ownership model is in place.** **Met;** ownership resolves at site, group and
+   installation scope with the fail-closed contract unchanged, site-owned-only categories refuse wider scopes,
+   and consolidated reporting is a group-scoped read that does not relax write isolation. The per-category
+   scope table and non-atomic inter-business rule are frozen, and the four-business installation proof passes
+   on MariaDB, MySQL and PostgreSQL.
+8. **The enterprise document primitives exist and are enforced.** **Met;** an approved document refuses
+   mutation and is corrected by a linked reversal; a closed period refuses every direct mutation and an
+   induced hard-delete set-null rewrite; a sequence is scoped by document type and legal entity and resets on
+   a fiscal period; and quantity and money values convert through core contracts against extension-held tables.
+   Definition identity, catalog site, handle and owner are immutable, so a non-site sequence retains its
+   counter coordinate across a refused ownership widening or catalog move. The thousand-line aggregate
+   invariant is atomic, and named architecture and three-engine tests enforce every rule. The completed work
+   is recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
+9. **The multi-currency contract holds.** **Met;** a converted amount is marked as converted and carries its
+   rate and as-at instant on every surface that renders it, no write path accepts a converted amount as a
+   stored value, and a rate provider is an extension. The contract, port, pipeline, report and export carriage
+   and rendering half are recorded in [`CHANGELOG.md`](../../CHANGELOG.md); `ConvertedMoneySurface` enumerates
+   the surfaces and its coverage test fails when a renderer is added without provenance.
+10. **The language contract and machinery are in place, and `en-GB` is extracted.** **Met;** messages resolve
+    by stable semantic identifier through the core → extension → site → organization chain; ICU
+    MessageFormat handles plurals, gender, ordinals, numbers and dates; and all templates, all 44 currently
+    registered console commands and the user-facing error paths resolve from the 2,102-message catalogue. The
+    hardcoded-string gate covers all three surfaces, the direction gate scans every stylesheet the build
+    consumes, and right-to-left has corrected `he` and `ar` baselines. Content is a translation group with
+    per-locale slugs and publication state, declared fallback, automatic `hreflang` and a shipped selector;
+    definition labels carry locales; and extension-contributed items bind to declared translation sets. The
+    completed Gate A work is recorded in [`CHANGELOG.md`](../../CHANGELOG.md); `V2-LNG-010` remains the Gate B
+    translation and per-locale qualification tail.
+11. **Point of sale is not foreclosed.** **Met;** the idempotency contract states who mints the operation
+    identifier and for how long replay is honoured; a client-asserted occurrence instant has a declared,
+    non-authoritative home; late and out-of-order arrival is accepted; and validation that depends on current
+    stock or price remains deferrable. [ADR 0008](decisions/0008-numbering-under-disconnection.md) selects
+    synchronisation-time numbering: the terminal carries an immutable unique client reference and the receiving
+    command allocates the unchanged gapless human number. The completed work is recorded in
+    [`CHANGELOG.md`](../../CHANGELOG.md).
+12. **Nothing regressed.** Current-source regression proof is exact candidate
+    [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1):
+    [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541),
+    [Nightly run `32579525381`](https://github.com/kumwe/app/actions/runs/32579525381),
+    [Security run `32579525379`](https://github.com/kumwe/app/actions/runs/32579525379) and
+    [Development Compose run `32579525390`](https://github.com/kumwe/app/actions/runs/32579525390).
+    Released-artifact proof remains at
     [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7).
     [Merge run `32469278190`](https://github.com/kumwe/app/actions/runs/32469278190) passed the quality,
     unit, architecture, integration, functional, browser and complete production-deployment suites on
@@ -1099,7 +1121,8 @@ and phase S's Gate A half complete.
     the published composition schemas, so a malformed or unbounded one is refused before any runtime
     consumes it, and a signed compatibility fixture declaring every kind passes the full lifecycle. An
     extension built against this generation needs no manifest, declaration or classification change when
-    the composition surface ships at Gate B. `V2-STU-001` closed.
+    the composition surface ships at Gate B. Completion is recorded in the changelog; `V2-STU-001` is
+    absent from the live findings ledger.
 
 **What Gate A does not assert.** Not enterprise capacity. Not point-in-time recovery. Not operational
 diagnostics. Not the human interface acceptance. Not a release. An extension author after Gate A is
@@ -1139,7 +1162,7 @@ building against contracts that will not move; they are not building against a q
     `ar`, `es`, `pt-BR` and `zh-Hans` have complete catalogues with no missing identifier on any
     translatable surface, and the browser, accessibility and visual matrix runs per locale with
     right-to-left carrying its own baselines. Zero horizontal overflow and zero inaccessible critical
-    control in any of the nine. `V2-LNG-010` closed.
+    control in any of the nine. `V2-LNG-010` remains open until that evidence exists.
 12. **The visual composition surface ships and is qualified.** An authorized administrator composes a
     page from typed, theme-bounded building blocks in the embedded Studio surface, previews it
     authenticated, and publishes it, with the composition stored as a schema-valid canonical document
@@ -1151,7 +1174,7 @@ building against contracts that will not move; they are not building against a q
     administrator content-security policy is unchanged except the recorded same-origin preview frame.
     The signed manifest records the exact Studio package versions the release qualified, and the
     composition contributions frozen at Gate A criterion 13 are consumed by the running surface without
-    a contract change. `V2-STU-002` through `V2-STU-007` closed.
+    a contract change. `V2-STU-002` through `V2-STU-007` remain open until that evidence exists.
 
 ---
 
@@ -1240,17 +1263,17 @@ command or test that verifies it, the workflow and cadence that runs it, the art
 evidence expiry, and its residual limitation. A claim with no executable evidence is reworded as
 conditional or planned in the same change. Documentation never describes a target as a current capability.
 
-**P0-C — Public contract classification and compatibility fixtures.** The extension half is delivered and
-recorded in [`CHANGELOG.md`](../../CHANGELOG.md): manifest schemas and SPI versions, the PHP interfaces,
-DTOs and application ports intentionally exposed, contribution schemas and namespacing rules, the
-restricted container's host-service allowlist, migrations and applied-byte immutability, and the full
-lifecycle with its data-preservation behaviour are classified in
-[`docs/extension-contract/`](../extension-contract/README.md), frozen per generation, and proved by a
-signed compatibility package each. The machine-surface half is outstanding: generated REST schemas and
-stable problem codes; console command names, options, JSON fields, exit codes and safe secret input; and
-model-context tool names, closed schemas, stable errors and intentional exclusions. Classify each the same
-way, as data with a build check behind it. Internal code may be decomposed freely thereafter; public
-contracts require semantic versioning, a compatibility window, migration guidance and a passing fixture.
+**P0-C — Public contract classification and compatibility fixtures.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). The extension contract classifies every exposed PHP type, manifest and
+SPI generation, declaration key, namespace rule, host-service allowlist, migration-immutability rule and
+lifecycle guarantee, with a signed compatibility package for every supported generation. The manifest key
+inventory is derived from the parser authority, so a frozen generation cannot silently accept an unrecorded
+surface. REST, CLI and MCP each have an independently retained immutable generation covering schemas, stable
+problem or error vocabulary, command and tool names, bounded inputs, portable outcomes, safe secret transport,
+risk and intentional exclusions. Generators refuse retained-byte replacement, require additive successors for
+incompatible changes, and executable parity checks compare every retained contract with the live runtime.
+Internal code may be decomposed freely; public contracts require semantic versioning, a compatibility window,
+migration guidance and passing fixtures.
 
 **P0-D — Capacity contract.** Already delivered as [`capacity-contract.json`](capacity-contract.json). This
 work package extends it with the deterministic dataset generator seeds and age distribution, and the exact
@@ -1283,51 +1306,35 @@ follow.
    engine defaults are not a portable contract.
 8. **Release qualification authority.** The build-once artifact chain and the signed manifest as the
    release source of truth.
-9. **Enterprise primitive ownership.** Findings: `V2-ERP-002`, `V2-ERP-003`, `V2-ERP-005`, `V2-ERP-007`.
-   Decision D13 has answered the enterprise boundary questions and decision D10 has answered currency.
-   Role-specific dashboards follow decision D15 and
-   [ADR 0006](decisions/0006-unified-dashboard-composition.md), with delivered behavior recorded in
-   [`CHANGELOG.md`](../../CHANGELOG.md). What remains for the rest is to write each verdict down where an
-   author finds it: [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) and
-   [ADR 0004](decisions/0004-money-conversion-contract.md) are written and accepted, and D13.5's
-   unit-conversion verdict is now delivered and documented in `docs/business-integrations.md`; the
-   period-close and numbering-scope verdicts are recorded in the frozen contract with the exact shape an
-   extension implements against. An extension author must not have to guess, and must not have to read a
-   decision log to find out.
-10. **Resource ownership scope.** Already accepted as
-    [ADR 0001](decisions/0001-resource-ownership-scope.md) under decision D7. What remains for this work
-    package is the per-category scope table: for **every** resource category the installation carries, not
-    just the seven the ADR names, declare which of site, group and installation it may be owned at. That
-    table is part of the frozen contract in `P0-C`, because an extension contributing a resource category
-    declares its permitted scopes the same way it declares everything else.
-11. **Interface and content translation architecture.** Findings: `V2-LNG-001`, `V2-LNG-007` through
-    `V2-LNG-010`, and `V2-LNG-012`. Already accepted as
-    [ADR 0002](decisions/0002-interface-translation-architecture.md) under decisions D11 and D12. What
-    remains for this work package is the contract half: the message-identifier grammar and its namespacing
-    rules, the catalogue file layout an extension ships, the override-chain resolution order as a
-    machine-readable declaration, the locale dimension on definition labels, and the extension item-to-set
-    association that makes a contributed translation declaration effective at runtime. The first four are
-    delivered. The last is `V2-LNG-012` and must enter an additive contract generation in `P0-C`, because
-    changing a frozen extension generation after publication is not a compatible repair.
-12. **Offline-capture non-foreclosure constraints.** Findings: `V2-POS-002`. Decision D14. Point of sale is
-    deferred as a product; what is decided here is what Version 2 must not foreclose. Three of the four
-    constraints are settled and recorded in [`CHANGELOG.md`](../../CHANGELOG.md): who mints an operation
-    identifier and for how long a replay is honoured, including what replaced the fixed `P1D` window and
-    what the actor component of the scope digest means for a terminal that re-authenticated; where a
-    client-asserted occurrence instant lives and why it is never authoritative; that arrival order is not
-    event order; and that stock and price validation at capture time is best-effort.
-    **`V2-POS-002` is the one decision left open**: whether a disconnected terminal receives
-    its human document number at synchronisation time while carrying its own client reference until then,
-    or from a per-terminal reserved block that forfeits gaplessness. It must be taken here, because
-    `BusinessNumberSequenceAllocator`'s documented gapless guarantee is a shipped promise and either shape
-    changes what that promise means.
+9. **Enterprise primitive ownership.** Decisions D10, D13 and D15 are implemented in the frozen contracts
+   and runtime primitives an extension author uses. Immutable correction, period close, numbering scope,
+   money and unit conversion, and role-specific dashboard composition are documented at their authoring
+   surfaces and enforced by executable evidence. The only retained ledger entry is `V2-ERP-007`, a
+   non-gating conditional guard that keeps a future offline terminal possible without adding point of sale
+   to Version 2.
+10. **Resource ownership scope.** [ADR 0001](decisions/0001-resource-ownership-scope.md) and the frozen
+    contribution contract carry the per-category scope table for every resource category the installation
+    supports. An extension declares permitted site, group and installation scopes through the same retained
+    generation as its other contributions, and admission refuses an incompatible scope.
+11. **Interface and content translation architecture.** Decisions D11 and D12 and
+    [ADR 0002](decisions/0002-interface-translation-architecture.md) are delivered for Gate A: the stable
+    message grammar, catalogue layout, override order, locale-bearing definition labels and additive
+    extension item-to-translation-set association are frozen and executable. `V2-LNG-010` is solely the
+    Gate B catalogue-completion and per-locale qualification tail.
+12. **Offline-capture non-foreclosure constraints.** Decision D14 is complete. Point of sale remains
+    deferred as a product, while Version 2 preserves bounded caller-minted replay, a non-authoritative
+    client occurrence instant, late and out-of-order arrival, and the deferrable-validation split. ADR 0008
+    chooses synchronisation-time human numbering: the terminal carries an immutable unique client reference
+    until the receiving command allocates the unchanged gapless number. Executable contracts hold all four
+    constraints; `V2-ERP-007` remains only as a non-gating guard against a future foreclosing change.
 
 **Exit gate.** Every current feature, surface and contribution has an owner and at least one behavioural
 evidence path. Every critical and high finding has an identifier, severity, owner, acceptance test and
 target phase. Every normative claim is executable or explicitly conditional. The public contract is frozen
 with passing fixtures, and it includes the per-category ownership-scope table, the locale dimension on
 definition labels, the translation-group declaration and the message-identifier grammar. All twelve
-decisions are recorded, `V2-POS-002` among them. The repository is green on all three engines. No runtime
+decisions are recorded, including ADR 0008's synchronisation-time numbering choice. The repository is green
+on all three engines. No runtime
 feature was removed, renamed or narrowed.
 
 **Non-goals.** Do not refactor `BusinessRecordService`, `ContainerFactory` or the machine-surface handlers.
@@ -1344,18 +1351,11 @@ or scales. Every legitimate use case keeps a supported safe path.
 
 **Entry conditions.** Phase 0 decisions 3, 5 and 6 recorded. May run in parallel with phase 2.
 
-**P1-F — Extension lifecycle withdrawal proofs.** Findings: none open; `V2-SEC-003` is recorded in
-[`CHANGELOG.md`](../../CHANGELOG.md) and the residual belongs to `GM-SUP-05`, which is Gate B and waits on
-an isolated runtime that does not exist. The posture half of this package is done: every document, prompt
-and operator message says "trusted in-process extension code", the ambient filesystem, network,
-environment, database and process authority is inventoried beside the deployment control that bounds each
-part of it, `RestrictedExtensionContainer` is unweakened and is never called a sandbox, and recovery
-composition is proven to run no extension PHP and to expose no extension template namespace. What remains
-here is the withdrawal half, which is a behavioural proof rather than a wording one: that disable,
-quarantine, trust revocation, stale generation and recovery each remove executable routes, templates,
-assets, jobs, listeners and tools immediately while preserving data. Parts of it are already asserted by
-`ExtensionContributionLifecycleIntegrationTest`; what this package owes is the complete matrix across all
-five withdrawal causes and all seven executable kinds, on all three engines.
+**State.** Delivered; every phase 1 package is recorded in [`CHANGELOG.md`](../../CHANGELOG.md). The final
+`P1-F` slice withdraws the complete resident contribution graph on disable, quarantine, trust revocation or
+generation replacement, fences stale listeners before extension code runs, and composes recovery with no
+extension PHP or template namespace. Published definitions and extension-owned data remain preserved. The
+engine integration lifecycle and the registry/generation unit matrix hold the behavior.
 
 **Exit gate.** Identity-reuse history behaviour is defined and proven on three engines, and paging cannot
 silently cross a generation. Submitted input survives both failure classes on all three browser surfaces.
@@ -1368,8 +1368,9 @@ The credential, taxonomy and foreign-key-name halves of this phase are delivered
 contract and no handler accepts one, every machine mutation carries validated risk, capability, operation
 and bounded-schema metadata enforced before a server is built, and MySQL/MariaDB foreign-key names are isolated
 between prefixed installations. Focused foreign-key-shape and replay evidence runs on all three engines; it is
-not evidence that two complete prefixed core plans coexist in one PostgreSQL schema. That remaining schema-wide
-non-primary-index namespace contract is `V2-DB-004` in phase 2.
+joined by the completed PostgreSQL schema-wide non-primary-index proof, which installs two complete prefixed core
+plans into one schema through the append-only index-isolation migration. Both are recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md).
 
 **Non-goals.** Do not split the machine-surface handlers or catalog for size alone. Do not decompose
 `BusinessRecordService`. Do not build a sandbox. Do not expose dangerous operations everywhere in the name
@@ -1404,62 +1405,49 @@ other half. Keep source-string tests only where the source text itself is the co
 a generated-file checksum. Replace routing, wiring and class-shape string assertions with live container,
 router, metadata and behaviour checks **before** the structures they describe move.
 
-**P2-D — Three-engine catalogue and primary-engine policy.** Findings: `V2-DB-001`, `V2-DB-004`. Express
-database tests by invariant and run the same portable contract on all three engines. Every merge candidate proves: clean
-install and migration from an empty database; install beneath a parent schema where supported; repeated
-migration and no-op upgrade; the current supported upgrade fixture; record, version, idempotency, audit,
-outbox and concurrency invariants; history generation behaviour; schema plan, apply and recovery; backup
-and restore smoke with a post-restore probe; and zero unexplained driver skip. Driver-specific coverage:
-next-key and gap locks, implicit DDL commits, metadata locks, collation and index-prefix limits, deadlock
-and lock timeout, undo and purge lag, binary-log behaviour on the MySQL family; transactional DDL limits,
-`SKIP LOCKED`, serialization and deadlock cases, autovacuum and freeze, dead tuples and index bloat,
-write-ahead-log and checkpoint behaviour on PostgreSQL. Pin exact image digests for release.
+**P2-D — Three-engine catalogue and primary-engine policy.** The Gate A portability slice is delivered and
+recorded in [`CHANGELOG.md`](../../CHANGELOG.md): every merge candidate runs the same complete relational,
+migration, schema, recovery and three-pass idempotency selection on MariaDB LTS, MySQL 8.4 and PostgreSQL 17,
+with no unexplained driver skip. PostgreSQL schema-global index isolation is enforced by an append-only
+migration and a two-prefix full-plan proof. The broader engine-characterisation package remains open for
+driver-specific coverage: next-key and gap locks, implicit DDL commits, metadata locks, collation and
+index-prefix limits, deadlock and lock timeout, undo and purge lag and binary-log behaviour on the MySQL
+family; transactional DDL limits, `SKIP LOCKED`, serialization and deadlock cases, autovacuum and freeze,
+dead tuples and index bloat, write-ahead-log and checkpoint behaviour on PostgreSQL. Exact image digests for
+release remain owned by `P2-H`.
 
-Close `V2-DB-004` without rewriting a published self-checksumming migration: an append-only migration must
-inventory every non-primary index on prefixed core tables whose name can collide in PostgreSQL's schema
-namespace, and derive its replacement from the physical table name plus the published stem with a stable
-table-plus-stem digest inside the 63-byte identifier limit. Its replay and interruption paths must be
-idempotent and wrong-shape targets must fail closed. The acceptance run installs two complete empty-database
-core plans with distinct prefixes sequentially in one PostgreSQL schema, then proves schema-wide name
-uniqueness and each index's exact table, ordered keys, uniqueness, predicate, expression, included columns
-and operator classes. MariaDB, MySQL, existing upgrade ledgers and every published migration checksum must
-remain accepted.
+**P2-E — Browser, accessibility and visual matrix.** The Gate A browser-breadth slice is delivered and
+recorded in [`CHANGELOG.md`](../../CHANGELOG.md). Merge runs the critical administrator, portal,
+generated-business, owned-line, maker-checker, step-up, policy-denial, no-JavaScript and website journeys on
+MariaDB, MySQL and PostgreSQL in desktop and mobile Chromium. Nightly runs the closed critical set on desktop
+Firefox and WebKit and its breadth contract on desktop and mobile Firefox and WebKit, covering keyboard and
+focus, touch, forced colours, 200% text zoom, reflow and accessibility. Required journeys must pass on their
+first attempt, the overall first-attempt pass rate must remain at least 99%, and acceptance requires zero
+serious or critical accessibility violation, horizontal-overflow finding, inaccessible critical control or
+quarantined critical journey. Evidence identifies commit, database, browser, viewport, locale and fixture.
 
-**P2-E — Browser, accessibility and visual matrix.** Findings: `V2-DB-001`. The merge half is delivered and
-recorded in [`CHANGELOG.md`](../../CHANGELOG.md): the journeys run on MariaDB, MySQL and PostgreSQL,
-desktop and mobile Chromium, and a run reports its first-attempt results separately from its retried ones.
-Sharding and fixture isolation are not built, and the nightly half is only started — two browser engines,
-without the remaining dimensions. What is still owed, at merge: critical administrator, portal,
-generated-business, owned-line, maker-checker, step-up, policy-denial, no-JavaScript and website journeys,
-sharded and fixture-isolated. Nightly
-adds Firefox and WebKit, accessibility, keyboard and focus, touch, high contrast, zoom and reflow, print
-where relevant, and visual regression. Convert screenshots claimed as regression baselines into real
-comparison assertions or label them evidence-only. Acceptance: zero serious or critical accessibility
-violations, zero horizontal overflow, zero inaccessible critical control, critical journeys passing first
-attempt, overall first-attempt pass rate at or above 99%, zero quarantined critical journey, and evidence
-identifying commit, engine, browser, viewport, locale and fixture.
+Browser-owned comparison baselines remain distinct. A screenshot without a baseline owned by that browser is
+labelled evidence-only. The locale axis and right-to-left Chromium baselines are delivered; phase L's `PL-G`
+owns Gate B qualification of all nine locales. Broader phase work remains open for general sharding and
+expansion beyond the closed critical set.
 
-The evidence record already carries a locale field, which is what makes phase L's per-locale qualification
-an extension of this matrix rather than a second one. This package adds the dimension itself: the matrix
-accepts a locale axis, a run declares which locales it exercised, and a right-to-left locale keeps its own
-visual baselines rather than being compared against left-to-right ones. Only the axis is built here; phase
-L supplies the locales that travel along it.
-
-**P2-F — Live surface and contract fitness.** Compare generated declarations against live registrations:
-runtime route method and path against OpenAPI operation, security, middleware, capability, idempotency and
-version metadata; the real console application against the command index; the serialized machine catalog
-against callable handlers, risk, capability, schema and mutation guard; interface navigation and action
-metadata against authorized use cases; and worker, scheduler and event registries against declared
-contributions. An explicit allowlist records intentionally uncontracted health, asset and recovery routes.
-A hard-coded partial route list is not sufficient proof.
+**P2-F — Live surface and contract fitness.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). REST parity walks the real router in both directions against retained
+OpenAPI operations and checks security, capability, audience, purpose, idempotency, precondition and version
+metadata, with a structured allowlist for intentionally uncontracted routes. The live console application
+exactly matches the retained CLI generation. The MCP catalogue matches callable handlers, bounded schemas,
+risk, capability, mutation requirements and the closed error vocabulary. Interactive routes, navigation and
+KIS metadata, plus event, worker, queue and scheduler declarations, are compared with independently resolved
+production registries.
 
 **P2-G — Suite idempotency.** Delivered; recorded in [`CHANGELOG.md`](../../CHANGELOG.md). The deployed-artifact
-lane builds the released selection, installs it with `--no-dev` and an authoritative classmap, seals the tree,
-and reproduces all four production-only defects inside it. The reuse half now runs the integration suite twice
-after the ordinary pass against the same database: once in declaration order and once with class files reversed
-while method declaration order is preserved. The six former second-pass failures have been removed,
-`docs/quality/idempotency-baseline.json` is empty, and CI enforces both appended passes on MariaDB, MySQL and
-PostgreSQL. A new failure or any attempted stale/expired exemption fails the gate.
+lane builds the released selection, installs it with `--no-dev` and an authoritative classmap, seals the tree
+and reproduces all four production-only defects inside it. After the ordinary integration run, CI executes a
+repeat pass and then a reverse-class-order pass against the same database while preserving method declaration
+order: three consecutive full runs. Process-owned fixture shutdown withdraws each run's transient definitions
+and live schema installations while retaining the explicit shared replay fixtures. The idempotency record is
+empty, new or stale exemptions fail closed, and both appended passes are enforced on MariaDB, MySQL and
+PostgreSQL.
 
 **P2-H — Build-once exact-artifact release chain.** Findings: `V2-REL-001`. Prove the candidate belongs to
 the protected branch and that required workflows passed. Build the application image, web image, Composer
@@ -1502,17 +1490,14 @@ this phase.
 **Entry conditions.** Phase 2 can detect behavioural, database, surface, compatibility and dependency
 regressions. Phase 1 is merged.
 
-**P3-A — Prove the transaction boundary on every engine.** The boundary itself has moved: Application owns
-`TransactionManager`, Infrastructure adapts Doctrine DBAL behind it, no application signature admits a
-connection or a query builder, and the architecture gate refuses both regressions. That half is recorded in
-[`CHANGELOG.md`](../../CHANGELOG.md). What is still owed is the evidence, because the move deliberately
-changed no semantics and therefore proved none: commit, rollback, exception translation, retryable deadlock
-and serialization failure, non-retryable domain failure, nested call semantics, and audit and outbox
-atomicity, each exercised on MariaDB, MySQL and PostgreSQL. Today the adapter's integration test covers
-nested commit and nested rollback only; the rest is asserted by the code paths that use it rather than by a
-test of the boundary. This package belongs with phase 2's engine matrix and blocks nothing else in phase 3.
+**P3-A — Prove the transaction boundary on every engine.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). `TransactionBoundaryEngineIntegrationTest` proves commit, rollback,
+exception translation, retryable deadlock and serialization failure, non-retryable domain failure, nested
+call semantics, and audit/outbox atomicity on MariaDB, MySQL and PostgreSQL. The architecture gate keeps
+Doctrine and its connection/query types outside Application.
 
-**P3-C — Delivery and presentation leakage.** Idempotency middleware asks an Application idempotency port
+**P3-C — Delivery and presentation leakage.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). Idempotency middleware asks an Application idempotency port
 rather than writing Doctrine state directly. Business surface Application uses rendering contracts or
 receives fully typed view models. Theme and package validation depends on a template-validation port rather
 than importing Twig inward. HTTP, machine-surface and console input models stay delivery concerns
@@ -1526,37 +1511,20 @@ extension-migration exception as an exact interface in the recorded decision and
 Avoid a shared dumping ground: every shared-kernel type needs a stable semantic owner, no framework import
 and at least two legitimate inward consumers.
 
-**P3-E — Only the record seams the aggregate needs.** `BusinessRecordService` remains the stable public
-facade and the single owner of the use-case transaction boundary. Extract, in this order and no further:
+**P3-E — Only the record seams the aggregate needs.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). `BusinessRecordRelationshipCoordinator` owns typed relationship and
+owned-line validation/mutation intent, and `BusinessRecordMutationPublication` owns coherent revision,
+audit and durable-event publication. `BusinessRecordService` remains the stable public facade and sole owner
+of the use-case transaction; focused characterization plus the complete three-engine and cross-surface gates
+hold its signatures, errors and observable effects unchanged.
 
-1. **Relationship and owned-line coordination.** Typed relation and owned-line validation and mutation
-   intent, centralized, with single-line public behaviour unchanged. This is the seam the aggregate command
-   is built on.
-2. **Atomic publication.** Coordination of authoritative record changes with revision, audit and durable
-   event creation under the one existing transaction. This is the seam the aggregate's one-revision,
-   one-audit, one-event contract needs.
-
-Each extraction: confirm outcome characterization across real adapters first; introduce a typed
-collaborator interface only where a testable responsibility exists; move one vertical use case; keep
-facade signatures, errors, audit and event behaviour stable; run the full three-engine and cross-surface
-gates; delete obsolete private code only after equivalence is proven. A collaborator that merely forwards
-is not a seam and is rejected in review.
-
-**P3-F — Prove the business-group ownership model on the full engine matrix.** Decision D7,
-[ADR 0001](decisions/0001-resource-ownership-scope.md). The model itself is built and recorded in
-[`CHANGELOG.md`](../../CHANGELOG.md): ownership is held at a scope, groups are declared, the gateway decides
-by containment, the per-category table is frozen in source, scope changes are asymmetric and audited, and
-consolidated reporting is a distinct read capability. What remains here is the proof on the engine matrix,
-which belongs to phase 2's gates rather than to the model.
-
-Required, on MariaDB, MySQL and PostgreSQL: the forward migration applies and replays cleanly on each; two
-sites in one group both see a group-owned client while a third site does not; overlapping groups resolve
-independently; a site-owned resource behaves exactly as it does today, asserted by the unchanged existing
-isolation tests; a group-scoped ownership row for a ledger is refused; disabling one member site removes its
-access without affecting the others; widening is audited and reversible; narrowing is refused while another
-member site references the resource and succeeds once it does not; a group report returns exactly the union
-of what its member sites may each see, and no more; and the authorization hot path issues no additional
-query per call.
+**P3-F — Prove the business-group ownership model on the full engine matrix.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). Decision D7 and
+[ADR 0001](decisions/0001-resource-ownership-scope.md) are exercised by
+`BusinessGroupOwnershipEngineIntegrationTest` on MariaDB, MySQL and PostgreSQL: migration replay, contained
+and overlapping group visibility, unchanged site isolation, site-only refusal, member disablement,
+audited/reversible widening, guarded narrowing, exact consolidated reporting and the no-extra-query hot path
+all pass in a four-business installation.
 
 **State in the Gate A extension contract, not in a covenant footnote.** A transfer between two businesses of
 a group is **two transactions coordinated by a durable event**, never one. No transaction spans sites. An
@@ -1630,101 +1598,13 @@ language inside an invariant is not what was decided.
 
 ### Phase E — Enterprise document primitives
 
-**Objective.** Build the primitives decisions D10 and D13 assigned to core, and record the four constraints
-decision D14 places on the platform so point of sale stays possible. Every package here shapes something an
-extension author builds against, which is why the whole phase is Gate A and none of it waits for Gate B.
-D10's money conversion contract is the first of them to have landed, its rendering half followed, and
-D13.5's unit-of-measure contract followed that; `PE-A`, `PE-B`, `PE-C` and `PE-G` have completed and left
-this directory for `CHANGELOG.md`. What `PE-G` left behind is `V2-POS-002` alone, which is a decision
-rather than an implementation.
-
-**Entry conditions.** Phase 3 exit gate passed — these packages touch the record service, the allocator and
-the value codec, and they need clean seams first. Phase 0 decisions 9 and 12 recorded, including the
-`V2-POS-002` choice. May run in parallel with phase 4 where file ownership is disjoint; `PE-F` cannot,
-because it and `P4-C` both own numbering.
-
-**The rule that governs the whole phase.** Every primitive here is **enforceable, not advisory**. A rule
-that lives only in documentation is a rule an extension author breaks by accident, so each package below
-names the check that fails the build when its rule is violated. Where a rule genuinely cannot be checked
-mechanically, the package says so and names the human review that covers it instead. No package leaves the
-question unanswered.
-
-
-**PE-D — Immutable correction by linked reversal.** Findings: `V2-ERP-005`. Decision D13.2,
-[ADR 0003](decisions/0003-immutable-correction-by-reversal.md). A workflow binding may declare that
-entering a state makes the record immutable. After that transition every mutation of the record's own
-fields and its owned lines is refused on every surface, including surfaces an extension contributes, with a
-stable named error rather than a policy denial — the caller may be fully authorized; the document is
-closed. Correction is a new record of the same definition carrying a first-class typed link to the record
-it reverses, with its own approval path. The original is never rewritten and never suppressed.
-
-A thousand-line reversal is a thousand-line document and commits through the aggregate document command
-[ADR 0005](decisions/0005-atomic-aggregate-document-contract.md) records. No separate reversal write path
-exists and none may be added.
-
-*The enforcing check:* an architecture test asserts no mutation path in `src/` can write a record whose
-definition declares it immutable in its current state, so a new write path added later cannot bypass the
-rule silently. A three-engine integration test proves update, owned-line mutation and archive are all
-refused with a stable error on every surface and that the reversal path succeeds. A conformance-fixture
-assertion in the exact-value approved-document portfolio entry fails an extension that corrects by
-mutation.
-
-**PE-E — Period close and posting lock.** Findings: `V2-ERP-003`. Decision D13.3: **core provides the
-mechanism, the extension provides the policy.** Core gains a declarative temporal lock that refuses a
-mutation to a record whose declared date field falls inside a closed range, evaluated before the mutation
-fence rather than after it. Core gains **no fiscal calendar**: what a period is, when it closes, who may
-close it and what re-opening means are the extension's, expressed through the lock's administrative
-surface.
-
-Its interaction with `PE-D` is a required test rather than an emergent behaviour: a correction issued after
-its original's period has closed is dated in an open period, and the two mechanisms must agree about that
-without either being special-cased.
-
-*The enforcing check:* a three-engine integration test proves a mutation dated inside a closed period is
-refused on every surface, that closing a period is capability-gated and audited, and that a record dated
-outside the closed range is unaffected. An architecture test asserts the lock is consulted on every
-mutation entry point, enumerated from the same table the mutation guard already uses, so a new entry point
-that skips it fails.
-
-**PE-F — Numbering scope and fiscal-period reset.** Findings: `V2-ERP-002`, `V2-POS-002`. Decision D13.4.
-Widen `NumberSequenceScope` beyond `Site` and `Organization` to include document type and legal entity in
-the counter identity, and widen `NumberSequenceReset` beyond `Never`, `Yearly` and `Monthly` to include a
-fiscal-period reset resolved through `PE-E`'s period declaration. The work is small because the allocator
-already exists and already derives its counter row from a scope key and a period key: what changes is what
-those two keys are composed from, not how the counter advances.
-
-**Never change the meaning of an existing sequence for throughput alone**, and never weaken gapless
-semantics to widen the vocabulary. A widened scope means *more* counters, each contended less, which is a
-throughput improvement obtained honestly.
-
-This package also implements whatever `V2-POS-002` decided about disconnected allocation, because both
-change the same allocator. If the decision was allocation at synchronisation time, the terminal's own
-client reference becomes a declared field with its own uniqueness scope, and the human number is allocated
-by the receiving command exactly as it is today. If the decision was reserved blocks, the forfeit of
-gaplessness for those counters is declared on the sequence itself and stated in the supported envelope,
-never left implicit.
-
-*The enforcing check:* the existing gapless concurrency tests run unchanged against every new scope and
-reset combination — if one needs rewriting, the widening is wrong. A migration test proves every existing
-counter maps forward to exactly one widened counter with its current value intact. If reserved blocks were
-chosen, a test asserts that a sequence declaring them reports itself as non-gapless through the same
-declaration an operator reads.
-
-**PE-G is complete apart from its one decision.** Findings: `V2-POS-002`. Decision D14. The replay window,
-the declared home for a client-asserted occurrence instant, the late and out-of-order arrival guarantee and
-the deferrable-validation split are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md), each
-with the check that holds it. What is left is not work: it is `V2-POS-002`, the choice between allocating a
-disconnected terminal's document number at synchronisation time and issuing per-terminal reserved blocks.
-`PE-F` implements whichever is chosen, because both change the same allocator.
-
-**Exit gate.** A definition can declare a document immutable from a transition and correct it by linked
-reversal, and no write path can bypass it. A closed period refuses a mutation dated inside it on all three
-engines. A sequence is scoped by document type and legal entity and resets on a fiscal period, with every
-existing gapless test passing unmodified. A quantity and a money amount each convert through the core
-contract against an extension-held table. A converted amount already carries its marker, rate and as-at
-instant on every surface that renders it, proved from one enumerated table of surfaces. Three of the four
-offline constraints are declared and each has a passing test or a named human review; the fourth is
-`V2-POS-002` and is a decision. All three engines pass.
+**State.** Delivered; all packages and follow-up findings are recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). Decisions D10, D13 and D14 are executable: linked reversal preserves
+immutable originals; posting-period locks fence direct and induced mutation; document-type/legal-entity
+sequences reset on declared fiscal periods without weakening gapless behavior; quantity and money conversion
+use extension-held tables while converted money carries provenance across every renderer; and ADR 0008's
+synchronisation-time numbering preserves an immutable unique client reference until the receiving command
+allocates the human number. The complete three-engine evidence set enforces the phase exit gate.
 
 **Non-goals.** Do not build a general ledger, a fiscal calendar, a rate feed, a rate policy, a rounding
 policy or a unit dictionary in core. Do not store a converted amount as a `core.money` value. Do not build
@@ -1781,36 +1661,35 @@ publication state, the declared fallback, automatic `hreflang` and the shipped l
 locale dimension on definition labels, and the extension contribution route are all built, and the
 byte-stability the immutable definition document required is asserted rather than assumed.
 
-**PL-E — The hardcoded-string gate.** Findings: `V2-LNG-007`. `composer translation:strings` exists and
-runs inside `composer qa`. It scans `templates/`, refuses user-facing text nodes, translatable attributes
-and prose written into a Twig expression, proves both directions of the catalogue contract — no referenced
-identifier missing, no catalogue entry orphaned — and enforces any template that appears in neither its
-enforced set nor its register, so a new template cannot quietly reintroduce hardcoded text.
-
-What remains is **console output and the user-facing error paths of `src/`**, under the same allowlist
-discipline: machine error codes, audit action names, log messages and developer exceptions are not
-translated, and every allowlist entry names its reason.
+**PL-E — The hardcoded-string gate.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). `composer translation:strings` runs inside `composer qa` and scans
+templates, all registered console commands and user-facing source error paths. It refuses hardcoded interface
+text, proves both directions of the catalogue contract — no referenced identifier missing and no catalogue
+entry orphaned — and fails when a new surface is neither enforced nor explicitly classified. Machine error
+codes, audit action names, log messages and developer exceptions remain inline under reasoned categories
+because they are stable contracts or operator/developer text rather than localizable interface prose.
 
 This package is the reason the whole decision is worth making. **A convention without a gate is a
 suggestion**, and a translation programme protected only by review is a translation programme that decays
 one merge at a time.
 
-*The enforcing check:* the check is itself the deliverable, and it is proven in both directions the way
-`tools/verify-roadmap.php` is. `tests/Architecture/InterfaceTranslationGateTest.php` does that for the
-template half today; the widened scope owes the same proof.
+*The enforcing check:* the check is itself the deliverable and its architecture tests prove the widened
+template, console and source-error scope in both directions.
 
-**PL-F — The right-to-left conversion.** Findings: `V2-LNG-009`. The layout half is done. Every inline-axis
-declaration across `assets/` is logical — 96 of them, none physical — `composer assets:direction` fails the
-build on a new physical declaration with an allowlist that ships empty, the three layouts emit `dir` from
-the resolved locale, and `tests/Browser/right-to-left.spec.ts` asserts direction and zero horizontal
-overflow on the public, administrator and portal entry surfaces in both `he` and `ar`.
+**PL-F — The right-to-left conversion.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). Every stylesheet consumed by Vite is inside the direction gate, every
+inline-axis declaration uses logical properties, and `composer assets:direction` fails the build on a new
+physical declaration with an allowlist that ships empty. The three layouts emit `dir` from the resolved
+locale, and `tests/Browser/right-to-left.spec.ts` asserts direction, zero horizontal overflow and critical
+control reachability on the public, administrator and portal entry surfaces in both `he` and `ar`.
 
 The matrix's **language axis** is built. `desktop-chromium-he`, `desktop-chromium-ar`, `mobile-chromium-he`
 and `mobile-chromium-ar` run those journeys and file a baseline under the project name, and the
 source-language projects keep their original names so their committed baselines stay attached to them.
 
-What remains is the screenshots. The four right-to-left baseline directories are empty, because producing
-a baseline needs a running stack and a browser, which is the `P2-E` matrix.
+Twelve browser-owned right-to-left screenshots are committed across the four `he` and `ar` projects. The
+source-language projects retain their original names and baselines, so no locale compares against another
+locale's pixels.
 
 *The enforcing check:* the `P2-E` matrix runs `he` and `ar` against their own baselines, with the same
 zero-horizontal-overflow and zero-inaccessible-control acceptance as every other locale.
@@ -1828,18 +1707,16 @@ translation.
 *The enforcing check:* a catalogue-completeness check fails when any of the nine is missing an identifier
 the source catalogue declares, so "we shipped eight and a half languages" is not a state the build permits.
 
-**Exit gate, Gate A half.** Messages resolve by stable semantic identifier through the four-step chain,
-formatted by ICU — **met**. `default_locale` selects a language and the layouts emit `lang` and `dir` from
-the resolved locale — **met**. The hardcoded-string gate passes on a clean tree and fails on a reintroduction,
-but `en-GB` is not fully extracted: 28 of 76 templates are enforced, the other 48 remain in the extraction
-register, and console output and user-facing source error paths remain outside its present scope. Site and
-organization overrides are stored, administered and resolved without a deployment — **met**. Content is a
-translation group with per-locale slugs, per-locale publication state, a declared fallback, automatic `hreflang`
-and a shipped selector. Definition labels carry locales without moving an untranslated document's checksum.
-An extension declares translation-set inventory through the frozen contract; the additive item-to-set association
-remains `V2-LNG-012`. Right-to-left styles and locale-scoped browser projects are built, but the four baseline
-directories remain empty and their visual qualification remains `V2-LNG-009`. This Gate A half does not pass until
-the remaining findings close and current three-engine evidence is green at the qualified commit.
+**Exit gate, Gate A half.** **Met.** Messages resolve by stable semantic identifier through the four-step
+chain and format through ICU. `default_locale` selects a language and layouts emit `lang` and `dir` from the
+resolved locale. Every template, all 44 registered console commands and user-facing source error paths resolve
+through the 2,102-message `en-GB` catalogue, with the hardcoded-string gate enforcing the closed inventory.
+Site and organization overrides are stored, administered and resolved without deployment. Content carries
+translation groups, per-locale slugs and publication state, declared fallback, automatic `hreflang` and a
+shipped selector; definition labels carry locales without moving an untranslated document's checksum; and
+extension-contributed items bind to their declared translation sets. Every build stylesheet is direction
+checked and the four `he`/`ar` browser projects own committed baselines. The completed work is recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md).
 
 **Exit gate, Gate B half.** All nine catalogues complete with no missing identifier, and per-locale browser,
 accessibility and visual qualification passing for each.

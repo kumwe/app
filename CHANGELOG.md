@@ -1,10 +1,11 @@
 # Changelog
 
-Everything this programme has **finished** is recorded here. Everything it has **still to do** lives in
-[`docs/roadmap/`](docs/roadmap/README.md) — objectives, gates, work packages and the open findings ledger.
-Those are the only two places, and they never overlap: a work package leaves the roadmap and arrives here in
-the pull request that completes it. If you want to know what is coming next, read
-[`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md); if you want to know what already shipped, read this file.
+Everything this programme has **finished** is recorded here. Its durable objectives, gates and package
+contracts live in [`docs/roadmap/README.md`](docs/roadmap/README.md); its **still-to-do** identifiers live in
+the [`STATUS.md`](docs/roadmap/STATUS.md) open-work table and open findings ledger. When planned work
+completes, its live-index entry leaves those indexes and arrives here in the same pull request, while its
+normative package definition remains. If you want to know what comes next, read STATUS; if you want to know
+what already shipped, read this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -23,7 +24,78 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
-- **Gate A's three-engine regression criterion has exact released evidence.** Commit
+- **Gate A's executable quality evidence is complete at one verification candidate.** Verification candidate
+  [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
+  passed [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541),
+  [Nightly run `32579525381`](https://github.com/kumwe/app/actions/runs/32579525381),
+  [Security run `32579525379`](https://github.com/kumwe/app/actions/runs/32579525379) and
+  [Development Compose run `32579525390`](https://github.com/kumwe/app/actions/runs/32579525390). CI
+  runs the ordinary integration suite, repeat pass and reverse-class-order pass against one database on
+  MariaDB LTS, MySQL 8.4 and PostgreSQL 17, with an empty idempotency record and independently checked
+  collection and runner status. Process-scoped fixture shutdown withdraws each run's transient definitions
+  and schema installations while retaining a bounded explicit replay set, so the third pass proves reuse
+  instead of consuming an ever-growing global catalogue. PostgreSQL disables PDO's prepared-statement reuse
+  at the connection boundary, and the formerly skipped nine-allocation identity proof now runs beside a
+  minimal PDO-only regression. Merge exercises the closed critical browser journeys in desktop/mobile
+  Chromium on all three databases; Nightly exercises Firefox and WebKit at both widths, including keyboard,
+  touch, forced-colour, 200%-zoom and reflow breadth, and enforces first-attempt results independently of
+  retries. Closes `V2-QA-004`, `V2-QA-007`, `V2-QA-008` and `V2-DB-001`; completes `P2-G` and the Gate A
+  slices of `P2-D` and `P2-E`, and completes Gate A's machine criterion 5. Gate A remains unassessed pending
+  the governing interpretation and recorded owner sign-offs. (#102)
+- **REST, CLI and MCP are retained machine contracts rather than generated documentation snapshots.** Each
+  surface now owns an immutable generation with bounded inputs, schemas, stable errors, risk and intentional
+  exclusions; incompatible changes require an additive successor and generators refuse to replace retained
+  bytes. Executable parity walks the live router, console application and MCP catalogue in both directions.
+  Extension manifest key inventories are derived from the parser authority and compared with every frozen
+  generation, so a parser change cannot silently widen old grammar. Closes `V2-DOC-003` and completes `P0-C`
+  and `P2-F`. (#102)
+- **The last enterprise-document follow-ups preserve their invariants under indirect mutation.** A definition's
+  immutable catalogue coordinate now owns a non-site sequence's identity, so widening or moving ownership
+  cannot restart its counter. A hard-delete `set_null` sweep evaluates the posting period of every referencing
+  source record; one closed source refuses and rolls back the target deletion and every induced version/audit
+  write atomically. Closes `V2-ERP-008` and `V2-ERP-009`. (#102)
+- **The right-to-left gate covers every stylesheet the production build consumes.** Direction verification now
+  follows the Vite input set, the formerly physical portal and administrator declarations use logical
+  properties, and corrected `he`/`ar` baselines prove the brand, borders and spacing resolve on the proper
+  inline side. Closes `V2-LNG-013`. (#102)
+- **The roadmap is the sole live programme authority.** The executed gap matrix is retained explicitly as
+  historical evidence, while current sequencing, open findings and gate state live only under
+  `docs/roadmap/`; the changelog remains the completed-work authority. The roadmap verifier now also accepts
+  a ready Gate A summary when all thirteen criteria are met and continues to fail it when any criterion is
+  unmet. Closes `V2-DOC-001`. (#102)
+- **Resident extension code is withdrawn and fenced with its signed generation.** At commit
+  [`798f896b`](https://github.com/kumwe/app/commit/798f896b55da76f19cb4d01aee05cf74196bb44b),
+  disable, quarantine,
+  emergency trust revocation and runtime rematerialization withdraw providers, contribution registries,
+  theme/view/template paths and catalogues from the resident graph while preserving published definitions
+  and extension-owned data. Every execution entry checks the live generation authority fail closed, so a
+  superseded synchronous listener cannot enter extension code, and recovery composition exposes neither
+  extension PHP nor an extension template namespace. Lifecycle integration and registry/generation unit
+  evidence complete `P1-F`. (#102)
+- **The transaction and aggregate seams required by Gate A are extracted and proved.** Candidate
+  [`798f896b`](https://github.com/kumwe/app/commit/798f896b55da76f19cb4d01aee05cf74196bb44b)
+  proved `TransactionBoundaryEngineIntegrationTest` across commit, rollback, translated retryable and
+  non-retryable failures, nesting, audit and outbox atomicity on MariaDB, MySQL and PostgreSQL. The stable
+  `BusinessRecordService` facade now delegates typed relationship/owned-line decisions to
+  `BusinessRecordRelationshipCoordinator` and coherent revision/audit/event publication to
+  `BusinessRecordMutationPublication`, while retaining the one authoritative transaction and all public
+  surface behavior. Commit
+  [`8455b376`](https://github.com/kumwe/app/commit/8455b3769f166077e492a415e888b3c510c74fbd)
+  removes the facade's final duplicate portal/reference-policy copies so the relationship seam is the single
+  decision owner; verification candidate
+  [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
+  passed the focused refusal/publication proof and complete gates with that final shape. Completes `P3-A` and
+  `P3-E`. (#102)
+- **The business-group ownership contract has its complete three-engine proof.** At commit
+  [`798f896b`](https://github.com/kumwe/app/commit/798f896b55da76f19cb4d01aee05cf74196bb44b),
+  a four-business fixture
+  exercises migration replay, contained and overlapping group visibility, unchanged site isolation,
+  site-only resource refusal, member disablement, audited and reversible widening, guarded narrowing,
+  exact consolidated reporting and the no-extra-query authorization path on MariaDB, MySQL and PostgreSQL.
+  Completes `P3-F`. (#102)
+- **Gate A's three-engine regression criterion has current-source and exact released evidence.** Verification
+  candidate [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
+  passed current-source CI, Nightly, Security and Development Compose. Released-evidence commit
   [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7)
   passed the complete quality, MariaDB LTS, MySQL 8.4, PostgreSQL 17, browser, deployment, security and
   Development Compose workflows. Continuous-release run
@@ -31,9 +103,8 @@ development programme, from the architecture decision that opened it to the curr
   [`v2.0.0-alpha.4`](https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.4), and release run
   [run 32472065990](https://github.com/kumwe/app/actions/runs/32472065990) built, signed/attested and published
   the Composer-project archive, checksums, SBOMs and signed checksum bundle from those exact bytes. This is
-  the executable evidence Gate A criterion 12
-  required; the alpha label does not turn Gate A into a release claim or replace its remaining truthful-gate
-  criterion.
+  the retained released-artifact evidence Gate A criterion 12 requires. The alpha label does not turn Gate A
+  into a release claim or replace its pending governance and recorded owner sign-offs.
 - **The documentation rule for `tests/` is enforced, not merely written down.** `docs/coding-standard.md`
   has asked for a documentation block on every test class and test method since it was written, and
   `composer docs:api` scanned `src/` only, so the rule had never once been checked. `composer docs:tests`
@@ -316,12 +387,13 @@ development programme, from the architecture decision that opened it to the curr
   one authority for sequencing: two gates, ten decisions, an enterprise capacity contract, a per-primitive
   judgement of what an enterprise resource planning system needs against what the code actually provides, and
   an architecture decision record for resource-ownership scope. (`fa86362`)
-- **This changelog, and the lifecycle rule that keeps it and the roadmap apart.** `docs/roadmap/` holds
-  forward work only; a completed work package leaves it and lands here in the same pull request that completes
-  it, so the roadmap shrinks as the programme advances instead of accumulating a tail of finished items. The
+- **This changelog, and the lifecycle rule that keeps programme state unambiguous.** The STATUS open-work
+  table and `findings.json` hold forward-work identifiers only; a completed identifier leaves its live index
+  and lands here in the same pull request, while its normative package definition remains in README. The
   rule is stated at the top of the roadmap and beside the pointer in `AGENTS.md`, and enforced by
   `tools/verify-roadmap.php` — `composer roadmap:check`, inside `composer qa`, and again from the architecture
-  suite — which fails when `findings.json` carries an entry in state `closed` and names what to move where.
+  suite — which fails when `findings.json` carries an entry in state `closed` or the STATUS open-work table
+  carries a completion marker, and names what to move where.
   The fifty-six findings already closed at consolidation were moved out of the ledger and into the entries
   that follow.
 - **A structured observability contract that the runtime is obliged to honour.** `config/observability.php`
@@ -1092,6 +1164,14 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **Browser lifecycle tests now converge on the authenticated runtime without hiding product failures.** A
+  shared bounded helper probes readiness with the Playwright context's authenticated request client, accepts
+  only HTTP 200 or the exact no-store 503 convergence contract, disposes every probe response, and then makes
+  one browser navigation that must return 200. Administrator, portal and theme lifecycles therefore survive
+  Firefox's `NS_ERROR_NET_ERROR_RESPONSE` during expected container convergence without broad transport
+  retries or relaxed assertions; candidate
+  [`798f896b`](https://github.com/kumwe/app/commit/798f896b55da76f19cb4d01aee05cf74196bb44b)
+  passed every Chromium, Firefox and WebKit lifecycle on first attempt. (#102)
 - **The Firefox/WebKit breadth gate now tests the contracts each browser can actually render.** A generated
   business denial negotiates a themed, non-enumerating HTML 403 for browser navigation while preserving the
   problem document for machine callers; one-column stacks explicitly clamp their track, access form controls
