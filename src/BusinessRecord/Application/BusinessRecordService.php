@@ -13,10 +13,7 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Automation\IdempotencyKey;
 use Kumwe\App\Application\Persistence\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\App\BusinessDefinition\Domain\ComputationMode;
 use Kumwe\App\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
@@ -25,10 +22,7 @@ use Kumwe\App\BusinessDefinition\Domain\NumberSequenceFormat;
 use Kumwe\App\BusinessDefinition\Domain\NumberSequenceReset;
 use Kumwe\App\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
-use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
 use Kumwe\App\BusinessRecord\Application\Command\ArchiveRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
@@ -65,8 +59,6 @@ use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
@@ -139,6 +131,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *         submitted values into a stored value set.
      * @param  BusinessRecordAccessController         $recordAccess    Canonical row, field, action, and relation
      *         policy planner applied before every repository call.
+     * @param  BusinessRecordRelationshipCoordinator  $relationships   Typed relationship and owned-line
+     *         validation seam invoked inside this service's transaction.
      * @param  ApprovalService                        $approvals       Generic maker-checker and step-up workflow.
      * @param  ResourceSiteOwnershipWriter            $ownership       Records approval-resource ownership with
      *         create and removes it only with a physical delete.
@@ -146,19 +140,18 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *         and transition capabilities.
      * @param  TransactionManager                     $transactions    Owner of the single transaction each
      *         operation runs inside.
-     * @param  AuditRecorder                          $audit           Sink for the redacted audit entry every
-     *         mutation writes.
+     * @param  BusinessRecordMutationPublication      $publication     Revision, audit and event coordinator
+     *         invoked inside this service's authoritative transaction.
      * @param  RecordFingerprint                      $fingerprints    Keyed digest used for idempotency
      *         scopes and for identities held in the trail.
      * @param  ClockInterface                         $clock           Supplies the one instant stamped on
      *         every row a mutation touches.
      * @param  PostingPeriodLock                      $postingPeriods  Declarative temporal lock evaluated
-     *         before the mutation fence on every mutation path.
+     *         before the mutation fence for an addressed record and immediately before any source record
+     *         an inbound set-null delete sweep would rewrite.
      * @param  PostingPeriodCalendar                  $periodCalendar  Containment seam a `fiscal-period`
      *         number sequence resolves its counter's period key through, from the record's declared
      *         posting date.
-     * @param  ?BusinessRecordMutationEventPublisher  $events          Transactional domain and integration
-     *         event publisher; nullable only for isolated legacy tests.
      * @param  BusinessRecordReplayWindow             $replayWindow    Declared horizons over which a
      *         caller-minted operation identifier replays, and over which it is remembered so a late
      *         repeat is refused by name instead of applied twice.
@@ -176,16 +169,16 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         private RecordValueCodec $values,
         private RecordRuleValidator $rules,
         private BusinessRecordAccessController $recordAccess,
+        private BusinessRecordRelationshipCoordinator $relationships,
         private ApprovalService $approvals,
         private ResourceSiteOwnershipWriter $ownership,
         private AuthorizationGateway $authorization,
         private TransactionManager $transactions,
-        private AuditRecorder $audit,
+        private BusinessRecordMutationPublication $publication,
         private RecordFingerprint $fingerprints,
         private ClockInterface $clock,
         private PostingPeriodLock $postingPeriods,
         private PostingPeriodCalendar $periodCalendar,
-        private ?BusinessRecordMutationEventPublisher $events = null,
         private BusinessRecordReplayWindow $replayWindow = new BusinessRecordReplayWindow(),
     ) {
     }
@@ -285,7 +278,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $recordKey,
                         $recordId,
                         $this->allocateNumbers($resolved, $scope, $now, $command->values),
-                        $this->invariantLineValues($command->context, $resolved, null),
+                        $this->relationships->invariantLineValues($command->context, $resolved, null),
                     );
                 } catch (BusinessRecordValidationFailed $exception) {
                     throw $this->validationForAccess(
@@ -329,7 +322,14 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $command->context->site(),
                 );
                 $changed = array_keys($record->values());
-                $this->recordMutation($command->context, $resolved, $record, 'create', $changed, $now);
+                $this->publication->publish(
+                    $command->context,
+                    $resolved->definition,
+                    $record,
+                    'create',
+                    $changed,
+                    $now,
+                );
 
                 return $this->result($record, 'create');
             },
@@ -526,7 +526,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             }
             $relatedAccess = $sourceAccess->related($query->relatedHandle)
                 ?? throw new BusinessRecordNotFound();
-            [$targetIdentifier, $relationship] = $this->relatedTarget(
+            [$targetIdentifier, $relationship] = $this->relationships->relatedTarget(
                 $source->definition,
                 $query->relatedHandle,
             );
@@ -546,7 +546,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 if (
                     $field?->type !== 'core.entity_reference'
                     || !$sourceAccess->fields->allows($usage, $field->handle)
-                    || !$this->inputFieldAvailable($field, $usage)
+                    || !$this->relationships->inputFieldAvailable($field, $usage)
                 ) {
                     throw new BusinessRecordNotFound();
                 }
@@ -556,11 +556,15 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $target = $this->definitions->forCreate($query->context, $targetIdentifier);
             $targetGeneration->assertMatches($target);
             $targetScope = $this->scope($target, $query->context, $query->organizationIdentifier);
-            $this->assertPortalTargetOperation($query->context, $target->definition, PortalOperation::Browse);
+            $this->relationships->assertPortalTargetOperation(
+                $query->context,
+                $target->definition,
+                PortalOperation::Browse,
+            );
             if ($relationship !== null && $sourceScope->toArray() !== $targetScope->toArray()) {
                 throw new BusinessRecordNotFound();
             }
-            if (!$this->relatedTargetAccessible($target->definition, $relatedAccess)) {
+            if (!$this->relationships->relatedTargetAccessible($target->definition, $relatedAccess)) {
                 return new RelatedRecordBrowseResult($target->definition, new RecordBrowseResult([]));
             }
 
@@ -625,8 +629,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $lineScope = $this->scope($line, $query->context, $query->organizationIdentifier);
             $field = $this->optionalField($line->definition, $query->field);
             $choiceAccess = $lineAccess->related($query->field);
-            $this->assertPortalTargetOperation($query->context, $line->definition, PortalOperation::Relation);
-            $this->assertRelatedTargetAccess($line->definition, $lineAccess);
+            $this->relationships->assertPortalTargetOperation(
+                $query->context,
+                $line->definition,
+                PortalOperation::Relation,
+            );
+            $this->relationships->assertRelatedTargetAccess($line->definition, $lineAccess);
             if (
                 $sourceScope->toArray() !== $lineScope->toArray()
                 || $field?->type !== 'core.entity_reference'
@@ -639,7 +647,10 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             ) {
                 throw new BusinessRecordNotFound();
             }
-            [$choiceIdentifier, $nestedRelationship] = $this->relatedTarget($line->definition, $query->field);
+            [$choiceIdentifier, $nestedRelationship] = $this->relationships->relatedTarget(
+                $line->definition,
+                $query->field,
+            );
             if ($nestedRelationship !== null) {
                 throw new BusinessRecordNotFound();
             }
@@ -647,8 +658,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $choice = $this->definitions->forCreate($query->context, $choiceIdentifier);
             $choiceGeneration->assertMatches($choice);
             $choiceScope = $this->scope($choice, $query->context, $query->organizationIdentifier);
-            $this->assertPortalTargetOperation($query->context, $choice->definition, PortalOperation::Browse);
-            $this->assertRelatedTargetAccess($choice->definition, $choiceAccess);
+            $this->relationships->assertPortalTargetOperation(
+                $query->context,
+                $choice->definition,
+                PortalOperation::Browse,
+            );
+            $this->relationships->assertRelatedTargetAccess($choice->definition, $choiceAccess);
 
             return new RelatedRecordBrowseResult(
                 $choice->definition,
@@ -708,8 +723,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $target = $this->definitions->pinned($query->context, $relationship->target, $version);
             $targetGeneration->assertMatches($target);
             $targetScope = $this->scope($target, $query->context, $query->organizationIdentifier);
-            $this->assertPortalTargetOperation($query->context, $target->definition, PortalOperation::Relation);
-            $this->assertRelatedTargetAccess($target->definition, $relatedAccess);
+            $this->relationships->assertPortalTargetOperation(
+                $query->context,
+                $target->definition,
+                PortalOperation::Relation,
+            );
+            $this->relationships->assertRelatedTargetAccess($target->definition, $relatedAccess);
             if ($sourceScope->toArray() !== $targetScope->toArray()) {
                 throw new BusinessRecordNotFound();
             }
@@ -801,7 +820,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $resolved->definition->siteIdentifier,
                         $record->recordKey,
                         $record->recordId,
-                        $this->invariantLineValues($command->context, $resolved, $record),
+                        $this->relationships->invariantLineValues($command->context, $resolved, $record),
                     );
                 } catch (BusinessRecordValidationFailed $exception) {
                     throw $this->validationForAccess(
@@ -823,7 +842,14 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 $updated = $record->updated($values, $command->context->actorId(), $now);
                 $changed = $this->changed($record->values(), $updated->values());
                 $this->writes->update($resolved, $updated, $command->expectedVersion);
-                $this->recordMutation($command->context, $resolved, $updated, 'update', $changed, $now);
+                $this->publication->publish(
+                    $command->context,
+                    $resolved->definition,
+                    $updated,
+                    'update',
+                    $changed,
+                    $now,
+                );
 
                 return $this->result($updated, 'update');
             },
@@ -1059,9 +1085,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 }
                 $updated = $record->transitioned($transition['to'], $command->context->actorId(), $now);
                 $this->writes->update($resolved, $updated, $command->expectedVersion);
-                $this->recordMutation(
+                $this->publication->publish(
                     $command->context,
-                    $resolved,
+                    $resolved->definition,
                     $updated,
                     'action.' . $action->handle,
                     [],
@@ -1349,7 +1375,10 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 );
                 $this->expected($source, $command->expectedVersion);
                 $this->assertRecordMutable($resolved, $source);
-                $relationship = $this->relationship($resolved->definition, $command->relationship);
+                $relationship = $this->relationships->relationship(
+                    $resolved->definition,
+                    $command->relationship,
+                );
                 $relatedAccess = $access->related($relationship->handle)
                     ?? throw new BusinessRecordNotFound();
                 $targetKey = '';
@@ -1358,59 +1387,16 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 $lineDefinition = null;
                 $lineValues = [];
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
-                    $this->assertFieldInput(
-                        $relatedAccess,
-                        FieldAccessUsage::Create,
-                        array_keys($command->targetValues),
-                    );
-                    $lineResolved = $this->lineDefinition($command->context, $resolved, $relationship);
-                    $lineDefinition = $lineResolved->definition;
-                    $this->assertPortalTargetOperation(
-                        $command->context,
-                        $lineDefinition,
-                        PortalOperation::Relation,
-                    );
-                    $this->assertRelatedTargetAccess($lineDefinition, $relatedAccess);
-                    try {
-                        $lineId = $this->values->identity(
-                            $lineDefinition,
-                            $command->targetValues,
-                            $command->targetRecordId,
-                        );
-                    } catch (InvalidArgumentException $exception) {
-                        throw new BusinessRelationshipRejected($exception->getMessage());
-                    }
-                    $targetKey = $lineDefinition->identityStrategy === IdentityStrategy::Uuid
-                        ? $lineId
-                        : Uuid::uuid7()->toString();
-                    try {
-                        $lineValues = $this->rules->create(
-                            $lineDefinition,
-                            $command->targetValues,
-                            $lineDefinition->siteIdentifier,
-                            $targetKey,
-                            $lineId,
-                        );
-                    } catch (BusinessRecordValidationFailed $exception) {
-                        throw $this->validationForAccess(
-                            $exception,
-                            $command->context,
-                            $lineDefinition,
-                            $relatedAccess,
-                            FieldAccessUsage::Create,
-                        );
-                    }
-                    $lineValues = $this->resolveEntityReferences(
-                        $command->context,
-                        $lineDefinition,
+                    $intent = $this->relationships->prepareOwnedLineCreate(
+                        $command,
+                        $resolved,
                         $scope,
+                        $relationship,
                         $relatedAccess,
-                        $lineValues,
-                        array_keys($lineValues),
                     );
-                    if (!$relatedAccess->records->allows($lineValues)) {
-                        throw new BusinessRecordNotFound();
-                    }
+                    $targetKey = $intent->recordKey;
+                    $lineDefinition = $intent->line->definition;
+                    $lineValues = $intent->values;
                 } else {
                     if ($command->targetValues !== []) {
                         throw new BusinessRelationshipRejected('Only owned lines accept embedded target values.');
@@ -1424,12 +1410,15 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $relationship->target,
                     );
                     $targetGeneration->assertMatches($targetResolved);
-                    $this->assertPortalTargetOperation(
+                    $this->relationships->assertPortalTargetOperation(
                         $command->context,
                         $targetResolved->definition,
                         PortalOperation::Relation,
                     );
-                    $this->assertRelatedTargetAccess($targetResolved->definition, $relatedAccess);
+                    $this->relationships->assertRelatedTargetAccess(
+                        $targetResolved->definition,
+                        $relatedAccess,
+                    );
                     [$loadedTarget, , $target] = $this->load(
                         $command->context,
                         $relationship->target,
@@ -1442,10 +1431,14 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         throw new BusinessRecordReferenceConflict();
                     }
                     $targetResolved = $loadedTarget;
-                    if (!$relatedAccess->records->allows($target->values())) {
-                        throw new BusinessRecordNotFound();
-                    }
-                    $this->sameScope($source, $target);
+                    $this->relationships->assertExistingTarget(
+                        $command->context,
+                        $source,
+                        $targetResolved->definition,
+                        $target,
+                        $relatedAccess,
+                        PortalOperation::Relation,
+                    );
                     $targetKey = $target->recordKey;
                 }
                 $write = $this->writes->relate(
@@ -1466,10 +1459,10 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $this->assertRecordMutable($targetResolved, $write->target);
                 }
                 $updated = $write->source;
-                $this->assertAggregateInvariants($command->context, $resolved, $updated);
-                $this->recordMutation(
+                $this->relationships->assertAggregateInvariants($command->context, $resolved, $updated);
+                $this->publication->publish(
                     $command->context,
-                    $resolved,
+                    $resolved->definition,
                     $updated,
                     'relate.' . $relationship->handle,
                     [$relationship->handle],
@@ -1482,9 +1475,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     ),
                 );
                 if ($write->target !== null && $targetResolved !== null && $write->targetRelationship !== null) {
-                    $this->recordMutation(
+                    $this->publication->publish(
                         $command->context,
-                        $targetResolved,
+                        $targetResolved->definition,
                         $write->target,
                         'relate.' . $write->targetRelationship,
                         [$write->targetRelationship],
@@ -1567,28 +1560,24 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 );
                 $this->expected($source, $command->expectedVersion);
                 $this->assertRecordMutable($resolved, $source);
-                $relationship = $this->relationship($resolved->definition, $command->relationship);
+                $relationship = $this->relationships->relationship(
+                    $resolved->definition,
+                    $command->relationship,
+                );
                 $relatedAccess = $access->related($relationship->handle)
                     ?? throw new BusinessRecordNotFound();
                 $targetResolved = null;
                 $target = null;
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
-                    $line = $this->lineDefinition($command->context, $resolved, $relationship);
-                    $this->assertPortalTargetOperation(
+                    $targetKey = $this->relationships->ownedLineKey(
                         $command->context,
-                        $line->definition,
-                        PortalOperation::Relation,
-                    );
-                    $this->assertRelatedTargetAccess($line->definition, $relatedAccess);
-                    $identity = $this->reads->ownedLineIdentity(
                         $resolved,
                         $source,
                         $relationship,
-                        $line,
                         $relatedAccess,
                         $command->targetRecordId,
-                    ) ?? throw new BusinessRecordNotFound();
-                    $targetKey = $identity->recordKey;
+                        PortalOperation::Relation,
+                    );
                 } else {
                     $targetGeneration = $this->mutationFence->lock(
                         $command->context,
@@ -1599,12 +1588,15 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $relationship->target,
                     );
                     $targetGeneration->assertMatches($targetResolved);
-                    $this->assertPortalTargetOperation(
+                    $this->relationships->assertPortalTargetOperation(
                         $command->context,
                         $targetResolved->definition,
                         PortalOperation::Relation,
                     );
-                    $this->assertRelatedTargetAccess($targetResolved->definition, $relatedAccess);
+                    $this->relationships->assertRelatedTargetAccess(
+                        $targetResolved->definition,
+                        $relatedAccess,
+                    );
                     [$loadedTarget, , $target] = $this->load(
                         $command->context,
                         $relationship->target,
@@ -1619,9 +1611,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         throw new BusinessRecordReferenceConflict();
                     }
                     $targetResolved = $loadedTarget;
-                    if (!$relatedAccess->records->allows($target->values())) {
-                        throw new BusinessRecordNotFound();
-                    }
+                    $this->relationships->assertTargetRow($target, $relatedAccess);
                     $targetKey = $target->recordKey;
                 }
                 $write = $this->writes->unrelate(
@@ -1639,10 +1629,10 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $this->assertRecordMutable($targetResolved, $write->target);
                 }
                 $updated = $write->source;
-                $this->assertAggregateInvariants($command->context, $resolved, $updated);
-                $this->recordMutation(
+                $this->relationships->assertAggregateInvariants($command->context, $resolved, $updated);
+                $this->publication->publish(
                     $command->context,
-                    $resolved,
+                    $resolved->definition,
                     $updated,
                     'unrelate.' . $relationship->handle,
                     [$relationship->handle],
@@ -1650,9 +1640,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $this->relationshipEvidence($relationship->handle, $command->targetRecordId),
                 );
                 if ($write->target !== null && $targetResolved !== null && $write->targetRelationship !== null) {
-                    $this->recordMutation(
+                    $this->publication->publish(
                         $command->context,
-                        $targetResolved,
+                        $targetResolved->definition,
                         $write->target,
                         'unrelate.' . $write->targetRelationship,
                         [$write->targetRelationship],
@@ -1732,30 +1722,24 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 );
                 $this->expected($source, $command->expectedVersion);
                 $this->assertRecordMutable($resolved, $source);
-                $relationship = $this->relationship($resolved->definition, $command->relationship);
+                $relationship = $this->relationships->relationship(
+                    $resolved->definition,
+                    $command->relationship,
+                );
                 $relatedAccess = $access->related($relationship->handle)
                     ?? throw new BusinessRecordNotFound();
                 $keys = [];
                 $targetResolved = null;
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
-                    $line = $this->lineDefinition($command->context, $resolved, $relationship);
-                    $this->assertPortalTargetOperation(
+                    $keys = $this->relationships->ownedLineKeys(
                         $command->context,
-                        $line->definition,
+                        $resolved,
+                        $source,
+                        $relationship,
+                        $relatedAccess,
+                        $command->orderedRecordIds,
                         PortalOperation::Reorder,
                     );
-                    $this->assertRelatedTargetAccess($line->definition, $relatedAccess);
-                    foreach ($command->orderedRecordIds as $recordId) {
-                        $identity = $this->reads->ownedLineIdentity(
-                            $resolved,
-                            $source,
-                            $relationship,
-                            $line,
-                            $relatedAccess,
-                            $recordId,
-                        ) ?? throw new BusinessRecordNotFound();
-                        $keys[] = $identity->recordKey;
-                    }
                 } else {
                     $targetGeneration = $this->mutationFence->lock(
                         $command->context,
@@ -1763,12 +1747,15 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     );
                     $targetResolved = $this->definitions->forCreate($command->context, $relationship->target);
                     $targetGeneration->assertMatches($targetResolved);
-                    $this->assertPortalTargetOperation(
+                    $this->relationships->assertPortalTargetOperation(
                         $command->context,
                         $targetResolved->definition,
                         PortalOperation::Reorder,
                     );
-                    $this->assertRelatedTargetAccess($targetResolved->definition, $relatedAccess);
+                    $this->relationships->assertRelatedTargetAccess(
+                        $targetResolved->definition,
+                        $relatedAccess,
+                    );
                     foreach ($command->orderedRecordIds as $recordId) {
                         [$loadedTarget, , $target] = $this->load(
                             $command->context,
@@ -1783,16 +1770,18 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         if ($loadedTarget->definition->id !== $targetResolved->definition->id) {
                             throw new BusinessRecordReferenceConflict();
                         }
-                        if (!$relatedAccess->records->allows($target->values())) {
-                            throw new BusinessRecordNotFound();
-                        }
-                        $this->sameScope($source, $target);
+                        $this->relationships->assertExistingTarget(
+                            $command->context,
+                            $source,
+                            $targetResolved->definition,
+                            $target,
+                            $relatedAccess,
+                            PortalOperation::Reorder,
+                        );
                         $keys[] = $target->recordKey;
                     }
                 }
-                if (count(array_unique($keys)) !== count($keys)) {
-                    throw new BusinessRelationshipRejected('Normalized relationship identities are duplicated.');
-                }
+                $this->relationships->assertUniqueTargetKeys($keys);
                 $updated = $this->writes->reorder(
                     $resolved,
                     $source,
@@ -1803,9 +1792,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $command->expectedVersion,
                     $targetResolved,
                 );
-                $this->recordMutation(
+                $this->publication->publish(
                     $command->context,
-                    $resolved,
+                    $resolved->definition,
                     $updated,
                     'reorder.' . $relationship->handle,
                     [$relationship->handle],
@@ -2141,33 +2130,16 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $this->expected($header, (int) $command->expectedVersion);
             $this->assertRecordMutable($resolved, $header);
         }
-        $relationship = $this->relationship($resolved->definition, $command->relationship);
-        if ($relationship->kind !== RelationshipKind::OwnedLineCollection) {
-            throw new BusinessRelationshipRejected('A document is written over a declared owned-line collection.');
-        }
-        $relatedAccess = $access->related($relationship->handle) ?? throw new BusinessRecordNotFound();
-        $lineResolved = $this->lineDefinition($command->context, $resolved, $relationship);
-        $lineDefinition = $lineResolved->definition;
-        if ($lineDefinition->invariantLineDependencies() !== []) {
-            throw new BusinessRelationshipRejected(
-                'A line type declaring its own aggregate invariant needs a command that writes its lines too.',
-            );
-        }
-        $this->assertPortalTargetOperation($command->context, $lineDefinition, PortalOperation::Relation);
-        $this->assertRelatedTargetAccess($lineDefinition, $relatedAccess);
-        $stored = $this->storedDocumentLines($resolved, $header, $relationship, $lineResolved, $relatedAccess);
-        [$prepared, $removed, $renumber] = $this->prepareDocumentLines(
+        $lineIntent = $this->relationships->prepareDocumentMutation(
             $command,
+            $resolved,
             $scope,
-            $relatedAccess,
-            $lineDefinition,
-            $stored,
+            $header,
+            $access,
         );
-        $collections = $this->invariantLineValues($command->context, $resolved, $header, [
-            $relationship->handle => array_map(
-                static fn (OwnedLineWrite $line): array => RecordExpressionValues::from($line->values),
-                $prepared,
-            ),
+        $relationship = $lineIntent->relationship;
+        $collections = $this->relationships->invariantLineValues($command->context, $resolved, $header, [
+            $relationship->handle => $lineIntent->invariantValues(),
         ]);
         [$record, $changed] = $creating
             ? $this->createDocumentHeader($command, $resolved, $scope, $access, $collections, $now)
@@ -2176,255 +2148,25 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $resolved,
             $record,
             $relationship,
-            $lineDefinition,
-            $prepared,
-            $removed,
-            $renumber,
+            $lineIntent->line->definition,
+            $lineIntent->writes,
+            $lineIntent->removed,
+            $lineIntent->renumber,
             $command->context->actorId(),
             $now,
         );
-        $this->recordMutation(
+        $this->publication->publish(
             $command->context,
-            $resolved,
+            $resolved->definition,
             $record,
             'document.' . $command->intent->value,
             [...$changed, $relationship->handle],
             $now,
-            $this->documentEvidence($relationship->handle, $prepared, $removed),
+            $this->documentEvidence($relationship->handle, $lineIntent->writes, $lineIntent->removed),
             $command->capturedAt,
         );
 
         return $this->result($record, 'document.' . $command->intent->value);
-    }
-
-    /**
-     * Read the document's stored collection whole, and refuse a caller that cannot see all of it.
-     *
-     * A document command replaces a collection rather than adding to one, so working from a filtered view
-     * of it would silently delete the lines the actor was not shown. The read is therefore unfiltered and
-     * the policy is applied here instead: a stored line the relationship's row policy hides fails the whole
-     * command closed, which is the only safe answer when the alternative is destroying data invisibly.
-     *
-     * @param   ResolvedBusinessDefinition  $resolved       Pinned header definition and its installation.
-     * @param   ?BusinessRecord             $header         Document being amended, or null while creating.
-     * @param   RelationshipDefinition      $relationship   Owned-line collection being written.
-     * @param   ResolvedBusinessDefinition  $lineResolved   Pinned line definition the rows decode against.
-     * @param   BusinessRecordAccessPlan    $relatedAccess  Row and field policy for the collection.
-     *
-     * @return  array<string, StoredOwnedLine>  Stored lines keyed by caller-facing identity; empty while
-     *          creating, because a document that does not exist holds nothing.
-     *
-     * @throws  BusinessRelationshipRejected  When the stored collection is larger than one command may
-     *          write, so an amend could not describe it whole.
-     * @throws  BusinessRecordNotFound  When the row policy hides one of the stored lines.
-     *
-     * @since   2.0.0
-     */
-    private function storedDocumentLines(
-        ResolvedBusinessDefinition $resolved,
-        ?BusinessRecord $header,
-        RelationshipDefinition $relationship,
-        ResolvedBusinessDefinition $lineResolved,
-        BusinessRecordAccessPlan $relatedAccess,
-    ): array {
-        if ($header === null) {
-            return [];
-        }
-        $rows = $this->reads->ownedLinesForDocumentIntegrity(
-            $resolved,
-            $header,
-            $relationship,
-            $lineResolved,
-            WriteDocumentCommand::MAXIMUM_LINES + 1,
-        );
-        if (count($rows) > WriteDocumentCommand::MAXIMUM_LINES) {
-            throw new BusinessRelationshipRejected('The stored document holds more lines than one command may write.');
-        }
-        $stored = [];
-        foreach ($rows as $row) {
-            if (!$relatedAccess->records->allows($row->values)) {
-                throw new BusinessRecordNotFound();
-            }
-            $stored[$row->recordId] = $row;
-        }
-
-        return $stored;
-    }
-
-    /**
-     * Turn the submitted line list into the collection the write side will store.
-     *
-     * Position comes from the list rather than from the caller, which is what makes two lines in one slot
-     * impossible and a hole in the numbering impossible with it. Identity decides the rest: a line whose
-     * identity the document already holds is amended in place and keeps its storage key, one whose identity
-     * it does not is added, and every stored line the list never names is removed. A line that comes back
-     * spelled exactly as it was stored, in the slot it already held, is marked unmodified and costs no
-     * statement at all.
-     *
-     * @param   WriteDocumentCommand            $command         Document write being prepared.
-     * @param   RecordScope                     $scope           Resolved site and organization the lines
-     *          inherit from their owner.
-     * @param   BusinessRecordAccessPlan        $relatedAccess   Row and field policy for the collection.
-     * @param   EntityTypeDefinition            $lineDefinition  Pinned line type every line is judged
-     *          against.
-     * @param   array<string, StoredOwnedLine>  $stored          Stored collection keyed by line identity.
-     *
-     * @return  array{list<OwnedLineWrite>, list<string>, bool}  The whole collection in position order, the
-     *          storage keys the document no longer holds, and whether any surviving line moved and the
-     *          order therefore has to be rewritten in two passes.
-     *
-     * @throws  BusinessRelationshipRejected  When a line identity cannot be settled, or two lines resolve
-     *          to one identity.
-     * @throws  BusinessRecordValidationFailed  When a line breaks one of its own type's field rules.
-     * @throws  BusinessRecordNotFound  When the row policy would hide a line the command writes.
-     *
-     * @since   2.0.0
-     */
-    private function prepareDocumentLines(
-        WriteDocumentCommand $command,
-        RecordScope $scope,
-        BusinessRecordAccessPlan $relatedAccess,
-        EntityTypeDefinition $lineDefinition,
-        array $stored,
-    ): array {
-        $prepared = [];
-        $claimed = [];
-        $renumber = false;
-        foreach ($command->lines as $position => $line) {
-            try {
-                $lineId = $this->values->identity($lineDefinition, $line->values, $line->recordId);
-            } catch (InvalidArgumentException $exception) {
-                throw new BusinessRelationshipRejected($exception->getMessage());
-            }
-            if (isset($claimed[$lineId])) {
-                throw new BusinessRelationshipRejected('A document names one line identity more than once.');
-            }
-            $claimed[$lineId] = true;
-            $existing = $stored[$lineId] ?? null;
-            if ($existing !== null && $existing->position !== $position) {
-                $renumber = true;
-            }
-            $prepared[] = $this->prepareDocumentLine(
-                $command->context,
-                $scope,
-                $relatedAccess,
-                $lineDefinition,
-                $line,
-                $lineId,
-                $position,
-                $existing,
-            );
-        }
-        if ($renumber) {
-            $prepared = array_map(
-                static fn (OwnedLineWrite $line): OwnedLineWrite => $line->storedVersion === null || $line->modified
-                    ? $line
-                    : new OwnedLineWrite(
-                        $line->recordKey,
-                        $line->recordId,
-                        $line->position,
-                        $line->values,
-                        $line->storedVersion,
-                        true,
-                    ),
-                $prepared,
-            );
-        }
-        $removed = [];
-        foreach ($stored as $identity => $row) {
-            if (!isset($claimed[$identity])) {
-                $removed[] = $row->recordKey;
-            }
-        }
-
-        return [$prepared, $removed, $renumber];
-    }
-
-    /**
-     * Validate one submitted line against the line type and decide whether it has to be written at all.
-     *
-     * A line already in the document is treated as a patch over what it holds, exactly as an ordinary
-     * record update would be, so a caller may resend only the handles that moved. A line being added is
-     * validated as a creation. Either way the result is held against the collection's own row policy
-     * before it is accepted, so a caller cannot write a line into a document it would not be shown.
-     *
-     * @param   ExecutionContext          $context         Actor and site the write runs as.
-     * @param   RecordScope               $scope           Scope entity references are resolved within.
-     * @param   BusinessRecordAccessPlan  $relatedAccess   Row and field policy for the collection.
-     * @param   EntityTypeDefinition      $lineDefinition  Pinned line type the values are judged against.
-     * @param   DocumentLineInput         $line            Submitted line.
-     * @param   string                    $lineId          Caller-facing identity settled for the line.
-     * @param   int                       $position        Slot the line takes, being its index in the list.
-     * @param   ?StoredOwnedLine          $existing        The stored line this one replaces, or null when
-     *          the document is gaining it now.
-     *
-     * @return  OwnedLineWrite  The prepared line, carrying the storage key, the slot, the normalized values
-     *          and whether the row actually has to move.
-     *
-     * @throws  BusinessRecordValidationFailed  When the line breaks one of its type's field rules, or names
-     *          a field the actor may not write.
-     * @throws  BusinessRecordNotFound  When the collection's row policy would hide the resulting line.
-     *
-     * @since   2.0.0
-     */
-    private function prepareDocumentLine(
-        ExecutionContext $context,
-        RecordScope $scope,
-        BusinessRecordAccessPlan $relatedAccess,
-        EntityTypeDefinition $lineDefinition,
-        DocumentLineInput $line,
-        string $lineId,
-        int $position,
-        ?StoredOwnedLine $existing,
-    ): OwnedLineWrite {
-        $usage = $existing === null ? FieldAccessUsage::Create : FieldAccessUsage::Update;
-        $this->assertFieldInput($relatedAccess, $usage, array_keys($line->values));
-        $recordKey = $existing->recordKey
-            ?? ($lineDefinition->identityStrategy === IdentityStrategy::Uuid
-                ? $lineId
-                : Uuid::uuid7()->toString());
-        try {
-            $values = $existing === null
-                ? $this->rules->create(
-                    $lineDefinition,
-                    $line->values,
-                    $lineDefinition->siteIdentifier,
-                    $recordKey,
-                    $lineId,
-                )
-                : $this->rules->update(
-                    $lineDefinition,
-                    $existing->values,
-                    $line->values,
-                    $lineDefinition->siteIdentifier,
-                    $recordKey,
-                    $lineId,
-                );
-        } catch (BusinessRecordValidationFailed $exception) {
-            throw $this->validationForAccess($exception, $context, $lineDefinition, $relatedAccess, $usage);
-        }
-        $values = $this->resolveEntityReferences(
-            $context,
-            $lineDefinition,
-            $scope,
-            $relatedAccess,
-            $values,
-            $existing === null ? array_keys($values) : array_keys($line->values),
-        );
-        if (!$relatedAccess->records->allows($values)) {
-            throw new BusinessRecordNotFound();
-        }
-
-        return new OwnedLineWrite(
-            $recordKey,
-            $lineId,
-            $position,
-            $values,
-            $existing?->version,
-            $existing === null
-                || $existing->position !== $position
-                || $this->changed($existing->values, $values) !== [],
-        );
     }
 
     /**
@@ -2606,106 +2348,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     }
 
     /**
-     * Gather the owned-line collections this definition's invariants reduce, without reading the rest.
-     *
-     * A definition that declares no aggregate invariant costs nothing here — no lock, no statement, no
-     * decode — which is what keeps the rule free for the records that do not use it. Where one is
-     * declared, the caller's own prepared collection is preferred over storage, because the rule has to be
-     * judged on the document the command is about to write and not on the one it is replacing.
-     *
-     * @param   ExecutionContext                                 $context   Actor and site the gather runs as.
-     * @param   ResolvedBusinessDefinition                       $resolved  Pinned definition whose invariants name the
-     *          collections.
-     * @param ?BusinessRecord $record Record whose stored collections are read, or null
-     *          while a record is being created and therefore holds none.
-     * @param   array<string, list<array<string, scalar|null>>>  $prepared  Collections the caller has
-     *          already settled, keyed by relationship handle, which win over what is stored.
-     *
-     * @return  array<string, list<array<string, scalar|null>>>  Every collection the invariants name, keyed
-     *          by relationship handle and flattened into the expression vocabulary; empty when none does.
-     *
-     * @throws  BusinessRelationshipRejected  When a stored collection an invariant reduces is larger than
-     *          one command may write, so the rule could not be judged over the whole of it.
-     *
-     * @since   2.0.0
-     */
-    private function invariantLineValues(
-        ExecutionContext $context,
-        ResolvedBusinessDefinition $resolved,
-        ?BusinessRecord $record,
-        array $prepared = [],
-    ): array {
-        $collections = [];
-        foreach (array_keys($resolved->definition->invariantLineDependencies()) as $handle) {
-            if (array_key_exists($handle, $prepared)) {
-                $collections[$handle] = $prepared[$handle];
-                continue;
-            }
-            if ($record === null) {
-                $collections[$handle] = [];
-                continue;
-            }
-            $relationship = $this->relationship($resolved->definition, $handle);
-            $lineResolved = $this->lineDefinition($context, $resolved, $relationship);
-            $rows = $this->reads->ownedLinesForDocumentIntegrity(
-                $resolved,
-                $record,
-                $relationship,
-                $lineResolved,
-                WriteDocumentCommand::MAXIMUM_LINES + 1,
-            );
-            if (count($rows) > WriteDocumentCommand::MAXIMUM_LINES) {
-                throw new BusinessRelationshipRejected(
-                    'A document holds more lines than one aggregate invariant may reduce.',
-                );
-            }
-            $collections[$handle] = array_map(
-                static fn (StoredOwnedLine $row): array => RecordExpressionValues::from($row->values),
-                $rows,
-            );
-        }
-
-        return $collections;
-    }
-
-    /**
-     * Re-judge the aggregate invariants of a record whose collection a single-line write has just changed.
-     *
-     * `relate()` and `unrelate()` move one member of a collection without touching a single header value,
-     * so a rule that spans the document can be broken by them even though the ordinary update path never
-     * runs. The check reads the collection as it now stands, inside the same transaction, so a link that
-     * would leave the document inconsistent takes its own write down with it rather than committing.
-     *
-     * A definition declaring no aggregate invariant reaches no statement here at all.
-     *
-     * @param   ExecutionContext            $context   Actor and site the write ran as.
-     * @param   ResolvedBusinessDefinition  $resolved  Pinned definition supplying the invariants.
-     * @param   BusinessRecord              $record    Record at the version the write produced.
-     *
-     * @return  void
-     *
-     * @throws  BusinessRecordValidationFailed  When the changed collection breaks an aggregate invariant.
-     * @throws  BusinessRelationshipRejected  When a collection an invariant reduces is larger than one
-     *          command may reduce.
-     *
-     * @since   2.0.0
-     */
-    private function assertAggregateInvariants(
-        ExecutionContext $context,
-        ResolvedBusinessDefinition $resolved,
-        BusinessRecord $record,
-    ): void {
-        if ($resolved->definition->invariantLineDependencies() === []) {
-            return;
-        }
-        $this->rules->assertLineAggregates(
-            $resolved->definition,
-            $record->values(),
-            $this->invariantLineValues($context, $resolved, $record),
-        );
-    }
-
-    /**
      * Reduce a document write to the bounded summary its revision, audit entry and event carry.
      *
      * A thousand-line document produces one entry, and that entry describes the shape of the change rather
@@ -2853,7 +2495,14 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $context->site(),
                     );
                 }
-                $this->recordMutation($context, $resolved, $updated, $operation, [], $now);
+                $this->publication->publish(
+                    $context,
+                    $resolved->definition,
+                    $updated,
+                    $operation,
+                    [],
+                    $now,
+                );
 
                 return $this->result($updated, $operation, $operation === 'delete');
             },
@@ -2867,7 +2516,10 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * first. Every active installed definition on the site is scanned for declared relationships aimed at
      * this one whose target column sits directly on the referencing record's own table; each match is
      * fenced, re-pinned to the version its rows were written under, and unrelated one row at a time so
-     * that every source is re-versioned and audited in its own right. What the declared delete behaviour
+     * that every source is re-versioned and audited in its own right. A source's posting period is judged
+     * immediately before that rewrite inside the deleting transaction; a closed source therefore refuses
+     * the delete by name and rolls back every earlier source version, revision and audit entry in the same
+     * sweep. What the declared delete behaviour
      * decides is which of three things happens: a cascading relationship is refused outright — whether or
      * not any row currently uses it — because non-owned cascade deletion needs a bounded workflow this
      * path does not provide, a restricting one is detected through a one-row internal integrity probe, and
@@ -2888,6 +2540,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @throws  BusinessRecordImmutable  When a record holding a set-null reference to the one being
      *          deleted is closed by its workflow state, because clearing the reference would rewrite a
      *          closed document's own fields.
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed  When a
+     *          record holding a set-null reference is dated in a closed posting period; the whole delete
+     *          transaction, including earlier source rewrites, is rolled back.
      * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When a
      *          referencing definition or the version one of its rows was written under cannot be resolved.
      * @throws  BusinessRecordSchemaUnavailable  When an active installation disagrees with the definition
@@ -2960,6 +2615,11 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $source->definitionVersion,
                     );
                     $generation->assertMatches($sourceResolved);
+                    $this->postingPeriods->assertMutationOpen(
+                        $sourceResolved->definition,
+                        $source->scope,
+                        $source,
+                    );
                     $this->assertRecordMutable($sourceResolved, $source);
                     $write = $this->writes->unrelate(
                         $sourceResolved,
@@ -2972,9 +2632,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $targetResolved,
                         $target,
                     );
-                    $this->recordMutation(
+                    $this->publication->publish(
                         $context,
-                        $sourceResolved,
+                        $sourceResolved->definition,
                         $write->source,
                         'unrelate.' . $relationship->handle,
                         [$relationship->handle],
@@ -3555,6 +3215,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * containing it through the `PostingPeriodCalendar` seam, because a fiscal period is about when the
      * document is posted and not about when the command happens to run.
      *
+     * A record mode without a site dimension deliberately falls back to the definition's catalog site.
+     * That coordinate is stable rather than mutable ownership state: `business_definition` and
+     * `business_record` are site-only resource categories, and the catalog repository refuses any change
+     * to a definition's identity, site, handle or owner. An attempted widening or move therefore fails
+     * before allocation and cannot restart an existing run under another site coordinate.
+     *
      * @param   ResolvedBusinessDefinition  $resolved         Definition and installed schema the record is
      *          being created against.
      * @param   RecordScope                 $scope            Resolved site and organization the record
@@ -3813,8 +3479,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 $targetGeneration->assertMatches($target);
                 $targetScope = $this->scope($target, $context, $scope->organizationIdentifier);
                 $identityField = $this->identityField($target->definition);
-                $this->assertPortalTargetOperation($context, $target->definition, PortalOperation::Read);
-                $this->assertRelatedTargetAccess($target->definition, $targetAccess);
+                $this->relationships->assertPortalTargetOperation(
+                    $context,
+                    $target->definition,
+                    PortalOperation::Read,
+                );
+                $this->relationships->assertRelatedTargetAccess($target->definition, $targetAccess);
                 $targetId = $this->values->identity(
                     $target->definition,
                     [$identityField->handle => $value],
@@ -4084,123 +3754,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     }
 
     /**
-     * Write the revision and the audit entry that describe one applied mutation.
-     *
-     * Both are written inside the mutation's own transaction, so a rolled-back write takes its trail with
-     * it. The revision holds a canonical snapshot of the stored values — virtual computed fields are left
-     * out because nothing about them is stored — and relationship evidence is folded into that snapshot
-     * under a reserved key the definition is not allowed to collide with. A definition with revisions
-     * turned off gets no snapshot at all, but is still audited: the audit entry never carries values, and
-     * omits restricted and secret handles from its changed-field metadata. It stands in for the
-     * record's identity with a keyed digest so the trail discloses nothing the record itself protects.
-     *
-     * @param   ExecutionContext            $context        Actor, site and request the mutation ran under.
-     * @param   ResolvedBusinessDefinition  $resolved       Definition the record was written against,
-     *          supplying each field's computation mode and sensitivity.
-     * @param   BusinessRecord              $record         Record at the version this mutation produced.
-     * @param   string                      $operation      Label the entry is recorded under, such as
-     *          `update` or `relate.lines`; the audit action prefixes it with `business.record.`.
-     * @param   list<string>                $changedFields  Handles whose value the mutation changed;
-     *          sorted in place here so the trail is order-independent.
-     * @param   DateTimeImmutable           $now            Instant stamped on both entries.
-     * @param   array<string, mixed>        $evidence       Relationship details to preserve alongside the
-     *          snapshot; empty for a mutation that touched no relationship.
-     * @param   ?ClientAssertedInstant      $capturedAt     When the caller says the work happened, recorded
-     *          in the trail beside $now and never in place of it, so a reader can tell a document captured
-     *          days ago from one captured a second ago; null when the caller asserted nothing.
-     *
-     * @return  void
-     *
-     * @throws  BusinessRecordSchemaUnavailable  When the definition declares a field whose handle collides
-     *          with the reserved key relationship evidence is stored under.
-     *
-     * @since   2.0.0
-     */
-    private function recordMutation(
-        ExecutionContext $context,
-        ResolvedBusinessDefinition $resolved,
-        BusinessRecord $record,
-        string $operation,
-        array $changedFields,
-        DateTimeImmutable $now,
-        array $evidence = [],
-        ?ClientAssertedInstant $capturedAt = null,
-    ): void {
-        sort($changedFields, SORT_STRING);
-        $snapshot = $this->revisionSnapshot($resolved->definition, $record);
-        if ($evidence !== []) {
-            if (array_key_exists('runtime_relation_evidence', $snapshot)) {
-                throw new BusinessRecordSchemaUnavailable('A definition collides with reserved revision evidence.');
-            }
-            $snapshot['runtime_relation_evidence'] = RecordValueGuard::canonical($evidence);
-        }
-        if ($resolved->definition->revisionsEnabled) {
-            $this->revisions->append(new BusinessRecordRevision(
-                Uuid::uuid7()->toString(),
-                $record->definitionId,
-                $record->definitionVersion,
-                $context->site()->identifier(),
-                $record->scope->organizationIdentifier,
-                $record->recordKey,
-                $this->fingerprints->digest($record->recordId),
-                $record->version,
-                $record->version,
-                $operation,
-                $snapshot,
-                $changedFields,
-                $context->actorId(),
-                $now,
-            ));
-        }
-        $metadata = [];
-        foreach ($changedFields as $handle) {
-            $field = $this->optionalField($resolved->definition, $handle);
-            if (
-                $field !== null && in_array(
-                    $field->sensitivity,
-                    [Sensitivity::Restricted, Sensitivity::Secret],
-                    true,
-                )
-            ) {
-                continue;
-            }
-            $metadata[] = [
-                'field' => $handle,
-                'redacted' => false,
-            ];
-        }
-        $this->audit->record(new AuditEvent(
-            Uuid::uuid7()->toString(),
-            $now,
-            $context->actorId(),
-            'business.record.' . $operation,
-            'business_record',
-            $record->recordKey,
-            'success',
-            [
-                'definition_id' => $record->definitionId,
-                'definition_version' => $record->definitionVersion,
-                'record_version' => $record->version,
-                'record_identity_digest' => $this->fingerprints->digest($record->recordId),
-                'organization_identifier' => $record->scope->organizationIdentifier,
-                'changed_fields' => $metadata,
-                'mutation_evidence' => RecordValueGuard::canonical($evidence),
-                'client_captured_at' => $capturedAt?->toArray(),
-            ],
-        ));
-        $this->events?->publish(
-            $context,
-            $record->definitionId,
-            $record->definitionVersion,
-            $record->recordKey,
-            $record->version,
-            $operation,
-            array_column($metadata, 'field'),
-            $now,
-        );
-    }
-
-    /**
      * Build the disclosure-safe evidence a relationship mutation records about its far end.
      *
      * The target's identity and any embedded line values are reduced to keyed digests rather than stored,
@@ -4235,39 +3788,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 ? null
                 : $this->fingerprints->digest($embeddedValues),
         ];
-    }
-
-    /**
-     * Reduce a record's values to the canonical snapshot its revision stores.
-     *
-     * Virtual computed fields are skipped because nothing about them is stored to begin with, and a field
-     * the record does not carry is left out rather than written as null, so absence in a snapshot means
-     * the row held no such column. Every surviving value is canonicalized, which is what makes two
-     * snapshots comparable byte for byte across processes and definition versions.
-     *
-     * @param   EntityTypeDefinition  $definition  Definition supplying the field list and each field's
-     *          computation mode.
-     * @param   BusinessRecord        $record      Record whose values are being snapshotted.
-     *
-     * @return  array<string, mixed>  Stored field values keyed by handle, in their canonical storage
-     *          spelling; empty when the record carries nothing worth preserving.
-     *
-     * @since   2.0.0
-     */
-    private function revisionSnapshot(EntityTypeDefinition $definition, BusinessRecord $record): array
-    {
-        $snapshot = [];
-        foreach ($definition->fields() as $field) {
-            if ($field->computed && $field->computationMode === ComputationMode::Virtual) {
-                continue;
-            }
-            if (!array_key_exists($field->handle, $record->values())) {
-                continue;
-            }
-            $snapshot[$field->handle] = RecordValueGuard::canonical($record->values()[$field->handle]);
-        }
-
-        return $snapshot;
     }
 
     /**
@@ -4359,85 +3879,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     }
 
     /**
-     * Require a nested relation plan to identify the declared target and disclose its public identity.
-     *
-     * Row access alone is insufficient when a caller supplies a target identity. Every selector and
-     * relationship mutation consumes the same public-reference permission so a known or forged identity
-     * cannot bypass the plan that made target choices visible.
-     *
-     * @param   EntityTypeDefinition      $target  Declared target definition.
-     * @param   BusinessRecordAccessPlan  $access  Nested plan rooted at the source field or relationship.
-     *
-     * @return  void
-     *
-     * @throws  BusinessRecordNotFound  When the plan points elsewhere or withholds the target identity.
-     *
-     * @since   2.0.0
-     */
-    private function assertRelatedTargetAccess(
-        EntityTypeDefinition $target,
-        BusinessRecordAccessPlan $access,
-    ): void {
-        if (!$this->relatedTargetAccessible($target, $access)) {
-            throw new BusinessRecordNotFound();
-        }
-    }
-
-    /**
-     * Decide whether one nested target plan may release the target's public identity.
-     *
-     * Selector reads use this predicate to return an indistinguishable empty page when target identity is
-     * withheld. Mutations wrap the same predicate with `assertRelatedTargetAccess()` and fail closed instead.
-     *
-     * @param   EntityTypeDefinition      $target  Declared target definition.
-     * @param   BusinessRecordAccessPlan  $access  Nested plan rooted at the source handle.
-     *
-     * @return  bool  True only for the exact target and its disclosed public identity field.
-     *
-     * @since   2.0.0
-     */
-    private function relatedTargetAccessible(
-        EntityTypeDefinition $target,
-        BusinessRecordAccessPlan $access,
-    ): bool {
-        return hash_equals($target->id, $access->resourceIdentifier)
-            && $access->fields->allows(
-                FieldAccessUsage::PublicReference,
-                $this->identityField($target)->handle,
-            );
-    }
-
-    /**
-     * Enforce a related target's exact portal exposure without affecting other authenticated surfaces.
-     *
-     * Source definition exposure is enforced by the generated surface before this service is called. A
-     * traversal is a second definition boundary, so a portal actor must also receive an explicit target-side
-     * opt-in for the read, browse, relation, or reorder operation being performed.
-     *
-     * @param   ExecutionContext      $context    Authenticated surface and tenant.
-     * @param   EntityTypeDefinition  $target     Definition reached through a source field or relationship.
-     * @param   PortalOperation       $operation  Exact target-side portal operation required.
-     *
-     * @return  void
-     *
-     * @throws  BusinessRecordNotFound  When a portal target or operation is not explicitly exposed.
-     *
-     * @since   2.0.0
-     */
-    private function assertPortalTargetOperation(
-        ExecutionContext $context,
-        EntityTypeDefinition $target,
-        PortalOperation $operation,
-    ): void {
-        if (
-            $context->surface() === AuthenticatedSurface::Portal
-            && (!$target->portalExposure || !$target->allowsPortalOperation($operation))
-        ) {
-            throw new BusinessRecordNotFound();
-        }
-    }
-
-    /**
      * Reject a portal include unless its exact nested target remains discoverable for this read operation.
      *
      * Generated adapters validate includes against the shared catalog, but the canonical service also
@@ -4476,8 +3917,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             } catch (BusinessRecordDefinitionUnavailable | BusinessRecordSchemaUnavailable) {
                 throw new BusinessRecordNotFound();
             }
-            $this->assertPortalTargetOperation($context, $target->definition, $operation);
-            $this->assertRelatedTargetAccess($target->definition, $targetAccess);
+            $this->relationships->assertPortalTargetOperation($context, $target->definition, $operation);
+            $this->relationships->assertRelatedTargetAccess($target->definition, $targetAccess);
             if (!$this->maySelectRelatedRows($targetAccess)) {
                 throw new BusinessRecordNotFound();
             }
@@ -4538,35 +3979,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     }
 
     /**
-     * Resolve a selector handle to its target and distinguish field references from relationships.
-     *
-     * @param   EntityTypeDefinition  $definition  Source definition declaring the handle.
-     * @param   string                $handle      Relationship or entity-reference field handle.
-     *
-     * @return  array{string, ?RelationshipDefinition}  Target handle and relationship when applicable.
-     *
-     * @throws  BusinessRecordNotFound  When the handle is absent or has no usable target.
-     *
-     * @since   2.0.0
-     */
-    private function relatedTarget(EntityTypeDefinition $definition, string $handle): array
-    {
-        $field = $this->optionalField($definition, $handle);
-        if ($field?->type === 'core.entity_reference') {
-            $target = $field->configuration['target'] ?? null;
-            if (!is_string($target)) {
-                throw new BusinessRecordNotFound();
-            }
-
-            return [$target, null];
-        }
-        $relationship = $definition->runtimeRelationship($handle)
-            ?? throw new BusinessRecordNotFound();
-
-        return [$relationship->target, $relationship];
-    }
-
-    /**
      * Describe at most sixteen target fields the nested selector plan authorizes for text search.
      *
      * A conditional-visibility field is deliberately absent even when its static definition says searchable:
@@ -4601,33 +4013,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         }
 
         return $fields;
-    }
-
-    /**
-     * Resolve a relationship handle against the definition version the record is pinned to.
-     *
-     * Resolution goes through the runtime lookup, so a legacy ordered-lines field answers here as the
-     * owned collection it behaves like and relationship commands need not distinguish the two. Because the
-     * pinned version is what is searched, a relationship added since the record was written is correctly
-     * reported as undeclared for that record.
-     *
-     * @param   EntityTypeDefinition  $definition  Pinned definition the record was written under.
-     * @param   string                $handle      Relationship or ordered-lines handle the command named.
-     *
-     * @return  RelationshipDefinition  The declared association, or the one synthesized for an
-     *          ordered-lines field.
-     *
-     * @throws  BusinessRelationshipRejected  When the pinned definition declares neither a relationship
-     *          nor an ordered-lines field under that handle.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a matching
-     *          ordered-lines field declares no usable target entity.
-     *
-     * @since   2.0.0
-     */
-    private function relationship(EntityTypeDefinition $definition, string $handle): RelationshipDefinition
-    {
-        return $definition->runtimeRelationship($handle)
-            ?? throw new BusinessRelationshipRejected('The relationship is not declared by the pinned definition.');
     }
 
     /**
@@ -4706,74 +4091,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             }
         }
         throw new BusinessRecordActionRejected('The action is not declared by the pinned definition.');
-    }
-
-    /**
-     * Resolve the pinned definition of the line type an owned-line collection stores.
-     *
-     * The version used is not the installed one. It is read off the owner's own installed blueprint, which
-     * records the line definition version its line table was generated for, and the line definition is
-     * then fenced and pinned to exactly that — so the columns being written always match the table that
-     * exists, even after the line type has been published again. A blueprint that carries no such table,
-     * or records no usable version for it, is a schema the owner cannot store lines through at all.
-     *
-     * @param   ExecutionContext            $context       Actor and site the resolution runs as.
-     * @param   ResolvedBusinessDefinition  $owner         Owner definition whose blueprint names the line
-     *          table.
-     * @param   RelationshipDefinition      $relationship  Owned-line relationship being written.
-     *
-     * @return  ResolvedBusinessDefinition  The line type at the version its table was generated for,
-     *          paired with its own installation.
-     *
-     * @throws  BusinessRelationshipRejected  When the owner's blueprint carries no table for this
-     *          collection, or records no integer target definition version for it.
-     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
-     *          the line type does not exist on this site, or that version of it is not published.
-     * @throws  BusinessRecordSchemaUnavailable  When the line type's schema is not installed and active.
-     * @throws  BusinessRecordTemporarilyUnavailable  When the line type's installation moved between the
-     *          lock and the resolve.
-     *
-     * @since   2.0.0
-     */
-    private function lineDefinition(
-        ExecutionContext $context,
-        ResolvedBusinessDefinition $owner,
-        RelationshipDefinition $relationship,
-    ): ResolvedBusinessDefinition {
-        $table = $owner->installation->blueprint->table('line:' . $relationship->handle)
-            ?? throw new BusinessRelationshipRejected('The owned-line table is unavailable.');
-        $version = $table->options['target_definition_version'] ?? null;
-        if (!is_int($version)) {
-            throw new BusinessRelationshipRejected('The owned-line pinned definition version is unavailable.');
-        }
-
-        $generation = $this->mutationFence->lock($context, $relationship->target);
-        $line = $this->definitions->pinned($context, $relationship->target, $version);
-        $generation->assertMatches($line);
-
-        return $line;
-    }
-
-    /**
-     * Refuse a link whose two ends do not sit in the same site and organization.
-     *
-     * Scope isolation is enforced here rather than by the storage, because two records of different types
-     * can be perfectly valid rows and still belong to tenants that must not be joined.
-     *
-     * @param   BusinessRecord  $source  Record the relationship is declared on.
-     * @param   BusinessRecord  $target  Record being linked to it.
-     *
-     * @return  void
-     *
-     * @throws  BusinessRecordReferenceConflict  When the two records' scopes differ in any dimension.
-     *
-     * @since   2.0.0
-     */
-    private function sameScope(BusinessRecord $source, BusinessRecord $target): void
-    {
-        if ($source->scope->toArray() !== $target->scope->toArray()) {
-            throw new BusinessRecordReferenceConflict();
-        }
     }
 
     /**

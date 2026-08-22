@@ -13,10 +13,13 @@ use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportDrillDownDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 #[CoversClass(ReportApiPresenter::class)]
+#[CoversClass(ReportDefinitionRegistry::class)]
 final class ReportDeliveryPresenterTest extends TestCase
 {
     public function testActiveReportAppearsWithTypedParametersAndDisappearsAfterReconciliation(): void
@@ -48,6 +51,37 @@ final class ReportDeliveryPresenterTest extends TestCase
             'default' => null,
         ], $document['parameters'][0]);
         self::assertSame([], (new ReportDefinitionRegistry([]))->all());
+    }
+
+    /**
+     * Refuse a contributed report snapshot from an old generation before it reaches a delivery presenter.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStaleGenerationCannotExposeResidentReportContribution(): void
+    {
+        $execution = $this->createMock(ExtensionExecutionGate::class);
+        $execution->expects(self::once())
+            ->method('assertCurrent')
+            ->willThrowException(new RuntimeException('stale extension generation'));
+        $registry = new ReportDefinitionRegistry([
+            new ReportDefinition(
+                'acme.open_items',
+                1,
+                'Open items',
+                'acme.item',
+                'acme.reports.read',
+                [],
+                [],
+                [new ReportColumnDefinition('number', 'Number', 'number', ReportValueType::String)],
+            ),
+        ], $execution);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('stale extension generation');
+        $registry->all();
     }
 
     public function testResultDrillDownsUseOnlyGeneratedSurfaceRoutes(): void

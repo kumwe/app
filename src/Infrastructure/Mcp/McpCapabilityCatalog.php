@@ -8,7 +8,8 @@ namespace Kumwe\App\Infrastructure\Mcp;
  * Single declaration of the MCP surface a Kumwe release publishes.
  *
  * Every tool, resource and prompt an MCP client can reach is described here once: its name, the
- * `KumweMcpHandlers` method that serves it, the capability that handler requires, the annotation hints
+ * `KumweMcpHandlers` method that serves it, the literal or dynamic capability resolver that handler uses,
+ * the mutation-guard route, the annotation hints
  * a client uses to decide how cautiously to call it, the `McpRiskClass` that says what calling it
  * costs, the non-MCP route an operator takes instead, and explicit JSON Schemas for input and output.
  * `KumweMcpServerFactory` registers a server straight from this list, and the discovery tool and the
@@ -17,7 +18,8 @@ namespace Kumwe\App\Infrastructure\Mcp;
  * handlers. The catalogue is pure data with no dependencies and no state, which is why the container
  * shares one instance of it.
  *
- * Three properties hold across the whole list, and `McpCatalogValidator` proves each of them before a
+ * Three properties hold across the whole list, and `McpCatalogValidator` proves each of them against the
+ * registered handler call graph before a
  * server is built rather than leaving them to review. Every entry that is not read-only declares an
  * `operationId` and is annotated idempotent, so `McpMutationGuard` can fence a first attempt and replay
  * a retry instead of applying it twice. Every entry declares one risk class, and its annotations and
@@ -246,7 +248,8 @@ final class McpCapabilityCatalog
      *
      * @return  list<array{
      *            name: string, title: string, description: string, handler: string,
-     *            capability: string|null, readOnly: bool, destructive: bool, idempotent: bool,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
      *            risk: McpRiskClass, alternative: string,
      *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
      *          }>
@@ -280,7 +283,8 @@ final class McpCapabilityCatalog
      *
      * @return  list<array{
      *            name: string, title: string, description: string, handler: string,
-     *            capability: string|null, readOnly: bool, destructive: bool, idempotent: bool,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
      *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
      *          }>
      *
@@ -296,7 +300,7 @@ final class McpCapabilityCatalog
                 'Discover Kumwe',
                 'Discover the available Kumwe MCP surface.',
                 'discover',
-                null,
+                McpDynamicCapabilityResolver::Authenticated,
                 true,
                 false,
                 true,
@@ -356,7 +360,7 @@ final class McpCapabilityCatalog
                 'Transition content',
                 'Apply an authorized workflow transition.',
                 'transitionContent',
-                null,
+                McpDynamicCapabilityResolver::ContentTransition,
                 false,
                 false,
                 true,
@@ -812,7 +816,7 @@ final class McpCapabilityCatalog
                 'Execute a custom business view',
                 'Execute one policy-visible typed custom view through its signed bounded contract.',
                 'executeBusinessView',
-                null,
+                McpDynamicCapabilityResolver::BusinessView,
                 true,
                 false,
                 true,
@@ -892,7 +896,7 @@ final class McpCapabilityCatalog
                 'Plan a generated business mutation',
                 'Bind one exact mutation to current definition, runtime, policy, actor, and record state.',
                 'planBusinessRecordMutation',
-                null,
+                McpDynamicCapabilityResolver::BusinessMutationPlan,
                 true,
                 false,
                 true,
@@ -941,7 +945,8 @@ final class McpCapabilityCatalog
                     'record' => $this->businessRecordIdentifier(),
                 ],
                 $this->businessMutationOutput(),
-                ['operationId', 'plan', 'definition', 'values']
+                ['operationId', 'plan', 'definition', 'values'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_update',
@@ -957,7 +962,8 @@ final class McpCapabilityCatalog
                     'values' => $this->businessValues(false),
                 ],
                 $this->businessMutationOutput(),
-                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'values']
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'values'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_archive',
@@ -970,7 +976,8 @@ final class McpCapabilityCatalog
                 true,
                 $this->businessVersionedRecordProperties(),
                 $this->businessMutationOutput(),
-                ['operationId', 'plan', 'definition', 'record', 'expectedVersion']
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_restore',
@@ -983,7 +990,8 @@ final class McpCapabilityCatalog
                 true,
                 $this->businessVersionedRecordProperties(),
                 $this->businessMutationOutput(),
-                ['operationId', 'plan', 'definition', 'record', 'expectedVersion']
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_delete',
@@ -996,7 +1004,8 @@ final class McpCapabilityCatalog
                 true,
                 $this->businessVersionedRecordProperties(),
                 $this->businessMutationOutput(),
-                ['operationId', 'plan', 'definition', 'record', 'expectedVersion']
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_relate',
@@ -1015,7 +1024,8 @@ final class McpCapabilityCatalog
                     'targetValues' => $this->businessValues(true),
                 ],
                 $this->businessMutationOutput(),
-                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'relationship', 'target']
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'relationship', 'target'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_unrelate',
@@ -1032,7 +1042,8 @@ final class McpCapabilityCatalog
                     'target' => $this->businessRecordIdentifier(),
                 ],
                 $this->businessMutationOutput(),
-                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'relationship', 'target']
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'relationship', 'target'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_reorder',
@@ -1057,7 +1068,8 @@ final class McpCapabilityCatalog
                 [
                     'operationId', 'plan', 'definition', 'record', 'expectedVersion',
                     'relationship', 'orderedRecordIds',
-                ]
+                ],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_request_action',
@@ -1076,7 +1088,8 @@ final class McpCapabilityCatalog
                 $this->closedObject([
                     'approval_request_id' => ['type' => ['string', 'null'], 'format' => 'uuid'],
                 ], ['approval_request_id']),
-                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'action']
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'action'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_execute_action',
@@ -1094,7 +1107,8 @@ final class McpCapabilityCatalog
                     'approvalRequestId' => ['type' => ['string', 'null'], 'format' => 'uuid'],
                 ],
                 $this->businessMutationOutput(),
-                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'action']
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'action'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
             $this->tool(
                 'kumwe_business_operation_status',
@@ -1550,24 +1564,27 @@ final class McpCapabilityCatalog
      * The input schema is always a closed object — `additionalProperties` is false — so an argument no
      * property names is rejected by the server before a handler is reached.
      *
-     * @param   string                $name         Tool name a client calls, stable for the release.
-     * @param   string                $title        Short label, reused as the annotation title.
-     * @param   string                $description  One line telling a client what the tool is for.
-     * @param   string                $handler      Method on `KumweMcpHandlers` this tool is bound to.
-     * @param   ?string               $capability   Capability the handler requires, or null when
-     *          authentication alone admits the call or the handler authorizes each action itself.
-     * @param   bool                  $readOnly     True when the tool only reads; false marks a mutation.
-     * @param   bool                  $destructive  True when a successful call removes or overwrites state
+     * @param string $name Tool name a client calls, stable for the release.
+     * @param   string                               $title               Short label, reused as the annotation title.
+     * @param string $description One line telling a client what the tool is for.
+     * @param string $handler Method on `KumweMcpHandlers` this tool is bound to.
+     * @param   string|McpDynamicCapabilityResolver  $capabilityResolver  Literal capability the handler
+     *          requires, or the closed dynamic resolver its live implementation enforces.
+     * @param bool $readOnly True when the tool only reads; false marks a mutation.
+     * @param bool $destructive True when a successful call removes or overwrites state
      *          the caller cannot simply rebuild, which clients may use to prompt for confirmation.
-     * @param   bool                  $idempotent   True when repeating the call with the same arguments
+     * @param bool $idempotent True when repeating the call with the same arguments
      *          leaves the same end state.
-     * @param   array<string, mixed>  $properties   JSON Schema property map of the tool's input object.
-     * @param   array<string, mixed>  $output       JSON Schema published as the tool's output schema.
-     * @param   list<string>          $required     Input property names a client must supply.
+     * @param array<string, mixed> $properties JSON Schema property map of the tool's input object.
+     * @param array<string, mixed> $output JSON Schema published as the tool's output schema.
+     * @param   list<string>                         $required            Input property names a client must supply.
+     * @param ?McpMutationGuardMode $mutationGuard Explicit non-local guard route, or null to select
+     *          no guard for a read and the local handler graph for a mutation.
      *
      * @return  array{
      *            name: string, title: string, description: string, handler: string,
-     *            capability: string|null, readOnly: bool, destructive: bool, idempotent: bool,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
      *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
      *          }
      *
@@ -1578,17 +1595,22 @@ final class McpCapabilityCatalog
         string $title,
         string $description,
         string $handler,
-        ?string $capability,
+        string|McpDynamicCapabilityResolver $capabilityResolver,
         bool $readOnly,
         bool $destructive,
         bool $idempotent,
         array $properties,
         array $output,
         array $required = [],
+        ?McpMutationGuardMode $mutationGuard = null,
     ): array {
+        $capability = is_string($capabilityResolver) ? $capabilityResolver : null;
+        $mutationGuard ??= $readOnly ? McpMutationGuardMode::None : McpMutationGuardMode::Local;
+
         return [
             'name' => $name, 'title' => $title, 'description' => $description, 'handler' => $handler,
-            'capability' => $capability, 'readOnly' => $readOnly, 'destructive' => $destructive,
+            'capability' => $capability, 'capabilityResolver' => $capabilityResolver,
+            'mutationGuard' => $mutationGuard, 'readOnly' => $readOnly, 'destructive' => $destructive,
             'idempotent' => $idempotent,
             'inputSchema' => [
                 'type' => 'object', 'properties' => $properties, 'required' => $required,

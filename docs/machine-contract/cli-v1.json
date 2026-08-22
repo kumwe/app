@@ -1,0 +1,905 @@
+{
+  "format": "kumwe-cli-machine-contract-v1",
+  "generation": 1,
+  "status": "retained",
+  "surface_digest": "sha256:13c011f6c11b98a55d471b21ef652a0a196d9d0e9df38634a608f5ca3783ffad",
+  "dispatcher": {
+    "list_exit": 0,
+    "unknown_command_exit": 64,
+    "invalid_invocation_exit": 64
+  },
+  "input_types": [
+    "absolute-path",
+    "base64",
+    "boolean",
+    "csv",
+    "enum",
+    "flag",
+    "hex-digest",
+    "identifier",
+    "json-object",
+    "json-object-list",
+    "non-negative-integer",
+    "nullable-identifier",
+    "nullable-string",
+    "output-path",
+    "positive-integer",
+    "protected-json-file",
+    "protected-json-list-file",
+    "secret-file",
+    "string",
+    "timestamp"
+  ],
+  "output_modes": [
+    "json-document",
+    "json-lines",
+    "json-or-text-lines",
+    "none",
+    "secret-lines",
+    "text-lines"
+  ],
+  "risk_classes": [
+    "read",
+    "local-write",
+    "mutate",
+    "high-impact"
+  ],
+  "commands": [
+    {
+      "name": "access",
+      "action_argument": true,
+      "default_action": "users",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"email","type":"string","enum":[]},
+        {"name":"display-name","type":"string","enum":[]},
+        {"name":"password-file","type":"secret-file","enum":[]},
+        {"name":"status","type":"enum","enum":["pending","active","suspended","disabled"]},
+        {"name":"id","type":"identifier","enum":[]},
+        {"name":"version","type":"positive-integer","enum":[]},
+        {"name":"code","type":"identifier","enum":[]},
+        {"name":"name","type":"string","enum":[]},
+        {"name":"user","type":"identifier","enum":[]},
+        {"name":"role","type":"identifier","enum":[]},
+        {"name":"capability","type":"identifier","enum":[]},
+        {"name":"scope-type","type":"identifier","enum":[]},
+        {"name":"scope","type":"identifier","enum":[]},
+        {"name":"grant","type":"identifier","enum":[]},
+        {"name":"token","type":"identifier","enum":[]},
+        {"name":"expires-at","type":"timestamp","enum":[]},
+        {"name":"reason","type":"string","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"users","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"roles","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"tokens","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"create-user","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","email","display-name","password-file","status"],"required_options":["site","token-file","email","display-name","password-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"update-user","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","id","email","display-name","status","version"],"required_options":["site","token-file","id","email","display-name","status","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"create-role","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","code","name"],"required_options":["site","token-file","code","name"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"assign-role","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","user","role"],"required_options":["site","token-file","user","role"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"revoke-role","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","user","role"],"required_options":["site","token-file","user","role"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"grant","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","role","capability","scope-type","scope"],"required_options":["site","token-file","role","capability"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"revoke-grant","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","grant"],"required_options":["site","token-file","grant"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"revoke-token","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","token"],"required_options":["site","token-file","token"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"rotate-token","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","token","name","expires-at"],"required_options":["site","token-file","token","name"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"revoke-user-tokens","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","user","reason"],"required_options":["site","token-file","user","reason"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"emergency-revoke-user-tokens","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","user","reason"],"required_options":["site","token-file","user","reason"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"reset-password","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","user","password-file","reason"],"required_options":["site","token-file","user","password-file","reason"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"revoke-step-up","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","user","reason"],"required_options":["site","token-file","user","reason"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"terminate-sessions","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","user","reason"],"required_options":["site","token-file","user","reason"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "app:health",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"ready","1":"not-ready"},
+      "actions": [
+        {"name":"invoke","risk":"read","positionals":[],"allowed_options":[],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "audit:export",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"from","type":"positive-integer","enum":[]},
+        {"name":"to","type":"positive-integer","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"export-failed"},
+      "actions": [
+        {"name":"invoke","risk":"read","positionals":[],"allowed_options":["site","token-file","from","to"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "audit:verify",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"batch-size","type":"positive-integer","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"json-or-text-lines"},
+      "exit_codes": {"0":"intact-and-enforced","1":"divergent-or-failed","2":"intact-without-enforcement"},
+      "actions": [
+        {"name":"invoke","risk":"read","positionals":[],"allowed_options":["site","token-file","batch-size"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "automation",
+      "action_argument": true,
+      "default_action": "schedules",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"id","type":"identifier","enum":[]},
+        {"name":"limit","type":"positive-integer","enum":[]},
+        {"name":"queue","type":"identifier","enum":[]},
+        {"name":"name","type":"string","enum":[]},
+        {"name":"cron","type":"string","enum":[]},
+        {"name":"timezone","type":"string","enum":[]},
+        {"name":"job","type":"identifier","enum":[]},
+        {"name":"payload","type":"json-object","enum":[]},
+        {"name":"first-run","type":"timestamp","enum":[]},
+        {"name":"version","type":"positive-integer","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"schedules","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"schedule","risk":"read","positionals":[],"allowed_options":["site","token-file","id"],"required_options":["site","token-file","id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"jobs","risk":"read","positionals":[],"allowed_options":["site","token-file","limit"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"queues","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"purge-queue","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","queue","limit"],"required_options":["site","token-file","queue"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"create","risk":"mutate","positionals":[],"allowed_options":["site","token-file","name","cron","timezone","job","payload","queue","first-run"],"required_options":["site","token-file","name","cron","job"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"enable","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id","version"],"required_options":["site","token-file","id","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"disable","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id","version"],"required_options":["site","token-file","id","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"delete","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","id","version"],"required_options":["site","token-file","id","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"retry","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id"],"required_options":["site","token-file","id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"cancel","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id"],"required_options":["site","token-file","id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-definition",
+      "action_argument": true,
+      "default_action": "list",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"handle","type":"identifier","enum":[]},
+        {"name":"version","type":"positive-integer","enum":[]},
+        {"name":"definition-file","type":"protected-json-file","enum":[]},
+        {"name":"expected-revision","type":"positive-integer","enum":[]},
+        {"name":"confirmed","type":"boolean","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"get","risk":"read","positionals":[],"allowed_options":["site","token-file","handle","version"],"required_options":["site","token-file","handle"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"draft","risk":"read","positionals":[],"allowed_options":["site","token-file","handle"],"required_options":["site","token-file","handle"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"history","risk":"read","positionals":[],"allowed_options":["site","token-file","handle"],"required_options":["site","token-file","handle"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"compatibility","risk":"read","positionals":[],"allowed_options":["site","token-file","handle"],"required_options":["site","token-file","handle"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"import","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition-file","expected-revision"],"required_options":["site","token-file","definition-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"validate","risk":"read","positionals":[],"allowed_options":["site","token-file","handle"],"required_options":["site","token-file","handle"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"publish","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","handle","expected-revision","confirmed"],"required_options":["site","token-file","handle","expected-revision"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"supersede","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","handle","version"],"required_options":["site","token-file","handle","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"deprecate","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","handle","version"],"required_options":["site","token-file","handle","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"reject","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","handle","version"],"required_options":["site","token-file","handle","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-periods",
+      "action_argument": true,
+      "default_action": "list",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"organization","type":"identifier","enum":[]},
+        {"name":"key","type":"identifier","enum":[]},
+        {"name":"starts","type":"timestamp","enum":[]},
+        {"name":"ends","type":"timestamp","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file","organization"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"close","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","organization","key","starts","ends"],"required_options":["site","token-file","key","starts","ends"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"reopen","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","organization","key"],"required_options":["site","token-file","key"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-record",
+      "action_argument": true,
+      "default_action": "entities",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"definition","type":"identifier","enum":[]},
+        {"name":"view","type":"identifier","enum":[]},
+        {"name":"query-file","type":"protected-json-file","enum":[]},
+        {"name":"parameters-file","type":"protected-json-file","enum":[]},
+        {"name":"record","type":"identifier","enum":[]},
+        {"name":"values-file","type":"protected-json-file","enum":[]},
+        {"name":"operation-id","type":"identifier","enum":[]},
+        {"name":"expected-version","type":"positive-integer","enum":[]},
+        {"name":"action","type":"identifier","enum":[]},
+        {"name":"input-file","type":"protected-json-file","enum":[]},
+        {"name":"approval-request","type":"identifier","enum":[]},
+        {"name":"limit","type":"positive-integer","enum":[]},
+        {"name":"relationship","type":"identifier","enum":[]},
+        {"name":"target-record","type":"identifier","enum":[]},
+        {"name":"target-values-file","type":"protected-json-file","enum":[]},
+        {"name":"position","type":"non-negative-integer","enum":[]},
+        {"name":"ordered-records-file","type":"protected-json-list-file","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"json-document"},
+      "exit_codes": {"0":"success","1":"internal-error","64":"usage-error","65":"data-error","66":"not-found","69":"unavailable","73":"conflict","75":"temporary-failure","77":"permission-denied"},
+      "actions": [
+        {"name":"entities","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"schema","risk":"read","positionals":[],"allowed_options":["site","token-file","definition"],"required_options":["site","token-file","definition"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"view","risk":"read","positionals":[],"allowed_options":["site","token-file","definition","view","query-file","parameters-file","record"],"required_options":["site","token-file","definition","view"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file","definition","query-file"],"required_options":["site","token-file","definition"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"get","risk":"read","positionals":[],"allowed_options":["site","token-file","definition","record","query-file"],"required_options":["site","token-file","definition","record"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"create","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","values-file","operation-id","record"],"required_options":["site","token-file","definition","values-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"update","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","record","expected-version","values-file","operation-id"],"required_options":["site","token-file","definition","record","expected-version","values-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"archive","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","record","expected-version","operation-id"],"required_options":["site","token-file","definition","record","expected-version","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"restore","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","record","expected-version","operation-id"],"required_options":["site","token-file","definition","record","expected-version","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"delete","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","definition","record","expected-version","operation-id"],"required_options":["site","token-file","definition","record","expected-version","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"action","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","record","expected-version","action","operation-id","input-file","approval-request"],"required_options":["site","token-file","definition","record","expected-version","action","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"request-action","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","record","expected-version","action","operation-id","input-file"],"required_options":["site","token-file","definition","record","expected-version","action","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"approvals","risk":"read","positionals":[],"allowed_options":["site","token-file","limit"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"approval","risk":"read","positionals":[],"allowed_options":["site","token-file","approval-request"],"required_options":["site","token-file","approval-request"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"history","risk":"read","positionals":[],"allowed_options":["site","token-file","definition","record","query-file"],"required_options":["site","token-file","definition","record"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"relate","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","record","expected-version","relationship","target-record","target-values-file","position","operation-id"],"required_options":["site","token-file","definition","record","expected-version","relationship","target-record","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"unrelate","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","record","expected-version","relationship","target-record","operation-id"],"required_options":["site","token-file","definition","record","expected-version","relationship","target-record","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"reorder","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","record","expected-version","relationship","ordered-records-file","operation-id"],"required_options":["site","token-file","definition","record","expected-version","relationship","ordered-records-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"report","risk":"read","positionals":[],"allowed_options":["site","token-file","definition","query-file"],"required_options":["site","token-file","definition"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"export","risk":"read","positionals":[],"allowed_options":["site","token-file","definition","query-file"],"required_options":["site","token-file","definition"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"operation","risk":"read","positionals":[],"allowed_options":["site","token-file","operation-id"],"required_options":["site","token-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-record-rekey",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"batch-size","type":"positive-integer","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"complete","1":"operation-failed","2":"more-work-remains"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","batch-size"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-report",
+      "action_argument": true,
+      "default_action": "run",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"report","type":"identifier","enum":[]},
+        {"name":"parameters-file","type":"protected-json-file","enum":[]},
+        {"name":"retention-seconds","type":"positive-integer","enum":[]},
+        {"name":"artifact","type":"identifier","enum":[]},
+        {"name":"output-file","type":"output-path","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"json-document"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"run","risk":"read","positionals":[],"allowed_options":["site","token-file","report","parameters-file"],"required_options":["site","token-file","report"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"export","risk":"mutate","positionals":[],"allowed_options":["site","token-file","report","parameters-file","retention-seconds"],"required_options":["site","token-file","report"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"status","risk":"read","positionals":[],"allowed_options":["site","token-file","artifact"],"required_options":["site","token-file","artifact"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"download","risk":"local-write","positionals":[],"allowed_options":["site","token-file","artifact","output-file"],"required_options":["site","token-file","artifact","output-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-schema",
+      "action_argument": true,
+      "default_action": "plans",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"definition","type":"identifier","enum":[]},
+        {"name":"plan","type":"identifier","enum":[]},
+        {"name":"expected-checksum","type":"hex-digest","enum":[]},
+        {"name":"confirmation","type":"hex-digest","enum":[]},
+        {"name":"evidence","type":"identifier","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"definitions","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"plans","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"get","risk":"read","positionals":[],"allowed_options":["site","token-file","plan"],"required_options":["site","token-file","plan"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"plan","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition"],"required_options":["site","token-file","definition"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"purge-plan","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","definition"],"required_options":["site","token-file","definition"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"approve","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","plan","expected-checksum","confirmation","evidence"],"required_options":["site","token-file","plan","expected-checksum"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"execute","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","plan"],"required_options":["site","token-file","plan"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"recover","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","plan"],"required_options":["site","token-file","plan"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "content",
+      "action_argument": true,
+      "default_action": "list",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"deleted","type":"boolean","enum":[]},
+        {"name":"id","type":"identifier","enum":[]},
+        {"name":"title","type":"string","enum":[]},
+        {"name":"slug","type":"identifier","enum":[]},
+        {"name":"data","type":"json-object","enum":[]},
+        {"name":"content-type","type":"identifier","enum":[]},
+        {"name":"version","type":"positive-integer","enum":[]},
+        {"name":"status","type":"identifier","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file","deleted"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"get","risk":"read","positionals":[],"allowed_options":["site","token-file","id"],"required_options":["site","token-file","id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"create","risk":"mutate","positionals":[],"allowed_options":["site","token-file","title","slug","data","content-type"],"required_options":["site","token-file","title","slug"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"update","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id","version","title","slug","data"],"required_options":["site","token-file","id","version","title","slug"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"transition","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id","version","status"],"required_options":["site","token-file","id","version","status"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"trash","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id","version"],"required_options":["site","token-file","id","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"restore","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id","version"],"required_options":["site","token-file","id","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "content-model",
+      "action_argument": true,
+      "default_action": "list",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"kind","type":"enum","enum":["content-type","workflow"]},
+        {"name":"id","type":"identifier","enum":[]},
+        {"name":"handle","type":"identifier","enum":[]},
+        {"name":"name","type":"string","enum":[]},
+        {"name":"states","type":"json-object-list","enum":[]},
+        {"name":"transitions","type":"json-object-list","enum":[]},
+        {"name":"workflow","type":"identifier","enum":[]},
+        {"name":"schema","type":"json-object","enum":[]},
+        {"name":"version","type":"positive-integer","enum":[]},
+        {"name":"allow-breaking","type":"boolean","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file","kind"],"required_options":["site","token-file","kind"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"get","risk":"read","positionals":[],"allowed_options":["site","token-file","kind","id"],"required_options":["site","token-file","kind","id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"create","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","kind","handle","name","states","transitions","workflow","schema"],"required_options":["site","token-file","kind","handle","name"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[{"option":"kind","operator":"equals","value":"workflow","require":["states","transitions"]},{"option":"kind","operator":"equals","value":"content-type","require":["workflow"]}]},
+        {"name":"update","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","kind","id","version","name","states","transitions","workflow","schema","allow-breaking"],"required_options":["site","token-file","kind","id","version","name"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[{"option":"kind","operator":"equals","value":"workflow","require":["states","transitions"]},{"option":"kind","operator":"equals","value":"content-type","require":["workflow"]}]}
+      ]
+    },
+    {
+      "name": "database:migrate",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [],
+      "output": {"stdout":"text-lines","stderr":"none"},
+      "exit_codes": {"0":"success"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":[],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "database:recover-lock",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"expected-owner","type":"hex-digest","enum":[]},
+        {"name":"confirm-legacy-quiesced","type":"flag","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","64":"usage-error"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["expected-owner","confirm-legacy-quiesced"],"required_options":["expected-owner","confirm-legacy-quiesced"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "database:status",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [],
+      "output": {"stdout":"text-lines","stderr":"none"},
+      "exit_codes": {"0":"current","2":"migrations-pending"},
+      "actions": [
+        {"name":"invoke","risk":"read","positionals":[],"allowed_options":[],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "demo:export-profile",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"admin-email","type":"string","enum":[]},
+        {"name":"admin-password-file","type":"secret-file","enum":[]},
+        {"name":"profile","type":"identifier","enum":[]},
+        {"name":"output","type":"output-path","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"export-failed"},
+      "actions": [
+        {"name":"invoke","risk":"local-write","positionals":[],"allowed_options":["admin-email","admin-password-file","profile","output"],"required_options":["admin-email","admin-password-file","profile","output"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "demo:install",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"admin-email","type":"string","enum":[]},
+        {"name":"admin-password-file","type":"secret-file","enum":[]},
+        {"name":"credentials-file","type":"output-path","enum":[]},
+        {"name":"extensions","type":"csv","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"install-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["admin-email","admin-password-file","credentials-file","extensions"],"required_options":["admin-email","admin-password-file","credentials-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "demo:install-examples",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"admin-email","type":"string","enum":[]},
+        {"name":"admin-password-file","type":"secret-file","enum":[]},
+        {"name":"extensions","type":"csv","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"install-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["admin-email","admin-password-file","extensions"],"required_options":["admin-email","admin-password-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "demo:provision-access",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"admin-email","type":"string","enum":[]},
+        {"name":"admin-password-file","type":"secret-file","enum":[]},
+        {"name":"credentials-file","type":"output-path","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"provision-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["admin-email","admin-password-file","credentials-file"],"required_options":["admin-email","admin-password-file","credentials-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:activate",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"surface","type":"identifier","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"activation-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[{"name":"extension","type":"identifier","required":true,"enum":[]}],"allowed_options":["site","token-file","surface"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:build",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"output","type":"output-path","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"build-failed"},
+      "actions": [
+        {"name":"invoke","risk":"local-write","positionals":[{"name":"source","type":"absolute-path","required":true,"enum":[]}],"allowed_options":["output"],"required_options":["output"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:conformance",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"conformant","1":"nonconformant-or-failed"},
+      "actions": [
+        {"name":"invoke","risk":"read","positionals":[{"name":"package","type":"absolute-path","required":true,"enum":[]}],"allowed_options":[],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:disable",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"disable-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[{"name":"extension","type":"identifier","required":true,"enum":[]}],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:inspect",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"inspection-failed"},
+      "actions": [
+        {"name":"invoke","risk":"read","positionals":[{"name":"package","type":"absolute-path","required":true,"enum":[]}],"allowed_options":[],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:install",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"key-id","type":"identifier","enum":[]},
+        {"name":"signature","type":"base64","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"install-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[{"name":"package","type":"absolute-path","required":true,"enum":[]}],"allowed_options":["site","token-file","key-id","signature"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[{"option":"key-id","operator":"present","value":null,"require":["signature"]},{"option":"signature","operator":"present","value":null,"require":["key-id"]}]}
+      ]
+    },
+    {
+      "name": "extension:list",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"none"},
+      "exit_codes": {"0":"success"},
+      "actions": [
+        {"name":"invoke","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:runtime:materialize",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"repair","type":"flag","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"materialization-failed"},
+      "actions": [
+        {"name":"invoke","risk":"local-write","positionals":[],"allowed_options":["repair"],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:runtime:watch",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"once","type":"flag","enum":[]},
+        {"name":"interval","type":"positive-integer","enum":[]},
+        {"name":"reload-pid","type":"non-negative-integer","enum":[]}
+      ],
+      "output": {"stdout":"none","stderr":"text-lines"},
+      "exit_codes": {"0":"converged","1":"watch-failed"},
+      "actions": [
+        {"name":"invoke","risk":"local-write","positionals":[],"allowed_options":["once","interval","reload-pid"],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:scaffold",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"namespace","type":"string","enum":[]},
+        {"name":"target","type":"output-path","enum":[]},
+        {"name":"label","type":"string","enum":[]},
+        {"name":"version","type":"string","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"scaffold-failed"},
+      "actions": [
+        {"name":"invoke","risk":"local-write","positionals":[{"name":"extension","type":"identifier","required":true,"enum":[]}],"allowed_options":["namespace","target","label","version"],"required_options":["namespace","target","label"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:sign",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"key-id","type":"identifier","enum":[]},
+        {"name":"secret-key-file","type":"secret-file","enum":[]},
+        {"name":"output","type":"output-path","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"signing-failed"},
+      "actions": [
+        {"name":"invoke","risk":"local-write","positionals":[{"name":"package","type":"absolute-path","required":true,"enum":[]}],"allowed_options":["key-id","secret-key-file","output"],"required_options":["key-id","secret-key-file","output"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:trust",
+      "action_argument": true,
+      "default_action": "list",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"key","type":"identifier","enum":[]},
+        {"name":"public-key-file","type":"secret-file","enum":[]},
+        {"name":"vendor","type":"identifier","enum":[]},
+        {"name":"extension","type":"identifier","enum":[]},
+        {"name":"expires-at","type":"timestamp","enum":[]},
+        {"name":"old-key","type":"identifier","enum":[]},
+        {"name":"new-key","type":"identifier","enum":[]},
+        {"name":"reason","type":"string","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"add","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","key","public-key-file","vendor","extension","expires-at"],"required_options":["site","token-file","key","public-key-file","expires-at"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"rotate","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","old-key","new-key","public-key-file","vendor","extension","expires-at"],"required_options":["site","token-file","old-key","new-key","public-key-file","expires-at"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"revoke","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","key","reason"],"required_options":["site","token-file","key","reason"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"finalize-rotation","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","key","reason"],"required_options":["site","token-file","key","reason"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"emergency-revoke","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","key","reason"],"required_options":["site","token-file","key","reason"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "extension:uninstall",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"uninstall-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[{"name":"extension","type":"identifier","required":true,"enum":[]}],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "integration:manage",
+      "action_argument": true,
+      "default_action": "outbox",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"limit","type":"positive-integer","enum":[]},
+        {"name":"consumer","type":"identifier","enum":[]},
+        {"name":"process","type":"identifier","enum":[]},
+        {"name":"projection","type":"identifier","enum":[]},
+        {"name":"event","type":"identifier","enum":[]},
+        {"name":"version","type":"positive-integer","enum":[]},
+        {"name":"note","type":"string","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"json-document"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"outbox","risk":"read","positionals":[],"allowed_options":["site","token-file","limit"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"inbox","risk":"read","positionals":[],"allowed_options":["site","token-file","consumer","limit"],"required_options":["site","token-file","consumer"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"processes","risk":"read","positionals":[],"allowed_options":["site","token-file","limit"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"process-work","risk":"mutate","positionals":[],"allowed_options":["site","token-file","process","limit"],"required_options":["site","token-file","process"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"projections","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"projection-rebuild","risk":"mutate","positionals":[],"allowed_options":["site","token-file","projection"],"required_options":["site","token-file","projection"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"replay","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","event"],"required_options":["site","token-file","event"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"purge","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","limit"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"cancel","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","process","version","note"],"required_options":["site","token-file","process","version","note"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "integration:work",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"once","type":"flag","enum":[]},
+        {"name":"stream","type":"enum","enum":["all","outbox","process"]},
+        {"name":"sleep-ms","type":"positive-integer","enum":[]},
+        {"name":"lease-seconds","type":"positive-integer","enum":[]},
+        {"name":"max-items","type":"non-negative-integer","enum":[]},
+        {"name":"max-runtime","type":"non-negative-integer","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"drained","1":"worker-failed"},
+      "actions": [
+        {"name":"invoke","risk":"mutate","positionals":[],"allowed_options":["once","stream","sleep-ms","lease-seconds","max-items","max-runtime"],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "mcp:serve",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]}
+      ],
+      "output": {"stdout":"json-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"clean-disconnect","1":"protocol-failure","64":"usage-error","65":"token-file-error","77":"permission-denied"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "navigation",
+      "action_argument": true,
+      "default_action": "list",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"menu","type":"identifier","enum":[]},
+        {"name":"id","type":"identifier","enum":[]},
+        {"name":"handle","type":"identifier","enum":[]},
+        {"name":"title","type":"string","enum":[]},
+        {"name":"version","type":"positive-integer","enum":[]},
+        {"name":"parent","type":"nullable-identifier","enum":[]},
+        {"name":"slug","type":"identifier","enum":[]},
+        {"name":"position","type":"non-negative-integer","enum":[]},
+        {"name":"target-type","type":"nullable-identifier","enum":[]},
+        {"name":"content","type":"nullable-identifier","enum":[]},
+        {"name":"target-url","type":"nullable-string","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"items","risk":"read","positionals":[],"allowed_options":["site","token-file","menu"],"required_options":["site","token-file","menu"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"get-item","risk":"read","positionals":[],"allowed_options":["site","token-file","id"],"required_options":["site","token-file","id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"create-menu","risk":"mutate","positionals":[],"allowed_options":["site","token-file","handle","title"],"required_options":["site","token-file","handle","title"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"update-menu","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id","version","handle","title"],"required_options":["site","token-file","id","version","handle","title"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"delete-menu","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","id","version"],"required_options":["site","token-file","id","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"create-item","risk":"mutate","positionals":[],"allowed_options":["site","token-file","menu","parent","title","slug","position","target-type","content","target-url"],"required_options":["site","token-file","menu","title","slug"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"update-item","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id","version","parent","title","slug","position","target-type","content","target-url"],"required_options":["site","token-file","id","version","title","slug"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"delete-item","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","id","version"],"required_options":["site","token-file","id","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "queue:work",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"queue","type":"identifier","enum":[]},
+        {"name":"once","type":"flag","enum":[]},
+        {"name":"sleep-ms","type":"positive-integer","enum":[]},
+        {"name":"lease-seconds","type":"positive-integer","enum":[]},
+        {"name":"max-jobs","type":"non-negative-integer","enum":[]},
+        {"name":"max-runtime","type":"non-negative-integer","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"drained","1":"worker-failed"},
+      "actions": [
+        {"name":"invoke","risk":"mutate","positionals":[],"allowed_options":["queue","once","sleep-ms","lease-seconds","max-jobs","max-runtime"],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "schedule:run",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"loop","type":"flag","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"dispatched","1":"scheduler-failed"},
+      "actions": [
+        {"name":"invoke","risk":"mutate","positionals":[],"allowed_options":["loop"],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "settings",
+      "action_argument": true,
+      "default_action": "get",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"site-name","type":"string","enum":[]},
+        {"name":"homepage-content","type":"identifier","enum":[]},
+        {"name":"locale","type":"identifier","enum":[]},
+        {"name":"timezone","type":"string","enum":[]},
+        {"name":"search-indexing-enabled","type":"boolean","enum":[]},
+        {"name":"presentation-json","type":"json-object","enum":[]},
+        {"name":"presentation-logo","type":"string","enum":[]},
+        {"name":"presentation-footer","type":"string","enum":[]},
+        {"name":"presentation-primary-menu","type":"identifier","enum":[]},
+        {"name":"presentation-active-scheme","type":"identifier","enum":[]},
+        {"name":"presentation-button-style","type":"identifier","enum":[]},
+        {"name":"presentation-button-shape","type":"identifier","enum":[]},
+        {"name":"presentation-header-style","type":"identifier","enum":[]},
+        {"name":"presentation-schemes-json","type":"json-object-list","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"get","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"update","risk":"mutate","positionals":[],"allowed_options":["site","token-file","site-name","homepage-content","locale","timezone","search-indexing-enabled","presentation-json","presentation-logo","presentation-footer","presentation-primary-menu","presentation-active-scheme","presentation-button-style","presentation-button-shape","presentation-header-style","presentation-schemes-json"],"required_options":["site","token-file","site-name","homepage-content","locale","timezone"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "theme:administrator:recover",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"confirm","type":"enum","enum":["restore-core-administrator"]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"recovery-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["confirm"],"required_options":["confirm"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "token:create",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"email","type":"string","enum":[]},
+        {"name":"name","type":"string","enum":[]},
+        {"name":"capabilities","type":"csv","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"password-file","type":"secret-file","enum":[]},
+        {"name":"expires-at","type":"timestamp","enum":[]},
+        {"name":"audience","type":"identifier","enum":[]},
+        {"name":"purpose","type":"identifier","enum":[]},
+        {"name":"organization","type":"identifier","enum":[]},
+        {"name":"workspace","type":"identifier","enum":[]}
+      ],
+      "output": {"stdout":"secret-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"issuance-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["email","name","capabilities","token-file","site","password-file","expires-at","audience","purpose","organization","workspace"],"required_options":["email","name","capabilities"],"one_of_options":[["token-file","password-file"]],"mutually_exclusive_options":[["token-file","password-file"]],"conditional_requirements":[{"option":"token-file","operator":"present","value":null,"require":["site"]},{"option":"workspace","operator":"present","value":null,"require":["organization"]}]}
+      ]
+    },
+    {
+      "name": "user:create-admin",
+      "action_argument": false,
+      "default_action": "invoke",
+      "options": [
+        {"name":"email","type":"string","enum":[]},
+        {"name":"name","type":"string","enum":[]},
+        {"name":"password-file","type":"secret-file","enum":[]}
+      ],
+      "output": {"stdout":"text-lines","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"creation-failed"},
+      "actions": [
+        {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["email","name","password-file"],"required_options":["email","name","password-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "user:recover-credentials",
+      "action_argument": true,
+      "default_action": null,
+      "options": [
+        {"name":"email","type":"string","enum":[]},
+        {"name":"password-file","type":"secret-file","enum":[]},
+        {"name":"reason","type":"string","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"recovery-failed"},
+      "actions": [
+        {"name":"reset-password","risk":"high-impact","positionals":[],"allowed_options":["email","password-file","reason"],"required_options":["email","password-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"revoke-step-up","risk":"high-impact","positionals":[],"allowed_options":["email","reason"],"required_options":["email"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"terminate-sessions","risk":"high-impact","positionals":[],"allowed_options":["email","reason"],"required_options":["email"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    }
+  ]
+}

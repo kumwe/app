@@ -19,7 +19,7 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
-use Kumwe\App\Application\Automation\CronExpression;
+use Kumwe\App\Automation\Domain\CronExpression;
 use Kumwe\App\Application\Automation\JobExecutionClass;
 use Kumwe\App\Application\Automation\JobExecutionScope;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;

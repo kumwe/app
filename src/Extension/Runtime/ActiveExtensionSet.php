@@ -60,12 +60,32 @@ final class ActiveExtensionSet
     private array $themePaths = [];
 
     /**
+     * Extension owner of each activated global theme surface.
+     *
+     * The path alone is insufficient for lifecycle withdrawal: two package versions may publish the
+     * same directory shape. Loader composition records the canonical owner beside it so removal never
+     * guesses from filesystem names.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private array $themeOwners = [];
+
+    /**
      * Template directory of the theme activated for a site, keyed by site identifier.
      *
      * @var    array<string, string>
      * @since  2.0.0
      */
     private array $siteThemePaths = [];
+
+    /**
+     * Extension owner of each site-specific theme assignment loaded into this process.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private array $siteThemeOwners = [];
 
     /**
      * Start an empty set bound to the registries and the trust boundary its later phases need.
@@ -156,8 +176,9 @@ final class ActiveExtensionSet
     /**
      * Record the template directory of the theme activated for one surface.
      *
-     * @param   ThemeSurface  $surface  Surface the theme was activated for.
-     * @param   string        $path     Absolute path of that theme's template directory.
+     * @param   ThemeSurface  $surface     Surface the theme was activated for.
+     * @param   string        $path        Absolute path of that theme's template directory.
+     * @param   ?string       $identifier  Owning extension, or null for an isolated test fixture.
      *
      * @return  void
      *
@@ -166,13 +187,16 @@ final class ActiveExtensionSet
      *
      * @since   2.0.0
      */
-    public function setThemePath(ThemeSurface $surface, string $path): void
+    public function setThemePath(ThemeSurface $surface, string $path, ?string $identifier = null): void
     {
         if (isset($this->themePaths[$surface->value])) {
             throw new LogicException(sprintf('More than one %s theme was loaded.', $surface->value));
         }
 
         $this->themePaths[$surface->value] = $path;
+        if ($identifier !== null) {
+            $this->themeOwners[$surface->value] = $identifier;
+        }
     }
 
     /**
@@ -233,8 +257,9 @@ final class ActiveExtensionSet
     /**
      * Record the template directory of the theme activated for one site.
      *
-     * @param   string  $siteIdentifier  Site the theme is activated for.
-     * @param   string  $path            Absolute path of that theme's template directory.
+     * @param   string   $siteIdentifier  Site the theme is activated for.
+     * @param   string   $path            Absolute path of that theme's template directory.
+     * @param   ?string  $identifier      Owning extension, or null for an isolated test fixture.
      *
      * @return  void
      *
@@ -242,12 +267,75 @@ final class ActiveExtensionSet
      *
      * @since   2.0.0
      */
-    public function setSiteThemePath(string $siteIdentifier, string $path): void
+    public function setSiteThemePath(string $siteIdentifier, string $path, ?string $identifier = null): void
     {
         if (isset($this->siteThemePaths[$siteIdentifier])) {
             throw new LogicException(sprintf('More than one theme was loaded for site %s.', $siteIdentifier));
         }
         $this->siteThemePaths[$siteIdentifier] = $path;
+        if ($identifier !== null) {
+            $this->siteThemeOwners[$siteIdentifier] = $identifier;
+        }
+    }
+
+    /**
+     * Withdraw one resident extension and every registry, presentation and localization path it owns.
+     *
+     * Provider objects are dropped with the extension entry; the registry-set sweep removes every
+     * declarative and executable contribution; and the owner maps remove Twig theme, namespaced view,
+     * portal-template and compiled-catalogue paths. Raw Joomla listeners cannot be detached safely, so
+     * their generation-aware registration wrapper separately makes them inert after the same change.
+     *
+     * @param   string  $identifier  Canonical `vendor/name` owner being withdrawn.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function withdraw(string $identifier): void
+    {
+        $this->extensions = array_values(array_filter(
+            $this->extensions,
+            static fn (array $extension): bool => $extension['identifier'] !== $identifier,
+        ));
+        $this->contributions->remove(ContributionOwner::extension($identifier));
+        foreach ($this->extensionViewPaths as &$paths) {
+            unset($paths[$identifier]);
+        }
+        unset($paths);
+        unset($this->portalTemplatePaths[$identifier], $this->catalogueDirectories[$identifier]);
+        foreach ($this->themeOwners as $surface => $owner) {
+            if ($owner === $identifier) {
+                unset($this->themeOwners[$surface], $this->themePaths[$surface]);
+            }
+        }
+        foreach ($this->siteThemeOwners as $site => $owner) {
+            if ($owner === $identifier) {
+                unset($this->siteThemeOwners[$site], $this->siteThemePaths[$site]);
+            }
+        }
+    }
+
+    /**
+     * Withdraw every extension object loaded from a generation that is no longer authoritative.
+     *
+     * A single lifecycle mutation supersedes the complete signed graph, not just its named package.
+     * Clearing all extension owners is therefore the safe in-process response: core registrations stay
+     * available, while no cross-extension dependency can keep executing against a mixed generation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function withdrawAll(): void
+    {
+        $identifiers = array_map(
+            static fn (array $extension): string => $extension['identifier'],
+            $this->extensions,
+        );
+        foreach ($identifiers as $identifier) {
+            $this->withdraw($identifier);
+        }
     }
 
     /**

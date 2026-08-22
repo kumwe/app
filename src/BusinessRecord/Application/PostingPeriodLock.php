@@ -18,11 +18,15 @@ use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
  *
  * A definition opts in by marking exactly one of its date fields `posting_date` — a definition that
  * declares none is untouched by the whole mechanism, and this guard returns before reading anything.
- * For a declared definition the guard is evaluated **before the mutation fence is taken**: every
- * mutation path through `BusinessRecordService` — create, update, archive, delete, restore, relate,
- * unrelate, reorder, document writes, and custom actions dispatched by the business surface — calls it
- * ahead of its transaction, so a closed period refuses cheaply, without acquiring the definition's
- * exclusive installation lock. Both sides of a mutation are judged: the posting date the record
+ * For a declared definition the addressed record is evaluated **before the mutation fence is taken**:
+ * every direct mutation path through `BusinessRecordService` — create, update, archive, delete, restore,
+ * relate, unrelate, reorder, document writes, and custom actions dispatched by the business surface —
+ * calls it ahead of its transaction, so a closed period refuses cheaply, without acquiring the
+ * definition's exclusive installation lock. The one induced-write case is necessarily later: a hard
+ * delete's inbound set-null sweep discovers its source records only inside the deleting transaction, so
+ * it calls this lock immediately before each source rewrite. A closed source refuses the entire delete
+ * and the transaction rolls back every source version, revision and audit entry already produced by that
+ * sweep. Both sides of a mutation are judged: the posting date the record
  * already stores, and the posting date the submitted values would store — which is what refuses a
  * creation backdated into a closed period as firmly as an edit of an existing row. A create that omits
  * the field falls back to the field's declared static default, since that is the value the row would

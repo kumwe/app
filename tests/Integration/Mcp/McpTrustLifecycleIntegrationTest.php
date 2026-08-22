@@ -9,10 +9,12 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use Kumwe\App\Extension\Domain\PackageChecksum;
 use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\App\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -43,6 +45,27 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         if (!$database->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
             self::markTestSkipped('This test exercises MySQL/MariaDB implicit-commit lifecycle serialization.');
         }
+        $firstMaterialization = $container->get(RuntimeMaterializationState::class);
+        $firstExecutionGate = $container->get(ExtensionExecutionGate::class);
+        self::assertInstanceOf(RuntimeMaterializationState::class, $firstMaterialization);
+        self::assertInstanceOf(ExtensionExecutionGate::class, $firstExecutionGate);
+        self::assertTrue($firstMaterialization->trusted);
+        self::assertTrue($firstExecutionGate->isCurrent());
+
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        $trust = $container->get(TrustStore::class);
+        $secondMaterialization = $container->get(RuntimeMaterializationState::class);
+        $secondExecutionGate = $container->get(ExtensionExecutionGate::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        self::assertInstanceOf(TrustStore::class, $trust);
+        self::assertInstanceOf(RuntimeMaterializationState::class, $secondMaterialization);
+        self::assertInstanceOf(ExtensionExecutionGate::class, $secondExecutionGate);
+        self::assertTrue($secondMaterialization->trusted);
+        self::assertTrue($secondExecutionGate->isCurrent());
+        self::assertTrue($firstExecutionGate->isCurrent());
 
         $marker = strtolower(str_replace('-', '', Uuid::uuid7()->toString()));
         $keyId = 'mcprace.' . $marker;
@@ -124,6 +147,8 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
                 ) {
                     throw new RuntimeException('MCP lifecycle race services are unavailable.');
                 }
+                // The deliberately unpublished DB-only extension cannot satisfy a resident-generation gate;
+                // generation refusal is covered separately, while this case isolates transaction lock ordering.
                 $handlers = self::withMutationGuard($handlers, new McpMutationGuard(
                     $childDatabase,
                     $childTables,
@@ -148,18 +173,24 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
             exit(0);
         }
         if ($revoker < 0) {
+            $database->executeStatement(sprintf(
+                "UPDATE %s SET status = 'quarantined', updated_at = ? WHERE id = ? AND status = 'active'",
+                $tables->quoted('extensions'),
+            ), [new DateTimeImmutable(), $extensionId], [Types::DATETIME_IMMUTABLE, Types::STRING]);
             self::fail('The MCP trust revoker process could not be started.');
         }
-
-        $releaseAcquired = $database->fetchOne('SELECT GET_LOCK(?, 0)', [$releaseLock]);
-        self::assertContains($releaseAcquired, [1, '1', true]);
-        self::assertNotFalse(file_put_contents($readyFile, 'ready'));
 
         $attempt = 'not-run';
         $tableCreated = false;
         $revokerStatus = 0;
+        $releaseHeld = false;
+        $revokerReaped = false;
         try {
-            self::waitForNamedLock($database, $startedLock);
+            $releaseAcquired = $database->fetchOne('SELECT GET_LOCK(?, 0)', [$releaseLock]);
+            $releaseHeld = in_array($releaseAcquired, [1, '1', true], true);
+            self::assertTrue($releaseHeld, 'The MCP trust-race release lock could not be acquired.');
+            self::assertNotFalse(file_put_contents($readyFile, 'ready'));
+            self::waitForNamedLock($database, $startedLock, $resultFile);
             try {
                 $trust->synchronizedLifecycle(function () use (
                     $trust,
@@ -183,43 +214,68 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
             } catch (RuntimeException $exception) {
                 $attempt = 'blocked:' . $exception->getMessage();
             }
-        } finally {
             $database->fetchOne('SELECT RELEASE_LOCK(?)', [$releaseLock]);
+            $releaseHeld = false;
             pcntl_waitpid($revoker, $revokerStatus);
+            $revokerReaped = true;
             $database->close();
             $tableCreated = $database->createSchemaManager()->tablesExist([$ddlTable]);
-            if ($tableCreated) {
+
+            self::assertTrue(pcntl_wifexited($revokerStatus));
+            self::assertSame(0, pcntl_wexitstatus($revokerStatus));
+            self::assertStringStartsWith('blocked:Another extension lifecycle operation', $attempt);
+            self::assertFalse($tableCreated, 'An installer executed DDL while MCP revocation was uncommitted.');
+            $result = json_decode((string) file_get_contents($resultFile), true, 16, JSON_THROW_ON_ERROR);
+            self::assertSame([$identifier], $result['quarantined'] ?? null);
+            self::assertSame('quarantined', $database->fetchOne(sprintf(
+                'SELECT status FROM %s WHERE identifier = ?',
+                $tables->quoted('extensions'),
+            ), [$identifier]));
+            self::assertSame('0', (string) $database->fetchOne(sprintf(
+                'SELECT enabled FROM %s WHERE key_id = ?',
+                $tables->quoted('extension_trust_keys'),
+            ), [$keyId]));
+            self::assertSame('completed', $database->fetchOne(sprintf(
+                'SELECT state FROM %s WHERE operation = ? AND idempotency_key = ?',
+                $tables->quoted('idempotency'),
+            ), ['mcp.trust-key.emergency-revoke', $operationId]));
+        } finally {
+            if ($releaseHeld) {
+                $database->fetchOne('SELECT RELEASE_LOCK(?)', [$releaseLock]);
+            }
+            if (!$revokerReaped) {
+                pcntl_waitpid($revoker, $revokerStatus);
+            }
+            $database->executeStatement(sprintf(
+                "UPDATE %s SET status = 'quarantined', updated_at = ? WHERE id = ? AND status = 'active'",
+                $tables->quoted('extensions'),
+            ), [new DateTimeImmutable(), $extensionId], [Types::DATETIME_IMMUTABLE, Types::STRING]);
+            $database->close();
+            if ($database->createSchemaManager()->tablesExist([$ddlTable])) {
                 $database->executeStatement(sprintf(
                     'DROP TABLE %s',
                     $database->quoteSingleIdentifier($ddlTable),
                 ));
             }
+            foreach ([$readyFile, $resultFile] as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            }
         }
-
-        self::assertTrue(pcntl_wifexited($revokerStatus));
-        self::assertSame(0, pcntl_wexitstatus($revokerStatus));
-        self::assertStringStartsWith('blocked:Another extension lifecycle operation', $attempt);
-        self::assertFalse($tableCreated, 'An installer executed DDL while MCP revocation was uncommitted.');
-        $result = json_decode((string) file_get_contents($resultFile), true, 16, JSON_THROW_ON_ERROR);
-        self::assertSame([$identifier], $result['quarantined'] ?? null);
-        self::assertSame('quarantined', $database->fetchOne(sprintf(
-            'SELECT status FROM %s WHERE identifier = ?',
-            $tables->quoted('extensions'),
-        ), [$identifier]));
-        self::assertSame('0', (string) $database->fetchOne(sprintf(
-            'SELECT enabled FROM %s WHERE key_id = ?',
-            $tables->quoted('extension_trust_keys'),
-        ), [$keyId]));
-        self::assertSame('completed', $database->fetchOne(sprintf(
-            'SELECT state FROM %s WHERE operation = ? AND idempotency_key = ?',
-            $tables->quoted('idempotency'),
-        ), ['mcp.trust-key.emergency-revoke', $operationId]));
     }
 
-    private static function waitForNamedLock(Connection $database, string $name): void
+    private static function waitForNamedLock(Connection $database, string $name, string $resultFile): void
     {
         $deadline = hrtime(true) + 15_000_000_000;
         while ($database->fetchOne('SELECT IS_USED_LOCK(?)', [$name]) === null) {
+            if (is_file($resultFile)) {
+                $result = file_get_contents($resultFile);
+                throw new RuntimeException(sprintf(
+                    'The MCP trust-race child exited before the synchronization point: %s',
+                    is_string($result) ? $result : 'unreadable result',
+                ));
+            }
             if (hrtime(true) >= $deadline) {
                 throw new RuntimeException('The MCP trust race synchronization point timed out.');
             }
@@ -249,6 +305,10 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         foreach ($constructor->getParameters() as $parameter) {
             if ($parameter->getName() === 'mutations') {
                 $arguments[] = $mutations;
+                continue;
+            }
+            if ($parameter->getName() === 'extensionRuntime') {
+                $arguments[] = null;
                 continue;
             }
             $arguments[] = $reflection->getProperty($parameter->getName())->getValue($handlers);

@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { createHmac } from 'node:crypto';
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
+import { gotoAfterRuntimeConvergence } from './support/runtime-convergence';
 
 const portalEmail = process.env.KUMWE_BROWSER_PORTAL_EMAIL
   ?? 'browser-portal@kumwe.test';
@@ -148,7 +149,7 @@ async function signIn(
   email = portalEmail,
   password = portalPassword,
 ): Promise<void> {
-  await page.goto('/portal/login');
+  await gotoAfterRuntimeConvergence(page, '/portal/login', 'The portal sign-in page');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByLabel('Workspace').fill('north');
@@ -157,15 +158,33 @@ async function signIn(
 }
 
 async function signInAdministrator(page: Page): Promise<void> {
-  await page.goto('/administrator/login');
+  await gotoAfterRuntimeConvergence(page, '/administrator/login', 'The administrator sign-in page');
   await page.getByLabel('Email address').fill(administratorEmail);
   await page.getByLabel('Password').fill(administratorPassword);
   await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
   await expect(page).toHaveURL(/\/administrator$/);
 }
 
+async function waitForAssetInspectionStatus(
+  page: Page,
+  status?: 'active' | 'disabled',
+): Promise<void> {
+  const expected = status === undefined
+    ? /component · 2\.0\.0 · (?:active|disabled)/
+    : new RegExp(`component · 2\\.0\\.0 · ${status}`);
+  await gotoAfterRuntimeConvergence(
+    page,
+    '/administrator/extensions',
+    'The asset-inspection extension listing',
+  );
+  const extension = page.locator('article').filter({
+    hasText: 'kumwe/asset-inspection-example',
+  }).first();
+  await expect(extension).toContainText(expected);
+}
+
 async function ensureAssetInspectionActive(page: Page): Promise<void> {
-  await page.goto('/administrator/extensions');
+  await waitForAssetInspectionStatus(page);
   const extension = page.locator('article').filter({
     hasText: 'kumwe/asset-inspection-example',
   }).first();
@@ -174,7 +193,7 @@ async function ensureAssetInspectionActive(page: Page): Promise<void> {
     await activate.click();
     await expect(page).toHaveURL(/\/administrator\/extensions$/);
   }
-  await expect(extension).toContainText(/component · 2\.0\.0 · active/);
+  await waitForAssetInspectionStatus(page, 'active');
   await expect.poll(async () => {
     await page.goto('/administrator');
     return page.locator(
@@ -572,9 +591,9 @@ test('portal dashboard prunes and recovers a saved extension workflow across lif
         hasText: 'kumwe/asset-inspection-example',
       }).first();
       await extension.getByRole('button', { name: 'Disable' }).click();
-      await expect(administrator).toHaveURL(/\/administrator\/extensions$/);
-      await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
       extensionDisabled = true;
+      await expect(administrator).toHaveURL(/\/administrator\/extensions$/);
+      await waitForAssetInspectionStatus(administrator, 'disabled');
 
       await expect.poll(async () => {
         await portal.goto(workflowPollHref);

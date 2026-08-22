@@ -5,6 +5,10 @@ automation, projections, and reports. They extend schema 3; they do not change t
 schema 1, 2, or 3 packages. A schema-4 package is trusted in-process code, but every executable contribution still
 has to match its signed, owner-scoped declaration before it can enter a runtime generation.
 
+The complete Version 2 extension SDK now carries manifest schemas 1 through 5 and contribution SPI revisions 1
+through 3. Schema 5/SPI 3 preserves every schema-4 integration byte and adds the separate declarative composition
+section. This guide focuses on the durable-integration contract introduced by schema 4/SPI 2.
+
 This guide is for extension authors and operators. It covers compatibility and failure semantics that application
 code must not invent independently. The example under `examples/extensions/asset-inspection` is deliberately a
 platform proof, not a production asset-management or ERP module.
@@ -49,7 +53,7 @@ runtime inventory; parsing a manifest or instantiating its provider alone is not
 
 The following are versioned extension-facing contracts in Kumwe 2.x:
 
-- manifest schemas 1 through 4 and contribution SPI revisions 1 and 2;
+- manifest schemas 1 through 5 and contribution SPI revisions 1 through 3;
 - `ExtensionServiceProvider`, `RuntimeExtension`, `ExtensionContributionProvider`, `ExtensionContainer`, and
   `ExtensionContributionRegistrar`;
 - immutable definition and event DTOs in `BusinessIntegration\Domain` and `BusinessReporting\Domain`;
@@ -59,7 +63,7 @@ The following are versioned extension-facing contracts in Kumwe 2.x:
   CLI, and MCP contracts, and extension lifecycle/migration contracts;
 - the conformance SDK facades and lifecycle adapter.
 
-The compatibility fixtures under `tests/Fixtures/ExtensionApi` pin all four manifest grammars and the declared
+The compatibility fixtures under `tests/Fixtures/ExtensionApi` pin all five manifest grammars and the declared
 interface signatures. A change that removes a method, narrows an accepted manifest, changes a parameter or return
 type, removes an enum case, or changes an existing serialized definition requires a new manifest/SPI revision and
 an explicit compatibility path. Registry implementations, composition-root wiring, raw database tables,

@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, request as apiRequest, test, type Page } from '@playwright/test';
+import { gotoAfterRuntimeConvergence } from './support/runtime-convergence';
 
 /**
  * Installable site-theme lifecycle: the shipped Horizon example is installed through the signed demo
@@ -45,11 +46,28 @@ function installHorizonExample(): void {
 }
 
 async function signInAdministrator(page: Page): Promise<void> {
-  await page.goto('/administrator/login');
+  await gotoAfterRuntimeConvergence(page, '/administrator/login', 'The administrator sign-in page');
   await page.getByLabel('Email address').fill(administratorEmail);
   await page.getByLabel('Password').fill(administratorPassword);
   await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
   await expect(page).toHaveURL(/\/administrator$/u);
+}
+
+/** Reload the extension screen through the generation drain until Horizon reaches the requested state. */
+async function waitForHorizonStatus(
+  page: Page,
+  status?: 'active' | 'disabled',
+): Promise<void> {
+  const expected = status === undefined
+    ? /template · 1\.0\.0 · (?:active|disabled)/u
+    : new RegExp(`template · 1\\.0\\.0 · ${status}`, 'u');
+  await gotoAfterRuntimeConvergence(
+    page,
+    '/administrator/extensions',
+    'The Horizon extension listing',
+  );
+  const extension = page.locator('article').filter({ hasText: themeIdentifier }).first();
+  await expect(extension).toContainText(expected);
 }
 
 /** Poll the public homepage, bypassing its public cache window, until the theme state matches. */
@@ -161,12 +179,11 @@ test.beforeAll(async ({ browser }) => {
       expectedPath: `/${parentSegment}/${childSegment}`,
     });
 
-    await page.goto('/administrator/extensions');
+    await waitForHorizonStatus(page);
     const extension = page.locator('article').filter({ hasText: themeIdentifier }).first();
-    await expect(extension).toBeVisible();
     await extension.getByRole('button', { name: 'Use for site' }).click();
     await expect(page).toHaveURL(/\/administrator\/extensions$/u);
-    await expect(extension).toContainText(/template · 1\.0\.0 · active/u);
+    await waitForHorizonStatus(page, 'active');
   } finally {
     await page.close();
   }
@@ -178,13 +195,14 @@ test.afterAll(async ({ browser }) => {
   const page = await browser.newPage({ baseURL: baseUrl });
   try {
     await signInAdministrator(page);
-    await page.goto('/administrator/extensions');
+    await waitForHorizonStatus(page);
     const extension = page.locator('article').filter({ hasText: themeIdentifier }).first();
     const disable = extension.getByRole('button', { name: 'Disable' });
     if (await disable.count()) {
       await disable.click();
       await expect(page).toHaveURL(/\/administrator\/extensions$/u);
     }
+    await waitForHorizonStatus(page, 'disabled');
     await deleteMenuItemsByTitle(page, [childTitle, parentTitle]);
   } finally {
     await page.close();

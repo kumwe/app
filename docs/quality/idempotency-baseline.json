@@ -2,27 +2,21 @@
   "baseline": "kumwe-suite-idempotency",
   "finding": "V2-QA-004",
   "authority": "docs/roadmap/README.md",
-  "note": "The integration suite was not idempotent against a database another run already used. That was the finding, and this file was its reproduction: the tests and passes that fail when the suite runs against the database the first run left behind. It is a record, not a permission. tools/verify-suite-idempotency.php fails on any test outside its pass-aware entry, fails when a listed test stops needing the exemption in a recorded pass, and fails when an entry passes its expiry, so the list can only ever shrink. The six recorded tests each executed the removal their entry named — run-unique fixture identities for the ledger-backed idempotency keys and operation identifiers, per-run definition identities for the contributed package, and a declared rollback of the outage drill's poisoned cache entry — so the record is empty and anything that fails now is new.",
+  "note": "The integration suite was not idempotent against a database another run already used. That was the finding, and this file was its reproduction: the tests and passes that fail when the suite runs against the database the first run left behind. It is a record, not a permission. tools/verify-suite-idempotency.php fails on any test outside its pass-aware entry, fails when a listed test stops needing the exemption in a recorded pass, and fails when an entry passes its expiry, so the list can only ever shrink. The six recorded tests each executed the removal their entry named, and the process-scoped fixture lifecycle now withdraws every newly published run-unique integration definition together with its live schema installation after each suite run while retaining the explicitly shared replay fixtures. The record is therefore empty for both the repeated and reverse-class-order passes, and anything that fails now is new.",
   "recorded_at": "2026-08-15",
   "emptied_at": "2026-08-18",
+  "reverse_enforced_at": "2026-08-21",
   "recorded_from": [
     "https://github.com/kumwe/app/actions/runs/31876448442",
     "https://github.com/kumwe/app/actions/runs/31877919073"
   ],
   "scope": {
     "enforced_passes": [
-      "repeat"
+      "repeat",
+      "reverse"
     ],
-    "note": "`repeat` runs the integration suite again against the database the first run left behind. That is the property this check enforces. The entries list is what it found, and it is empty now that every recorded test rolls its installation-global state back or mints per-run identities.",
-    "engines_note": "Two fields carry two different claims, and conflating them would make the gate lie in one direction or the other. `observed_on` is fact: the engines on which this exact failure was seen. `applies_to` is scope: the engines on which the entry excuses a failure. `passes` limits both claims to the execution passes that actually produced the record. A test failing on an engine or pass outside that scope is a new violation; an entry whose test passes on an observed engine in a recorded pass is stale and must be deleted. An engine in `applies_to` but not in `observed_on` is therefore neither excused into silence nor asserted as fact.",
-    "not_yet_enforced": {
-      "pass": "reverse",
-      "statement": "The suite gives the same result when its classes run in a different order.",
-      "finding": "V2-QA-004",
-      "owner": "quality-engineering",
-      "why_not_enforced": "The first attempt used PHPUnit's --order-by=reverse, which also reverses the order of the tests inside each class, so a class whose methods are written to run in declaration order fails for a reason that has nothing to do with a reused database. That run reported 38 failures across roughly 21 classes — seven of them methods of one class, five of another — which is the signature of intra-class ordering rather than database residue, so recording it would have been a blanket permission rather than a record. The corrected mechanism — tools/verify-suite-idempotency.php generating a configuration that lists the integration classes in reverse and leaves method order alone — was executed for the first time on 2026-08-18 with --pass=reverse against a freshly provisioned MariaDB database: it collected the same 340 tests the suite collects in declaration order and passed every one, runner exit 0, nothing outside the by-then-empty record. Still owed before enforcement: the same measurement on MySQL and PostgreSQL in CI, and a decision about where the pass runs — appended to the enforced sequence it would be the third consecutive suite run against one database, and the per-run fixture definitions each run installs meet the per-site OpenAPI component bound of 256 definitions at about that third run, so enforcement needs either fixture retirement or a database of its own.",
-      "how_to_run": "php tools/verify-suite-idempotency.php --engine=ID --pass=reverse"
-    }
+    "note": "`repeat` runs the integration suite again against the database the first full run left behind. `reverse` then lists the same integration classes in reverse while preserving declaration order inside each class. Appended to the initial full-suite execution, these are three consecutive runs against one database. Each PHPUnit process snapshots the migrated definition catalog and atomically withholds the installation and rejects the current version of every run-unique definition it added before it exits, while an explicit bounded set of stable replay fixtures remains available for the next pass. Transient fixture contracts therefore do not consume the next run's live OpenAPI definition allowance.",
+    "engines_note": "Two fields carry two different claims, and conflating them would make the gate lie in one direction or the other. `observed_on` is fact: the engines on which this exact failure was seen. `applies_to` is scope: the engines on which the entry excuses a failure. `passes` limits both claims to the execution passes that actually produced the record. A test failing on an engine or pass outside that scope is a new violation; an entry whose test passes on an observed engine in a recorded pass is stale and must be deleted. An engine in `applies_to` but not in `observed_on` is therefore neither excused into silence nor asserted as fact. CI now executes both enforced passes on MariaDB, MySQL, and PostgreSQL."
   },
   "entries": []
 }

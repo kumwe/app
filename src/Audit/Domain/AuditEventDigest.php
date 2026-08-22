@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Audit\Domain;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\CanonicalJson;
+use Kumwe\App\Shared\Domain\CanonicalJson;
 
 /**
  * Canonical per-event fingerprint the tamper-evidence layer stores beside every audit row.

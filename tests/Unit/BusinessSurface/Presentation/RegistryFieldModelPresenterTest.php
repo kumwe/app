@@ -17,8 +17,10 @@ use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
 use Kumwe\App\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 #[CoversClass(RegistryFieldModelPresenter::class)]
 #[CoversClass(FieldModelContext::class)]
@@ -46,7 +48,10 @@ final class RegistryFieldModelPresenterTest extends TestCase
     {
         foreach (FieldModelContext::cases() as $context) {
             $seen = [];
-            $presenter = new RegistryFieldModelPresenter($this->registry($seen));
+            $presenter = new RegistryFieldModelPresenter(
+                $this->registry($seen),
+                $this->createStub(ExtensionExecutionGate::class),
+            );
 
             $presented = $presenter->present($this->field(), $this->type(), $context, 'stored value');
 
@@ -67,7 +72,10 @@ final class RegistryFieldModelPresenterTest extends TestCase
     public function testPresentedFieldCarriesDisplayProvenanceAndTheExportedModel(): void
     {
         $seen = [];
-        $presenter = new RegistryFieldModelPresenter($this->registry($seen));
+        $presenter = new RegistryFieldModelPresenter(
+            $this->registry($seen),
+            $this->createStub(ExtensionExecutionGate::class),
+        );
 
         $presented = $presenter->present($this->field(), $this->type(), FieldModelContext::Detail, 'stored value');
 
@@ -90,7 +98,10 @@ final class RegistryFieldModelPresenterTest extends TestCase
     public function testErrorsAndEditabilityAreForwardedIntoTheValidatedRequest(): void
     {
         $seen = [];
-        $presenter = new RegistryFieldModelPresenter($this->registry($seen));
+        $presenter = new RegistryFieldModelPresenter(
+            $this->registry($seen),
+            $this->createStub(ExtensionExecutionGate::class),
+        );
 
         $presented = $presenter->present(
             $this->field(),
@@ -116,10 +127,42 @@ final class RegistryFieldModelPresenterTest extends TestCase
      */
     public function testUncoveredContextFailsClosedThroughThePort(): void
     {
-        $presenter = new RegistryFieldModelPresenter(new FieldPresentationRegistry());
+        $presenter = new RegistryFieldModelPresenter(
+            new FieldPresentationRegistry(),
+            $this->createStub(ExtensionExecutionGate::class),
+        );
 
         $this->expectException(InvalidBusinessDefinition::class);
         $this->expectExceptionMessage('No safe presenter is registered for this field context.');
+        $presenter->present($this->field(), $this->type(), FieldModelContext::Detail, 'stored value');
+    }
+
+    /**
+     * Refuse an extension presenter from a superseded generation before its strategy is called.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStaleGenerationCannotEnterResidentFieldPresenter(): void
+    {
+        $strategy = $this->createMock(FieldPresenter::class);
+        $strategy->expects(self::never())->method('present');
+        $registry = new FieldPresentationRegistry();
+        $registry->register(
+            DefinitionOwner::extension('acme/editor'),
+            $this->type()->id,
+            [FieldPresentationContext::Detail],
+            $strategy,
+        );
+        $execution = $this->createMock(ExtensionExecutionGate::class);
+        $execution->expects(self::once())
+            ->method('assertCurrent')
+            ->willThrowException(new RuntimeException('stale extension generation'));
+        $presenter = new RegistryFieldModelPresenter($registry, $execution);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('stale extension generation');
         $presenter->present($this->field(), $this->type(), FieldModelContext::Detail, 'stored value');
     }
 

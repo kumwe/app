@@ -13,12 +13,13 @@ use ReflectionMethod;
  * exist, annotate a removal as an ordinary write, open its schema to arguments nothing validates, or
  * publish a property that carries a secret inbound, and nothing but a reader would notice.
  * `KumweMcpServerFactory` runs this before it registers anything, so each of those is now a boot
- * failure naming the tool and the rule it broke. The checks are pure — a catalogue and a handler object
- * in, a list of violations out — which is what lets the unit suite drive deliberately broken catalogues
- * through the same code the runtime uses.
+ * failure naming the tool and the rule it broke. The checks are deterministic — a catalogue and the exact
+ * installed handler source in, a list of violations out — which lets the unit suite drive deliberately
+ * broken catalogues through the same code the runtime uses.
  *
  * Three families of rule are enforced. **Identity**: names are unique, well formed, and bound to a
- * public handler method whose complete parameter list matches the schema. **Risk coherence**:
+ * public handler method whose complete parameter list matches the schema, and whose executable capability
+ * and mutation-guard routes match the typed catalogue binding. **Risk coherence**:
  * every tool declares an `McpRiskClass`, and its read-only, destructive, idempotent, capability and
  * operation-identity declarations must agree with the class it claims. **Non-disclosure**: no declared
  * property anywhere in a published schema may be shaped like a credential or a host path, and no handler
@@ -84,8 +85,10 @@ final readonly class McpCatalogValidator
      * one mistake and fixing it one tool at a time wastes the author's time.
      *
      * @param   list<array{
-     *              name: string, handler: string, capability: string|null, readOnly: bool,
-     *              destructive: bool, idempotent: bool, risk: McpRiskClass, alternative: string,
+     *              name: string, handler: string, capability: string|null,
+     *              capabilityResolver: string|McpDynamicCapabilityResolver,
+     *              mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool,
+     *              idempotent: bool, risk: McpRiskClass, alternative: string,
      *              inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...
      *          }>  $tools      Tool declarations to check in full.
      * @param   list<array{uri: string, handler: string, ...}>   $resources  Resource declarations to check.
@@ -124,8 +127,10 @@ final readonly class McpCatalogValidator
      * malformed snapshot through the exact same boundary the server factory calls.
      *
      * @param   list<array{
-     *              name: string, handler: string, capability: string|null, readOnly: bool,
-     *              destructive: bool, idempotent: bool, risk: McpRiskClass, alternative: string,
+     *              name: string, handler: string, capability: string|null,
+     *              capabilityResolver: string|McpDynamicCapabilityResolver,
+     *              mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool,
+     *              idempotent: bool, risk: McpRiskClass, alternative: string,
      *              inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...
      *          }>  $tools      Tool declarations to check in full.
      * @param   list<array{uri: string, handler: string, ...}>   $resources  Resource declarations to check.
@@ -182,8 +187,10 @@ final readonly class McpCatalogValidator
      * `violations()` instead, because one entry cannot answer them.
      *
      * @param   array{
-     *            name: string, handler: string, capability: string|null, readOnly: bool,
-     *            destructive: bool, idempotent: bool, risk: McpRiskClass, alternative: string,
+     *            name: string, handler: string, capability: string|null,
+     *            capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool,
+     *            idempotent: bool, risk: McpRiskClass, alternative: string,
      *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...
      *          }      $tool      One published catalogue entry.
      * @param   object  $handlers  Handler object the entry names a method on.
@@ -201,6 +208,7 @@ final readonly class McpCatalogValidator
             ...$this->schemaViolations($tool['name'], 'output', $tool['outputSchema'], false),
             ...$this->disclosureViolations($tool['name'], $tool),
             ...$this->handlerSignatureViolations($tool['handler'], $handlers),
+            ...(new McpToolExecutionEvidence())->violations($tool, $handlers),
         ];
     }
 

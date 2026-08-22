@@ -7,7 +7,7 @@ host supplies presentation-ready page, site, navigation, canonical URL, and asse
 Build and statically inspect the package from the repository root:
 
 ```bash
-php bin/kumwe extension:build examples/extensions/minimal-template --output=/tmp/minimal-site-template.zip
+php bin/kumwe extension:build "$PWD/examples/extensions/minimal-template" --output=/tmp/minimal-site-template.zip
 php bin/kumwe extension:conformance /tmp/minimal-site-template.zip
 ```
 

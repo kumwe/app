@@ -14,7 +14,7 @@
  * because repository ancestry rather than the local object cache decides whether a citation survives.
  *
  * Usage:
- *   php tools/verify-roadmap.php [--findings=PATH] [--changelog=PATH] [--repository=PATH]
+ *   php tools/verify-roadmap.php [--findings=PATH] [--changelog=PATH] [--repository=PATH] [--status=PATH]
  *
  * `--findings` exists so the architecture suite can prove the check fails in the right direction against a
  * ledger with a closed entry reintroduced, without writing that entry into the committed one.
@@ -29,6 +29,7 @@ $errors = [];
 $ledgerPath = $root . '/docs/roadmap/findings.json';
 $changelogPath = $root . '/CHANGELOG.md';
 $repositoryRoot = $root;
+$statusPath = $root . '/docs/roadmap/STATUS.md';
 
 foreach (array_slice($argv, 1) as $argument) {
     if (str_starts_with($argument, '--findings=')) {
@@ -43,17 +44,21 @@ foreach (array_slice($argv, 1) as $argument) {
         $repositoryRoot = substr($argument, strlen('--repository='));
         continue;
     }
+    if (str_starts_with($argument, '--status=')) {
+        $statusPath = substr($argument, strlen('--status='));
+        continue;
+    }
 
     $errors[] = sprintf(
         'Unknown argument %s. Usage: php tools/verify-roadmap.php [--findings=PATH] [--changelog=PATH] '
-        . '[--repository=PATH]',
+        . '[--repository=PATH] [--status=PATH]',
         $argument,
     );
 }
 
 $findings = readLedger($ledgerPath, $errors);
 readLedger($root . '/docs/roadmap/capacity-contract.json', $errors);
-verifyStatusSelfConsistency($root . '/docs/roadmap/STATUS.md', $errors);
+verifyStatusSelfConsistency($statusPath, $errors);
 
 if (!is_file($changelogPath)) {
     $errors[] = 'CHANGELOG.md is missing. It is where completed work goes when it leaves the roadmap.';
@@ -194,11 +199,15 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
         }
     }
 
+    /** @var array<string, array{packages: string, findings: string}> $open */
     $open = [];
     if (preg_match('/^## Open work packages by phase$(.*?)^## /ms', $source, $section) === 1) {
         foreach (explode("\n", $section[1]) as $line) {
-            if (preg_match('/^\|\s*([0-9A-Z]+)\s*\|([^|]*)\|/u', $line, $row) === 1) {
-                $open[trim($row[1])] = trim($row[2]);
+            if (preg_match('/^\|\s*([0-9A-Z]+)\s*\|([^|]*)\|([^|]*)\|/u', $line, $row) === 1) {
+                $open[trim($row[1])] = [
+                    'packages' => trim($row[2]),
+                    'findings' => trim($row[3]),
+                ];
             }
         }
     }
@@ -211,51 +220,57 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
     }
 
     foreach ($board as $phase => $state) {
-        $packages = $open[$phase] ?? null;
-        if ($packages === null) {
+        $work = $open[$phase] ?? null;
+        if ($work === null) {
             continue;
         }
-        $hasOpenPackages = preg_match('/`[A-Z]+[0-9A-Z]*-[A-Z]`/', explode('(', $packages)[0]) === 1;
-        // Only a state that opens by calling the phase delivered is a claim about the phase; prose
-        // naming which pieces are delivered while the row also says what is open is exactly right.
-        if ($hasOpenPackages && preg_match('/^\**delivered\b/i', $state) === 1) {
+        $packages = $work['packages'];
+        $findings = $work['findings'];
+        $liveIndex = trim($packages . ' ' . $findings);
+        $hasOpenWork = !in_array(trim($liveIndex, " \t\n\r\0\x0B—-"), ['', '|'], true);
+        if (preg_match('/\b(?:closed|complete|completed|delivered|done|finished|shipped)\b/i', $liveIndex) === 1) {
             $errors[] = sprintf(
-                'STATUS.md phase %s reads "%s" while the open-work table still lists %s. The table '
-                . 'holds only what is outstanding, so a phase with packages in it is not delivered.',
+                'STATUS.md open-work row for phase %s carries a completion marker. Completed package '
+                . 'or finding identifiers belong in CHANGELOG.md and the phase board, not this table.',
                 $phase,
-                $state,
-                $packages,
             );
         }
 
-        // Within one row, a package cannot be open and complete at the same time.
-        if (preg_match('/\(([^)]*)\)/u', $packages, $parenthetical) === 1) {
-            preg_match_all('/`([A-Z]+[0-9A-Z]*-[A-Z])`/', explode('(', $packages)[0], $openIds);
-            preg_match_all('/`([A-Z]+[0-9A-Z]*-[A-Z])`/', $parenthetical[1], $doneIds);
-            $both = array_intersect($openIds[1], $doneIds[1]);
-            if ($both !== []) {
-                $errors[] = sprintf(
-                    'STATUS.md lists %s as both open and complete in phase %s.',
-                    implode(', ', $both),
-                    $phase,
-                );
-            }
+        // Only a state that opens by calling the phase delivered is a claim about the phase.
+        if ($hasOpenWork && preg_match('/^\**delivered\b/i', $state) === 1) {
+            $errors[] = sprintf(
+                'STATUS.md phase %s reads "%s" while the open-work table still lists %s / %s. The table '
+                . 'holds only what is outstanding, so a phase with work in it is not delivered.',
+                $phase,
+                $state,
+                $packages,
+                $findings,
+            );
         }
     }
 
+    $criteria = [];
     $unmet = [];
     if (preg_match('/^## Gate A criteria$(.*?)^## /ms', $source, $section) === 1) {
         foreach (explode("\n", $section[1]) as $line) {
             if (preg_match('/^\|\s*(\d+)\s*\|([^|]*)\|([^|]*)\|/u', $line, $row) === 1) {
-                if (!str_starts_with(ltrim($row[3]), 'Yes')) {
-                    $unmet[] = trim($row[1]);
+                $criterion = trim($row[1]);
+                $criteria[] = $criterion;
+                if (preg_match('/^Yes(?:\s|$)/u', ltrim($row[3])) !== 1) {
+                    $unmet[] = $criterion;
                 }
             }
         }
     }
-    if ($unmet === []) {
-        $errors[] = 'STATUS.md must carry a Gate A criteria table with a Met column for each criterion; '
-            . 'none was read, so the gate\'s readiness cannot be checked against it.';
+    $expectedCriteria = array_map(
+        static fn (int $criterion): string => (string) $criterion,
+        range(1, 13),
+    );
+    if ($criteria !== $expectedCriteria) {
+        $errors[] = sprintf(
+            'STATUS.md must carry exactly Gate A criteria 1 through 13 in order; found: %s.',
+            $criteria === [] ? 'none' : implode(', ', $criteria),
+        );
 
         return;
     }
@@ -266,12 +281,17 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
         if (preg_match('/^\|\s*\**Gate A\**\s*\|(.*)$/u', $line, $row) !== 1) {
             continue;
         }
-        if (preg_match('/\bready\b/i', $row[1]) !== 1) {
+        $statusCells = array_values(array_filter(
+            array_map('trim', explode('|', $row[1])),
+            static fn (string $cell): bool => $cell !== '',
+        ));
+        $gateStatus = $statusCells[0] ?? '';
+        if ($unmet === [] || preg_match('/^\**(?:Ready|Passed)\b/i', $gateStatus) !== 1) {
             continue;
         }
         $errors[] = sprintf(
-            'STATUS.md says Gate A is ready while criteria %s are not met in its own criteria table. '
-            . 'A gate with an outstanding criterion is not ready; it is ready to fail one.',
+            'STATUS.md claims Gate A readiness or passage while criteria %s are not met in its own criteria '
+            . 'table.',
             implode(', ', $unmet),
         );
 
@@ -291,7 +311,10 @@ function verifyChangelogCitations(string $path, string $root, array &$errors): v
     /** @var array<int, array<int, string>> $matched */
     $matched = [];
     preg_match_all('/`([0-9a-f]{7,40})`/', $contents, $matched);
-    $citations = array_values(array_unique($matched[1] ?? []));
+    $citations = array_values(array_unique(array_filter(
+        $matched[1] ?? [],
+        static fn (string $citation): bool => preg_match('/^[0-9]{9,}$/D', $citation) !== 1,
+    )));
     if ($citations === []) {
         $errors[] = 'CHANGELOG.md cites no commits, so completed work has no reachable evidence.';
 

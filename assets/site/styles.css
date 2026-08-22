@@ -149,7 +149,7 @@
   .managed-hero-copy h1 { max-width: 12ch; margin-block: .65rem 1.35rem; }
   .managed-summary { max-width: 42rem; color: var(--site-muted); font-size: clamp(1.05rem, 2vw, 1.28rem); }
   .managed-hero-logo { position: relative; padding: clamp(1.2rem, 3vw, 2.4rem); border: 1px solid color-mix(in srgb, var(--site-border), transparent 10%); border-radius: 1.35rem; background: color-mix(in srgb, var(--site-surface) 88%, transparent); box-shadow: 0 2.4rem 5rem rgb(7 24 45 / .18), inset 0 1px 0 color-mix(in srgb, var(--site-surface) 95%, transparent); backdrop-filter: blur(14px); }
-  .managed-hero-logo::before { position: absolute; z-index: -1; inset: 1.4rem -1.6rem -1.6rem 1.4rem; border-radius: 1.35rem; background: linear-gradient(145deg, color-mix(in srgb, var(--site-accent), transparent 76%), color-mix(in srgb, var(--site-navy-950), transparent 94%)); content: ""; }
+  .managed-hero-logo::before { position: absolute; z-index: -1; inset-block: 1.4rem -1.6rem; inset-inline: 1.4rem -1.6rem; border-radius: 1.35rem; background: linear-gradient(145deg, color-mix(in srgb, var(--site-accent), transparent 76%), color-mix(in srgb, var(--site-navy-950), transparent 94%)); content: ""; }
   .managed-hero-logo img { width: 100%; max-height: 18rem; object-fit: contain; }
   .managed-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 2rem; }
   .managed-section { padding-block: clamp(4.5rem, 9vw, 7.5rem); scroll-margin-top: 5.5rem; background: var(--site-surface); }
@@ -240,7 +240,7 @@
     .site-header-inner { min-height: 4.5rem; }
     .managed-hero-grid, .managed-section-grid { grid-template-columns: 1fr; }
     .managed-hero-logo { order: -1; max-width: 24rem; margin-inline-end: .75rem; }
-    .managed-hero-logo::before { inset: 1rem -1rem -1rem 1rem; }
+    .managed-hero-logo::before { inset-block: 1rem -1rem; inset-inline: 1rem -1rem; }
     html[data-site-navigation-enhanced] .site-navigation-toggle { display: inline-flex; }
     .site-navigation { position: static; display: block; padding: .6rem; border: 1px solid var(--site-border); border-radius: .75rem; background: var(--site-surface); }
     html[data-site-navigation-enhanced] .site-navigation { position: absolute; inset: 4.5rem 1rem auto; display: none; box-shadow: 0 18px 44px rgb(7 24 45 / .18); }

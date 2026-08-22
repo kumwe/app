@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Runtime;
 
-use Kumwe\App\Infrastructure\Persistence\ReadinessStatus;
+use Kumwe\App\Application\Readiness\ReadinessStatus;
 
 /**
  * Readiness signal for the HTTP request path, answered from the replica-local readiness marker alone.

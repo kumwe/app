@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
+import { gotoAfterRuntimeConvergence } from './support/runtime-convergence';
 
 const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL ?? 'browser-administrator@kumwe.test';
 const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD ?? 'browser administrator password';
@@ -117,7 +118,7 @@ async function signIn(
   email = administratorEmail,
   password = administratorPassword,
 ): Promise<void> {
-  await page.goto('/administrator/login');
+  await gotoAfterRuntimeConvergence(page, '/administrator/login', 'The administrator sign-in page');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
@@ -154,15 +155,33 @@ async function expectAdministratorRecordRow(page: Page, value: string): Promise<
     .toBeVisible();
 }
 
+async function waitForAnnouncementsStatus(
+  page: Page,
+  status?: 'active' | 'disabled',
+): Promise<void> {
+  const expected = status === undefined
+    ? /component · 2\.0\.0 · (?:active|disabled)/
+    : new RegExp(`component · 2\\.0\\.0 · ${status}`);
+  await gotoAfterRuntimeConvergence(
+    page,
+    '/administrator/extensions',
+    'The announcements extension listing',
+  );
+  const extension = page.locator('article').filter({
+    hasText: 'kumwe/announcements-example',
+  }).first();
+  await expect(extension).toContainText(expected);
+}
+
 async function ensureAnnouncementsActive(page: Page): Promise<void> {
-  await page.goto('/administrator/extensions');
+  await waitForAnnouncementsStatus(page);
   const extension = page.locator('article').filter({ hasText: 'kumwe/announcements-example' }).first();
   const activate = extension.getByRole('button', { name: 'Activate' });
   if (await activate.count()) {
     await activate.click();
     await expect(page).toHaveURL(/\/administrator\/extensions$/);
   }
-  await expect(extension).toContainText(/component · 2\.0\.0 · active/);
+  await waitForAnnouncementsStatus(page, 'active');
   await expect.poll(async () => {
     await page.goto('/administrator');
     return page.getByRole('link', { name: 'Announcements', exact: true }).count();
@@ -502,7 +521,7 @@ test('an access-group dashboard default reaches its member and can be reset', as
 test.describe('authenticated administrator', () => {
   test.beforeEach(async ({ page }) => signIn(page));
 
-  test('dashboard supports desktop and responsive navigation', async ({ page, isMobile }) => {
+  test('dashboard supports desktop and responsive navigation', async ({ page }, testInfo) => {
     await expect(page.getByRole('heading', { name: 'Your work, at a glance' })).toBeVisible();
     await expect(page.locator('[data-kis-dashboard-widget="core.dashboard.content-summary"]')).toBeVisible();
     const quickLinks = page.locator('.kis-dashboard-shortcut-list a');
@@ -531,12 +550,15 @@ test.describe('authenticated administrator', () => {
     await expect(page).toHaveURL(/\/administrator\/content\?q=launch$/u);
     await page.goto('/administrator');
     await expectStylesLoaded(page);
-    if (isMobile) {
-      const toggle = page.getByRole('button', { name: 'Open administrator navigation' });
+    const toggle = page.getByRole('button', { name: 'Open administrator navigation' });
+    if (testInfo.project.name.startsWith('mobile-')) {
+      await expect(toggle).toBeVisible();
       await toggle.click();
       await expect(page.getByRole('navigation', { name: 'Administrator navigation' })).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(toggle).toBeFocused();
+    } else {
+      await expect(toggle).toBeHidden();
     }
     await expectAccessible(page);
     await expect(page).toHaveScreenshot('dashboard.png', {
@@ -565,6 +587,10 @@ test.describe('authenticated administrator', () => {
 
   test('business definitions publish through graphical compatibility gates', async ({ page }, testInfo) => {
     // KIS-EVIDENCE-BEGIN p6-002-definition-ui
+    // Eight fully authored field rows plus validation, publication, accessibility and evidence capture
+    // already consume almost 30 seconds on WebKit. Give this one intentionally dense journey a bounded
+    // budget without weakening an assertion or extending the rest of the browser suite.
+    test.setTimeout(60_000);
     const suffix = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const handle = `site.default.browser_invoice_${suffix}`;
     await page.goto('/administrator/business-definitions?new=1');
@@ -1966,9 +1992,10 @@ test.describe('authenticated administrator', () => {
           hasText: 'kumwe/announcements-example',
         }).first();
         await extension.getByRole('button', { name: 'Disable' }).click();
-        await expect(page).toHaveURL(/\/administrator\/extensions$/);
-        await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
         extensionDisabled = true;
+        await expect(page).toHaveURL(/\/administrator\/extensions$/);
+        await waitForAnnouncementsStatus(page, 'disabled');
+        await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
 
         await expect.poll(async () => {
           await page.goto(announcementsDashboardPollHref);

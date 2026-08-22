@@ -469,6 +469,58 @@
             }
         },
         {
+            "id": "cli-machine-contract",
+            "title": "The retained CLI generation matches the live command graph",
+            "purpose": "Fail when the live command names differ from the immutable CLI generation, when its executable input grammar, file-backed secret transport, or declared portable exits are violated, or when the deployed and documentation copies differ byte for byte. Output modes, exit meanings, and closed action-level risk remain compatibility-pinned metadata rather than claims that the dispatcher introspects command output.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "cli:contract",
+            "command": "composer cli:contract",
+            "artifact": "docs/machine-contract/cli-v1.json",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer cli:contract"
+                }
+            }
+        },
+        {
+            "id": "mcp-machine-contract",
+            "title": "The retained MCP generation matches the live capability catalogue",
+            "purpose": "Fail when a live tool, resource, prompt, schema, mutation requirement, risk classification, or stable error contract differs from the immutable MCP generation.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "mcp:contract",
+            "command": "composer mcp:contract",
+            "artifact": "docs/machine-contract/mcp-v1.json",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer mcp:contract"
+                }
+            }
+        },
+        {
             "id": "openapi-drift",
             "title": "The generated OpenAPI document matches the routes that exist",
             "purpose": "Regenerate the contract and fail when it differs from the committed artifact.",
@@ -626,8 +678,8 @@
         },
         {
             "id": "integration-idempotency",
-            "title": "The integration suite against a reused database, judged against a shrinking baseline",
-            "purpose": "Run the integration suite a second time against the database the first run left behind and fail on any test that is not in the pass-aware record in docs/quality/idempotency-baseline.json. The suite was not idempotent when V2-QA-004 was recorded; the baseline was that finding's reproduction, it only ever shrinks, and it is empty now that every recorded test rolls its installation-global state back or mints per-run identities. Reverse class order remains an explicitly pending measurement available through --pass=reverse, not a property this per-change lane claims to enforce.",
+            "title": "The integration suite repeated and reverse-ordered against one reused database",
+            "purpose": "After the complete suite's first integration run, execute the integration suite again in declaration order and then with its classes listed in reverse while preserving method order. Judge both passes against the shrinking pass-aware record in docs/quality/idempotency-baseline.json. The record is empty, and the process-scoped fixture lifecycle withdraws each run's newly published run-unique definitions together with their live schema installations before the next pass while retaining a bounded set of shared replay fixtures, so all three consecutive runs exercise one database without transient contracts consuming the live OpenAPI definition bound.",
             "owner": "quality-engineering",
             "runner": "composer",
             "command": "composer test:idempotency -- --engine=ID",
@@ -763,14 +815,14 @@
         },
         {
             "id": "frontend-build",
-            "title": "Administrator frontend type-checks and rebuilds to the committed bytes",
-            "purpose": "Fail when the committed browser assets are not what the locked toolchain produces.",
+            "title": "Frontend type-checks and every generated frontend asset reproduces committed bytes",
+            "purpose": "Fail when the locked source graph does not reproduce the Vite build tree and generated site runtime fallback.",
             "owner": "frontend",
             "runner": "npm",
-            "command": "npm run check",
-            "artifact": "public/assets/build",
+            "command": "bash -euo pipefail -c 'npm run check; npm run build; generated_status=\"$(git status --porcelain=v1 --untracked-files=all -- public/assets/build public/assets/site.css)\"; test -z \"$generated_status\"'",
+            "artifact": "public/assets/build and public/assets/site.css",
             "in_qa": false,
-            "excluded_from_qa_reason": "It is the frontend contract and runs under Node, not under the PHP entry point. It is a merge and nightly gate rather than a release one because the artifact it guards \u2014 public/assets/build \u2014 is committed, verified byte for byte at merge, and travels into the release archive unchanged.",
+            "excluded_from_qa_reason": "It is the frontend contract and runs under Node, not under the PHP entry point. It is a merge and nightly gate rather than a release one because both generated artifacts \u2014 public/assets/build and public/assets/site.css \u2014 are committed, verified byte for byte at merge, and travel into the release archive unchanged.",
             "cadence": [
                 "ci",
                 "nightly"
@@ -781,12 +833,12 @@
                 "ci": {
                     "file": ".github/workflows/ci.yml",
                     "job": "frontend",
-                    "contains": "npm run check"
+                    "contains": "git status --porcelain=v1 --untracked-files=all -- public/assets/build public/assets/site.css"
                 },
                 "nightly": {
                     "file": ".github/workflows/nightly.yml",
                     "job": "browser",
-                    "contains": "npm run check"
+                    "contains": "git status --porcelain=v1 --untracked-files=all -- public/assets/build public/assets/site.css"
                 }
             }
         },
@@ -819,8 +871,8 @@
         },
         {
             "id": "browser-engine-breadth",
-            "title": "Firefox and WebKit journeys, nightly",
-            "purpose": "Carry the same behavioural and accessibility journeys onto the two engines merge does not have time for; pixel baselines stay with Chromium and these projects declare that they ignore snapshots rather than comparing against a baseline that was never theirs.",
+            "title": "Desktop and mobile Firefox and WebKit journeys, nightly",
+            "purpose": "Carry the complete desktop behavioural and accessibility journeys onto the two engines merge does not have time for, plus bounded mobile touch, keyboard, focus, forced-colour, zoom and reflow proofs on both. The forced-colour proof verifies both media-query activation and a product-owned computed-style change rather than treating matchMedia alone as product evidence. Pixel baselines stay with Chromium and all four breadth projects declare that they ignore snapshots rather than comparing against a baseline that was never theirs; the cross-engine screenshot attachment is explicitly named evidence-only. The evidence records commit, database, project, browser, viewport, locale and fixture. The workflow enforces at least 99 percent first-attempt success overall, while tests/Browser/nightly-critical-journeys.json is the closed exact-title/project set for which a missing journey, final failure or retry-only pass is rejected.",
             "owner": "frontend",
             "runner": "npm",
             "command": "npm run test:browser:breadth",

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Http\Handler;
 
-use Kumwe\App\Infrastructure\Persistence\ReadinessStatus;
+use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

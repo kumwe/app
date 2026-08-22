@@ -42,6 +42,7 @@ use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -196,6 +197,7 @@ final class CustomBusinessActionExecutorTest extends TestCase
             new CustomBusinessViewHandlerRegistry($references),
             $actions,
             $authorization,
+            $this->createStub(ExtensionExecutionGate::class),
         );
         $guard = $this->createMock(BusinessRecordCustomActionGuard::class);
         $guard->expects(self::once())->method('guardCustomAction');

@@ -8,10 +8,13 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
 use Kumwe\App\BusinessDefinition\Domain\ViewDefinition;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 
 /**
  * Resolves custom declarations from one installed definition and dispatches their typed handlers.
@@ -31,6 +34,7 @@ final readonly class CustomBusinessSurfaceDispatcher
      * @param  CustomBusinessViewHandlerRegistry    $views          Active typed view handlers.
      * @param  CustomBusinessActionHandlerRegistry  $actions        Active typed action handlers.
      * @param  AuthorizationGateway                 $authorization  Shared audited authorization boundary.
+     * @param  ExtensionExecutionGate               $execution      Live generation authority for extension code.
      *
      * @since  2.0.0
      */
@@ -38,6 +42,7 @@ final readonly class CustomBusinessSurfaceDispatcher
         private CustomBusinessViewHandlerRegistry $views,
         private CustomBusinessActionHandlerRegistry $actions,
         private AuthorizationGateway $authorization,
+        private ExtensionExecutionGate $execution,
     ) {
     }
 
@@ -79,6 +84,7 @@ final readonly class CustomBusinessSurfaceDispatcher
      */
     public function viewContractSchemas(EntityTypeDefinition $definition, string $handle): ?array
     {
+        $this->assertCurrentOwner($definition->owner);
         foreach ($definition->views() as $view) {
             if ($view->handle !== $handle || $view->handler === null || $view->schema === null) {
                 continue;
@@ -110,6 +116,7 @@ final readonly class CustomBusinessSurfaceDispatcher
      */
     public function actionContractSchemas(EntityTypeDefinition $definition, string $handle): ?array
     {
+        $this->assertCurrentOwner($definition->owner);
         foreach ($definition->actions() as $action) {
             if ($action->handle !== $handle || $action->handler === null || $action->schema === null) {
                 continue;
@@ -176,6 +183,7 @@ final readonly class CustomBusinessSurfaceDispatcher
      */
     public function viewQuerySchema(EntityTypeDefinition $definition, string $handle): array
     {
+        $this->assertCurrentOwner($definition->owner);
         $view = $this->viewDefinition($definition, $handle);
         $contract = $this->views->contract(
             $definition->owner,
@@ -207,6 +215,7 @@ final readonly class CustomBusinessSurfaceDispatcher
         EntityTypeDefinition $definition,
         CustomBusinessViewQuery $query,
     ): CustomBusinessViewResult {
+        $this->assertCurrentOwner($definition->owner);
         $view = $this->viewDefinition($definition, $query->view);
         $handler = (string) $view->handler;
         $schema = (string) $view->schema;
@@ -240,6 +249,7 @@ final readonly class CustomBusinessSurfaceDispatcher
         EntityTypeDefinition $definition,
         CustomBusinessActionCommand $command,
     ): CustomBusinessActionResult {
+        $this->assertCurrentOwner($definition->owner);
         $action = $this->actionDefinition($definition, $command->action);
         $handler = (string) $action->handler;
         $schema = (string) $action->schema;
@@ -253,6 +263,28 @@ final readonly class CustomBusinessSurfaceDispatcher
         );
 
         return $this->actions->execute($definition->owner, $handler, $schema, $command);
+    }
+
+    /**
+     * Fence extension-owned contracts and handlers against the live runtime generation.
+     *
+     * Core and site-authored definitions do not execute package code and therefore do not depend on an
+     * extension publication. An extension owner does, so even schema discovery fails closed once a
+     * disable, uninstall, replacement or trust withdrawal supersedes the resident graph.
+     *
+     * @param   DefinitionOwner  $owner  Owner of the definition selecting the custom contract.
+     *
+     * @return  void
+     *
+     * @throws  \RuntimeException  When an extension-owned surface belongs to a stale runtime generation.
+     *
+     * @since   2.0.0
+     */
+    private function assertCurrentOwner(DefinitionOwner $owner): void
+    {
+        if ($owner->type === DefinitionOwnerType::Extension) {
+            $this->execution->assertCurrent();
+        }
     }
 
     /**

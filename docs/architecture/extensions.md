@@ -132,7 +132,8 @@ events, service IDs explicitly documented for extensions, capability names, API 
 as versioned interfaces. Schema-1 packages continue to load but cannot opt into typed shell contributions without
 a schema-2 manifest; contributed field presenters and custom business handlers require schema 3 so schema 2
 remains a closed, unchanged grammar. Durable integration contributions require schema 4/SPI 2; schemas 1 through 3
-retain their existing bytes and behavior.
+retain their existing bytes and behavior. Declarative composition contributions require schema 5/SPI 3; schema 5
+preserves every earlier grammar and opens only its closed composition section.
 Internal controller classes, registry implementations, template implementation details, and raw database tables
 are not stable APIs.
 

@@ -6,6 +6,7 @@ namespace Kumwe\App\BusinessReporting\Application;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 
 /**
  * Immutable runtime index of reconciled report contributions.
@@ -23,16 +24,22 @@ final readonly class ReportDefinitionRegistry
     private array $reports;
 
     /**
-     * Index definitions and refuse ambiguity.
+     * Build the immutable report index with an optional live extension-generation authority.
      *
-     * @param   list<ReportDefinition>  $reports  Active reconciled contributions.
+     * The container supplies the authority because every indexed report is an extension contribution.
+     * Isolated domain and presenter tests may omit it; an empty registry never needs it.
+     *
+     * @param   list<ReportDefinition>   $reports    Active reconciled contributions.
+     * @param   ?ExtensionExecutionGate  $execution  Live authority for the generation that declared them.
      *
      * @throws  InvalidArgumentException  When a member is invalid or an identifier is duplicated.
      *
      * @since   2.0.0
      */
-    public function __construct(array $reports)
-    {
+    public function __construct(
+        array $reports,
+        private ?ExtensionExecutionGate $execution = null,
+    ) {
         if (count($reports) > 256) {
             throw new InvalidArgumentException('The active report registry exceeds its safe bound.');
         }
@@ -60,6 +67,8 @@ final readonly class ReportDefinitionRegistry
      */
     public function get(string $identifier): ReportDefinition
     {
+        $this->assertCurrent();
+
         return $this->reports[$identifier] ?? throw new ReportUnavailable('The report is unavailable.');
     }
 
@@ -72,6 +81,24 @@ final readonly class ReportDefinitionRegistry
      */
     public function all(): array
     {
+        $this->assertCurrent();
+
         return array_values($this->reports);
+    }
+
+    /**
+     * Fence a non-empty contributed report snapshot against live runtime authority.
+     *
+     * @return  void
+     *
+     * @throws  \RuntimeException  When this report snapshot belongs to a superseded generation.
+     *
+     * @since   2.0.0
+     */
+    private function assertCurrent(): void
+    {
+        if ($this->reports !== []) {
+            $this->execution?->assertCurrent();
+        }
     }
 }

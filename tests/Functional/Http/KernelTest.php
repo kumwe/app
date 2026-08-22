@@ -9,17 +9,22 @@ use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Http\Handler\ApiIndexHandler;
 use Kumwe\App\Http\Handler\HomePageHandler;
 use Kumwe\App\Http\Handler\LivenessHandler;
+use Kumwe\App\Http\Middleware\ExtensionRuntimeGenerationMiddleware;
 use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
 use Kumwe\App\Presentation\Twig\SiteTwigEnvironment;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Laminas\Diactoros\ServerRequestFactory;
+use Laminas\Stratigility\MiddlewarePipeInterface;
 use Mezzio\Application;
+use Mezzio\Middleware\LazyLoadingMiddleware;
 use Mezzio\Router\RouterInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Server\MiddlewareInterface;
 use ReflectionMethod;
+use Traversable;
 
 #[CoversClass(ContainerFactory::class)]
 #[CoversClass(HomePageHandler::class)]
@@ -210,6 +215,31 @@ final class KernelTest extends TestCase
     }
 
     /**
+     * The extension-generation fence is installed only after the full runtime is materialized.
+     *
+     * Recovery composition must remain able to repair an absent or stale runtime publication, while
+     * normal requests must cross the live-generation authority before resident extension code can run.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testExtensionGenerationFenceIsInstalledOnlyInTheFullRuntime(): void
+    {
+        $factory = new ContainerFactory();
+        $environment = new Environment($this->productionValues());
+
+        self::assertNotContains(
+            ExtensionRuntimeGenerationMiddleware::class,
+            $this->pipelineNames($factory->createRecovery($environment)),
+        );
+        self::assertContains(
+            ExtensionRuntimeGenerationMiddleware::class,
+            $this->pipelineNames($factory->create($environment)),
+        );
+    }
+
+    /**
      * @return array<string, string>
      */
     private function productionValues(): array
@@ -273,5 +303,50 @@ final class KernelTest extends TestCase
         self::assertIsString($cache);
 
         return $cache;
+    }
+
+    /**
+     * Flatten the configured application pipeline into concrete and lazy service names.
+     *
+     * @param   Container  $container  Prepared full or recovery runtime container.
+     *
+     * @return  list<string>  Middleware names in execution order.
+     *
+     * @since   2.0.0
+     */
+    private function pipelineNames(Container $container): array
+    {
+        self::assertInstanceOf(Application::class, $container->get(Application::class));
+        $pipeline = $container->get(MiddlewarePipeInterface::class);
+        self::assertInstanceOf(MiddlewareInterface::class, $pipeline);
+
+        return $this->middlewareNames($pipeline);
+    }
+
+    /**
+     * Flatten one middleware pipeline into the service names it will resolve.
+     *
+     * @param   MiddlewareInterface  $middleware  Prepared middleware or nested pipeline.
+     *
+     * @return  list<string>  Concrete class and lazy service names in execution order.
+     *
+     * @since   2.0.0
+     */
+    private function middlewareNames(MiddlewareInterface $middleware): array
+    {
+        if ($middleware instanceof LazyLoadingMiddleware) {
+            return [$middleware->middlewareName];
+        }
+        if ($middleware instanceof Traversable) {
+            $names = [];
+            foreach ($middleware as $nested) {
+                self::assertInstanceOf(MiddlewareInterface::class, $nested);
+                array_push($names, ...$this->middlewareNames($nested));
+            }
+
+            return $names;
+        }
+
+        return [$middleware::class];
     }
 }

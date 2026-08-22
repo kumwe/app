@@ -151,14 +151,30 @@ FROM php-base AS vendor
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 COPY composer.json composer.lock ./
 
-RUN composer install \
-    --classmap-authoritative \
-    --no-ansi \
-    --no-dev \
-    --no-interaction \
-    --no-progress \
-    --no-scripts \
-    --prefer-dist
+RUN set -eux; \
+    for attempt in 1 2 3; do \
+        if composer install \
+            --classmap-authoritative \
+            --no-ansi \
+            --no-dev \
+            --no-interaction \
+            --no-progress \
+            --no-scripts \
+            --prefer-dist; then \
+            exit 0; \
+        else \
+            status="$?"; \
+        fi; \
+        if [ "$status" -ne 100 ]; then \
+            exit "$status"; \
+        fi; \
+        if [ "$attempt" -lt 3 ]; then \
+            echo "Composer dependency download failed on attempt ${attempt}; retrying." >&2; \
+            sleep $((10 * attempt)); \
+        fi; \
+    done; \
+    echo 'Composer dependencies could not be installed after three bounded attempts.' >&2; \
+    exit "$status"
 
 COPY . ./
 

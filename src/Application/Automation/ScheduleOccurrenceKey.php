@@ -7,6 +7,7 @@ namespace Kumwe\App\Application\Automation;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
+use Kumwe\App\Shared\Domain\CanonicalJson;
 
 /**
  * Derives the key that lets one occurrence of one schedule be dispatched exactly once.

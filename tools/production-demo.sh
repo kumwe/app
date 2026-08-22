@@ -119,7 +119,6 @@ administrator_password="$(<"$state_directory/administrator-password")"
         trap '\''rm -f "$password_file"'\'' EXIT
         printf %s "$KUMWE_DEMO_ADMIN_PASSWORD" > "$password_file"
         php bin/kumwe user:create-admin \
-            --site=default \
             --email=administrator@kumwe.test \
             --name="Demonstration Administrator" \
             --password-file="$password_file"
