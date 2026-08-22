@@ -24,6 +24,14 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **The operator checklist is the one road for changing this repository.** `AGENTS.md` is now the
+  checklist any agent or person follows: where code lives, which gate watches a given change, the
+  recipes that keep `composer qa` green, and the dual homes that new work must not make worse.
+  [`docs/architecture/map.md`](docs/architecture/map.md) is the folder map. `CONTRIBUTING.md` and
+  `CLAUDE.md` no longer understate the local lane or point at the removed `docs/product/` path.
+  Existing programme contracts, quality manifests, and frozen surfaces are unchanged; this is the
+  missing index, not a second constitution.
+
 - **Gate A's executable quality evidence is complete at one exact machine candidate.** Exact candidate
   [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad),
   whose reproducible baseline records measured source
