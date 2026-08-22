@@ -428,10 +428,12 @@ final class PostingPeriodLockIntegrationTest extends TestCase
             $this->key('atomic-target'),
             recordId: $targetId,
         ));
-        foreach ([
-            [$openSourceId, 'Open source', '2410-02-05', 'atomic-open'],
-            [$closedSourceId, 'Closed source', '2410-01-15', 'atomic-closed'],
-        ] as [$recordId, $title, $postedOn, $key]) {
+        foreach (
+            [
+                [$openSourceId, 'Open source', '2410-02-05', 'atomic-open'],
+                [$closedSourceId, 'Closed source', '2410-01-15', 'atomic-closed'],
+            ] as [$recordId, $title, $postedOn, $key]
+        ) {
             $records->create(new CreateRecordCommand(
                 $context,
                 $owner,
@@ -444,7 +446,7 @@ final class PostingPeriodLockIntegrationTest extends TestCase
                 $owner,
                 $recordId,
                 1,
-                'primary_target',
+                'nullable_target',
                 $targetId,
                 $this->key($key . '-relate'),
             ));
@@ -457,10 +459,10 @@ final class PostingPeriodLockIntegrationTest extends TestCase
                 $context,
                 $owner,
                 $recordId,
-                includes: ['primary_target'],
+                includes: ['nullable_target'],
             ));
             self::assertSame($recordId, $view->recordKey);
-            self::assertCount(1, $view->includes['primary_target']);
+            self::assertCount(1, $view->includes['nullable_target']);
             $sourceBefore[$recordId] = [
                 'record_key' => $view->recordKey,
                 'version' => $view->version,
@@ -530,11 +532,11 @@ final class PostingPeriodLockIntegrationTest extends TestCase
                     $context,
                     $owner,
                     $recordId,
-                    includes: ['primary_target'],
+                    includes: ['nullable_target'],
                 ));
                 self::assertSame($sourceBefore[$recordId]['version'], $view->version);
-                self::assertCount(1, $view->includes['primary_target']);
-                self::assertSame($targetId, $view->includes['primary_target'][0]->recordId);
+                self::assertCount(1, $view->includes['nullable_target']);
+                self::assertSame($targetId, $view->includes['nullable_target'][0]->recordId);
                 self::assertSame($sourceBefore[$recordId]['history'], count($records->history(
                     new RecordHistoryQuery($context, $owner, $recordId),
                 )->revisions));
@@ -564,10 +566,10 @@ final class PostingPeriodLockIntegrationTest extends TestCase
                 $context,
                 $owner,
                 $recordId,
-                includes: ['primary_target'],
+                includes: ['nullable_target'],
             ));
             self::assertSame(3, $view->version);
-            self::assertSame([], $view->includes['primary_target']);
+            self::assertSame([], $view->includes['nullable_target']);
         }
         $this->expectException(BusinessRecordNotFound::class);
         $records->read(new ReadRecordQuery($context, $target, $targetId));
@@ -577,8 +579,8 @@ final class PostingPeriodLockIntegrationTest extends TestCase
      * Install the posting-dated owner graph once per process and answer its handles.
      *
      * The owner is the relationship fixture widened by the whole primitive under test: a nullable
-     * `posted_on` date declared as the posting date, and the approve workflow that proves the
-     * transition exemption.
+     * `posted_on` date declared as the posting date, an approve workflow that proves the transition
+     * exemption, and a many-to-one set-null relationship used by the atomic hard-delete proof.
      *
      * @param   Container         $container  Real integration container.
      * @param   ExecutionContext  $context    Administrator the installation runs as.
@@ -621,6 +623,13 @@ final class PostingPeriodLockIntegrationTest extends TestCase
             'filterable' => true,
             'sortable' => true,
             'configuration' => ['posting_date' => true],
+        ];
+        $document['relationships'][] = [
+            'handle' => 'nullable_target',
+            'label' => 'Nullable target',
+            'kind' => 'many_to_one',
+            'target' => $target->handle,
+            'on_delete' => 'set_null',
         ];
         $document['actions'] = [[
             'handle' => 'approve',

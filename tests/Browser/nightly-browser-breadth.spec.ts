@@ -16,10 +16,10 @@ async function signIn(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/administrator$/u);
 }
 
-/** Attach evidence without presenting another engine's pixels as this engine's regression baseline. */
+/** Attach full-page evidence without presenting another engine's pixels as a regression baseline. */
 async function attachEvidenceScreenshot(page: Page, testInfo: TestInfo): Promise<void> {
   const path = testInfo.outputPath('nightly-browser-breadth-evidence-only.png');
-  await page.screenshot({ path, fullPage: true, animations: 'disabled', caret: 'hide' });
+  await page.screenshot({ path, fullPage: true, scale: 'css', animations: 'disabled', caret: 'hide' });
   await testInfo.attach('nightly-browser-breadth-evidence-only', {
     path,
     contentType: 'image/png',

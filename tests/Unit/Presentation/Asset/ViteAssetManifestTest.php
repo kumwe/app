@@ -20,6 +20,12 @@ use RuntimeException;
 #[UsesClass(AssetEntry::class)]
 final class ViteAssetManifestTest extends TestCase
 {
+    /**
+     * Temporary manifest path unique to the current test.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private string $manifest;
 
     /**
@@ -183,12 +189,14 @@ final class ViteAssetManifestTest extends TestCase
      */
     public function testMalformedManifestListsOrEntryMetadataFailClosed(): void
     {
-        foreach ([
-            'css' => ['css' => ['named' => 'css/site.css']],
-            'imports' => ['imports' => ['_same.js', '_same.js']],
-            'dynamicImports' => ['dynamicImports' => 'not-a-list'],
-            'assets' => ['assets' => ['named' => 'css/site.css']],
-        ] as $field => $mutation) {
+        foreach (
+            [
+                'css' => ['css' => ['named' => 'css/site.css']],
+                'imports' => ['imports' => ['_same.js', '_same.js']],
+                'dynamicImports' => ['dynamicImports' => 'not-a-list'],
+                'assets' => ['assets' => ['named' => 'css/site.css']],
+            ] as $field => $mutation
+        ) {
             $this->writeManifest([
                 'assets/site/main.ts' => $this->validEntry([
                     'file' => 'js/site.js',
@@ -205,14 +213,16 @@ final class ViteAssetManifestTest extends TestCase
             }
         }
 
-        foreach ([
-            'missing isEntry' => ['file' => 'js/site.js', 'src' => 'assets/site/main.ts'],
-            'false isEntry' => ['file' => 'js/site.js', 'src' => 'assets/site/main.ts', 'isEntry' => false],
-            'non-boolean isEntry' => ['file' => 'js/site.js', 'src' => 'assets/site/main.ts', 'isEntry' => 1],
-            'missing src' => ['file' => 'js/site.js', 'isEntry' => true],
-            'mismatched src' => ['file' => 'js/site.js', 'src' => 'assets/other/main.ts', 'isEntry' => true],
-            'non-string src' => ['file' => 'js/site.js', 'src' => 1, 'isEntry' => true],
-        ] as $kind => $record) {
+        foreach (
+            [
+                'missing isEntry' => ['file' => 'js/site.js', 'src' => 'assets/site/main.ts'],
+                'false isEntry' => ['file' => 'js/site.js', 'src' => 'assets/site/main.ts', 'isEntry' => false],
+                'non-boolean isEntry' => ['file' => 'js/site.js', 'src' => 'assets/site/main.ts', 'isEntry' => 1],
+                'missing src' => ['file' => 'js/site.js', 'isEntry' => true],
+                'mismatched src' => ['file' => 'js/site.js', 'src' => 'assets/other/main.ts', 'isEntry' => true],
+                'non-string src' => ['file' => 'js/site.js', 'src' => 1, 'isEntry' => true],
+            ] as $kind => $record
+        ) {
             $this->writeManifest(['assets/site/main.ts' => $record]);
 
             try {
@@ -237,11 +247,13 @@ final class ViteAssetManifestTest extends TestCase
      */
     public function testUnsafeOrNonCssOutputsFailClosed(): void
     {
-        foreach ([
-            'module' => ['file' => '../site.js'],
-            'platform path' => ['file' => 'js/site.js', 'css' => ['css\\site.css']],
-            'non-CSS' => ['file' => 'js/site.js', 'css' => ['js/not-a-style.js']],
-        ] as $kind => $record) {
+        foreach (
+            [
+                'module' => ['file' => '../site.js'],
+                'platform path' => ['file' => 'js/site.js', 'css' => ['css\\site.css']],
+                'non-CSS' => ['file' => 'js/site.js', 'css' => ['js/not-a-style.js']],
+            ] as $kind => $record
+        ) {
             $this->writeManifest(['assets/site/main.ts' => $this->validEntry($record)]);
 
             try {

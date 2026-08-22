@@ -589,8 +589,8 @@ function assertRendererBinding(string $root, array $binding): void
  *
  * CSS escapes can spell every contract-sensitive identifier another way, so this repository refuses
  * them instead of maintaining a partial decoder. Comments are removed outside quoted strings with
- * line endings preserved; removing rather than spacing them exposes identifiers split as
- * `mar/**/gin-left` without corrupting diagnostics.
+ * line endings preserved; removing rather than spacing them exposes identifiers split by an embedded
+ * CSS comment without corrupting diagnostics.
  *
  * @return string  Escape-free CSS with comments removed and source line numbers preserved.
  *

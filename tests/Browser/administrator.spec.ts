@@ -567,11 +567,11 @@ test.describe('authenticated administrator', () => {
   });
 
   test('business definitions publish through graphical compatibility gates', async ({ page }, testInfo) => {
+    // KIS-EVIDENCE-BEGIN p6-002-definition-ui
     // Eight fully authored field rows plus validation, publication, accessibility and evidence capture
     // already consume almost 30 seconds on WebKit. Give this one intentionally dense journey a bounded
     // budget without weakening an assertion or extending the rest of the browser suite.
     test.setTimeout(60_000);
-    // KIS-EVIDENCE-BEGIN p6-002-definition-ui
     const suffix = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const handle = `site.default.browser_invoice_${suffix}`;
     await page.goto('/administrator/business-definitions?new=1');

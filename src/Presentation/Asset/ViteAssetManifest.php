@@ -122,7 +122,18 @@ final readonly class ViteAssetManifest
             throw new RuntimeException(sprintf('The frontend asset entry %s is missing.', $key));
         }
 
-        return $record;
+        $validated = [];
+        foreach ($record as $field => $value) {
+            if (!is_string($field)) {
+                throw new RuntimeException(sprintf(
+                    'The frontend asset entry %s contains a non-string field name.',
+                    $key,
+                ));
+            }
+            $validated[$field] = $value;
+        }
+
+        return $validated;
     }
 
     /**
@@ -133,12 +144,12 @@ final readonly class ViteAssetManifest
      * and must never be promoted into the initial page. The collections remain separate so a
      * malformed graph cannot silently alter order or coverage.
      *
-     * @param   array<mixed>         $manifest    Decoded Vite manifest object.
-     * @param   string               $key         Current entry or static chunk key.
-     * @param   array<string, int>   $state       DFS state: one active, two complete.
-     * @param   array<string, true>  $seen        Stylesheet outputs already linked.
-     * @param   list<string>         $stylesheets Public stylesheet URLs populated in place.
-     * @param   bool                 $entry       Whether this is the requested entry, whose CSS leads.
+     * @param   array<mixed>         $manifest     Decoded Vite manifest object.
+     * @param   string               $key          Current entry or static chunk key.
+     * @param   array<string, int>   $state        DFS state: one active, two complete.
+     * @param   array<string, true>  $seen         Stylesheet outputs already linked.
+     * @param   list<string>         $stylesheets  Public stylesheet URLs populated in place.
+     * @param   bool                 $entry        Whether this is the requested entry, whose CSS leads.
      *
      * @return  void
      *
@@ -286,6 +297,9 @@ final readonly class ViteAssetManifest
 
     /**
      * Admit one normalized relative Vite output path.
+     *
+     * @param   string  $value  Relative Vite output path to validate.
+     * @param   string  $field  Manifest field used in failure diagnostics.
      *
      * @return  string  Path safe to append to the configured public prefix.
      *

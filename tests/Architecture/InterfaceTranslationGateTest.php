@@ -1098,16 +1098,18 @@ final class InterfaceTranslationGateTest extends TestCase
         self::assertStringNotContainsString('php ', $privileged);
         self::assertStringNotContainsString('uses: ./', $privileged);
         self::assertStringNotContainsString('run: ./', $privileged);
-        foreach ([
-            'tools/',
-            'bin/',
-            'vendor/',
-            'node_modules/',
-            '.github/actions/',
-            'python ',
-            'ruby ',
-            'perl ',
-        ] as $execution) {
+        foreach (
+            [
+                'tools/',
+                'bin/',
+                'vendor/',
+                'node_modules/',
+                '.github/actions/',
+                'python ',
+                'ruby ',
+                'perl ',
+            ] as $execution
+        ) {
             self::assertStringNotContainsString($execution, $privileged, $execution);
         }
         $privilegedUses = preg_match_all(
