@@ -3479,8 +3479,12 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 $targetGeneration->assertMatches($target);
                 $targetScope = $this->scope($target, $context, $scope->organizationIdentifier);
                 $identityField = $this->identityField($target->definition);
-                $this->assertPortalTargetOperation($context, $target->definition, PortalOperation::Read);
-                $this->assertRelatedTargetAccess($target->definition, $targetAccess);
+                $this->relationships->assertPortalTargetOperation(
+                    $context,
+                    $target->definition,
+                    PortalOperation::Read,
+                );
+                $this->relationships->assertRelatedTargetAccess($target->definition, $targetAccess);
                 $targetId = $this->values->identity(
                     $target->definition,
                     [$identityField->handle => $value],
@@ -3875,85 +3879,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     }
 
     /**
-     * Require a nested relation plan to identify the declared target and disclose its public identity.
-     *
-     * Row access alone is insufficient when a caller supplies a target identity. Every selector and
-     * relationship mutation consumes the same public-reference permission so a known or forged identity
-     * cannot bypass the plan that made target choices visible.
-     *
-     * @param   EntityTypeDefinition      $target  Declared target definition.
-     * @param   BusinessRecordAccessPlan  $access  Nested plan rooted at the source field or relationship.
-     *
-     * @return  void
-     *
-     * @throws  BusinessRecordNotFound  When the plan points elsewhere or withholds the target identity.
-     *
-     * @since   2.0.0
-     */
-    private function assertRelatedTargetAccess(
-        EntityTypeDefinition $target,
-        BusinessRecordAccessPlan $access,
-    ): void {
-        if (!$this->relatedTargetAccessible($target, $access)) {
-            throw new BusinessRecordNotFound();
-        }
-    }
-
-    /**
-     * Decide whether one nested target plan may release the target's public identity.
-     *
-     * Selector reads use this predicate to return an indistinguishable empty page when target identity is
-     * withheld. Mutations wrap the same predicate with `assertRelatedTargetAccess()` and fail closed instead.
-     *
-     * @param   EntityTypeDefinition      $target  Declared target definition.
-     * @param   BusinessRecordAccessPlan  $access  Nested plan rooted at the source handle.
-     *
-     * @return  bool  True only for the exact target and its disclosed public identity field.
-     *
-     * @since   2.0.0
-     */
-    private function relatedTargetAccessible(
-        EntityTypeDefinition $target,
-        BusinessRecordAccessPlan $access,
-    ): bool {
-        return hash_equals($target->id, $access->resourceIdentifier)
-            && $access->fields->allows(
-                FieldAccessUsage::PublicReference,
-                $this->identityField($target)->handle,
-            );
-    }
-
-    /**
-     * Enforce a related target's exact portal exposure without affecting other authenticated surfaces.
-     *
-     * Source definition exposure is enforced by the generated surface before this service is called. A
-     * traversal is a second definition boundary, so a portal actor must also receive an explicit target-side
-     * opt-in for the read, browse, relation, or reorder operation being performed.
-     *
-     * @param   ExecutionContext      $context    Authenticated surface and tenant.
-     * @param   EntityTypeDefinition  $target     Definition reached through a source field or relationship.
-     * @param   PortalOperation       $operation  Exact target-side portal operation required.
-     *
-     * @return  void
-     *
-     * @throws  BusinessRecordNotFound  When a portal target or operation is not explicitly exposed.
-     *
-     * @since   2.0.0
-     */
-    private function assertPortalTargetOperation(
-        ExecutionContext $context,
-        EntityTypeDefinition $target,
-        PortalOperation $operation,
-    ): void {
-        if (
-            $context->surface() === AuthenticatedSurface::Portal
-            && (!$target->portalExposure || !$target->allowsPortalOperation($operation))
-        ) {
-            throw new BusinessRecordNotFound();
-        }
-    }
-
-    /**
      * Reject a portal include unless its exact nested target remains discoverable for this read operation.
      *
      * Generated adapters validate includes against the shared catalog, but the canonical service also
@@ -3992,8 +3917,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             } catch (BusinessRecordDefinitionUnavailable | BusinessRecordSchemaUnavailable) {
                 throw new BusinessRecordNotFound();
             }
-            $this->assertPortalTargetOperation($context, $target->definition, $operation);
-            $this->assertRelatedTargetAccess($target->definition, $targetAccess);
+            $this->relationships->assertPortalTargetOperation($context, $target->definition, $operation);
+            $this->relationships->assertRelatedTargetAccess($target->definition, $targetAccess);
             if (!$this->maySelectRelatedRows($targetAccess)) {
                 throw new BusinessRecordNotFound();
             }
