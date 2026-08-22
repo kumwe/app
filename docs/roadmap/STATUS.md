@@ -23,12 +23,12 @@ record is not thereby a new machine-evidence candidate.
 
 | | |
 |---|---|
-| **Current phase** | Gate A closeout: all 13 executable criteria are met; formal assessment awaits governance alignment and owner sign-offs. |
-| **In flight** | All thirteen executable Gate A criteria are verified at exact candidate `67cf6c02` by terminal-green CI, Nightly, Security and Development Compose runs. Its reproducible baseline names measured source `a4ded133`, and the candidate changes only that baseline file from the measured source. Criteria 5 and 12 therefore have exact machine-candidate proof; criterion 12's released-artifact evidence remains `2adb2ebe` and `v2.0.0-alpha.4`. Phase E is delivered, `P0-C`, `P2-F`, `P2-G` and `S-A` are complete, and the remaining open work is explicitly outside the thirteen-criterion Gate A evidence set. |
-| **Next** | Reconcile section 8's phase-completion entry condition with its thirteen executable criteria, record the product owner's approval of the exact evidence commit and obtain the required invariant-owner review sign-offs; then record the formal Gate A assessment. |
+| **Current phase** | Gate A passed. Runtime implementation and Gate B preparation proceed. |
+| **In flight** | All thirteen executable Gate A criteria are verified at exact candidate `67cf6c02` by terminal-green CI, Nightly, Security and Development Compose runs. Its reproducible baseline names measured source `a4ded133`; criterion 12's released-artifact evidence remains `2adb2ebe` and `v2.0.0-alpha.4`. Remaining open work continues without reopening Gate A. |
+| **Next** | Continue the runtime work with code quality and stability as the priority; add documentation and tests when they directly protect changed runtime behavior. |
 | **Open decisions** | `V2-QA-014` needs a real-Safari appearance-switch result before the stale WebKit background can be classified as a product defect or a Playwright-only emulation defect. It belongs to Gate B's accountable human-interface acceptance and does not block Gate A. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
-| **Gate A** | Not assessed. All 13 executable exit criteria are met. Formal assessment remains pending because section 8's phase-completion entry condition and its criterion-defined evidence set need one governing interpretation; passage is not asserted until that decision, product-owner approval of the exact evidence commit and the required invariant-owner review sign-offs are recorded. |
-| **Gate B** | Not started. Blocked on Gate A. 12 exit criteria; criterion 12 is the Studio visual composition integration added by decision D16. |
+| **Gate A** | Passed on 2026-08-22. All 13 executable criteria are met; acceptance is recorded in [ADR 0010](decisions/0010-gate-a-assessment.md). |
+| **Gate B** | Not assessed. Gate A is passed; the remaining Gate B runtime and qualification work is open. |
 
 ## Phase board
 
@@ -41,11 +41,11 @@ record is not thereby a new machine-evidence candidate.
 | 4 — Atomic aggregate documents | A | In progress — `P4-A` and `P4-D` delivered with the command and bounded invariant; `P4-B` and `P4-C` remain | Phase 3; phase 0 decision 2 |
 | E — Enterprise document primitives | A | Delivered — every package and follow-up finding complete | — |
 | L — Language, locale and multilingual content | A, with a B tail | Gate A half delivered — `PL-A` … `PL-F` complete; only the `PL-G` Gate B translation tail remains open | `PL-G` needs phase 2's broader `P2-E` matrix; otherwise parallel to 3, 4 and E |
-| **Gate A** | | **Not assessed — 13/13 executable criteria met** | Governance alignment, product-owner approval and invariant-owner sign-offs |
-| 5 — Enterprise scale | B | Not started | Gate A |
+| **Gate A** | | **Passed — 13/13 executable criteria met** | — |
+| 5 — Enterprise scale | B | Not started | `P2-I` performance harness |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
 | 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
-| S — Studio visual composition | A, with a B integration | In progress — `S-A` complete, the Gate A declaration contract is frozen; `S-B` … `S-G` open | Gate A |
+| S — Studio visual composition | A, with a B integration | In progress — `S-A` complete, the Gate A declaration contract is frozen; `S-B` … `S-G` open | — |
 | **Gate B** | | **Not assessed** | **Phases 7 and S** |
 | M — Maintainability | — | Not started | Phase 3 seams settled. Blocks nothing. |
 | N — Native client platform contracts | — | Version 3 seed — not started | Nothing in Version 2; blocks nothing. Decision D17, [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md). |
@@ -72,7 +72,7 @@ remains in README.
 
 ## Decisions
 
-Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a full decision record.
+Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full decision record.
 
 | | Decision | Record |
 |---|---|---|
@@ -93,6 +93,7 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 | D15 | Role-specific dashboards compose the unified contribution runtime | [ADR 0006](decisions/0006-unified-dashboard-composition.md) |
 | D16 | Studio visual composition is the Version 2 authoring surface, integrated at Gate B | [ADR 0007](decisions/0007-studio-visual-composition-integration.md) |
 | D17 | The native client platform is a Version 3 programme; its sign-in is the authentication link | [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md) |
+| D18 | Gate A is accepted on its thirteen executable criteria | [ADR 0010](decisions/0010-gate-a-assessment.md) |
 | — | The remaining `P0-E` decisions | Not yet written |
 
 ## Ledger snapshot
@@ -136,7 +137,7 @@ Seventeen, all recorded in [`README.md`](README.md) section 2. Eight carry a ful
 By severity: 0 critical, 19 high, 18 medium, 9 low.
 By origin: 12 from the independent review, 12 still-open entries from the executed gap matrix, 22 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
-D16 and D17.
+D16 through D18.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
 the tamper-evident audit work, the record-secret key ring and rotation, the credential lifecycle, the

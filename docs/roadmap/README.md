@@ -456,6 +456,13 @@ already signed in; the web's password login stays exactly as it is. Recorded wit
 non-goals in [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md); the ledger
 entries live in lane N, which blocks no Version 2 gate. See also section 5.3.
 
+### D18 — Gate A is accepted on its thirteen executable criteria
+
+Gate A is governed by the thirteen executable criteria in section 8. All thirteen are met at exact
+machine-evidence candidate `67cf6c02`, and the product owner accepted the result on 2026-08-22. Broader open
+work remains in the roadmap without blocking or reopening Gate A. Recorded in
+[ADR 0010](decisions/0010-gate-a-assessment.md).
+
 ---
 
 ## 3. Reconciliation with the independent review
@@ -1018,8 +1025,8 @@ intention.
 
 **Purpose.** Make it safe and productive to build an extension. Nothing is published; nothing is released.
 
-**Entry conditions.** Phases 0 through 4, phase E and phase L complete, each at its own exit gate,
-and phase S's Gate A half complete.
+**Entry conditions.** The thirteen executable criteria below are the Gate A acceptance contract. Open work
+outside those criteria does not block Gate A.
 
 **Exit criteria.** All must hold, each with executable evidence at one commit.
 
@@ -1070,8 +1077,8 @@ and phase S's Gate A half complete.
    line coverage and every global, changed-line and changed-refusal ratchet held. [Security run
    32582206983](https://github.com/kumwe/app/actions/runs/32582206983) and [Development Compose run
    32582206967](https://github.com/kumwe/app/actions/runs/32582206967) passed the same source. This satisfies
-   executable criterion 5 at the machine-evidence commit. Gate A remains **Not assessed** pending the section
-   8 governance interpretation, product-owner approval of that exact commit and invariant-owner sign-offs.
+   executable criterion 5 at the machine-evidence commit. Gate A is **Passed**; the product owner's acceptance
+   is recorded in [ADR 0010](decisions/0010-gate-a-assessment.md).
 6. **The seams the aggregate command needs are clean.** **Met and verified at
    [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad) by
    [CI run 32582207163](https://github.com/kumwe/app/actions/runs/32582207163);** recorded in
@@ -1142,6 +1149,9 @@ and phase S's Gate A half complete.
     extension built against this generation needs no manifest, declaration or classification change when
     the composition surface ships at Gate B. Completion is recorded in the changelog; `V2-STU-001` is
     absent from the live findings ledger.
+
+**Assessment.** **Passed on 2026-08-22.** All thirteen executable criteria are met at exact machine-evidence
+candidate `67cf6c02`. [ADR 0010](decisions/0010-gate-a-assessment.md) records the acceptance.
 
 **What Gate A does not assert.** Not enterprise capacity. Not point-in-time recovery. Not operational
 diagnostics. Not the human interface acceptance. Not a release. An extension author after Gate A is
@@ -1740,7 +1750,7 @@ checked and the four `he`/`ar` browser projects own committed baselines. The com
 **Exit gate, Gate B half.** All nine catalogues complete with no missing identifier, and per-locale browser,
 accessibility and visual qualification passing for each.
 
-Once phases 4, E and L have each passed their Gate A exit gate, **Gate A is assessed against section 8.**
+Gate A is assessed against section 8's thirteen executable criteria. Broader phase work keeps its own state.
 
 **Non-goals.** Do not translate machine error codes, audit action names, log messages or developer
 exceptions. Do not parse XLIFF at runtime. Do not add Traditional Chinese to Version 2. Do not build

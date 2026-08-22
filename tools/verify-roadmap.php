@@ -286,12 +286,12 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
             static fn (string $cell): bool => $cell !== '',
         ));
         $gateStatus = $statusCells[0] ?? '';
-        if ($unmet === [] || preg_match('/^\**Ready\b/i', $gateStatus) !== 1) {
+        if ($unmet === [] || preg_match('/^\**(?:Ready|Passed)\b/i', $gateStatus) !== 1) {
             continue;
         }
         $errors[] = sprintf(
-            'STATUS.md says Gate A is ready while criteria %s are not met in its own criteria table. '
-            . 'A gate with an outstanding criterion is not ready; it is ready to fail one.',
+            'STATUS.md claims Gate A readiness or passage while criteria %s are not met in its own criteria '
+            . 'table.',
             implode(', ', $unmet),
         );
 

@@ -96,7 +96,46 @@ final class RoadmapLifecycleTest extends TestCase
         }
 
         self::assertSame(1, $result['status']);
-        self::assertStringContainsString('Gate A is ready while criteria 5 are not met', $result['output']);
+        self::assertStringContainsString(
+            'Gate A readiness or passage while criteria 5 are not met',
+            $result['output'],
+        );
+    }
+
+    /**
+     * A passed Gate A claim is refused while any executable criterion remains unmet.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierRefusesAPassedGateWithAnUnmetCriterion(): void
+    {
+        $status = preg_replace(
+            '/^\| 5 \| Quality gates are truthful \|.*$/m',
+            '| 5 | Quality gates are truthful | Partly — executable evidence is incomplete | GM-TEST-01 |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | Passed. |',
+            $status,
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'Gate A readiness or passage while criteria 5 are not met',
+            $result['output'],
+        );
     }
 
     /**
@@ -195,7 +234,10 @@ final class RoadmapLifecycleTest extends TestCase
         }
 
         self::assertSame(1, $result['status']);
-        self::assertStringContainsString('Gate A is ready while criteria 5 are not met', $result['output']);
+        self::assertStringContainsString(
+            'Gate A readiness or passage while criteria 5 are not met',
+            $result['output'],
+        );
     }
 
     /**

@@ -46,8 +46,9 @@ development programme, from the architecture decision that opened it to the curr
   touch, forced-colour, 200%-zoom and reflow breadth. This record names the immutable workflow subject; the
   later documentation-only commit carrying it is not a new machine-evidence candidate. Closes `V2-QA-004`,
   `V2-QA-007`, `V2-QA-008` and `V2-DB-001`; completes `P2-G` and the Gate A slices of `P2-D` and `P2-E`, and
-  completes Gate A's machine criterion 5. Gate A remains unassessed pending the governing interpretation and
-  recorded owner sign-offs. (#102)
+  completes Gate A's machine criterion 5. All thirteen executable criteria are met and Gate A was accepted
+  by the product owner on 2026-08-22; [ADR 0010](docs/roadmap/decisions/0010-gate-a-assessment.md) records the
+  decision. (#102)
 - **REST, CLI and MCP are retained machine contracts rather than generated documentation snapshots.** Each
   surface now owns an immutable generation with bounded inputs, schemas, stable errors, risk and intentional
   exclusions; incompatible changes require an additive successor and generators refuse to replace retained
@@ -112,7 +113,7 @@ development programme, from the architecture decision that opened it to the curr
   [run 32472065990](https://github.com/kumwe/app/actions/runs/32472065990) built, signed/attested and published
   the Composer-project archive, checksums, SBOMs and signed checksum bundle from those exact bytes. This is
   the retained released-artifact evidence Gate A criterion 12 requires. The alpha label does not turn Gate A
-  into a release claim or replace its pending governance and recorded owner sign-offs.
+  into a production-release claim; Gate A acceptance is recorded separately in ADR 0010.
 - **The documentation rule for `tests/` is enforced, not merely written down.** `docs/coding-standard.md`
   has asked for a documentation block on every test class and test method since it was written, and
   `composer docs:api` scanned `src/` only, so the rule had never once been checked. `composer docs:tests`
