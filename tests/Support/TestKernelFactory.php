@@ -60,12 +60,22 @@ final class TestKernelFactory
 
     public static function create(Environment $environment): Container
     {
-        $container = (new ContainerFactory())->create($environment);
-        self::discardReplicaLocalRuntime($container);
-        $migrate = $container->get(MigrateCommand::class);
-        if (!$migrate instanceof MigrateCommand || $migrate->execute([], self::output()) !== 0) {
-            throw new RuntimeException('The integration database could not be migrated.');
+        // Repair and materialize through recovery composition first: discarding after a full boot would leave
+        // that container's immutable execution gates pinned to the replica state that was just removed.
+        $recovery = (new ContainerFactory())->createRecovery($environment);
+        try {
+            self::discardReplicaLocalRuntime($recovery);
+            $migrate = $recovery->get(MigrateCommand::class);
+            if (!$migrate instanceof MigrateCommand || $migrate->execute([], self::output()) !== 0) {
+                throw new RuntimeException('The integration database could not be migrated.');
+            }
+        } finally {
+            $database = $recovery->get(Connection::class);
+            if ($database instanceof Connection) {
+                $database->close();
+            }
         }
+        $container = (new ContainerFactory())->create($environment);
         self::trackTransientBusinessDefinitions($container, $environment);
 
         return $container;

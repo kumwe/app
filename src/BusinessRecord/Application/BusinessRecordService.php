@@ -59,7 +59,6 @@ use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
 use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
