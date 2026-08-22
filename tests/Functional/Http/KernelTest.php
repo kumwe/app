@@ -214,6 +214,16 @@ final class KernelTest extends TestCase
         self::assertSame($firstRecoveryCache, $nextRecoveryCache);
     }
 
+    /**
+     * The extension-generation fence is installed only after the full runtime is materialized.
+     *
+     * Recovery composition must remain able to repair an absent or stale runtime publication, while
+     * normal requests must cross the live-generation authority before resident extension code can run.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testExtensionGenerationFenceIsInstalledOnlyInTheFullRuntime(): void
     {
         $factory = new ContainerFactory();
