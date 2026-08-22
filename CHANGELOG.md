@@ -24,24 +24,30 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
-- **Gate A's executable quality evidence is complete at one verification candidate.** Verification candidate
-  [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
-  passed [CI run 32579525541](https://github.com/kumwe/app/actions/runs/32579525541),
-  [Nightly run 32579525381](https://github.com/kumwe/app/actions/runs/32579525381),
-  [Security run 32579525379](https://github.com/kumwe/app/actions/runs/32579525379) and
-  [Development Compose run 32579525390](https://github.com/kumwe/app/actions/runs/32579525390). CI
-  runs the ordinary integration suite, repeat pass and reverse-class-order pass against one database on
-  MariaDB LTS, MySQL 8.4 and PostgreSQL 17, with an empty idempotency record and independently checked
-  collection and runner status. Process-scoped fixture shutdown withdraws each run's transient definitions
-  and schema installations while retaining a bounded explicit replay set, so the third pass proves reuse
-  instead of consuming an ever-growing global catalogue. PostgreSQL disables PDO's prepared-statement reuse
-  at the connection boundary, and the formerly skipped nine-allocation identity proof now runs beside a
-  minimal PDO-only regression. Merge exercises the closed critical browser journeys in desktop/mobile
-  Chromium on all three databases; Nightly exercises Firefox and WebKit at both widths, including keyboard,
-  touch, forced-colour, 200%-zoom and reflow breadth, and enforces first-attempt results independently of
-  retries. Closes `V2-QA-004`, `V2-QA-007`, `V2-QA-008` and `V2-DB-001`; completes `P2-G` and the Gate A
-  slices of `P2-D` and `P2-E`, and completes Gate A's machine criterion 5. Gate A remains unassessed pending
-  the governing interpretation and recorded owner sign-offs. (#102)
+- **Gate A's executable quality evidence is complete at one exact machine candidate.** Exact candidate
+  [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad),
+  whose reproducible baseline records measured source
+  [`a4ded133`](https://github.com/kumwe/app/commit/a4ded13341d41dfbb2b7f69ff072b077510d2338)
+  and whose only tree change from that source is `docs/quality/baseline.json`, passed
+  [CI run 32582207163](https://github.com/kumwe/app/actions/runs/32582207163),
+  [Nightly run 32582207042](https://github.com/kumwe/app/actions/runs/32582207042),
+  [Security run 32582206983](https://github.com/kumwe/app/actions/runs/32582206983) and
+  [Development Compose run 32582206967](https://github.com/kumwe/app/actions/runs/32582206967). CI's main
+  quality suite passed 2,473 tests / 30,843 assertions and its test-documentation baseline passed 258 tests /
+  29,430 assertions. MariaDB LTS, MySQL 8.4 and PostgreSQL 17 each passed a 3,144-test ordinary suite and
+  complete 381-test same-database repeat and reverse-class-order passes with zero recorded idempotency
+  failures; MariaDB's canonical coverage run measured 15.30% classes, 39.47% methods and 66.90% lines and
+  every ratchet held. Process-scoped fixture shutdown withdraws each run's transient definitions and schema
+  installations while retaining a bounded explicit replay set, so the third pass proves reuse instead of
+  consuming an ever-growing global catalogue. PostgreSQL disables PDO's prepared-statement reuse at the
+  connection boundary, and the formerly skipped nine-allocation identity proof now runs beside a minimal
+  PDO-only regression. Merge passed 160 desktop/mobile Chromium journeys first attempt on each database;
+  Nightly passed 142 Firefox/WebKit journeys first attempt, including all 20 critical journeys and keyboard,
+  touch, forced-colour, 200%-zoom and reflow breadth. This record names the immutable workflow subject; the
+  later documentation-only commit carrying it is not a new machine-evidence candidate. Closes `V2-QA-004`,
+  `V2-QA-007`, `V2-QA-008` and `V2-DB-001`; completes `P2-G` and the Gate A slices of `P2-D` and `P2-E`, and
+  completes Gate A's machine criterion 5. Gate A remains unassessed pending the governing interpretation and
+  recorded owner sign-offs. (#102)
 - **REST, CLI and MCP are retained machine contracts rather than generated documentation snapshots.** Each
   surface now owns an immutable generation with bounded inputs, schemas, stable errors, risk and intentional
   exclusions; incompatible changes require an additive successor and generators refuse to replace retained
@@ -60,9 +66,11 @@ development programme, from the architecture decision that opened it to the curr
   inline side. Closes `V2-LNG-013`. (`798f896b`; #102)
 - **The roadmap is the sole live programme authority.** The executed gap matrix is retained explicitly as
   historical evidence, while current sequencing, open findings and gate state live only under
-  `docs/roadmap/`; the changelog remains the completed-work authority. The roadmap verifier now also accepts
-  a ready Gate A summary when all thirteen criteria are met and continues to fail it when any criterion is
-  unmet. Closes `V2-DOC-001`. (`0bdbdcfe`; #102)
+  `docs/roadmap/`; the changelog remains the completed-work authority. The roadmap verifier accepts a ready
+  Gate A summary only when all thirteen criteria are met, rejects completion vocabulary in either live open
+  index, checks both package and finding cells for lifecycle consistency, and distinguishes decimal
+  workflow-run identifiers from hexadecimal commit citations. Closes `V2-DOC-001`. (`0bdbdcfe`,
+  `a4ded133`; #102)
 - **Resident extension code is withdrawn and fenced with its signed generation.** At commit
   [`798f896b`](https://github.com/kumwe/app/commit/798f896b55da76f19cb4d01aee05cf74196bb44b),
   disable, quarantine,
@@ -82,8 +90,8 @@ development programme, from the architecture decision that opened it to the curr
   surface behavior. Commit
   [`8455b376`](https://github.com/kumwe/app/commit/8455b3769f166077e492a415e888b3c510c74fbd)
   removes the facade's final duplicate portal/reference-policy copies so the relationship seam is the single
-  decision owner; verification candidate
-  [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
+  decision owner; exact machine candidate
+  [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad)
   passed the focused refusal/publication proof and complete gates with that final shape. Completes `P3-A` and
   `P3-E`. (#102)
 - **The business-group ownership contract has its complete three-engine proof.** At commit
@@ -93,9 +101,9 @@ development programme, from the architecture decision that opened it to the curr
   site-only resource refusal, member disablement, audited and reversible widening, guarded narrowing,
   exact consolidated reporting and the no-extra-query authorization path on MariaDB, MySQL and PostgreSQL.
   Completes `P3-F`. (#102)
-- **Gate A's three-engine regression criterion has current-source and exact released evidence.** Verification
-  candidate [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
-  passed current-source CI, Nightly, Security and Development Compose. Released-evidence commit
+- **Gate A's three-engine regression criterion has exact machine-candidate and released-artifact evidence.**
+  Candidate [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad)
+  passed exact-candidate CI, Nightly, Security and Development Compose. Released-evidence commit
   [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7)
   passed the complete quality, MariaDB LTS, MySQL 8.4, PostgreSQL 17, browser, deployment, security and
   Development Compose workflows. Continuous-release run

@@ -1,10 +1,19 @@
 # Kumwe App consolidated roadmap
 
 **Original consolidation baseline** `7a83c295bce6c23f250384ba787dd5e4595fff0e`
-**Current machine-evidence candidate** [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
+
+**Exact machine-evidence candidate** [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad)
+
+**Reproducible-baseline measured source** [`a4ded133`](https://github.com/kumwe/app/commit/a4ded13341d41dfbb2b7f69ff072b077510d2338) — candidate `67cf6c02` changes only [`docs/quality/baseline.json`](../quality/baseline.json) from that source
+
 **Machine-readable companions** [`findings.json`](findings.json), [`capacity-contract.json`](capacity-contract.json)
+
 **Current position** [`STATUS.md`](STATUS.md)
+
 **Work already finished** [`CHANGELOG.md`](../../CHANGELOG.md)
+
+This evidence record names the immutable workflow subject above; the documentation-only commit carrying the
+record is not thereby a new machine-evidence candidate.
 
 ---
 
@@ -1042,24 +1051,30 @@ and phase S's Gate A half complete.
    complete prefixed core plans into one schema and checking every resulting index shape. The completed
    work is recorded in [`CHANGELOG.md`](../../CHANGELOG.md).
 5. **The gates are truthful.** **Machine evidence verified at exact candidate
-   [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1).**
+   [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad), whose
+   reproducible baseline records measured source
+   [`a4ded133`](https://github.com/kumwe/app/commit/a4ded13341d41dfbb2b7f69ff072b077510d2338).**
    One manifest defines local, CI, nightly and release execution; coverage attribution and ratchets are
    enforced; semantic dependency checking fails new violations; and retained REST, CLI, MCP and live-registry
    contracts are checked against production registrations. The integration suite runs ordinarily, repeats
    against the same database and then runs in reverse class order on MariaDB, MySQL and PostgreSQL, with an
    empty idempotency record and process-owned fixture retirement between passes. Merge browser proof covers
    desktop and mobile Chromium on all three engines, while
-   [Nightly run `32579525381`](https://github.com/kumwe/app/actions/runs/32579525381) covers desktop and mobile
-   Firefox and WebKit, keyboard and focus, touch, forced colours, 200% zoom, reflow and accessibility.
-   [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541) carries the exact candidate's
-   quality, frontend, relational, browser and deployed-artifact evidence; [Security run
-   `32579525379`](https://github.com/kumwe/app/actions/runs/32579525379) and [Development Compose run
-   `32579525390`](https://github.com/kumwe/app/actions/runs/32579525390) passed the same source. This satisfies
+   [Nightly run 32582207042](https://github.com/kumwe/app/actions/runs/32582207042) passed 142 desktop/mobile
+   Firefox and WebKit journeys first attempt, including all 20 critical journeys plus keyboard and focus,
+   touch, forced colours, 200% zoom, reflow and accessibility. [CI run
+   32582207163](https://github.com/kumwe/app/actions/runs/32582207163) carries the exact candidate's quality,
+   frontend, relational, browser, deployment-acceptance and deployed-artifact evidence: all three engines
+   passed the 3,144-test ordinary suite plus the 381-test repeat and reverse passes with no idempotency
+   failure, and each three-engine Chromium lane passed 160 journeys first attempt. MariaDB measured 66.90%
+   line coverage and every global, changed-line and changed-refusal ratchet held. [Security run
+   32582206983](https://github.com/kumwe/app/actions/runs/32582206983) and [Development Compose run
+   32582206967](https://github.com/kumwe/app/actions/runs/32582206967) passed the same source. This satisfies
    executable criterion 5 at the machine-evidence commit. Gate A remains **Not assessed** pending the section
    8 governance interpretation, product-owner approval of that exact commit and invariant-owner sign-offs.
 6. **The seams the aggregate command needs are clean.** **Met and verified at
-   [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1) by
-   [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541);** recorded in
+   [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad) by
+   [CI run 32582207163](https://github.com/kumwe/app/actions/runs/32582207163);** recorded in
    [`CHANGELOG.md`](../../CHANGELOG.md). The transaction abstraction is inward, owned by Application and
    adapted by Doctrine in Infrastructure, with its semantics proved on all three engines. Automation Doctrine
    adapters sit in Infrastructure behind application ports. The idempotency middleware no longer writes
@@ -1102,12 +1117,12 @@ and phase S's Gate A half complete.
     synchronisation-time numbering: the terminal carries an immutable unique client reference and the receiving
     command allocates the unchanged gapless human number. The completed work is recorded in
     [`CHANGELOG.md`](../../CHANGELOG.md).
-12. **Nothing regressed.** Current-source regression proof is exact candidate
-    [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1):
-    [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541),
-    [Nightly run `32579525381`](https://github.com/kumwe/app/actions/runs/32579525381),
-    [Security run `32579525379`](https://github.com/kumwe/app/actions/runs/32579525379) and
-    [Development Compose run `32579525390`](https://github.com/kumwe/app/actions/runs/32579525390).
+12. **Nothing regressed.** Exact machine-candidate regression proof is
+    [`67cf6c02`](https://github.com/kumwe/app/commit/67cf6c02360f8af4220f8bde7c24297854d45dad):
+    [CI run 32582207163](https://github.com/kumwe/app/actions/runs/32582207163),
+    [Nightly run 32582207042](https://github.com/kumwe/app/actions/runs/32582207042),
+    [Security run 32582206983](https://github.com/kumwe/app/actions/runs/32582206983) and
+    [Development Compose run 32582206967](https://github.com/kumwe/app/actions/runs/32582206967).
     Released-artifact proof remains at
     [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7).
     [Merge run `32469278190`](https://github.com/kumwe/app/actions/runs/32469278190) passed the quality,
