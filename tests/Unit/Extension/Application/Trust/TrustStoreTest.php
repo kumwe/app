@@ -17,10 +17,12 @@ use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\App\Extension\Application\Trust\UntrustedPackage;
 use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use Kumwe\App\Extension\Domain\PackageChecksum;
 use Kumwe\App\Extension\Domain\PackageSignature;
 use Kumwe\App\Extension\Runtime\ExtensionContainer;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\App\Extension\Runtime\RuntimePublicationKeyRing;
@@ -60,6 +62,7 @@ final class TrustStoreTest extends TestCase
             sys_get_temp_dir(),
             $keys,
             $store,
+            $this->createStub(ExtensionExecutionGate::class),
         ))->load([], new ExtensionContributionRegistrySet(withCore: false));
         self::assertSame(0, $active->count());
     }
@@ -120,6 +123,7 @@ final class TrustStoreTest extends TestCase
             $root,
             $keys,
             $store,
+            $this->createStub(ExtensionExecutionGate::class),
         ))->load([], new ExtensionContributionRegistrySet(withCore: false));
         self::assertSame(1, $active->count());
     }
@@ -196,7 +200,9 @@ final class TrustStoreTest extends TestCase
         $repository = new MemoryTrustStoreRepository();
         $runtime = new MemoryRuntimeInvalidator();
         $runtime->failMaterialization = true;
-        $store = $this->store($repository, $runtime);
+        $withdrawal = $this->createMock(ExtensionRuntimeWithdrawal::class);
+        $withdrawal->expects(self::once())->method('withdrawAll');
+        $store = $this->store($repository, $runtime, $withdrawal);
         $context = AuthorizationContext::human(['extensions.manage']);
         $store->add($context, 'vendor.failure', $this->publicKey(), 'acme', '*', $this->expiry());
         $repository->active['acme/catalog'] = 'vendor.failure';
@@ -272,7 +278,9 @@ final class TrustStoreTest extends TestCase
     {
         $repository = new MemoryTrustStoreRepository();
         $runtime = new MemoryRuntimeInvalidator();
-        $store = $this->store($repository, $runtime);
+        $withdrawal = $this->createMock(ExtensionRuntimeWithdrawal::class);
+        $withdrawal->expects(self::once())->method('withdrawAll');
+        $store = $this->store($repository, $runtime, $withdrawal);
         $context = AuthorizationContext::human(['extensions.manage']);
         $store->add(
             $context,
@@ -303,6 +311,7 @@ final class TrustStoreTest extends TestCase
     private function store(
         TrustStoreRepository $repository,
         ?MemoryRuntimeInvalidator $runtime = null,
+        ?ExtensionRuntimeWithdrawal $withdrawal = null,
     ): TrustStore {
         $verifier = new class implements TrustKeySignatureVerifier {
             public function verify(string $key, PackageChecksum $checksum, PackageSignature $signature): bool
@@ -346,6 +355,7 @@ final class TrustStoreTest extends TestCase
             $audit,
             $clock,
             AuthorizationContext::gateway(),
+            runtimeWithdrawal: $withdrawal,
         );
     }
 

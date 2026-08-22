@@ -96,6 +96,29 @@ final class NeutralBusinessFixture
 
     public const SECOND_LINE_RECORD_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8244e27';
 
+    /**
+     * Definition handles intentionally shared by separate tests and by later suite processes.
+     *
+     * These fixtures use stable record or idempotency identities to prove replay and backup behavior. They
+     * must therefore remain active between suite passes; every other neutral fixture carries a run-unique
+     * suffix and belongs to the transient process scope.
+     *
+     * @return  list<string>  Stable site-owned handles retained across integration-suite processes.
+     *
+     * @since  2.0.0
+     */
+    public static function persistentDefinitionHandles(): array
+    {
+        return [
+            self::HANDLE,
+            self::TARGET_HANDLE,
+            self::LINE_HANDLE,
+            self::OWNER_HANDLE,
+            'site.default.doc_line_' . self::DOCUMENT_SUFFIX,
+            'site.default.doc_header_' . self::DOCUMENT_SUFFIX,
+        ];
+    }
+
     /** @return array<string, mixed> */
     public static function backupDocument(): array
     {

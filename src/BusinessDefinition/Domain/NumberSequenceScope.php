@@ -21,7 +21,10 @@ use InvalidArgumentException;
  * handle is the document type, so every allocated-number field of every entity type draws from counters
  * exclusively its own, and the site is the legal entity — the ownership boundary ADR 0001 rules a
  * business's books may never share. Those coordinates come from the declaring field and the record's
- * resolved scope; what is declared here is only how far the run subdivides within them.
+ * resolved scope; what is declared here is only how far the run subdivides within them. When that record
+ * scope carries no site dimension, the legal-entity coordinate is the definition's immutable catalog site:
+ * core freezes both business definitions and records as site-only resources, and catalog identity and site
+ * cannot be moved after creation.
  *
  * @since  2.0.0
  */

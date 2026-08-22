@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Console;
 
+use InvalidArgumentException;
+use Kumwe\App\Delivery\Console\Contract\CliMachineContract;
+use Kumwe\App\Delivery\Console\Contract\CliV1MachineContract;
+use LogicException;
+
 /**
  * Dispatcher behind `bin/kumwe`: it maps the requested name onto a registered command and runs it.
  *
  * This is the only place the console decides what an argument vector means. It resolves the command
  * name, hands the remaining arguments to the matching `Command`, and returns the status the entry
- * point exits with — so an operator and a CI job read the same outcome from `$?`. Three statuses come
- * from here rather than from a command: `0` after printing the command list, `64` for a name nothing
- * is registered under, and otherwise whatever the command returned. It performs no authorization and
- * no option parsing beyond the name; both belong to the command. The command set arrives as
- * constructor input, so `bootstrap/console.php` can hand it the reduced recovery set — the commands
- * that must still run when a broken site keeps the full container from being built — without this
- * class knowing the difference.
+ * point exits with — so an operator and a CI job read the same outcome from `$?`. The retained CLI
+ * machine contract closes the argument grammar before application code runs and closes the returned
+ * status afterwards; commands still own authorization and conversion into application requests. The
+ * dispatcher itself returns `0` after listing and `64` for an unknown name or invalid invocation. The
+ * command set arrives as constructor input, so `bootstrap/console.php` can hand it the reduced recovery
+ * set without weakening the same contract.
  *
  * @since  2.0.0
  */
@@ -30,20 +34,41 @@ final class ConsoleApplication
     private array $commands = [];
 
     /**
+     * Retained machine surface enforced before and after every command execution.
+     *
+     * @var    CliMachineContract
+     * @since  2.0.0
+     */
+    private readonly CliMachineContract $contract;
+
+    /**
      * Index the registered commands by name and fix the order the listing prints them in.
      *
-     * A later registration silently replaces an earlier one with the same name, so the container is
-     * the single place that decides which implementation owns a given command name.
+     * Every name must be unique and present in the retained machine contract. A reduced recovery
+     * console may register a subset, but it cannot invent a command or replace an earlier registration.
      *
-     * @param  iterable<Command>  $commands  Every command this console can dispatch, in registration order.
-     * @param  Output             $output    Sink the listing, the unknown-command message and each command write to.
+     * @param  iterable<Command>    $commands  Every command this console can dispatch, in registration order.
+     * @param  Output               $output    Sink the listing, the unknown-command message and each command write to.
+     * @param  ?CliMachineContract  $contract  Retained surface; generation one when not explicitly supplied.
      *
      * @since  2.0.0
      */
-    public function __construct(iterable $commands, private readonly Output $output)
-    {
+    public function __construct(
+        iterable $commands,
+        private readonly Output $output,
+        ?CliMachineContract $contract = null,
+    ) {
+        $this->contract = $contract ?? CliV1MachineContract::contract();
+        $declared = array_fill_keys($this->contract->commandNames(), true);
         foreach ($commands as $command) {
-            $this->commands[$command->name()] = $command;
+            $name = $command->name();
+            if (isset($this->commands[$name])) {
+                throw new LogicException(sprintf('Console command name "%s" is registered more than once.', $name));
+            }
+            if (!isset($declared[$name])) {
+                throw new LogicException(sprintf('Console command name "%s" is absent from the CLI contract.', $name));
+            }
+            $this->commands[$name] = $command;
         }
 
         ksort($this->commands);
@@ -80,7 +105,31 @@ final class ConsoleApplication
             return 64;
         }
 
-        return $this->commands[$name]->execute(array_values(array_slice($arguments, 2)), $this->output);
+        $commandArguments = array_values(array_slice($arguments, 2));
+        try {
+            $commandArguments = $this->contract->validateInvocation($name, $commandArguments);
+        } catch (InvalidArgumentException $failure) {
+            $this->output->error($failure->getMessage());
+
+            return 64;
+        }
+
+        $exitCode = $this->commands[$name]->execute($commandArguments, $this->output);
+        $this->contract->assertExitCode($name, $exitCode);
+
+        return $exitCode;
+    }
+
+    /**
+     * List the live registration names for machine-contract parity checks.
+     *
+     * @return  list<string>  Lexically sorted registered command names.
+     *
+     * @since   2.0.0
+     */
+    public function commandNames(): array
+    {
+        return array_keys($this->commands);
     }
 
     /**

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\CanonicalJson;
+use Kumwe\App\Shared\Domain\CanonicalJson;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

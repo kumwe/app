@@ -307,7 +307,11 @@ final readonly class McpMutationGuard
                 return null;
             }
 
-            throw new RuntimeException('The MCP operation is already in progress; retry after its lease expires.');
+            throw new McpToolRefusal(
+                'operation.in_progress',
+                'The requested operation is still in progress.',
+                true,
+            );
         }
     }
 

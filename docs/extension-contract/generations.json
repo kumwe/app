@@ -236,6 +236,10 @@
         "portal",
         "business"
       ],
+      "business_keys": [
+        "field_types",
+        "definitions"
+      ],
       "closed_to_unknown_keys": true,
       "fixture": {
         "package": "tests/Fixtures/ExtensionApi/generations/manifest-2",
@@ -257,7 +261,7 @@
           "administrator.views": 1
         }
       },
-      "surface_digest": "90d1b6787c1abd0f776b406f1c931a6e824242f44613381d2868404140e2b65d"
+      "surface_digest": "e42e5d16e41765aee6b5f567057325a4b6994f07a3a41dd0005ea296d452ae79"
     },
     {
       "id": "manifest-3",
@@ -379,7 +383,7 @@
       "schema": 4,
       "spi": 2,
       "status": "frozen",
-      "promise": "Everything schema 3 promises, on contribution SPI 2 rather than SPI 1, plus the two top-level keys SPI 2 opened: `integration` and `interface`. Durable integration is the substance of the generation — versioned event contracts, synchronous domain listeners, queue-backed consumers, jobs, queues, schedules, rebuildable projections, reports, outbound webhook adapters and money rate providers — and `interface` binds every graphical route the package mounts to a declared semantic surface. SPI 2 is fail-closed about that binding: a schema-4 package that mounts a graphical GET route without declaring its surface is refused.",
+      "promise": "Everything schema 3 promises, on contribution SPI 2 rather than SPI 1, plus the three top-level keys SPI 2 opened: `integration`, `interface` and `content`. Durable integration is the substance of the generation — versioned event contracts, synchronous domain listeners, queue-backed consumers, jobs, queues, schedules, rebuildable projections, reports, outbound webhook adapters, money rate providers and unit converters — while `content` declares multilingual translation groups and `interface` binds every graphical route the package mounts to a declared semantic surface. SPI 2 is fail-closed about that binding: a schema-4 package that mounts a graphical GET route without declaring its surface is refused.",
       "manifest_keys": [
         {
           "key": "schema",
@@ -454,7 +458,8 @@
         "portal",
         "business",
         "integration",
-        "interface"
+        "interface",
+        "content"
       ],
       "business_keys": [
         "field_types",
@@ -473,7 +478,11 @@
         "projections",
         "reports",
         "webhooks",
-        "rate_providers"
+        "rate_providers",
+        "unit_converters"
+      ],
+      "content_keys": [
+        "translation_groups"
       ],
       "closed_to_unknown_keys": true,
       "fixture": {
@@ -502,14 +511,14 @@
           "integration.webhooks": 1
         }
       },
-      "surface_digest": "5277d5d7249f24312dadb58c6487b1d6b824df7da0828a9f1375a7c61acfb60d"
+      "surface_digest": "13345cfdd5608244cf1201f38f191404abbb796c3f6683631aba5f1c4304d8ff"
     },
     {
       "id": "manifest-5",
       "schema": 5,
       "spi": 3,
       "status": "frozen",
-      "promise": "Everything schema 4 promises, on contribution SPI 3 rather than SPI 2, plus the `composition` top-level key SPI 3 opened and the two additions the parser accepted since schema 4 froze: the `content` contribution section and the `unit_converters` integration list. Composition is the substance of the generation — blocks with bounded property schemas, slots and renderer bindings, patterns, field controls, inspectors, design vocabularies including size roles, and composition migrations — declared, validated at admission and at install against the published composition schema profile, and inert until the Gate B surface consumes them. A schema-5 package built the day after this freeze installs unchanged when that surface ships.",
+      "promise": "Everything schema 4 promises, on contribution SPI 3 rather than SPI 2, plus the `composition` top-level key SPI 3 opened. Composition is the substance of the generation — blocks with bounded property schemas, slots and renderer bindings, patterns, field controls, inspectors, design vocabularies including size roles, and composition migrations — declared, validated at admission and at install against the published composition schema profile, and inert until the Gate B surface consumes them. A schema-5 package built the day after this freeze installs unchanged when that surface ships.",
       "manifest_keys": [
         {
           "key": "schema",
@@ -641,7 +650,7 @@
           "composition.migrations": 1
         }
       },
-      "surface_digest": "84aedb00fb2347d87cda25c651e9cf139cead8adb322483bccdb6c451bfe1772"
+      "surface_digest": "9052331b45f1f8cc9b76bcb0489bed2c190141e2cca12ddd6e01d7abb14971f1"
     }
   ],
   "spi_generations": [

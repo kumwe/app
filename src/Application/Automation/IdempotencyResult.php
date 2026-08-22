@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Automation;
 
 use InvalidArgumentException;
+use Kumwe\App\Shared\Domain\CanonicalJson;
 
 /**
  * Response an idempotent operation produced, kept so a repeat of the request can be answered from it.

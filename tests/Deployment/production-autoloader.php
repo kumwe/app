@@ -62,6 +62,33 @@ try {
         throw new RuntimeException('The production autoloader cannot resolve the application\'s own classes.');
     }
 
+    $policySources = [
+        ['Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers', 'discover'],
+        ['Kumwe\\App\\Infrastructure\\Mcp\\BusinessMcpHandlers', 'create'],
+        ['Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService', 'customView'],
+        ['Kumwe\\App\\Content\\Application\\ContentService', 'transition'],
+    ];
+    $sourceRoot = realpath($root . '/src');
+    if ($sourceRoot === false) {
+        throw new RuntimeException('The artifact carries no readable application source root.');
+    }
+    foreach ($policySources as [$class, $method]) {
+        $source = (new ReflectionMethod($class, $method))->getFileName();
+        $canonical = is_string($source) ? realpath($source) : false;
+        if (
+            $canonical === false
+            || !str_starts_with($canonical, $sourceRoot . DIRECTORY_SEPARATOR)
+            || file($canonical, FILE_IGNORE_NEW_LINES) === false
+        ) {
+            throw new RuntimeException(sprintf(
+                'The deployed artifact cannot read the reflected MCP policy source for %s::%s.',
+                $class,
+                $method,
+            ));
+        }
+    }
+    $detail['mcp_policy_source_files'] = count($policySources);
+
     $drillClass = 'Kumwe\\App\\Tests\\Support\\NeutralBusinessFixture';
     if (class_exists($drillClass)) {
         throw new RuntimeException(

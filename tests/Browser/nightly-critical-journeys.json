@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "note": "The closed first-attempt acceptance set for the nightly Firefox and WebKit lane. A listed project/title pair that is missing, fails finally, or passes only after retry fails acceptance; the overall lane must also remain at least 99 percent first-attempt green. Titles are exact Playwright spec titles rather than substrings so renaming or silently removing a critical journey cannot weaken the gate.",
+  "required_obligations": [
+    "administrator",
+    "portal",
+    "generated-business",
+    "owned-line",
+    "maker-checker",
+    "step-up",
+    "policy-denial",
+    "no-javascript",
+    "website",
+    "nightly-breadth"
+  ],
+  "journeys": [
+    {
+      "title": "dashboard supports desktop and responsive navigation",
+      "obligations": ["administrator"],
+      "projects": ["desktop-firefox", "desktop-webkit"]
+    },
+    {
+      "title": "portal shell keeps sessions isolated and protects mutations",
+      "obligations": ["portal"],
+      "projects": ["desktop-firefox", "desktop-webkit"]
+    },
+    {
+      "title": "generated business workspaces are responsive, accessible and visually bounded",
+      "obligations": ["generated-business"],
+      "projects": ["desktop-firefox", "desktop-webkit"]
+    },
+    {
+      "title": "generated relationship selectors and owned lines persist and reorder",
+      "obligations": ["owned-line"],
+      "projects": ["desktop-firefox", "desktop-webkit"]
+    },
+    {
+      "title": "portal maker-checker approval requires a distinct step-up identity",
+      "obligations": ["maker-checker", "step-up"],
+      "projects": ["desktop-firefox", "desktop-webkit"]
+    },
+    {
+      "title": "a denied administrator URL renders the themed 403 page instead of raw JSON",
+      "obligations": ["policy-denial"],
+      "projects": ["desktop-firefox", "desktop-webkit"]
+    },
+    {
+      "title": "portal generated forms complete a no-JavaScript lifecycle",
+      "obligations": ["no-javascript"],
+      "projects": ["desktop-firefox", "desktop-webkit"]
+    },
+    {
+      "title": "database-backed public presentation is responsive and ready",
+      "obligations": ["website"],
+      "projects": ["desktop-firefox", "desktop-webkit"]
+    },
+    {
+      "title": "Nightly browser breadth preserves keyboard, touch, high contrast, zoom and reflow",
+      "obligations": ["nightly-breadth"],
+      "projects": [
+        "desktop-firefox",
+        "mobile-firefox",
+        "desktop-webkit",
+        "mobile-webkit"
+      ]
+    }
+  ]
+}

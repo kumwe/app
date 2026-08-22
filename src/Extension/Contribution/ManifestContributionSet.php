@@ -28,6 +28,7 @@ use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\Internal\ExtensionManifestGrammar;
 use Kumwe\App\Identity\Domain\Capability;
 use Kumwe\App\InterfaceStandard\SurfaceArea;
 use Kumwe\App\InterfaceStandard\SurfaceDefinition;
@@ -847,18 +848,9 @@ final readonly class ManifestContributionSet
             throw new InvalidArgumentException('Typed extension contributions require manifest schema 2, 3, 4, or 5.');
         }
         $data = self::object($data, 'contributions');
-        $topLevelKeys = ['version', 'capabilities', 'resource_policies', 'administrator', 'portal', 'business'];
-        if ($manifestSchema >= 4) {
-            $topLevelKeys[] = 'integration';
-            $topLevelKeys[] = 'interface';
-            $topLevelKeys[] = 'content';
-        }
-        if ($manifestSchema >= 5) {
-            $topLevelKeys[] = 'composition';
-        }
         self::knownKeys(
             $data,
-            $topLevelKeys,
+            ExtensionManifestGrammar::contributionKeys($manifestSchema),
             'contributions',
         );
         $expectedSpi = match (true) {
@@ -877,48 +869,31 @@ final readonly class ManifestContributionSet
         $administrator = self::object($data['administrator'] ?? [], 'contributions.administrator');
         self::knownKeys($administrator, ['workspaces', 'navigation', 'routes', 'views'], 'administrator contributions');
         $business = self::object($data['business'] ?? [], 'contributions.business');
-        $businessKeys = ['field_types', 'definitions'];
-        if ($manifestSchema >= 3) {
-            $businessKeys[] = 'field_presentations';
-            $businessKeys[] = 'view_handlers';
-            $businessKeys[] = 'action_handlers';
-        }
-        self::knownKeys($business, $businessKeys, 'business contributions');
+        self::knownKeys(
+            $business,
+            ExtensionManifestGrammar::businessKeys($manifestSchema),
+            'business contributions',
+        );
         $portal = self::object($data['portal'] ?? [], 'contributions.portal');
         self::knownKeys($portal, ['workspaces', 'navigation', 'routes', 'templates'], 'portal contributions');
         $interface = self::object($data['interface'] ?? [], 'contributions.interface');
         self::knownKeys($interface, ['surfaces'], 'interface contributions');
         $content = self::object($data['content'] ?? [], 'contributions.content');
-        self::knownKeys($content, ['translation_groups'], 'content contributions');
+        self::knownKeys(
+            $content,
+            ExtensionManifestGrammar::contentKeys($manifestSchema),
+            'content contributions',
+        );
         $composition = self::object($data['composition'] ?? [], 'contributions.composition');
         self::knownKeys(
             $composition,
-            [
-                'blocks',
-                'patterns',
-                'field_controls',
-                'inspectors',
-                'design_vocabularies',
-                'migrations',
-            ],
+            ExtensionManifestGrammar::compositionKeys($manifestSchema),
             'composition contributions',
         );
         $integration = self::object($data['integration'] ?? [], 'contributions.integration');
         self::knownKeys(
             $integration,
-            [
-                'event_schemas',
-                'domain_listeners',
-                'consumers',
-                'jobs',
-                'queues',
-                'schedules',
-                'projections',
-                'reports',
-                'webhooks',
-                'rate_providers',
-                'unit_converters',
-            ],
+            ExtensionManifestGrammar::integrationKeys($manifestSchema),
             'integration contributions',
         );
 

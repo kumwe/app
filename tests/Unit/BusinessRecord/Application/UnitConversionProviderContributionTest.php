@@ -21,10 +21,12 @@ use Kumwe\App\BusinessRecord\Domain\UnitConversionRequest;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeUnitConversionProviderCatalog;
 use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 #[CoversClass(RuntimeUnitConversionProviderCatalog::class)]
 #[CoversClass(UnitConversionPipeline::class)]
@@ -203,6 +205,42 @@ final class UnitConversionProviderContributionTest extends TestCase
     }
 
     /**
+     * Prove a resident converter from an old generation is fenced before package code can be called.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStaleGenerationCannotEnterResidentUnitConversionProvider(): void
+    {
+        $owner = ContributionOwner::extension('acme/units');
+        $definition = new UnitConversionProviderDefinition('acme.units.trade', ['case', 'unit']);
+        $provider = $this->createMock(UnitConversionProvider::class);
+        $provider->method('identifier')->willReturn('acme.units.trade');
+        $provider->expects(self::never())->method('supports');
+        $provider->expects(self::never())->method('factorFor');
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registrar = $registries->registrar($owner, new ManifestContributionSet(
+            $owner,
+            unitConverters: [$definition],
+        ));
+        $registrar->unitConversionProvider($definition, $provider);
+        $registrar->complete();
+        $execution = $this->createMock(ExtensionExecutionGate::class);
+        $execution->expects(self::once())
+            ->method('assertCurrent')
+            ->willThrowException(new RuntimeException('stale extension generation'));
+        $pipeline = new UnitConversionPipeline(
+            new QuantityConverter(),
+            new RuntimeUnitConversionProviderCatalog($registries, $execution),
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('stale extension generation');
+        $pipeline->convert($this->request());
+    }
+
+    /**
      * Prove a declared conversion provider survives the manifest round trip a publication depends on.
      *
      * @return  void
@@ -285,7 +323,10 @@ final class UnitConversionProviderContributionTest extends TestCase
     {
         return new UnitConversionPipeline(
             new QuantityConverter(),
-            new RuntimeUnitConversionProviderCatalog($registries),
+            new RuntimeUnitConversionProviderCatalog(
+                $registries,
+                $this->createStub(ExtensionExecutionGate::class),
+            ),
         );
     }
 

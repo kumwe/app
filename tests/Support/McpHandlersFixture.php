@@ -10,6 +10,7 @@ use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
@@ -23,8 +24,10 @@ use ReflectionClass;
 
 final class McpHandlersFixture
 {
-    public static function create(McpCapabilityCatalog $catalog): KumweMcpHandlers
-    {
+    public static function create(
+        McpCapabilityCatalog $catalog,
+        ?ExtensionExecutionGate $extensionRuntime = null,
+    ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
             self::withoutConstructor(ContentService::class),
@@ -41,6 +44,7 @@ final class McpHandlersFixture
             self::withoutConstructor(McpMutationGuard::class),
             new SystemClock(),
             AuthorizationContext::gateway(),
+            extensionRuntime: $extensionRuntime,
         );
     }
 

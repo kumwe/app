@@ -396,7 +396,8 @@ try {
     // an approval identity: adding it to the manifest is what creates both. Only `all` projects reach
     // the maker-checker journey -- the right-to-left projects are confined to a spec that never enrolls
     // an authenticator. TOTP enrollment is a once-per-account operation, so each project needs its own
-    // pair, and each attempt of a project needs one the previous attempt has not already consumed.
+    // pair, and each attempt of a project needs one the previous attempt has not already consumed. The
+    // `breadth` projects never reach that journey, so they need no approval identities of their own.
     $matrix = BrowserProjectManifest::read(dirname(__DIR__) . '/Browser/projects.json');
     $approvalProjects = [];
     foreach ($matrix['projects'] as $matrixProject) {

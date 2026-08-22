@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\BusinessDefinition\Infrastructure;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRevisionConflict;
+use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Infrastructure\Persistence\DoctrineBusinessDefinitionRepository;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -68,5 +73,50 @@ final class DoctrineBusinessDefinitionRepositoryTest extends TestCase
 
         $this->expectException(LogicException::class);
         $repository->lockContractNamespace(SiteContext::default());
+    }
+
+    /**
+     * Refuse publication when the definition identity disappeared after compatibility analysis.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPublishReportsARevisionConflictWhenTheIdentityHeadIsMissing(): void
+    {
+        $database = $this->createMock(Connection::class);
+        $database->expects(self::once())->method('isTransactionActive')->willReturn(true);
+        $database->expects(self::once())->method('quoteSingleIdentifier')
+            ->with('kumwe_business_definitions')
+            ->willReturn('`kumwe_business_definitions`');
+        $database->expects(self::once())->method('fetchAssociative')->with(
+            self::callback(static fn (string $sql): bool => str_contains(
+                $sql,
+                'SELECT * FROM `kumwe_business_definitions` WHERE id = ?',
+            )),
+            [NeutralBusinessFixture::DEFINITION_ID],
+            [Types::GUID],
+        )->willReturn(false);
+        $database->expects(self::never())->method('executeStatement');
+        $definition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::document())->published(1);
+        $plan = new CompatibilityPlan(null, 1, null, $definition->checksum(), []);
+        $repository = new DoctrineBusinessDefinitionRepository(
+            $database,
+            new TableNames($database, 'kumwe_'),
+        );
+
+        try {
+            $repository->publish(
+                $definition,
+                $plan,
+                '018f5200-0000-7000-8000-000000000099',
+                new DateTimeImmutable('2026-08-22T12:00:00+00:00'),
+                7,
+            );
+            self::fail('A missing publication identity head was accepted.');
+        } catch (BusinessDefinitionRevisionConflict $failure) {
+            self::assertSame(7, $failure->expected);
+            self::assertSame(0, $failure->actual);
+        }
     }
 }

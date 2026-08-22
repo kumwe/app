@@ -58,7 +58,7 @@ final class ClientAssertedInstantBoundaryTest extends TestCase
      * @since  2.0.0
      */
     private const CARRIERS = [
-        'src/BusinessRecord/Application/BusinessRecordService.php',
+        'src/BusinessRecord/Application/BusinessRecordMutationPublication.php',
         'src/BusinessRecord/Application/Command/WriteDocumentCommand.php',
         'src/BusinessRecord/Domain/ClientAssertedInstant.php',
     ];

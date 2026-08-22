@@ -66,7 +66,8 @@ final readonly class DoctrineBusinessNumberSequenceAllocator implements Business
      * replays the whole command against the row the winner committed. That replay is safe precisely
      * because the idempotency claim rolls back with the transaction.
      *
-     * @param   string             $siteIdentifier  Site the numbered record belongs to.
+     * @param   string             $siteIdentifier  Site the numbered record belongs to, or the immutable
+     *          definition catalog site when the record scope itself carries no site dimension.
      * @param   string             $definitionId    UUID of the definition declaring the sequence field.
      * @param   string             $fieldHandle     Handle of the `core.sequence` field being filled.
      * @param   string             $scopeKey        Tenancy key from `NumberSequenceFormat::counter()`.

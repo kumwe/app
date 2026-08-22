@@ -47,7 +47,7 @@ use RuntimeException;
  * `publish()` put the revision they were composed against into the WHERE clause and turn an affected-row count
  * other than one into `BusinessDefinitionRevisionConflict`, re-reading the head so the conflict reports the
  * revision the catalog actually holds. Identity and ownership are checked against the stored head on every
- * save, so a handle cannot be moved to another definition or another owner.
+ * save, so a definition cannot be moved to another catalog site, handle or owner.
  *
  * Nothing coming out of storage is trusted. Every column is read through a typed accessor that raises
  * `RuntimeException` rather than coercing, JSON columns have to decode to the object or list shape their
@@ -347,9 +347,9 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
      *
      * @throws  LogicException  When the caller has no transaction open.
      * @throws  BusinessDefinitionRevisionConflict  When the stored head is not at the expected revision, or
-     *          another writer created or advanced the same handle first.
-     * @throws  InvalidBusinessDefinition  When the stored head names a different definition id or owner for
-     *          this handle, or the definition cannot be canonically encoded to a checksum.
+     *          another writer created or advanced the same handle or definition identity first.
+     * @throws  InvalidBusinessDefinition  When the stored head names a different definition id, catalog site,
+     *          handle or owner, or the definition cannot be canonically encoded to a checksum.
      * @throws  RuntimeException  When the stored head is missing a column or holds a wrongly typed value.
      *
      * @since   2.0.0
@@ -366,6 +366,7 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
             if ($expectedRevision !== null && $expectedRevision !== 0) {
                 throw new BusinessDefinitionRevisionConflict($expectedRevision, 0);
             }
+            $this->assertIdentityUnclaimed($definition);
             try {
                 $this->database->insert($this->tables->raw('business_definitions'), [
                     'id' => $definition->id,
@@ -392,7 +393,7 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
             }
             $revision = 1;
         } else {
-            $this->assertSameOwner($definition, $row);
+            $this->assertSameCatalogIdentity($definition, $row);
             $actual = $this->integer($row, 'draft_revision');
             if ($expectedRevision === null || $expectedRevision !== $actual) {
                 throw new BusinessDefinitionRevisionConflict($expectedRevision ?? 0, $actual);
@@ -450,9 +451,11 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
      * The plan is checked against the bytes before anything is written: its target checksum has to match the
      * definition's own and its target version has to be the definition's version, so a plan analysed against
      * different bytes can never be stored beside them. The head then moves to `draft_revision = 0` under a
-     * revision-guarded UPDATE, any still-published predecessor is marked superseded without its bytes being
-     * touched, the new version row is inserted with its plan, its dependency rows are rewritten, and the draft
-     * row is deleted — leaving the handle published with no work in progress.
+     * revision-and-identity-guarded UPDATE, any still-published predecessor is marked superseded without its
+     * bytes being touched, the new version row is inserted with its plan, its dependency rows are rewritten,
+     * and the draft row is deleted — leaving the handle published with no work in progress. Re-reading and
+     * guarding the frozen catalog coordinate here matters even though the normal service publishes the stored
+     * draft: the repository is a public seam and must reject caller-supplied bytes that move the same UUID.
      *
      * @param   EntityTypeDefinition  $definition             Definition already advanced to the version the
      *          plan targets, whose checksum the plan names.
@@ -467,7 +470,8 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
      *
      * @throws  LogicException  When the caller has no transaction open.
      * @throws  InvalidBusinessDefinition  When the definition's checksum or version does not match the plan,
-     *          the definition cannot be canonically encoded, or it does not itself carry published status.
+     *          the definition cannot be canonically encoded, it does not itself carry published status, or
+     *          its catalog site, handle or owner differs from the stored head.
      * @throws  BusinessDefinitionRevisionConflict  When the head is no longer at the expected draft revision,
      *          so another writer changed it after the plan was analysed.
      *
@@ -487,17 +491,37 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         ) {
             throw new InvalidBusinessDefinition('A publication does not match its compatibility plan.');
         }
+        $head = $this->identityRow($definition->id);
+        if ($head === null) {
+            throw new BusinessDefinitionRevisionConflict($expectedDraftRevision, 0);
+        }
+        $this->assertSameCatalogIdentity($definition, $head);
         $affected = $this->database->executeStatement(sprintf(
             'UPDATE %s SET draft_revision = 0, published_version = ?, publication_state = ?, updated_at = ? '
-            . 'WHERE id = ? AND draft_revision = ?',
+            . 'WHERE id = ? AND site_identifier = ? AND handle = ? AND owner_type = ? AND owner_identifier = ? '
+            . 'AND draft_revision = ?',
             $this->tables->quoted('business_definitions'),
         ), [
             $definition->definitionVersion,
             DefinitionStatus::Published->value,
             $now,
             $definition->id,
+            $definition->siteIdentifier,
+            $definition->handle,
+            $definition->owner->type->value,
+            $definition->owner->identifier,
             $expectedDraftRevision,
-        ], [Types::INTEGER, Types::STRING, Types::DATETIME_IMMUTABLE, Types::GUID, Types::INTEGER]);
+        ], [
+            Types::INTEGER,
+            Types::STRING,
+            Types::DATETIME_IMMUTABLE,
+            Types::GUID,
+            Types::STRING,
+            Types::STRING,
+            Types::STRING,
+            Types::STRING,
+            Types::INTEGER,
+        ]);
         if ($affected !== 1) {
             throw new BusinessDefinitionRevisionConflict(
                 $expectedDraftRevision,
@@ -816,31 +840,89 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
     }
 
     /**
-     * Refuse a save that would re-point an existing handle at another definition or another owner.
+     * Fetch the raw catalog head for one globally unique definition identity.
+     *
+     * Publication receives a complete definition rather than a site context, so it resolves the authoritative
+     * head by UUID and then compares every frozen catalog coordinate before it writes. This lookup is kept
+     * distinct from `entryRow()`, whose site-and-handle semantics are the public catalog lookup contract.
+     *
+     * @param   string  $id  Canonical definition UUID.
+     *
+     * @return  array<string, mixed>|null  The head row exactly as returned by the driver, or null when absent.
+     *
+     * @since   2.0.0
+     */
+    private function identityRow(string $id): ?array
+    {
+        $row = $this->database->fetchAssociative(sprintf(
+            'SELECT * FROM %s WHERE id = ?',
+            $this->tables->quoted('business_definitions'),
+        ), [$id], [Types::GUID]);
+
+        return $row === false ? null : $row;
+    }
+
+    /**
+     * Refuse a save that would change an existing catalog coordinate or owner.
      *
      * A handle is looked up by site and name, so without this check a second definition claiming the same
-     * handle would silently take over the stored head. Identity and ownership are therefore settled when the
-     * entry is first created and no later save can move them.
+     * handle could silently take over the stored head. Identity, catalog site, handle and ownership are
+     * therefore settled when the entry is first created and no later save can move them.
      *
-     * @param   EntityTypeDefinition  $definition  Definition being saved.
-     * @param   array<string, mixed>  $row         Stored head row currently holding that site and handle.
+     * @param   EntityTypeDefinition  $definition  Definition being saved or published.
+     * @param   array<string, mixed>  $row         Authoritative stored catalog head.
      *
      * @return  void
      *
-     * @throws  InvalidBusinessDefinition  When the stored id, owner type or owner identifier differs from the
-     *          definition being saved.
+     * @throws  InvalidBusinessDefinition  When the stored id, site, handle, owner type or owner identifier
+     *          differs from the definition being saved.
      * @throws  RuntimeException  When one of those columns is absent or is not a non-empty string.
      *
      * @since   2.0.0
      */
-    private function assertSameOwner(EntityTypeDefinition $definition, array $row): void
+    private function assertSameCatalogIdentity(EntityTypeDefinition $definition, array $row): void
     {
         if (
             $this->string($row, 'id') !== $definition->id
+            || $this->string($row, 'site_identifier') !== $definition->siteIdentifier
+            || $this->string($row, 'handle') !== $definition->handle
             || $this->string($row, 'owner_type') !== $definition->owner->type->value
             || $this->string($row, 'owner_identifier') !== $definition->owner->identifier
         ) {
-            throw new InvalidBusinessDefinition('A business-definition identity or owner cannot be changed.');
+            throw new InvalidBusinessDefinition(
+                'A business-definition identity, catalog site, handle or owner cannot be changed.',
+            );
+        }
+    }
+
+    /**
+     * Refuse to introduce a globally claimed identity under a different site or handle.
+     *
+     * The ordinary lookup is deliberately site-and-handle scoped. A caller presenting an existing UUID
+     * under a different coordinate would otherwise reach the insert and be reported as a generic optimistic
+     * conflict by the primary key. Naming the invariant here keeps the catalog site — and therefore the
+     * owning-site coordinate used by non-site-scoped number sequences — immovable by contract. This read is
+     * diagnostic rather than a substitute for the UUID primary key: two concurrent first saves can both see
+     * no claim, and the database-authoritative loser is intentionally reported as an optimistic conflict.
+     *
+     * @param   EntityTypeDefinition  $definition  New catalog entry being proposed.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the definition UUID already has a catalog head.
+     *
+     * @since   2.0.0
+     */
+    private function assertIdentityUnclaimed(EntityTypeDefinition $definition): void
+    {
+        $claimed = $this->database->fetchOne(sprintf(
+            'SELECT id FROM %s WHERE id = ?',
+            $this->tables->quoted('business_definitions'),
+        ), [$definition->id], [Types::GUID]);
+        if ($claimed !== false) {
+            throw new InvalidBusinessDefinition(
+                'A business-definition identity, catalog site, handle or owner cannot be changed.',
+            );
         }
     }
 

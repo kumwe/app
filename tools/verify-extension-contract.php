@@ -28,6 +28,10 @@
 
 declare(strict_types=1);
 
+use Kumwe\App\Extension\Domain\Internal\ExtensionManifestGrammar;
+
+require_once dirname(__DIR__) . '/src/Extension/Domain/Internal/ExtensionManifestGrammar.php';
+
 $root = dirname(__DIR__);
 $errors = [];
 $generationsPath = $root . '/docs/extension-contract/generations.json';
@@ -107,6 +111,7 @@ foreach (contractList($generations['manifest_generations'] ?? null, 'manifest_ge
             $errors[] = sprintf('Manifest generation %s declares a key without a known status.', $id);
         }
     }
+    assertManifestGrammarParity($id, $entry, $errors);
 
     $fixture = $entry['fixture'] ?? null;
     if (!is_array($fixture)) {
@@ -398,6 +403,78 @@ function assertFrozenDigest(string $id, array $entry, array &$errors): void
             $id,
             $digest,
         );
+    }
+}
+
+/**
+ * Compare one retained manifest record with the exact grammar arrays consumed by the live parser.
+ *
+ * Schema 1 intentionally accepts unknown root keys, so only its documented interpreted/advisory inventory
+ * is retained. Strict schemas must match every closed root and nested contribution set byte for byte.
+ *
+ * @param   string                $id      Generation identifier used in diagnostics.
+ * @param   array<string, mixed>  $entry   Retained generation entry.
+ * @param   list<string>          $errors  Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function assertManifestGrammarParity(string $id, array $entry, array &$errors): void
+{
+    $schema = $entry['schema'] ?? null;
+    if (!is_int($schema) || $schema < 2 || $schema > 5) {
+        return;
+    }
+
+    $recordedManifestKeys = [];
+    foreach ($entry['manifest_keys'] ?? [] as $key) {
+        if (is_array($key) && is_string($key['key'] ?? null)) {
+            $recordedManifestKeys[] = $key['key'];
+        }
+    }
+    $expected = [
+        'manifest_keys' => ExtensionManifestGrammar::manifestKeys($schema),
+        'contribution_keys' => ExtensionManifestGrammar::contributionKeys($schema),
+        'business_keys' => ExtensionManifestGrammar::businessKeys($schema),
+    ];
+    if ($schema >= 4) {
+        $expected['integration_keys'] = ExtensionManifestGrammar::integrationKeys($schema);
+        $expected['content_keys'] = ExtensionManifestGrammar::contentKeys($schema);
+    }
+    if ($schema >= 5) {
+        $expected['composition_keys'] = ExtensionManifestGrammar::compositionKeys($schema);
+    }
+
+    foreach ($expected as $member => $runtimeKeys) {
+        $recordedKeys = $member === 'manifest_keys'
+            ? $recordedManifestKeys
+            : ($entry[$member] ?? null);
+        if (
+            !is_array($recordedKeys)
+            || !array_is_list($recordedKeys)
+            || count(array_filter($recordedKeys, 'is_string')) !== count($recordedKeys)
+        ) {
+            $errors[] = sprintf('Manifest generation %s must record %s as a string list.', $id, $member);
+            continue;
+        }
+        /** @var list<string> $recordedKeys */
+        $recordedSet = array_values(array_unique($recordedKeys));
+        if (count($recordedSet) !== count($recordedKeys)) {
+            $errors[] = sprintf('Manifest generation %s records a duplicate key in %s.', $id, $member);
+        }
+        $runtimeSet = array_values(array_unique($runtimeKeys));
+        sort($recordedSet, SORT_STRING);
+        sort($runtimeSet, SORT_STRING);
+        if ($recordedSet !== $runtimeSet) {
+            $errors[] = sprintf(
+                'Manifest generation %s records %s as [%s], but the live parser accepts [%s].',
+                $id,
+                $member,
+                implode(', ', $recordedKeys),
+                implode(', ', $runtimeKeys),
+            );
+        }
     }
 }
 

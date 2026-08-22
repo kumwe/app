@@ -57,7 +57,7 @@ manifest grammar and the runtime registrar are two different things to break.
 | `schema: 1` | — | Identity, requirements, autoload, migrations, assets, and a provider that registers its own services, boots and declares its own routes. No typed contributions. |
 | `schema: 2` | `1` | Typed contributions: capabilities, resource policies and the administrator shell. The manifest becomes closed to unknown keys. |
 | `schema: 3` | `1` | The portal surface, safe field presentation, and custom business view and action handlers. |
-| `schema: 4` | `2` | Durable integration — event contracts, listeners, consumers, jobs, queues, schedules, projections, reports, webhooks, money rate providers — and KIS semantic surfaces bound to every graphical route. |
+| `schema: 4` | `2` | Durable integration — event contracts, listeners, consumers, jobs, queues, schedules, projections, reports, webhooks, money rate providers and unit converters — multilingual content groups, and KIS semantic surfaces bound to every graphical route. |
 | `schema: 5` | `3` | The declarative composition contract, frozen at Gate A ahead of the Gate B surface that consumes it: blocks with bounded property schemas, slots and renderer bindings, patterns, field controls, inspectors, design vocabularies including size roles, and composition migrations. |
 
 Every one of those five is still promised. A package on schema 1 installs on this release exactly as it
@@ -160,8 +160,10 @@ against the new code deliberately, so a bad release cannot re-enter service unat
 - **Adding a generation** is the ordinary way forward. Add an entry to `generations.json`, ship its
   compatibility package, and leave every existing entry alone.
 - **Changing a frozen generation** fails the build. Each entry carries a `surface_digest` over its own
-  canonical bytes; the check recomputes it. If the change really is deliberate, record the new digest in
-  the same change that makes it, so it appears in the diff and in review.
+  canonical bytes; the check recomputes it. The recorded closed key sets are also compared with the
+  `ExtensionManifestGrammar` arrays consumed by the live parser, so changing both the record and its digest
+  cannot conceal parser drift. If a change really is deliberate, publish a successor generation rather than
+  widening one existing generation in place.
 - **Withdrawing something** means moving it to the `withdrawn` list with a reason, not deleting the line.
 
 Internal code needs none of this. That is the trade the classification exists to make: a small surface

@@ -33,6 +33,342 @@ final class RoadmapLifecycleTest extends TestCase
         self::assertStringContainsString('Kumwe roadmap verified', $result['output']);
     }
 
+    /**
+     * A complete criteria table remains valid when no Gate A criterion is outstanding.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierAcceptsAllThirteenGateACriteriaAsMet(): void
+    {
+        $status = preg_replace(
+            '/^\| 5 \| Quality gates are truthful \|.*$/m',
+            '| 5 | Quality gates are truthful | Yes — executable evidence is complete | — |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | Ready for formal assessment. All 13 executable criteria are met. |',
+            $status,
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(0, $result['status'], $result['output']);
+        self::assertStringContainsString('Kumwe roadmap verified', $result['output']);
+    }
+
+    /**
+     * An affirmative Gate A readiness claim is refused while any executable criterion remains unmet.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierRefusesAReadyGateWithAnUnmetCriterion(): void
+    {
+        $status = preg_replace(
+            '/^\| 5 \| Quality gates are truthful \|.*$/m',
+            '| 5 | Quality gates are truthful | Partly — executable evidence is incomplete | GM-TEST-01 |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | Ready for formal assessment. |',
+            $status,
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'Gate A readiness or passage while criteria 5 are not met',
+            $result['output'],
+        );
+    }
+
+    /**
+     * A passed Gate A claim is refused while any executable criterion remains unmet.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierRefusesAPassedGateWithAnUnmetCriterion(): void
+    {
+        $status = preg_replace(
+            '/^\| 5 \| Quality gates are truthful \|.*$/m',
+            '| 5 | Quality gates are truthful | Partly — executable evidence is incomplete | GM-TEST-01 |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | Passed. |',
+            $status,
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'Gate A readiness or passage while criteria 5 are not met',
+            $result['output'],
+        );
+    }
+
+    /**
+     * A negative readiness statement is not treated as an affirmative Gate A readiness claim.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierAcceptsNotReadyWhileACriterionIsUnmet(): void
+    {
+        $status = preg_replace(
+            '/^\| 5 \| Quality gates are truthful \|.*$/m',
+            '| 5 | Quality gates are truthful | Partly — executable evidence is incomplete | GM-TEST-01 |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | Not ready — executable evidence remains incomplete. |',
+            $status,
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| \| [^|\r\n]* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | | **Not assessed** | Executable evidence remains incomplete |',
+            $status,
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(0, $result['status'], $result['output']);
+        self::assertStringContainsString('Kumwe roadmap verified', $result['output']);
+    }
+
+    /**
+     * Readiness text outside a Gate A row's first non-empty status cell does not become the gate state.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierIgnoresReadinessOutsideTheGateStatusCell(): void
+    {
+        $status = preg_replace(
+            '/^\| 5 \| Quality gates are truthful \|.*$/m',
+            '| 5 | Quality gates are truthful | Partly — executable evidence is incomplete | GM-TEST-01 |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | Not assessed while executable evidence remains incomplete. |',
+            $status,
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| \| .*$/m',
+            '| **Gate A** | | **Not assessed** | Ready after recorded owner approval |',
+            $status,
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(0, $result['status'], $result['output']);
+        self::assertStringContainsString('Kumwe roadmap verified', $result['output']);
+    }
+
+    /**
+     * Criterion state must carry the standalone Yes token rather than merely start with those letters.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierDoesNotTreatYesterdayAsYes(): void
+    {
+        $status = preg_replace(
+            '/^\| 5 \| Quality gates are truthful \|.*$/m',
+            '| 5 | Quality gates are truthful | Yesterday evidence was incomplete | GM-TEST-01 |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | Ready for formal assessment. |',
+            $status,
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'Gate A readiness or passage while criteria 5 are not met',
+            $result['output'],
+        );
+    }
+
+    /**
+     * The live package index must not retain a completed identifier beside open work.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierRefusesACompletionMarkerInTheOpenWorkTable(): void
+    {
+        $original = $this->contents('docs/roadmap/STATUS.md');
+        foreach (['closed', 'complete', 'completed', 'delivered', 'done', 'finished', 'shipped'] as $marker) {
+            $status = str_replace(
+                '| 3 | `P3-D` |',
+                sprintf('| 3 | `P3-D` (`P3-A` %s) |', $marker),
+                $original,
+            );
+            self::assertNotSame($original, $status);
+            $path = $this->writeTemporaryStatus($status);
+
+            try {
+                $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+            } finally {
+                @unlink($path);
+            }
+
+            self::assertSame(1, $result['status'], sprintf('Marker "%s" must be refused.', $marker));
+            self::assertStringContainsString(
+                'open-work row for phase 3 carries a completion marker',
+                $result['output'],
+            );
+        }
+    }
+
+    /**
+     * A finding cannot remain in the live index with completion language either.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierRefusesACompletionMarkerInTheOpenFindingCell(): void
+    {
+        $status = str_replace(
+            '| 3 | `P3-D` | — |',
+            '| 3 | `P3-D` | `V2-TEST-001` complete |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertNotSame($this->contents('docs/roadmap/STATUS.md'), $status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'open-work row for phase 3 carries a completion marker',
+            $result['output'],
+        );
+    }
+
+    /**
+     * A prose package lane and its findings still make a delivered phase contradictory.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierTreatsAProseLaneAsOpenWork(): void
+    {
+        $status = str_replace(
+            '| M — Maintainability | — | Not started |',
+            '| M — Maintainability | — | Delivered |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertNotSame($this->contents('docs/roadmap/STATUS.md'), $status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('phase M reads "Delivered"', $result['output']);
+    }
+
+    /**
+     * Thirteen rows are insufficient when their criterion identifiers are duplicated or incomplete.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierRequiresExactlyGateACriteriaOneThroughThirteen(): void
+    {
+        $status = preg_replace(
+            '/^\| 13 \|/m',
+            '| 12 |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('exactly Gate A criteria 1 through 13 in order', $result['output']);
+    }
+
     public function testTheVerifierRefusesAClosedFindingAndSaysWhereItBelongs(): void
     {
         $ledger = $this->decodeJson('docs/roadmap/findings.json');
@@ -97,6 +433,33 @@ final class RoadmapLifecycleTest extends TestCase
         self::assertSame(1, $result['status']);
         self::assertStringContainsString('not reachable from HEAD', $result['output']);
         self::assertStringContainsString('0000000', $result['output']);
+    }
+
+    /**
+     * A decimal workflow-run identifier is evidence metadata, not an abbreviated commit citation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierDoesNotTreatAWorkflowRunAsACommit(): void
+    {
+        $head = substr(trim($this->git($this->root, ['rev-parse', 'HEAD'])), 0, 12);
+        $changelog = tempnam(sys_get_temp_dir(), 'kumwe-changelog-');
+        self::assertIsString($changelog);
+        file_put_contents(
+            $changelog,
+            sprintf("# Changelog\n\nCompleted work. (`%s`) Workflow run `32579525541`.\n", $head),
+        );
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', $changelog);
+        } finally {
+            @unlink($changelog);
+        }
+
+        self::assertSame(0, $result['status'], $result['output']);
+        self::assertStringContainsString('Kumwe roadmap verified', $result['output']);
     }
 
     /**
@@ -198,13 +561,18 @@ final class RoadmapLifecycleTest extends TestCase
      * @param   string       $ledger      Findings ledger to verify.
      * @param   string|null  $changelog   Alternate changelog fixture, or null for the repository document.
      * @param   string|null  $repository  Alternate repository history, or null for the project checkout.
+     * @param   string|null  $status      Alternate programme-status fixture, or null for the repository document.
      *
      * @return  array{status: int, output: string}  Process status and combined output.
      *
      * @since   2.0.0
      */
-    private function runVerifier(string $ledger, ?string $changelog = null, ?string $repository = null): array
-    {
+    private function runVerifier(
+        string $ledger,
+        ?string $changelog = null,
+        ?string $repository = null,
+        ?string $status = null,
+    ): array {
         $command = sprintf(
             '%s %s %s',
             escapeshellarg(PHP_BINARY),
@@ -216,6 +584,9 @@ final class RoadmapLifecycleTest extends TestCase
         }
         if ($repository !== null) {
             $command .= ' ' . escapeshellarg('--repository=' . $repository);
+        }
+        if ($status !== null) {
+            $command .= ' ' . escapeshellarg('--status=' . $status);
         }
         $command .= ' 2>&1';
 
@@ -287,6 +658,24 @@ final class RoadmapLifecycleTest extends TestCase
         $encoded = json_encode($ledger, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         self::assertIsString($encoded);
         file_put_contents($path, $encoded);
+
+        return $path;
+    }
+
+    /**
+     * Write one alternate programme-status document for a verifier test.
+     *
+     * @param   string  $status  Complete Markdown status document.
+     *
+     * @return  string  Temporary document path.
+     *
+     * @since   2.0.0
+     */
+    private function writeTemporaryStatus(string $status): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'kumwe-roadmap-status-');
+        self::assertIsString($path);
+        file_put_contents($path, $status);
 
         return $path;
     }

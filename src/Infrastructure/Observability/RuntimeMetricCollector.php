@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Infrastructure\Persistence\ReadinessStatus;
+use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Throwable;

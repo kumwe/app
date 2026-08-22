@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Delivery\Console;
 
+use LogicException;
 use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\ConsoleApplication;
@@ -19,8 +20,8 @@ final class ConsoleApplicationTest extends TestCase
         $output = new BufferedOutput();
         $application = new ConsoleApplication([new SuccessfulCommand()], $output);
 
-        self::assertSame(0, $application->run(['kumwe', 'example', 'value']));
-        self::assertSame(['value'], $output->lines);
+        self::assertSame(0, $application->run(['kumwe', 'extension:conformance', '/tmp/package.zip']));
+        self::assertSame(['/tmp/package.zip'], $output->lines);
     }
 
     public function testUnknownCommandHasUsageExitCode(): void
@@ -51,8 +52,91 @@ final class ConsoleApplicationTest extends TestCase
         self::assertSame(0, $application->run(['kumwe', 'list']));
         self::assertSame('Kumwe App 2.0', $output->lines[0]);
         self::assertSame('Available commands:', $output->lines[1]);
-        self::assertStringContainsString('example', $output->lines[2]);
+        self::assertStringContainsString('extension:conformance', $output->lines[2]);
         self::assertStringContainsString('Check whether Kumwe is ready to serve traffic.', $output->lines[2]);
+    }
+
+    /**
+     * An option not frozen for the selected action is refused before command code runs.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnknownOptionIsAUsageFailureBeforeDispatch(): void
+    {
+        $output = new BufferedOutput();
+        $application = new ConsoleApplication([new SuccessfulCommand()], $output);
+
+        self::assertSame(64, $application->run([
+            'kumwe',
+            'extension:conformance',
+            '/tmp/package.zip',
+            '--password=must-not-reach-command',
+        ]));
+        self::assertSame([], $output->lines);
+        self::assertStringContainsString('--password option is unknown', $output->errors[0]);
+    }
+
+    /**
+     * A duplicate live registration is a composition defect rather than last-registration-wins behavior.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDuplicateCommandRegistrationIsRejected(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessageIsOrContains('registered more than once');
+
+        new ConsoleApplication([new SuccessfulCommand(), new SuccessfulCommand()], new BufferedOutput());
+    }
+
+    /**
+     * Refuse a live registration that is absent from the retained machine contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUndeclaredCommandRegistrationIsRejected(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessageIsOrContains('absent from the CLI contract');
+
+        new ConsoleApplication([new UndeclaredCommand()], new BufferedOutput());
+    }
+
+    /**
+     * Expose the same deterministic live name set used by machine-contract parity checks.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testListsRegisteredCommandNamesInLexicalOrder(): void
+    {
+        $application = new ConsoleApplication([new SuccessfulCommand()], new BufferedOutput());
+
+        self::assertSame(['extension:conformance'], $application->commandNames());
+    }
+
+    /**
+     * An implementation cannot introduce an exit status absent from the retained contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUndeclaredExitStatusIsRejected(): void
+    {
+        $application = new ConsoleApplication([new UndeclaredExitCommand()], new BufferedOutput());
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessageIsOrContains('undeclared exit code 70');
+
+        $application->run(['kumwe', 'extension:conformance', '/tmp/package.zip']);
     }
 }
 
@@ -60,7 +144,7 @@ final class SuccessfulCommand implements Command
 {
     public function name(): string
     {
-        return 'example';
+        return 'extension:conformance';
     }
 
     public function description(): string
@@ -73,6 +157,100 @@ final class SuccessfulCommand implements Command
         $output->line($arguments[0] ?? 'missing');
 
         return 0;
+    }
+}
+
+/**
+ * Test command deliberately absent from the retained CLI machine contract.
+ *
+ * @since  2.0.0
+ */
+final class UndeclaredCommand implements Command
+{
+    /**
+     * Return a name no retained generation declares.
+     *
+     * @return  string  Undeclared command name.
+     *
+     * @since   2.0.0
+     */
+    public function name(): string
+    {
+        return 'fixture:undeclared';
+    }
+
+    /**
+     * Return a stable description identifier that construction must never render.
+     *
+     * @return  string  Fixture description identifier.
+     *
+     * @since   2.0.0
+     */
+    public function description(): string
+    {
+        return 'core.console.app_health.description';
+    }
+
+    /**
+     * Fail if composition allows this undeclared command to execute.
+     *
+     * @param   list<string>  $arguments  Unused command vector.
+     * @param   Output        $output     Unused output sink.
+     *
+     * @return  int  Success is unreachable because construction must fail.
+     *
+     * @since   2.0.0
+     */
+    public function execute(array $arguments, Output $output): int
+    {
+        return 0;
+    }
+}
+
+/**
+ * Test command that deliberately violates its retained exit-code contract.
+ *
+ * @since  2.0.0
+ */
+final class UndeclaredExitCommand implements Command
+{
+    /**
+     * Return a real retained name so only the exit status violates the contract.
+     *
+     * @return  string  Extension conformance command name.
+     *
+     * @since   2.0.0
+     */
+    public function name(): string
+    {
+        return 'extension:conformance';
+    }
+
+    /**
+     * Return a stable catalogue message identifier.
+     *
+     * @return  string  Health description identifier used by the fixture.
+     *
+     * @since   2.0.0
+     */
+    public function description(): string
+    {
+        return 'core.console.app_health.description';
+    }
+
+    /**
+     * Return an intentionally undeclared status.
+     *
+     * @param   list<string>  $arguments  Validated fixture arguments.
+     * @param   Output        $output     Unused fixture output.
+     *
+     * @return  int  Deliberately undeclared software error code.
+     *
+     * @since   2.0.0
+     */
+    public function execute(array $arguments, Output $output): int
+    {
+        return 70;
     }
 }
 

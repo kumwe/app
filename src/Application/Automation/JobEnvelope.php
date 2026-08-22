@@ -8,6 +8,7 @@ use DateInterval;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
+use Kumwe\App\Shared\Domain\CanonicalJson;
 
 /**
  * Immutable state machine for one queued job, from creation through claim to completion or death.

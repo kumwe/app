@@ -580,6 +580,7 @@ PHP;
 
         $emptied = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=mariadb',
+            '--pass=repeat',
             '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
             '--status=repeat:0',
@@ -589,6 +590,7 @@ PHP;
 
         $regressed = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=pgsql',
+            '--pass=repeat',
             '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/' . $repeat,
             '--status=repeat:2',
@@ -609,6 +611,7 @@ PHP;
         $recorded = $this->root . '/tests/Fixtures/Idempotency/recorded-repeat.junit.xml';
         $missing = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=mysql',
+            '--pass=repeat',
             '--expected-tests=7',
             '--junit=other:' . $recorded,
             '--status=other:2',
@@ -619,6 +622,7 @@ PHP;
 
         $missingStatus = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=mysql',
+            '--pass=repeat',
             '--expected-tests=7',
             '--junit=repeat:' . $recorded,
         ]);
@@ -627,6 +631,7 @@ PHP;
 
         $truncated = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=mysql',
+            '--pass=repeat',
             '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/truncated-report.junit.xml',
             '--status=repeat:0',
@@ -636,6 +641,7 @@ PHP;
 
         $accountedSkip = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=mariadb',
+            '--pass=repeat',
             '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
             '--status=repeat:0',
@@ -644,6 +650,7 @@ PHP;
 
         $runnerFailure = $this->execute('tools/verify-suite-idempotency.php', [
             '--engine=mysql',
+            '--pass=repeat',
             '--expected-tests=7',
             '--junit=repeat:' . $this->root . '/tests/Fixtures/Idempotency/nothing-failing.junit.xml',
             '--status=repeat:2',
@@ -724,7 +731,11 @@ PHP;
                 self::assertNotSame('UNASSIGNED', $entry[$field]);
             }
             self::assertSame('V2-QA-004', $entry['finding']);
-            self::assertSame(['repeat'], $entry['passes'] ?? null);
+            self::assertIsArray($entry['passes'] ?? null);
+            self::assertNotSame([], $entry['passes']);
+            foreach ($entry['passes'] as $pass) {
+                self::assertContains($pass, ['repeat', 'reverse']);
+            }
             self::assertIsArray($entry['observed_on'] ?? null);
             self::assertIsArray($entry['applies_to'] ?? null);
             self::assertNotSame([], $entry['observed_on']);
@@ -736,33 +747,24 @@ PHP;
     }
 
     /**
-     * A pass the baseline does not enforce must say why, and must not be silently absent.
+     * Reverse class order is enforced with a mechanism that leaves method declaration order alone.
      *
-     * The reverse-order pass is owed and is not enforced, because its first attempt measured the wrong
-     * property — `--order-by=reverse` reorders the tests inside each class as well as the classes. A gate
-     * may narrow what it claims; it may not narrow it quietly. The baseline therefore has to carry the
-     * unenforced pass, its finding, its owner and the reason, and the generator that measures it correctly
-     * has to produce a runnable configuration that leaves method order alone.
+     * The first reverse-order attempt measured the wrong property: `--order-by=reverse` reorders tests
+     * inside each class as well as the classes. The corrected generator lists integration class files in
+     * reverse and leaves each class's method order untouched. With transient definition fixtures withdrawn
+     * between processes, both this pass and the ordinary repeat pass are now part of the per-change gate.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testAnUnenforcedPassCarriesItsReasonAndItsCorrectedMechanism(): void
+    public function testReverseClassOrderIsEnforcedThroughTheCorrectedMechanism(): void
     {
         $baseline = $this->decode('docs/quality/idempotency-baseline.json');
         $scope = $baseline['scope'];
         self::assertIsArray($scope);
-        self::assertSame(['repeat'], $scope['enforced_passes'] ?? null);
-
-        $pending = $scope['not_yet_enforced'];
-        self::assertIsArray($pending);
-        self::assertSame('reverse', $pending['pass'] ?? null);
-        self::assertSame('V2-QA-004', $pending['finding'] ?? null);
-        foreach (['statement', 'owner', 'why_not_enforced', 'how_to_run'] as $field) {
-            self::assertIsString($pending[$field] ?? null);
-            self::assertNotSame('', trim((string) $pending[$field]));
-        }
+        self::assertSame(['repeat', 'reverse'], $scope['enforced_passes'] ?? null);
+        self::assertArrayNotHasKey('not_yet_enforced', $scope);
 
         $emitted = $this->execute('tools/verify-suite-idempotency.php', ['--emit-reverse-configuration']);
         self::assertSame(0, $emitted['status'], $emitted['output']);
@@ -858,12 +860,77 @@ PHP;
             self::assertStringContainsString('--project=' . $project, $merge);
         }
 
-        // The breadth projects run every journey except the right-to-left spec, and compare no pixels.
-        // Both facts now live in structure rather than in adjacent lines of the configuration: the
-        // manifest decides which spec set a project runs, and the configuration names the projects whose
+        $breadth = $scripts['test:browser:breadth'] ?? null;
+        self::assertIsString($breadth);
+        foreach (
+            ['desktop-firefox', 'mobile-firefox', 'desktop-webkit', 'mobile-webkit'] as $project
+        ) {
+            self::assertStringContainsString('--project=' . $project, $breadth);
+        }
+
+        // Desktop breadth runs every journey except the right-to-left spec; bounded mobile breadth runs
+        // its dedicated interaction and reflow proof. Neither compares pixels. These facts live in
+        // structure, not adjacent configuration lines: the manifest decides which spec set a project
+        // runs, and the configuration names the projects whose
         // snapshots are ignored. Asserting the structure keeps the guarantee while letting the matrix be
         // defined in one place — the literal-adjacency form could only ever be read from one file.
         $configuration = $this->contents('playwright.config.ts');
+        self::assertStringContainsString("project.specs === 'breadth'", $configuration);
+        self::assertStringContainsString('{ testMatch: breadthSpec }', $configuration);
+        $nightly = $this->contents('.github/workflows/nightly.yml');
+        self::assertStringContainsString('.firstAttemptPassRatePercent >= 99', $nightly);
+        self::assertStringContainsString('(.projects | sort)', $nightly);
+        self::assertStringContainsString(
+            '--critical=tests/Browser/nightly-critical-journeys.json',
+            $nightly,
+        );
+        foreach (
+            [
+                "'tests/Support/prepare-browser-contribution.php'",
+                "'tools/summarize-browser-attempts.mjs'",
+                "'tools/verify-browser-attempt-summary.mjs'",
+            ] as $triggerPath
+        ) {
+            self::assertStringContainsString($triggerPath, $nightly);
+        }
+        foreach (
+            [
+                '.critical.totalExpected > 0',
+                '(.critical.missing | length) == 0',
+                '(.critical.failed | length) == 0',
+                '(.critical.passedOnlyAfterRetry | length) == 0',
+            ] as $criticalAcceptance
+        ) {
+            self::assertStringContainsString($criticalAcceptance, $nightly);
+        }
+
+        $critical = $this->decode('tests/Browser/nightly-critical-journeys.json');
+        self::assertSame(1, $critical['schema_version'] ?? null);
+        self::assertSame(
+            [
+                'administrator',
+                'portal',
+                'generated-business',
+                'owned-line',
+                'maker-checker',
+                'step-up',
+                'policy-denial',
+                'no-javascript',
+                'website',
+                'nightly-breadth',
+            ],
+            $critical['required_obligations'] ?? null,
+        );
+        self::assertContains(
+            'Nightly browser breadth preserves keyboard, touch, high contrast, zoom and reflow',
+            array_column($critical['journeys'] ?? [], 'title'),
+        );
+
+        $breadthJourney = $this->contents('tests/Browser/nightly-browser-breadth.spec.ts');
+        self::assertStringContainsString("matchMedia('(forced-colors: active)').matches", $breadthJourney);
+        self::assertStringContainsString("expect(ordinaryColorEvidence.width).toBe('0px')", $breadthJourney);
+        self::assertStringContainsString("expect(activeColorEvidence.width).toBe('2px')", $breadthJourney);
+        self::assertStringContainsString("expect(activeColorEvidence.style).toBe('solid')", $breadthJourney);
         $matrix = json_decode(
             $this->contents('tests/Browser/projects.json'),
             true,
@@ -883,11 +950,13 @@ PHP;
             1,
             preg_match("/snapshotIgnoringProjects = new Set\(\[([^\]]*)\]\)/", $configuration, $ignored),
         );
-        foreach (['desktop-firefox', 'desktop-webkit'] as $project) {
+        foreach (
+            ['desktop-firefox', 'mobile-firefox', 'desktop-webkit', 'mobile-webkit'] as $project
+        ) {
             self::assertSame(
-                'all',
+                str_starts_with($project, 'mobile-') ? 'breadth' : 'all',
                 $specsByProject[$project] ?? null,
-                sprintf('%s must run every journey except the right-to-left spec.', $project),
+                sprintf('%s must run its declared cross-engine breadth scope.', $project),
             );
             self::assertStringContainsString(
                 sprintf("'%s'", $project),

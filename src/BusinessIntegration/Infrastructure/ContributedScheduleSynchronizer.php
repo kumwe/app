@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Application\Automation\CronExpression;
+use Kumwe\App\Automation\Domain\CronExpression;
 use Kumwe\App\Application\Automation\JobExecutionClass;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\App\Application\Persistence\TransactionManager;

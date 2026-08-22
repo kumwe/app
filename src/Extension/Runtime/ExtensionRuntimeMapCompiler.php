@@ -32,7 +32,7 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalidator
+final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalidator, ExtensionRuntimeGenerationAuthority
 {
     /**
      * Writer that claims and renews this replica's lease row without fighting its own peers.

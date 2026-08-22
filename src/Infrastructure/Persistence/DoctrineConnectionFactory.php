@@ -9,6 +9,7 @@ use Doctrine\DBAL\DriverManager;
 use Kumwe\App\Infrastructure\Persistence\Type\DoctrineTemporalTypes;
 use Kumwe\App\Kernel\Configuration\DatabaseConfiguration;
 use Pdo\Mysql;
+use Pdo\Pgsql;
 
 /**
  * Opens the shared DBAL connection every Kumwe repository, migration and lease works through.
@@ -17,7 +18,8 @@ use Pdo\Mysql;
  * settled: the microsecond-preserving temporal types are installed before the connection exists, and the
  * session time zone is pinned to UTC so a server configured for a local zone cannot shift the instants
  * Kumwe stores. Engine differences are confined to this class — `mysql` and `mariadb` both bind to
- * `pdo_mysql` and differ from `pgsql` only in driver, character set and the shape of the TLS parameters.
+ * `pdo_mysql`; PostgreSQL binds to `pdo_pgsql` and sends each DBAL one-shot statement with its parameters
+ * in one call, avoiding both a second round trip and a PHP 8.5 stale-result fault on repeated locking reads.
  *
  * @since  2.0.0
  */
@@ -41,8 +43,9 @@ final readonly class DoctrineConnectionFactory
      * The connection comes back already open rather than lazy, because the time-zone statement is issued
      * here: an unreachable server or rejected credentials therefore fail while the container is being
      * built instead of inside whichever query happened to run first. On PostgreSQL the configured SSL
-     * mode is passed through as `sslmode`; on MySQL and MariaDB every mode but `disable` sets the
-     * driver's server-certificate check, which is asked for only under `verify-ca` and `verify-full`.
+     * mode is passed through as `sslmode`, and one-shot query execution is explicit because DBAL does not
+     * reuse prepared objects. On MySQL and MariaDB every mode but `disable` sets the driver's
+     * server-certificate check, which is asked for only under `verify-ca` and `verify-full`.
      *
      * @return  Connection  An open connection whose session time zone is UTC.
      *
@@ -68,6 +71,9 @@ final readonly class DoctrineConnectionFactory
 
         if ($this->configuration->driver === 'pgsql') {
             $parameters['sslmode'] = $this->configuration->sslMode;
+            $parameters['driverOptions'] = [
+                Pgsql::ATTR_DISABLE_PREPARES => true,
+            ];
         } elseif ($this->configuration->sslMode !== 'disable') {
             $parameters['driverOptions'] = [
                 Mysql::ATTR_SSL_VERIFY_SERVER_CERT => in_array(

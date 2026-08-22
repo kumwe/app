@@ -1,7 +1,7 @@
 {
     "ledger": "kumwe-consolidated-findings",
     "version": "2.0.0",
-    "verified_at_sha": "7a83c295bce6c23f250384ba787dd5e4595fff0e",
+    "verified_at_sha": "8455b3769f166077e492a415e888b3c510c74fbd",
     "authority": "docs/roadmap/README.md",
     "completed_work": "CHANGELOG.md",
     "note": "This ledger holds open work only. A finding that reaches 'closed' leaves this file in the same change that closes it, and its substance becomes an entry in CHANGELOG.md under the category it belongs to; the roadmap therefore shrinks as the programme advances instead of accumulating a tail of finished items. 'closed' is deliberately absent from states for that reason, and tools/verify-roadmap.php fails the build when an entry carries it. Every source anchor in this file was resolved against the repository at verified_at_sha. The 56 entries closed before this rule was introduced were moved to CHANGELOG.md with the commits that closed them.",
@@ -29,7 +29,7 @@
                 {
                     "file": "src/BusinessRecord/Application/BusinessRecordService.php",
                     "symbol": "BusinessRecordService",
-                    "note": "3,673 lines on the verified SHA, unchanged since the review's pinned revision."
+                    "note": "4,126 lines on the verified SHA after the two Gate A seam extractions and deletion of the facade's final duplicate relationship-policy methods. The remaining size work is deliberately assigned to non-gating lane M."
                 }
             ],
             "acceptance_test": "Each extracted collaborator owns a coherent invariant, has explicit typed input and output, and is independently testable without duplicating application authorization or transaction policy. The facade's method signatures, errors, audit actions and event semantics are unchanged, proven by the existing cross-surface parity suite.",
@@ -54,7 +54,7 @@
                 {
                     "file": "src/BusinessRecord/Application/BusinessRecordService.php",
                     "symbol": "mutationFence->lock() call sites",
-                    "note": "Lines 1341, 1504, 1659, 2042, 2173, 2286, 2723 and 3614 — every write path."
+                    "note": "Seven direct calls at lines 1404, 1582, 1744, 2588, 2805, 2923 and 3477 cover the mutation paths that acquire this definition-wide fence."
                 },
                 {
                     "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
@@ -163,8 +163,8 @@
             "source_anchors": [
                 {
                     "file": "src/Infrastructure/Automation/DoctrineJobQueue.php",
-                    "symbol": "the queue-policy lock and live-lease count",
-                    "note": "Line 968 takes the queue_policy row with FOR UPDATE; lines 985 and 990 then run COUNT(*) over reserved rows with unexpired leases. The ordinary claim at line 270 already uses FOR UPDATE SKIP LOCKED, so the mutex is specific to contributed queues with a declared ceiling."
+                    "symbol": "the runtime-policy lock and live-lease count",
+                    "note": "Line 968 takes the job_queue_runtime row with FOR UPDATE; lines 985 and 990 then run COUNT(*) over reserved rows with unexpired leases. The ordinary claim at line 270 already uses FOR UPDATE SKIP LOCKED, so the mutex is specific to contributed queues with a declared ceiling."
                 }
             ],
             "acceptance_test": "A configured queue owns durable concurrency slots claimed with portable leasing. One claim transaction may lease a batch where ordering permits. Completion, expiry, cancellation and recovery release the slot safely. No over-claim beyond declared tolerance, no starvation, bounded recovery after SIGKILL, and no site or organization able to monopolise worker capacity.",
@@ -189,61 +189,6 @@
             "acceptance_test": "Every hot store declares authoritative purpose, minimum retention, immutability, expiry index or partition strategy, hot and warm and archived state, batch and time and lock and replication budgets, its six retention metrics, backup and restore and legal-hold behaviour, and its failure and reconciliation procedure. Audit pruning happens only after a verifiable anchor is committed and the off-host archive is proven restorable.",
             "owner": "UNASSIGNED",
             "closure_sha": null
-        },
-        {
-            "id": "V2-QA-004",
-            "title": "The integration suite is not idempotent against a reused database, and six tests prove it",
-            "severity": "medium",
-            "state": "reproduced",
-            "phase": "2",
-            "gate": "A",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "docs/quality/idempotency-baseline.json",
-                    "symbol": "entries",
-                    "note": "Six tests across four classes fail when the integration suite runs a second time against the database the first run left behind. Identical set on MySQL 8.4 and PostgreSQL 17 in run 31876448442. Three are GeneratedBusinessBrowserIntegrationTest methods meeting a schema installation the previous run left; one is AssetInspectionCustomViewIntegrationTest meeting its own contribution; one is ExtensionContributionLifecycleIntegrationTest meeting an extension it left installed and trusted; and one is RedisOutageIntegrationTest::testTheSignInBudgetFailsClosedAndThePageCacheDegradesWhileRedisIsGone, which is not database state at all but a process-global cache diagnostic that is never cleared, so its assertion is only true the first time."
-                },
-                {
-                    "file": "docs/quality/idempotency-baseline.json",
-                    "symbol": "scope.not_yet_enforced",
-                    "note": "The other half of the acceptance — the same result in a different class order — is measured by nothing. The first attempt used PHPUnit's --order-by=reverse, which also reverses the tests inside each class, and reported 38 failures across roughly 21 classes in run 31877919073: seven methods of BusinessRecordPolicyEnforcementIntegrationTest, five of BusinessRecordPolicyCompilerIntegrationTest, three of BusinessRecordHistoryPagingIntegrationTest. That distribution is intra-class ordering, not database residue, so the measurement was of the wrong property. The corrected mechanism generates a configuration listing the classes in reverse with method order untouched, verified to collect the same 283 tests, and is run with --pass=reverse."
-                },
-                {
-                    "file": ".github/workflows/ci.yml",
-                    "symbol": "Prove the integration suite is idempotent against a reused database",
-                    "note": "The step enforces the repeat pass on all three engines against the baseline: a test outside the record fails, an entry whose test now passes fails as stale, an entry past its expiry fails. It does not enforce the reverse pass, and the baseline records why rather than leaving the narrower claim unstated."
-                }
-            ],
-            "acceptance_test": "docs/quality/idempotency-baseline.json is empty and its enforced_passes carries both passes: every recorded test passes when the integration suite runs a second time against the same database, and the suite gives the same result when its classes run in a different order, on MariaDB, MySQL and PostgreSQL. Any class that mutates installation-global state declares and executes its own rollback, as RecordSecretRotationIntegrationTest does.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "progress": "Delivered: the repeat pass enforced on all three engines; the six recorded non-idempotent tests fixed at their real mechanisms (fixed idempotency keys and fixed definition identities minted per run; the Redis outage drill scoped to the installation's own namespace and rolled back) and the record emptied; the corrected reverse-order pass executed once on MariaDB, green, 340 tests in reversed class order against the emptied record. Outstanding: the reverse pass enforced in CI beside the repeat pass on all three engines, which the per-site OpenAPI definition ceiling currently blocks as an appended same-database pass - see V2-QA-008."
-        },
-        {
-            "id": "V2-DB-001",
-            "title": "The nightly browser matrix covers two more engines and not yet the remaining dimensions",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "2",
-            "gate": "A",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": ".github/workflows/ci.yml",
-                    "symbol": "the browser job",
-                    "note": "The journeys now run on MariaDB, MySQL and PostgreSQL at merge, desktop and mobile Chromium, with first-attempt results summarized separately from retried ones."
-                },
-                {
-                    "file": ".github/workflows/nightly.yml",
-                    "symbol": "the browser job",
-                    "note": "Nightly adds desktop Firefox and desktop WebKit on MariaDB, both declaring ignoreSnapshots because pixel baselines belong to the browser that recorded them. It does not yet add mobile on those engines, nor the keyboard, touch, high-contrast, zoom and reflow dimensions."
-                }
-            ],
-            "acceptance_test": "Nightly exercises Firefox and WebKit on desktop and mobile, and adds keyboard and focus, touch, high contrast, zoom and reflow, with the acceptance figures the roadmap states: zero serious or critical accessibility violation, zero horizontal overflow, zero inaccessible critical control, and an overall first-attempt pass rate at or above 99%.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "progress": "Delivered: the three-engine merge matrix that was the finding's substance, the two further browser engines nightly, and first-attempt reporting separated from retries."
         },
         {
             "id": "V2-REL-001",
@@ -365,7 +310,7 @@
                 {
                     "file": "tools/restore.sh",
                     "symbol": "the completion manifest",
-                    "note": "kumwe-restore-manifest.json records per-tree path, file count and digests, which is the natural place to carry the payload snapshot instant that a replay target must not exceed."
+                    "note": "The restore path already reads backup_created_at at line 316, records it in kumwe-restore-manifest.json at line 338 and records the restored trees at lines 345–353. What remains absent is a field and validator that bind a requested database replay target at or before that payload snapshot instant."
                 }
             ],
             "acceptance_test": "The restore tooling refuses, or loudly records, a replay target later than the filesystem payload snapshot instant, and the drill exercises both the permitted and the refused case. The rule is stated once, in the operator documentation and in the tool, with the same wording.",
@@ -409,7 +354,7 @@
                 {
                     "file": "docs/interface-standard",
                     "symbol": "the programme ledger",
-                    "note": "composer interface:programme reports 42 surfaces, 85 templates, 23 navigation entries, 19 generated instances, 16 actors, 27 tasks, 13 journeys, 60 work items, 8 findings and 3 verification reports. The human gate is not among the executed evidence."
+                    "note": "composer interface:programme reports 43 surfaces, 90 templates, 24 navigation entries, 19 generated instances, 16 actors, 28 tasks, 13 journeys, 60 work items, 8 findings and 3 verification reports. The human gate is not among the executed evidence."
                 }
             ],
             "acceptance_test": "Named accountable reviewers complete the five archetype task journeys with task-based evidence. Automated Playwright, axe and visual results are necessary and not sufficient. Accessibility evidence covers WCAG 2.2 AA, keyboard and focus and screen-reader semantics, touch targets, zoom and reflow, high contrast, loading and empty and error and denied and confirmation states, essential no-JavaScript flows, and reviewed visual regression on desktop and mobile.",
@@ -436,25 +381,6 @@
             "closure_sha": null
         },
         {
-            "id": "V2-DOC-001",
-            "title": "Programme state was spread across competing documents",
-            "severity": "medium",
-            "state": "in_progress",
-            "phase": "0",
-            "gate": "A",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "docs/qualification/gap-matrix.md",
-                    "symbol": "the whole file",
-                    "note": "322 lines mixing an opening analysis, eight wave outcomes and per-entry closure prose. Its header still reads 'Gap totals: 0 critical, 13 high, 27 medium, 21 low' as an opening statement, which is no longer the current state of the programme."
-                }
-            ],
-            "acceptance_test": "docs/roadmap/ is the single authority for programme sequencing. The gap matrix is retained unmodified as executed evidence and says so in its own header. No second state database is created.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
             "id": "V2-ERP-007",
             "title": "No offline-tolerant capture primitive for point-of-sale-style surfaces",
             "severity": "low",
@@ -469,12 +395,11 @@
                     "note": "No offline queue, no client-side durable store, no reconciliation or conflict-resolution primitive exists anywhere under src/. Client-supplied operation identifiers and the idempotency ledger give a retried command a stable outcome, which is the foundation an offline client needs but is not itself offline support."
                 }
             ],
-            "acceptance_test": "Nothing is built for this in Version 2. What must hold is that Version 2 does not foreclose it. Three of the four constraints are settled and recorded in CHANGELOG.md: the caller-minted operation identifier now replays over a declared, bounded, configurable window and a repeat arriving after it is refused by name rather than applied twice; a client-asserted capture instant has a declared home beside the server's own and is proved unreachable from every ordering, expiry, period and numbering path; and the deferrable and non-deferrable validation split is written into the extension-facing contract with the non-deferrable half held by an architecture test. This entry stays open on the one that remains, V2-POS-002, because the deferral is only a decision somebody owns once the numbering shape under disconnection is chosen. The reviewer of any Gate A contract change asks whether it makes an offline terminal impossible; if it does, this entry is the place that objection is raised.",
+            "acceptance_test": "Nothing is built for this in Version 2. What must hold is that Version 2 does not foreclose it. All four constraints are settled and recorded in CHANGELOG.md: the caller-minted operation identifier replays over a declared, bounded, configurable window and a repeat arriving after it is refused by name rather than applied twice; a client-asserted capture instant has a declared non-authoritative home and is proved unreachable from ordering, expiry, period and numbering decisions; the deferrable and non-deferrable validation split is written into the extension-facing contract; and ADR 0008 chooses synchronisation-time numbering, with an immutable unique client reference retained until the receiving command allocates the unchanged gapless human number. The reviewer of any contract change asks whether it makes a future offline terminal impossible; if it does, this entry is the standing guard where that objection is raised.",
             "owner": "UNASSIGNED",
             "closure_sha": null,
             "product_owner_decision": "Decision D14 — deferred beyond Version 2 as a product. Offline point of sale will be a separate long-standing application talking to the platform over the API. Version 2 does not build it and must not design in a way that forecloses it.",
-            "residual": "The platform must remain positioned to accommodate an offline terminal. Three of the four constraints that carry that positioning are delivered; V2-POS-002 alone remains, and it is the product owner's decision rather than an implementation task. This entry is the standing reminder that the deferral has a cost somebody is paying attention to.",
-            "forward_reference": "V2-POS-002"
+            "residual": "The platform must remain positioned to accommodate an offline terminal while the product itself stays deferred: no offline queue, client-side durable store or reconciliation flow ships in Version 2. All four non-foreclosure contracts are delivered; this conditional entry remains as a standing guard against a future incompatible change."
         },
         {
             "id": "V2-LNG-010",
@@ -579,9 +504,9 @@
             "origin": "gap-matrix",
             "source_anchors": [
                 {
-                    "file": "src/Administrator/Http/Middleware/",
+                    "file": "tests/Unit/Administrator/Http/Middleware/AdministratorCsrfMiddlewareTest.php",
                     "symbol": "AdministratorCsrfMiddleware",
-                    "note": "No dedicated comparison or rejection tests. No test anywhere asserts the session cookie attribute string."
+                    "note": "Dedicated administrator CSRF tests cover a matching token, a wrong token, an absent token and localized refusal language and direction at lines 40, 58, 80 and 100. No test anywhere asserts the session cookie attribute string, and the other acceptance-matrix items remain open."
                 }
             ],
             "acceptance_test": "Dedicated tests for both CSRF middlewares, the Redis rate-limiter window arithmetic, the portal session store find and rotate rejection matrix, the logout handlers, and the session cookie attribute string.",
@@ -872,42 +797,6 @@
             "product_owner_decision": "Decision D16."
         },
         {
-            "id": "V2-ERP-008",
-            "title": "A non-site-scoped counter keys on the definition's owning site, which ownership widening can silently change",
-            "severity": "medium",
-            "state": "open",
-            "phase": "E",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-                    "symbol": "allocateNumbers",
-                    "note": "Falls back to the definition's owning site for the counter's site coordinate when the record scope carries no site. Under ADR 0001 ownership can widen, so an ownership change would alter the counter identity of every non-site-scoped sequence on that definition and restart its runs at one. A stable sentinel coordinate, or a rule freezing owning-site changes for sequence-bearing definitions, needs deciding."
-                }
-            ],
-            "acceptance_test": "A definition whose ownership widens or moves keeps every existing counter identity and every run's continuity, proven by a test that widens ownership around a definition with allocated numbers.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-ERP-009",
-            "title": "The hard-delete set-null sweep rewrites referencing records without a posting-period evaluation",
-            "severity": "medium",
-            "state": "open",
-            "phase": "E",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-                    "symbol": "clearInboundSetNull",
-                    "note": "The posting-period lock judges the addressed record, and the immutability guard already fences this sweep, but a record dated in a closed period can still be re-versioned by deleting an undated record it references set-null. Whether the sweep should refuse, skip, or be judged like any mutation is a decision the lock's addressed-record rule deliberately left open."
-                }
-            ],
-            "acceptance_test": "Deleting a record referenced set-null by a closed-period record either refuses by name or provably leaves the closed-period record's version and audit history untouched, and the chosen rule is stated on the lock.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
             "id": "V2-UX-003",
             "title": "Closed and immutable records still render edit affordances, and the definition editor cannot declare immutable states",
             "severity": "medium",
@@ -916,58 +805,17 @@
             "origin": "new",
             "source_anchors": [
                 {
-                    "file": "src/BusinessRecord/Presentation/",
-                    "symbol": "generated browser surface",
-                    "note": "The generated browser catches only validation and version-conflict problems on submit, so an immutable or closed-period refusal lands on the global error boundary, and generated forms render edit affordances for records the service will refuse because catalog metadata does not expose immutable states or the posting-date declaration."
+                    "file": "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php",
+                    "symbol": "GeneratedBusinessBrowserController::write()",
+                    "note": "The generated browser's write path catches validation and version-conflict problems at lines 1165 and 1214, but not immutable or closed-period refusals, so those land on the global error boundary. Generated forms still render edit affordances for records the service will refuse because catalog metadata does not expose immutable states or the posting-date declaration."
                 },
                 {
-                    "file": "src/BusinessDefinition/Presentation/",
-                    "symbol": "definition editor form mapper",
-                    "note": "The administrator definition editor cannot yet declare workflow immutable_states; the declaration is reachable only through canonical documents or an extension contribution."
+                    "file": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php",
+                    "symbol": "BusinessDefinitionFormMapper::workflow()",
+                    "note": "Lines 281–302 map the administrator workflow form without immutable_states. The declaration is reachable only through canonical documents or an extension contribution."
                 }
             ],
             "acceptance_test": "A record in an immutable state or a closed period renders read-only affordances with the refusal's own wording, and the definition editor can declare and remove immutable states with validation.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-QA-007",
-            "title": "pdo_pgsql under PHP 8.5 answers a stale empty result when one prepared statement is re-executed many times in one transaction",
-            "severity": "high",
-            "state": "reproduced",
-            "phase": "2",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php",
-                    "symbol": "testEachIdentityCoordinateIsolatesItsOwnContiguousRun",
-                    "note": "Reproduction: fresh PostgreSQL database, parent schema plus migrate, then this test's choreography - the allocator's identical five-parameter SELECT FOR UPDATE re-executed nine times inside one transaction - reads the first run at one where three were allocated. The backend session never changes, the unique index is valid and live, the committed state is correct whenever any other statement interleaves, and interleaving any statement makes the same sequence answer correctly. MariaDB and MySQL are unaffected. The real write path always interleaves record writes between allocations, so the product is not known to be exposed; the test's PostgreSQL leg skips naming this finding until the driver is cleared or pinned."
-                }
-            ],
-            "acceptance_test": "A minimal PDO-only reproduction either confirms the driver fault upstream (and the toolchain pins or patches pdo_pgsql, after which the skip is removed) or finds the true mechanism in this stack and fixes it; either way the allocator-seam test runs on PostgreSQL again.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-QA-008",
-            "title": "Accumulating fixture definitions hit the per-site OpenAPI component ceiling by the third suite run against one database",
-            "severity": "medium",
-            "state": "reproduced",
-            "phase": "2",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/OpenApi/Application/OpenApiComponentClaimAdmission.php",
-                    "symbol": "admit",
-                    "note": "Uninstall preserves published definitions by design and each integration run installs roughly one hundred and sixty fixture definitions, so MAX_DEFINITIONS = 256 is exhausted around the third consecutive run against one database. This does not threaten the enforced two-run idempotency property, but it blocks enforcing the reverse pass as an appended same-database pass and will bite any long-lived integration database."
-                },
-                {
-                    "file": "src/BusinessRecord/Application/InstalledBusinessRecordDefinitionResolver.php",
-                    "symbol": "activeInstalled",
-                    "note": "Rejecting the published version is not on its own a way to withdraw a fixture definition, and an attempt on this branch had to be withdrawn for it. BusinessDefinitionService::reject flips the catalog head's publication_state, but catalog() selects every row for the site with no filter on that column, and this resolver then throws BusinessRecordSchemaUnavailable on any Active schema installation whose version reads Rejected. Withdrawing a definition therefore has to retire the schema installation in the same step, or the accounting has to change instead; rejection alone breaks definition resolution for the whole site rather than excluding one definition from it."
-                }
-            ],
-            "acceptance_test": "Either fixture definitions are retired with the run that made them, or the ceiling's accounting distinguishes live definitions from preserved-but-withdrawn ones; three consecutive full-suite runs against one database stay green.",
             "owner": "UNASSIGNED",
             "closure_sha": null
         },
@@ -1112,10 +960,11 @@
         },
         {
             "id": "V2-QA-010",
-            "title": "The standard asks every test method for a documentation block and no gate has ever checked",
+            "title": "The enforced test documentation baseline still carries legacy documentation debt",
             "severity": "medium",
             "state": "in_progress",
-            "phase": "2",
+            "phase": "M",
+            "gate": null,
             "origin": "new",
             "source_anchors": [
                 {
@@ -1124,52 +973,15 @@
                     "note": "States plainly that test classes and test methods carry documentation blocks under the same rules as src/, and that a test block says what behaviour is pinned - the part a future reader needs."
                 },
                 {
-                    "file": "composer.json",
-                    "symbol": "docs:api",
-                    "note": "Ran tools/verify-docblocks.php against src/ only, so the rule for tests/ was written and unenforced from the day it was set down. The originally recorded figure counted test methods: 1,193 of 2,586 carried no block. Measured across every member the standard covers, tests/ owed 3,829 findings when the gate was armed. Each new test written beside an undocumented neighbour inherited the habit, which is how the drift compounded."
+                    "file": "docs/quality/test-docblock-baseline.json",
+                    "symbol": "entry_count and entries",
+                    "note": "The enforced, shrinking record owns the current count and exact member-level debt. It began with 3,829 findings across missing documentation, summaries, @since, @param, @return and @var declarations; new violations, stale entries, malformed ownership and expired entries fail the gate, so the recorded set can only shrink."
                 }
             ],
-            "acceptance_test": "The recorded entries reach zero and the baseline document is deleted with the change that empties it, the way docs/quality/idempotency-baseline.json was emptied. The gate itself is delivered; what remains is the burn-down, taken in its own changes rather than inside a delivery wave.",
+            "acceptance_test": "The recorded entry_count reaches zero, the entries list is empty, and the enforced gate continues to refuse any new violation. The gate itself is delivered and truthful; the remaining burn-down is maintainability work taken in its own changes rather than inside a delivery wave.",
             "owner": "UNASSIGNED",
             "closure_sha": null,
-            "progress": "Delivered: the gate exists and is enforced. composer docs:tests runs in composer qa and in the CI quality job, and tools/verify-docblocks.php holds tests/ to every documentation rule it checks -- not undocumented methods alone, but classes, summaries, @since, @param and @return -- against a record of 3,829 entries keyed by file, code and class-qualified member. Line width is the one rule left out, because phpcs.xml already holds tests/ to the same 120 characters and the tree owes nothing there. A violation the record does not carry fails, an entry that no longer matches fails, and the record is refused outright if an entry lacks an owner, a finding, a justification or a well-formed expiry, if two entries share a key, or if the declared count disagrees with the entries. Seven cases in tests/Unit/DocumentationBaseline pin each of those, including the keying defect the first attempt shipped with. Outstanding: the 3,829 recorded entries, of which 1,215 are test methods and the rest constructors, helpers and providers, burned down in their own changes."
-        },
-        {
-            "id": "V2-LNG-013",
-            "title": "Two vite stylesheet inputs sit outside the direction gate and pin physical sides in right-to-left",
-            "severity": "medium",
-            "state": "reproduced",
-            "phase": "L",
-            "gate": "A",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "public/assets/portal.css",
-                    "symbol": "physical inline-axis declarations",
-                    "note": "portal.css and administrator.css are vite build inputs but live outside composer assets:direction's assets/ scan root, so their physical declarations were never checked. Visibly: .portal-brand { margin-right: auto } pins the portal brand to the left under right-to-left, captured honestly in the committed portal-login baselines; also border-right on .portal-navigation, border-left on alerts and notices, and margin-left in the administrator styles."
-                }
-            ],
-            "acceptance_test": "composer assets:direction scans every stylesheet the build consumes, not one directory; the physical declarations become logical properties, and the right-to-left baselines are re-recorded showing the brand and the borders on the correct side.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-DOC-003",
-            "title": "A frozen manifest generation's recorded key lists omit two surfaces its parser accepts",
-            "severity": "low",
-            "state": "reproduced",
-            "phase": "2",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "docs/extension-contract/generations.json",
-                    "symbol": "manifest-4",
-                    "note": "Its frozen entry omits content from contribution_keys and unit_converters from integration_keys, though schema-4 parsing accepts both: surfaces added after the generation was frozen were never recorded against it. The record and the parser disagree about what a manifest-4 package may declare, which is the one thing a frozen generation exists to settle."
-                }
-            ],
-            "acceptance_test": "Every generation's recorded key lists match what its parser accepts, proven by a check that derives the lists from the parser rather than trusting the record, so a surface added after a freeze cannot go unrecorded again.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
+            "progress": "Delivered: the gate exists and is enforced. composer docs:tests runs in composer qa and in the CI quality job, and tools/verify-docblocks.php holds tests/ to every documentation rule it checks -- not undocumented methods alone, but classes, summaries, @since, @param, @return and @var -- against entries keyed by file, code and class-qualified member. Line width is held separately by phpcs.xml. A violation the record does not carry fails, an entry that no longer matches fails, and the record is refused outright if an entry lacks an owner, a finding, a justification or a well-formed expiry, if two entries share a key, or if entry_count disagrees with the entries. Outstanding: burn down the exact entries retained in docs/quality/test-docblock-baseline.json. This debt is assigned to non-gating lane M because its executable ratchet already prevents regression."
         },
         {
             "id": "V2-DEMO-001",
@@ -1190,12 +1002,12 @@
             "closure_sha": null
         },
         {
-            "id": "V2-QA-011",
+            "id": "V2-QA-014",
             "title": "WebKit keeps a stale background-color after a live colour-scheme change, and nobody knows whether real Safari does",
             "severity": "medium",
             "state": "decision_required",
-            "phase": "2",
-            "gate": "A",
+            "phase": "7",
+            "gate": "B",
             "origin": "new",
             "source_anchors": [
                 {
@@ -1205,14 +1017,14 @@
                 },
                 {
                     "file": "assets/administrator/styles.css",
-                    "symbol": "line 550",
+                    "symbol": "the reduced-motion rule at line 588",
                     "note": "An in-flight transition is ruled out: the same emulateMedia call sets reducedMotion reduce, and this rule forces transition-duration to .01ms !important for every element. The reported #ffffff is also exactly the pre-flip value rather than an interpolated midpoint, and axe samples hundreds of milliseconds later. The value is stuck, not settling, so no change to the transition list can reach it."
                 }
             ],
             "acceptance_test": "Someone determines on real Safari, not an emulated media override, whether changing the operating system appearance while an administrator page is open leaves background-color at its previous value. If it does, this is a user-facing theming defect and the fix is to stop expressing the theme only as root custom properties consumed through var() -- light-dark(), or real declarations inside the media block, so a media change re-runs the cascade for the non-inherited property. If it does not, the finding belongs to Playwright's setEmulatedMedia path, the assertion is rewritten to emulate before load rather than after, and the browser behaviour is reported upstream with the reproducer.",
             "owner": "UNASSIGNED",
             "closure_sha": null,
-            "progress": "Run 32443342932 reproduced the Playwright WebKit path. The breadth journey now reloads after setting the media override, so it validates a settled dark render without pretending to answer live Safari behaviour. The proposed transition-list change remains refuted and no product CSS is guessed. What stays open is the real-Safari experiment and, depending on that result, either a cascade-level product fix or an upstream Playwright report."
+            "progress": "Run 32443342932 reproduced the Playwright WebKit path. The breadth journey now reloads after setting the media override, so it validates a settled dark render without pretending to answer live Safari behaviour. The proposed transition-list change remains refuted and no product CSS is guessed. What stays open is the real-Safari experiment and, depending on that result, either a cascade-level product fix or an upstream Playwright report. This is Gate B human-interface acceptance work under P7-E; Gate A explicitly does not assert human acceptance."
         }
     ]
 }

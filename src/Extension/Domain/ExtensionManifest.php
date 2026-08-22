@@ -7,6 +7,7 @@ namespace Kumwe\App\Extension\Domain;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Domain\Internal\ExtensionManifestGrammar;
 use ValueError;
 
 /**
@@ -275,24 +276,7 @@ final readonly class ExtensionManifest
             throw new InvalidArgumentException('The extension manifest schema must be 1, 2, 3, 4, or 5.');
         }
         if ($schema >= 2) {
-            self::assertKnownKeys($data, [
-                'schema',
-                'name',
-                'type',
-                'version',
-                'provider',
-                'requires',
-                'dependencies',
-                'autoload',
-                'migrations',
-                'configuration',
-                'permissions',
-                'routes',
-                'events',
-                'assets',
-                'contributions',
-                'template',
-            ], 'The extension manifest');
+            self::assertKnownKeys($data, ExtensionManifestGrammar::manifestKeys($schema), 'The extension manifest');
         }
 
         $name = self::requiredString($data, 'name');

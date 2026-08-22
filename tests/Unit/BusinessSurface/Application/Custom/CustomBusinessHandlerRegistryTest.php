@@ -29,7 +29,9 @@ use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegist
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use LogicException;
+use RuntimeException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -333,7 +335,12 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
         });
         $authorization = $this->createMock(AuthorizationGateway::class);
         $authorization->expects(self::once())->method('assertAllowed');
-        $dispatcher = new CustomBusinessSurfaceDispatcher($views, $actions, $authorization);
+        $dispatcher = new CustomBusinessSurfaceDispatcher(
+            $views,
+            $actions,
+            $authorization,
+            $this->createStub(ExtensionExecutionGate::class),
+        );
         $definition = self::definition();
         $viewQuery = new CustomBusinessViewQuery(
             self::context(),
@@ -376,9 +383,66 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
             new CustomBusinessViewHandlerRegistry(),
             new CustomBusinessActionHandlerRegistry(),
             $authorization,
+            $this->createStub(ExtensionExecutionGate::class),
         );
         self::assertNull($inactive->viewContractSchemas($definition, 'summary'));
         self::assertNull($inactive->actionContractSchemas($definition, 'recalculate'));
+    }
+
+    /**
+     * A superseded generation cannot enter either resident typed extension handler.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDispatcherRefusesStaleGenerationBeforeTypedExtensionCodeRuns(): void
+    {
+        $owner = DefinitionOwner::extension('acme/editor');
+        $viewHandler = $this->createMock(CustomBusinessViewHandler::class);
+        $viewHandler->expects(self::never())->method('handle');
+        $views = new CustomBusinessViewHandlerRegistry();
+        $views->register($owner, self::viewContract(), $viewHandler);
+        $actionHandler = $this->createMock(CustomBusinessActionHandler::class);
+        $actionHandler->expects(self::never())->method('handle');
+        $actions = new CustomBusinessActionHandlerRegistry();
+        $actions->register($owner, self::actionContract(), $actionHandler);
+        $authorization = $this->createMock(AuthorizationGateway::class);
+        $authorization->expects(self::never())->method('assertAllowed');
+        $execution = $this->createMock(ExtensionExecutionGate::class);
+        $execution->expects(self::exactly(2))
+            ->method('assertCurrent')
+            ->willThrowException(new RuntimeException('stale extension generation'));
+        $dispatcher = new CustomBusinessSurfaceDispatcher($views, $actions, $authorization, $execution);
+        $definition = self::definition();
+
+        try {
+            $dispatcher->view($definition, new CustomBusinessViewQuery(
+                self::context(),
+                $definition->handle,
+                'summary',
+                new RecordQuerySpecification(pageSize: 10),
+                ['term' => 'north'],
+            ));
+            self::fail('A stale custom view handler was invoked.');
+        } catch (RuntimeException $exception) {
+            self::assertSame('stale extension generation', $exception->getMessage());
+        }
+
+        try {
+            $dispatcher->action($definition, new CustomBusinessActionCommand(
+                self::context(),
+                $definition->handle,
+                'asset-1',
+                1,
+                'recalculate',
+                IdempotencyKey::fromString('operation:stale-dispatch-0001'),
+                ['mode' => 'full'],
+            ));
+            self::fail('A stale custom action handler was invoked.');
+        } catch (RuntimeException $exception) {
+            self::assertSame('stale extension generation', $exception->getMessage());
+        }
     }
 
     /**

@@ -9,6 +9,7 @@ use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessSurface\Application\FieldModelContext;
 use Kumwe\App\BusinessSurface\Application\FieldModelPresenter;
 use Kumwe\App\BusinessSurface\Application\PresentedField;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 
 /**
  * Adapts the application-owned rendering contract over the owner-aware safe presenter registry.
@@ -27,12 +28,15 @@ final readonly class RegistryFieldModelPresenter implements FieldModelPresenter
     /**
      * Wire the adapter to the contribution-owned registry every presented value crosses.
      *
-     * @param  FieldPresentationRegistry  $registry  Owner-aware safe field presenter registry.
+     * @param  FieldPresentationRegistry  $registry   Owner-aware safe field presenter registry.
+     * @param  ExtensionExecutionGate     $execution  Live authority for contributed presenter objects.
      *
      * @since  2.0.0
      */
-    public function __construct(private FieldPresentationRegistry $registry)
-    {
+    public function __construct(
+        private FieldPresentationRegistry $registry,
+        private ExtensionExecutionGate $execution,
+    ) {
     }
 
     /**
@@ -63,6 +67,9 @@ final readonly class RegistryFieldModelPresenter implements FieldModelPresenter
         array $errors = [],
         bool $editable = false,
     ): PresentedField {
+        if (!str_starts_with($type->id, 'core.')) {
+            $this->execution->assertCurrent();
+        }
         $presentation = $this->registry->present(new FieldPresentationRequest(
             $field,
             $type,

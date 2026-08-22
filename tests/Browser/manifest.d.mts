@@ -14,7 +14,7 @@ export declare const maxRetries: number;
 /** A validated project entry. */
 export interface BrowserProject {
   readonly name: string;
-  readonly specs: 'all' | 'right-to-left';
+  readonly specs: 'all' | 'right-to-left' | 'breadth';
 }
 
 /** A validated manifest. */

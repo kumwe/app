@@ -44,6 +44,7 @@ use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegist
 use Kumwe\App\Delivery\Http\Api\Business\BusinessOperationStatusApiHandler;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -394,6 +395,7 @@ final class BusinessOperationStatusApiHandlerTest extends TestCase
                 new CustomBusinessViewHandlerRegistry($references),
                 new CustomBusinessActionHandlerRegistry($references),
                 $authorization,
+                $this->createStub(ExtensionExecutionGate::class),
             );
         }
         $catalog = new BusinessSurfaceCatalog(
@@ -579,6 +581,7 @@ final class BusinessOperationStatusApiHandlerTest extends TestCase
             new CustomBusinessViewHandlerRegistry($references),
             $actions,
             $this->createStub(AuthorizationGateway::class),
+            $this->createStub(ExtensionExecutionGate::class),
         );
     }
 

@@ -21,10 +21,12 @@ use Kumwe\App\BusinessRecord\Domain\MoneyValue;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeMoneyRateProviderCatalog;
 use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 #[CoversClass(MoneyConversionPipeline::class)]
 #[CoversClass(MoneyRateProviderDefinition::class)]
@@ -194,6 +196,42 @@ final class MoneyRateProviderContributionTest extends TestCase
     }
 
     /**
+     * Prove a resident provider from an old generation is fenced before package code can be called.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStaleGenerationCannotEnterResidentRateProvider(): void
+    {
+        $owner = ContributionOwner::extension('acme/rates');
+        $definition = new MoneyRateProviderDefinition('acme.rates.ecb', ['ZAR', 'EUR']);
+        $provider = $this->createMock(MoneyRateProvider::class);
+        $provider->method('identifier')->willReturn('acme.rates.ecb');
+        $provider->expects(self::never())->method('supports');
+        $provider->expects(self::never())->method('rateFor');
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registrar = $registries->registrar($owner, new ManifestContributionSet(
+            $owner,
+            moneyRateProviders: [$definition],
+        ));
+        $registrar->moneyRateProvider($definition, $provider);
+        $registrar->complete();
+        $execution = $this->createMock(ExtensionExecutionGate::class);
+        $execution->expects(self::once())
+            ->method('assertCurrent')
+            ->willThrowException(new RuntimeException('stale extension generation'));
+        $pipeline = new MoneyConversionPipeline(
+            new MoneyConverter(),
+            new RuntimeMoneyRateProviderCatalog($registries, $execution),
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('stale extension generation');
+        $pipeline->convert($this->request());
+    }
+
+    /**
      * Prove a declared rate provider survives the manifest round trip a runtime publication depends on.
      *
      * @return  void
@@ -276,7 +314,10 @@ final class MoneyRateProviderContributionTest extends TestCase
     {
         return new MoneyConversionPipeline(
             new MoneyConverter(),
-            new RuntimeMoneyRateProviderCatalog($registries),
+            new RuntimeMoneyRateProviderCatalog(
+                $registries,
+                $this->createStub(ExtensionExecutionGate::class),
+            ),
         );
     }
 

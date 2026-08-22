@@ -1,0 +1,705 @@
+{
+    "format": "kumwe-rest-machine-contract-snapshot-v1",
+    "generation": "1.0.0",
+    "openapi_semantic_sha256": "7e18419ca02ec8b131531643b60219e4dbd0c5e316ae46772b3e93cf33aa11c0",
+    "operations": {
+        "activateExtension": {
+            "contract_sha256": "b45490458cd5ee55cbe702d67b307ae5a854986407f411ca3b1cdbc33a8acc72",
+            "method": "POST",
+            "path": "/api/v1/extensions/{vendor}/{name}/activate"
+        },
+        "addExtensionTrustKey": {
+            "contract_sha256": "28fdae7c40b3cc99513f1488389f46644dad7e2dedf666f9fe9f975eb4c8621c",
+            "method": "POST",
+            "path": "/api/v1/extension-trust-keys"
+        },
+        "approveBusinessSchemaPlan": {
+            "contract_sha256": "e7e8d4f1a493601f3320eb6ae467fe614832f0a64ceadcf78bd7199f8f9628fb",
+            "method": "POST",
+            "path": "/api/v1/business-schema-plans/{planId}/approve"
+        },
+        "assignRole": {
+            "contract_sha256": "e35d76006ba221838d39e8cceb64e4ff38e0932d4761926f19621d1bb561c650",
+            "method": "PUT",
+            "path": "/api/v1/users/{id}/roles/{roleId}"
+        },
+        "businessApprovalList": {
+            "contract_sha256": "036e59da0064cf2d1dd0d436177725a2cb81314cf3d7d72aa14d55b3b859b229",
+            "method": "GET",
+            "path": "/api/v1/business/approvals"
+        },
+        "businessApprovalRead": {
+            "contract_sha256": "2131f962bfeeec38cc4526c82f3cd146efef126d1f7f27e80c2ae24193924b91",
+            "method": "GET",
+            "path": "/api/v1/business/approvals/{approval}"
+        },
+        "businessDefinitionDiscover": {
+            "contract_sha256": "c6bf8bc03a08265c47a0cac01fbd3809c529e0186f578640dd345f27e8d759c9",
+            "method": "GET",
+            "path": "/api/v1/business/definitions"
+        },
+        "businessDefinitionInspect": {
+            "contract_sha256": "d73350dce73e3b458e7e49142be5dc2fc2ca903796effa0df7e47a605f608d9a",
+            "method": "GET",
+            "path": "/api/v1/business/definitions/{definition}"
+        },
+        "businessOperationStatusRead": {
+            "contract_sha256": "c725f238223cbc6dd21c828a67a460cef4ae3637f719823f1be700d516f81a0f",
+            "method": "GET",
+            "path": "/api/v1/business/operations/{operation}"
+        },
+        "businessRecordAction": {
+            "contract_sha256": "f3180944538df9ad867877249b73a6f91326d9e6c871192a44210085cccd1cf9",
+            "method": "POST",
+            "path": "/api/v1/business/records/{definition}/{record}/actions/{action}"
+        },
+        "businessRecordActionApproval": {
+            "contract_sha256": "9ffc581a5e0d5d15c708603ce00e07c6fd8310ca19b72563609a24fbe9bfdea3",
+            "method": "POST",
+            "path": "/api/v1/business/records/{definition}/{record}/actions/{action}/approval"
+        },
+        "businessRecordArchive": {
+            "contract_sha256": "7fe2da44763fb7ad7ef729371e2cbee4bca7b8751170a2e67704f1c5750e8085",
+            "method": "POST",
+            "path": "/api/v1/business/records/{definition}/{record}/archive"
+        },
+        "businessRecordBrowse": {
+            "contract_sha256": "1453552e4809cf41cdb7a7b86bbfba80a0415254335a67cb56516237e30eec6e",
+            "method": "GET",
+            "path": "/api/v1/business/records/{definition}"
+        },
+        "businessRecordCreate": {
+            "contract_sha256": "ed809523ab0fcd2c342a4196e13e6cdf5afdfabd7b4132a88c5d1c76f00826bb",
+            "method": "POST",
+            "path": "/api/v1/business/records/{definition}"
+        },
+        "businessRecordCustomRecordView": {
+            "contract_sha256": "5103fd9fd8989248bcf4b70a776a7bbe212519df00bcbc9ffaf745707e272568",
+            "method": "POST",
+            "path": "/api/v1/business/views/{definition}/{record}/{view}"
+        },
+        "businessRecordCustomView": {
+            "contract_sha256": "b943eb3b9fb2f270793222ccd02b3d737d61e95a319262284713e41b66f05e04",
+            "method": "POST",
+            "path": "/api/v1/business/views/{definition}/{view}"
+        },
+        "businessRecordDelete": {
+            "contract_sha256": "07126e565c5828730156272f4f19c14359dcd6a5af9e010d11ca43d66d40946c",
+            "method": "DELETE",
+            "path": "/api/v1/business/records/{definition}/{record}"
+        },
+        "businessRecordHistory": {
+            "contract_sha256": "c15dda96e812b3adb9d2d1ae84fffdcc26795f29ca49282d6ac29ce13ae06c00",
+            "method": "GET",
+            "path": "/api/v1/business/records/{definition}/{record}/history"
+        },
+        "businessRecordRead": {
+            "contract_sha256": "902d959edb0450c230067b5c53e13ee6c83a0adc509543a1d4a7eeb30a9446c6",
+            "method": "GET",
+            "path": "/api/v1/business/records/{definition}/{record}"
+        },
+        "businessRecordRelate": {
+            "contract_sha256": "5d6fd4ef3e52a5cdd9ec288cbc9686ecd2bed47a91eaa3c61c5b3ba60dec22e9",
+            "method": "POST",
+            "path": "/api/v1/business/records/{definition}/{record}/relations/{relation}"
+        },
+        "businessRecordRelationRead": {
+            "contract_sha256": "c1967758a8116396c7e707b0e7f53c3274fa1c2a3b8fffb548b53b37120bdc4e",
+            "method": "GET",
+            "path": "/api/v1/business/records/{definition}/{record}/relations/{relation}"
+        },
+        "businessRecordReorder": {
+            "contract_sha256": "59e7688be80e02fa2111b90788d5908df0022d8f2b25a2a58467e3703a187521",
+            "method": "PUT",
+            "path": "/api/v1/business/records/{definition}/{record}/relations/{relation}/order"
+        },
+        "businessRecordRestore": {
+            "contract_sha256": "782d905f0ecc3bc7500a9827fa95d5fd801690f3a100e3e68e086e2ab7ea6225",
+            "method": "POST",
+            "path": "/api/v1/business/records/{definition}/{record}/restore"
+        },
+        "businessRecordSearch": {
+            "contract_sha256": "f5e0e2979c63bbfba232914ee80a2adc0465598afe593aaa23241fff42966376",
+            "method": "POST",
+            "path": "/api/v1/business/records/{definition}/search"
+        },
+        "businessRecordUnrelate": {
+            "contract_sha256": "a81dc5c9fb6dcf5d0e4a933c115a1c06f70bf90e6c7d2d73caf00c931c19a116",
+            "method": "DELETE",
+            "path": "/api/v1/business/records/{definition}/{record}/relations/{relation}/{target}"
+        },
+        "businessRecordUpdate": {
+            "contract_sha256": "b246c14de31b0094a026ef89eea1d931b567715b98f42fad5d1a207c45935d5f",
+            "method": "PATCH",
+            "path": "/api/v1/business/records/{definition}/{record}"
+        },
+        "businessReportExecute": {
+            "contract_sha256": "7b019654708e0743551163f1942842ec8512629334b1c315ccee0d192d62f567",
+            "method": "POST",
+            "path": "/api/v1/business/reports/{report}"
+        },
+        "businessReportExportDownload": {
+            "contract_sha256": "1f183e99929a862a810d994c504a65f32becbeb2533d7a0634f9bbf6eb68fe71",
+            "method": "GET",
+            "path": "/api/v1/business/report-exports/{artifact}/download"
+        },
+        "businessReportExportRequest": {
+            "contract_sha256": "feb6b69a7d3f265048649ad64bcccd108c9872ac91b9606d90f1b752c9943dd3",
+            "method": "POST",
+            "path": "/api/v1/business/reports/{report}/exports"
+        },
+        "businessReportExportStatus": {
+            "contract_sha256": "eed0b16a6b7d5eb12f32048b77613e9de23fa53a3d9ac4189cd1f970d6222ad8",
+            "method": "GET",
+            "path": "/api/v1/business/report-exports/{artifact}"
+        },
+        "businessReportList": {
+            "contract_sha256": "b29d53098ed32805eacc38992e395c84d89b20226a845bb8bd20485aa48c7e19",
+            "method": "GET",
+            "path": "/api/v1/business/reports"
+        },
+        "cancelJob": {
+            "contract_sha256": "be71dba523896c282a6d627ea7a24d2247c1e955c890fcbc03b9bbe6f03dcf9e",
+            "method": "POST",
+            "path": "/api/v1/jobs/{id}/cancel"
+        },
+        "closePostingPeriod": {
+            "contract_sha256": "5c40ad54bd3088f58c90b57131b7e4d62c3a92f67feed43c5ee9ba610435c508",
+            "method": "POST",
+            "path": "/api/v1/business-periods/close"
+        },
+        "createBusinessSchemaPlan": {
+            "contract_sha256": "0f4fe2c142fdf87266768c9603528067277e496c1a076a0ce84cda6751aadede",
+            "method": "POST",
+            "path": "/api/v1/business-schema-plans"
+        },
+        "createBusinessSchemaPurgePlan": {
+            "contract_sha256": "2d64b4f9c98b30293a76c4ceab0142645e14d43bb3bcb415c615ee3200cb2515",
+            "method": "POST",
+            "path": "/api/v1/business-schema-plans/purge"
+        },
+        "createContent": {
+            "contract_sha256": "2f53daceda7646572051763c06389ac7be568da361aa8c7f96790e3e88831ebf",
+            "method": "POST",
+            "path": "/api/v1/content"
+        },
+        "createContentType": {
+            "contract_sha256": "032a4d32f48ca131ceba5c0793b46032056553312974257e396aa5b8cdf49af3",
+            "method": "POST",
+            "path": "/api/v1/content-types"
+        },
+        "createGrant": {
+            "contract_sha256": "19c4838c78474de8ada7fddbb26319e2b733c397fcc2779339a0dfc1c49dd263",
+            "method": "POST",
+            "path": "/api/v1/roles/{id}/grants"
+        },
+        "createMenu": {
+            "contract_sha256": "65de7f79a5d0435ed86c19416738f7d17143d239c89486022a3762a6b0b49d6b",
+            "method": "POST",
+            "path": "/api/v1/menus"
+        },
+        "createMenuItem": {
+            "contract_sha256": "2c0199372c0d9b51ccef16e50bb48a431a02e6de371576f2a5722f311f6a0da8",
+            "method": "POST",
+            "path": "/api/v1/menus/{menuId}/items"
+        },
+        "createRole": {
+            "contract_sha256": "9b65833d156adbb8d3200e765bc67c2b69813b0f7a0683f26e2968ee85283cb6",
+            "method": "POST",
+            "path": "/api/v1/roles"
+        },
+        "createSchedule": {
+            "contract_sha256": "19c739f0f26a6e4f5559dd619b93ee888a78f98189c978c2fba22d31d7f82e46",
+            "method": "POST",
+            "path": "/api/v1/schedules"
+        },
+        "createToken": {
+            "contract_sha256": "11248b238e12b982e20c35a087835460b5658049d564ceced8f98bb4d05cb1a7",
+            "method": "POST",
+            "path": "/api/v1/tokens"
+        },
+        "createUser": {
+            "contract_sha256": "8e46848ecdf2ba77d61d6416e0cbda626e6685e4a329469bb21eef35f3a218c0",
+            "method": "POST",
+            "path": "/api/v1/users"
+        },
+        "createWorkflow": {
+            "contract_sha256": "4259c4bb41128d9433ebe7c5bb3103162e959ebf0bca883b30052a294073adae",
+            "method": "POST",
+            "path": "/api/v1/workflows"
+        },
+        "deleteMenu": {
+            "contract_sha256": "f46fa26b06ad3c8bf3792501836648120e156cd1f3076c7c19b99ab1d8924463",
+            "method": "DELETE",
+            "path": "/api/v1/menus/{id}"
+        },
+        "deleteMenuItem": {
+            "contract_sha256": "a38e1f7a6b66f1b405463b578c1d04296125bdbb4d6efd72d21fdbca7a27b823",
+            "method": "DELETE",
+            "path": "/api/v1/menu-items/{id}"
+        },
+        "deleteSchedule": {
+            "contract_sha256": "265a78b00eafd7438b6088ffabcc4b046221721c0532e6929a11bca31bd132ec",
+            "method": "DELETE",
+            "path": "/api/v1/schedules/{id}"
+        },
+        "deprecateBusinessDefinitionVersion": {
+            "contract_sha256": "b28b3af294de1ff254d58a79fee8cc3dc1ef0ef547888003e861a3a3ac467436",
+            "method": "POST",
+            "path": "/api/v1/business-definitions/{identifier}/deprecate"
+        },
+        "disableExtension": {
+            "contract_sha256": "05041ffcbb479a51e95d95ef9a564fd7c768c4e3bcb0d75f65e1543576474569",
+            "method": "POST",
+            "path": "/api/v1/extensions/{vendor}/{name}/disable"
+        },
+        "discoverApi": {
+            "contract_sha256": "1b3ed63ccc3b548d3662dd4e713f5e0f6d420f4c2ed5b2d9a5278d2fc30384ac",
+            "method": "GET",
+            "path": "/api/v1"
+        },
+        "emergencyRevokeAllUserTokens": {
+            "contract_sha256": "09386d15da370c3472011701d2579db4c49b1b27bf86d202c3ebd55308336f24",
+            "method": "DELETE",
+            "path": "/api/v1/users/{id}/tokens/emergency"
+        },
+        "executeBusinessSchemaPlan": {
+            "contract_sha256": "4fb72f5c7832433b33b9260f42b7ccccd5b993b018445afe8c61df5a3e334416",
+            "method": "POST",
+            "path": "/api/v1/business-schema-plans/{planId}/execute"
+        },
+        "getContent": {
+            "contract_sha256": "a2a5d4213070478033e50f99c93d29248059ed78cf1d2fb0a6ca77547941d34d",
+            "method": "GET",
+            "path": "/api/v1/content/{id}"
+        },
+        "getContentType": {
+            "contract_sha256": "a92814b17b627534cb17d9bb1bb980a5d05a47735885e44835e1cc17570f8933",
+            "method": "GET",
+            "path": "/api/v1/content-types/{id}"
+        },
+        "getLiveness": {
+            "contract_sha256": "40c7e3e5a3b04fbf9eb9f7cdd4dfd1d8bebafae296b5551e8d7af790329cddbd",
+            "method": "GET",
+            "path": "/health/live"
+        },
+        "getMenu": {
+            "contract_sha256": "bd1c4e2d0e742e9edd8e4426f35d7778657590451c389b34fa095f25824d9f96",
+            "method": "GET",
+            "path": "/api/v1/menus/{id}"
+        },
+        "getMenuItem": {
+            "contract_sha256": "b3a64dab4d09b463c368757be4cd04f575cca26bc87d809569e8e59c2a7e27f8",
+            "method": "GET",
+            "path": "/api/v1/menu-items/{id}"
+        },
+        "getReadiness": {
+            "contract_sha256": "43b21f00def37a75207119bb7419b50e3472a0332c571b8d1f53ffcdaac16296",
+            "method": "GET",
+            "path": "/health/ready"
+        },
+        "getSchedule": {
+            "contract_sha256": "3d7c1ddfabcffd717136cc321f6ef742f63d27ffba5021de9393011c5ccba12b",
+            "method": "GET",
+            "path": "/api/v1/schedules/{id}"
+        },
+        "getSettings": {
+            "contract_sha256": "caa26246c5f935e9e55136c619914b0e085a979f3e209203c8ad2a45fb36bea7",
+            "method": "GET",
+            "path": "/api/v1/settings"
+        },
+        "getWorkflow": {
+            "contract_sha256": "a4604c9ee83aca9f6fef33d8987e954b9eb663c8a526a109e4164d0b8f8c2934",
+            "method": "GET",
+            "path": "/api/v1/workflows/{id}"
+        },
+        "listBusinessDefinitionHistory": {
+            "contract_sha256": "450f7579ddaf0c6d8e50bc267047c04d21259fdce0c84e1a4f49e0e972628a49",
+            "method": "GET",
+            "path": "/api/v1/business-definitions/{identifier}/history"
+        },
+        "listBusinessDefinitions": {
+            "contract_sha256": "c3138b29560f999900d6a772b538a73865f37b60424340f72211aaa6df27c6df",
+            "method": "GET",
+            "path": "/api/v1/business-definitions"
+        },
+        "listBusinessSchemaPlans": {
+            "contract_sha256": "5dbe56a62afb83620141622c19e5d0ad2fbbad0eba715510b04fde284ee4b637",
+            "method": "GET",
+            "path": "/api/v1/business-schema-plans"
+        },
+        "listContent": {
+            "contract_sha256": "661b7f9ae0e2f946711069d77ccd9f366b57b30ea3a13e0b9ed739068f16b81f",
+            "method": "GET",
+            "path": "/api/v1/content"
+        },
+        "listContentTypes": {
+            "contract_sha256": "d8678bf47cc6dfbb332fa3675efb5bc85d44e79504c1cac49711f40927bf83e2",
+            "method": "GET",
+            "path": "/api/v1/content-types"
+        },
+        "listExtensionTrustKeys": {
+            "contract_sha256": "bb1447c23eb77a4a3042b0a54f69efa8b512e71942c9e978e85f114c10ba7c46",
+            "method": "GET",
+            "path": "/api/v1/extension-trust-keys"
+        },
+        "listExtensions": {
+            "contract_sha256": "0fc6b622dcb145cfc17dc2612558078d9bbe804e3ebe228e4ae48da3fc1da9fa",
+            "method": "GET",
+            "path": "/api/v1/extensions"
+        },
+        "listJobs": {
+            "contract_sha256": "ddb310e91f33d6be57b5e258a8fc6b30be506a64a444f943699adcf34418b1ad",
+            "method": "GET",
+            "path": "/api/v1/jobs"
+        },
+        "listMenuItems": {
+            "contract_sha256": "96cd812f6fa50ef237b49348c73bef2cafdcfbf0decbf0203f6a26845ef799c9",
+            "method": "GET",
+            "path": "/api/v1/menus/{menuId}/items"
+        },
+        "listMenus": {
+            "contract_sha256": "9715855749a672e72d5dd6f55a76bc6b136de4d84a26e4ba052e799fe6ee59de",
+            "method": "GET",
+            "path": "/api/v1/menus"
+        },
+        "listPostingPeriods": {
+            "contract_sha256": "0e455f1083fd1d638d7fb7411252ee85036e69db4dd15499a29ed1cd83bf487a",
+            "method": "GET",
+            "path": "/api/v1/business-periods"
+        },
+        "listRoles": {
+            "contract_sha256": "7fd289653c09e5fd3d71bd69b6f2eaf25f5852ec50c8877e13e3b0352f4789bd",
+            "method": "GET",
+            "path": "/api/v1/roles"
+        },
+        "listSchedules": {
+            "contract_sha256": "54f02957af4e3a4f2e5a22cbaeb247109048981e19b07bea0bfbfd32c89cfb91",
+            "method": "GET",
+            "path": "/api/v1/schedules"
+        },
+        "listSchemaEligibleDefinitions": {
+            "contract_sha256": "807ccecfb200757359179fb80a9195e399b4a105017627f332cfc62039365b5f",
+            "method": "GET",
+            "path": "/api/v1/business-schema-definitions"
+        },
+        "listTokens": {
+            "contract_sha256": "58b69c9debe297dff3671fc54b79b802ff4f4dd3a0222d853b94b05d43ebc29c",
+            "method": "GET",
+            "path": "/api/v1/tokens"
+        },
+        "listUsers": {
+            "contract_sha256": "abe640df2faf09829735c9f835b8a644803f50e96a877de0c9d9b856f968116a",
+            "method": "GET",
+            "path": "/api/v1/users"
+        },
+        "listWorkflows": {
+            "contract_sha256": "558a70ba470b2cca00136f1f76df4b9848091ac6f5c68d560b07fea135976474",
+            "method": "GET",
+            "path": "/api/v1/workflows"
+        },
+        "previewBusinessDefinitionCompatibility": {
+            "contract_sha256": "7f8b72c3d60fc19ec818ff2559da7b9eee19212a072246b6c029ba73fbc7cafb",
+            "method": "GET",
+            "path": "/api/v1/business-definitions/{identifier}/compatibility"
+        },
+        "previewSafePlan": {
+            "contract_sha256": "753bbc897c080552a832dbfdc8024f54e134f710a8dab785db6f3d5eb922838e",
+            "method": "POST",
+            "path": "/api/v1/plans"
+        },
+        "publishBusinessDefinition": {
+            "contract_sha256": "70844eff4519e4144cb0a328c131e9da282cc697e203b7ca9f31915566084a49",
+            "method": "POST",
+            "path": "/api/v1/business-definitions/{identifier}/publish"
+        },
+        "publishContentType": {
+            "contract_sha256": "5c0e20b6135e746d774930e9cf61e5a45d42864c0e71ca18bcaa7fdca72244f9",
+            "method": "PATCH",
+            "path": "/api/v1/content-types/{id}"
+        },
+        "publishWorkflow": {
+            "contract_sha256": "634a80ed0570dcc989f1b57d3707a29fcc52d6599184028e2c469c0d7d56557f",
+            "method": "PATCH",
+            "path": "/api/v1/workflows/{id}"
+        },
+        "readBusinessDefinition": {
+            "contract_sha256": "119aeb5cf1c6538726d344f3508c92994ab25e287992d00c2e24177d6701c7e6",
+            "method": "GET",
+            "path": "/api/v1/business-definitions/{identifier}"
+        },
+        "readBusinessDefinitionDraft": {
+            "contract_sha256": "22cca6c841ca7ba912666d7c7542e5c1359f79c88a4d2ae4789cd3567c7cd348",
+            "method": "GET",
+            "path": "/api/v1/business-definitions/{identifier}/draft"
+        },
+        "readBusinessSchemaPlan": {
+            "contract_sha256": "791a4424cc2de6491259047f2ba4bcb62799560b303a6990a8e92231adfeee76",
+            "method": "GET",
+            "path": "/api/v1/business-schema-plans/{planId}"
+        },
+        "readOpenApiContract": {
+            "contract_sha256": "cfbc87948a21322e29cc1d1668d14375afa36739340227c916d7190409fce048",
+            "method": "GET",
+            "path": "/api/v1/openapi.json"
+        },
+        "recoverBusinessSchemaPlan": {
+            "contract_sha256": "818ed5cd3549e2a084b121bd21b122aa6122ee5727dd8271f9599a14aa80f082",
+            "method": "POST",
+            "path": "/api/v1/business-schema-plans/{planId}/recover"
+        },
+        "rejectBusinessDefinitionVersion": {
+            "contract_sha256": "8ed3eb09ad18fb372136f1bbcde6bdbfdcc10fe42dbe4cc1bb9f11e342bf8a02",
+            "method": "POST",
+            "path": "/api/v1/business-definitions/{identifier}/reject"
+        },
+        "reopenPostingPeriod": {
+            "contract_sha256": "97b1c417f6d3dd06dd267b6d1a1eb8bf359c6d1bdb575c4cdd348bc794e12957",
+            "method": "POST",
+            "path": "/api/v1/business-periods/reopen"
+        },
+        "restoreContent": {
+            "contract_sha256": "a13b00ee90110af1a0dc1b22f04b77d1d2f80a4ad0d9d9cf8bb29e7d03c3bd55",
+            "method": "POST",
+            "path": "/api/v1/content/{id}/restore"
+        },
+        "retryJob": {
+            "contract_sha256": "9bdcb0c9025fa7405a059cdaa080465742dae95a247eb705fad7e9060c69e7e8",
+            "method": "POST",
+            "path": "/api/v1/jobs/{id}/retry"
+        },
+        "revokeExtensionTrustKey": {
+            "contract_sha256": "326fb38ea245c905948e4b5d36149f9d3d01fc52e4509d1cc56971f97aab63a6",
+            "method": "DELETE",
+            "path": "/api/v1/extension-trust-keys/{keyId}"
+        },
+        "revokeGrant": {
+            "contract_sha256": "8a97d02152e1bd4fcb72516e3b60ecb515ee80c88818a3fb31d3c7de99e4c47e",
+            "method": "DELETE",
+            "path": "/api/v1/grants/{grantId}"
+        },
+        "revokeRole": {
+            "contract_sha256": "cbb57ae3b2a0c576293c8a4f6c88a613f26b14d7e4ca4bd57c40c2254dc560a7",
+            "method": "DELETE",
+            "path": "/api/v1/users/{id}/roles/{roleId}"
+        },
+        "revokeToken": {
+            "contract_sha256": "6a80d04ff92b96705ad2226048e345ad2dffcae90ee503b7e66f3184683a3fb1",
+            "method": "DELETE",
+            "path": "/api/v1/tokens/{tokenId}"
+        },
+        "revokeUserSiteTokens": {
+            "contract_sha256": "cefcc36d8e6cf8ee35a51a1544d1f6addfaf5714f4dc0f60900a0059d34609e7",
+            "method": "DELETE",
+            "path": "/api/v1/users/{id}/tokens"
+        },
+        "rotateExtensionTrustKey": {
+            "contract_sha256": "c182ac5add8564aa9ac25a0abb83a141a1648f7eed483615e69116b2289098ba",
+            "method": "POST",
+            "path": "/api/v1/extension-trust-keys/{keyId}/rotate"
+        },
+        "rotateToken": {
+            "contract_sha256": "2f8d48c380af9a87fc4126e9e00d50f747e253c996eed201a2b4975d34c1ba1b",
+            "method": "POST",
+            "path": "/api/v1/tokens/{tokenId}/rotate"
+        },
+        "saveBusinessDefinitionDraft": {
+            "contract_sha256": "1382117ed1ff20b2838e7309868f282d105a7f5121d063ed387282061aaae987",
+            "method": "PUT",
+            "path": "/api/v1/business-definitions/{identifier}/draft"
+        },
+        "setScheduleEnabled": {
+            "contract_sha256": "5c8bf88407e4517079444dd07b2e613069b09f489cb2635b521c2ea5dbcdec4e",
+            "method": "PATCH",
+            "path": "/api/v1/schedules/{id}"
+        },
+        "supersedeBusinessDefinitionVersion": {
+            "contract_sha256": "cb52b1df0294b18af8323f5e8ba65e8ecbe15cff01d6b50dd3994719d3a42fcb",
+            "method": "POST",
+            "path": "/api/v1/business-definitions/{identifier}/supersede"
+        },
+        "transitionContent": {
+            "contract_sha256": "2718849a903bc5f854de1a3388881478a86fd7dc289cc57dcdb2aa222785b90c",
+            "method": "POST",
+            "path": "/api/v1/content/{id}/transition"
+        },
+        "trashContent": {
+            "contract_sha256": "11ddaff1e6838ca8d4f40469b0868f75f2a9ad4725a0796c6a3f9081286bc80c",
+            "method": "DELETE",
+            "path": "/api/v1/content/{id}"
+        },
+        "uninstallExtension": {
+            "contract_sha256": "5b6c4e0d9665234a5b45d8203b13adab7864233405266245921747cde760d004",
+            "method": "DELETE",
+            "path": "/api/v1/extensions/{vendor}/{name}"
+        },
+        "updateContent": {
+            "contract_sha256": "e40625a7b52e833e2c248b500e704bff758fae7db78b3414d17668303f9d217f",
+            "method": "PATCH",
+            "path": "/api/v1/content/{id}"
+        },
+        "updateMenu": {
+            "contract_sha256": "eb1ec04d0c9f0f77a33cf2433b4f638dac0b134b89088690de65074d3c72d66b",
+            "method": "PATCH",
+            "path": "/api/v1/menus/{id}"
+        },
+        "updateMenuItem": {
+            "contract_sha256": "6061f7afea324fa6e7d06c9d249b6d41c300e3835b3afad1702063001d0d3f70",
+            "method": "PATCH",
+            "path": "/api/v1/menu-items/{id}"
+        },
+        "updateSettings": {
+            "contract_sha256": "b907e68ae09e4881ccf71a282f442660247c0ede5db0d1cc8d2941386bc47d50",
+            "method": "PUT",
+            "path": "/api/v1/settings"
+        },
+        "updateUser": {
+            "contract_sha256": "93b08ff0d8b3ffbcd7a7b8236b213df8f6384c80cc707f7a2973563505ac9551",
+            "method": "PATCH",
+            "path": "/api/v1/users/{id}"
+        },
+        "validateBusinessDefinitionDraft": {
+            "contract_sha256": "df6ee1c42e524cd6420f81de3e35fe31adb4e4ad0dc4c37427821400d902b96f",
+            "method": "POST",
+            "path": "/api/v1/business-definitions/{identifier}/validate"
+        }
+    },
+    "problem_registry_sha256": "7715276508a830c4459eaa1f4df82d83daf48b1ea37f268bb90487a2a52a8a80",
+    "schemas": {
+        "ApiDiscovery": "bd7fcdf121a76fbf14d16fb2ebf547aafc908e909b437c1448911cb5abaf420a",
+        "BusinessDefinitionCatalog": "70832ee9ba9d9aeaca4d70c8a85ccb1f0559b87f77e3efde8b34f78f4ce2131e",
+        "BusinessDefinitionCatalogEntry": "445a24b1c9de8a6defa628673fe96e5bf8fb388126306ddae9ea83a5c61c9248",
+        "BusinessDefinitionCompatibility": "9dede955364081d42bc17c4560fc251f954ee908e64557b686ae3f018c261006",
+        "BusinessDefinitionCompatibilityChange": "715588ac83ed80acc6cab9b0431630c2c5ea2a2885fee530bb32f751ff5cf5f1",
+        "BusinessDefinitionDraft": "aa055c57ef2d8085c0b54be25bad3c51714ddaf368ec8e28628c92f1e87cbfc1",
+        "BusinessDefinitionDraftInput": "fa3bb115e452d76fde8dd249923aebeeab44fd08cd0a5a9f2cbc5a38cedef768",
+        "BusinessDefinitionPublishInput": "07fafa14a2ac81c916920565a52fbce2fe6431fb8f41e48075ab64a8c5dda4c8",
+        "BusinessDefinitionVersion": "1d8604411f4e4aeabb08e09a03def345dab0d1f2d4d531cdd6b93c421275f78d",
+        "BusinessDefinitionVersionCollection": "66a6b32a014c20050ecbb802012ff3b2bc2eb842992fb9bbcb8f29bce9ad4947",
+        "BusinessDefinitionVersionInput": "c478ae180e6b7a8291f15e19e377fcd655709e8583906ef22ecb822e75af5e93",
+        "BusinessSchemaApprovalInput": "3df23e736cba2ff7a51117024f38c847e7a7f774331c6a80074975d928c35f66",
+        "BusinessSchemaDefinitionCollection": "4048f00f9e5930f02fae19b974448c3f7794baf37b1b9f00b3361c7800234ab9",
+        "BusinessSchemaExecutionOutcome": "573b4428322b1b09f321c2d9b8288144c11dce57df18e2ce27ba248081df5cf5",
+        "BusinessSchemaPlan": "cfb54687c4c39b556c6cb23278d79e4678d6aba55694670ededb2144f23d3f97",
+        "BusinessSchemaPlanCollection": "1c738414f55af9e9672732daab39e1b07e2f6fbebd881799e3ea8c33f3a08905",
+        "BusinessSchemaPlanDocument": "0a5d6493e25b5f17b095bea19a2000942b896f0f6c2ace8c06848d059f139192",
+        "BusinessSchemaPlanInput": "f195eb0f898d43c9e1c19dd9341b159dedccb502cbddbad8f1ea0a3e490c92b9",
+        "BusinessSchemaPlanStep": "356b9afe0919f6cce2970a1e49d238d90260c4941a0005d0333499b92b6a1db0",
+        "BusinessSchemaPurgeInput": "0261bf1503d08ae1e170afe14e55aa1c95d60889a8cdcec493916395d26159c7",
+        "CapabilityRecord": "6bb4a13ef0b57fa50f8858c3414f335839973131430bac9260daa50b361ef1ee",
+        "Content": "68fce65eab053f2e360cb4c328e8cb534f228ace375738bb876335b0373de657",
+        "ContentCollection": "7dab0667c93271806189740112acc02a84ca1a8a4e4fc6a0c07e89f06165f931",
+        "ContentCreate": "49d3539f5f3b03bf7318bdd72ba2b132de36f556b1c3bd1e0ea3c511100d50ac",
+        "ContentFieldDefinition": "7e3fc56a2d2a5418568ae9dc40aee9af4d19c9f804655a7fe8a6d067bc42d2f3",
+        "ContentPatch": "d6421ed39f0a73f0e223bb5101ed87c1117b983d806428b34c4b761bf68600b5",
+        "ContentTransition": "c4915535aed104062fbd79de1611ab544f12b498ed405697422b6c0f90a25c18",
+        "ContentTypeCollection": "8c659f4711c93de3502de0d2039b4a3047d091efb4e2cf873cd852afa0f44705",
+        "ContentTypeDefinition": "bf7cf6d9fb90ab95e83237389ff78b4fadc051dd46c0a59e071fdb956a737194",
+        "ContentTypeMutation": "6ffd232546523133c4f47c64c61e23869318057113ded4ead0ff4c285e26a03f",
+        "DefinitionOwner": "bd261db5d9007e39077f75d3b5c21f4cea0cb8c68b30cb0ffb422f5900ab4d71",
+        "ExtensionActivateRequest": "46762ae3fcb1f36bbad7dc4e817234107ae3baee9964da60ffdefbadc1edf3ae",
+        "ExtensionCollection": "7b97ef49b3a8070c6b43c3f52d93a3513c3100b3e6c33d991753c5499cbc5edd",
+        "ExtensionCredentialRequest": "befc671292e5c13872b859e1b410521b68cb8d2d9c884a84ece32439ea3c9017",
+        "ExtensionLifecycleResult": "fe775fe2c40e808f71311080193de4ab6b701edf3a527c06f5b030d6321d0394",
+        "ExtensionQuarantineResult": "14e3b574649eaaac08eb28f1a2c131ab46e31550ddb9022c52b3b48a5a47b4e4",
+        "ExtensionRecord": "94d4a088eedb6de51e803f58a947f7f1b52b736faf786a27674cb6b06de14477",
+        "ExtensionTrustKey": "e03c49ac73ca93335520133b3e43f3421b811e8b41eb47d1b575e6966292164d",
+        "ExtensionTrustKeyCollection": "ab3eb560eea74b31115ec4f3c88b8d86d3623aa1d929c1a9b5fba5a22530197a",
+        "ExtensionTrustKeyCreate": "29b54deaca21af347f0cfe0d0d731d10ab922e839dd9e7c7d4d788ed89ab735a",
+        "ExtensionTrustKeyRevoke": "bf9a090e8b197e2e004fe770cdbed350e8465ed18416cc18aad7975db3a3a6fd",
+        "ExtensionTrustKeyRotate": "019f9b2a36d828cdf23ccc2023afcaf3bd6c08f06f25e11153485b48fd9064ec",
+        "GeneratedBusinessAction": "a46f34fceb9ea55cce8a9a52db830e0618cdc583110e0419c27e58f903690798",
+        "GeneratedBusinessActionApproval": "ab5f12db8ac837ac3495d98b930bcbc7ab9edddd1f9c572b90b6c67c5fff3bbc",
+        "GeneratedBusinessActionMetadata": "96a73e41c60d483e04aeec6ab89c8ecdaafcf29e1c9fe1ea174650a4b118f19e",
+        "GeneratedBusinessApproval": "10dfe4d484def7f65ef596f2c27823a34fb364b6697b25982e197508f9984568",
+        "GeneratedBusinessApprovalCollection": "a9337eb040aa10a1d9f688a88be910964381a6a658ba3422c81568edb8fddf36",
+        "GeneratedBusinessApprovalOperationResult": "14903637edcf9bab63846cec267030d219e5f3731410edfb8f1bc9ae4aefdbde",
+        "GeneratedBusinessApprovalRequest": "eb92428df523c58cd28e1a736853eb745bc0fd1ffa462909aa51350296a3a2b9",
+        "GeneratedBusinessApprovalVote": "55ed3d971e705abd1532caa4e751aaba661a9fb265209b0b5dc2af279dd06970",
+        "GeneratedBusinessBrowse": "a39e7dd09044ad7be2771975761ac52840983b82bed3bf92395da819faaafd2b",
+        "GeneratedBusinessConvertedMoney": "119c578eaa90baa506b9c2abb7850dab3593558c0fbfb8b0c437cc060636d1fb",
+        "GeneratedBusinessCreate": "a0ca7f97c6da5716442f5a0f5f6699271a80b55106eed79c50ad9a9d953b2b7c",
+        "GeneratedBusinessCustomContract": "0ff6477c5fe784ee7d39ef676b396718478f2dfb6fb0dd474519b5c2cd6ed3a2",
+        "GeneratedBusinessCustomViewMetadata": "3a826a7501addc8b8ce549103bb3f15465228d850d07c6389549fa5e3f7de42d",
+        "GeneratedBusinessCustomViewRequest": "1dbc68bd06d82306ce99858a555fc1a82b0ed7b167e5ba338c41c6e266699110",
+        "GeneratedBusinessCustomViewResponse": "91e37ba17010f884c21073598c03d1489308ecafcab0bfc56933f3fd28a6761a",
+        "GeneratedBusinessDefinitionCollection": "288cdd3f489fbb710073278dbd37894885f4fcc2e2c0d186510a07d5ac62ea0d",
+        "GeneratedBusinessDefinitionDocument": "adae1ab0c02793ec10b689ec184ab5fad0134c1ac88bc4b11492d42d9dfc4a00",
+        "GeneratedBusinessDefinitionMetadata": "78dbb777d2af4804a8f9e41f7007511e57e404082e2a3a39faee6147f8f6a9cd",
+        "GeneratedBusinessFieldMetadata": "5b94ba2c9cf701da77bda557dc45488b15136fd1dae528a20ef361f571ca55a9",
+        "GeneratedBusinessHistory": "552a9f8e15ac2911d62e93b10c0039a33c863c5fb11cb566a1afd3dbc6469594",
+        "GeneratedBusinessMutation": "71ac18f8d2fd57b31db2de91e908008383035b8deae8204545a138950da8c29f",
+        "GeneratedBusinessOperationStatus": "3811b859aa5f1ce419728c54215679347305e23ee1c091fad53988a0ab9b2811",
+        "GeneratedBusinessQuery": "88d1681d192f3fdfc536752dba5b532a7af58bd2fb58d6377d7e88ec6873b219",
+        "GeneratedBusinessRecord": "b0c48678c56bc4035e94d5b83a0da9f097e6ba58203e4459f4191b6bce16c6e7",
+        "GeneratedBusinessRelate": "a938f889420a4778ee4a11aca02cb92ba20b3645cf4a5fc8e929a80c9a15fe67",
+        "GeneratedBusinessRelationRecord": "48af6cfebd3a4a4db87a4d8c5b95a6615c3b5e4d46b5f153191fb382f0281498",
+        "GeneratedBusinessRelationshipMetadata": "61b95e0bf95ed2cd4080919a52c8060469f6a7d9be814ac9d3db1f6da45b9a07",
+        "GeneratedBusinessReorder": "124185a3befd08e58cc1de52f3f972eb91b7b2f540889250654e4341a70ddf77",
+        "GeneratedBusinessReportCollection": "50d24aa940e3a55b03a7db9ebec89de61358311e35e6749a98efa67dc6314fe5",
+        "GeneratedBusinessReportColumn": "20e7a54ed01ba68446fa1ed6a5e8262f0883ada20572589c2e3be12158465c17",
+        "GeneratedBusinessReportDefinition": "24bd30422947fe06f0f2b624b7b3cf0665eb6a156302d8ee608159842af9e4c3",
+        "GeneratedBusinessReportDrillDown": "e81d2cf07c9d8a630701651e9003145de089f8567d9d69de83cf1e7d98f6f4ca",
+        "GeneratedBusinessReportExport": "c7883574db7e067c29a11558a269422e79b9ac6c84bac20482a7e6ff2f636b1e",
+        "GeneratedBusinessReportExportRequest": "ad6c3187afab8ed6e1b89db7f031e3aeb3a517a662a3f9b6d1ba78f904705f05",
+        "GeneratedBusinessReportParameters": "3d2c5d511d62948d7030324cc064938b03bd7379a86858531ff4f5f1c63127c6",
+        "GeneratedBusinessReportRequest": "889f378402cf37214c8a87a3102bff6aff1b2eed82db77cd2c11e6c0bbef159a",
+        "GeneratedBusinessReportResult": "6877743f1533ef0f22fc283aeef25e3830e24bf6264c583d4dbbf850e6fd7834",
+        "GeneratedBusinessRevision": "8f565f67bdc2d2e3e0a45043ac735a645b6086446383c6f93d56f84e3c57f3bd",
+        "GeneratedBusinessSchemaDocument": "0bd7e1c1982a41f562a7b476e727924b91d82b9b563d7cfa78a9abde8be1fd15",
+        "GeneratedBusinessUpdate": "d5ff585e8e70bf6f6afe1120b1ab235ed77cfdbbe7f890a48f49770be8a95b91",
+        "GeneratedBusinessViewMetadata": "7b6e03f1874f76acb486048a8bebe371623308693fbcd1e75515b2398e55fe0f",
+        "GrantCreate": "fdd7ca0368933691373ac540afd96fdbd85c7e9fa7a939e78448e6c1a1bb2d27",
+        "GrantRecord": "7e142b7011eb45d8fcea9bc0592db274fb8f3cfe4e628838b059da49a4a2ec3b",
+        "IdentifierResponse": "0ac88d802b9a370f465c5f16848280b44fe753067ef7738d2521416f3fa1e56d",
+        "IssuedToken": "3a05dc0124f947ac955fd83c0a5afe56ef067ced7a03ccbd416887a692a1db7a",
+        "Job": "3570206bbf9b66df3d93ce651fd1fcc9e41d57a8e864e73a44ce955a5351b704",
+        "JobCollection": "87d59f5652371e408e585939ad120d7526009e266d3a7e7a7e7f8286be07ce89",
+        "JsonValue": "e7ad7ef525ae2af5cacb06c553ab4e5fef6135ed1d20bbc1ef538be00151061f",
+        "Liveness": "b4b5657635b76eaff599f473cb83ac399273f7ddee7899d900bf0b321af9abac",
+        "Menu": "9503008df79df63af5ae312da21cdefc11415600d818688eac476c1eafea86b8",
+        "MenuCollection": "fa1ee69823e371b43236b90c40f531f69970a98646e2ccdfce1361d1e4e69ad2",
+        "MenuCreate": "bd258b43b513aad68a019e887a839f820a849b3873bf9e743c8da0f714c3c798",
+        "MenuItem": "237f90b68e5011e8c7f66a24c4a9d82694c9802d514811eee6a0780dff6a3e80",
+        "MenuItemCollection": "38e6591d7249eafe422520d8484c7695a874bc0ffbf2e54d59c737f100c37a74",
+        "MenuItemCreate": "f691230e14bc2a581a8c171fee6cad8f3b3cce5573ddb2adcd984f9fa7b03032",
+        "MenuItemPatch": "7d6bb47e77875730c5568a20e3b2107b4855223228bd36317e753af7e7a54130",
+        "MenuPatch": "c38cfe3bdf9b66b04dc06b29fd12f5059f08d9ee64632f7dbbcff0b8c1832bf7",
+        "OpenApiDocument": "0d09ab129801abeadc690718b1993dc57a527a52d4cd6ed1bed6ceda9d708d28",
+        "PostingPeriod": "80d9ed95ab9534e8c28179527afd3810e9566d28bdce5d43853fd282f690a4e2",
+        "PostingPeriodCloseInput": "4e2bc2161808ec9c0197951d0a8a304ccb33e01f62be3235c96ceec945478a95",
+        "PostingPeriodCollection": "00d6342415442948bac2fe08f92ea8a9cf99e5ed9357cc8a32ee1329644d2e5e",
+        "PostingPeriodReopenInput": "2aec9bde8606ef73edfebb6034d791ab9eca6a81ee60b6082f3cbef5fb61f846",
+        "PresentationColors": "164a5e820e0758077e13ef0467a529ab8621c26d7e693b1b1541a290622292ca",
+        "PresentationScheme": "5a387bb0bfeb2dd6d746334923fc0a5e68d6f6fb53bbbb403b7123b3bcb5f842",
+        "ProblemDetails": "618d13ac446f89e92f61aafa6344d3fc0b68e4b55d58299191506fb7a03092ad",
+        "Readiness": "c719767e0a09695339595c1b5973b3ad3e7ab0a9fd7ecab024d2c0f12d0610aa",
+        "RoleCollection": "2d4b4663fede59f7f8e3ad7cadf9ed34a45b3b6c9517bffa17fb2c7a803219d2",
+        "RoleCreate": "cc99141592a35a30c2333e94c53f0c7e145fe11ab932fc2b19df348b06adf604",
+        "RoleRecord": "78f761ab8c434ab24c771ad0ef18812b0e1ee28f99d758e6b1c4c16ffd297486",
+        "RoleSummary": "8195d859810a6ea072ade172e451ca2a8636305fe6bd39033cbec0ff0c667cc2",
+        "SafePlan": "db7b6e7601071f21d55787f277c02203bc3c5ed0e4eb47158c1f6ac21a572254",
+        "SafePlanRequest": "87fd6c01163c1d5cf37a18d16f4320cbf14481bd6d79311a84c54c163aa9d443",
+        "Schedule": "3570206bbf9b66df3d93ce651fd1fcc9e41d57a8e864e73a44ce955a5351b704",
+        "ScheduleCollection": "ec713c3f979c077acfa20c1e7d8ae89067881d814f7c0fe7a0fba73717818cf0",
+        "ScheduleCreate": "883c451d48e2826d4be7fe8c51604a546783b2b905c00206d83d5fe0815b1061",
+        "ScheduleState": "3a296771cd5c88c9b16fb9573fb9c05e49871370cd9bfbb7c05626485f42a1a2",
+        "SitePresentation": "97350398f5700a5a4412b0b556d2f2ee67ee65d90804ff3a6ec084a6881e3a7d",
+        "SiteSettings": "c73e0911385f0ef20a0c084511858621e9eb5ddb7b719f094177338119e18179",
+        "TokenCollection": "d0eb7a5ab57116f9e03c8eb4ce19cf879d106adf432f989e18749c2ebc9468de",
+        "TokenCreate": "bf88a50599290e9255ba87a800bfb8d01efda88c4ffb371b0b1232c3e4704e7a",
+        "TokenRecord": "7520a5016e1cf96492c5e13a0a803e3601af19616737433e5d4efa301c1e6015",
+        "TokenRevocationRequest": "dbaec2ef68d30e5c5528b6525f9be743e15fc8a71c46bf66dd77f5bee768f0d5",
+        "TokenRevocationResult": "c6f782ea5333f5c9ac4b2433abc0ab53b46134e6ab8f9f5fd295fe29c3025bff",
+        "TokenRotate": "a83a1221d45807d787c54b16a82786f7b1a7f3dbb322bc33106e0f03a6d5f27f",
+        "UserCollection": "fb306332303050684d9c55fa18a9ba61d2a3b2e839a34444df323f8b804c93bf",
+        "UserCreate": "52e4d5dec4aaaa58fb724b5db9ab21b2a500c8472352660fc4af3765e5d9ca80",
+        "UserRecord": "be445be1ec8447e8a1e9c20b74f5b466b0026de9d3123c40ad7006940024ebf0",
+        "UserUpdate": "1292189a568c3da7d8a67a7db0959b3e15e3ed9ed4b16a8f9d7e76dceedf2aa3",
+        "WorkflowCollection": "5afe0affdc189ba4cf0560ecf3b44375a8c6971dd29ad8e64be567a0e6b9a9f8",
+        "WorkflowDefinition": "945ae934e7ceebcab70d78d2508328798f580c47322e20d0d46c9b42158009b0",
+        "WorkflowMutation": "15c75ac74b23c4cde76e4f6cd6ca457a70274693fd099ac32339e52927aac9b5",
+        "WorkflowStateDefinition": "f5f7e5774ee6bd78aea3d28d772bfa56d77a4fd39d9416701094f38aa7ef773f",
+        "WorkflowTransitionDefinition": "ec273a9536c8be6842cf645cfcafd176c003ba392f5eeacf1c48a58aaae181c5"
+    }
+}

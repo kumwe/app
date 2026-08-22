@@ -8,6 +8,8 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
+use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Infrastructure\Redis\RedisRuntime;
@@ -45,6 +47,9 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
      *         paired with each lease.
      * @param  TrustStore                       $trust          Owner of the installation-wide extension
      *         lifecycle lock every mutation runs inside.
+     * @param  ExtensionRuntimeWithdrawal       $withdrawal     Resident graph withdrawal boundary.
+     * @param  ExtensionExecutionGate           $execution      Live authority deciding whether that graph
+     *         is still current.
      *
      * @since  2.0.0
      */
@@ -54,6 +59,8 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
         private AuthorizationGateway $authorization,
         private ExtensionRegistryFenceAllocator $fences,
         private TrustStore $trust,
+        private ExtensionRuntimeWithdrawal $withdrawal,
+        private ExtensionExecutionGate $execution,
     ) {
     }
 
@@ -96,9 +103,13 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
             return 0;
         }
 
-        return $this->trust->synchronizedLifecycle(fn (): int =>
-            $this->locked(fn (DatabaseFencedExtensionRegistryLease $lease): int =>
-                $this->extensions->reconcileInstallOperations($lease)));
+        try {
+            return $this->trust->synchronizedLifecycle(fn (): int =>
+                $this->locked(fn (DatabaseFencedExtensionRegistryLease $lease): int =>
+                    $this->extensions->reconcileInstallOperations($lease)));
+        } finally {
+            $this->withdrawStaleRuntime();
+        }
     }
 
     /**
@@ -148,14 +159,18 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
         ?string $base64Signature = null,
     ): array {
         $this->authorize($context, AuthorizationResource::collection('extension'));
-        return $this->trust->synchronizedLifecycle(fn (): array =>
-            $this->locked(fn (DatabaseFencedExtensionRegistryLease $lease): array => $this->extensions->install(
-                $archiveFile,
-                $context,
-                $lease,
-                $signingKeyId,
-                $base64Signature,
-            )));
+        try {
+            return $this->trust->synchronizedLifecycle(fn (): array =>
+                $this->locked(fn (DatabaseFencedExtensionRegistryLease $lease): array => $this->extensions->install(
+                    $archiveFile,
+                    $context,
+                    $lease,
+                    $signingKeyId,
+                    $base64Signature,
+                )));
+        } finally {
+            $this->withdrawStaleRuntime();
+        }
     }
 
     /**
@@ -189,14 +204,18 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
         #[\SensitiveParameter] ?string $stepUpCredential = null,
     ): array {
         $this->authorize($context, AuthorizationResource::item('extension', $identifier));
-        return $this->trust->synchronizedLifecycle(fn (): array =>
-            $this->locked(fn (DatabaseFencedExtensionRegistryLease $lease): array => $this->extensions->activate(
-                $identifier,
-                $context,
-                $lease,
-                $surface,
-                $stepUpCredential,
-            )));
+        try {
+            return $this->trust->synchronizedLifecycle(fn (): array =>
+                $this->locked(fn (DatabaseFencedExtensionRegistryLease $lease): array => $this->extensions->activate(
+                    $identifier,
+                    $context,
+                    $lease,
+                    $surface,
+                    $stepUpCredential,
+                )));
+        } finally {
+            $this->withdrawStaleRuntime();
+        }
     }
 
     /**
@@ -225,13 +244,17 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
         #[\SensitiveParameter] ?string $stepUpCredential = null,
     ): array {
         $this->authorize($context, AuthorizationResource::item('extension', $identifier));
-        return $this->trust->synchronizedLifecycle(fn (): array =>
-            $this->locked(fn (DatabaseFencedExtensionRegistryLease $lease): array => $this->extensions->disable(
-                $identifier,
-                $context,
-                $lease,
-                $stepUpCredential,
-            )));
+        try {
+            return $this->trust->synchronizedLifecycle(fn (): array =>
+                $this->locked(fn (DatabaseFencedExtensionRegistryLease $lease): array => $this->extensions->disable(
+                    $identifier,
+                    $context,
+                    $lease,
+                    $stepUpCredential,
+                )));
+        } finally {
+            $this->withdrawStaleRuntime();
+        }
     }
 
     /**
@@ -260,17 +283,40 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
         #[\SensitiveParameter] ?string $stepUpCredential = null,
     ): void {
         $this->authorize($context, AuthorizationResource::item('extension', $identifier));
-        $this->trust->synchronizedLifecycle(fn (): array => $this->locked(
-            function (DatabaseFencedExtensionRegistryLease $lease) use (
-                $identifier,
-                $context,
-                $stepUpCredential,
-            ): array {
-                $this->extensions->uninstall($identifier, $context, $lease, $stepUpCredential);
+        try {
+            $this->trust->synchronizedLifecycle(fn (): array => $this->locked(
+                function (DatabaseFencedExtensionRegistryLease $lease) use (
+                    $identifier,
+                    $context,
+                    $stepUpCredential,
+                ): array {
+                    $this->extensions->uninstall($identifier, $context, $lease, $stepUpCredential);
 
-                return [];
-            },
-        ));
+                    return [];
+                },
+            ));
+        } finally {
+            $this->withdrawStaleRuntime();
+        }
+    }
+
+    /**
+     * Drop all resident package objects once a lifecycle operation supersedes their signed graph.
+     *
+     * The check also covers an operation whose durable commit succeeded before an after-event failed.
+     * An idempotent install leaves the generation current and therefore leaves the resident graph alone.
+     * The gate itself fails closed on an unreadable authority, so this method never masks the lifecycle
+     * result with a second infrastructure exception.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function withdrawStaleRuntime(): void
+    {
+        if (!$this->execution->isCurrent()) {
+            $this->withdrawal->withdrawAll();
+        }
     }
 
     /**

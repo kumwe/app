@@ -78,6 +78,14 @@ export async function collectInterfaceDiagnostics(
       '[role="region"]',
       '[role="dialog"]',
       '.panel',
+      '.page-actions',
+      '.option-grid',
+      '.media-input',
+      '.builder-row-heading',
+      '.presentation-color-grid',
+      '.three-column',
+      '.check',
+      '.menu-item-grid',
       '.portal-security-panel',
       '.portal-business-panel',
       '.kis-master-detail-grid',
@@ -87,7 +95,7 @@ export async function collectInterfaceDiagnostics(
     const isIgnored = (element: Element): boolean =>
       ignoredSelectors.some((selector) => element.matches(selector) || element.closest(selector) !== null);
     const rectangle = (element: Element): DOMRect => element.getBoundingClientRect();
-    const isVisible = (element: Element): boolean => {
+    const isRendered = (element: Element): boolean => {
       if (isIgnored(element)) {
         return false;
       }
@@ -109,8 +117,11 @@ export async function collectInterfaceDiagnostics(
         && style.visibility !== 'hidden'
         && Number.parseFloat(style.opacity) !== 0
         && bounds.width > tolerance
-        && bounds.height > tolerance
-        && bounds.right > 0
+        && bounds.height > tolerance;
+    };
+    const intersectsViewport = (element: Element): boolean => {
+      const bounds = rectangle(element);
+      return bounds.right > 0
         && bounds.bottom > 0
         && bounds.left < window.innerWidth
         && bounds.top < window.innerHeight;
@@ -190,7 +201,7 @@ export async function collectInterfaceDiagnostics(
 
     const candidates = [root, ...root.querySelectorAll<HTMLElement>(componentSelector)]
       .filter((element, index, elements) => elements.indexOf(element) === index)
-      .filter(isVisible);
+      .filter(isRendered);
     for (const element of candidates) {
       const style = getComputedStyle(element);
       const bounds = rectangle(element);
@@ -240,7 +251,7 @@ export async function collectInterfaceDiagnostics(
     if (configuration.detectControlOverlaps ?? true) {
       const controls = [...root.querySelectorAll<HTMLElement>(
         'a[href], button, input:not([type="hidden"]), select, textarea, summary, [role="tab"]',
-      )].filter(isVisible);
+      )].filter((element) => isRendered(element) && intersectsViewport(element));
       for (let leftIndex = 0; leftIndex < controls.length; leftIndex += 1) {
         const left = controls[leftIndex];
         if (left === undefined) {

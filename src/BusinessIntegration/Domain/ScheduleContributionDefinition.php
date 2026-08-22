@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessIntegration\Domain;
 
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\CronExpression;
+use Kumwe\App\Automation\Domain\CronExpression;
 
 /**
  * Declarative recurring schedule compiled with its owning runtime generation.

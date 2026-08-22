@@ -137,8 +137,9 @@ interface BusinessDefinitionRepository
      *
      * The expected revision is the caller's proof that it composed the change against what is stored now:
      * null claims the handle has no catalog entry yet, and any other value has to equal the stored draft
-     * revision exactly. Identity and ownership are settled when the entry is created and cannot be moved by
-     * a later save, so a handle stays attributable to whoever first introduced it.
+     * revision exactly. The globally unique definition identity, catalog site, handle and owner are settled
+     * when the entry is created and cannot be moved by a later save, so a handle stays attributable to the
+     * same catalog and whoever first introduced it.
      *
      * @param   EntityTypeDefinition  $definition        Version-zero draft to store, carrying its own site,
      *          handle and owner.
@@ -149,8 +150,10 @@ interface BusinessDefinitionRepository
      *
      * @return  DefinitionDraft  The stored draft at its new revision, which the next write must quote.
      *
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the submitted identity
+     *          is already claimed under another site, handle or owner.
      * @throws  BusinessDefinitionRevisionConflict  When the stored draft is not at the expected revision, or
-     *          another writer created or advanced the same handle first.
+     *          another writer created or advanced the same handle or definition identity first.
      *
      * @since   2.0.0
      */
@@ -179,6 +182,8 @@ interface BusinessDefinitionRepository
      *
      * @return  DefinitionVersionRecord  The stored version, published and paired with its plan.
      *
+     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the supplied version
+     *          moves the stored definition's catalog site, handle or owner.
      * @throws  BusinessDefinitionRevisionConflict  When the stored draft is no longer at the expected
      *          revision, so another writer changed it after the plan was analysed.
      *

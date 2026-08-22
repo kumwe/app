@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Runtime;
 
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use InvalidArgumentException;
 use Kumwe\App\Extension\Application\ExtensionServiceProvider;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
@@ -40,6 +41,7 @@ final readonly class ExtensionRuntimeLoader
      *         checked against, including keys it was rotated from.
      * @param  TrustStore                  $trust          Trust boundary handed to the active set, its
      *         routes, and each extension's event listeners.
+     * @param  ExtensionExecutionGate      $execution      Live generation gate attached to resident listeners.
      *
      * @since  2.0.0
      */
@@ -48,6 +50,7 @@ final readonly class ExtensionRuntimeLoader
         private string $extensionRoot,
         private RuntimePublicationKeyRing $keys,
         private TrustStore $trust,
+        private ExtensionExecutionGate $execution,
     ) {
     }
 
@@ -168,6 +171,7 @@ final readonly class ExtensionRuntimeLoader
                     $events,
                     $this->trust,
                     $identifier,
+                    $this->execution,
                 );
             }
             $container = new RestrictedExtensionContainer($identifier, $services);
@@ -207,10 +211,10 @@ final readonly class ExtensionRuntimeLoader
                         if (!is_string($siteIdentifier)) {
                             throw new RuntimeException('A compiled theme site is invalid.');
                         }
-                        $active->setSiteThemePath($siteIdentifier, $themePath);
+                        $active->setSiteThemePath($siteIdentifier, $themePath, $identifier);
                     }
                 } else {
-                    $active->setThemePath($surface, $themePath);
+                    $active->setThemePath($surface, $themePath, $identifier);
                 }
                 $this->addExtensionViews($active, $surface, $identifier, $root);
             }

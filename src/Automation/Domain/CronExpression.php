@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\App\Application\Automation;
+namespace Kumwe\App\Automation\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -12,7 +12,7 @@ use RuntimeException;
 /**
  * Five-field cron expression parsed once and asked for the instants a schedule fires on.
  *
- * `DoctrineScheduler` builds one when a schedule is created, so an unusable expression is rejected
+ * The automation adapters build one when a schedule is created, so an unusable expression is rejected
  * before it reaches the database, and builds it again at dispatch to advance `next_run_at`. Each
  * field accepts `*`, a single value, a range, a comma-separated list, and a `/step` suffix, and a
  * day-of-week seven is folded onto zero so both spellings of Sunday work. The two calendar fields

@@ -8,7 +8,10 @@ use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\App\Infrastructure\Mcp\McpCatalogInvalid;
 use Kumwe\App\Infrastructure\Mcp\McpCatalogValidator;
+use Kumwe\App\Infrastructure\Mcp\McpDynamicCapabilityResolver;
+use Kumwe\App\Infrastructure\Mcp\McpMutationGuardMode;
 use Kumwe\App\Infrastructure\Mcp\McpRiskClass;
+use Kumwe\App\Infrastructure\Mcp\McpToolExecutionEvidence;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -17,6 +20,7 @@ use SensitiveParameter;
 use stdClass;
 
 #[CoversClass(McpCatalogValidator::class)]
+#[CoversClass(McpToolExecutionEvidence::class)]
 #[CoversClass(McpRiskClass::class)]
 #[CoversClass(McpCatalogInvalid::class)]
 final class McpCatalogValidatorTest extends TestCase
@@ -25,9 +29,9 @@ final class McpCatalogValidatorTest extends TestCase
      * Proves the surface this release actually publishes satisfies every rule the validator enforces.
      *
      * This is the gate itself rather than a sample of it: identity, handler binding, risk coherence,
-     * schema closure and non-disclosure are all checked against the real catalogue and the real handler
-     * signatures, so a tool added without a risk class, with a mis-stated annotation, with an object
-     * schema nobody decided about, or carrying credential material fails here.
+     * schema closure, live capability enforcement, mutation fencing and non-disclosure are all checked
+     * against the real catalogue and handlers, so a tool added without a risk class, with a mis-stated
+     * annotation, with an object schema nobody decided about, or carrying credential material fails here.
      *
      * @return  void
      *
@@ -43,6 +47,49 @@ final class McpCatalogValidatorTest extends TestCase
             $catalog->prompts(),
             self::handlers(),
         ));
+    }
+
+    /**
+     * Proves public capability metadata cannot drift from the resolver the live handler is validated against.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testACapabilityThatDoesNotMatchTheLiveBindingIsRefused(): void
+    {
+        $tool = self::tool('kumwe_content_list');
+        $tool['capability'] = 'content.update';
+        $tool['capabilityResolver'] = 'content.update';
+
+        $violations = (new McpCatalogValidator())->toolViolations($tool, self::handlers());
+
+        self::assertContains(
+            'Tool "kumwe_content_list" declares capability content.update '
+                . 'but handler listContent does not enforce that live binding.',
+            $violations,
+        );
+    }
+
+    /**
+     * Proves a mutation with the right schema and capability still fails when its live route skips the guard.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMutationWhoseHandlerDoesNotReachTheGuardIsRefused(): void
+    {
+        $tool = self::tool('kumwe_menu_item_delete');
+        $tool['handler'] = 'unguardedMenuDelete';
+
+        $violations = (new McpCatalogValidator())->toolViolations($tool, self::misdeclaredHandlers());
+
+        self::assertContains(
+            'Mutating tool "kumwe_menu_item_delete" does not reach McpMutationGuard '
+                . 'through handler unguardedMenuDelete.',
+            $violations,
+        );
     }
 
     /**
@@ -616,8 +663,10 @@ final class McpCatalogValidatorTest extends TestCase
      * @param   string  $name  Tool name to select.
      *
      * @return  array{
-     *              name: string, handler: string, capability: string|null, readOnly: bool,
-     *              destructive: bool, idempotent: bool, risk: McpRiskClass, alternative: string,
+     *              name: string, handler: string, capability: string|null,
+     *              capabilityResolver: string|McpDynamicCapabilityResolver,
+     *              mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool,
+     *              idempotent: bool, risk: McpRiskClass, alternative: string,
      *              inputSchema: array<string, mixed>, outputSchema: array<string, mixed>, ...
      *          }  The published entry.
      *
@@ -702,6 +751,35 @@ final class McpCatalogValidatorTest extends TestCase
             public function marksArgumentSensitive(#[SensitiveParameter] string $proofValue): void
             {
             }
+
+            /**
+             * Enforce the declared capability but deliberately omit the required mutation guard.
+             *
+             * @param   string  $operationId  Deduplication identity the omitted guard should have fenced.
+             * @param   string  $id           Menu-item identifier.
+             * @param   int     $version      Expected menu-item version.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function unguardedMenuDelete(string $operationId, string $id, int $version): void
+            {
+                $this->require('navigation.manage');
+            }
+
+            /**
+             * Stand in for the real handler capability check in structural evidence fixtures.
+             *
+             * @param   string  $capability  Capability the fixture records as enforced.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            private function require(string $capability): void
+            {
+            }
         };
     }
 
@@ -725,6 +803,8 @@ final class McpCatalogValidatorTest extends TestCase
             'description' => 'A sound read-only entry that exists only to carry one handler binding.',
             'handler' => $handler,
             'capability' => null,
+            'capabilityResolver' => McpDynamicCapabilityResolver::Authenticated,
+            'mutationGuard' => McpMutationGuardMode::None,
             'readOnly' => true,
             'destructive' => false,
             'idempotent' => true,

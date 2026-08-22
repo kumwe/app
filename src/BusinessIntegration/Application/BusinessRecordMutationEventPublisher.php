@@ -10,6 +10,7 @@ use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
 use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
 use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
 use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Ramsey\Uuid\Uuid;
 
@@ -31,6 +32,7 @@ final readonly class BusinessRecordMutationEventPublisher
      * @param  EventContractRegistry             $contracts      Exact trusted event contracts.
      * @param  ExtensionContributionRegistrySet  $contributions  Live owner-bound listener registry.
      * @param  OutboxStore                       $outbox         Transactional durable event store.
+     * @param  ExtensionExecutionGate            $execution      Live authority for contributed listeners.
      *
      * @since  2.0.0
      */
@@ -38,6 +40,7 @@ final readonly class BusinessRecordMutationEventPublisher
         private EventContractRegistry $contracts,
         private ExtensionContributionRegistrySet $contributions,
         private OutboxStore $outbox,
+        private ExtensionExecutionGate $execution,
     ) {
     }
 
@@ -92,8 +95,12 @@ final readonly class BusinessRecordMutationEventPublisher
             ],
         );
 
+        $entries = $this->contributions->domainListeners()->executableEntries();
+        if ($entries !== []) {
+            $this->execution->assertCurrent();
+        }
         $handlers = [];
-        foreach ($this->contributions->domainListeners()->executableEntries() as $entry) {
+        foreach ($entries as $entry) {
             $definition = $entry['definition'];
             if (
                 $definition instanceof DomainListenerDefinition

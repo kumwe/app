@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessIntegration\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\CanonicalJson;
+use Kumwe\App\Shared\Domain\CanonicalJson;
 use Ramsey\Uuid\Uuid;
 
 /**

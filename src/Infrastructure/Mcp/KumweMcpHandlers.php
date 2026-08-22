@@ -18,6 +18,7 @@ use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
@@ -86,6 +87,8 @@ final readonly class KumweMcpHandlers
      *         instance is unbound.
      * @param  ?Closure                     $contextRefresh    Callback bound by `forCredential()` that
      *         re-verifies the retained token and mints a fresh context; null when no credential is retained.
+     * @param  ?ExtensionExecutionGate      $extensionRuntime  Live authority for the resident extension
+     *         generation; null only in isolated tests that have no extension runtime.
      *
      * @since  2.0.0
      */
@@ -107,6 +110,7 @@ final readonly class KumweMcpHandlers
         private AuthorizationGateway $authorization,
         private ?ExecutionContext $executionContext = null,
         private ?Closure $contextRefresh = null,
+        private ?ExtensionExecutionGate $extensionRuntime = null,
     ) {
     }
 
@@ -142,6 +146,7 @@ final readonly class KumweMcpHandlers
             $this->clock,
             $this->authorization,
             $context,
+            extensionRuntime: $this->extensionRuntime,
         );
     }
 
@@ -213,6 +218,7 @@ final readonly class KumweMcpHandlers
             $this->clock,
             $this->authorization,
             contextRefresh: $refresh,
+            extensionRuntime: $this->extensionRuntime,
         );
     }
 
@@ -234,6 +240,8 @@ final readonly class KumweMcpHandlers
      */
     public function discover(): array
     {
+        $this->principal();
+
         return $this->catalog->publicSummary();
     }
 
@@ -3066,6 +3074,11 @@ final readonly class KumweMcpHandlers
     /**
      * Resolve the execution context this call runs under, re-proving a retained credential first.
      *
+     * The resident extension generation is proven before even the retained credential is refreshed. That
+     * makes the common boundary cover both HTTP and long-lived stdio MCP transports: once replacement,
+     * withdrawal or trust revocation advances authority, no subsequent protected tool or resource can enter
+     * an application service through a handler object built from the old graph.
+     *
      * A retained credential takes precedence over a bound context and is re-read on every call rather than
      * cached, which is what makes a revoked stdio token stop the very next tool call. Passing an operation
      * identifier returns a child context carrying it as the request identifier, so the authorization decision,
@@ -3078,11 +3091,13 @@ final readonly class KumweMcpHandlers
      *
      * @throws  InsufficientCapability  When nothing is bound, or the retained credential no longer verifies.
      * @throws  InvalidArgumentException  When the operation identifier cannot serve as a request identifier.
+     * @throws  \RuntimeException  When this handler graph belongs to a superseded extension generation.
      *
      * @since   2.0.0
      */
     private function context(?string $operationId = null): ExecutionContext
     {
+        $this->extensionRuntime?->assertCurrent();
         $context = $this->contextRefresh !== null
             ? ($this->contextRefresh)()
             : $this->executionContext;

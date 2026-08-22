@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\CronExpression;
+use Kumwe\App\Automation\Domain\CronExpression;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

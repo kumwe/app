@@ -288,9 +288,33 @@ property**, and the whole mirroring follows from the `dir` attribute the layouts
 - `text-align: start` / `text-align: end`, not `left` / `right`
 - `border-start-start-radius` and its three siblings, not `border-top-left-radius` and its
 
-`composer assets:direction` fails the build on a physical inline-axis declaration anywhere under
-`assets/`. A declaration that is genuinely correct in physical terms earns an entry in
-`tools/stylesheet-direction.json` naming why; the register ships empty, because so far none is.
+`composer assets:direction` fails the build on a physical inline-axis declaration in every CSS asset
+the committed Vite manifest names. The manifest CSS union must equal every regular `.css` file below
+the recursive build root, so a missing reference, an orphan output, traversal or a symlink fails
+closed instead of narrowing discovery. CI rebuilds the manifest and refuses tracked **and untracked**
+changes, binding those emitted bytes to the complete source and package graph Vite consumed. CSS
+escapes are prohibited and comments are removed before inspection, so escaped or comment-split
+identifiers cannot hide physical properties, `@import` or `url()`. Four-side margin, padding, inset
+and border shorthands fail when their two inline values differ; asymmetric corner shorthands fail as
+well. Opaque CSS query modes (`?raw`, `?inline`, `?url`), constructed stylesheets and CSS loaded
+through `new URL(..., import.meta.url)` are prohibited in the owned frontend source because they
+produce no emitted stylesheet for that contract to inspect. Static Lit `css` tagged templates are
+included in the same scan, including named import aliases; interpolation, `unsafeCSS`, namespace
+aliases and composed style arrays fail closed.
+
+The same gate checks the site, portal and administrator stylesheets served when the Vite manifest is
+absent. Those runtime fallbacks are named explicitly in `tools/stylesheet-direction.json`, and the
+gate verifies that each renderer contains exactly one live asset-entry call with that entry and URL.
+The site fallback is regenerated atomically after every Vite build from the initial-document graph:
+the entry record's `css`, CSS `file` and CSS `assets` first, followed by its recursive **static**
+`imports` in Vite's dependency-first post-order. Direct-import sibling order stays stable and the
+first stylesheet occurrence wins. `dynamicImports` remain attached to the later module load and are
+never promoted into render-blocking CSS. The PHP production resolver and Node fallback generator
+implement that same ordering, missing-reference and cycle contract. Relative
+`url()` values and retained CSS `@import` rules are refused because concatenating them would change
+their base URL. CI requires both the fallback and hashed build tree to reproduce byte for byte. A
+declaration that is genuinely correct in physical terms earns an entry in that register naming why;
+the exception list ships empty, because so far none is.
 
 The browser matrix has a **language axis** as well as a device axis: `desktop-chromium-he`,
 `desktop-chromium-ar`, `mobile-chromium-he` and `mobile-chromium-ar` run the right-to-left journeys,

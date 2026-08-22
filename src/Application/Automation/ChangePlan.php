@@ -8,6 +8,7 @@ use DateInterval;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
+use Kumwe\App\Shared\Domain\CanonicalJson;
 
 /**
  * Short-lived preview of a command, fingerprinted so it can only be applied exactly as previewed.

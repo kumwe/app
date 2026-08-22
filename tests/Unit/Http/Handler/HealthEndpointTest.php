@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Http\Handler;
 
-use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
+use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Kumwe\App\Delivery\Console\Command\HealthCheckCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Http\Handler\LivenessHandler;
@@ -16,8 +16,8 @@ use Kumwe\App\Infrastructure\Persistence\Migration\MigrationPlan;
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationRepository;
 use Kumwe\App\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
 use Kumwe\App\Infrastructure\Persistence\ReadinessProbe;
-use Kumwe\App\Infrastructure\Persistence\ReadinessStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
