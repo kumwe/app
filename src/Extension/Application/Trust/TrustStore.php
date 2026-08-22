@@ -64,7 +64,7 @@ final readonly class TrustStore
      * @param  ?PackageDefinitionSynchronizer  $businessDefinitions         Synchronizer that deactivates
      *         business definitions owned by a quarantined extension, or null where the installation
      *         registers none.
-     * @param  ?ExtensionRuntimeWithdrawal      $runtimeWithdrawal           Removes resident contribution
+     * @param  ?ExtensionRuntimeWithdrawal     $runtimeWithdrawal           Removes resident contribution
      *         objects after a trust invalidation commits; null in isolated trust tests without a runtime.
      *
      * @since  2.0.0

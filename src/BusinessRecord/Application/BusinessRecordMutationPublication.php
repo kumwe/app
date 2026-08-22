@@ -60,14 +60,14 @@ final readonly class BusinessRecordMutationPublication
      * one reserved key. Calls are deliberately ordered revision, audit, synchronous listeners and outbox; any
      * exception aborts the facade-owned transaction before idempotency can be completed.
      *
-     * @param   ExecutionContext            $context        Actor, site and trace of the mutation.
-     * @param   EntityTypeDefinition        $definition     Exact definition version used by the write.
-     * @param   BusinessRecord              $record         Record version produced by the authoritative write.
-     * @param   string                      $operation      Stable mutation label.
-     * @param   list<string>                $changedFields  Handles whose stored value changed.
-     * @param   DateTimeImmutable           $now            One instant shared by every publication effect.
-     * @param   array<string, mixed>        $evidence       Disclosure-safe relationship or aggregate evidence.
-     * @param   ?ClientAssertedInstant      $capturedAt     Non-authoritative caller occurrence instant.
+     * @param   ExecutionContext        $context        Actor, site and trace of the mutation.
+     * @param   EntityTypeDefinition    $definition     Exact definition version used by the write.
+     * @param   BusinessRecord          $record         Record version produced by the authoritative write.
+     * @param   string                  $operation      Stable mutation label.
+     * @param   list<string>            $changedFields  Handles whose stored value changed.
+     * @param   DateTimeImmutable       $now            One instant shared by every publication effect.
+     * @param   array<string, mixed>    $evidence       Disclosure-safe relationship or aggregate evidence.
+     * @param   ?ClientAssertedInstant  $capturedAt     Non-authoritative caller occurrence instant.
      *
      * @return  void
      *

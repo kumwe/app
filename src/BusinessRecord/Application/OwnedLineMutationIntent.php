@@ -23,9 +23,9 @@ final readonly class OwnedLineMutationIntent
      *
      * @param  RelationshipDefinition      $relationship  Owned collection declared by the header definition.
      * @param  ResolvedBusinessDefinition  $line          Pinned line definition matching the installed table.
-     * @param  list<OwnedLineWrite>         $writes        Final collection in dense position order.
-     * @param  list<string>                 $removed       Storage keys no longer owned by the document.
-     * @param  bool                         $renumber      Whether surviving positions require two-pass rewrite.
+     * @param  list<OwnedLineWrite>        $writes        Final collection in dense position order.
+     * @param  list<string>                $removed       Storage keys no longer owned by the document.
+     * @param  bool                        $renumber      Whether surviving positions require two-pass rewrite.
      *
      * @since  2.0.0
      */

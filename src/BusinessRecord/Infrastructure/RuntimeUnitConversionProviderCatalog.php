@@ -31,7 +31,7 @@ final readonly class RuntimeUnitConversionProviderCatalog implements UnitConvers
      * Read providers from the contribution registries the running generation published.
      *
      * @param  ExtensionContributionRegistrySet  $contributions  Active owner-aware contribution registries.
-     * @param  ExtensionExecutionGate             $execution      Live authority for resident provider objects.
+     * @param  ExtensionExecutionGate            $execution      Live authority for resident provider objects.
      *
      * @since  2.0.0
      */

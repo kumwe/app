@@ -1564,21 +1564,21 @@ final class McpCapabilityCatalog
      * The input schema is always a closed object — `additionalProperties` is false — so an argument no
      * property names is rejected by the server before a handler is reached.
      *
-     * @param   string                $name         Tool name a client calls, stable for the release.
-     * @param   string                $title        Short label, reused as the annotation title.
-     * @param   string                $description  One line telling a client what the tool is for.
-     * @param   string                $handler      Method on `KumweMcpHandlers` this tool is bound to.
+     * @param string $name Tool name a client calls, stable for the release.
+     * @param   string                               $title               Short label, reused as the annotation title.
+     * @param string $description One line telling a client what the tool is for.
+     * @param string $handler Method on `KumweMcpHandlers` this tool is bound to.
      * @param   string|McpDynamicCapabilityResolver  $capabilityResolver  Literal capability the handler
      *          requires, or the closed dynamic resolver its live implementation enforces.
-     * @param   bool                  $readOnly     True when the tool only reads; false marks a mutation.
-     * @param   bool                  $destructive  True when a successful call removes or overwrites state
+     * @param bool $readOnly True when the tool only reads; false marks a mutation.
+     * @param bool $destructive True when a successful call removes or overwrites state
      *          the caller cannot simply rebuild, which clients may use to prompt for confirmation.
-     * @param   bool                  $idempotent   True when repeating the call with the same arguments
+     * @param bool $idempotent True when repeating the call with the same arguments
      *          leaves the same end state.
-     * @param   array<string, mixed>  $properties   JSON Schema property map of the tool's input object.
-     * @param   array<string, mixed>  $output       JSON Schema published as the tool's output schema.
-     * @param   list<string>          $required     Input property names a client must supply.
-     * @param   ?McpMutationGuardMode  $mutationGuard  Explicit non-local guard route, or null to select
+     * @param array<string, mixed> $properties JSON Schema property map of the tool's input object.
+     * @param array<string, mixed> $output JSON Schema published as the tool's output schema.
+     * @param   list<string>                         $required            Input property names a client must supply.
+     * @param ?McpMutationGuardMode $mutationGuard Explicit non-local guard route, or null to select
      *          no guard for a read and the local handler graph for a mutation.
      *
      * @return  array{

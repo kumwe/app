@@ -28,8 +28,8 @@ final readonly class ExtensionRuntimeGenerationMiddleware implements MiddlewareI
     /**
      * Bind the request boundary to the resident publication and live generation authority.
      *
-     * @param  ExtensionExecutionGate          $runtime   Live authority for resident extension code.
-     * @param  RuntimeMaterializationState     $loaded    Boot-time publication served by this process.
+     * @param  ExtensionExecutionGate         $runtime   Live authority for resident extension code.
+     * @param  RuntimeMaterializationState    $loaded    Boot-time publication served by this process.
      * @param  ProblemDetailsResponseFactory  $problems  Canonical RFC 9457 response builder.
      *
      * @since  2.0.0

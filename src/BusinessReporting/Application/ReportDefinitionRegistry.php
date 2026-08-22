@@ -29,7 +29,7 @@ final readonly class ReportDefinitionRegistry
      * The container supplies the authority because every indexed report is an extension contribution.
      * Isolated domain and presenter tests may omit it; an empty registry never needs it.
      *
-     * @param   list<ReportDefinition>    $reports    Active reconciled contributions.
+     * @param   list<ReportDefinition>   $reports    Active reconciled contributions.
      * @param   ?ExtensionExecutionGate  $execution  Live authority for the generation that declared them.
      *
      * @throws  InvalidArgumentException  When a member is invalid or an identifier is duplicated.

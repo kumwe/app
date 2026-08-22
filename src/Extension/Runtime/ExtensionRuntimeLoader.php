@@ -41,7 +41,7 @@ final readonly class ExtensionRuntimeLoader
      *         checked against, including keys it was rotated from.
      * @param  TrustStore                  $trust          Trust boundary handed to the active set, its
      *         routes, and each extension's event listeners.
-     * @param  ExtensionExecutionGate      $execution     Live generation gate attached to resident listeners.
+     * @param  ExtensionExecutionGate      $execution      Live generation gate attached to resident listeners.
      *
      * @since  2.0.0
      */

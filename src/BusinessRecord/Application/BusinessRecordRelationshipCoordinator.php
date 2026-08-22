@@ -49,8 +49,8 @@ final readonly class BusinessRecordRelationshipCoordinator
      * @param  BusinessRecordReadRepository      $reads        Read port for target identities and owned lines.
      * @param  BusinessRecordMutationFence       $fence        Generation fence held while targets are resolved.
      * @param  BusinessRecordDefinitionResolver  $definitions  Resolver for live and pinned target definitions.
-     * @param  RecordValueCodec                   $values       Codec settling identities and reference values.
-     * @param  RecordRuleValidator                $rules        Validator normalizing line values and invariants.
+     * @param  RecordValueCodec                  $values       Codec settling identities and reference values.
+     * @param  RecordRuleValidator               $rules        Validator normalizing line values and invariants.
      *
      * @since  2.0.0
      */
@@ -645,11 +645,11 @@ final readonly class BusinessRecordRelationshipCoordinator
     /**
      * Prepare the whole owned-line replacement described by one aggregate document command.
      *
-     * @param   WriteDocumentCommand            $command  Whole-document mutation being applied.
-     * @param   ResolvedBusinessDefinition      $owner    Pinned header definition and installed schema.
-     * @param   RecordScope                     $scope    Site and organization inherited by every line.
-     * @param   ?BusinessRecord                 $header   Existing header, or null while creating.
-     * @param   BusinessRecordAccessPlan        $access   Header plan carrying the exact nested line plan.
+     * @param   WriteDocumentCommand        $command  Whole-document mutation being applied.
+     * @param   ResolvedBusinessDefinition  $owner    Pinned header definition and installed schema.
+     * @param   RecordScope                 $scope    Site and organization inherited by every line.
+     * @param   ?BusinessRecord             $header   Existing header, or null while creating.
+     * @param   BusinessRecordAccessPlan    $access   Header plan carrying the exact nested line plan.
      *
      * @return  OwnedLineMutationIntent  Validated final collection and the persistence changes it implies.
      *
