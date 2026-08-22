@@ -13,6 +13,7 @@ use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
+use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use Kumwe\App\Extension\Domain\ExtensionManifest;
 use Kumwe\App\Extension\Domain\PackageChecksum;
@@ -63,6 +64,8 @@ final readonly class TrustStore
      * @param  ?PackageDefinitionSynchronizer  $businessDefinitions         Synchronizer that deactivates
      *         business definitions owned by a quarantined extension, or null where the installation
      *         registers none.
+     * @param  ?ExtensionRuntimeWithdrawal      $runtimeWithdrawal           Removes resident contribution
+     *         objects after a trust invalidation commits; null in isolated trust tests without a runtime.
      *
      * @since  2.0.0
      */
@@ -77,6 +80,7 @@ final readonly class TrustStore
         private AuthorizationGateway $authorization,
         private bool $allowUnsignedLocalPackages = false,
         private ?PackageDefinitionSynchronizer $businessDefinitions = null,
+        private ?ExtensionRuntimeWithdrawal $runtimeWithdrawal = null,
     ) {
     }
 
@@ -801,6 +805,8 @@ final readonly class TrustStore
             $this->runtime->materialize();
         } catch (Throwable) {
             // Authoritative database state is committed; bootstrap retries materialization and fails closed.
+        } finally {
+            $this->runtimeWithdrawal?->withdrawAll();
         }
     }
 

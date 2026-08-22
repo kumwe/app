@@ -126,6 +126,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationPublication;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordReadRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
@@ -326,6 +327,8 @@ use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
 use Kumwe\App\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
 use Kumwe\App\Demo\Infrastructure\VdmBusinessDemoInstaller;
 use Kumwe\App\Extension\Application\ExtensionManager;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
+use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\App\Extension\Application\Package\ArchiveContentReader;
@@ -361,6 +364,8 @@ use Kumwe\App\Extension\Development\PackageSigner;
 use Kumwe\App\Extension\Development\ProtectedSigningKeyReader;
 use Kumwe\App\Extension\Development\StaticConformanceRunner;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
+use Kumwe\App\Extension\Runtime\CurrentExtensionExecutionGate;
+use Kumwe\App\Extension\Runtime\DeferredExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\AdministratorViewRegistry;
 use Kumwe\App\Extension\Contribution\ContributionDefinition;
@@ -462,6 +467,7 @@ use Kumwe\App\Http\Handler\ReadinessHandler;
 use Kumwe\App\Http\Handler\RobotsHandler;
 use Kumwe\App\Http\Middleware\BodyLimitMiddleware;
 use Kumwe\App\Http\Middleware\BearerAuthenticationMiddleware;
+use Kumwe\App\Http\Middleware\ExtensionRuntimeGenerationMiddleware;
 use Kumwe\App\Http\Middleware\MetricsMiddleware;
 use Kumwe\App\Http\Middleware\ProblemDetailsMiddleware;
 use Kumwe\App\Http\Middleware\RequestIdMiddleware;
@@ -2177,6 +2183,8 @@ final class ContainerFactory
             300,
             self::service($container, LoggerInterface::class),
         ), true);
+        $runtimeWithdrawal = new DeferredExtensionRuntimeWithdrawal();
+        $container->share(ExtensionRuntimeWithdrawal::class, $runtimeWithdrawal, true);
         $container->share(TrustRuntimeInvalidator::class, static fn (Container $container): TrustRuntimeInvalidator =>
             self::service($container, ExtensionRuntimeMapCompiler::class), true);
         $container->share(ExtensionArtifactVerifier::class, new FilesystemExtensionArtifactVerifier(
@@ -2193,6 +2201,7 @@ final class ContainerFactory
             self::service($container, AuthorizationGateway::class),
             $configuration->allowUnsignedLocalExtensions,
             self::service($container, PackageDefinitionSynchronizer::class),
+            self::service($container, ExtensionRuntimeWithdrawal::class),
         ), true);
         $container->share(RevocationListVerifier::class, new SodiumRevocationListVerifier(), true);
         $container->share(RevocationFeedSource::class, new StreamRevocationFeedSource(), true);
@@ -2333,6 +2342,7 @@ final class ContainerFactory
             self::service($container, EventContractRegistry::class),
             self::service($container, ExtensionContributionRegistrySet::class),
             self::service($container, OutboxStore::class),
+            self::service($container, ExtensionExecutionGate::class),
         ), true);
         $container->share(FieldTypeRegistry::class, $contributionRegistries->fieldTypes(), true);
         $container->share(DoctrinePersistedFieldTypeDefinitionResolver::class, static fn (
@@ -2502,6 +2512,14 @@ final class ContainerFactory
             self::service($container, TableNames::class),
             self::service($container, DoctrineBusinessRecordQueryCompiler::class),
         ), true);
+        $container->share(BusinessRecordMutationPublication::class, static fn (
+            Container $container,
+        ): BusinessRecordMutationPublication => new BusinessRecordMutationPublication(
+            self::service($container, BusinessRecordRevisionRepository::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, RecordFingerprint::class),
+            self::service($container, BusinessRecordMutationEventPublisher::class),
+        ), true);
         $container->share(BusinessRecordIdempotencyRepository::class, static fn (
             Container $container,
         ): BusinessRecordIdempotencyRepository => new DoctrineBusinessRecordIdempotencyRepository(
@@ -2591,12 +2609,11 @@ final class ContainerFactory
             self::service($container, ResourceSiteOwnershipWriter::class),
             self::service($container, AuthorizationGateway::class),
             self::service($container, TransactionManager::class),
-            self::service($container, AuditRecorder::class),
+            self::service($container, BusinessRecordMutationPublication::class),
             self::service($container, RecordFingerprint::class),
             self::service($container, ClockInterface::class),
             self::service($container, PostingPeriodLock::class),
             self::service($container, PostingPeriodCalendar::class),
-            self::service($container, BusinessRecordMutationEventPublisher::class),
             $configuration->idempotencyReplay,
         ), true);
         $container->share(
@@ -2684,11 +2701,15 @@ final class ContainerFactory
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, ExtensionRegistryFenceAllocator::class),
                 self::service($container, TrustStore::class),
+                self::service($container, ExtensionRuntimeWithdrawal::class),
+                self::service($container, ExtensionExecutionGate::class),
             ), true);
         $container->alias(ExtensionInstallReconciler::class, ExtensionManager::class);
         $compiler = self::service($container, ExtensionRuntimeMapCompiler::class);
         $materialization = $compiler->inspectLocal();
         $container->share(RuntimeMaterializationState::class, $materialization, true);
+        $execution = new CurrentExtensionExecutionGate($compiler, $materialization);
+        $container->share(ExtensionExecutionGate::class, $execution, true);
         $active = $loadRuntime
             && $materialization->trusted
             && $materialization->publication !== null
@@ -2697,6 +2718,7 @@ final class ContainerFactory
                 $extensionRoot,
                 $keyRing,
                 self::service($container, TrustStore::class),
+                $execution,
             ))->load([
                 BusinessRecordService::class => self::service($container, BusinessRecordService::class),
                 ContentService::class => self::service($container, ContentService::class),
@@ -2708,6 +2730,7 @@ final class ContainerFactory
             ], $contributionRegistries)
             : new ActiveExtensionSet($contributionRegistries, self::service($container, TrustStore::class));
         $container->share(ActiveExtensionSet::class, $active, true);
+        $runtimeWithdrawal->bind($active);
         $container->share(QueueRuntimePolicyCatalog::class, new ContributedQueueRuntimePolicyCatalog(
             $contributionRegistries,
             $materialization,
@@ -2830,6 +2853,7 @@ final class ContainerFactory
             Container $container,
         ): MoneyRateProviderCatalog => new RuntimeMoneyRateProviderCatalog(
             self::service($container, ExtensionContributionRegistrySet::class),
+            self::service($container, ExtensionExecutionGate::class),
         ), true);
         $container->share(MoneyConversionPipeline::class, static fn (
             Container $container,
@@ -2844,6 +2868,7 @@ final class ContainerFactory
             Container $container,
         ): UnitConversionProviderCatalog => new RuntimeUnitConversionProviderCatalog(
             self::service($container, ExtensionContributionRegistrySet::class),
+            self::service($container, ExtensionExecutionGate::class),
         ), true);
         $container->share(UnitConversionPipeline::class, static fn (
             Container $container,
@@ -2875,7 +2900,10 @@ final class ContainerFactory
             self::service($container, ExtensionContributionRegistrySet::class)->reports()->definitions(),
             static fn (object $definition): bool => $definition instanceof ReportDefinition,
         ));
-        $container->share(ReportDefinitionRegistry::class, new ReportDefinitionRegistry($reportDefinitions), true);
+        $container->share(ReportDefinitionRegistry::class, new ReportDefinitionRegistry(
+            $reportDefinitions,
+            self::service($container, ExtensionExecutionGate::class),
+        ), true);
         $container->share(ReportApiPresenter::class, new ReportApiPresenter(), true);
         $container->share(ReportScopeResolver::class, static fn (
             Container $container,
@@ -2970,6 +2998,7 @@ final class ContainerFactory
             Container $container,
         ): FieldModelPresenter => new RegistryFieldModelPresenter(
             self::service($container, FieldPresentationRegistry::class),
+            self::service($container, ExtensionExecutionGate::class),
         ), true);
         $container->share(BusinessRecordQueryFactory::class, new BusinessRecordQueryFactory(), true);
         $container->share(BusinessRecordProjector::class, new BusinessRecordProjector(), true);
@@ -2992,6 +3021,7 @@ final class ContainerFactory
             self::service($container, ExtensionContributionRegistrySet::class)->customBusinessViewHandlers(),
             self::service($container, ExtensionContributionRegistrySet::class)->customBusinessActionHandlers(),
             self::service($container, AuthorizationGateway::class),
+            self::service($container, ExtensionExecutionGate::class),
         ), true);
         $container->share(CustomBusinessActionExecutor::class, static fn (
             Container $container,
@@ -3152,6 +3182,13 @@ final class ContainerFactory
         ), true);
         $container->share(BodyLimitMiddleware::class, new BodyLimitMiddleware($configuration->maxBodyBytes), true);
         $container->share(ProblemDetailsResponseFactory::class, new ProblemDetailsResponseFactory(), true);
+        $container->share(ExtensionRuntimeGenerationMiddleware::class, static fn (
+            Container $container,
+        ): ExtensionRuntimeGenerationMiddleware => new ExtensionRuntimeGenerationMiddleware(
+            self::service($container, ExtensionExecutionGate::class),
+            self::service($container, RuntimeMaterializationState::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
         $container->share(RequireIdempotencyKeyMiddleware::class, static function (
             Container $container,
         ): RequireIdempotencyKeyMiddleware {
@@ -3957,6 +3994,11 @@ final class ContainerFactory
         $application->pipe(TrustedHostMiddleware::class);
         $application->pipe(BodyLimitMiddleware::class);
         $application->pipe(SecurityHeadersMiddleware::class);
+        if ($portalEnabled) {
+            // Recovery composition executes no package code and must remain available while a stale
+            // full-runtime process drains, so only the full graph carries the generation fence.
+            $application->pipe(ExtensionRuntimeGenerationMiddleware::class);
+        }
         $application->pipe(RouteMiddleware::class);
         $application->pipe(ImplicitHeadMiddleware::class);
         $application->pipe(ImplicitOptionsMiddleware::class);
@@ -5745,6 +5787,7 @@ final class ContainerFactory
                 self::service($container, McpMutationGuard::class),
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
+                extensionRuntime: self::service($container, ExtensionExecutionGate::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(

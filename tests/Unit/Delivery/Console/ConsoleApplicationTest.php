@@ -94,6 +94,35 @@ final class ConsoleApplicationTest extends TestCase
     }
 
     /**
+     * Refuse a live registration that is absent from the retained machine contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUndeclaredCommandRegistrationIsRejected(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessageIsOrContains('absent from the CLI contract');
+
+        new ConsoleApplication([new UndeclaredCommand()], new BufferedOutput());
+    }
+
+    /**
+     * Expose the same deterministic live name set used by machine-contract parity checks.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testListsRegisteredCommandNamesInLexicalOrder(): void
+    {
+        $application = new ConsoleApplication([new SuccessfulCommand()], new BufferedOutput());
+
+        self::assertSame(['extension:conformance'], $application->commandNames());
+    }
+
+    /**
      * An implementation cannot introduce an exit status absent from the retained contract.
      *
      * @return  void
@@ -127,6 +156,53 @@ final class SuccessfulCommand implements Command
     {
         $output->line($arguments[0] ?? 'missing');
 
+        return 0;
+    }
+}
+
+/**
+ * Test command deliberately absent from the retained CLI machine contract.
+ *
+ * @since  2.0.0
+ */
+final class UndeclaredCommand implements Command
+{
+    /**
+     * Return a name no retained generation declares.
+     *
+     * @return  string  Undeclared command name.
+     *
+     * @since   2.0.0
+     */
+    public function name(): string
+    {
+        return 'fixture:undeclared';
+    }
+
+    /**
+     * Return a stable description identifier that construction must never render.
+     *
+     * @return  string  Fixture description identifier.
+     *
+     * @since   2.0.0
+     */
+    public function description(): string
+    {
+        return 'core.console.app_health.description';
+    }
+
+    /**
+     * Fail if composition allows this undeclared command to execute.
+     *
+     * @param   list<string>  $arguments  Unused command vector.
+     * @param   Output        $output     Unused output sink.
+     *
+     * @return  int  Success is unreachable because construction must fail.
+     *
+     * @since   2.0.0
+     */
+    public function execute(array $arguments, Output $output): int
+    {
         return 0;
     }
 }

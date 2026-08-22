@@ -13,10 +13,7 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Automation\IdempotencyKey;
 use Kumwe\App\Application\Persistence\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\App\BusinessDefinition\Domain\ComputationMode;
 use Kumwe\App\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
@@ -27,8 +24,6 @@ use Kumwe\App\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
-use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
 use Kumwe\App\BusinessRecord\Application\Command\ArchiveRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
@@ -66,7 +61,6 @@ use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
 use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
@@ -146,8 +140,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *         and transition capabilities.
      * @param  TransactionManager                     $transactions    Owner of the single transaction each
      *         operation runs inside.
-     * @param  AuditRecorder                          $audit           Sink for the redacted audit entry every
-     *         mutation writes.
+     * @param  BusinessRecordMutationPublication      $publication     Revision, audit and event coordinator
+     *         invoked inside this service's authoritative transaction.
      * @param  RecordFingerprint                      $fingerprints    Keyed digest used for idempotency
      *         scopes and for identities held in the trail.
      * @param  ClockInterface                         $clock           Supplies the one instant stamped on
@@ -158,8 +152,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @param  PostingPeriodCalendar                  $periodCalendar  Containment seam a `fiscal-period`
      *         number sequence resolves its counter's period key through, from the record's declared
      *         posting date.
-     * @param  ?BusinessRecordMutationEventPublisher  $events          Transactional domain and integration
-     *         event publisher; nullable only for isolated legacy tests.
      * @param  BusinessRecordReplayWindow             $replayWindow    Declared horizons over which a
      *         caller-minted operation identifier replays, and over which it is remembered so a late
      *         repeat is refused by name instead of applied twice.
@@ -181,12 +173,11 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         private ResourceSiteOwnershipWriter $ownership,
         private AuthorizationGateway $authorization,
         private TransactionManager $transactions,
-        private AuditRecorder $audit,
+        private BusinessRecordMutationPublication $publication,
         private RecordFingerprint $fingerprints,
         private ClockInterface $clock,
         private PostingPeriodLock $postingPeriods,
         private PostingPeriodCalendar $periodCalendar,
-        private ?BusinessRecordMutationEventPublisher $events = null,
         private BusinessRecordReplayWindow $replayWindow = new BusinessRecordReplayWindow(),
     ) {
     }
@@ -330,7 +321,14 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $command->context->site(),
                 );
                 $changed = array_keys($record->values());
-                $this->recordMutation($command->context, $resolved, $record, 'create', $changed, $now);
+                $this->publication->publish(
+                    $command->context,
+                    $resolved->definition,
+                    $record,
+                    'create',
+                    $changed,
+                    $now,
+                );
 
                 return $this->result($record, 'create');
             },
@@ -824,7 +822,14 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 $updated = $record->updated($values, $command->context->actorId(), $now);
                 $changed = $this->changed($record->values(), $updated->values());
                 $this->writes->update($resolved, $updated, $command->expectedVersion);
-                $this->recordMutation($command->context, $resolved, $updated, 'update', $changed, $now);
+                $this->publication->publish(
+                    $command->context,
+                    $resolved->definition,
+                    $updated,
+                    'update',
+                    $changed,
+                    $now,
+                );
 
                 return $this->result($updated, 'update');
             },
@@ -1060,9 +1065,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 }
                 $updated = $record->transitioned($transition['to'], $command->context->actorId(), $now);
                 $this->writes->update($resolved, $updated, $command->expectedVersion);
-                $this->recordMutation(
+                $this->publication->publish(
                     $command->context,
-                    $resolved,
+                    $resolved->definition,
                     $updated,
                     'action.' . $action->handle,
                     [],
@@ -1468,9 +1473,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 }
                 $updated = $write->source;
                 $this->assertAggregateInvariants($command->context, $resolved, $updated);
-                $this->recordMutation(
+                $this->publication->publish(
                     $command->context,
-                    $resolved,
+                    $resolved->definition,
                     $updated,
                     'relate.' . $relationship->handle,
                     [$relationship->handle],
@@ -1483,9 +1488,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     ),
                 );
                 if ($write->target !== null && $targetResolved !== null && $write->targetRelationship !== null) {
-                    $this->recordMutation(
+                    $this->publication->publish(
                         $command->context,
-                        $targetResolved,
+                        $targetResolved->definition,
                         $write->target,
                         'relate.' . $write->targetRelationship,
                         [$write->targetRelationship],
@@ -1641,9 +1646,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 }
                 $updated = $write->source;
                 $this->assertAggregateInvariants($command->context, $resolved, $updated);
-                $this->recordMutation(
+                $this->publication->publish(
                     $command->context,
-                    $resolved,
+                    $resolved->definition,
                     $updated,
                     'unrelate.' . $relationship->handle,
                     [$relationship->handle],
@@ -1651,9 +1656,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $this->relationshipEvidence($relationship->handle, $command->targetRecordId),
                 );
                 if ($write->target !== null && $targetResolved !== null && $write->targetRelationship !== null) {
-                    $this->recordMutation(
+                    $this->publication->publish(
                         $command->context,
-                        $targetResolved,
+                        $targetResolved->definition,
                         $write->target,
                         'unrelate.' . $write->targetRelationship,
                         [$write->targetRelationship],
@@ -1804,9 +1809,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $command->expectedVersion,
                     $targetResolved,
                 );
-                $this->recordMutation(
+                $this->publication->publish(
                     $command->context,
-                    $resolved,
+                    $resolved->definition,
                     $updated,
                     'reorder.' . $relationship->handle,
                     [$relationship->handle],
@@ -2184,9 +2189,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $command->context->actorId(),
             $now,
         );
-        $this->recordMutation(
+        $this->publication->publish(
             $command->context,
-            $resolved,
+            $resolved->definition,
             $record,
             'document.' . $command->intent->value,
             [...$changed, $relationship->handle],
@@ -2854,7 +2859,14 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $context->site(),
                     );
                 }
-                $this->recordMutation($context, $resolved, $updated, $operation, [], $now);
+                $this->publication->publish(
+                    $context,
+                    $resolved->definition,
+                    $updated,
+                    $operation,
+                    [],
+                    $now,
+                );
 
                 return $this->result($updated, $operation, $operation === 'delete');
             },
@@ -2984,9 +2996,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                         $targetResolved,
                         $target,
                     );
-                    $this->recordMutation(
+                    $this->publication->publish(
                         $context,
-                        $sourceResolved,
+                        $sourceResolved->definition,
                         $write->source,
                         'unrelate.' . $relationship->handle,
                         [$relationship->handle],
@@ -4102,123 +4114,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     }
 
     /**
-     * Write the revision and the audit entry that describe one applied mutation.
-     *
-     * Both are written inside the mutation's own transaction, so a rolled-back write takes its trail with
-     * it. The revision holds a canonical snapshot of the stored values — virtual computed fields are left
-     * out because nothing about them is stored — and relationship evidence is folded into that snapshot
-     * under a reserved key the definition is not allowed to collide with. A definition with revisions
-     * turned off gets no snapshot at all, but is still audited: the audit entry never carries values, and
-     * omits restricted and secret handles from its changed-field metadata. It stands in for the
-     * record's identity with a keyed digest so the trail discloses nothing the record itself protects.
-     *
-     * @param   ExecutionContext            $context        Actor, site and request the mutation ran under.
-     * @param   ResolvedBusinessDefinition  $resolved       Definition the record was written against,
-     *          supplying each field's computation mode and sensitivity.
-     * @param   BusinessRecord              $record         Record at the version this mutation produced.
-     * @param   string                      $operation      Label the entry is recorded under, such as
-     *          `update` or `relate.lines`; the audit action prefixes it with `business.record.`.
-     * @param   list<string>                $changedFields  Handles whose value the mutation changed;
-     *          sorted in place here so the trail is order-independent.
-     * @param   DateTimeImmutable           $now            Instant stamped on both entries.
-     * @param   array<string, mixed>        $evidence       Relationship details to preserve alongside the
-     *          snapshot; empty for a mutation that touched no relationship.
-     * @param   ?ClientAssertedInstant      $capturedAt     When the caller says the work happened, recorded
-     *          in the trail beside $now and never in place of it, so a reader can tell a document captured
-     *          days ago from one captured a second ago; null when the caller asserted nothing.
-     *
-     * @return  void
-     *
-     * @throws  BusinessRecordSchemaUnavailable  When the definition declares a field whose handle collides
-     *          with the reserved key relationship evidence is stored under.
-     *
-     * @since   2.0.0
-     */
-    private function recordMutation(
-        ExecutionContext $context,
-        ResolvedBusinessDefinition $resolved,
-        BusinessRecord $record,
-        string $operation,
-        array $changedFields,
-        DateTimeImmutable $now,
-        array $evidence = [],
-        ?ClientAssertedInstant $capturedAt = null,
-    ): void {
-        sort($changedFields, SORT_STRING);
-        $snapshot = $this->revisionSnapshot($resolved->definition, $record);
-        if ($evidence !== []) {
-            if (array_key_exists('runtime_relation_evidence', $snapshot)) {
-                throw new BusinessRecordSchemaUnavailable('A definition collides with reserved revision evidence.');
-            }
-            $snapshot['runtime_relation_evidence'] = RecordValueGuard::canonical($evidence);
-        }
-        if ($resolved->definition->revisionsEnabled) {
-            $this->revisions->append(new BusinessRecordRevision(
-                Uuid::uuid7()->toString(),
-                $record->definitionId,
-                $record->definitionVersion,
-                $context->site()->identifier(),
-                $record->scope->organizationIdentifier,
-                $record->recordKey,
-                $this->fingerprints->digest($record->recordId),
-                $record->version,
-                $record->version,
-                $operation,
-                $snapshot,
-                $changedFields,
-                $context->actorId(),
-                $now,
-            ));
-        }
-        $metadata = [];
-        foreach ($changedFields as $handle) {
-            $field = $this->optionalField($resolved->definition, $handle);
-            if (
-                $field !== null && in_array(
-                    $field->sensitivity,
-                    [Sensitivity::Restricted, Sensitivity::Secret],
-                    true,
-                )
-            ) {
-                continue;
-            }
-            $metadata[] = [
-                'field' => $handle,
-                'redacted' => false,
-            ];
-        }
-        $this->audit->record(new AuditEvent(
-            Uuid::uuid7()->toString(),
-            $now,
-            $context->actorId(),
-            'business.record.' . $operation,
-            'business_record',
-            $record->recordKey,
-            'success',
-            [
-                'definition_id' => $record->definitionId,
-                'definition_version' => $record->definitionVersion,
-                'record_version' => $record->version,
-                'record_identity_digest' => $this->fingerprints->digest($record->recordId),
-                'organization_identifier' => $record->scope->organizationIdentifier,
-                'changed_fields' => $metadata,
-                'mutation_evidence' => RecordValueGuard::canonical($evidence),
-                'client_captured_at' => $capturedAt?->toArray(),
-            ],
-        ));
-        $this->events?->publish(
-            $context,
-            $record->definitionId,
-            $record->definitionVersion,
-            $record->recordKey,
-            $record->version,
-            $operation,
-            array_column($metadata, 'field'),
-            $now,
-        );
-    }
-
-    /**
      * Build the disclosure-safe evidence a relationship mutation records about its far end.
      *
      * The target's identity and any embedded line values are reduced to keyed digests rather than stored,
@@ -4253,39 +4148,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 ? null
                 : $this->fingerprints->digest($embeddedValues),
         ];
-    }
-
-    /**
-     * Reduce a record's values to the canonical snapshot its revision stores.
-     *
-     * Virtual computed fields are skipped because nothing about them is stored to begin with, and a field
-     * the record does not carry is left out rather than written as null, so absence in a snapshot means
-     * the row held no such column. Every surviving value is canonicalized, which is what makes two
-     * snapshots comparable byte for byte across processes and definition versions.
-     *
-     * @param   EntityTypeDefinition  $definition  Definition supplying the field list and each field's
-     *          computation mode.
-     * @param   BusinessRecord        $record      Record whose values are being snapshotted.
-     *
-     * @return  array<string, mixed>  Stored field values keyed by handle, in their canonical storage
-     *          spelling; empty when the record carries nothing worth preserving.
-     *
-     * @since   2.0.0
-     */
-    private function revisionSnapshot(EntityTypeDefinition $definition, BusinessRecord $record): array
-    {
-        $snapshot = [];
-        foreach ($definition->fields() as $field) {
-            if ($field->computed && $field->computationMode === ComputationMode::Virtual) {
-                continue;
-            }
-            if (!array_key_exists($field->handle, $record->values())) {
-                continue;
-            }
-            $snapshot[$field->handle] = RecordValueGuard::canonical($record->values()[$field->handle]);
-        }
-
-        return $snapshot;
     }
 
     /**

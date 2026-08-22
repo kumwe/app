@@ -9,6 +9,7 @@ use Kumwe\App\BusinessRecord\Application\MoneyRateProviderCatalog;
 use Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest;
 use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 
 /**
  * The active rate providers, read from the extension contributions of the running generation.
@@ -30,11 +31,14 @@ final readonly class RuntimeMoneyRateProviderCatalog implements MoneyRateProvide
      * Read providers from the contribution registries the running generation published.
      *
      * @param  ExtensionContributionRegistrySet  $contributions  Active owner-aware contribution registries.
+     * @param  ExtensionExecutionGate             $execution      Live authority for resident provider objects.
      *
      * @since  2.0.0
      */
-    public function __construct(private ExtensionContributionRegistrySet $contributions)
-    {
+    public function __construct(
+        private ExtensionContributionRegistrySet $contributions,
+        private ExtensionExecutionGate $execution,
+    ) {
     }
 
     /**
@@ -49,8 +53,12 @@ final readonly class RuntimeMoneyRateProviderCatalog implements MoneyRateProvide
      */
     public function providersFor(MoneyConversionRequest $request): array
     {
+        $entries = $this->contributions->moneyRateProviders()->executableEntries();
+        if ($entries !== []) {
+            $this->execution->assertCurrent();
+        }
         $ordered = [];
-        foreach ($this->contributions->moneyRateProviders()->executableEntries() as $entry) {
+        foreach ($entries as $entry) {
             $definition = $entry['definition'];
             $implementation = $entry['implementation'];
             if (

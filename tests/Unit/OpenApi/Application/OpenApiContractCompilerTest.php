@@ -324,6 +324,105 @@ final class OpenApiContractCompilerTest extends TestCase
     }
 
     /**
+     * Refuse every incomplete operation boundary before publishing a machine contract.
+     *
+     * Each case starts from the same valid checked-in core shape and corrupts exactly one operation
+     * declaration. This keeps operation identity, authorization, input and output refusals independently
+     * observable instead of relying on a successful compilation to imply their negative branches.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRejectsIncompleteCoreOperationContracts(): void
+    {
+        /** @var array<string, array{callable, string}> $cases */
+        $cases = [
+            'missing operation identifier' => [
+                static function (array &$core): void {
+                    unset($core['paths']['/health']['get']['operationId']);
+                },
+                'requires an operation identifier',
+            ],
+            'non-list security declaration' => [
+                static function (array &$core): void {
+                    $core['paths']['/health']['get']['security'] = ['BearerAuth' => []];
+                },
+                'security declaration is invalid',
+            ],
+            'missing capability contract' => [
+                static function (array &$core): void {
+                    $core['paths']['/health']['get']['security'] = [['BearerAuth' => []]];
+                },
+                'has no declared capability contract',
+            ],
+            'malformed capability' => [
+                static function (array &$core): void {
+                    $core['paths']['/health']['get']['x-kumwe-required-capabilities'] = ['INVALID'];
+                },
+                'capability declaration is invalid',
+            ],
+            'undeclared write request body' => [
+                static function (array &$core): void {
+                    $core['paths']['/health']['post'] = $core['paths']['/health']['get'];
+                    $core['paths']['/health']['post']['operationId'] = 'healthWrite';
+                    $core['paths']['/health']['post']['x-kumwe-required-capabilities'] = [];
+                    unset($core['paths']['/health']['get']);
+                },
+                'has no declared request-body contract',
+            ],
+            'non-list parameters' => [
+                static function (array &$core): void {
+                    $core['paths']['/health']['get']['parameters'] = ['name' => 'request'];
+                },
+                'parameter declaration is invalid',
+            ],
+            'non-object parameter' => [
+                static function (array &$core): void {
+                    $core['paths']['/health']['get']['parameters'] = ['request'];
+                },
+                'operation parameter is invalid',
+            ],
+            'malformed parameter reference' => [
+                static function (array &$core): void {
+                    $core['paths']['/health']['get']['parameters'] = [['$ref' => 'ParameterWithoutPath']];
+                },
+                'parameter reference is invalid',
+            ],
+            'missing response registry' => [
+                static function (array &$core): void {
+                    unset($core['paths']['/health']['get']['responses']);
+                },
+                'requires response contracts',
+            ],
+            'non-object response' => [
+                static function (array &$core): void {
+                    $core['paths']['/health']['get']['responses']['200'] = 'healthy';
+                },
+                'operation response is invalid',
+            ],
+            'undeclared successful response' => [
+                static function (array &$core): void {
+                    unset($core['paths']['/health']['get']['responses']['200']['x-kumwe-body']);
+                },
+                'has no declared successful response schema',
+            ],
+        ];
+
+        foreach ($cases as $label => [$corrupt, $message]) {
+            $core = $this->core();
+            $corrupt($core);
+
+            try {
+                (new OpenApiContractCompiler())->compile($core, [], str_repeat('8', 64));
+                self::fail(sprintf('The %s boundary was accepted.', $label));
+            } catch (InvalidArgumentException $failure) {
+                self::assertStringContainsString($message, $failure->getMessage(), $label);
+            }
+        }
+    }
+
+    /**
      * Publish report execution and the complete durable export lifecycle as bounded deterministic operations.
      *
      * @since  2.0.0
