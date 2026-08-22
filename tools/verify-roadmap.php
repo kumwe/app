@@ -199,11 +199,15 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
         }
     }
 
+    /** @var array<string, array{packages: string, findings: string}> $open */
     $open = [];
     if (preg_match('/^## Open work packages by phase$(.*?)^## /ms', $source, $section) === 1) {
         foreach (explode("\n", $section[1]) as $line) {
-            if (preg_match('/^\|\s*([0-9A-Z]+)\s*\|([^|]*)\|/u', $line, $row) === 1) {
-                $open[trim($row[1])] = trim($row[2]);
+            if (preg_match('/^\|\s*([0-9A-Z]+)\s*\|([^|]*)\|([^|]*)\|/u', $line, $row) === 1) {
+                $open[trim($row[1])] = [
+                    'packages' => trim($row[2]),
+                    'findings' => trim($row[3]),
+                ];
             }
         }
     }
@@ -216,27 +220,31 @@ function verifyStatusSelfConsistency(string $path, array &$errors): void
     }
 
     foreach ($board as $phase => $state) {
-        $packages = $open[$phase] ?? null;
-        if ($packages === null) {
+        $work = $open[$phase] ?? null;
+        if ($work === null) {
             continue;
         }
-        $hasOpenPackages = preg_match('/`[A-Z]+[0-9A-Z]*-[A-Z]`/', $packages) === 1;
-        if (preg_match('/\b(?:complete|completed|delivered)\b/i', $packages) === 1) {
+        $packages = $work['packages'];
+        $findings = $work['findings'];
+        $liveIndex = trim($packages . ' ' . $findings);
+        $hasOpenWork = !in_array(trim($liveIndex, " \t\n\r\0\x0B—-"), ['', '|'], true);
+        if (preg_match('/\b(?:closed|complete|completed|delivered|done|finished|shipped)\b/i', $liveIndex) === 1) {
             $errors[] = sprintf(
                 'STATUS.md open-work row for phase %s carries a completion marker. Completed package '
-                . 'identifiers belong in CHANGELOG.md and the phase board, not this table.',
+                . 'or finding identifiers belong in CHANGELOG.md and the phase board, not this table.',
                 $phase,
             );
         }
 
         // Only a state that opens by calling the phase delivered is a claim about the phase.
-        if ($hasOpenPackages && preg_match('/^\**delivered\b/i', $state) === 1) {
+        if ($hasOpenWork && preg_match('/^\**delivered\b/i', $state) === 1) {
             $errors[] = sprintf(
-                'STATUS.md phase %s reads "%s" while the open-work table still lists %s. The table '
-                . 'holds only what is outstanding, so a phase with packages in it is not delivered.',
+                'STATUS.md phase %s reads "%s" while the open-work table still lists %s / %s. The table '
+                . 'holds only what is outstanding, so a phase with work in it is not delivered.',
                 $phase,
                 $state,
                 $packages,
+                $findings,
             );
         }
     }
@@ -303,7 +311,10 @@ function verifyChangelogCitations(string $path, string $root, array &$errors): v
     /** @var array<int, array<int, string>> $matched */
     $matched = [];
     preg_match_all('/`([0-9a-f]{7,40})`/', $contents, $matched);
-    $citations = array_values(array_unique($matched[1] ?? []));
+    $citations = array_values(array_unique(array_filter(
+        $matched[1] ?? [],
+        static fn (string $citation): bool => preg_match('/^[0-9]{9,}$/D', $citation) !== 1,
+    )));
     if ($citations === []) {
         $errors[] = 'CHANGELOG.md cites no commits, so completed work has no reachable evidence.';
 

@@ -207,9 +207,42 @@ final class RoadmapLifecycleTest extends TestCase
      */
     public function testTheVerifierRefusesACompletionMarkerInTheOpenWorkTable(): void
     {
+        $original = $this->contents('docs/roadmap/STATUS.md');
+        foreach (['closed', 'complete', 'completed', 'delivered', 'done', 'finished', 'shipped'] as $marker) {
+            $status = str_replace(
+                '| 3 | `P3-D` |',
+                sprintf('| 3 | `P3-D` (`P3-A` %s) |', $marker),
+                $original,
+            );
+            self::assertNotSame($original, $status);
+            $path = $this->writeTemporaryStatus($status);
+
+            try {
+                $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+            } finally {
+                @unlink($path);
+            }
+
+            self::assertSame(1, $result['status'], sprintf('Marker "%s" must be refused.', $marker));
+            self::assertStringContainsString(
+                'open-work row for phase 3 carries a completion marker',
+                $result['output'],
+            );
+        }
+    }
+
+    /**
+     * A finding cannot remain in the live index with completion language either.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierRefusesACompletionMarkerInTheOpenFindingCell(): void
+    {
         $status = str_replace(
-            '| 3 | `P3-D` |',
-            '| 3 | `P3-D` (`P3-A` complete) |',
+            '| 3 | `P3-D` | — |',
+            '| 3 | `P3-D` | `V2-TEST-001` complete |',
             $this->contents('docs/roadmap/STATUS.md'),
         );
         self::assertNotSame($this->contents('docs/roadmap/STATUS.md'), $status);
@@ -226,6 +259,33 @@ final class RoadmapLifecycleTest extends TestCase
             'open-work row for phase 3 carries a completion marker',
             $result['output'],
         );
+    }
+
+    /**
+     * A prose package lane and its findings still make a delivered phase contradictory.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierTreatsAProseLaneAsOpenWork(): void
+    {
+        $status = str_replace(
+            '| M — Maintainability | — | Not started |',
+            '| M — Maintainability | — | Delivered |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertNotSame($this->contents('docs/roadmap/STATUS.md'), $status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('phase M reads "Delivered"', $result['output']);
     }
 
     /**
@@ -319,6 +379,33 @@ final class RoadmapLifecycleTest extends TestCase
         self::assertSame(1, $result['status']);
         self::assertStringContainsString('not reachable from HEAD', $result['output']);
         self::assertStringContainsString('0000000', $result['output']);
+    }
+
+    /**
+     * A decimal workflow-run identifier is evidence metadata, not an abbreviated commit citation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierDoesNotTreatAWorkflowRunAsACommit(): void
+    {
+        $head = substr(trim($this->git($this->root, ['rev-parse', 'HEAD'])), 0, 12);
+        $changelog = tempnam(sys_get_temp_dir(), 'kumwe-changelog-');
+        self::assertIsString($changelog);
+        file_put_contents(
+            $changelog,
+            sprintf("# Changelog\n\nCompleted work. (`%s`) Workflow run `32579525541`.\n", $head),
+        );
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', $changelog);
+        } finally {
+            @unlink($changelog);
+        }
+
+        self::assertSame(0, $result['status'], $result['output']);
+        self::assertStringContainsString('Kumwe roadmap verified', $result['output']);
     }
 
     /**

@@ -47,9 +47,9 @@
 > carries it or an open-work row carries a completion marker, naming what must move to the changelog. This
 > is deliberate: the gap matrix rotted into a forward plan precisely because nothing mechanical stopped it.
 >
-> The one exception is [`docs/qualification/gap-matrix.md`](../qualification/gap-matrix.md), retained
-> unchanged as the historical evidence record of the executed qualification programme. Do not plan from it,
-> and do not delete it.
+> The one exception is [`docs/qualification/gap-matrix.md`](../qualification/gap-matrix.md), retained as the
+> historical evidence record of the executed qualification programme. Its result rows stay frozen; its
+> authority banner may point readers to the current live indexes. Do not plan from it, and do not delete it.
 
 ---
 
@@ -66,8 +66,8 @@ It consolidates and supersedes, for sequencing purposes:
 - the seven-session runtime-readiness blueprint and its individual session contracts; and
 - every scattered plan, progress note and next-steps list elsewhere in the repository.
 
-It does **not** supersede [`docs/qualification/gap-matrix.md`](../qualification/gap-matrix.md), which is
-retained unchanged as the executed evidence of the eight-wave production-qualification programme. Its
+It does **not** supersede [`docs/qualification/gap-matrix.md`](../qualification/gap-matrix.md), whose result
+rows are retained as the executed evidence of the eight-wave production-qualification programme. Its
 closed entries are proof of work already done, not a forward plan. Their substance is recorded in
 [`CHANGELOG.md`](../../CHANGELOG.md) with the commits that closed them; the entries that are still
 conditional or open are carried into [`findings.json`](findings.json), which holds open work only.
@@ -558,9 +558,10 @@ full-plan proof, with the completed work recorded in `CHANGELOG.md`.
 
 ## 4. Verified baselines
 
-Sections 4.1 through 4.4 preserve the original consolidated baseline resolved against `26a7b39`; their counts
-and closed blockers are historical evidence, not claims about current head. Section 4.5 is explicitly refreshed
-against the current implementation revision. Nothing is inherited on trust.
+Sections 4.1 through 4.4 preserve the original consolidated baseline resolved against `26a7b39`; section
+4.5 preserves the later decision-time snapshot rooted at `7a83c295`. Their counts and before-state findings
+are historical evidence, not claims about current head. Current capability and gate assertions live in
+sections 5 and 8, STATUS and the changelog. Nothing is inherited on trust.
 
 ### 4.1 What ran green at the consolidated baseline
 
@@ -619,11 +620,11 @@ residuals.
 | `V2-DR-003` | `tools/backup.sh` 149, 161, 198–202 | Four gzip tarballs; `pg_dump --format=custom` compresses by default; `--set-gtid-purged=OFF` on MySQL; no coordinate at all on MariaDB. |
 | Fence partitioning (positive) | `DoctrineBusinessRecordMutationFence::acquire()`; `BusinessTransactionalRuntimeMigration::installations()` 122–147 | The fence selects with `WHERE h.site_identifier = ?` on the site-scoped `business_definitions` table joined to `business_schema_installations`, and re-checks the installation's own site on the joined row. Four businesses running the same logical definition hold four definition rows and four installation rows, so a group **partitions** the `V2-SCL-001` hot spot rather than concentrating it. |
 
-### 4.5 Currency, language and enterprise-primitive current state, verified
+### 4.5 Currency, language and enterprise primitives — decision-time snapshot
 
-Decisions D10 through D14 rest on the state below. It was refreshed against
-`7a83c295bce6c23f250384ba787dd5e4595fff0e`. Where something exists, this says so precisely. Where it does
-not, this says so plainly.
+> **Historical snapshot, not current inventory.** Decisions D10 through D14 were made from the state rooted
+> at `7a83c295bce6c23f250384ba787dd5e4595fff0e`; later annotations record a few deliveries, but the before-state
+> paragraphs intentionally remain. Use section 8, STATUS and CHANGELOG for the current implementation.
 
 **Money and exact values — the exact half is already provided.** `MoneyValue` binds an `ExactDecimal`
 amount to an uppercase ISO 4217 alphabetic code and refuses anything that is not exactly three uppercase
@@ -752,8 +753,11 @@ this programme is designed as a step toward it, and no figure in the capacity co
 
 ### 5.1 Capability primitives an enterprise resource planning system requires
 
-Verified against the code at `7a83c295bce6c23f250384ba787dd5e4595fff0e`. **Provided** means it exists
-and is proven. **Partial** means it
+> **Historical capability audit, not current inventory.** This table and its totals are rooted at
+> `7a83c295bce6c23f250384ba787dd5e4595fff0e`. Some rows carry explicit later annotations, but the update is
+> intentionally non-uniform; use section 8, STATUS and CHANGELOG for current Gate A capability state.
+
+**Provided** means it existed and was proven at the row's recorded state. **Partial** means it
 exists with a stated limitation. **Must add** means core has to build it. **Decision required** means the
 core-versus-extension boundary has not been settled and must be, before extension authors depend on either
 answer.

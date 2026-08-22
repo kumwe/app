@@ -26,10 +26,10 @@ development programme, from the architecture decision that opened it to the curr
 
 - **Gate A's executable quality evidence is complete at one verification candidate.** Verification candidate
   [`df861cbe`](https://github.com/kumwe/app/commit/df861cbe9c2482e343ec0afb078494ec50f7c3e1)
-  passed [CI run `32579525541`](https://github.com/kumwe/app/actions/runs/32579525541),
-  [Nightly run `32579525381`](https://github.com/kumwe/app/actions/runs/32579525381),
-  [Security run `32579525379`](https://github.com/kumwe/app/actions/runs/32579525379) and
-  [Development Compose run `32579525390`](https://github.com/kumwe/app/actions/runs/32579525390). CI
+  passed [CI run 32579525541](https://github.com/kumwe/app/actions/runs/32579525541),
+  [Nightly run 32579525381](https://github.com/kumwe/app/actions/runs/32579525381),
+  [Security run 32579525379](https://github.com/kumwe/app/actions/runs/32579525379) and
+  [Development Compose run 32579525390](https://github.com/kumwe/app/actions/runs/32579525390). CI
   runs the ordinary integration suite, repeat pass and reverse-class-order pass against one database on
   MariaDB LTS, MySQL 8.4 and PostgreSQL 17, with an empty idempotency record and independently checked
   collection and runner status. Process-scoped fixture shutdown withdraws each run's transient definitions
@@ -48,21 +48,21 @@ development programme, from the architecture decision that opened it to the curr
   bytes. Executable parity walks the live router, console application and MCP catalogue in both directions.
   Extension manifest key inventories are derived from the parser authority and compared with every frozen
   generation, so a parser change cannot silently widen old grammar. Closes `V2-DOC-003` and completes `P0-C`
-  and `P2-F`. (#102)
+  and `P2-F`. (`798f896b`; #102)
 - **The last enterprise-document follow-ups preserve their invariants under indirect mutation.** A definition's
   immutable catalogue coordinate now owns a non-site sequence's identity, so widening or moving ownership
   cannot restart its counter. A hard-delete `set_null` sweep evaluates the posting period of every referencing
   source record; one closed source refuses and rolls back the target deletion and every induced version/audit
-  write atomically. Closes `V2-ERP-008` and `V2-ERP-009`. (#102)
+  write atomically. Closes `V2-ERP-008` and `V2-ERP-009`. (`798f896b`; #102)
 - **The right-to-left gate covers every stylesheet the production build consumes.** Direction verification now
   follows the Vite input set, the formerly physical portal and administrator declarations use logical
   properties, and corrected `he`/`ar` baselines prove the brand, borders and spacing resolve on the proper
-  inline side. Closes `V2-LNG-013`. (#102)
+  inline side. Closes `V2-LNG-013`. (`798f896b`; #102)
 - **The roadmap is the sole live programme authority.** The executed gap matrix is retained explicitly as
   historical evidence, while current sequencing, open findings and gate state live only under
   `docs/roadmap/`; the changelog remains the completed-work authority. The roadmap verifier now also accepts
   a ready Gate A summary when all thirteen criteria are met and continues to fail it when any criterion is
-  unmet. Closes `V2-DOC-001`. (#102)
+  unmet. Closes `V2-DOC-001`. (`0bdbdcfe`; #102)
 - **Resident extension code is withdrawn and fenced with its signed generation.** At commit
   [`798f896b`](https://github.com/kumwe/app/commit/798f896b55da76f19cb4d01aee05cf74196bb44b),
   disable, quarantine,
