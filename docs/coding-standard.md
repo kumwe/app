@@ -1,9 +1,9 @@
 # Kumwe coding standard
 
 This is the single normative source for how Kumwe source code is written. It applies to every
-contributor: humans, and any AI agent that opens a pull request. `AGENTS.md` and `CLAUDE.md` in the
-repository root delegate here rather than restating the rules, so there is exactly one place to change
-when the standard changes.
+contributor: humans, and any AI agent that opens a pull request. `AGENTS.md` is the operator
+checklist for sequencing a change; `CLAUDE.md` exists so Claude Code loads the same two files.
+Neither restates these rules, so there is exactly one place to change when the standard changes.
 
 Two checks enforce this document:
 

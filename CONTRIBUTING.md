@@ -1,9 +1,10 @@
 # Contributing to Kumwe
 
-Read [the Kumwe coding standard](docs/coding-standard.md) before your first change. It is the normative
-source for documentation blocks, type declarations, naming, structure, and error handling, and it
-applies to human and automated contributors alike. [`AGENTS.md`](AGENTS.md) is the short entry point for
-agent contributors.
+Read [`AGENTS.md`](AGENTS.md) first. It is the operator checklist: where code lives, which
+gate watches a given change, and the recipes that keep `composer qa` green. Read
+[the Kumwe coding standard](docs/coding-standard.md) before your first change. It is the
+normative source for documentation blocks, type declarations, naming, structure, and
+error handling, and it applies to human and automated contributors alike.
 
 ## Development principles
 
@@ -23,15 +24,22 @@ agent contributors.
 ## Commit structure
 
 Kumwe 2.0 development uses focused commits aligned with the numbered phases in
-`docs/product/phase-roadmap.md`. A phase commit must include its tests and relevant
-documentation.
+[`docs/roadmap/`](docs/roadmap/README.md). Start at
+[`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md) for live work. A phase commit
+must include its tests and relevant documentation.
 
 ## Required local checks
 
 The canonical commands are declared as Composer scripts. Before submitting a
-change, run `composer qa`. It runs the architecture policy, the documentation-block
-check, PHP_CodeSniffer, PHPStan, and PHPUnit. Database integration tests require the
-PostgreSQL service described by the development Compose file.
+change, run `composer qa`. Its member set is
+[`docs/quality/contract.json`](docs/quality/contract.json): architecture policy,
+the reproducible baseline, documentation-block checks, frozen contracts, the
+roadmap lifecycle, translations, coverage attribution, PHP_CodeSniffer, PHPStan,
+and PHPUnit. Adding a test, route, command, or migration also requires
+`composer baseline:record`. [`AGENTS.md`](AGENTS.md) lists the recipes.
+
+Database integration tests require the PostgreSQL service described by the
+development Compose file.
 
 The two documentation tools are dependency free and run without `composer install`:
 

@@ -17,7 +17,7 @@ REST API, CLI, MCP tools, workers, and scheduler allow, and what one refuses, th
   components, templates, languages, and message catalogues, without rebuilding the application image.
 - Automation is durable: database-backed queues, leases, bounded retries, and recurring schedules.
 
-Entry points: [`AGENTS.md`](AGENTS.md) for contributors, the
+Entry points: [`AGENTS.md`](AGENTS.md) is the operator checklist for changing this repository, the
 [coding standard](docs/coding-standard.md), [demo profiles](docs/demo-profiles.md),
 [workers and scheduler](docs/automation.md), and the full [documentation index](docs/README.md).
 
