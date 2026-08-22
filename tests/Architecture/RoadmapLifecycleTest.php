@@ -159,6 +159,12 @@ final class RoadmapLifecycleTest extends TestCase
             $status,
         );
         self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| \| [^|\r\n]* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | | **Not assessed** | Executable evidence remains incomplete |',
+            $status,
+        );
+        self::assertIsString($status);
         $path = $this->writeTemporaryStatus($status);
 
         try {
@@ -184,6 +190,12 @@ final class RoadmapLifecycleTest extends TestCase
             '/^\| 5 \| Quality gates are truthful \|.*$/m',
             '| 5 | Quality gates are truthful | Partly — executable evidence is incomplete | GM-TEST-01 |',
             $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $status = preg_replace(
+            '/^\| \*\*Gate A\*\* \| [^|\r\n]* \|$/m',
+            '| **Gate A** | Not assessed while executable evidence remains incomplete. |',
+            $status,
         );
         self::assertIsString($status);
         $status = preg_replace(
