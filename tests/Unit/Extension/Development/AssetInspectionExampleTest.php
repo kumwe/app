@@ -602,6 +602,17 @@ final class AssetInspectionExampleTest extends TestCase
             self::assertNotSame([], $expected, sprintf('The full fixture left %s vacuous.', $surface));
             self::assertCount(count($expected), $actual, sprintf('Live registry %s drifted.', $surface));
             foreach ($expected as $index => $declaration) {
+                if ($surface === 'administrator.navigation') {
+                    $declaredPath = $declaration['path'] ?? null;
+                    self::assertIsString($declaredPath);
+                    self::assertSame(
+                        '/administrator/extensions/' . $owner->identifier()
+                            . ($declaredPath === '/' ? '' : $declaredPath),
+                        $actual[$index]['href'] ?? null,
+                        'Live administrator navigation does not preserve its confined declared path.',
+                    );
+                    unset($declaration['path']);
+                }
                 self::assertSame(
                     $declaration,
                     array_intersect_key($actual[$index], $declaration),

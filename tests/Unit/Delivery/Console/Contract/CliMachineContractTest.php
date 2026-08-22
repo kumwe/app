@@ -252,17 +252,18 @@ final class CliMachineContractTest extends TestCase
 
         foreach ($cases as $type => [$accepted, $refused]) {
             $enum = $type === 'enum' ? ['alpha'] : [];
+            $name = $type === 'secret-file' ? 'value-file' : 'value';
             $contract = CliMachineContract::fromJson($this->encodeWithDigest(
-                $this->minimalDocument($type, $enum),
+                $this->minimalDocument($type, $enum, $name),
             ));
             self::assertSame(
-                ['--value=' . $accepted],
-                $contract->validateInvocation('fixture', ['--value=' . $accepted]),
+                ['--' . $name . '=' . $accepted],
+                $contract->validateInvocation('fixture', ['--' . $name . '=' . $accepted]),
                 $type,
             );
 
             try {
-                $contract->validateInvocation('fixture', ['--value=' . $refused]);
+                $contract->validateInvocation('fixture', ['--' . $name . '=' . $refused]);
                 self::fail(sprintf('The invalid %s value was accepted.', $type));
             } catch (\InvalidArgumentException $failure) {
                 self::assertStringContainsString('is not a valid', $failure->getMessage(), $type);
@@ -695,12 +696,13 @@ final class CliMachineContractTest extends TestCase
      *
      * @param   string        $type  Retained input classifier.
      * @param   list<string>  $enum  Closed enum vocabulary when the classifier is `enum`.
+     * @param   string        $name  Option name satisfying any classifier-specific naming invariant.
      *
      * @return  array<string, mixed>  Valid one-command contract document.
      *
      * @since   2.0.0
      */
-    private function minimalDocument(string $type, array $enum = []): array
+    private function minimalDocument(string $type, array $enum = [], string $name = 'value'): array
     {
         $document = $this->document();
         $document['commands'] = [[
@@ -708,7 +710,7 @@ final class CliMachineContractTest extends TestCase
             'action_argument' => false,
             'default_action' => 'run',
             'options' => [[
-                'name' => 'value',
+                'name' => $name,
                 'type' => $type,
                 'enum' => $enum,
             ]],
@@ -724,7 +726,7 @@ final class CliMachineContractTest extends TestCase
                 'name' => 'run',
                 'risk' => 'read',
                 'positionals' => [],
-                'allowed_options' => ['value'],
+                'allowed_options' => [$name],
                 'required_options' => [],
                 'one_of_options' => [],
                 'mutually_exclusive_options' => [],
