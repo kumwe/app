@@ -840,11 +840,11 @@ function assertNoOpaqueCssModes(string $root): array
             }
             $gap = '(?:\s|/\*.*?\*/|//[^\r\n]*(?:\r?\n|$))*';
             if (preg_match(
-                '/new' . $gap . 'URL' . $gap . '\(' . $gap
+                '~new' . $gap . 'URL' . $gap . '\(' . $gap
                     . '(?:([\'"])[^\'"]+\.' . $styleSuffix . '(?:[?#][^\'"]*)?\1|'
                     . '`[^`]*\.' . $styleSuffix . '(?:[?#][^`]*)?`)'
                     . $gap . ',' . $gap . 'import' . $gap . '\.' . $gap . 'meta' . $gap . '\.'
-                    . $gap . 'url' . $gap . '\)/is',
+                    . $gap . 'url' . $gap . '\)~is',
                 $source,
             ) === 1) {
                 throw new RuntimeException(sprintf(
