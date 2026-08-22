@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
+import { gotoAfterRuntimeConvergence } from './support/runtime-convergence';
 
 const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL ?? 'browser-administrator@kumwe.test';
 const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD ?? 'browser administrator password';
@@ -117,7 +118,7 @@ async function signIn(
   email = administratorEmail,
   password = administratorPassword,
 ): Promise<void> {
-  await page.goto('/administrator/login');
+  await gotoAfterRuntimeConvergence(page, '/administrator/login', 'The administrator sign-in page');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
@@ -154,15 +155,33 @@ async function expectAdministratorRecordRow(page: Page, value: string): Promise<
     .toBeVisible();
 }
 
+async function waitForAnnouncementsStatus(
+  page: Page,
+  status?: 'active' | 'disabled',
+): Promise<void> {
+  const expected = status === undefined
+    ? /component · 2\.0\.0 · (?:active|disabled)/
+    : new RegExp(`component · 2\\.0\\.0 · ${status}`);
+  await gotoAfterRuntimeConvergence(
+    page,
+    '/administrator/extensions',
+    'The announcements extension listing',
+  );
+  const extension = page.locator('article').filter({
+    hasText: 'kumwe/announcements-example',
+  }).first();
+  await expect(extension).toContainText(expected);
+}
+
 async function ensureAnnouncementsActive(page: Page): Promise<void> {
-  await page.goto('/administrator/extensions');
+  await waitForAnnouncementsStatus(page);
   const extension = page.locator('article').filter({ hasText: 'kumwe/announcements-example' }).first();
   const activate = extension.getByRole('button', { name: 'Activate' });
   if (await activate.count()) {
     await activate.click();
     await expect(page).toHaveURL(/\/administrator\/extensions$/);
   }
-  await expect(extension).toContainText(/component · 2\.0\.0 · active/);
+  await waitForAnnouncementsStatus(page, 'active');
   await expect.poll(async () => {
     await page.goto('/administrator');
     return page.getByRole('link', { name: 'Announcements', exact: true }).count();
@@ -1973,9 +1992,9 @@ test.describe('authenticated administrator', () => {
           hasText: 'kumwe/announcements-example',
         }).first();
         await extension.getByRole('button', { name: 'Disable' }).click();
-        await expect(page).toHaveURL(/\/administrator\/extensions$/);
-        await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
         extensionDisabled = true;
+        await expect(page).toHaveURL(/\/administrator\/extensions$/);
+        await waitForAnnouncementsStatus(page, 'disabled');
 
         await expect.poll(async () => {
           await page.goto(announcementsDashboardPollHref);
