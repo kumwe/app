@@ -1995,6 +1995,7 @@ test.describe('authenticated administrator', () => {
         extensionDisabled = true;
         await expect(page).toHaveURL(/\/administrator\/extensions$/);
         await waitForAnnouncementsStatus(page, 'disabled');
+        await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
 
         await expect.poll(async () => {
           await page.goto(announcementsDashboardPollHref);
