@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use DateTimeImmutable;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\App\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessDefinition\Domain\PortalOperation;
+use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
@@ -25,6 +29,7 @@ use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
 use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
 use Kumwe\App\BusinessRecord\Application\OwnedLineCreateIntent;
 use Kumwe\App\BusinessRecord\Application\OwnedLineMutationIntent;
@@ -50,9 +55,11 @@ use Kumwe\App\BusinessSecurity\Application\FieldDisclosurePlan;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicySet;
+use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Throwable;
 
 /**
  * Characterizes the relationship decisions extracted from the stable business-record facade.
@@ -115,6 +122,46 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
      * @since  2.0.0
      */
     private const LINE_C = '0191574f-f0b8-7bf3-a9aa-91c6b8245a15';
+
+    /**
+     * Stable reference-identity line definition used to prove normalized collision handling.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const REFERENCE_LINE_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8245a16';
+
+    /**
+     * Stable owner definition for the reference-identity line fixture.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const REFERENCE_OWNER_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8245a17';
+
+    /**
+     * Stable entity-reference target definition used by owned-line resolution cases.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const TARGET_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8245a18';
+
+    /**
+     * Stable owned-line definition carrying the entity-reference field under test.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const REFERENCE_FIELD_LINE_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8245a19';
+
+    /**
+     * Stable owner definition for the entity-reference line fixture.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const REFERENCE_FIELD_OWNER_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8245a20';
 
     /**
      * A create becomes one typed, dense intent before any repository write can run.
@@ -424,6 +471,612 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
     }
 
     /**
+     * Selector, portal, nested identity and row decisions fail closed at the coordinator boundary.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSelectorAndNestedTargetRefusalsRemainIndistinguishable(): void
+    {
+        [$owner, $line] = $this->resolvedDefinitions();
+        $coordinator = $this->coordinator($this->createStub(BusinessRecordReadRepository::class), $line);
+        $unboundDocument = NeutralBusinessFixture::documentLineDocument('unbound', self::REFERENCE_LINE_ID);
+        $unboundDocument['fields'][] = [
+            'handle' => 'unbound_target',
+            'label' => 'Unbound target',
+            'type' => 'core.entity_reference',
+        ];
+        $unbound = EntityTypeDefinition::fromArray($unboundDocument)->published(1);
+
+        $this->assertRefusal(
+            BusinessRecordNotFound::class,
+            null,
+            static fn () => $coordinator->relatedTarget($unbound, 'unbound_target'),
+        );
+        $this->assertRefusal(
+            BusinessRecordNotFound::class,
+            null,
+            static fn () => $coordinator->relatedTarget($owner->definition, 'undeclared'),
+        );
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'The relationship is not declared by the pinned definition.',
+            static fn () => $coordinator->relationship($owner->definition, 'undeclared'),
+        );
+        $this->assertRefusal(
+            BusinessRecordNotFound::class,
+            null,
+            fn () => $coordinator->assertPortalTargetOperation(
+                self::portalContext(),
+                $line->definition,
+                PortalOperation::Read,
+            ),
+        );
+        $this->assertRefusal(
+            BusinessRecordNotFound::class,
+            null,
+            fn () => $coordinator->assertRelatedTargetAccess(
+                $line->definition,
+                $this->ownerAccess($owner->definition, $line->definition),
+            ),
+        );
+        $this->assertRefusal(
+            BusinessRecordNotFound::class,
+            null,
+            fn () => $coordinator->assertTargetRow(
+                $this->record($line->definition, self::LINE_A),
+                $this->lineAccess($line->definition, false),
+            ),
+        );
+    }
+
+    /**
+     * A single embedded line refuses the wrong relationship, field, identity, values and row policy.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOwnedLineCreateCharacterizesEveryPrePersistenceRefusal(): void
+    {
+        [$owner, $line] = $this->resolvedDefinitions();
+        $coordinator = $this->coordinator($this->createStub(BusinessRecordReadRepository::class), $line);
+        $relationship = $coordinator->relationship($owner->definition, 'lines');
+        $access = $this->lineAccess($line->definition);
+        $ordinary = new RelationshipDefinition(
+            'targets',
+            'Targets',
+            RelationshipKind::ManyToMany,
+            $line->definition->handle,
+            ordered: true,
+            onDelete: DeleteBehavior::Restrict,
+        );
+
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'Only an owned-line relationship accepts embedded values.',
+            fn () => $coordinator->prepareOwnedLineCreate(
+                $this->relateCommand($this->submittedLine('C', 'Gamma', '3.75')),
+                $owner,
+                $this->scope(),
+                $ordinary,
+                $access,
+            ),
+        );
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $coordinator->prepareOwnedLineCreate(
+                $this->relateCommand([
+                    ...$this->submittedLine('C', 'Gamma', '3.75'),
+                    'unavailable' => 'withheld',
+                ]),
+                $owner,
+                $this->scope(),
+                $relationship,
+                $access,
+            ),
+        );
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'A UUID business-record identity is invalid.',
+            fn () => $coordinator->prepareOwnedLineCreate(
+                $this->relateCommand($this->submittedLine('C', 'Gamma', '3.75'), 'not-a-uuid'),
+                $owner,
+                $this->scope(),
+                $relationship,
+                $access,
+            ),
+        );
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $coordinator->prepareOwnedLineCreate(
+                $this->relateCommand(['code' => 'C']),
+                $owner,
+                $this->scope(),
+                $relationship,
+                $access,
+            ),
+        );
+        $this->assertRefusal(
+            BusinessRecordNotFound::class,
+            null,
+            fn () => $coordinator->prepareOwnedLineCreate(
+                $this->relateCommand($this->submittedLine('C', 'Gamma', '3.75')),
+                $owner,
+                $this->scope(),
+                $relationship,
+                $this->lineAccess($line->definition, false),
+            ),
+        );
+    }
+
+    /**
+     * Owned-line writes require both the generated table and its exact target-definition pin.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOwnedLineCreateRefusesIncompleteInstalledTableContracts(): void
+    {
+        [$owner, $line] = $this->resolvedDefinitions();
+        $relationship = $owner->definition->runtimeRelationship('lines')
+            ?? throw new BusinessRelationshipRejected('The fixture relationship is missing.');
+        $command = $this->relateCommand($this->submittedLine('C', 'Gamma', '3.75'));
+        $access = $this->lineAccess($line->definition);
+        $coordinator = $this->coordinator($this->createStub(BusinessRecordReadRepository::class), $line);
+
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'The owned-line table is unavailable.',
+            fn () => $coordinator->prepareOwnedLineCreate(
+                $command,
+                $this->resolved($owner->definition),
+                $this->scope(),
+                $relationship,
+                $access,
+            ),
+        );
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'The owned-line pinned definition version is unavailable.',
+            fn () => $coordinator->prepareOwnedLineCreate(
+                $command,
+                $this->resolved($owner->definition, $line->definition->definitionVersion, false),
+                $this->scope(),
+                $relationship,
+                $access,
+            ),
+        );
+    }
+
+    /**
+     * Whole-document preparation refuses invalid relationship shape, line schema, identity, values and policy.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDocumentPreparationCharacterizesStructuralAndLineRefusals(): void
+    {
+        [$owner, $line] = $this->resolvedDefinitions();
+        $ordinaryDocument = NeutralBusinessFixture::documentHeaderDocument(
+            'ordinary',
+            self::HEADER_ID,
+            $line->definition->handle,
+            withAggregateInvariants: false,
+        );
+        $ordinaryDocument['relationships'][0]['kind'] = RelationshipKind::ManyToMany->value;
+        $ordinaryDocument['relationships'][0]['on_delete'] = DeleteBehavior::Restrict->value;
+        $ordinaryOwner = $this->resolved(
+            EntityTypeDefinition::fromArray($ordinaryDocument)->published(1),
+            $line->definition->definitionVersion,
+        );
+        $coordinator = $this->coordinator($this->createStub(BusinessRecordReadRepository::class), $line);
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'A document is written over a declared owned-line collection.',
+            fn () => $coordinator->prepareDocumentMutation(
+                $this->documentCommand([]),
+                $ordinaryOwner,
+                $this->scope(),
+                null,
+                $this->ownerAccess($ordinaryOwner->definition, $line->definition),
+            ),
+        );
+
+        $nestedDocument = NeutralBusinessFixture::documentHeaderDocument(
+            'nestedline',
+            self::REFERENCE_LINE_ID,
+            $line->definition->handle,
+        );
+        $nestedLine = $this->resolved(EntityTypeDefinition::fromArray($nestedDocument)->published(1));
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'A line type declaring its own aggregate invariant needs a command that writes its lines too.',
+            fn () => $this->coordinator(
+                $this->createStub(BusinessRecordReadRepository::class),
+                $nestedLine,
+            )->prepareDocumentMutation(
+                $this->documentCommand([]),
+                $owner,
+                $this->scope(),
+                null,
+                $this->ownerAccess($owner->definition, $nestedLine->definition),
+            ),
+        );
+
+        $oversizedReads = $this->createMock(BusinessRecordReadRepository::class);
+        $oversizedReads->expects(self::once())->method('ownedLinesForDocumentIntegrity')->willReturn(array_fill(
+            0,
+            WriteDocumentCommand::MAXIMUM_LINES + 1,
+            $this->storedLine(self::LINE_A, 0, 'A', 'Alpha', '1.25'),
+        ));
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'The stored document holds more lines than one command may write.',
+            fn () => $this->coordinator($oversizedReads, $line)->prepareDocumentMutation(
+                $this->documentCommand([], DocumentWriteIntent::Amend),
+                $owner,
+                $this->scope(),
+                $this->record($owner->definition, self::DOCUMENT_ID),
+                $this->ownerAccess($owner->definition, $line->definition),
+            ),
+        );
+
+        [$referenceOwner, $referenceLine] = $this->referenceIdentityDefinitions();
+        $referenceCoordinator = $this->coordinator(
+            $this->createStub(BusinessRecordReadRepository::class),
+            $referenceLine,
+        );
+        $referenceAccess = $this->ownerAccess($referenceOwner->definition, $referenceLine->definition);
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'A reference-identity record requires an explicit identity.',
+            fn () => $referenceCoordinator->prepareDocumentMutation(
+                $this->documentCommand([
+                    new DocumentLineInput($this->submittedLine('A', 'Alpha', '1.25')),
+                ]),
+                $referenceOwner,
+                $this->scope(),
+                null,
+                $referenceAccess,
+            ),
+        );
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'A document names one line identity more than once.',
+            fn () => $referenceCoordinator->prepareDocumentMutation(
+                $this->documentCommand([
+                    new DocumentLineInput([
+                        'line_number' => ' duplicate ',
+                        ...$this->submittedLine('A', 'Alpha', '1.25'),
+                    ]),
+                    new DocumentLineInput([
+                        'line_number' => 'DUPLICATE',
+                        ...$this->submittedLine('B', 'Beta', '2.50'),
+                    ]),
+                ]),
+                $referenceOwner,
+                $this->scope(),
+                null,
+                $referenceAccess,
+            ),
+        );
+
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $coordinator->prepareDocumentMutation(
+                $this->documentCommand([new DocumentLineInput(['code' => 'A'], self::LINE_A)]),
+                $owner,
+                $this->scope(),
+                null,
+                $this->ownerAccess($owner->definition, $line->definition),
+            ),
+        );
+        $this->assertRefusal(
+            BusinessRecordNotFound::class,
+            null,
+            fn () => $coordinator->prepareDocumentMutation(
+                $this->documentCommand([
+                    new DocumentLineInput($this->submittedLine('A', 'Alpha', '1.25'), self::LINE_A),
+                ]),
+                $owner,
+                $this->scope(),
+                null,
+                $this->ownerAccess($owner->definition, $line->definition, false),
+            ),
+        );
+    }
+
+    /**
+     * Aggregate reads preserve prepared and absent collections and refuse an oversized stored collection.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testInvariantCollectionGatherHonorsTheCommandCeiling(): void
+    {
+        $lineDefinition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::documentLineDocument(
+            'invariant',
+            self::LINE_ID,
+        ))->published(1);
+        $ownerDefinition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::documentHeaderDocument(
+            'invariant',
+            self::HEADER_ID,
+            $lineDefinition->handle,
+        ))->published(1);
+        $line = $this->resolved($lineDefinition);
+        $owner = $this->resolved($ownerDefinition, $lineDefinition->definitionVersion);
+        $reads = $this->createMock(BusinessRecordReadRepository::class);
+        $reads->expects(self::once())->method('ownedLinesForDocumentIntegrity')->willReturn(array_fill(
+            0,
+            WriteDocumentCommand::MAXIMUM_LINES + 1,
+            $this->storedLine(self::LINE_A, 0, 'A', 'Alpha', '1.25'),
+        ));
+        $coordinator = $this->coordinator($reads, $line);
+
+        self::assertSame(['lines' => [['amount' => '1.25']]], $coordinator->invariantLineValues(
+            self::context(),
+            $owner,
+            null,
+            ['lines' => [['amount' => '1.25']]],
+        ));
+        self::assertSame(['lines' => []], $coordinator->invariantLineValues(self::context(), $owner, null));
+        $this->assertRefusal(
+            BusinessRelationshipRejected::class,
+            'A document holds more lines than one aggregate invariant may reduce.',
+            fn () => $coordinator->invariantLineValues(
+                self::context(),
+                $owner,
+                $this->record($ownerDefinition, self::DOCUMENT_ID),
+            ),
+        );
+    }
+
+    /**
+     * Entity references require nested authority, a scoped target and an existing identity before storage.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOwnedLineEntityReferenceResolutionFailsClosedAndStoresOnlyTheTargetKey(): void
+    {
+        [$owner, $line, $target] = $this->entityReferenceDefinitions();
+        $relationship = $owner->definition->runtimeRelationship('lines')
+            ?? throw new BusinessRelationshipRejected('The fixture relationship is missing.');
+        $command = $this->relateCommand([
+            ...$this->submittedLine('C', 'Gamma', '3.75'),
+            'product' => ' target-001 ',
+        ]);
+        $withoutTarget = $this->lineAccess($line->definition);
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $this->coordinator(
+                $this->createStub(BusinessRecordReadRepository::class),
+                $line,
+                $target,
+            )->prepareOwnedLineCreate($command, $owner, $this->scope(), $relationship, $withoutTarget),
+        );
+
+        $targetAccess = $this->targetAccess($target->definition);
+        $access = $this->lineAccess($line->definition, true, ['product' => $targetAccess]);
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $this->coordinator(
+                $this->createStub(BusinessRecordReadRepository::class),
+                $line,
+                $target,
+            )->prepareOwnedLineCreate(
+                $this->relateCommand([
+                    ...$this->submittedLine('C', 'Gamma', '3.75'),
+                    'product' => ['invalid-reference-shape'],
+                ]),
+                $owner,
+                $this->scope(),
+                $relationship,
+                $access,
+            ),
+        );
+        $missingReads = $this->createMock(BusinessRecordReadRepository::class);
+        $missingReads->expects(self::once())->method('identity')->willReturn(null);
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $this->coordinator($missingReads, $line, $target)->prepareOwnedLineCreate(
+                $command,
+                $owner,
+                $this->scope(),
+                $relationship,
+                $access,
+            ),
+        );
+
+        $scopeReads = $this->createMock(BusinessRecordReadRepository::class);
+        $scopeReads->expects(self::never())->method('identity');
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $this->coordinator($scopeReads, $line, $target)->prepareOwnedLineCreate(
+                $command,
+                $owner,
+                RecordScope::forDefinition(ScopeMode::SiteOrganization, SiteContext::default(), 'acme'),
+                $relationship,
+                $access,
+            ),
+        );
+
+        $resolvedReads = $this->createMock(BusinessRecordReadRepository::class);
+        $resolvedReads->expects(self::once())->method('identity')->willReturn(
+            new StoredRecordIdentity(self::LINE_A, 'TARGET-001', 1, 1),
+        );
+        $intent = $this->coordinator($resolvedReads, $line, $target)->prepareOwnedLineCreate(
+            $command,
+            $owner,
+            $this->scope(),
+            $relationship,
+            $access,
+        );
+
+        self::assertSame(self::LINE_A, $intent->values['product']);
+    }
+
+    /**
+     * Build an owner whose line identity is authored and normalized instead of generated.
+     *
+     * @return  array{ResolvedBusinessDefinition, ResolvedBusinessDefinition}  Owner then line definition.
+     *
+     * @since   2.0.0
+     */
+    private function referenceIdentityDefinitions(): array
+    {
+        $lineDocument = NeutralBusinessFixture::documentLineDocument('coordref', self::REFERENCE_LINE_ID);
+        $lineDocument['identity_strategy'] = 'reference';
+        $lineDocument['fields'][0] = [
+            'handle' => 'line_number',
+            'label' => 'Line number',
+            'type' => 'core.reference_identity',
+            'required' => true,
+            'nullable' => false,
+            'length' => 80,
+            'normalizers' => ['trim', 'uppercase'],
+            'unique' => true,
+            'indexed' => true,
+            'immutable_after_create' => true,
+        ];
+        $lineDefinition = EntityTypeDefinition::fromArray($lineDocument)->published(1);
+        $ownerDefinition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::documentHeaderDocument(
+            'coordref',
+            self::REFERENCE_OWNER_ID,
+            $lineDefinition->handle,
+            withAggregateInvariants: false,
+        ))->published(1);
+
+        return [
+            $this->resolved($ownerDefinition, $lineDefinition->definitionVersion),
+            $this->resolved($lineDefinition),
+        ];
+    }
+
+    /**
+     * Build an owner line whose product field resolves a reference-identity target.
+     *
+     * @return  array{ResolvedBusinessDefinition, ResolvedBusinessDefinition, ResolvedBusinessDefinition}
+     *          Owner, line and reference target definitions.
+     *
+     * @since   2.0.0
+     */
+    private function entityReferenceDefinitions(): array
+    {
+        $targetDefinition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::referenceTargetDocument(
+            'coordtarget',
+            self::TARGET_ID,
+        ))->published(1);
+        $lineDocument = NeutralBusinessFixture::documentLineDocument(
+            'coordlink',
+            self::REFERENCE_FIELD_LINE_ID,
+        );
+        $lineDocument['fields'][] = [
+            'handle' => 'product',
+            'label' => 'Product',
+            'type' => 'core.entity_reference',
+            'configuration' => ['target' => $targetDefinition->handle],
+        ];
+        $lineDefinition = EntityTypeDefinition::fromArray($lineDocument)->published(1);
+        $ownerDefinition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::documentHeaderDocument(
+            'coordlink',
+            self::REFERENCE_FIELD_OWNER_ID,
+            $lineDefinition->handle,
+            withAggregateInvariants: false,
+        ))->published(1);
+
+        return [
+            $this->resolved($ownerDefinition, $lineDefinition->definitionVersion),
+            $this->resolved($lineDefinition),
+            $this->resolved($targetDefinition),
+        ];
+    }
+
+    /**
+     * Build a nested target plan that reveals only the target's public reference identity.
+     *
+     * @param   EntityTypeDefinition  $target  Reference target protected by the plan.
+     *
+     * @return  BusinessRecordAccessPlan  Exact target identity and row decision.
+     *
+     * @since   2.0.0
+     */
+    private function targetAccess(EntityTypeDefinition $target): BusinessRecordAccessPlan
+    {
+        return new BusinessRecordAccessPlan(
+            $target->id,
+            'business.record.read',
+            $this->rowPolicy(true),
+            new FieldDisclosurePlan(['public_reference' => ['code']]),
+            hash('sha256', 'relationship-reference-target-access'),
+        );
+    }
+
+    /**
+     * Build a stable public single-line command with selectable values and target identity.
+     *
+     * @param   array<string, mixed>  $values    Submitted embedded line values.
+     * @param   string                $recordId  Caller-facing identity requested for the line.
+     *
+     * @return  RelateRecordsCommand  Valid bounded command ready for coordinator characterization.
+     *
+     * @since   2.0.0
+     */
+    private function relateCommand(array $values, string $recordId = self::LINE_C): RelateRecordsCommand
+    {
+        return new RelateRecordsCommand(
+            self::context(),
+            'site.default.doc_header_coord',
+            self::DOCUMENT_ID,
+            1,
+            'lines',
+            $recordId,
+            IdempotencyKey::fromString('relationship-coordinator-refusal'),
+            targetValues: $values,
+        );
+    }
+
+    /**
+     * Assert one precise public refusal while allowing a case to characterize several independent branches.
+     *
+     * @param   class-string<Throwable>  $expected   Exact exception type expected from the boundary.
+     * @param   ?string                  $message    Exact stable message, or null for deliberately opaque errors.
+     * @param   callable(): mixed        $operation  Coordinator operation expected to refuse.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function assertRefusal(string $expected, ?string $message, callable $operation): void
+    {
+        try {
+            $operation();
+        } catch (Throwable $failure) {
+            self::assertSame($expected, $failure::class);
+            if ($message !== null) {
+                self::assertSame($message, $failure->getMessage());
+            }
+
+            return;
+        }
+
+        self::fail('The coordinator operation did not refuse the request.');
+    }
+
+    /**
      * Build the published header and line definitions with real, mutually pinned installation blueprints.
      *
      * @return  array{ResolvedBusinessDefinition, ResolvedBusinessDefinition}  Header then line definition.
@@ -454,6 +1107,7 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
      *
      * @param   EntityTypeDefinition  $definition     Published definition to install.
      * @param   ?int                  $lineVersion    Pinned target version for an owner line table.
+     * @param   bool                  $includePin     Whether the line table carries its required target pin.
      *
      * @return  ResolvedBusinessDefinition  Valid definition and active installation pair.
      *
@@ -462,6 +1116,7 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
     private function resolved(
         EntityTypeDefinition $definition,
         ?int $lineVersion = null,
+        bool $includePin = true,
     ): ResolvedBusinessDefinition {
         $column = new PhysicalColumnBlueprint('record_key', 'c_record_key_coord', 'guid');
         $table = new PhysicalTableBlueprint(
@@ -470,7 +1125,7 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
             $lineVersion === null ? PhysicalTableKind::Entity : PhysicalTableKind::OwnedLine,
             [$column],
             [$column->physicalName],
-            options: $lineVersion === null ? [] : ['target_definition_version' => $lineVersion],
+            options: $lineVersion === null || !$includePin ? [] : ['target_definition_version' => $lineVersion],
         );
         $blueprint = new PhysicalSchemaBlueprint(
             $definition->id,
@@ -500,6 +1155,7 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
      *
      * @param   BusinessRecordReadRepository  $reads  Read behavior selected by the current case.
      * @param   ResolvedBusinessDefinition    $line   Pinned line definition every target lookup returns.
+     * @param   ?ResolvedBusinessDefinition   $target Optional entity-reference target returned for live lookup.
      *
      * @return  BusinessRecordRelationshipCoordinator  Independently testable relationship seam.
      *
@@ -508,12 +1164,18 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
     private function coordinator(
         BusinessRecordReadRepository $reads,
         ResolvedBusinessDefinition $line,
+        ?ResolvedBusinessDefinition $target = null,
     ): BusinessRecordRelationshipCoordinator {
         $fence = $this->createStub(BusinessRecordMutationFence::class);
-        $fence->method('lock')->willReturn($this->generation($line));
+        $fence->method('lock')->willReturnCallback(
+            fn (ExecutionContext $_context, string $handle): BusinessRecordMutationGeneration =>
+                $target !== null && $handle === $target->definition->handle
+                    ? $this->generation($target)
+                    : $this->generation($line),
+        );
         $definitions = $this->createStub(BusinessRecordDefinitionResolver::class);
         $definitions->method('pinned')->willReturn($line);
-        $definitions->method('forCreate')->willReturn($line);
+        $definitions->method('forCreate')->willReturn($target ?? $line);
         $codec = new RecordValueCodec(new SodiumSecretCipher(
             'relationship-coordinator-key-v1',
             str_repeat("\x21", SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES),
@@ -583,6 +1245,7 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
      *
      * @param   EntityTypeDefinition  $line       Line definition protected by the plan.
      * @param   bool                  $allowRows  Whether the line row predicate admits values.
+     * @param   array<string, BusinessRecordAccessPlan>  $related  Nested entity-reference decisions by handle.
      *
      * @return  BusinessRecordAccessPlan  Exact line target plan.
      *
@@ -591,17 +1254,37 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
     private function lineAccess(
         EntityTypeDefinition $line,
         bool $allowRows = true,
+        array $related = [],
     ): BusinessRecordAccessPlan {
+        $create = [];
+        $update = [];
+        $identity = null;
+        foreach ($line->fields() as $field) {
+            if (in_array($field->type, ['core.uuid', 'core.reference_identity'], true)) {
+                $identity = $field->handle;
+            }
+            if (!$field->serverOnly && !$field->readOnly && !$field->computed && $field->formula === null) {
+                if ($field->createVisible) {
+                    $create[] = $field->handle;
+                }
+                if ($field->updateVisible && !$field->immutableAfterCreate) {
+                    $update[] = $field->handle;
+                }
+            }
+        }
+        self::assertNotNull($identity);
+
         return new BusinessRecordAccessPlan(
             $line->id,
             'business.record.relate',
             $this->rowPolicy($allowRows),
             new FieldDisclosurePlan([
-                'create' => ['code', 'description', 'amount'],
-                'update' => ['code', 'description', 'amount'],
-                'public_reference' => ['id'],
+                'create' => $create,
+                'update' => $update,
+                'public_reference' => [$identity],
             ]),
             hash('sha256', 'relationship-line-access-' . ($allowRows ? 'allow' : 'deny')),
+            $related,
         );
     }
 
@@ -781,6 +1464,23 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
     private function scope(): RecordScope
     {
         return RecordScope::forDefinition(ScopeMode::Site, SiteContext::default(), null);
+    }
+
+    /**
+     * Return a password-authenticated portal context for target-exposure refusal.
+     *
+     * @return  ExecutionContext  Human portal context on the default site.
+     *
+     * @since   2.0.0
+     */
+    private static function portalContext(): ExecutionContext
+    {
+        return AuthorizationContext::principal([])->context(
+            SiteContext::default(),
+            AuthenticationStrength::Password,
+            'relationship-coordinator-portal-test',
+            surface: AuthenticatedSurface::Portal,
+        );
     }
 
     /**

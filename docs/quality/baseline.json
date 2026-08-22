@@ -39,7 +39,7 @@
         },
         "unit": {
             "files": 403,
-            "test_methods": 2136
+            "test_methods": 2143
         }
     },
     "coverage": {

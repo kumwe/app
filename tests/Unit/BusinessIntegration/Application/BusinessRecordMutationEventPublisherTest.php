@@ -11,7 +11,9 @@ use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
 use Kumwe\App\BusinessIntegration\Application\DomainEventHandler;
 use Kumwe\App\BusinessIntegration\Application\OutboxStore;
+use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
 use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
@@ -27,6 +29,76 @@ use RuntimeException;
 #[CoversClass(BusinessRecordMutationEventPublisher::class)]
 final class BusinessRecordMutationEventPublisherTest extends TestCase
 {
+    /**
+     * A current generation admits its listener before the event is appended to the outbox.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCurrentGenerationDispatchesListenerBeforeOutboxAppend(): void
+    {
+        $order = [];
+        $definition = new DomainListenerDefinition(
+            'acme.listener.record_mutated',
+            'core.business_record.mutated',
+            [1],
+            '1.0.0',
+        );
+        $handler = $this->createMock(DomainEventHandler::class);
+        $handler->method('definition')->willReturn($definition);
+        $handler->expects(self::once())
+            ->method('handle')
+            ->willReturnCallback(static function (DomainEvent $event) use (&$order): void {
+                $order[] = 'listener';
+                self::assertSame('core.business_record.mutated', $event->eventType());
+            });
+        $contributions = new ExtensionContributionRegistrySet();
+        $contributions->domainListeners()->register(
+            ContributionOwner::extension('acme/listener'),
+            $definition,
+            $handler,
+        );
+        $outbox = $this->createMock(OutboxStore::class);
+        $outbox->expects(self::once())
+            ->method('append')
+            ->willReturnCallback(static function (IntegrationEvent $event) use (&$order): void {
+                $order[] = 'outbox';
+                self::assertSame('core.business_record.mutated', $event->eventType());
+            });
+        $execution = $this->createMock(ExtensionExecutionGate::class);
+        $execution->expects(self::once())
+            ->method('assertCurrent')
+            ->willReturnCallback(static function () use (&$order): void {
+                $order[] = 'generation';
+            });
+        $publisher = new BusinessRecordMutationEventPublisher(
+            $contributions->validateIntegrationContributions(),
+            $contributions,
+            $outbox,
+            $execution,
+        );
+
+        $publisher->publish(
+            ExecutionContext::issueSystem(
+                new \stdClass(),
+                SystemIdentity::CommandLine,
+                SiteContext::default(),
+                'mutation-request',
+                'mutation-correlation',
+            ),
+            'site.default.contact',
+            1,
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244f92',
+            2,
+            'update',
+            ['name'],
+            new DateTimeImmutable('2026-08-22T10:15:30Z'),
+        );
+
+        self::assertSame(['generation', 'listener', 'outbox'], $order);
+    }
+
     /**
      * A stale runtime refuses the whole listener-and-outbox boundary without invoking extension code.
      *
