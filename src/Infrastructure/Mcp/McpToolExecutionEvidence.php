@@ -121,7 +121,7 @@ final readonly class McpToolExecutionEvidence
                 $source,
                 $matches,
             );
-            if (in_array($capability, $matches[2] ?? [], true)) {
+            if (in_array($capability, $matches[2], true)) {
                 return true;
             }
         }
@@ -307,7 +307,7 @@ final readonly class McpToolExecutionEvidence
 
         $sources = [$source];
         preg_match_all('/\$this->([A-Za-z_][A-Za-z0-9_]*)\s*\(/', $source, $matches);
-        foreach (array_unique($matches[1] ?? []) as $called) {
+        foreach (array_unique($matches[1]) as $called) {
             if (is_string($called)) {
                 $sources = [...$sources, ...$this->reachableSources($class, $called, $seen)];
             }
@@ -331,6 +331,7 @@ final readonly class McpToolExecutionEvidence
         if (!method_exists($class, $method)) {
             return null;
         }
+        /** @var array<string, string> $sourceByMethod */
         static $sourceByMethod = [];
         $key = $class . '::' . $method;
         if (isset($sourceByMethod[$key])) {
@@ -345,11 +346,16 @@ final readonly class McpToolExecutionEvidence
         if ($lines === false) {
             return null;
         }
+        $start = $reflection->getStartLine();
+        $end = $reflection->getEndLine();
+        if ($start === false || $end === false) {
+            return null;
+        }
 
         $sourceByMethod[$key] = implode("\n", array_slice(
             $lines,
-            $reflection->getStartLine() - 1,
-            $reflection->getEndLine() - $reflection->getStartLine() + 1,
+            $start - 1,
+            $end - $start + 1,
         ));
 
         return $sourceByMethod[$key];

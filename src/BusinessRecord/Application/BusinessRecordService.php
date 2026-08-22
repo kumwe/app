@@ -22,7 +22,6 @@ use Kumwe\App\BusinessDefinition\Domain\NumberSequenceFormat;
 use Kumwe\App\BusinessDefinition\Domain\NumberSequenceReset;
 use Kumwe\App\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\App\BusinessRecord\Application\Command\ArchiveRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
@@ -4053,35 +4052,6 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             FieldAccessUsage::Update => $field->updateVisible && !$field->immutableAfterCreate,
             default => false,
         };
-    }
-
-    /**
-     * Resolve a selector handle to its target and distinguish field references from relationships.
-     *
-     * @param   EntityTypeDefinition  $definition  Source definition declaring the handle.
-     * @param   string                $handle      Relationship or entity-reference field handle.
-     *
-     * @return  array{string, ?RelationshipDefinition}  Target handle and relationship when applicable.
-     *
-     * @throws  BusinessRecordNotFound  When the handle is absent or has no usable target.
-     *
-     * @since   2.0.0
-     */
-    private function relatedTarget(EntityTypeDefinition $definition, string $handle): array
-    {
-        $field = $this->optionalField($definition, $handle);
-        if ($field?->type === 'core.entity_reference') {
-            $target = $field->configuration['target'] ?? null;
-            if (!is_string($target)) {
-                throw new BusinessRecordNotFound();
-            }
-
-            return [$target, null];
-        }
-        $relationship = $definition->runtimeRelationship($handle)
-            ?? throw new BusinessRecordNotFound();
-
-        return [$relationship->target, $relationship];
     }
 
     /**
