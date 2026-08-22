@@ -128,6 +128,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationPublication;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordReadRepository;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationshipCoordinator;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordWriteRepository;
@@ -2592,6 +2593,15 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
         ), true);
+        $container->share(BusinessRecordRelationshipCoordinator::class, static fn (
+            Container $container,
+        ): BusinessRecordRelationshipCoordinator => new BusinessRecordRelationshipCoordinator(
+            self::service($container, BusinessRecordReadRepository::class),
+            self::service($container, BusinessRecordMutationFence::class),
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, RecordValueCodec::class),
+            self::service($container, RecordRuleValidator::class),
+        ), true);
         $container->share(BusinessRecordService::class, static fn (
             Container $container,
         ): BusinessRecordService => new BusinessRecordService(
@@ -2605,6 +2615,7 @@ final class ContainerFactory
             self::service($container, RecordValueCodec::class),
             self::service($container, RecordRuleValidator::class),
             self::service($container, BusinessRecordAccessController::class),
+            self::service($container, BusinessRecordRelationshipCoordinator::class),
             self::service($container, ApprovalService::class),
             self::service($container, ResourceSiteOwnershipWriter::class),
             self::service($container, AuthorizationGateway::class),

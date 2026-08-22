@@ -79,7 +79,8 @@ final readonly class McpToolExecutionEvidence
         if (!$tool['readOnly'] && $guard === McpMutationGuardMode::None) {
             $violations[] = sprintf('Mutating tool "%s" declares no mutation-guard route.', $tool['name']);
         }
-        if ($guard === McpMutationGuardMode::Local
+        if (
+            $guard === McpMutationGuardMode::Local
             && !$this->reachesMutationGuard($handlers::class, $tool['handler'])
         ) {
             $violations[] = sprintf(
@@ -88,7 +89,8 @@ final readonly class McpToolExecutionEvidence
                 $tool['handler'],
             );
         }
-        if ($guard === McpMutationGuardMode::BusinessDelegate
+        if (
+            $guard === McpMutationGuardMode::BusinessDelegate
             && !$this->reachesBusinessDelegateGuard($handlers::class, $tool['handler'])
         ) {
             $violations[] = sprintf(
@@ -128,11 +130,13 @@ final readonly class McpToolExecutionEvidence
         if ($source === null) {
             return false;
         }
-        if (preg_match(
-            '/\$this->businessMutationContext\(\s*\$operationId\s*,\s*([\'\"])([a-z_]+)\1\s*\)/',
-            $source,
-            $match,
-        ) !== 1) {
+        if (
+            preg_match(
+                '/\$this->businessMutationContext\(\s*\$operationId\s*,\s*([\'\"])([a-z_]+)\1\s*\)/',
+                $source,
+                $match,
+            ) !== 1
+        ) {
             return false;
         }
 
@@ -266,11 +270,13 @@ final readonly class McpToolExecutionEvidence
     private function reachesBusinessDelegateGuard(string $class, string $handler): bool
     {
         $source = $this->methodSource($class, $handler);
-        if ($source === null || preg_match(
-            '/\$this->businessRecords\s*->\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(/',
-            $source,
-            $match,
-        ) !== 1) {
+        if (
+            $source === null || preg_match(
+                '/\$this->businessRecords\s*->\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(/',
+                $source,
+                $match,
+            ) !== 1
+        ) {
             return false;
         }
 

@@ -65,10 +65,12 @@ final class ExtensionRuntimeGenerationMiddlewareTest extends TestCase
      */
     public function testCurrentOrCoreOnlyRuntimeContinues(): void
     {
-        foreach ([
-            [true, true],
-            [false, false],
-        ] as [$trusted, $current]) {
+        foreach (
+            [
+                [true, true],
+                [false, false],
+            ] as [$trusted, $current]
+        ) {
             $execution = $this->createMock(ExtensionExecutionGate::class);
             $expectation = $trusted ? self::once() : self::never();
             $execution->expects($expectation)->method('isCurrent')->willReturn($current);

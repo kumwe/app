@@ -606,10 +606,12 @@ final class CliMachineContractTest extends TestCase
             $contract->validateInvocation('fixture', ['run', 'record-42', '--value=alpha']),
         );
 
-        foreach ([
-            ['fixture', [], 'requires an action'],
-            ['fixture', ['run', '--value=alpha', 'record-42'], 'Positional arguments must precede'],
-        ] as [$command, $arguments, $message]) {
+        foreach (
+            [
+                ['fixture', [], 'requires an action'],
+                ['fixture', ['run', '--value=alpha', 'record-42'], 'Positional arguments must precede'],
+            ] as [$command, $arguments, $message]
+        ) {
             try {
                 $contract->validateInvocation($command, $arguments);
                 self::fail('An invalid action vector was accepted.');

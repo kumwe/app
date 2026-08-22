@@ -27,8 +27,7 @@ final class McpHandlersFixture
     public static function create(
         McpCapabilityCatalog $catalog,
         ?ExtensionExecutionGate $extensionRuntime = null,
-    ): KumweMcpHandlers
-    {
+    ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
             self::withoutConstructor(ContentService::class),
