@@ -1082,9 +1082,16 @@ and phase S's Gate A half complete.
     numbering shape is decided and recorded. Three of the four are delivered and recorded in
     [`CHANGELOG.md`](../../CHANGELOG.md). The criterion is **not yet met**: it waits on `V2-POS-002`,
     which is the product owner's decision and not an implementation task.
-12. **Nothing regressed.** The full suite is green on MariaDB, MySQL and PostgreSQL. No supported
-    compatibility fixture is broken except the approved model-context security correction, which ships with
-    migration guidance and a stable error.
+12. **Nothing regressed.** Met at
+    [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7).
+    [Merge run `32469278190`](https://github.com/kumwe/app/actions/runs/32469278190) passed the quality,
+    unit, architecture, integration, functional, browser and complete production-deployment suites on
+    MariaDB LTS, MySQL 8.4 and PostgreSQL 17. The security and Development Compose workflows passed on the
+    same commit. Continuous-release run `32472051532` cut
+    [`v2.0.0-alpha.4`](https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.4), and release run `32472065990`
+    built, signed/attested and published its checksums, SBOMs and signed checksum bundle from that exact
+    source. No supported compatibility fixture is broken except the approved model-context
+    security correction, which ships with migration guidance and a stable error.
 13. **The composition contribution contract is frozen.** An extension declares a composition block with
     its bounded property schema, slots and renderer binding, a pattern, an inspector or field control,
     design vocabulary including size roles, and a composition migration, through classified contribution
@@ -1446,36 +1453,13 @@ metadata against authorized use cases; and worker, scheduler and event registrie
 contributions. An explicit allowlist records intentionally uncontracted health, asset and recovery routes.
 A hard-coded partial route list is not sufficient proof.
 
-**P2-G — Suite idempotency.** Findings: `V2-QA-004`, `GM-SUP-09`. The deployed-artifact lane this package was
-half of is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md): `composer test:artifact` builds the
-released selection, installs it with `--no-dev` and an authoritative classmap, seals the tree, and reproduces
-all four production-only defects inside it, at merge and before a deployment is stood up.
-
-The reuse half is executed rather than assumed, and it has now answered: the step runs the integration suite
-a second time against the database the first run left behind, on all three engines, and six tests across four
-classes fail. They are recorded in `docs/quality/idempotency-baseline.json` with an owner, an expiry and what
-removing each one takes, and the step fails on anything outside that record, so the list can only shrink.
-
-Two things remain, and they are different sizes.
-
-The six removals. Each baseline entry names its own fix, and five of them are one shape: the class installs a
-definition, a contribution or an extension under a fixed identity and does not remove it, so it needs a
-`tearDownAfterClass` that undoes what it did, the way `RecordSecretRotationIntegrationTest` rolls its rotation
-back. The sixth is not database state at all — a process-global cache diagnostic is never cleared, so an
-assertion that a healthy cache records no degradation is only true the first time, and the choice there is
-between clearing the diagnostic when the cache recovers, which is arguably the behaviour an operator wants,
-and asserting the notices the test itself caused.
-
-**And the class-order half, which is measured by nothing.** The first attempt at it used PHPUnit's
-`--order-by=reverse`, which reverses the tests inside each class as well as the classes, so it measured a
-stronger and different property than the one stated here: 38 failures across roughly 21 classes, seven of
-them methods of a single class. That distribution is intra-class ordering rather than database residue.
-Recording 21 classes would have been a blanket permission, and enforcing a property nobody has measured is
-what produced the wrong measurement in the first place, so the pass is declared unenforced in the baseline
-with its reason and its owner. The mechanism is corrected and runnable —
-`php tools/verify-suite-idempotency.php --engine=ID --pass=reverse` generates a configuration listing the
-classes in reverse with method order untouched — and what is owed is one measured run of it, followed by
-either a green pass or entries recorded the way the six were.
+**P2-G — Suite idempotency.** Delivered; recorded in [`CHANGELOG.md`](../../CHANGELOG.md). The deployed-artifact
+lane builds the released selection, installs it with `--no-dev` and an authoritative classmap, seals the tree,
+and reproduces all four production-only defects inside it. The reuse half now runs the integration suite twice
+after the ordinary pass against the same database: once in declaration order and once with class files reversed
+while method declaration order is preserved. The six former second-pass failures have been removed,
+`docs/quality/idempotency-baseline.json` is empty, and CI enforces both appended passes on MariaDB, MySQL and
+PostgreSQL. A new failure or any attempted stale/expired exemption fails the gate.
 
 **P2-H — Build-once exact-artifact release chain.** Findings: `V2-REL-001`. Prove the candidate belongs to
 the protected branch and that required workflows passed. Build the application image, web image, Composer
@@ -1782,25 +1766,13 @@ resolver were already built; site and organization wording is now stored, admini
 `/administrator/wording`, and an extension contributes its compiled catalogues through the ordinary package
 path. The console binding belongs to `PL-C`, because it lands with the console extraction.
 
-**PL-C — Extraction of `en-GB` at scale.** Findings: `V2-LNG-001`, `V2-LNG-008`. Extraction is proven at
-real scale: 117 messages across 28 templates cover the whole public site surface, the eleven shared
-interface-standard partials, the chrome, login and access-denied surfaces of the administrator and the
-portal, and the administered wording screen, which was authored extracted rather than extracted afterwards.
-What remains is volume — the 48 templates listed in `tools/translation-extraction.json`, the 48 console
-commands and the user-facing error paths of `src/` — plus binding the translator into the console the way
-it is already bound into the three Twig environments: once, into the surface every command already
-receives, rather than through 48 constructors.
-
-Five of the 48 are held open because another change was in flight on them:
-`templates/administrator/business-detail.twig`, `business-form.twig` and `content-form.twig`, and
-`templates/portal/business-detail.twig` and `business-form.twig`. Extract them once that change has landed.
-
-Only user-facing text moves. An exception message that exists for a developer, a log line, a stable machine
-error code and an audit action name are not user-facing text and must not be translated — a translated
-error code is a broken contract. The documentation names each category and why.
-
-*The enforcing check:* `PL-E`'s gate passing with an empty `pending_extraction` register. Extraction is
-finished when the hardcoded-string check passes on a clean tree, not when someone judges it finished.
+**PL-C — Extraction of `en-GB` at scale.** Delivered; recorded in
+[`CHANGELOG.md`](../../CHANGELOG.md). All 80 templates, every currently registered console command (44), and
+the user-facing error paths of `src/` resolve through the 2,102-message catalogue. The translator is bound to
+the console once through the output surface every command already receives. The empty pending-extraction
+register and `composer translation:strings` enforce both directions of the contract. Developer exceptions,
+log lines, stable machine error codes and audit action names remain inline by explicit category because they
+are contracts or operator/developer text, not localizable interface prose.
 
 **PL-D — Multilingual content and definition labels.** Delivered; recorded in
 [`CHANGELOG.md`](../../CHANGELOG.md) and described in
@@ -2120,7 +2092,7 @@ lag, disk forecast, extension trust and security events; synthetic probes; dashb
 operations from transport retries; and operator drills confirming each critical alert is actionable and
 clears after recovery. Closes `GM-OBS-05` by decision or by implementation, never by silence.
 
-**P7-E — Accountable human interface acceptance.** Findings: `V2-UX-001`. Named accountable reviewers
+**P7-E — Accountable human interface acceptance.** Findings: `V2-UX-001`, `V2-QA-014`. Named accountable reviewers
 complete five archetype task journeys with task-based evidence: content authoring and media and navigation
 and workflow and publication; an exact-value thousand-line document drafted, reviewed, approved, posted,
 inspected in history and exported; a relationship and self-service portal flow; a mobile assignment flow
@@ -2130,6 +2102,11 @@ error recovery, confirmation, policy denial, concurrency and stale state, long-f
 ergonomics and assistive technology. Fix the known generic debt: detached required markers, raw technical
 labels and defaults, extremely long ungrouped mobile forms, insufficient progressive disclosure, and raw
 platform terminology presented as a business-user workflow.
+
+On real Safari, a reviewer also changes the operating-system appearance while an administrator page remains
+open and records whether the rendered background follows it. That experiment closes `V2-QA-014` either with
+a cascade-level product repair or with an upstream Playwright report and a settled-render assertion; emulated
+WebKit alone cannot stand in for accountable human acceptance on the native browser.
 
 Two journeys are additionally run in a non-source language, one of them right-to-left: terminology,
 truncation, line wrapping, form-label alignment, date and number rendering and assistive-technology
@@ -2332,6 +2309,10 @@ registrars, if change-frequency data shows benefit, in one fixed reviewed order 
 second root, no domain rules inside a registrar, and recovery composition still incapable of executing
 extension code. Other hotspots only after measuring coupling, churn, reasons to change, test isolation,
 query complexity and incident risk.
+
+This lane also owns `V2-QA-010`, the legacy test-documentation burn-down. Its executable gate is already in
+place and refuses new, stale, malformed or expired baseline entries; reducing the retained record to zero is
+maintenance work and blocks no product gate.
 
 **Rules.** No hotspot is refactored because it exceeds a line count. Every candidate records its concrete
 maintenance or correctness problem, its public and internal contract, its proposed seam and invariant

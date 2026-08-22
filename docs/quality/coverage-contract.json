@@ -96,7 +96,19 @@
             {
                 "path": "tests/Unit/Support/BrowserProjectManifestTest.php",
                 "reason": "The subject is tests/Support/BrowserProjectManifest, the test-infrastructure reader for the browser matrix manifest. It is not under src/ and is not part of the released package, so PHPUnit refuses it as a coverage target outright \u2014 naming it in #[CoversClass] emitted a warning per case and, with failOnWarning, failed the canonical engine's own run. The answer is to attribute nothing, not to widen the measured source tree: coverage exists to describe the product, and admitting tests/Support to it would credit the harness for the product's lines."
-            }
+            },
+      {
+        "path": "tests/Unit/Support/TransientBusinessDefinitionFixtureScopeTest.php",
+        "reason": "The subject is tests/Support/TransientBusinessDefinitionFixtureScope, the process-level integration fixture lifecycle used only by the test harness. It is outside src/ and the released package, so attributing it as product coverage would widen the measured source tree and credit the harness instead of the product behavior the integration passes exercise."
+      },
+      {
+        "path": "tests/Unit/Support/ProcessOwnedShutdownTest.php",
+        "reason": "The subject is tests/Support/ProcessOwnedShutdown, process-lifecycle infrastructure used only by the test harness. It is outside src/ and the released package, so widening product coverage to credit it would make the metric less truthful."
+      },
+      {
+        "path": "tests/Unit/Tools/RetainedMachineContractWriterTest.php",
+        "reason": "The primary subject is tools/RetainedMachineContractWriter.php, a repository generation guard outside src/ and the released package. The CLI assertion proves retained-byte behavior through that tool; assigning a product class as the target would credit the wrong boundary."
+      }
         ],
         "pending": [],
         "pending_directories": []

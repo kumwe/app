@@ -388,7 +388,12 @@ final class OpenApiContractCompilerTest extends TestCase
                 '/health' => [
                     'get' => [
                         'operationId' => 'healthRead',
-                        'responses' => ['200' => ['description' => 'Healthy.']],
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Healthy.',
+                                'x-kumwe-body' => 'none',
+                            ],
+                        ],
                     ],
                 ],
             ],

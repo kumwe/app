@@ -11,7 +11,7 @@ extension task views, hide policy state, copy KIS components, or introduce autho
 Build and statically inspect the package from the repository root:
 
 ```bash
-php bin/kumwe extension:build examples/extensions/minimal-administrator-template \
+php bin/kumwe extension:build "$PWD/examples/extensions/minimal-administrator-template" \
   --output=/tmp/minimal-administrator-template.zip
 php bin/kumwe extension:conformance /tmp/minimal-administrator-template.zip
 ```

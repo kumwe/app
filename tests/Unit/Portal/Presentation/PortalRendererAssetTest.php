@@ -54,6 +54,8 @@ final class PortalRendererAssetTest extends TestCase
             'assets/portal/main.ts' => [
                 'file' => 'js/portal-safe.js',
                 'css' => ['css/portal-safe.css'],
+                'src' => 'assets/portal/main.ts',
+                'isEntry' => true,
             ],
         ], JSON_THROW_ON_ERROR)));
         $renderer = new PortalRenderer(

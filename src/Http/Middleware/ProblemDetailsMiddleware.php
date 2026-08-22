@@ -6,8 +6,8 @@ namespace Kumwe\App\Http\Middleware;
 
 use Kumwe\App\Application\Authorization\AuthorizationDenied;
 use Kumwe\App\Application\Security\HighImpactAuthenticationRequired;
+use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
-use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -33,13 +33,17 @@ final readonly class ProblemDetailsMiddleware implements MiddlewareInterface
     /**
      * Wire the sink for unexpected failures and decide how much detail responses may carry.
      *
-     * @param  LoggerInterface  $logger  Destination for unhandled exceptions, recorded with the request id.
-     * @param  bool             $debug   Whether the 500 response may disclose the exception message.
+     * @param  LoggerInterface                $logger    Destination for unhandled exceptions and request ids.
+     * @param  bool                           $debug     Whether 500 responses may disclose exception messages.
+     * @param  ProblemDetailsResponseFactory  $problems  Registry-enforcing RFC 9457 response factory.
      *
      * @since  2.0.0
      */
-    public function __construct(private LoggerInterface $logger, private bool $debug)
-    {
+    public function __construct(
+        private LoggerInterface $logger,
+        private bool $debug,
+        private ProblemDetailsResponseFactory $problems = new ProblemDetailsResponseFactory(),
+    ) {
     }
 
     /**
@@ -64,28 +68,28 @@ final readonly class ProblemDetailsMiddleware implements MiddlewareInterface
             return $handler->handle($request);
         } catch (Throwable $exception) {
             if ($exception instanceof AuthorizationDenied) {
-                return new JsonResponse([
-                    'type' => 'urn:kumwe:problem:authorization-denied',
-                    'title' => 'Forbidden',
-                    'status' => 403,
-                    'detail' => 'The authenticated identity is not authorized for this operation.',
-                ], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
+                return $this->problems->create(
+                    403,
+                    'Forbidden',
+                    'The authenticated identity is not authorized for this operation.',
+                    'urn:kumwe:problem:authorization-denied',
+                )->withHeader('Cache-Control', 'no-store');
             }
             if ($exception instanceof HighImpactAuthenticationRequired) {
-                return new JsonResponse([
-                    'type' => 'urn:kumwe:problem:high-impact-authentication-required',
-                    'title' => 'Step-up authentication required',
-                    'status' => 403,
-                    'detail' => 'Current-password authentication is required for this high-impact operation.',
-                ], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
+                return $this->problems->create(
+                    403,
+                    'Step-up authentication required',
+                    'Current-password authentication is required for this high-impact operation.',
+                    'urn:kumwe:problem:high-impact-authentication-required',
+                )->withHeader('Cache-Control', 'no-store');
             }
             if ($exception instanceof AuthenticationThrottled) {
-                return new JsonResponse([
-                    'type' => 'urn:kumwe:problem:authentication-throttled',
-                    'title' => 'Too Many Requests',
-                    'status' => 429,
-                    'detail' => 'Too many authentication attempts. Try again later.',
-                ], 429, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
+                return $this->problems->create(
+                    429,
+                    'Too Many Requests',
+                    'Too many authentication attempts. Try again later.',
+                    'urn:kumwe:problem:authentication-throttled',
+                )->withHeader('Cache-Control', 'no-store');
             }
 
             $requestAttribute = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE, 'unknown');
@@ -97,15 +101,12 @@ final readonly class ProblemDetailsMiddleware implements MiddlewareInterface
                 'path' => $request->getUri()->getPath(),
             ]);
 
-            $problem = [
-                'type' => 'about:blank',
-                'title' => 'Internal Server Error',
-                'status' => 500,
-                'detail' => $this->debug ? $exception->getMessage() : 'The request could not be completed.',
-                'request_id' => $requestId,
-            ];
-
-            return new JsonResponse($problem, 500, ['Content-Type' => 'application/problem+json']);
+            return $this->problems->create(
+                500,
+                'Internal Server Error',
+                $this->debug ? $exception->getMessage() : 'The request could not be completed.',
+                extensions: ['request_id' => $requestId],
+            );
         }
     }
 }

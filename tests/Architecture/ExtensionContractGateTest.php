@@ -90,6 +90,56 @@ final class ExtensionContractGateTest extends TestCase
     }
 
     /**
+     * Require a self-consistent retained digest to fail when it omits keys the live parser accepts.
+     *
+     * A digest proves only that a document did not change accidentally. This case deliberately rewrites
+     * both a generation record and its digest to the incomplete historical schema-4 shape, proving the
+     * independent parser-parity check still catches multilingual content and unit-converter drift.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRetainedGenerationMustMatchTheLiveParserGrammar(): void
+    {
+        $document = $this->decodeJson('docs/extension-contract/generations.json');
+        $generations = $document['manifest_generations'];
+        self::assertIsArray($generations);
+        self::assertIsArray($generations[3]);
+
+        $generation = $generations[3];
+        self::assertSame('manifest-4', $generation['id'] ?? null);
+        self::assertIsArray($generation['contribution_keys']);
+        self::assertIsArray($generation['integration_keys']);
+        $generation['contribution_keys'] = array_values(array_filter(
+            $generation['contribution_keys'],
+            static fn (mixed $key): bool => $key !== 'content',
+        ));
+        $generation['integration_keys'] = array_values(array_filter(
+            $generation['integration_keys'],
+            static fn (mixed $key): bool => $key !== 'unit_converters',
+        ));
+        unset($generation['content_keys'], $generation['surface_digest']);
+        $canonical = $this->canonical($generation);
+        $encoded = json_encode($canonical, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        self::assertIsString($encoded);
+        $generation['surface_digest'] = hash('sha256', $encoded);
+        $generations[3] = $generation;
+        $document['manifest_generations'] = $generations;
+
+        $path = $this->writeTemporaryDocument($document);
+        try {
+            $result = $this->runCheck($path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('the live parser accepts', $result['output']);
+        self::assertStringContainsString('content_keys', $result['output']);
+    }
+
+    /**
      * Require a withdrawn type that is quietly reinstated to stop the build.
      *
      * @return  void
@@ -223,5 +273,27 @@ final class ExtensionContractGateTest extends TestCase
         self::assertIsArray($decoded);
 
         return $decoded;
+    }
+
+    /**
+     * Sort every object key recursively in the same semantic form the generation verifier digests.
+     *
+     * @param   mixed  $value  Decoded JSON value.
+     *
+     * @return  mixed  Canonical value with list order retained and object keys sorted.
+     *
+     * @since   2.0.0
+     */
+    private function canonical(mixed $value): mixed
+    {
+        if (!is_array($value)) {
+            return $value;
+        }
+        $mapped = array_map(fn (mixed $item): mixed => $this->canonical($item), $value);
+        if (!array_is_list($mapped)) {
+            ksort($mapped, SORT_STRING);
+        }
+
+        return $mapped;
     }
 }

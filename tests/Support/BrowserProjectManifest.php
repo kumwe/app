@@ -31,7 +31,7 @@ final readonly class BrowserProjectManifest
      * @var    list<string>
      * @since  2.0.0
      */
-    public const array SPEC_SCOPES = ['all', 'right-to-left'];
+    public const array SPEC_SCOPES = ['all', 'right-to-left', 'breadth'];
 
     /**
      * The largest retry budget the manifest may declare.

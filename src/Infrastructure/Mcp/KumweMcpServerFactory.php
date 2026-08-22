@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Infrastructure\Mcp;
 
+use Mcp\Capability\Registry\ReferenceHandler;
 use Mcp\Schema\ServerCapabilities;
 use Mcp\Schema\ToolAnnotations;
 use Mcp\Server;
 use Mcp\Server\Session\SessionStoreInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Assembles the official SDK server that speaks MCP for Kumwe, one instance per transport run.
@@ -39,6 +42,9 @@ final readonly class KumweMcpServerFactory
      *         recognised across transport calls; null leaves the builder's own default in place.
      * @param  McpCatalogValidator     $validator      Gate every built server's catalogue is proven against;
      *         stateless, so the default instance is the one the container also shares.
+     * @param  LoggerInterface         $logger         Records registration defects and unexpected tool failures;
+     *         application refusals are returned as redacted tool results instead.
+     * @param  McpToolErrorMapper      $errors         Maps expected domain refusals to the retained error envelope.
      *
      * @since  2.0.0
      */
@@ -47,6 +53,8 @@ final readonly class KumweMcpServerFactory
         private string $serverVersion = '2.0.0',
         private ?SessionStoreInterface $sessions = null,
         private McpCatalogValidator $validator = new McpCatalogValidator(),
+        private LoggerInterface $logger = new NullLogger(),
+        private McpToolErrorMapper $errors = new McpToolErrorMapper(),
     ) {
     }
 
@@ -92,6 +100,8 @@ final readonly class KumweMcpServerFactory
                 'Use the least-privilege token required for each operation. Mutations use the same audited '
                 . 'application services and optimistic concurrency rules as the administrator and REST API.',
             )
+            ->setLogger($this->logger)
+            ->setReferenceHandler(new McpToolReferenceHandler(new ReferenceHandler(), $this->errors))
             ->setLazyLoading(false)
             ->setCapabilities(new ServerCapabilities(
                 tools: true,
@@ -126,8 +136,8 @@ final readonly class KumweMcpServerFactory
                     idempotentHint: $tool['idempotent'],
                     openWorldHint: false,
                 ),
-                inputSchema: $tool['inputSchema'],
-                outputSchema: $tool['outputSchema'],
+                inputSchema: McpJsonSchemaNormalizer::normalize($tool['inputSchema']),
+                outputSchema: McpJsonSchemaNormalizer::normalize($tool['outputSchema']),
             );
         }
 

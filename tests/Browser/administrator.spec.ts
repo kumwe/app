@@ -502,7 +502,7 @@ test('an access-group dashboard default reaches its member and can be reset', as
 test.describe('authenticated administrator', () => {
   test.beforeEach(async ({ page }) => signIn(page));
 
-  test('dashboard supports desktop and responsive navigation', async ({ page, isMobile }) => {
+  test('dashboard supports desktop and responsive navigation', async ({ page }, testInfo) => {
     await expect(page.getByRole('heading', { name: 'Your work, at a glance' })).toBeVisible();
     await expect(page.locator('[data-kis-dashboard-widget="core.dashboard.content-summary"]')).toBeVisible();
     const quickLinks = page.locator('.kis-dashboard-shortcut-list a');
@@ -531,12 +531,15 @@ test.describe('authenticated administrator', () => {
     await expect(page).toHaveURL(/\/administrator\/content\?q=launch$/u);
     await page.goto('/administrator');
     await expectStylesLoaded(page);
-    if (isMobile) {
-      const toggle = page.getByRole('button', { name: 'Open administrator navigation' });
+    const toggle = page.getByRole('button', { name: 'Open administrator navigation' });
+    if (testInfo.project.name.startsWith('mobile-')) {
+      await expect(toggle).toBeVisible();
       await toggle.click();
       await expect(page.getByRole('navigation', { name: 'Administrator navigation' })).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(toggle).toBeFocused();
+    } else {
+      await expect(toggle).toBeHidden();
     }
     await expectAccessible(page);
     await expect(page).toHaveScreenshot('dashboard.png', {
@@ -565,6 +568,10 @@ test.describe('authenticated administrator', () => {
 
   test('business definitions publish through graphical compatibility gates', async ({ page }, testInfo) => {
     // KIS-EVIDENCE-BEGIN p6-002-definition-ui
+    // Eight fully authored field rows plus validation, publication, accessibility and evidence capture
+    // already consume almost 30 seconds on WebKit. Give this one intentionally dense journey a bounded
+    // budget without weakening an assertion or extending the rest of the browser suite.
+    test.setTimeout(60_000);
     const suffix = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const handle = `site.default.browser_invoice_${suffix}`;
     await page.goto('/administrator/business-definitions?new=1');

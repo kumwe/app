@@ -1,0 +1,349 @@
+{
+    "format": "kumwe-problem-details-registry-v1",
+    "generation": "1.0.0",
+    "problems": [
+        {
+            "extensions": {},
+            "retry_after_seconds": 900,
+            "retryable": true,
+            "status": 429,
+            "type": "urn:kumwe:problem:authentication-throttled"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 403,
+            "type": "urn:kumwe:problem:authorization-denied"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 404,
+            "type": "urn:kumwe:problem:automation-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 404,
+            "type": "urn:kumwe:problem:business-approval-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 404,
+            "type": "urn:kumwe:problem:business-definition-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 404,
+            "type": "urn:kumwe:problem:business-operation-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:business-record-action-rejected"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-record-idempotency-corrupt"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": 1,
+            "retryable": true,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-record-idempotency-in-progress"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-record-idempotency-key-reused"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-record-idempotency-replay-window-elapsed"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-record-immutable"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 404,
+            "type": "urn:kumwe:problem:business-record-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-record-posting-period-closed"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-record-posting-period-undeclared"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-record-reference-conflict"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": 1,
+            "retryable": true,
+            "status": 503,
+            "type": "urn:kumwe:problem:business-record-unavailable"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-record-unique-conflict"
+        },
+        {
+            "extensions": {
+                "violations": {
+                    "required": true,
+                    "schema": {
+                        "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "code": {
+                                    "maxLength": 127,
+                                    "pattern": "^[a-z][a-z0-9._-]{0,126}$",
+                                    "type": "string"
+                                },
+                                "field": {
+                                    "maxLength": 63,
+                                    "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "maxLength": 1000,
+                                    "minLength": 1,
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "field",
+                                "message"
+                            ],
+                            "type": "object"
+                        },
+                        "maxItems": 256,
+                        "minItems": 1,
+                        "type": "array"
+                    }
+                }
+            },
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:business-record-validation-failed"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:business-relationship-rejected"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:business-report-row-limit-exceeded"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:business-report-validation-failed"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:business-schema-conflict"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 404,
+            "type": "urn:kumwe:problem:business-schema-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 404,
+            "type": "urn:kumwe:problem:content-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 403,
+            "type": "urn:kumwe:problem:high-impact-authentication-required"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:idempotency-authorization-changed"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": true,
+            "status": 409,
+            "type": "urn:kumwe:problem:idempotency-in-progress"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 400,
+            "type": "urn:kumwe:problem:idempotency-key-required"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:idempotency-key-reused"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 403,
+            "type": "urn:kumwe:problem:insufficient-capability"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:invalid-business-operation"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:invalid-business-record-query"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:invalid-business-report-export"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 400,
+            "type": "urn:kumwe:problem:invalid-idempotency-key"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 400,
+            "type": "urn:kumwe:problem:invalid-if-match"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 400,
+            "type": "urn:kumwe:problem:invalid-plan-request"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 404,
+            "type": "urn:kumwe:problem:navigation-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": 30,
+            "retryable": true,
+            "status": 503,
+            "type": "urn:kumwe:problem:openapi-contract-unavailable"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:posting-period-conflict"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 412,
+            "type": "urn:kumwe:problem:precondition-failed"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 428,
+            "type": "urn:kumwe:problem:precondition-required"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 403,
+            "type": "urn:kumwe:problem:step-up-required"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 422,
+            "type": "urn:kumwe:problem:validation-failed"
+        }
+    ]
+}

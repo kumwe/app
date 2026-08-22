@@ -23,6 +23,17 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **Gate A's three-engine regression criterion has exact released evidence.** Commit
+  [`2adb2ebe`](https://github.com/kumwe/app/commit/2adb2ebe0cfa95a1aa2953db944479aaa65c30a7)
+  passed the complete quality, MariaDB LTS, MySQL 8.4, PostgreSQL 17, browser, deployment, security and
+  Development Compose workflows. Continuous-release run
+  [run 32472051532](https://github.com/kumwe/app/actions/runs/32472051532) cut
+  [`v2.0.0-alpha.4`](https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.4), and release run
+  [run 32472065990](https://github.com/kumwe/app/actions/runs/32472065990) built, signed/attested and published
+  the Composer-project archive, checksums, SBOMs and signed checksum bundle from those exact bytes. This is
+  the executable evidence Gate A criterion 12
+  required; the alpha label does not turn Gate A into a release claim or replace its remaining truthful-gate
+  criterion.
 - **The documentation rule for `tests/` is enforced, not merely written down.** `docs/coding-standard.md`
   has asked for a documentation block on every test class and test method since it was written, and
   `composer docs:api` scanned `src/` only, so the rule had never once been checked. `composer docs:tests`
@@ -1084,10 +1095,14 @@ development programme, from the architecture decision that opened it to the curr
 - **The Firefox/WebKit breadth gate now tests the contracts each browser can actually render.** A generated
   business denial negotiates a themed, non-enumerating HTML 403 for browser navigation while preserving the
   problem document for machine callers; one-column stacks explicitly clamp their track, access form controls
-  cannot inherit a native select's intrinsic width, and the two user-task links carry 32-pixel targets. The
+  cannot inherit a native select's intrinsic width, the desktop shell cannot resurrect its responsive
+  navigation toggle through a later selector, and the two
+  user-task links carry 32-pixel targets. The
   presentation journey proves dark colour and reduced motion before entering Firefox's independent forced-colour
   phase, and WebKit's dark gallery is loaded under the emulation instead of scanning its stale live-override
-  state. Closes `V2-QA-012` and `V2-QA-013`; the real-Safari live-switch question in `V2-QA-011` remains open.
+  state. Environment-owned baseline refreshes cover both source-language Chromium projects and every locale-owned
+  RTL project together, so a shared stylesheet change cannot update one visual axis while leaving another stale.
+  Closes `V2-QA-012` and `V2-QA-013`; the real-Safari live-switch question in `V2-QA-014` remains open. (#102)
 - **A plaintext origin no longer tells the browser to upgrade what it cannot serve.**
   `upgrade-insecure-requests` sat in the Content-Security-Policy unconditionally while HSTS, immediately
   below it, was already gated on production HTTPS. On an origin not served over TLS the directive hardens

@@ -103,6 +103,20 @@
     overflow-wrap: anywhere;
   }
 
+  [data-kis-surface="core.administrator.settings"]
+    :is(kumwe-presentation-schemes, [data-presentation-scheme-rows], .builder-row, .builder-row > *,
+    .three-column, .three-column > *, .presentation-color-grid, .presentation-color-grid > *) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  [data-kis-surface="core.administrator.settings"]
+    .builder-row-heading h3[data-presentation-scheme-heading] {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
   .kis-phase-five-status-line {
     display: flex;
     flex-wrap: wrap;
@@ -271,6 +285,19 @@
 }
 
 @layer overrides {
+  @container kis-phase-five (max-width: 72em) {
+    [data-kis-surface="core.administrator.navigation"]
+      :is(.form-grid, .menu-item-grid) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    [data-kis-surface="core.administrator.navigation"]
+      :is(form, article, .panel-body, .kis-master-detail-grid, .kis-master-detail-content) {
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
+
   @container kis-phase-five (max-width: 62em) {
     .kis-phase-five .editor-grid {
       grid-template-columns: minmax(0, 1fr);
@@ -317,6 +344,41 @@
 
     .kis-phase-five .media-input {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kis-phase-five .media-input button {
+      max-width: 100%;
+      justify-self: start;
+      white-space: normal;
+    }
+
+    [data-kis-surface="core.administrator.settings"] .builder-row-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    [data-kis-surface="core.administrator.settings"] .builder-row-heading > * {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    [data-kis-surface="core.administrator.settings"] .builder-row-heading .remove-row {
+      max-width: 100%;
+      justify-self: start;
+      white-space: normal;
+    }
+
+    [data-kis-surface="core.administrator.navigation"]
+      :is(.form-grid, .menu-item-grid) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    [data-kis-surface="core.administrator.navigation"]
+      :is(form, article, .panel-body, .kis-master-detail-grid, .kis-master-detail-content) {
+      min-width: 0;
+      max-width: 100%;
     }
 
     .kis-phase-five .presentation-color-grid {
@@ -337,6 +399,10 @@
   }
 
   @media (max-width: 48rem) {
+    [data-kis-surface="core.administrator.settings"] .presentation-color-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     [data-kis-surface="core.administrator.business-security"] :is(.section-heading, .panel-header) {
       display: grid;
       align-items: stretch;

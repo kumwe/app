@@ -37,7 +37,8 @@ interface BusinessNumberSequenceAllocator
     /**
      * Reserve the next value of the counter these coordinates name.
      *
-     * @param   string             $siteIdentifier  Site the numbered record belongs to.
+     * @param   string             $siteIdentifier  Site the numbered record belongs to, or the immutable
+     *          definition catalog site when the record scope itself carries no site dimension.
      * @param   string             $definitionId    UUID of the definition declaring the sequence field.
      * @param   string             $fieldHandle     Handle of the `core.sequence` field being filled.
      * @param   string             $scopeKey        Tenancy key from `NumberSequenceFormat::counter()`.

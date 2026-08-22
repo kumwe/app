@@ -85,17 +85,12 @@ outright.
 
 `composer test:idempotency` runs the integration suite again against the database the previous run left
 behind and judges the result against
-[`docs/quality/idempotency-baseline.json`](quality/idempotency-baseline.json). The suite is not idempotent
-today — six tests across four classes fail on the second run — so the baseline records those six with an
-owner, an expiry and what removing each one takes, and the check fails on anything outside it: a test that
-starts failing, an entry whose test now passes, or an entry past its expiry. Run it after any change to a
-test that installs a definition, a contribution or an extension, because that is the shape five of the six
-have.
-
-The suite's behaviour under a different class order is the other half of the same property and is not yet
-enforced; the baseline says so and says why. `--pass=reverse` runs it, generating a configuration that lists
-the integration classes in reverse and leaves the order of methods inside each class alone — which is the
-property the roadmap states, and is not what `--order-by=reverse` measures.
+[`docs/quality/idempotency-baseline.json`](quality/idempotency-baseline.json). The formerly recorded six
+second-pass failures have been removed and the baseline is empty. CI now appends both declared passes to the
+ordinary integration run: `repeat` reuses the database in declaration order, then `reverse` lists the same
+integration classes in reverse while preserving the methods' declaration order. This proves three consecutive
+runs against one database on MariaDB, MySQL and PostgreSQL. Any new failure, stale exemption or expired entry
+fails the gate. Run it after any change to a test that installs a definition, contribution or extension.
 
 `composer test:artifact` is the deployed-artifact lane. It builds the released selection, installs it with
 `--no-dev` and an authoritative classmap, seals the tree, and runs the regression cases in

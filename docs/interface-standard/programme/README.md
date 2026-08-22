@@ -5,6 +5,12 @@ Standard (KIS). It is normative for programme scope, evidence, status, and hand-
 continues to be governed by the application and architecture documents; this programme records how every
 graphical delivery surface is brought into conformance without losing behaviour.
 
+This is a bounded interface-migration subprogramme, not a second product roadmap.
+[`docs/roadmap/`](../../roadmap/README.md) is the sole authority for Version 2 sequencing and for product
+Gate A/Gate B status. The ledgers here govern KIS phases A–F only; they can affect a product gate only when
+the product roadmap explicitly names that dependency. This keeps detailed, history-preserving interface
+evidence without creating a competing database of overall programme state.
+
 ## Authoritative records
 
 | Record | Purpose |

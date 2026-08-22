@@ -133,6 +133,7 @@ final readonly class OpenApiContractCompiler
             }
             $paths[$path] = $pathItem;
         }
+        $paths = $this->completeOperationContracts($paths);
         ksort($paths, SORT_STRING);
         $core['paths'] = $paths;
         $core['x-kumwe-business-generation'] = $generation;
@@ -149,6 +150,423 @@ final readonly class OpenApiContractCompiler
         }
 
         return new CompiledOpenApiContract($generation, hash('sha256', $json), $json);
+    }
+
+    /**
+     * Complete every operation's machine-readable request and response declaration.
+     *
+     * Core operations whose wire shapes are stable use named checked-in schemas. Generated-business
+     * operations already carry catalog-derived schemas and pass through unchanged. A deliberately bodyless
+     * request or response receives an explicit vendor marker, so absence is reviewable intent rather than an
+     * omission. Any future write or successful response that declares neither a schema nor a marker fails the
+     * compile and therefore cannot drift into the published contract unnoticed.
+     *
+     * @param   array<string, mixed>  $paths  Merged core and generated path registry.
+     *
+     * @return  array<string, mixed>  Paths with complete request, response and contract-version metadata.
+     *
+     * @throws  InvalidArgumentException  When an operation has no stable request or successful response shape.
+     *
+     * @since   2.0.0
+     */
+    private function completeOperationContracts(array $paths): array
+    {
+        /** @var array<string, string> $successSchemas */
+        $successSchemas = [
+            'addExtensionTrustKey' => '',
+            'activateExtension' => 'ExtensionLifecycleResult',
+            'approveBusinessSchemaPlan' => 'BusinessSchemaPlan',
+            'businessDefinitionDiscover' => 'GeneratedBusinessDefinitionCollection',
+            'businessDefinitionInspect' => 'GeneratedBusinessDefinitionDocument',
+            'businessOperationStatusRead' => 'GeneratedBusinessOperationStatus',
+            'closePostingPeriod' => 'PostingPeriod',
+            'createBusinessSchemaPlan' => 'BusinessSchemaPlan',
+            'createBusinessSchemaPurgePlan' => 'BusinessSchemaPlan',
+            'createContentType' => 'ContentTypeDefinition',
+            'createGrant' => 'IdentifierResponse',
+            'createMenu' => 'Menu',
+            'createMenuItem' => 'MenuItem',
+            'createRole' => 'IdentifierResponse',
+            'createSchedule' => 'IdentifierResponse',
+            'createToken' => 'IssuedToken',
+            'createUser' => 'IdentifierResponse',
+            'createWorkflow' => 'WorkflowDefinition',
+            'deprecateBusinessDefinitionVersion' => 'BusinessDefinitionVersion',
+            'disableExtension' => 'ExtensionLifecycleResult',
+            'discoverApi' => 'ApiDiscovery',
+            'emergencyRevokeAllUserTokens' => 'TokenRevocationResult',
+            'executeBusinessSchemaPlan' => 'BusinessSchemaExecutionOutcome',
+            'getContent' => 'Content',
+            'getContentType' => 'ContentTypeDefinition',
+            'getLiveness' => 'Liveness',
+            'getMenu' => 'Menu',
+            'getReadiness' => 'Readiness',
+            'getSchedule' => 'Schedule',
+            'getWorkflow' => 'WorkflowDefinition',
+            'listBusinessDefinitionHistory' => 'BusinessDefinitionVersionCollection',
+            'listBusinessDefinitions' => 'BusinessDefinitionCatalog',
+            'listBusinessSchemaPlans' => 'BusinessSchemaPlanCollection',
+            'listContentTypes' => 'ContentTypeCollection',
+            'listExtensionTrustKeys' => 'ExtensionTrustKeyCollection',
+            'listExtensions' => 'ExtensionCollection',
+            'listJobs' => 'JobCollection',
+            'listMenus' => 'MenuCollection',
+            'listPostingPeriods' => 'PostingPeriodCollection',
+            'listRoles' => 'RoleCollection',
+            'listSchedules' => 'ScheduleCollection',
+            'listSchemaEligibleDefinitions' => 'BusinessSchemaDefinitionCollection',
+            'listTokens' => 'TokenCollection',
+            'listUsers' => 'UserCollection',
+            'listWorkflows' => 'WorkflowCollection',
+            'previewBusinessDefinitionCompatibility' => 'BusinessDefinitionCompatibility',
+            'previewSafePlan' => 'SafePlan',
+            'publishBusinessDefinition' => 'BusinessDefinitionVersion',
+            'publishContentType' => 'ContentTypeDefinition',
+            'publishWorkflow' => 'WorkflowDefinition',
+            'readBusinessDefinition' => 'BusinessDefinitionVersion',
+            'readBusinessDefinitionDraft' => 'BusinessDefinitionDraft',
+            'readBusinessSchemaPlan' => 'BusinessSchemaPlanDocument',
+            'readOpenApiContract' => 'OpenApiDocument',
+            'recoverBusinessSchemaPlan' => 'BusinessSchemaExecutionOutcome',
+            'rejectBusinessDefinitionVersion' => 'BusinessDefinitionVersion',
+            'reopenPostingPeriod' => 'PostingPeriod',
+            'restoreContent' => 'Content',
+            'revokeExtensionTrustKey' => 'ExtensionQuarantineResult',
+            'revokeUserSiteTokens' => 'TokenRevocationResult',
+            'rotateToken' => 'IssuedToken',
+            'saveBusinessDefinitionDraft' => 'BusinessDefinitionDraft',
+            'supersedeBusinessDefinitionVersion' => 'BusinessDefinitionVersion',
+            'transitionContent' => 'Content',
+            'updateContent' => 'Content',
+            'updateMenu' => 'Menu',
+            'updateMenuItem' => 'MenuItem',
+            'updateSettings' => 'SiteSettings',
+            'validateBusinessDefinitionDraft' => 'BusinessDefinitionDraft',
+        ];
+        /** @var array<string, array{schema: string, required: bool}> $requestSchemas */
+        $requestSchemas = [
+            'activateExtension' => ['schema' => 'ExtensionActivateRequest', 'required' => false],
+            'addExtensionTrustKey' => ['schema' => 'ExtensionTrustKeyCreate', 'required' => true],
+            'createGrant' => ['schema' => 'GrantCreate', 'required' => true],
+            'createMenu' => ['schema' => 'MenuCreate', 'required' => true],
+            'createRole' => ['schema' => 'RoleCreate', 'required' => true],
+            'createToken' => ['schema' => 'TokenCreate', 'required' => true],
+            'createUser' => ['schema' => 'UserCreate', 'required' => true],
+            'disableExtension' => ['schema' => 'ExtensionCredentialRequest', 'required' => false],
+            'emergencyRevokeAllUserTokens' => ['schema' => 'TokenRevocationRequest', 'required' => true],
+            'revokeExtensionTrustKey' => ['schema' => 'ExtensionTrustKeyRevoke', 'required' => true],
+            'revokeUserSiteTokens' => ['schema' => 'TokenRevocationRequest', 'required' => true],
+            'rotateExtensionTrustKey' => ['schema' => 'ExtensionTrustKeyRotate', 'required' => true],
+            'rotateToken' => ['schema' => 'TokenRotate', 'required' => true],
+            'uninstallExtension' => ['schema' => 'ExtensionCredentialRequest', 'required' => false],
+            'updateMenu' => ['schema' => 'MenuPatch', 'required' => true],
+            'updateUser' => ['schema' => 'UserUpdate', 'required' => true],
+        ];
+        $bodylessWrites = [
+            'assignRole',
+            'businessRecordArchive',
+            'businessRecordRestore',
+            'cancelJob',
+            'executeBusinessSchemaPlan',
+            'recoverBusinessSchemaPlan',
+            'restoreContent',
+            'retryJob',
+            'validateBusinessDefinitionDraft',
+        ];
+        /** @var array<string, list<string>> $capabilityGroups */
+        $capabilityGroups = [
+            'automation.manage' => [
+                'cancelJob',
+                'createSchedule',
+                'deleteSchedule',
+                'getSchedule',
+                'listJobs',
+                'listSchedules',
+                'retryJob',
+                'setScheduleEnabled',
+            ],
+            'business.period.manage' => ['closePostingPeriod', 'reopenPostingPeriod'],
+            'business.period.read' => ['listPostingPeriods'],
+            'business.record.action' => ['businessRecordAction', 'businessRecordActionApproval'],
+            'business.record.archive' => ['businessRecordArchive'],
+            'business.record.browse' => [
+                'businessDefinitionDiscover',
+                'businessRecordBrowse',
+                'businessRecordSearch',
+            ],
+            'business.record.create' => ['businessRecordCreate'],
+            'business.record.delete' => ['businessRecordDelete'],
+            'business.record.export' => [
+                'businessReportExportDownload',
+                'businessReportExportRequest',
+                'businessReportExportStatus',
+            ],
+            'business.record.history' => ['businessRecordHistory'],
+            'business.record.read' => [
+                'businessDefinitionInspect',
+                'businessOperationStatusRead',
+                'businessRecordRead',
+                'businessRecordRelationRead',
+            ],
+            'business.record.relate' => [
+                'businessRecordRelate',
+                'businessRecordReorder',
+                'businessRecordUnrelate',
+            ],
+            'business.record.report' => ['businessReportExecute', 'businessReportList'],
+            'business.record.restore' => ['businessRecordRestore'],
+            'business.record.update' => ['businessRecordUpdate'],
+            'business.schema.approve' => ['approveBusinessSchemaPlan'],
+            'business.schema.destructive' => ['createBusinessSchemaPurgePlan'],
+            'business.schema.execute' => ['executeBusinessSchemaPlan'],
+            'business.schema.plan' => ['createBusinessSchemaPlan'],
+            'business.schema.read' => [
+                'listBusinessSchemaPlans',
+                'listSchemaEligibleDefinitions',
+                'readBusinessSchemaPlan',
+            ],
+            'business.schema.recover' => ['recoverBusinessSchemaPlan'],
+            'content.create' => ['createContent'],
+            'content.delete' => ['trashContent'],
+            'content.read' => [
+                'getContent',
+                'getContentType',
+                'getWorkflow',
+                'listBusinessDefinitionHistory',
+                'listBusinessDefinitions',
+                'listContent',
+                'listContentTypes',
+                'listWorkflows',
+                'previewBusinessDefinitionCompatibility',
+                'previewSafePlan',
+                'readBusinessDefinition',
+                'readBusinessDefinitionDraft',
+                'transitionContent',
+            ],
+            'content.restore' => ['restoreContent'],
+            'content.update' => [
+                'createContentType',
+                'createWorkflow',
+                'deprecateBusinessDefinitionVersion',
+                'publishBusinessDefinition',
+                'publishContentType',
+                'publishWorkflow',
+                'rejectBusinessDefinitionVersion',
+                'saveBusinessDefinitionDraft',
+                'supersedeBusinessDefinitionVersion',
+                'updateContent',
+                'validateBusinessDefinitionDraft',
+            ],
+            'extensions.manage' => [
+                'activateExtension',
+                'addExtensionTrustKey',
+                'disableExtension',
+                'listExtensions',
+                'listExtensionTrustKeys',
+                'revokeExtensionTrustKey',
+                'rotateExtensionTrustKey',
+                'uninstallExtension',
+            ],
+            'navigation.manage' => [
+                'createMenu',
+                'createMenuItem',
+                'deleteMenu',
+                'deleteMenuItem',
+                'getMenu',
+                'getMenuItem',
+                'listMenuItems',
+                'listMenus',
+                'updateMenu',
+                'updateMenuItem',
+            ],
+            'settings.manage' => ['getSettings', 'updateSettings'],
+            'users.manage' => [
+                'assignRole',
+                'createGrant',
+                'createRole',
+                'createToken',
+                'createUser',
+                'emergencyRevokeAllUserTokens',
+                'listRoles',
+                'listTokens',
+                'listUsers',
+                'revokeGrant',
+                'revokeRole',
+                'revokeToken',
+                'revokeUserSiteTokens',
+                'rotateToken',
+                'updateUser',
+            ],
+        ];
+        $capabilitiesByOperation = [];
+        foreach ($capabilityGroups as $capability => $operationIds) {
+            foreach ($operationIds as $operationId) {
+                $capabilitiesByOperation[$operationId] = [$capability];
+            }
+        }
+        $applicationAuthorizedOperations = [
+            'businessApprovalList',
+            'businessApprovalRead',
+            'businessRecordCustomRecordView',
+            'businessRecordCustomView',
+            'readOpenApiContract',
+        ];
+        $methods = ['get', 'put', 'post', 'patch', 'delete', 'head', 'options', 'trace'];
+        foreach ($paths as $path => $pathItem) {
+            if (!is_array($pathItem)) {
+                continue;
+            }
+            foreach ($methods as $method) {
+                $operation = $pathItem[$method] ?? null;
+                if (!is_array($operation)) {
+                    continue;
+                }
+                $operationId = $operation['operationId'] ?? null;
+                if (!is_string($operationId) || $operationId === '') {
+                    throw new InvalidArgumentException('Every OpenAPI operation requires an operation identifier.');
+                }
+                $operation['x-kumwe-contract-version'] = '1.0.0';
+                $security = $operation['security'] ?? [];
+                if (!is_array($security) || !array_is_list($security)) {
+                    throw new InvalidArgumentException('An OpenAPI operation security declaration is invalid.');
+                }
+                $capabilities = $operation['x-kumwe-required-capabilities']
+                    ?? $capabilitiesByOperation[$operationId]
+                    ?? (in_array($operationId, $applicationAuthorizedOperations, true) ? [] : null)
+                    ?? ($security === [] ? [] : null);
+                if (!is_array($capabilities) || !array_is_list($capabilities)) {
+                    throw new InvalidArgumentException(sprintf(
+                        'OpenAPI operation %s has no declared capability contract.',
+                        $operationId,
+                    ));
+                }
+                foreach ($capabilities as $capability) {
+                    if (!is_string($capability) || preg_match('/^[a-z][a-z0-9.]{2,126}$/D', $capability) !== 1) {
+                        throw new InvalidArgumentException('An OpenAPI capability declaration is invalid.');
+                    }
+                }
+                $operation['x-kumwe-required-capabilities'] = $capabilities;
+                if (isset($operation['requestBody'])) {
+                    $operation['x-kumwe-request-body'] = 'json';
+                } elseif (isset($requestSchemas[$operationId])) {
+                    $requestContract = $requestSchemas[$operationId];
+                    $operation['requestBody'] = [
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    '$ref' => '#/components/schemas/' . $requestContract['schema'],
+                                ],
+                            ],
+                        ],
+                        'required' => $requestContract['required'],
+                    ];
+                    $operation['x-kumwe-request-body'] = 'json';
+                } elseif (
+                    in_array($method, ['get', 'head', 'options', 'trace', 'delete'], true)
+                    || in_array($operationId, $bodylessWrites, true)
+                ) {
+                    $operation['x-kumwe-request-body'] = 'none';
+                } else {
+                    throw new InvalidArgumentException(sprintf(
+                        'OpenAPI operation %s has no declared request-body contract.',
+                        $operationId,
+                    ));
+                }
+                $parameterNames = [];
+                $parameters = $operation['parameters'] ?? [];
+                if (!is_array($parameters) || !array_is_list($parameters)) {
+                    throw new InvalidArgumentException('An OpenAPI operation parameter declaration is invalid.');
+                }
+                foreach ($parameters as $parameter) {
+                    if (!is_array($parameter)) {
+                        throw new InvalidArgumentException('An OpenAPI operation parameter is invalid.');
+                    }
+                    $name = $parameter['name'] ?? null;
+                    $reference = $parameter['$ref'] ?? null;
+                    if (is_string($name)) {
+                        $parameterNames[] = $name;
+                    } elseif (is_string($reference)) {
+                        $separator = strrpos($reference, '/');
+                        if ($separator === false) {
+                            throw new InvalidArgumentException('An OpenAPI parameter reference is invalid.');
+                        }
+                        $parameterNames[] = substr($reference, $separator + 1);
+                    }
+                }
+                $idempotent = in_array('IdempotencyKey', $parameterNames, true)
+                    || in_array('Idempotency-Key', $parameterNames, true);
+                $preconditioned = in_array('IfMatch', $parameterNames, true)
+                    || in_array('If-Match', $parameterNames, true);
+                $operation['x-kumwe-idempotency'] = $idempotent ? 'required' : 'none';
+                $operation['x-kumwe-precondition'] = $preconditioned ? 'if-match' : 'none';
+                $operation['x-kumwe-api-version'] = str_starts_with($path, '/api/v1') ? 'v1' : 'health';
+                $operation['x-kumwe-middleware-contracts'] = array_values(array_filter([
+                    $security === [] ? null : 'bearer-authentication',
+                    $idempotent ? 'idempotency-key' : null,
+                    $preconditioned ? 'if-match' : null,
+                ]));
+                $responses = $operation['responses'] ?? null;
+                if (!is_array($responses) || array_is_list($responses)) {
+                    throw new InvalidArgumentException('Every OpenAPI operation requires response contracts.');
+                }
+                foreach ($responses as $status => $response) {
+                    if (!is_array($response)) {
+                        throw new InvalidArgumentException('An OpenAPI operation response is invalid.');
+                    }
+                    if (
+                        isset($response['$ref'])
+                        || isset($response['content'])
+                        || ($response['x-kumwe-body'] ?? null) === 'none'
+                    ) {
+                        continue;
+                    }
+                    $numericStatus = preg_match('/^[1-5][0-9]{2}$/D', (string) $status) === 1
+                        ? (int) $status
+                        : null;
+                    if ($operationId === 'getReadiness' && $numericStatus === 503) {
+                        $response['content'] = [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/Readiness'],
+                            ],
+                        ];
+                    } elseif ($numericStatus !== null && $numericStatus >= 400) {
+                        $response['content'] = [
+                            'application/problem+json' => [
+                                'schema' => ['$ref' => '#/components/schemas/ProblemDetails'],
+                            ],
+                        ];
+                    } elseif (in_array($numericStatus, [204, 304], true)) {
+                        $response['x-kumwe-body'] = 'none';
+                    } else {
+                        $schema = $successSchemas[$operationId] ?? null;
+                        if (!is_string($schema)) {
+                            throw new InvalidArgumentException(sprintf(
+                                'OpenAPI operation %s has no declared successful response schema.',
+                                $operationId,
+                            ));
+                        }
+                        if ($schema === '') {
+                            $response['x-kumwe-body'] = 'none';
+                        } else {
+                            $mediaType = $operationId === 'readOpenApiContract'
+                                ? 'application/vnd.oai.openapi+json;version=3.1'
+                                : 'application/json';
+                            $response['content'] = [
+                                $mediaType => [
+                                    'schema' => ['$ref' => '#/components/schemas/' . $schema],
+                                ],
+                            ];
+                        }
+                    }
+                    $responses[$status] = $response;
+                }
+                $operation['responses'] = $responses;
+                $pathItem[$method] = $operation;
+            }
+            $paths[$path] = $pathItem;
+        }
+
+        return $paths;
     }
 
     /**

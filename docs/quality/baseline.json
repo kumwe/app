@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "dddd85e05e66fcd3b31811ad634f1c9f935c2696",
+    "commit": "37897cd42b24a06f70136569796889b8e12037c4",
     "recorded_at": "2026-08-21",
     "recorded_from": [],
     "toolchain": {
@@ -27,26 +27,26 @@
     "tests": {
         "architecture": {
             "files": 43,
-            "test_methods": 224
+            "test_methods": 245
         },
         "functional": {
-            "files": 7,
-            "test_methods": 27
+            "files": 9,
+            "test_methods": 31
         },
         "integration": {
-            "files": 95,
-            "test_methods": 377
+            "files": 96,
+            "test_methods": 381
         },
         "unit": {
-            "files": 384,
-            "test_methods": 2035
+            "files": 394,
+            "test_methods": 2093
         }
     },
     "coverage": {
         "canonical_engine": "mariadb",
         "ratchets": 3,
         "recorded_line_coverage_percent": 55.44,
-        "reasoned_attribution_rules": 12,
+        "reasoned_attribution_rules": 15,
         "tests_owing_attribution": 0
     },
     "surfaces": {
@@ -555,9 +555,9 @@
             "tests/Unit/Extension/Infrastructure/Trust/FilesystemExtensionArtifactVerifierTest.php": 2
         },
         "recorded_exemptions": {
-            "dependency-graph": 99,
+            "dependency-graph": 91,
             "idempotency": 0,
-            "test-documentation": 3685
+            "test-documentation": 3679
         }
     }
 }

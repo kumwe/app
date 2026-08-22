@@ -2,24 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\App\Application\Automation;
+namespace Kumwe\App\Shared\Domain;
 
 use InvalidArgumentException;
 use JsonException;
 
 /**
- * Order-independent JSON encoder the automation digests are computed over.
+ * Order-independent JSON encoder for durable, reproducible digests.
  *
- * Automation compares payloads it never keeps in full: an idempotency record stores only the digest of
- * the request that opened it and rejects a replay whose digest differs, a schedule occurrence becomes a
- * key by digesting its identifier and instant, and a change plan fingerprints the command and payload
- * it previews. Those comparisons span processes and outlive the request that made them, so the encoding
- * must not depend on the order keys happen to sit in an array — string-keyed arrays are sorted before
- * encoding, while lists keep their positions because order means something there. The value space is
- * deliberately narrow: null, bool, int, float, string and arrays of those, and nothing else, so an
- * object, a resource or a non-finite float is refused outright instead of being digested into something
- * that cannot be reproduced. `JobEnvelope` leans on that, calling `encode()` for the rejection alone to
- * prove a payload is representable before the job is stored.
+ * Domain, application and adapter code compare payloads it cannot keep in full: audit chains, integration
+ * envelopes, idempotency records and persisted projections all retain a digest rather than the original
+ * value. Those comparisons span processes and outlive the request that made them, so the encoding must not
+ * depend on the order keys happen to sit in an array. String-keyed arrays are sorted before encoding, while
+ * lists keep their positions because order means something there. The value space is deliberately narrow:
+ * null, bool, int, float, string and arrays of those, and nothing else, so an object, resource or non-finite
+ * float is refused instead of being digested into something that cannot be reproduced.
  *
  * @since  2.0.0
  */
@@ -41,7 +38,7 @@ final class CanonicalJson
         | JSON_THROW_ON_ERROR;
 
     /**
-     * Encode a value into the canonical form automation digests are taken over.
+     * Encode a value into the canonical form durable digests are taken over.
      *
      * @param   mixed  $value  Value to encode; arrays are normalised recursively first.
      *
@@ -62,7 +59,7 @@ final class CanonicalJson
     }
 
     /**
-     * Reduce a value to the fixed-width digest automation stores and compares in place of the value.
+     * Reduce a value to the fixed-width digest callers store and compare in place of the value.
      *
      * @param   mixed  $value  Value to fingerprint; encoded canonically before it is hashed.
      *

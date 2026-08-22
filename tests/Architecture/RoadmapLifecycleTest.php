@@ -33,6 +33,60 @@ final class RoadmapLifecycleTest extends TestCase
         self::assertStringContainsString('Kumwe roadmap verified', $result['output']);
     }
 
+    /**
+     * A complete criteria table remains valid when no Gate A criterion is outstanding.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierAcceptsAllThirteenGateACriteriaAsMet(): void
+    {
+        $status = preg_replace(
+            '/^\| 5 \| Quality gates are truthful \|.*$/m',
+            '| 5 | Quality gates are truthful | Yes — executable evidence is complete | — |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(0, $result['status'], $result['output']);
+        self::assertStringContainsString('Kumwe roadmap verified', $result['output']);
+    }
+
+    /**
+     * Thirteen rows are insufficient when their criterion identifiers are duplicated or incomplete.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheVerifierRequiresExactlyGateACriteriaOneThroughThirteen(): void
+    {
+        $status = preg_replace(
+            '/^\| 13 \|/m',
+            '| 12 |',
+            $this->contents('docs/roadmap/STATUS.md'),
+        );
+        self::assertIsString($status);
+        $path = $this->writeTemporaryStatus($status);
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', status: $path);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('exactly Gate A criteria 1 through 13 in order', $result['output']);
+    }
+
     public function testTheVerifierRefusesAClosedFindingAndSaysWhereItBelongs(): void
     {
         $ledger = $this->decodeJson('docs/roadmap/findings.json');
@@ -198,13 +252,18 @@ final class RoadmapLifecycleTest extends TestCase
      * @param   string       $ledger      Findings ledger to verify.
      * @param   string|null  $changelog   Alternate changelog fixture, or null for the repository document.
      * @param   string|null  $repository  Alternate repository history, or null for the project checkout.
+     * @param   string|null  $status      Alternate programme-status fixture, or null for the repository document.
      *
      * @return  array{status: int, output: string}  Process status and combined output.
      *
      * @since   2.0.0
      */
-    private function runVerifier(string $ledger, ?string $changelog = null, ?string $repository = null): array
-    {
+    private function runVerifier(
+        string $ledger,
+        ?string $changelog = null,
+        ?string $repository = null,
+        ?string $status = null,
+    ): array {
         $command = sprintf(
             '%s %s %s',
             escapeshellarg(PHP_BINARY),
@@ -216,6 +275,9 @@ final class RoadmapLifecycleTest extends TestCase
         }
         if ($repository !== null) {
             $command .= ' ' . escapeshellarg('--repository=' . $repository);
+        }
+        if ($status !== null) {
+            $command .= ' ' . escapeshellarg('--status=' . $status);
         }
         $command .= ' 2>&1';
 
@@ -287,6 +349,24 @@ final class RoadmapLifecycleTest extends TestCase
         $encoded = json_encode($ledger, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         self::assertIsString($encoded);
         file_put_contents($path, $encoded);
+
+        return $path;
+    }
+
+    /**
+     * Write one alternate programme-status document for a verifier test.
+     *
+     * @param   string  $status  Complete Markdown status document.
+     *
+     * @return  string  Temporary document path.
+     *
+     * @since   2.0.0
+     */
+    private function writeTemporaryStatus(string $status): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'kumwe-roadmap-status-');
+        self::assertIsString($path);
+        file_put_contents($path, $status);
 
         return $path;
     }

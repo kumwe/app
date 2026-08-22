@@ -24,6 +24,8 @@ use Kumwe\App\BusinessRecord\Application\Command\UpdateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
+use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodCalendar;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodLock;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodService;
@@ -394,11 +396,191 @@ final class PostingPeriodLockIntegrationTest extends TestCase
     }
 
     /**
+     * A hard-delete set-null sweep refuses a closed source and rolls back every induced write atomically.
+     *
+     * Two referrers are given storage keys that sort the open-period row first. The sweep therefore
+     * rewrites that source before it discovers the closed-period source. The refusal must still leave the
+     * target present, both references attached, every version and revision unchanged, and no audit entry
+     * from the attempted sweep. Reopening and replaying the exact idempotency key then succeeds, proving
+     * the refused transaction did not strand its claim either.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAClosedSetNullReferrerRollsBackTheWholeHardDeleteSweep(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $container->get(BusinessRecordService::class);
+        $periods = $container->get(PostingPeriodService::class);
+        self::assertInstanceOf(BusinessRecordService::class, $records);
+        self::assertInstanceOf(PostingPeriodService::class, $periods);
+        [$owner, $target] = $this->installGraph($container, $context, $this->suffix());
+
+        $openSourceId = '10000000-0000-4000-8000-000000000001';
+        $closedSourceId = '20000000-0000-4000-8000-000000000002';
+        $targetId = '30000000-0000-4000-8000-000000000003';
+        $records->create(new CreateRecordCommand(
+            $context,
+            $target,
+            ['label' => 'Atomic set-null target ' . $this->suffix()],
+            $this->key('atomic-target'),
+            recordId: $targetId,
+        ));
+        foreach (
+            [
+                [$openSourceId, 'Open source', '2410-02-05', 'atomic-open'],
+                [$closedSourceId, 'Closed source', '2410-01-15', 'atomic-closed'],
+            ] as [$recordId, $title, $postedOn, $key]
+        ) {
+            $records->create(new CreateRecordCommand(
+                $context,
+                $owner,
+                ['title' => $title, 'posted_on' => $postedOn],
+                $this->key($key),
+                recordId: $recordId,
+            ));
+            $related = $records->relate(new RelateRecordsCommand(
+                $context,
+                $owner,
+                $recordId,
+                1,
+                'nullable_target',
+                $targetId,
+                $this->key($key . '-relate'),
+            ));
+            self::assertSame(2, $related->version);
+        }
+
+        $sourceBefore = [];
+        foreach ([$openSourceId, $closedSourceId] as $recordId) {
+            $view = $records->read(new ReadRecordQuery(
+                $context,
+                $owner,
+                $recordId,
+                includes: ['nullable_target'],
+            ));
+            self::assertSame($recordId, $view->recordKey);
+            self::assertCount(1, $view->includes['nullable_target']);
+            $sourceBefore[$recordId] = [
+                'record_key' => $view->recordKey,
+                'version' => $view->version,
+                'history' => count($records->history(new RecordHistoryQuery(
+                    $context,
+                    $owner,
+                    $recordId,
+                ))->revisions),
+                'audit' => $this->recordAuditCount($container, $view->recordKey),
+            ];
+        }
+        self::assertLessThan(
+            0,
+            strcmp(
+                $sourceBefore[$openSourceId]['record_key'],
+                $sourceBefore[$closedSourceId]['record_key'],
+            ),
+            'The open-period source must sort before the closed-period source.',
+        );
+        $targetBefore = $records->read(new ReadRecordQuery($context, $target, $targetId));
+        $targetHistory = count($records->history(new RecordHistoryQuery(
+            $context,
+            $target,
+            $targetId,
+        ))->revisions);
+        $targetAudit = $this->recordAuditCount($container, $targetBefore->recordKey);
+
+        $periodKey = 'atomic-set-null-' . $this->suffix();
+        $periods->close(
+            $context,
+            $periodKey,
+            new DateTimeImmutable('2410-01-01T00:00:00Z'),
+            new DateTimeImmutable('2410-02-01T00:00:00Z'),
+        );
+        try {
+            $deleteKey = $this->key('atomic-delete');
+            $deleteIdempotencyBefore = $this->idempotencyCount($container, $deleteKey->value());
+            try {
+                $records->delete(new DeleteRecordCommand(
+                    $context,
+                    $target,
+                    $targetId,
+                    1,
+                    $deleteKey,
+                ));
+                self::fail('A closed-period set-null source must refuse the target hard delete.');
+            } catch (BusinessRecordPostingPeriodClosed $refused) {
+                self::assertSame('business_record.posting_period_closed', $refused->stableCode());
+                self::assertSame($periodKey, $refused->periodKey);
+            }
+
+            $targetAfter = $records->read(new ReadRecordQuery($context, $target, $targetId));
+            self::assertSame($targetBefore->version, $targetAfter->version);
+            self::assertSame($targetHistory, count($records->history(new RecordHistoryQuery(
+                $context,
+                $target,
+                $targetId,
+            ))->revisions));
+            self::assertSame($targetAudit, $this->recordAuditCount($container, $targetAfter->recordKey));
+            self::assertSame(
+                $deleteIdempotencyBefore,
+                $this->idempotencyCount($container, $deleteKey->value()),
+                'The refused delete must leave no idempotency claim behind.',
+            );
+            foreach ([$openSourceId, $closedSourceId] as $recordId) {
+                $view = $records->read(new ReadRecordQuery(
+                    $context,
+                    $owner,
+                    $recordId,
+                    includes: ['nullable_target'],
+                ));
+                self::assertSame($sourceBefore[$recordId]['version'], $view->version);
+                self::assertCount(1, $view->includes['nullable_target']);
+                self::assertSame($targetId, $view->includes['nullable_target'][0]->recordId);
+                self::assertSame($sourceBefore[$recordId]['history'], count($records->history(
+                    new RecordHistoryQuery($context, $owner, $recordId),
+                )->revisions));
+                self::assertSame(
+                    $sourceBefore[$recordId]['audit'],
+                    $this->recordAuditCount($container, $view->recordKey),
+                );
+            }
+        } finally {
+            $periods->reopen($context, $periodKey);
+        }
+
+        $deleted = $records->delete(new DeleteRecordCommand(
+            $context,
+            $target,
+            $targetId,
+            1,
+            $deleteKey,
+        ));
+        self::assertTrue($deleted->deleted, 'The refused idempotency claim rolled back with the delete.');
+        self::assertSame(
+            $deleteIdempotencyBefore + 1,
+            $this->idempotencyCount($container, $deleteKey->value()),
+        );
+        foreach ([$openSourceId, $closedSourceId] as $recordId) {
+            $view = $records->read(new ReadRecordQuery(
+                $context,
+                $owner,
+                $recordId,
+                includes: ['nullable_target'],
+            ));
+            self::assertSame(3, $view->version);
+            self::assertSame([], $view->includes['nullable_target']);
+        }
+        $this->expectException(BusinessRecordNotFound::class);
+        $records->read(new ReadRecordQuery($context, $target, $targetId));
+    }
+
+    /**
      * Install the posting-dated owner graph once per process and answer its handles.
      *
      * The owner is the relationship fixture widened by the whole primitive under test: a nullable
-     * `posted_on` date declared as the posting date, and the approve workflow that proves the
-     * transition exemption.
+     * `posted_on` date declared as the posting date, an approve workflow that proves the transition
+     * exemption, and a many-to-one set-null relationship used by the atomic hard-delete proof.
      *
      * @param   Container         $container  Real integration container.
      * @param   ExecutionContext  $context    Administrator the installation runs as.
@@ -442,6 +624,13 @@ final class PostingPeriodLockIntegrationTest extends TestCase
             'sortable' => true,
             'configuration' => ['posting_date' => true],
         ];
+        $document['relationships'][] = [
+            'handle' => 'nullable_target',
+            'label' => 'Nullable target',
+            'kind' => 'many_to_one',
+            'target' => $target->handle,
+            'on_delete' => 'set_null',
+        ];
         $document['actions'] = [[
             'handle' => 'approve',
             'label' => 'Approve',
@@ -478,6 +667,52 @@ final class PostingPeriodLockIntegrationTest extends TestCase
     private function key(string $operation): IdempotencyKey
     {
         return NeutralBusinessFixture::idempotencyKey('period-' . $operation . '-' . $this->suffix());
+    }
+
+    /**
+     * Count committed audit entries for one internal business-record key.
+     *
+     * @param   Container  $container  Integration container holding the audit table and table map.
+     * @param   string     $recordKey  Internal record key used as the audit subject identifier.
+     *
+     * @return  int  Number of committed entries for this record.
+     *
+     * @since   2.0.0
+     */
+    private function recordAuditCount(Container $container, string $recordKey): int
+    {
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+
+        return (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE subject_type = ? AND subject_id = ?',
+            $tables->quoted('audit_events'),
+        ), ['business_record', $recordKey]);
+    }
+
+    /**
+     * Count durable business-command claims under one caller-minted operation identifier.
+     *
+     * @param   Container  $container    Integration container holding the command ledger and table map.
+     * @param   string     $operationId  Caller-minted idempotency key stored as `operation_id`.
+     *
+     * @return  int  Number of durable claims for the operation identifier.
+     *
+     * @since   2.0.0
+     */
+    private function idempotencyCount(Container $container, string $operationId): int
+    {
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+
+        return (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE operation_id = ?',
+            $tables->quoted('business_command_idempotency'),
+        ), [$operationId]);
     }
 
     /**

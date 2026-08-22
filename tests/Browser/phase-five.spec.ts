@@ -139,22 +139,35 @@ test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, mot
   isMobile,
 }) => {
   // KIS-EVIDENCE-BEGIN p6-004-presentation-matrix
-  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   await signInAdministrator(page);
   await page.goto('/administrator/settings');
 
-  const modeContract = await page.evaluate(() => ({
-    dark: matchMedia('(prefers-color-scheme: dark)').matches,
-    reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-  }));
-  expect(modeContract).toEqual({ dark: true, reducedMotion: true });
+  // Apply each preference to the settled document independently. Gecko preserves reduced-motion
+  // emulation across navigation but restores its context colour scheme, so combining them before the
+  // sign-in redirects would measure an engine lifecycle detail instead of either product contract.
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.reload();
+  expect(await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)).toBe(true);
   await expect.poll(async () => page.evaluate(
     () => getComputedStyle(document.documentElement).colorScheme,
   )).toContain('dark');
 
+  await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
+  await page.reload();
+  expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
+  const maximumTransitionMilliseconds = await page
+    .getByRole('button', { name: 'Save settings and design' })
+    .evaluate((button) => Math.max(...getComputedStyle(button).transitionDuration
+      .split(',')
+      .map((duration) => duration.trim().endsWith('ms')
+        ? Number.parseFloat(duration)
+        : Number.parseFloat(duration) * 1000)));
+  expect(maximumTransitionMilliseconds).toBeLessThanOrEqual(1);
+
   // Gecko forces a light scheme when forcedColors is set to either explicit value, so prove this
-  // independent contract only after the dark and reduced-motion phase has passed with it omitted.
-  await page.emulateMedia({ forcedColors: 'active' });
+  // independent contract only after the dark and reduced-motion phases have passed with it omitted.
+  await page.emulateMedia({ colorScheme: 'light', forcedColors: 'active' });
+  await page.reload();
   expect(await page.evaluate(() => matchMedia('(forced-colors: active)').matches)).toBe(true);
 
   const firstSectionLink = page.locator('.kis-phase-five-section-nav a').first();

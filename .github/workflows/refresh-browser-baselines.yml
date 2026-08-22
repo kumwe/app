@@ -1,14 +1,15 @@
 # Visual baselines are evidence, and evidence must come from the environment that judges it: a baseline
 # rendered on a workstation carries that workstation's fonts and wrapping, and the browser lanes then
-# fail on pixels no code change produced. This manually dispatched workflow re-renders the requested
-# screenshots inside the same runner image, service topology and font set the verification lanes use,
-# and commits the refreshed baselines back to the dispatched branch.
+# fail on pixels no code change produced. This manually dispatched workflow rebuilds immutable assets,
+# re-renders the requested screenshots inside the same runner image, service topology and font set the
+# verification lanes use, and commits both forms of evidence back to the dispatched branch.
 name: Refresh browser baselines
 
 # The dispatch API only registers workflows present on the default branch, so a branch introducing
 # this lane could never call it. Pushing a change to this file therefore also runs the refresh, with
 # the selection below; the refreshed images are printed base64-encoded at the end of the job log so a
-# session without artifact egress can still retrieve, decode, and commit them.
+# session without artifact egress can still retrieve, decode, and commit them. Native-control containment,
+# its explicit keyboard-focus outline and topbar flex sizing are exercised across all six Chromium projects.
 on:
   workflow_dispatch:
     inputs:
@@ -16,18 +17,28 @@ on:
         description: >-
           Playwright selection passed through verbatim, for example
           "tests/Browser/administrator.spec.ts:505 --project=mobile-chromium".
-        required: true
+        required: false
+        default: ''
         type: string
   push:
     paths:
       - '.github/workflows/refresh-browser-baselines.yml'
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: refresh-browser-baselines-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  refresh:
-    name: Re-render and commit baselines
+  render:
+    name: Re-render baseline patch
+    if: github.ref_type == 'branch' && github.ref_name != github.event.repository.default_branch
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     services:
@@ -80,6 +91,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Install PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
@@ -105,6 +119,11 @@ jobs:
           composer install --no-interaction --prefer-dist
           npm ci
 
+      - name: Type-check and build immutable browser assets
+        run: |
+          npm run build
+          npm run check
+
       - name: Migrate and create the browser-test administrator
         shell: bash
         run: |
@@ -117,7 +136,6 @@ jobs:
           printf %s "$KUMWE_BROWSER_ADMIN_PASSWORD" > "$password_file"
           php bin/kumwe database:migrate
           php bin/kumwe user:create-admin \
-            --site=default \
             --email="$KUMWE_BROWSER_ADMIN_EMAIL" \
             --name="Browser Administrator" \
             --password-file="$password_file"
@@ -155,15 +173,19 @@ jobs:
           REFRESH_ARGUMENTS: ${{ inputs.arguments }}
         run: |
           set -euo pipefail
-          # The verification lanes run the desktop project before the mobile one, so a mobile
-          # screenshot captures whatever state the whole desktop pass left behind. A baseline
-          # re-rendered without that pass would encode a state the verification lane never sees;
-          # the state-building pass therefore runs first, and only the selection is re-captured.
+          # The default selection mirrors the complete Chromium verification matrix: both source-
+          # language projects plus the four locale-owned RTL projects. This keeps every baseline
+          # affected by a shared stylesheet change in one environment-owned refresh. A manually
+          # narrowed mobile selection is primed with the desktop project because the verification
+          # lane runs desktop first and its persisted state is part of the mobile rendering context.
           # The selection intentionally word-splits: it carries test locations and --project flags.
           arguments="${REFRESH_ARGUMENTS:-}"
           if [ -z "$arguments" ]; then
+            arguments='--project=desktop-chromium --project=mobile-chromium'
+            arguments="$arguments --project=desktop-chromium-he --project=desktop-chromium-ar"
+            arguments="$arguments --project=mobile-chromium-he --project=mobile-chromium-ar"
+          else
             npx playwright test --project=desktop-chromium || true
-            arguments='tests/Browser/administrator.spec.ts:505 --project=mobile-chromium'
           fi
           npx playwright test $arguments --update-snapshots
 
@@ -171,23 +193,170 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for image in $(git diff --name-only -- tests/Browser/screenshots); do
-            echo "===== BASELINE-BEGIN ${image} ====="
+          while IFS= read -r -d '' record; do
+            image="${record:3}"
+            case "$image" in
+              tests/Browser/screenshots/*) ;;
+              *)
+                echo "Unexpected screenshot status path $image." >&2
+                exit 1
+                ;;
+            esac
+            if [ -L "$image" ]; then
+              echo "Refusing to read linked screenshot $image." >&2
+              exit 1
+            fi
+            if [ ! -f "$image" ]; then
+              printf '===== BASELINE-DELETE %s =====\n' "$image"
+              continue
+            fi
+            printf '===== BASELINE-BEGIN %s =====\n' "$image"
             base64 -w 4000 "$image"
-            echo "===== BASELINE-END ${image} ====="
-          done
+            printf '\n===== BASELINE-END %s =====\n' "$image"
+          done < <(git status --porcelain=v1 -z --untracked-files=all --no-renames -- \
+            tests/Browser/screenshots)
 
-      - name: Commit refreshed baselines to the dispatched branch
-        if: github.event_name == 'workflow_dispatch'
+      - name: Build the path-scoped refresh patch
         shell: bash
         run: |
           set -euo pipefail
-          git add tests/Browser/screenshots
-          if git diff --cached --quiet; then
+          git add -- public/assets/build public/assets/site.css tests/Browser/screenshots
+          git diff --cached --binary --full-index --no-renames -- \
+            public/assets/build public/assets/site.css tests/Browser/screenshots \
+            > "$RUNNER_TEMP/browser-refresh.patch"
+
+      - name: Upload the refresh patch
+        id: upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-refresh-patch-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/browser-refresh.patch
+          if-no-files-found: error
+          retention-days: 1
+
+  commit:
+    name: Commit validated baseline patch
+    needs: render
+    if: github.ref_type == 'branch' && github.ref_name != github.event.repository.default_branch
+    permissions:
+      actions: read
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the exact rendered revision without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download only the rendered patch artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.render.outputs.artifact-id }}
+          path: ${{ runner.temp }}/browser-refresh
+          merge-multiple: true
+
+      - name: Apply and validate the path-scoped patch
+        id: apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch_path="$RUNNER_TEMP/browser-refresh/browser-refresh.patch"
+          if [ ! -f "$patch_path" ]; then
+            echo 'The downloaded refresh patch is missing.' >&2
+            exit 1
+          fi
+          if [ ! -s "$patch_path" ]; then
             echo 'Every selected baseline already matches this environment; nothing to commit.'
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          if [ -n "$(git status --porcelain=v1 --untracked-files=all)" ]; then
+            echo 'The exact-SHA checkout was not clean before patch application.' >&2
+            exit 1
+          fi
+          git apply --index --binary "$patch_path"
+
+          changed=0
+          while IFS= read -r -d '' metadata && IFS= read -r -d '' path; do
+            changed=$((changed + 1))
+            case "$path" in
+              public/assets/build/*|public/assets/site.css|tests/Browser/screenshots/*) ;;
+              *)
+                echo "The refresh patch changes forbidden path $path." >&2
+                exit 1
+                ;;
+            esac
+            read -r old_mode new_mode old_object new_object status <<< "${metadata#:}"
+            case "$status" in
+              A|D|M|T) ;;
+              *)
+                echo "The refresh patch gives $path unsupported raw status $status." >&2
+                exit 1
+                ;;
+            esac
+            for mode in "$old_mode" "$new_mode"; do
+              case "$mode" in
+                000000|100644) ;;
+                *)
+                  echo "The refresh patch gives $path forbidden old/new mode $old_mode/$new_mode." >&2
+                  exit 1
+                  ;;
+              esac
+            done
+          done < <(git diff --cached --raw --no-abbrev --no-renames -z)
+          if [ "$changed" -eq 0 ]; then
+            echo 'The non-empty refresh patch produced no staged change.' >&2
+            exit 1
+          fi
+
+          for required in public/assets/build/.vite/manifest.json public/assets/site.css; do
+            if [ ! -f "$required" ] || [ -L "$required" ]; then
+              echo "Required regular output $required is absent or linked." >&2
+              exit 1
+            fi
+            index_entry="$(git ls-files --stage -- "$required")"
+            if [[ "$index_entry" == *$'\n'* ]] || [ "${index_entry%% *}" != '100644' ]; then
+              echo "Required output $required is not a regular non-executable index file." >&2
+              exit 1
+            fi
+          done
+          git diff --cached --check
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+
+      - name: Commit the validated refresh without repository hooks
+        if: steps.apply.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name 'Lemuel'
           git config user.email 'lemuel@vdm.to'
-          git commit -m 'Refresh browser baselines from the verification environment'
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git commit --no-verify -m 'Refresh browser artifacts from the verification environment'
+
+      - name: Compare-and-swap push to the source branch
+        if: steps.apply.outputs.changed == 'true'
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF_TYPE" != 'branch' ] || [ "$GITHUB_REF_NAME" = "$DEFAULT_BRANCH" ]; then
+            echo 'Automated refresh pushes are restricted to non-default branches.' >&2
+            exit 1
+          fi
+          if [ "$(git rev-parse HEAD^)" != "$GITHUB_SHA" ]; then
+            echo 'The refresh commit is not based on the exact rendered revision.' >&2
+            exit 1
+          fi
+          remote_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${GITHUB_REF_NAME}" --jq .object.sha)"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo 'The source branch advanced while its baselines were rendering; refusing to overwrite it.' >&2
+            exit 1
+          fi
+          auth_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w 0)"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${auth_header}" \
+            push --porcelain \
+            --force-with-lease="refs/heads/${GITHUB_REF_NAME}:${GITHUB_SHA}" \
+            origin "HEAD:refs/heads/${GITHUB_REF_NAME}"

@@ -1,0 +1,36 @@
+{
+    "exclusions": [
+        {
+            "category": "asset",
+            "method": "GET",
+            "path": "/assets/extensions/{path:.+}",
+            "reason": "Static extension assets are not JSON REST resources."
+        },
+        {
+            "category": "health",
+            "method": "GET",
+            "path": "/metrics",
+            "reason": "Prometheus exposition is governed by the observability contract."
+        },
+        {
+            "category": "recovery",
+            "method": "POST",
+            "path": "/administrator/business-schema-plans/recovery-evidence",
+            "reason": "Session and CSRF protected recovery UI, not a bearer REST operation."
+        },
+        {
+            "category": "recovery",
+            "method": "POST",
+            "path": "/administrator/business-schema-plans/{id}/recover",
+            "reason": "Session and CSRF protected recovery UI, not a bearer REST operation."
+        },
+        {
+            "category": "recovery",
+            "method": "POST",
+            "path": "/portal/security/recovery",
+            "reason": "Session and CSRF protected account recovery UI, not a bearer REST operation."
+        }
+    ],
+    "format": "kumwe-openapi-route-exclusions-v1",
+    "generation": "1.0.0"
+}

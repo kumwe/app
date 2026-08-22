@@ -16,6 +16,9 @@ import { parseBrowserMatrix } from './tests/Browser/manifest.mjs';
  */
 const rightToLeftSpec = /right-to-left\.spec\.ts/;
 
+/** The bounded cross-engine proof used where full mobile emulation is not portable to Firefox. */
+const breadthSpec = /nightly-browser-breadth\.spec\.ts/;
+
 /**
  * The browser matrix is defined once, in tests/Browser/projects.json, because two languages read it.
  *
@@ -43,10 +46,29 @@ const projectOptions: Record<string, Record<string, unknown>> = {
   // baseline reports font hinting rather than the product. Behaviour and accessibility are asserted
   // identically on all three engines; only the pixel comparison stays with the browser that owns them.
   'desktop-firefox': { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 960 } },
+  // Playwright does not support `isMobile` in Firefox. This project therefore proves the responsive
+  // mobile viewport and touch-input contract at the same 412 x 915 CSS-pixel envelope as Pixel 7,
+  // without claiming Firefox applied mobile meta-viewport emulation that it cannot provide.
+  'mobile-firefox': {
+    ...devices['Desktop Firefox'],
+    viewport: { width: 412, height: 915 },
+    screen: { width: 412, height: 915 },
+    hasTouch: true,
+  },
   'desktop-webkit': { ...devices['Desktop Safari'], viewport: { width: 1440, height: 960 } },
+  'mobile-webkit': {
+    ...devices['iPhone 15'],
+    viewport: { width: 412, height: 915 },
+    screen: { width: 412, height: 915 },
+  },
 };
 
-const snapshotIgnoringProjects = new Set(['desktop-firefox', 'desktop-webkit']);
+const snapshotIgnoringProjects = new Set([
+  'desktop-firefox',
+  'mobile-firefox',
+  'desktop-webkit',
+  'mobile-webkit',
+]);
 
 /**
  * Answer the emulation a project runs under, or refuse a project nothing describes.
@@ -125,7 +147,9 @@ export default defineConfig({
     name: project.name,
     ...(project.specs === 'right-to-left'
       ? { testMatch: rightToLeftSpec }
-      : { testIgnore: rightToLeftSpec }),
+      : project.specs === 'breadth'
+        ? { testMatch: breadthSpec }
+        : { testIgnore: rightToLeftSpec }),
     ...(snapshotIgnoringProjects.has(project.name) ? { ignoreSnapshots: true } : {}),
     use: emulationFor(project.name),
   })),

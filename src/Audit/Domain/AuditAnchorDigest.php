@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Audit\Domain;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\CanonicalJson;
+use Kumwe\App\Shared\Domain\CanonicalJson;
 
 /**
  * Digest arithmetic for the chained `audit_anchors` ledger that seals ranges of the audit trail.

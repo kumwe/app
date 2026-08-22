@@ -8,7 +8,7 @@
     "recorded_from": [
         "https://github.com/kumwe/app/actions/runs/32251426675"
     ],
-    "entry_count": 3685,
+    "entry_count": 3679,
     "entries": [
         {
             "file": "tests/Architecture/BusinessDefinitionBoundaryTest.php",
@@ -694,26 +694,6 @@
             "file": "tests/Architecture/InterfaceTranslationGateTest.php",
             "line": 76,
             "member": "InterfaceTranslationGateTest::testTheHardcodedStringGateRefusesAnIdentifierTheCatalogueDoesNotCarry()",
-            "code": "MISSING_DOC",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Architecture/InterfaceTranslationGateTest.php",
-            "line": 372,
-            "member": "InterfaceTranslationGateTest::testTheStylesheetDirectionGateFailsOnAReintroducedPhysicalDeclaration()",
-            "code": "MISSING_DOC",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Architecture/InterfaceTranslationGateTest.php",
-            "line": 364,
-            "member": "InterfaceTranslationGateTest::testTheStylesheetDirectionGatePassesOnTheCommittedTree()",
             "code": "MISSING_DOC",
             "owner": "quality-engineering",
             "finding": "V2-QA-010",
@@ -1504,16 +1484,6 @@
             "file": "tests/Functional/Http/ManagementDeliveryTest.php",
             "line": 238,
             "member": "ManagementDeliveryTest::testBusinessApiStagesDeclareTheirOwnIndependentlyGrantableCapability()",
-            "code": "MISSING_DOC",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Functional/Http/ManagementDeliveryTest.php",
-            "line": 276,
-            "member": "ManagementDeliveryTest::testBusinessConsoleCommandsAreRegisteredOnTheRealApplication()",
             "code": "MISSING_DOC",
             "owner": "quality-engineering",
             "finding": "V2-QA-010",
@@ -25794,36 +25764,6 @@
             "file": "tests/Unit/Delivery/Http/Api/Plan/SafePlanTest.php",
             "line": 23,
             "member": "class@1::now()",
-            "code": "MISSING_DOC",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Unit/Delivery/Http/Api/ProblemDetailsResponseFactoryTest.php",
-            "line": 13,
-            "member": "ProblemDetailsResponseFactoryTest",
-            "code": "MISSING_DOC",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Unit/Delivery/Http/Api/ProblemDetailsResponseFactoryTest.php",
-            "line": 15,
-            "member": "ProblemDetailsResponseFactoryTest::testCreatesAnRfc9457ResponseWithoutReplacingReservedMembers()",
-            "code": "MISSING_DOC",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Unit/Delivery/Http/Api/ProblemDetailsResponseFactoryTest.php",
-            "line": 33,
-            "member": "ProblemDetailsResponseFactoryTest::testRejectsReservedExtensionMembers()",
             "code": "MISSING_DOC",
             "owner": "quality-engineering",
             "finding": "V2-QA-010",

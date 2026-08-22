@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kumwe\App\Identity\Application\Administration;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\CanonicalJson;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
@@ -21,6 +20,7 @@ use Kumwe\App\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\EmailAddress;
 use Kumwe\App\Identity\Domain\GrantScope;
 use Kumwe\App\Identity\Domain\UserStatus;
+use Kumwe\App\Shared\Domain\CanonicalJson;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

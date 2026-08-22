@@ -29,6 +29,25 @@ title = "Kumwe App"
 [extend]
 useDefault = true
 
+# Retained compatibility documents store SHA-256 checksums beside machine-surface identifiers. Upstream's
+# generic-api-key heuristic intentionally treats words such as API, credential, key and token as suspicious,
+# so a schema identity carrying one of those words beside its checksum resembles an assignment. These two
+# line shapes are narrower than a path or blanket rule exemption and target only upstream's generic-api-key
+# heuristic: the first admits only an explicitly named SHA-256 field, and the second names the exact schema
+# identities whose retained 64-hex value is a contract checksum.
+# Any new identity must be reviewed and added deliberately; arbitrary JSON keys and arbitrary hex values stay
+# scanned by every default rule.
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Retained machine-contract SHA-256 fields"
+regexTarget = "match"
+regexes = [
+  '''^[a-z][a-z0-9_]*_sha256"\s*:\s*"[a-f0-9]{64}"$''',
+  '''^(?:ApiDiscovery|ExtensionCredentialRequest|ExtensionTrustKey|ExtensionTrustKeyCollection|ExtensionTrustKeyCreate|ExtensionTrustKeyRevoke|ExtensionTrustKeyRotate|IssuedToken|OpenApiDocument|TokenCollection|TokenCreate|TokenRecord|TokenRevocationRequest|TokenRevocationResult|TokenRotate)"\s*:\s*"[a-f0-9]{64}"$''',
+]
+
 [[rules]]
 id = "kumwe-extension-runtime-signing-key"
 description = "Kumwe extension runtime signing key assigned inline"
