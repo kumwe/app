@@ -992,6 +992,15 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **Reordering an ordered collection renumbers set-based instead of one statement per link.** The
+  write repository's reorder now writes the new positions in bounded `CASE` statements of at most a
+  hundred links each — three bound parameters per link, inside the same parameter and packet
+  ceilings the owned-line batch reasons from — so a thousand-line document renumbers in ten
+  statements rather than a thousand (`P4-B`). The negative-flip first pass, the unique
+  source-and-position index guarantee, the exact-permutation refusal and the moved-link detection
+  are unchanged: a statement that renumbers fewer rows than its chunk carries still refuses the
+  reorder.
+
 - **The merge lane keeps all its evidence; the pull-request lane stops paying for it twice.** A new
   `preflight` job runs every record gate — baseline, quality contract, frozen contracts, documentation
   records, roadmap, interface programme, OpenAPI, translations, coverage attribution, coding standard and

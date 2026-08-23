@@ -67,6 +67,19 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
     private const int OWNED_LINE_BATCH = 100;
 
     /**
+     * Largest number of links one set-based reorder statement renumbers.
+     *
+     * A reorder pair binds three parameters — the link key twice and its new position — so a hundred
+     * links keeps a statement comfortably inside the same parameter and packet ceilings the owned-line
+     * batch reasons from, while a thousand-line document renumbers in ten statements instead of a
+     * thousand (P4-B).
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int REORDER_BATCH = 100;
+
+    /**
      * Largest number of bound parameters one owned-line statement is allowed to carry.
      *
      * MariaDB, MySQL and PostgreSQL all refuse a statement past 65,535 placeholders, so the budget sits an
@@ -567,10 +580,13 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
      *
      * The keys must be exactly the links currently stored, so a stale or partial list is refused before
      * anything is written rather than quietly reordering a subset. The rewrite then runs in two passes:
-     * every position for this source is first flipped to a negative value, and each row is afterwards set
-     * to its new position, which keeps a unique index over source and position satisfied throughout. Only a
-     * collection whose storage the source side owns can be renumbered here; when the canonical junction
-     * belongs to the inverse definition, the reorder has to be asked of that side.
+     * every position for this source is first flipped to a negative value, and the new positions are then
+     * written set-based, one bounded statement per hundred links rather than one statement per link, which
+     * keeps a unique index over source and position satisfied throughout because every not-yet-renumbered
+     * row still holds a negative position. A statement that renumbers fewer rows than its chunk carries
+     * means a link moved underneath the caller, and the reorder is refused. Only a collection whose
+     * storage the source side owns can be renumbered here; when the canonical junction belongs to the
+     * inverse definition, the reorder has to be asked of that side.
      *
      * @param   ResolvedBusinessDefinition   $resolved           Definition pinned to the installation
      *          holding the source row.
@@ -662,26 +678,44 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
                 $this->quote($positionColumn),
                 $this->quote($sourceColumn),
             ), [$source->recordKey], [$this->type($association, $sourceLogical)]);
-            foreach ($orderedRecordKeys as $position => $targetRecordKey) {
+            $targetType = $this->type($association, $targetLogical);
+            foreach (array_chunk($orderedRecordKeys, self::REORDER_BATCH, true) as $chunk) {
+                $cases = [];
+                $parameters = [];
+                $types = [];
+                foreach ($chunk as $position => $targetRecordKey) {
+                    $cases[] = 'WHEN ? THEN ?';
+                    $parameters[] = $targetRecordKey;
+                    $types[] = $targetType;
+                    $parameters[] = $position;
+                    $types[] = Types::INTEGER;
+                }
+                $parameters[] = $actorId;
+                $types[] = Types::STRING;
+                $parameters[] = $at;
+                $types[] = Types::DATETIME_IMMUTABLE;
+                $parameters[] = $source->recordKey;
+                $types[] = $this->type($association, $sourceLogical);
+                foreach ($chunk as $targetRecordKey) {
+                    $parameters[] = $targetRecordKey;
+                    $types[] = $targetType;
+                }
                 $affected = $this->database->executeStatement(sprintf(
-                    'UPDATE %s SET %s = ?, %s = %s + 1, %s = ?, %s = ? '
-                    . 'WHERE %s = ? AND %s = ?',
+                    'UPDATE %s SET %s = CASE %s %s END, %s = %s + 1, %s = ?, %s = ? '
+                    . 'WHERE %s = ? AND %s IN (%s)',
                     $this->quote($association->physicalName),
                     $this->quote($positionColumn),
+                    $this->quote($targetColumn),
+                    implode(' ', $cases),
                     $this->quote($this->physical($association, 'version')),
                     $this->quote($this->physical($association, 'version')),
                     $this->quote($this->physical($association, 'updated_by')),
                     $this->quote($this->physical($association, 'updated_at')),
                     $this->quote($sourceColumn),
                     $this->quote($targetColumn),
-                ), [$position, $actorId, $at, $source->recordKey, $targetRecordKey], [
-                    Types::INTEGER,
-                    Types::STRING,
-                    Types::DATETIME_IMMUTABLE,
-                    $this->type($association, $sourceLogical),
-                    $this->type($association, $targetLogical),
-                ]);
-                if ($affected !== 1) {
+                    implode(', ', array_fill(0, count($chunk), '?')),
+                ), $parameters, $types);
+                if ($affected !== count($chunk)) {
                     throw new BusinessRelationshipRejected('A relationship changed while its order was updated.');
                 }
             }
