@@ -8,8 +8,13 @@ use InvalidArgumentException;
 use Kumwe\App\Extension\Contribution\CanonicalCompositionDocument;
 use Kumwe\App\Extension\Contribution\CanonicalCompositionKind;
 use Kumwe\App\Extension\Contribution\CanonicalCompositionRegistrar;
+use Kumwe\App\Extension\Contribution\CompositionFieldControlDeclaration;
 use Kumwe\App\Extension\Contribution\CompositionHostBinding;
 use Kumwe\App\Extension\Contribution\CompositionPropertySchema;
+use Kumwe\App\Extension\Contribution\CompositionPropertyType;
+use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\Manifest5AdapterResult;
 use Kumwe\App\Extension\Contribution\Manifest5CompositionAdapter;
 use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Contribution\OwnedExtensionContributionRegistrar;
@@ -37,8 +42,11 @@ use stdClass;
 #[CoversClass(CanonicalCompositionDocument::class)]
 #[CoversClass(CanonicalCompositionKind::class)]
 #[CoversClass(CompositionHostBinding::class)]
+#[CoversClass(ContributionOwner::class)]
+#[CoversClass(Manifest5AdapterResult::class)]
 #[CoversClass(Manifest5CompositionAdapter::class)]
 #[CoversClass(ManifestContributionSet::class)]
+#[CoversClass(OwnedExtensionContributionRegistrar::class)]
 final class CanonicalCompositionTest extends TestCase
 {
     /**
@@ -267,6 +275,250 @@ final class CanonicalCompositionTest extends TestCase
                 ]],
             ],
         ];
+    }
+
+    /**
+     * A canonical document refuses each malformed shape at the arm that names it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testACanonicalDocumentRefusesEachMalformedShape(): void
+    {
+        $refusals = [
+            'over budget' => [
+                '{"type":"' . str_repeat('a', 262200) . '"}',
+                'cannot exceed 262144 bytes',
+            ],
+            'invalid JSON' => ['{broken', 'must be valid JSON'],
+            'non-object' => ['["type"]', 'must be a JSON object'],
+            'non-canonical bytes' => [
+                "{\"type\": \"acme.shop/grid\"}",
+                'exact canonical serialization',
+            ],
+            'missing identity' => ['{"kind":"grid"}', 'must carry its "type" identity'],
+        ];
+        foreach ($refusals as $label => [$canonical, $message]) {
+            $refused = null;
+            try {
+                new CanonicalCompositionDocument(CanonicalCompositionKind::BlockDefinition, $canonical);
+            } catch (InvalidArgumentException $exception) {
+                $refused = $exception;
+            }
+            self::assertNotNull($refused, sprintf('The %s document was accepted.', $label));
+            self::assertStringContainsString($message, $refused->getMessage());
+        }
+
+        $document = new CanonicalCompositionDocument(
+            CanonicalCompositionKind::Inspector,
+            '{"id":"acme.shop/price"}',
+        );
+        self::assertSame('acme.shop/price', $document->identity());
+        self::assertSame('inspector acme.shop/price', $document->identifier());
+        self::assertSame(
+            ['kind' => 'inspector', 'id' => 'acme.shop/price', 'canonical' => '{"id":"acme.shop/price"}'],
+            $document->toArray(),
+        );
+    }
+
+    /**
+     * A host binding refuses empty members and exports every declared member.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAHostBindingRefusesEmptyMembersAndExportsItsDeclaration(): void
+    {
+        $refusals = [
+            'empty document' => [['', null, null], 'must name its document'],
+            'empty renderer' => [['acme.shop/grid', '', null], 'renderer cannot be empty'],
+            'empty capability' => [['acme.shop/grid', null, ''], 'capability cannot be empty'],
+        ];
+        foreach ($refusals as $label => [[$documentId, $renderer, $capability], $message]) {
+            $refused = null;
+            try {
+                new CompositionHostBinding(
+                    CanonicalCompositionKind::BlockDefinition,
+                    $documentId,
+                    $renderer,
+                    $capability,
+                );
+            } catch (InvalidArgumentException $exception) {
+                $refused = $exception;
+            }
+            self::assertNotNull($refused, sprintf('The %s binding was accepted.', $label));
+            self::assertStringContainsString($message, $refused->getMessage());
+        }
+
+        $binding = new CompositionHostBinding(
+            CanonicalCompositionKind::Inspector,
+            'acme.shop/price',
+            null,
+            'acme.shop.compose',
+        );
+        self::assertSame('inspector acme.shop/price', $binding->identifier());
+        self::assertSame(
+            [
+                'kind' => 'inspector',
+                'id' => 'acme.shop/price',
+                'renderer' => null,
+                'capability' => 'acme.shop.compose',
+            ],
+            $binding->toArray(),
+        );
+    }
+
+    /**
+     * Direct construction refuses each canonical separation breach the parser cannot reach.
+     *
+     * The manifest parser refuses schema and SPI disagreement before the set is built, so these
+     * arms guard programmatic construction: the SPI fence in both directions, a binding without its
+     * document or capability, a repeated declaration, and a non-string canonical payload.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDirectConstructionRefusesEachCanonicalSeparationBreach(): void
+    {
+        $owner = ContributionOwner::extension('acme/shop');
+        $document = new CanonicalCompositionDocument(
+            CanonicalCompositionKind::Inspector,
+            '{"id":"acme.shop/price"}',
+        );
+
+        $refusals = [
+            'canonical documents on SPI 3' => [
+                static fn (): ManifestContributionSet => new ManifestContributionSet(
+                    $owner,
+                    spiVersion: ManifestContributionSet::COMPOSITION_SPI_VERSION,
+                    canonicalDocuments: [$document],
+                ),
+                'require contribution SPI 4',
+            ],
+            'paraphrase vocabulary on SPI 4' => [
+                static fn (): ManifestContributionSet => new ManifestContributionSet(
+                    $owner,
+                    spiVersion: ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION,
+                    compositionControls: [new CompositionFieldControlDeclaration(
+                        'acme.shop.money-control',
+                        CompositionPropertyType::String,
+                    )],
+                ),
+                'the schema-5 vocabulary is frozen at SPI 3',
+            ],
+            'binding without its document' => [
+                static fn (): ManifestContributionSet => new ManifestContributionSet(
+                    $owner,
+                    spiVersion: ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION,
+                    compositionHostBindings: [new CompositionHostBinding(
+                        CanonicalCompositionKind::Inspector,
+                        'acme.shop/price',
+                    )],
+                ),
+                'must name a canonical document this manifest declares',
+            ],
+            'binding with an undeclared capability' => [
+                static fn (): ManifestContributionSet => new ManifestContributionSet(
+                    $owner,
+                    spiVersion: ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION,
+                    canonicalDocuments: [$document],
+                    compositionHostBindings: [new CompositionHostBinding(
+                        CanonicalCompositionKind::Inspector,
+                        'acme.shop/price',
+                        null,
+                        'acme.shop.compose',
+                    )],
+                ),
+                'capability must be one this manifest declares',
+            ],
+            'repeated declaration' => [
+                static fn (): ManifestContributionSet => new ManifestContributionSet(
+                    $owner,
+                    spiVersion: ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION,
+                    canonicalDocuments: [$document, $document],
+                ),
+                'declared more than once',
+            ],
+        ];
+        foreach ($refusals as $label => [$construct, $message]) {
+            $refused = null;
+            try {
+                $construct();
+            } catch (InvalidArgumentException $exception) {
+                $refused = $exception;
+            }
+            self::assertNotNull($refused, sprintf('The %s set was accepted.', $label));
+            self::assertStringContainsString($message, $refused->getMessage());
+        }
+
+        $contributions = $this->contributions();
+        $contributions['composition']['documents'][0]['canonical'] = 42;
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must carry its canonical JSON string');
+        ManifestContributionSet::fromManifest(
+            ExtensionIdentifier::fromString('acme/shop'),
+            $contributions,
+            6,
+        );
+    }
+
+    /**
+     * Studio ownership follows the slash namespace grammar for core and extension owners alike.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStudioOwnershipFollowsTheSlashNamespaceGrammar(): void
+    {
+        $extension = ContributionOwner::extension('acme/shop');
+        $extension->assertOwns('block-definition acme.shop/grid', 'canonical composition document');
+        $extension->assertOwns('acme.shop/grid', 'canonical_composition_document');
+        ContributionOwner::core()->assertOwns('inspector core/price', 'composition_host_binding');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('cannot claim canonical composition document identifier');
+        $extension->assertOwns('block-definition evil.corp/grid', 'canonical composition document');
+    }
+
+    /**
+     * A live registrar accepts declared canonical documents into the runtime document surface.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testALiveRegistrarAcceptsDeclaredCanonicalDocuments(): void
+    {
+        $declarations = ManifestContributionSet::fromManifest(
+            ExtensionIdentifier::fromString('acme/shop'),
+            $this->contributions(),
+            6,
+        );
+        $registries = new ExtensionContributionRegistrySet();
+        $registrar = $registries->registrar($declarations->owner, $declarations);
+        foreach ($declarations->capabilities() as $capability) {
+            $registrar->capability($capability);
+        }
+        foreach ($declarations->canonicalCompositionDocuments() as $document) {
+            $registrar->canonicalCompositionDocument($document);
+        }
+        $registrar->complete();
+
+        $inventory = $registries->inventory($declarations->owner);
+        $documents = $inventory['composition']['documents'] ?? null;
+        self::assertIsArray($documents);
+        self::assertCount(1, $documents);
+        self::assertIsArray($documents[0]);
+        self::assertSame('block-definition', $documents[0]['kind']);
+        self::assertSame('acme.shop/grid', $documents[0]['id']);
+        self::assertSame(
+            $declarations->canonicalCompositionDocuments()[0]->canonical,
+            $documents[0]['canonical'],
+        );
     }
 
     /**
