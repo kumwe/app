@@ -67,7 +67,7 @@ case "$PHP_VERSION" in
     none) note "No PHP binary found; nothing beyond Tier 0 documentation checks can run." ;;
     *)
         PLATFORM_FLAG="--ignore-platform-req=php"
-        note "PHP $PHP_VERSION < 8.5: composer will run with $PLATFORM_FLAG. The suite is verified to pass, but prefer a real 8.5 (packages.sury.org line in tools/agent-egress.txt) for release-grade checks."
+        note "PHP $PHP_VERSION < 8.5: composer will run with $PLATFORM_FLAG. Unit, architecture, functional and almost all integration tests pass, but the extension-admission integration tests (about nine) correctly REFUSE under PHP < 8.5 because extension manifests demand it. For those, allow the packages.sury.org line in tools/agent-egress.txt and install php8.5."
         ;;
 esac
 
