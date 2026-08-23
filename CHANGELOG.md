@@ -37,7 +37,7 @@ development programme, from the architecture decision that opened it to the curr
   recording a file's own namespace declaration as a dependency, a latent false self-edge that
   class-level classification exposed. Thirteen baseline entries are deleted, the exemption count
   falls from 91 to 76 with none in the Domain-to-Application family, and phase 3 is delivered.
-  (`ea762c7b`)
+  (`cc872c3a`)
 - **Package P4-C is complete: the numbering machinery's remaining demands are proven on the hot
   paths, and the transition model is recorded.** ADR 0011 pins that the create command is the
   platform's numbering transition — deriving from ADR 0008's accepted no-second-entry-point
@@ -52,7 +52,7 @@ development programme, from the architecture decision that opened it to the curr
   delay the other's commit. The capacity harness gains the `hot_sequence_commit` operation class
   under capacity-contract amendment 1.2.0 — sustained creates serialized on one gapless counter
   row, the single-sequence worst case decision D1 requires the envelope to disclose — and a smoke
-  run reports it within objective. Only `P4-B` remains open in phase 4. (`605a5301`)
+  run reports it within objective. Only `P4-B` remains open in phase 4. (`a54f61c2`)
 - **Manifest schema 6 with contribution SPI 4 carries canonical Studio documents beside the frozen
   generations.** The generation kumwe/app#104 requires and finding `V2-STU-008` recorded is
   delivered whole. A schema-6 package declares each composition contribution as the exact canonical
@@ -61,9 +61,9 @@ development programme, from the architecture decision that opened it to the curr
   admission and again at install against the pinned `@kumwe/studio-protocol` release (now vendored
   in the shipped tree under `resources/studio-contract/`) and, for a block's `propertySchema`,
   against the complete `studio.profile/schema-property` grammar delivered at
-  [`87a56197`](https://github.com/kumwe/app/commit/87a56197b9df8825c3ffef15e63f4143242cb593) over
+  [`e92bacb6`](https://github.com/kumwe/app/commit/e92bacb6e1a2fe7c2d3c131f7c9dc1b5201cda44) over
   the corpus pinned at
-  [`76ed9a53`](https://github.com/kumwe/app/commit/76ed9a5341eecb2f36485da1892637474a10852f); one
+  [`25c26883`](https://github.com/kumwe/app/commit/25c2688357f22e967511c75e4b8508210d4affe5); one
   invalid artifact rejects the owning contribution atomically. Renderer bindings, authority and
   host references live in the separate bounded `host_bindings` section, never inside the portable
   document. The additive `CanonicalCompositionRegistrar` arrives beside the pinned SPI-3 registrar

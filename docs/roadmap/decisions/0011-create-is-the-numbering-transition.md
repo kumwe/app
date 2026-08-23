@@ -3,7 +3,7 @@
 **Status** Accepted
 **Decided by** Product owner, by the constraint ADR 0008 accepted; recorded here so package P4-C's
 "final approved transition" language resolves against the platform's actual transition model
-**Verified against** `a75b3e557adb75206a65c7d00d9d95ed717a38ed`
+**Verified against** `e242c5cd82a04cf24fb5febf7c95da184e8d56bb`
 **Findings** —
 **Gate** A
 
