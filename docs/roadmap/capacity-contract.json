@@ -1,6 +1,6 @@
 {
   "contract": "kumwe-capacity-contract",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "status": "approved",
   "authority": "docs/roadmap/README.md, section 7",
   "baseline_sha": "26a7b3963c255064754f541dc8286e75dd566b1f",
@@ -10,6 +10,12 @@
       "decisions": ["D10", "D11", "D12"],
       "change": "Three additions, none of which changes the five-million target or any latency objective. A translation group is declared as one logical content item so nine languages do not inflate the headline figure. Content row volume is declared to scale with published locales so the storage forecast states it rather than discovering it. And undeclared_currency_conversions joins the integrity objectives at zero, which is what makes D10's audit rule a measured property instead of an intention.",
       "not_changed": "The envelope, the service level objectives, the workload mix, the reference installation shape and every topology requirement are untouched."
+    },
+    {
+      "version": "1.2.0",
+      "decisions": ["D1", "ADR 0011"],
+      "change": "Adds the hot_sequence_commit operation class and its latency objective: sustained creates serialized on one gapless counter row, the single-sequence worst case whose throughput cost decision D1 requires the envelope to disclose.",
+      "not_changed": "The five-million target, every existing objective, the workload mix and every topology requirement are untouched."
     }
   ],
   "supersedes": {
@@ -191,6 +197,7 @@
     "bounded_primary_key_read": {"p95_ms": 250, "p99_ms": 750},
     "indexed_policy_filtered_page": {"p95_ms": 500, "p99_ms": 1500},
     "ordinary_small_mutation": {"p95_ms": 750, "p99_ms": 2000},
+    "hot_sequence_commit": {"p95_ms": 1000, "p99_ms": 2500},
     "document_100_line_commit": {"p95_ms": 2000, "p99_ms": 5000},
     "document_1000_line_commit": {
       "p95_ms": 8000,

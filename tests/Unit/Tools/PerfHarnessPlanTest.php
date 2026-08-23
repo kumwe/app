@@ -58,6 +58,7 @@ final class PerfHarnessPlanTest extends TestCase
         self::assertContains('document_100_line_commit', $classes);
         self::assertContains('document_1000_line_commit', $classes);
         self::assertContains('bounded_primary_key_read', $classes);
+        self::assertContains('hot_sequence_commit', $classes);
     }
 
     /**
