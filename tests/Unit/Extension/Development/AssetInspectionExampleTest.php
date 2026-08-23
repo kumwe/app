@@ -70,6 +70,7 @@ use Kumwe\App\Extension\Development\PackageInspector;
 use Kumwe\App\Extension\Development\PackageSigner;
 use Kumwe\App\Extension\Development\ProtectedSigningKeyReader;
 use Kumwe\App\Extension\Development\StaticConformanceRunner;
+use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use Kumwe\App\Extension\Domain\ExtensionManifest;
 use Kumwe\App\Extension\Domain\PackageSignature;
 use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveReader;
@@ -591,14 +592,21 @@ final class AssetInspectionExampleTest extends TestCase
         $manifest = $declarations->toArray();
         $inventory = $registries->inventory($owner);
 
+        $canonical = $runtime['canonical'];
+        $canonicalManifest = $canonical->toArray();
+        $canonicalInventory = $registries->inventory($canonical->owner);
+
         foreach ($registries->surfaceKeys() as $surface) {
             $manifestPath = match ($surface) {
                 'integration.money_rate_providers' => 'integration.rate_providers',
                 'integration.unit_conversion_providers' => 'integration.unit_converters',
                 default => $surface,
             };
-            $expected = self::contributionList($manifest, $manifestPath);
-            $actual = self::contributionList($inventory, $surface);
+            // The canonical Studio surface belongs to the companion SPI-v4 owner; every other
+            // surface stays with the paraphrase owner the committed example package declares.
+            $onCanonicalSurface = $surface === 'composition.documents';
+            $expected = self::contributionList($onCanonicalSurface ? $canonicalManifest : $manifest, $manifestPath);
+            $actual = self::contributionList($onCanonicalSurface ? $canonicalInventory : $inventory, $surface);
             self::assertNotSame([], $expected, sprintf('The full fixture left %s vacuous.', $surface));
             self::assertCount(count($expected), $actual, sprintf('Live registry %s drifted.', $surface));
             foreach ($expected as $index => $declaration) {
@@ -891,8 +899,10 @@ final class AssetInspectionExampleTest extends TestCase
      * @return  array{
      *              declarations: ManifestContributionSet,
      *              registries: ExtensionContributionRegistrySet,
-     *              additions: FullRegistryAdditions
-     *          }  Reconciled declarations, validated live registries, and the added executable contracts.
+     *              additions: FullRegistryAdditions,
+     *              canonical: ManifestContributionSet
+     *          }  Reconciled declarations, validated live registries, the added executable contracts,
+     *          and the companion canonical composition set carrying the Studio document surface.
      *
      * @since   2.0.0
      */
@@ -912,6 +922,17 @@ final class AssetInspectionExampleTest extends TestCase
         $provider->contribute($registrar, $container);
         $this->contributeFullRegistryAdditions($registrar, $additions);
         $registrar->complete();
+        // One manifest carries one composition grammar, so the canonical Studio document surface is
+        // filled by a companion SPI-v4 owner instead of widening the paraphrase owner's declarations.
+        $canonical = self::canonicalCompositionFixture();
+        $canonicalRegistrar = $registries->registrar($canonical->owner, $canonical);
+        foreach ($canonical->capabilities() as $capability) {
+            $canonicalRegistrar->capability($capability);
+        }
+        foreach ($canonical->canonicalCompositionDocuments() as $document) {
+            $canonicalRegistrar->canonicalCompositionDocument($document);
+        }
+        $canonicalRegistrar->complete();
         $registries->validateBusinessDefinitions();
         $registries->validateIntegrationContributions();
 
@@ -919,7 +940,38 @@ final class AssetInspectionExampleTest extends TestCase
             'declarations' => $declarations,
             'registries' => $registries,
             'additions' => $additions,
+            'canonical' => $canonical,
         ];
+    }
+
+    /**
+     * Parse the signed manifest-6 fixture into the canonical composition declaration set.
+     *
+     * The canonical Studio surface is deliberately unshareable with the schema-5 paraphrase
+     * vocabulary: a package declares one grammar or the other, never both. The exhaustive runtime
+     * fixture therefore pairs the SPI-v3 owner with this companion SPI-v4 owner so every registry
+     * surface still carries a non-core contribution.
+     *
+     * @return  ManifestContributionSet  The manifest-6 generation fixture's declared contributions.
+     *
+     * @since   2.0.0
+     */
+    private static function canonicalCompositionFixture(): ManifestContributionSet
+    {
+        $manifest = file_get_contents(
+            dirname(__DIR__, 3) . '/Fixtures/ExtensionApi/generations/manifest-6/kumwe.json',
+        );
+        self::assertIsString($manifest);
+        $document = json_decode($manifest, true, 64, JSON_THROW_ON_ERROR);
+        self::assertIsArray($document);
+        $contributions = $document['contributions'] ?? null;
+        self::assertIsArray($contributions);
+
+        return ManifestContributionSet::fromManifest(
+            ExtensionIdentifier::fromString('kumwe/contract-manifest-six'),
+            $contributions,
+            6,
+        );
     }
 
     /**

@@ -230,19 +230,19 @@ final class CompositionContributionTest extends TestCase
         try {
             ManifestContributionSet::fromManifest(
                 ExtensionIdentifier::fromString('acme/brochures'),
-                ['version' => ManifestContributionSet::COMPOSITION_SPI_VERSION],
-                6,
+                ['version' => ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION],
+                7,
             );
             self::fail('An undeclared manifest schema was accepted for typed contributions.');
         } catch (InvalidArgumentException $exception) {
-            self::assertStringContainsString('manifest schema 2, 3, 4, or 5', $exception->getMessage());
+            self::assertStringContainsString('manifest schema 2, 3, 4, 5, or 6', $exception->getMessage());
         }
 
         try {
-            ExtensionManifest::fromJson('{"schema": 6}');
+            ExtensionManifest::fromJson('{"schema": 7}');
             self::fail('An undeclared manifest schema was accepted at the install boundary.');
         } catch (InvalidArgumentException $exception) {
-            self::assertStringContainsString('schema must be 1, 2, 3, 4, or 5', $exception->getMessage());
+            self::assertStringContainsString('schema must be 1, 2, 3, 4, 5, or 6', $exception->getMessage());
         }
 
         $this->expectException(InvalidArgumentException::class);

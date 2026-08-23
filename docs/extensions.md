@@ -132,8 +132,11 @@ Schema 2 is required for application-shell contributions. A minimal graphical co
 
 Identifiers use `vendor/name`; compatibility and dependency constraints use semantic versions. The manifest is installation input and part of the extension's compatibility contract. Do not infer registration by scanning PHP files.
 
-Schema-2, schema-3, schema-4, and schema-5 manifests reject unknown root, requirement, autoload, dependency, and
-contribution keys.
+Schema-2, schema-3, schema-4, schema-5, and schema-6 manifests reject unknown root, requirement, autoload,
+dependency, and contribution keys. A schema-6 package declares its composition surface as canonical Studio
+documents (`contributions.composition.documents`, each the exact canonical JSON string of one pinned
+`@kumwe/studio-protocol` document) with separate bounded `host_bindings`; canonical identities follow the
+Studio `namespace/name` grammar inside the documents themselves.
 Every contribution identifier must begin with the extension namespace (`acme/announcements` becomes
 `acme.announcements`). Graphical workspaces, navigation entries, routes, views, templates, and KIS surfaces
 share an additive 191-character lowercase grammar that starts and ends alphanumerically and otherwise admits

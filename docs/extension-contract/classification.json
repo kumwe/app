@@ -2,7 +2,7 @@
   "format": "kumwe-extension-contract-classification-v1",
   "authority": "docs/extension-contract/README.md",
   "generations": "docs/extension-contract/generations.json",
-  "note": "Which types an extension may build against, as data rather than as prose. Everything under `Kumwe\\App\\` is internal unless it is listed here, so the absence of a type from this file is itself the answer: core may decompose it freely and a package that reaches for it will break. A type listed here is public — it is part of a promised generation, and it changes only by a generation gaining a successor. `pinned_by` names the compatibility fixture whose committed bytes hold the type's exact member signatures; where it is null the type is public and governed by its generation, but its members are not byte-pinned at this release.",
+  "note": "Which types an extension may build against, as data rather than as prose. Everything under `Kumwe\\App\\` is internal unless it is listed here, so the absence of a type from this file is itself the answer: core may decompose it freely and a package that reaches for it will break. A type listed here is public \u2014 it is part of a promised generation, and it changes only by a generation gaining a successor. `pinned_by` names the compatibility fixture whose committed bytes hold the type's exact member signatures; where it is null the type is public and governed by its generation, but its members are not byte-pinned at this release.",
   "default_visibility": "internal",
   "visibilities": {
     "public": "Part of a promised generation. An extension may depend on it.",
@@ -1173,6 +1173,66 @@
       "reachable_from": "manifest-1",
       "spi": null,
       "path": "src/Site/Application/SiteSettings.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\App\\Extension\\Contribution\\CanonicalCompositionRegistrar",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Extension/Contribution/CanonicalCompositionRegistrar.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/canonical-composition-registrar-v1.json"
+    },
+    {
+      "type": "Kumwe\\App\\Extension\\Contribution\\CanonicalCompositionKind",
+      "kind": "enum",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Extension/Contribution/CanonicalCompositionKind.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/canonical-composition-registrar-v1.json"
+    },
+    {
+      "type": "Kumwe\\App\\Extension\\Contribution\\CanonicalCompositionDocument",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Extension/Contribution/CanonicalCompositionDocument.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\App\\Extension\\Contribution\\CompositionHostBinding",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Extension/Contribution/CompositionHostBinding.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\App\\Extension\\Contribution\\Manifest5CompositionAdapter",
+      "kind": "class",
+      "visibility": "public",
+      "role": "call",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Extension/Contribution/Manifest5CompositionAdapter.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\App\\Extension\\Contribution\\Manifest5AdapterResult",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Extension/Contribution/Manifest5AdapterResult.php",
       "pinned_by": null
     }
   ]

@@ -24,6 +24,30 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **Manifest schema 6 with contribution SPI 4 carries canonical Studio documents beside the frozen
+  generations.** The generation kumwe/app#104 requires and finding `V2-STU-008` recorded is
+  delivered whole. A schema-6 package declares each composition contribution as the exact canonical
+  JSON bytes of one published Studio document — block-definition with its complete Draft 2020-12
+  `propertySchema`, pattern, field-adapter, inspector, design-vocabulary or migration — validated at
+  admission and again at install against the pinned `@kumwe/studio-protocol` release (now vendored
+  in the shipped tree under `resources/studio-contract/`) and, for a block's `propertySchema`,
+  against the complete `studio.profile/schema-property` grammar delivered at
+  [`87a56197`](https://github.com/kumwe/app/commit/87a56197b9df8825c3ffef15e63f4143242cb593) over
+  the corpus pinned at
+  [`76ed9a53`](https://github.com/kumwe/app/commit/76ed9a5341eecb2f36485da1892637474a10852f); one
+  invalid artifact rejects the owning contribution atomically. Renderer bindings, authority and
+  host references live in the separate bounded `host_bindings` section, never inside the portable
+  document. The additive `CanonicalCompositionRegistrar` arrives beside the pinned SPI-3 registrar
+  — no method was added to it — and provider registration is reconciled against the signed manifest
+  by literal byte equivalence of each document's canonical string. Manifest 6 accepts only SPI 4,
+  earlier manifests refuse SPI 4, manifest 5 / SPI 3 stay frozen byte for byte, and the documented
+  `Manifest5CompositionAdapter` translates only complete, deterministic, lossless property mappings
+  while naming everything else — a host `reference` is reported, never widened. The signed
+  `kumwe/contract-manifest-six` fixture declares every canonical kind and passes the complete
+  install, activate, upgrade, disable, reactivate and uninstall lifecycle, and
+  `classification.json` and `generations.json` record the generation with recomputed surface
+  digests: 6 manifest generations, 4 SPI generations, 117 classified public types.
+
 - **The Studio schema-property profile has its independent PHP implementation.** Under
   `src/Extension/Domain/Internal/StudioProfile/`, `CanonicalJson` produces the portability
   contract's canonical UTF-8 form — code-unit member ordering, minimal ECMA-404 escaping, the

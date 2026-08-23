@@ -1,0 +1,66 @@
+{
+    "schema": 6,
+    "name": "kumwe/contract-manifest-six",
+    "type": "component",
+    "version": "1.0.0",
+    "provider": "KumweContract\\ManifestSix\\Provider",
+    "autoload": {
+        "psr-4": {
+            "KumweContract\\ManifestSix\\": "src/"
+        }
+    },
+    "requires": {
+        "kumwe": "^2.0.0",
+        "php": "^8.5.0"
+    },
+    "contributions": {
+        "version": 4,
+        "capabilities": [
+            {
+                "id": "kumwe.contract-manifest-six.compose",
+                "label": "Compose contract fixtures",
+                "description": "Author the canonical composition surface this fixture declares."
+            }
+        ],
+        "composition": {
+            "documents": [
+                {
+                    "kind": "block-definition",
+                    "canonical": "{\"accessibility\":{\"accessibleName\":\"not-applicable\",\"category\":\"structural\",\"keyboard\":{\"defaultMessage\":\"Items follow the Blueprint reading order and can be moved through the outline.\",\"key\":\"kumwe.contract-manifest-six/grid-keyboard\"},\"outputChecks\":[\"kumwe.contract-manifest-six/reading-order\"],\"reducedMotion\":\"not-applicable\"},\"category\":\"kumwe.contract-manifest-six/layout\",\"contractVersion\":\"0.1-draft\",\"editingModes\":[\"blueprint\",\"content\"],\"icon\":{\"kind\":\"symbol\",\"value\":\"grid\"},\"kind\":\"block-definition\",\"label\":{\"defaultMessage\":\"Grid\",\"key\":\"kumwe.contract-manifest-six/grid\"},\"owner\":{\"id\":\"kumwe.contract-manifest-six/blocks\",\"version\":\"1.0.0\"},\"ports\":[],\"propertySchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"additionalProperties\":false,\"properties\":{\"collapse\":{\"enum\":[\"preserve\",\"wrap\",\"stack\"]},\"columns\":{\"maximum\":12,\"minimum\":1,\"type\":\"integer\"}},\"required\":[\"columns\",\"collapse\"],\"type\":\"object\"},\"rendererRequirements\":[{\"capability\":\"kumwe.contract-manifest-six/grid\",\"surface\":\"web\",\"versions\":\"^1.0.0\"},{\"capability\":\"kumwe.contract-manifest-six/grid\",\"surface\":\"preview\",\"versions\":\"^1.0.0\"}],\"revision\":\"grid-block-r1\",\"slots\":[{\"accepts\":{\"types\":[\"kumwe.contract-manifest-six/price\"]},\"id\":\"items\",\"label\":{\"defaultMessage\":\"Items\",\"key\":\"kumwe.contract-manifest-six/grid-items\"},\"maximum\":100,\"minimum\":0,\"ordered\":true}],\"themeControls\":[\"gap\",\"alignment\",\"surface\"],\"type\":\"kumwe.contract-manifest-six/grid\",\"version\":\"1.0.0\"}"
+                },
+                {
+                    "kind": "pattern",
+                    "canonical": "{\"blockDependencies\":[{\"revision\":\"block-r1\",\"type\":\"kumwe.contract-manifest-six/section\",\"version\":\"1.0.0\"},{\"revision\":\"block-r1\",\"type\":\"kumwe.contract-manifest-six/text\",\"version\":\"1.0.0\"}],\"contractVersion\":\"0.1-draft\",\"description\":{\"defaultMessage\":\"A hero section followed by a caption paragraph.\",\"key\":\"kumwe.contract-manifest-six/hero-with-caption-help\"},\"id\":\"kumwe.contract-manifest-six/hero-with-caption\",\"kind\":\"pattern\",\"label\":{\"defaultMessage\":\"Hero with caption\",\"key\":\"kumwe.contract-manifest-six/hero-with-caption\"},\"owner\":{\"id\":\"kumwe.contract-manifest-six/patterns\",\"version\":\"1.2.0\"},\"revision\":\"pattern-r3\",\"roots\":[{\"authoring\":{\"mode\":\"structural\"},\"bindings\":{},\"id\":\"section-p\",\"properties\":{},\"slots\":{\"main\":[{\"authoring\":{\"mode\":\"designer\"},\"bindings\":{},\"id\":\"text-p\",\"properties\":{\"text\":\"Hero\"},\"slots\":{},\"type\":\"kumwe.contract-manifest-six/text\",\"version\":\"1.0.0\"}]},\"type\":\"kumwe.contract-manifest-six/section\",\"version\":\"1.0.0\"},{\"authoring\":{\"mode\":\"designer\"},\"bindings\":{},\"id\":\"text-q\",\"properties\":{\"text\":\"Caption\"},\"slots\":{},\"type\":\"kumwe.contract-manifest-six/text\",\"version\":\"1.0.0\"}],\"version\":\"1.2.0\"}"
+                },
+                {
+                    "kind": "field-adapter",
+                    "canonical": "{\"contractVersion\":\"0.1-draft\",\"control\":\"kumwe.contract-manifest-six/money\",\"fieldKinds\":[\"kumwe.contract-manifest-six/money\",\"kumwe.contract-manifest-six/decimal\"],\"id\":\"kumwe.contract-manifest-six/money-control\",\"kind\":\"field-adapter\",\"label\":{\"defaultMessage\":\"Money control\",\"key\":\"kumwe.contract-manifest-six/money-control\"},\"optionSchema\":{\"additionalProperties\":false,\"properties\":{\"currencyDisplay\":{\"enum\":[\"code\",\"symbol\"],\"type\":\"string\"}},\"type\":\"object\"},\"owner\":{\"id\":\"kumwe.contract-manifest-six/catalog\",\"version\":\"1.0.0\"},\"requiredCapability\":\"kumwe.contract-manifest-six/field-controls\",\"version\":\"1.0.0\"}"
+                },
+                {
+                    "kind": "inspector",
+                    "canonical": "{\"blockTypes\":[\"kumwe.contract-manifest-six/price\"],\"contractVersion\":\"0.1-draft\",\"id\":\"kumwe.contract-manifest-six/price-inspector\",\"kind\":\"inspector\",\"label\":{\"defaultMessage\":\"Price inspector\",\"key\":\"kumwe.contract-manifest-six/price-inspector\"},\"owner\":{\"id\":\"kumwe.contract-manifest-six/catalog\",\"version\":\"1.0.0\"},\"placement\":\"augment\",\"requiredCapability\":\"kumwe.contract-manifest-six/custom-inspectors\",\"version\":\"1.0.0\"}"
+                },
+                {
+                    "kind": "design-vocabulary",
+                    "canonical": "{\"contractVersion\":\"0.1-draft\",\"designControls\":[{\"choices\":[{\"id\":\"compact\",\"label\":{\"defaultMessage\":\"Compact\",\"key\":\"kumwe.contract-manifest-six/card-density-compact\"}},{\"id\":\"comfortable\",\"label\":{\"defaultMessage\":\"Comfortable\",\"key\":\"kumwe.contract-manifest-six/card-density-comfortable\"}}],\"id\":\"card-density\",\"kind\":\"enum\",\"label\":{\"defaultMessage\":\"Card density\",\"key\":\"kumwe.contract-manifest-six/card-density\"}},{\"choices\":[{\"id\":\"full\",\"label\":{\"defaultMessage\":\"Full\",\"key\":\"kumwe.contract-manifest-six/card-width-full\"}},{\"id\":\"half\",\"label\":{\"defaultMessage\":\"Half\",\"key\":\"kumwe.contract-manifest-six/card-width-half\"}},{\"id\":\"quarter\",\"label\":{\"defaultMessage\":\"Quarter\",\"key\":\"kumwe.contract-manifest-six/card-width-quarter\"}}],\"id\":\"card-width\",\"kind\":\"size-role\",\"label\":{\"defaultMessage\":\"Card width\",\"key\":\"kumwe.contract-manifest-six/card-width\"}}],\"id\":\"kumwe.contract-manifest-six/product-vocabulary\",\"kind\":\"design-vocabulary\",\"label\":{\"defaultMessage\":\"Product design vocabulary\",\"key\":\"kumwe.contract-manifest-six/product-vocabulary\"},\"owner\":{\"id\":\"kumwe.contract-manifest-six/catalog\",\"version\":\"1.0.0\"},\"recipes\":[{\"blockType\":\"kumwe.contract-manifest-six/price\",\"designValues\":{\"card-density\":\"compact\",\"card-width\":\"quarter\"},\"id\":\"price-compact\",\"label\":{\"defaultMessage\":\"Compact price\",\"key\":\"kumwe.contract-manifest-six/price-compact\"}}],\"version\":\"1.0.0\"}"
+                },
+                {
+                    "kind": "migration",
+                    "canonical": "{\"artifactKinds\":[\"blueprint\",\"entry\"],\"contractVersion\":\"0.1-draft\",\"description\":{\"defaultMessage\":\"Rewrites plain price properties into the typed money value shape.\",\"key\":\"kumwe.contract-manifest-six/price-to-money-description\"},\"id\":\"kumwe.contract-manifest-six/price-to-money\",\"kind\":\"migration\",\"label\":{\"defaultMessage\":\"Price becomes typed money\",\"key\":\"kumwe.contract-manifest-six/price-to-money\"},\"lossClassification\":\"lossless\",\"owner\":{\"id\":\"kumwe.contract-manifest-six/catalog\",\"version\":\"1.1.0\"},\"sourceVersions\":\">=1.0.0 <1.1.0\",\"targetVersion\":\"1.1.0\",\"version\":\"1.1.0\"}"
+                }
+            ],
+            "host_bindings": [
+                {
+                    "kind": "block-definition",
+                    "id": "kumwe.contract-manifest-six/grid",
+                    "renderer": "kumwe.contract-manifest-six.renderer.grid"
+                },
+                {
+                    "kind": "inspector",
+                    "id": "kumwe.contract-manifest-six/price-inspector",
+                    "capability": "kumwe.contract-manifest-six.compose"
+                }
+            ]
+        }
+    }
+}

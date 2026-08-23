@@ -17,7 +17,7 @@
     "algorithm": "ed25519",
     "seed_stem": "kumwe-extension-contract-freeze",
     "seed_derivation": "sha256(seed_stem, raw)",
-    "note": "A fixture key, deliberately derived from a written stem rather than generated, so the compatibility packages can be rebuilt and re-signed by anyone and no key material of any kind — not even the public half — is committed as a literal. It proves the signing and trust path, not provenance: the package digest is signed with `PackageSigner`, the sidecar is a `SignatureDocument`, and admission runs through `PackageTrustPolicy` over `SodiumEd25519Verifier` — the same three the platform uses for a real release key. A release key proves provenance and lives outside the repository."
+    "note": "A fixture key, deliberately derived from a written stem rather than generated, so the compatibility packages can be rebuilt and re-signed by anyone and no key material of any kind \u2014 not even the public half \u2014 is committed as a literal. It proves the signing and trust path, not provenance: the package digest is signed with `PackageSigner`, the sidecar is a `SignatureDocument`, and admission runs through `PackageTrustPolicy` over `SodiumEd25519Verifier` \u2014 the same three the platform uses for a real release key. A release key proves provenance and lives outside the repository."
   },
   "contribution_surfaces": [
     "capabilities",
@@ -53,7 +53,8 @@
     "composition.field_controls",
     "composition.inspectors",
     "composition.design_vocabularies",
-    "composition.migrations"
+    "composition.migrations",
+    "composition.documents"
   ],
   "host_services": {
     "note": "The complete set of host services an extension may resolve from the container it is handed. The composition root allowlists these and nothing else, so a package that resolves anything absent from this list fails closed at runtime. Their identifiers are frozen; the method surface behind each is classified public but is not byte-pinned at this generation.",
@@ -161,7 +162,7 @@
       "schema": 2,
       "spi": 1,
       "status": "frozen",
-      "promise": "Everything schema 1 promises, plus typed contributions through contribution SPI 1: capabilities, resource policies and the administrator shell — workspaces, navigation, routes and views. The manifest becomes closed to unknown keys at every level whose key set is known, so a misspelled field fails the install instead of being silently ignored, and `permissions` must match the contributed capability identifiers exactly, order included. A schema-2 provider must implement the contribution contract, and the registrar holds it to what the manifest declared: it may register nothing it did not declare and omit nothing it did.",
+      "promise": "Everything schema 1 promises, plus typed contributions through contribution SPI 1: capabilities, resource policies and the administrator shell \u2014 workspaces, navigation, routes and views. The manifest becomes closed to unknown keys at every level whose key set is known, so a misspelled field fails the install instead of being silently ignored, and `permissions` must match the contributed capability identifiers exactly, order included. A schema-2 provider must implement the contribution contract, and the registrar holds it to what the manifest declared: it may register nothing it did not declare and omit nothing it did.",
       "manifest_keys": [
         {
           "key": "schema",
@@ -383,7 +384,7 @@
       "schema": 4,
       "spi": 2,
       "status": "frozen",
-      "promise": "Everything schema 3 promises, on contribution SPI 2 rather than SPI 1, plus the three top-level keys SPI 2 opened: `integration`, `interface` and `content`. Durable integration is the substance of the generation — versioned event contracts, synchronous domain listeners, queue-backed consumers, jobs, queues, schedules, rebuildable projections, reports, outbound webhook adapters, money rate providers and unit converters — while `content` declares multilingual translation groups and `interface` binds every graphical route the package mounts to a declared semantic surface. SPI 2 is fail-closed about that binding: a schema-4 package that mounts a graphical GET route without declaring its surface is refused.",
+      "promise": "Everything schema 3 promises, on contribution SPI 2 rather than SPI 1, plus the three top-level keys SPI 2 opened: `integration`, `interface` and `content`. Durable integration is the substance of the generation \u2014 versioned event contracts, synchronous domain listeners, queue-backed consumers, jobs, queues, schedules, rebuildable projections, reports, outbound webhook adapters, money rate providers and unit converters \u2014 while `content` declares multilingual translation groups and `interface` binds every graphical route the package mounts to a declared semantic surface. SPI 2 is fail-closed about that binding: a schema-4 package that mounts a graphical GET route without declaring its surface is refused.",
       "manifest_keys": [
         {
           "key": "schema",
@@ -518,7 +519,7 @@
       "schema": 5,
       "spi": 3,
       "status": "frozen",
-      "promise": "Everything schema 4 promises, on contribution SPI 3 rather than SPI 2, plus the `composition` top-level key SPI 3 opened. Composition is the substance of the generation — blocks with bounded property schemas, slots and renderer bindings, patterns, field controls, inspectors, design vocabularies including size roles, and composition migrations — declared, validated at admission and at install against the published composition schema profile, and inert until the Gate B surface consumes them. A schema-5 package built the day after this freeze installs unchanged when that surface ships.",
+      "promise": "Everything schema 4 promises, on contribution SPI 3 rather than SPI 2, plus the `composition` top-level key SPI 3 opened. Composition is the substance of the generation \u2014 blocks with bounded property schemas, slots and renderer bindings, patterns, field controls, inspectors, design vocabularies including size roles, and composition migrations \u2014 declared, validated at admission and at install against the published composition schema profile, and inert until the Gate B surface consumes them. A schema-5 package built the day after this freeze installs unchanged when that surface ships.",
       "manifest_keys": [
         {
           "key": "schema",
@@ -651,6 +652,137 @@
         }
       },
       "surface_digest": "9052331b45f1f8cc9b76bcb0489bed2c190141e2cca12ddd6e01d7abb14971f1"
+    },
+    {
+      "id": "manifest-6",
+      "schema": 6,
+      "spi": 4,
+      "status": "frozen",
+      "promise": "Everything schema 4 promises, on contribution SPI 4, carrying canonical Studio contribution documents instead of the App paraphrases schema 5 froze (decision D16, kumwe/app#104). Each contribution is the exact canonical JSON bytes of one published Studio document \u2014 block-definition with its complete Draft 2020-12 propertySchema, pattern, field-adapter, inspector, design-vocabulary or migration \u2014 validated at admission and at install against the pinned @kumwe/studio-protocol release and, for a block\u2019s propertySchema, against the complete studio.profile/schema-property grammar. Renderer bindings, authority and host references live in the separate bounded host_bindings section, never inside the portable document. Manifest 6 accepts only SPI 4, earlier manifests refuse SPI 4, and schema 5 stays frozen on SPI 3 byte for byte beside it.",
+      "manifest_keys": [
+        {
+          "key": "schema",
+          "status": "interpreted"
+        },
+        {
+          "key": "name",
+          "status": "interpreted"
+        },
+        {
+          "key": "type",
+          "status": "interpreted"
+        },
+        {
+          "key": "version",
+          "status": "interpreted"
+        },
+        {
+          "key": "provider",
+          "status": "interpreted"
+        },
+        {
+          "key": "autoload",
+          "status": "interpreted"
+        },
+        {
+          "key": "requires",
+          "status": "interpreted"
+        },
+        {
+          "key": "dependencies",
+          "status": "interpreted"
+        },
+        {
+          "key": "migrations",
+          "status": "interpreted"
+        },
+        {
+          "key": "assets",
+          "status": "interpreted"
+        },
+        {
+          "key": "permissions",
+          "status": "interpreted"
+        },
+        {
+          "key": "contributions",
+          "status": "interpreted"
+        },
+        {
+          "key": "template",
+          "status": "interpreted"
+        },
+        {
+          "key": "events",
+          "status": "advisory"
+        },
+        {
+          "key": "routes",
+          "status": "advisory"
+        },
+        {
+          "key": "configuration",
+          "status": "accepted_uninterpreted"
+        }
+      ],
+      "contribution_keys": [
+        "version",
+        "capabilities",
+        "resource_policies",
+        "administrator",
+        "portal",
+        "business",
+        "integration",
+        "interface",
+        "content",
+        "composition"
+      ],
+      "business_keys": [
+        "field_types",
+        "definitions",
+        "field_presentations",
+        "view_handlers",
+        "action_handlers"
+      ],
+      "integration_keys": [
+        "event_schemas",
+        "domain_listeners",
+        "consumers",
+        "jobs",
+        "queues",
+        "schedules",
+        "projections",
+        "reports",
+        "webhooks",
+        "rate_providers",
+        "unit_converters"
+      ],
+      "content_keys": [
+        "translation_groups"
+      ],
+      "composition_keys": [
+        "documents",
+        "host_bindings"
+      ],
+      "closed_to_unknown_keys": true,
+      "fixture": {
+        "package": "tests/Fixtures/ExtensionApi/generations/manifest-6",
+        "identifier": "kumwe/contract-manifest-six",
+        "manifest_sha256": "21127dfa1ab305d25d29e575d47728ec6de059a7a775a403e0437b36e3a144da",
+        "lifecycle": [
+          "install",
+          "activate",
+          "upgrade",
+          "disable",
+          "reactivate",
+          "uninstall"
+        ],
+        "contributions": {
+          "capabilities": 1,
+          "composition.documents": 6
+        }
+      },
+      "surface_digest": "2f5d236f0317e708ed519f59a3624bdf0f6b4c4539b3390c60ef653e02261808"
     }
   ],
   "spi_generations": [
@@ -751,7 +883,7 @@
       "manifest_schemas": [
         5
       ],
-      "promise": "Everything SPI 2 carries, plus every additive registrar published since it froze — content translation groups and unit conversion providers — and the composition contribution surfaces this generation exists for: blocks, patterns, field controls, inspectors, design vocabularies and composition migrations. A schema-5 manifest must declare `contributions.version` as 3. Every additive registrar is feature-detected rather than assumed, so a provider written against the base registrar keeps working unchanged, and every composition declaration is data: nothing renders, stores or executes until the Gate B surface consumes the declarations exactly as admitted.",
+      "promise": "Everything SPI 2 carries, plus every additive registrar published since it froze \u2014 content translation groups and unit conversion providers \u2014 and the composition contribution surfaces this generation exists for: blocks, patterns, field controls, inspectors, design vocabularies and composition migrations. A schema-5 manifest must declare `contributions.version` as 3. Every additive registrar is feature-detected rather than assumed, so a provider written against the base registrar keeps working unchanged, and every composition declaration is data: nothing renders, stores or executes until the Gate B surface consumes the declarations exactly as admitted.",
       "registrar": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrar",
       "additive_registrars": [
         "Kumwe\\App\\Extension\\Contribution\\InterfaceSurfaceRegistrar",
@@ -808,6 +940,69 @@
         "tests/Fixtures/ExtensionApi/generations/manifest-5"
       ],
       "surface_digest": "e7e7479d3a3b50c9b4557a07365ae0b3cb85c782656bdf4cac20adc2f49b1abe"
+    },
+    {
+      "id": "spi-4",
+      "version": 4,
+      "status": "frozen",
+      "constant": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION",
+      "manifest_schemas": [
+        6
+      ],
+      "promise": "Everything SPI 3 carries for the non-composition surfaces, with the composition surface replaced by canonical Studio documents: one additive CanonicalCompositionRegistrar beside the frozen SPI 3 registrar, so no method is added to a pinned interface and every existing provider stays source compatible. A schema-6 manifest must declare contributions.version as 4. Provider registration is reconciled against the signed manifest by literal byte equivalence of each document\u2019s canonical JSON, and host bindings are declaration-only host metadata the provider never registers. Every declaration is data: nothing renders, stores or executes until the Gate B surface consumes the documents exactly as admitted.",
+      "registrar": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrar",
+      "additive_registrars": [
+        "Kumwe\\App\\Extension\\Contribution\\InterfaceSurfaceRegistrar",
+        "Kumwe\\App\\Extension\\Contribution\\MoneyRateProviderRegistrar",
+        "Kumwe\\App\\Extension\\Contribution\\ContentTranslationRegistrar",
+        "Kumwe\\App\\Extension\\Contribution\\UnitConversionProviderRegistrar",
+        "Kumwe\\App\\Extension\\Contribution\\CompositionContributionRegistrar",
+        "Kumwe\\App\\Extension\\Contribution\\CanonicalCompositionRegistrar"
+      ],
+      "surfaces": [
+        "capabilities",
+        "resource_policies",
+        "administrator.workspaces",
+        "administrator.navigation",
+        "administrator.routes",
+        "administrator.views",
+        "portal.workspaces",
+        "portal.navigation",
+        "portal.templates",
+        "portal.routes",
+        "interface.surfaces",
+        "business.field_types",
+        "business.field_presentations",
+        "business.definitions",
+        "business.view_handlers",
+        "business.action_handlers",
+        "integration.event_schemas",
+        "integration.domain_listeners",
+        "integration.consumers",
+        "integration.jobs",
+        "integration.queues",
+        "integration.schedules",
+        "integration.projections",
+        "integration.reports",
+        "integration.webhooks",
+        "integration.money_rate_providers",
+        "integration.unit_conversion_providers",
+        "content.translation_groups",
+        "composition.documents"
+      ],
+      "pinned_by": [
+        "tests/Fixtures/ExtensionApi/public-interfaces-v2.json",
+        "tests/Fixtures/ExtensionApi/interface-surface-registrar-v1.json",
+        "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json",
+        "tests/Fixtures/ExtensionApi/content-translation-registrar-v1.json",
+        "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json",
+        "tests/Fixtures/ExtensionApi/composition-contribution-registrar-v1.json",
+        "tests/Fixtures/ExtensionApi/canonical-composition-registrar-v1.json"
+      ],
+      "fixtures": [
+        "tests/Fixtures/ExtensionApi/generations/manifest-6"
+      ],
+      "surface_digest": "ffde0bad7b059ca08c646a505c0dd831af2b7b85a23733675ab72a528a6a47f1"
     }
   ],
   "withdrawn": [

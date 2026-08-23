@@ -26,7 +26,7 @@ final class ExtensionManifestGrammar
      *
      * @param   int  $schema  Manifest schema generation.
      *
-     * @return  list<string>  Closed root key set for schemas 2 through 5; empty for schema 1.
+     * @return  list<string>  Closed root key set for schemas 2 through 6; empty for schema 1.
      *
      * @since   2.0.0
      */
@@ -160,7 +160,8 @@ final class ExtensionManifestGrammar
      *
      * @param   int  $schema  Manifest schema generation.
      *
-     * @return  list<string>  Closed composition key set, empty before schema 5.
+     * @return  list<string>  Closed composition key set: empty before schema 5, the frozen
+     *          paraphrase vocabulary at 5, canonical documents and host bindings from 6.
      *
      * @since   2.0.0
      */
@@ -168,9 +169,14 @@ final class ExtensionManifestGrammar
     {
         self::assertStrictSchema($schema);
 
-        return $schema >= 5
-            ? ['blocks', 'patterns', 'field_controls', 'inspectors', 'design_vocabularies', 'migrations']
-            : [];
+        // Schema 5's paraphrase vocabulary is frozen; schema 6 replaces it with canonical Studio
+        // documents plus their separate bounded host bindings, never mixing the two grammars.
+        return match (true) {
+            $schema >= 6 => ['documents', 'host_bindings'],
+            $schema === 5
+                => ['blocks', 'patterns', 'field_controls', 'inspectors', 'design_vocabularies', 'migrations'],
+            default => [],
+        };
     }
 
     /**
@@ -184,7 +190,7 @@ final class ExtensionManifestGrammar
      */
     private static function assertSchema(int $schema): void
     {
-        if (!in_array($schema, [1, 2, 3, 4, 5], true)) {
+        if (!in_array($schema, [1, 2, 3, 4, 5, 6], true)) {
             throw new InvalidArgumentException('The extension manifest schema is unsupported.');
         }
     }

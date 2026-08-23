@@ -94,8 +94,14 @@ Declare the schema you want, and the SPI it binds to:
 ```
 
 Declaring the wrong SPI for the schema is refused rather than corrected: schema 2 and 3 require
-`contributions.version` 1, schema 4 requires 2, schema 5 requires 3. That is the point of the pairing —
-a package built against a later runtime cannot install itself into an older one by accident.
+`contributions.version` 1, schema 4 requires 2, schema 5 requires 3, and schema 6 requires 4. That is
+the point of the pairing — a package built against a later runtime cannot install itself into an older
+one by accident. Schema 6 replaces the frozen schema-5 composition paraphrases with canonical Studio
+documents: each entry in `contributions.composition.documents` is the exact canonical JSON string of
+one published `@kumwe/studio-protocol` document, validated at admission and at install against the
+pinned release (and, for a block definition's `propertySchema`, against the complete
+`studio.profile/schema-property` grammar), while renderer bindings, authority and host references
+live in the separate bounded `host_bindings` section — never inside the portable document.
 
 Pick the **lowest** generation that carries what you need. Nothing is gained by moving to schema 4 for a
 package that only contributes an administrator workspace, and staying low keeps your package installable

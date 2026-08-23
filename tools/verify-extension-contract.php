@@ -423,7 +423,7 @@ function assertFrozenDigest(string $id, array $entry, array &$errors): void
 function assertManifestGrammarParity(string $id, array $entry, array &$errors): void
 {
     $schema = $entry['schema'] ?? null;
-    if (!is_int($schema) || $schema < 2 || $schema > 5) {
+    if (!is_int($schema) || $schema < 2 || $schema > 6) {
         return;
     }
 

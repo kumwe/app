@@ -342,6 +342,14 @@ final readonly class ExtensionContributionRegistrySet
     private OwnedRuntimeContributionRegistry $compositionMigrations;
 
     /**
+     * Canonical Studio composition documents contributed by schema-6 packages.
+     *
+     * @var    OwnedRuntimeContributionRegistry
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $canonicalCompositionDocuments;
+
+    /**
      * Every contribution kind, keyed by its dotted inventory path.
      *
      * Inventory and lifecycle removal both derive from this map, so a new kind becomes
@@ -442,6 +450,9 @@ final readonly class ExtensionContributionRegistrySet
             'composition design vocabulary',
         );
         $this->compositionMigrations = new OwnedRuntimeContributionRegistry('composition migration');
+        $this->canonicalCompositionDocuments = new OwnedRuntimeContributionRegistry(
+            'canonical composition document',
+        );
         $this->surfaces = [
             'capabilities' => $this->capabilities,
             'resource_policies' => $this->resourcePolicies,
@@ -483,6 +494,7 @@ final readonly class ExtensionContributionRegistrySet
             'composition.inspectors' => $this->compositionInspectors,
             'composition.design_vocabularies' => $this->compositionDesignVocabularies,
             'composition.migrations' => $this->compositionMigrations,
+            'composition.documents' => $this->canonicalCompositionDocuments,
         ];
         if ($withCore) {
             $registrar = $this->registrar(
@@ -1001,6 +1013,18 @@ final readonly class ExtensionContributionRegistrySet
     public function compositionMigrations(): OwnedRuntimeContributionRegistry
     {
         return $this->compositionMigrations;
+    }
+
+    /**
+     * Registry of the canonical Studio composition documents contributed by schema-6 packages.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Declared canonical documents.
+     *
+     * @since   2.0.0
+     */
+    public function canonicalCompositionDocuments(): OwnedRuntimeContributionRegistry
+    {
+        return $this->canonicalCompositionDocuments;
     }
 
     /**

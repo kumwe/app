@@ -165,6 +165,7 @@ final class ExtensionContractFreezeTest extends TestCase
                 ManifestContributionSet::SPI_VERSION,
                 ManifestContributionSet::CURRENT_SPI_VERSION,
                 ManifestContributionSet::COMPOSITION_SPI_VERSION,
+                ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION,
             ],
             $versions,
         );
