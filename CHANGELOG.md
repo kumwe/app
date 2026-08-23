@@ -1265,6 +1265,16 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **The operator checklist maps the gates only CI can measure.** The first tiered run of the new
+  pull-request lane surfaced three traps no document named: the coverage ratchet's changed-line and
+  changed-refusal floors credit only tests that name the executed class in `#[CoversClass]` and are
+  measurable only on the canonical CI leg; persistence SQL validated on one engine can still be
+  refused by another (PostgreSQL types a `CASE` by its THEN operands where MariaDB coerces); and a
+  PHP 8.4 sandbox cannot see 8.5-only deprecations that fail both PHPStan and the suite in CI. The
+  "Add a PHP class" recipe and the watcher table now carry all three, plus the browser-baseline
+  refresh rule for visible UI changes, so the flow of what must line up is written where every
+  change starts instead of being discovered forty minutes into a red build.
+
 - **The contributor documentation no longer contradicts the gates it describes.** `README.md`'s
   testing section carried a drifted ten-item copy of the `composer qa` member set that omitted the
   gates that most often fail pushes (the baseline, documentation, contract and roadmap checks); it

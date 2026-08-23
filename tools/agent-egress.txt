@@ -22,9 +22,11 @@ registry.npmjs.org
 archive.ubuntu.com
 security.ubuntu.com
 
-# --- PHP 8.5 packages for Ubuntu (optional; exact platform parity) ---
+# --- PHP 8.5 and pcov packages for Ubuntu (optional; exact platform parity,
+# --- including the coverage ratchet locally) ---
 packages.sury.org
 deb.sury.org
+ppa.launchpadcontent.net
 
 # --- Docker Hub (only for the artifact/deployment lanes and gitleaks) ---
 registry-1.docker.io
