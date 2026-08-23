@@ -1,0 +1,13 @@
+{
+    "name": "Kumwe App",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+    "postCreateCommand": "bash tools/agent-setup.sh",
+    "forwardPorts": [8080, 3306, 6379],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "files.eol": "\n"
+            }
+        }
+    }
+}

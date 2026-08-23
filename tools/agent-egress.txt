@@ -1,0 +1,32 @@
+# Canonical outbound-network allowlist for Kumwe agent sandboxes.
+#
+# This file is the single source of truth for every agent platform's network
+# policy. When configuring a sandboxed environment (Claude Code cloud, OpenAI
+# Codex, or any other harness), paste the domains below into its allowlist —
+# most platforms also ship a default package-manager list that already covers
+# part of this. tools/agent-setup.sh names the group to enable whenever a
+# blocked domain makes it skip a step. Domains only; one per line; comments
+# start with '#'.
+
+# --- Composer (PHP dependencies; dist zips come from GitHub's API) ---
+repo.packagist.org
+packagist.org
+api.github.com
+codeload.github.com
+objects.githubusercontent.com
+
+# --- npm (frontend dependencies) ---
+registry.npmjs.org
+
+# --- Ubuntu mirrors (MariaDB/Redis for the database-backed test lane) ---
+archive.ubuntu.com
+security.ubuntu.com
+
+# --- PHP 8.5 packages for Ubuntu (optional; exact platform parity) ---
+packages.sury.org
+deb.sury.org
+
+# --- Docker Hub (only for the artifact/deployment lanes and gitleaks) ---
+registry-1.docker.io
+auth.docker.io
+production.cloudfront.docker.com

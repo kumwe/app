@@ -1,5 +1,6 @@
 /.env
 /.env.local
+/.agent-env
 /.admin-password
 /.phpunit.cache/
 /.phpunit.result.cache
