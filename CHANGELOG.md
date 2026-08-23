@@ -24,6 +24,23 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **The Studio schema-property profile has its independent PHP implementation.** Under
+  `src/Extension/Domain/Internal/StudioProfile/`, `CanonicalJson` produces the portability
+  contract's canonical UTF-8 form — code-unit member ordering, minimal ECMA-404 escaping, the
+  deterministic ECMAScript number grammar, refusal of over-deep nesting and forbidden member
+  names — and `SchemaPropertyProfile` admits contributed block property schemas under the complete
+  `studio.profile/schema-property` grammar: the closed keyword set, every published complexity
+  ceiling measured on canonical bytes before untrusted maps are sorted, the portable local-reference
+  grammar with position-typed resolution, strongly-connected-component recursion refusal, the closed
+  object root, and first-diagnostic precedence in the published path order. The admitted schema is
+  interpreted by `SchemaPropertyValidator` — eval-free, memoized per instance location, with sorted
+  name-array checks and exact base-10 `multipleOf` comparison using string arithmetic rather than
+  binary division. Conformance is proven the way issue kumwe/app#104 demands: the committed test
+  replays all 12 canonical vectors byte-for-byte and all 62 schema-profile vectors of the pinned
+  corpus — rejection codes, schema pointers, instance verdicts and first diagnostics — and pins the
+  implementation's limits to `$defs/limits` in the vendored meta-schema (`V2-STU-008` progress
+  toward the manifest 6 / SPI 4 generation).
+
 - **The capacity contract has its first measuring instrument.** `tools/perf-harness.php` is the
   `P2-I` seed: a deterministic plan generator (one seed always derives one plan, held to that by a
   unit test) and a workload driver that boots the same kernel the integration suite uses and
