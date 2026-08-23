@@ -1,0 +1,90 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/depth-limit-boundary",
+  "description": "A schema at exactly the published depth limit remains admissible.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "additionalProperties": false,
+    "properties": {
+      "value": {
+        "not": {
+          "not": {
+            "not": {
+              "not": {
+                "not": {
+                  "not": {
+                    "not": {
+                      "not": {
+                        "not": {
+                          "not": {
+                            "not": {
+                              "not": {
+                                "not": {
+                                  "not": {
+                                    "not": {
+                                      "not": {
+                                        "not": {
+                                          "not": {
+                                            "not": {
+                                              "not": {
+                                                "not": {
+                                                  "not": {
+                                                    "not": {
+                                                      "not": {
+                                                        "not": {
+                                                          "not": {
+                                                            "not": {
+                                                              "not": {
+                                                                "not": {
+                                                                  "not": {
+                                                                    "type": "string"
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "type": "object"
+  },
+  "expect": {
+    "outcome": "accepted",
+    "instances": [
+      {
+        "value": {},
+        "valid": true
+      }
+    ]
+  },
+  "boundary": {
+    "limit": "maxSchemaDepth",
+    "position": "at-limit",
+    "value": 32
+  }
+}

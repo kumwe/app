@@ -1,0 +1,14 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "canonical-vector",
+  "id": "vector.canonical-vector.forbidden-member",
+  "description": "A forbidden member name is refused rather than silently dropped.",
+  "value": {
+    "__proto__": {
+      "polluted": true
+    }
+  },
+  "expect": {
+    "rejected": "forbidden-member"
+  }
+}

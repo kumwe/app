@@ -1,0 +1,196 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "command-vector",
+  "id": "vector.command-vector.move-node.reparent",
+  "description": "Moving a root node into a slot reparents it; the inverse move returns it to its original root position.",
+  "initial": {
+    "contractVersion": "0.1-draft",
+    "dependencyLock": {
+      "blocks": [
+        {
+          "revision": "block-r1",
+          "type": "studio.vector/section",
+          "version": "1.0.0"
+        },
+        {
+          "revision": "block-r1",
+          "type": "studio.vector/text",
+          "version": "1.0.0"
+        }
+      ],
+      "theme": {
+        "id": "studio.vector/theme",
+        "revision": "theme-r1",
+        "version": "1.0.0"
+      }
+    },
+    "id": "vector.blueprint",
+    "kind": "blueprint",
+    "label": {
+      "defaultMessage": "Vector Blueprint",
+      "key": "studio.vector/blueprint"
+    },
+    "model": {
+      "id": "studio.vector/model",
+      "revision": "model-r1",
+      "version": "1.0.0"
+    },
+    "owner": {
+      "id": "studio.vector/suite",
+      "version": "0.1.0-alpha.0"
+    },
+    "revision": "blueprint-r1",
+    "roots": [
+      {
+        "authoring": {
+          "mode": "structural"
+        },
+        "bindings": {},
+        "id": "section-a",
+        "properties": {},
+        "slots": {
+          "main": [
+            {
+              "authoring": {
+                "mode": "designer"
+              },
+              "bindings": {},
+              "id": "text-a",
+              "properties": {},
+              "slots": {},
+              "type": "studio.vector/text",
+              "version": "1.0.0"
+            }
+          ]
+        },
+        "type": "studio.vector/section",
+        "version": "1.0.0"
+      },
+      {
+        "authoring": {
+          "mode": "designer"
+        },
+        "bindings": {},
+        "id": "text-b",
+        "properties": {},
+        "slots": {},
+        "type": "studio.vector/text",
+        "version": "1.0.0"
+      }
+    ],
+    "status": "draft",
+    "version": "1.0.0"
+  },
+  "command": {
+    "artifactId": "vector.blueprint",
+    "baseStateVersion": 0,
+    "contractVersion": "0.1-draft",
+    "id": "vector.command.move-node.reparent",
+    "kind": "command",
+    "payload": {
+      "destination": {
+        "parentNodeId": "section-a",
+        "position": 1,
+        "slot": "main"
+      },
+      "nodeId": "text-b"
+    },
+    "sessionGeneration": "session-r1",
+    "type": "studio.command/move-node"
+  },
+  "expect": {
+    "document": {
+      "contractVersion": "0.1-draft",
+      "dependencyLock": {
+        "blocks": [
+          {
+            "revision": "block-r1",
+            "type": "studio.vector/section",
+            "version": "1.0.0"
+          },
+          {
+            "revision": "block-r1",
+            "type": "studio.vector/text",
+            "version": "1.0.0"
+          }
+        ],
+        "theme": {
+          "id": "studio.vector/theme",
+          "revision": "theme-r1",
+          "version": "1.0.0"
+        }
+      },
+      "id": "vector.blueprint",
+      "kind": "blueprint",
+      "label": {
+        "defaultMessage": "Vector Blueprint",
+        "key": "studio.vector/blueprint"
+      },
+      "model": {
+        "id": "studio.vector/model",
+        "revision": "model-r1",
+        "version": "1.0.0"
+      },
+      "owner": {
+        "id": "studio.vector/suite",
+        "version": "0.1.0-alpha.0"
+      },
+      "revision": "blueprint-r1",
+      "roots": [
+        {
+          "authoring": {
+            "mode": "structural"
+          },
+          "bindings": {},
+          "id": "section-a",
+          "properties": {},
+          "slots": {
+            "main": [
+              {
+                "authoring": {
+                  "mode": "designer"
+                },
+                "bindings": {},
+                "id": "text-a",
+                "properties": {},
+                "slots": {},
+                "type": "studio.vector/text",
+                "version": "1.0.0"
+              },
+              {
+                "authoring": {
+                  "mode": "designer"
+                },
+                "bindings": {},
+                "id": "text-b",
+                "properties": {},
+                "slots": {},
+                "type": "studio.vector/text",
+                "version": "1.0.0"
+              }
+            ]
+          },
+          "type": "studio.vector/section",
+          "version": "1.0.0"
+        }
+      ],
+      "status": "draft",
+      "version": "1.0.0"
+    }
+  },
+  "inverse": {
+    "artifactId": "vector.blueprint",
+    "baseStateVersion": 1,
+    "contractVersion": "0.1-draft",
+    "id": "vector.inverse.move-node.reparent",
+    "kind": "command",
+    "payload": {
+      "destination": {
+        "position": 1
+      },
+      "nodeId": "text-b"
+    },
+    "sessionGeneration": "session-r1",
+    "type": "studio.command/move-node"
+  }
+}

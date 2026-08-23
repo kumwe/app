@@ -1,0 +1,13 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/open-root",
+  "description": "A property object must fail closed instead of admitting undeclared members.",
+  "profile": "studio.profile/schema-property",
+  "schema": { "type": "object" },
+  "expect": {
+    "outcome": "rejected",
+    "code": "invalid-root",
+    "schemaPath": "/additionalProperties"
+  }
+}

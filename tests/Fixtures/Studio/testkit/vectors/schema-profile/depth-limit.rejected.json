@@ -1,0 +1,88 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/depth-limit",
+  "description": "A schema deeper than the published maximum is rejected at the first over-budget schema position.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "value": {
+        "not": {
+          "not": {
+            "not": {
+              "not": {
+                "not": {
+                  "not": {
+                    "not": {
+                      "not": {
+                        "not": {
+                          "not": {
+                            "not": {
+                              "not": {
+                                "not": {
+                                  "not": {
+                                    "not": {
+                                      "not": {
+                                        "not": {
+                                          "not": {
+                                            "not": {
+                                              "not": {
+                                                "not": {
+                                                  "not": {
+                                                    "not": {
+                                                      "not": {
+                                                        "not": {
+                                                          "not": {
+                                                            "not": {
+                                                              "not": {
+                                                                "not": {
+                                                                  "not": {
+                                                                    "not": {
+                                                                      "type": "string"
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "limit-exceeded",
+    "schemaPath": "/properties/value/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not/not"
+  },
+  "boundary": {
+    "limit": "maxSchemaDepth",
+    "position": "over-limit",
+    "value": 33
+  }
+}

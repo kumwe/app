@@ -1,0 +1,19 @@
+{
+  "schema": "rich-text.schema.json",
+  "description": "Rich text only carries the closed portable mark set; unknown marks such as scripts are rejected.",
+  "value": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "paragraph",
+        "content": [
+          {
+            "type": "text",
+            "text": "styled",
+            "marks": [{ "type": "script" }]
+          }
+        ]
+      }
+    ]
+  }
+}

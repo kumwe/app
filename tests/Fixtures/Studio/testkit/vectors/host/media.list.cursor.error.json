@@ -1,0 +1,36 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-vector",
+  "id": "vector.host-vector.media.list.cursor",
+  "description": "An opaque cursor the host did not mint is refused rather than treated as an offset.",
+  "profile": "studio.profile/host-baseline",
+  "port": "media",
+  "operation": "list",
+  "given": {
+    "artifacts": [
+      {
+        "id": "vector.blueprint",
+        "kind": "blueprint",
+        "revision": "vector.blueprint-r1"
+      }
+    ],
+    "permissions": ["studio.permission/publish", "studio.permission/save"],
+    "sessionGeneration": "session-r1"
+  },
+  "context": {
+    "operationId": "studio.operation/media.list",
+    "protocolVersion": "0.1.0-draft.2",
+    "requestId": "requests/vector-1",
+    "resourceContextKey": "contexts/vector",
+    "sessionGeneration": "session-r1"
+  },
+  "argument": {
+    "cursor": "not-a-cursor",
+    "limit": 10
+  },
+  "expect": {
+    "outcome": "error",
+    "category": "invalid-request",
+    "retryable": false
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/invalid-pointer",
+  "description": "A local reference rejects JSON Pointer escape sequences other than tilde-zero and tilde-one.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "$defs": { "value": { "type": "string" } },
+    "properties": { "value": { "$ref": "#/$defs/~2value" } }
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "invalid-reference",
+    "schemaPath": "/properties/value/$ref"
+  }
+}

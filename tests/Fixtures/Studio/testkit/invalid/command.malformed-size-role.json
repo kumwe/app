@@ -1,0 +1,18 @@
+{
+  "schema": "command.schema.json",
+  "description": "A size role must be a bounded lower-case identifier, never free text or CSS.",
+  "value": {
+    "artifactId": "vector.blueprint",
+    "baseStateVersion": 0,
+    "contractVersion": "0.1-draft",
+    "id": "vector.command.malformed-size-role",
+    "kind": "command",
+    "payload": {
+      "axis": "inline",
+      "nodeId": "text-a",
+      "role": "calc(50% - 1rem)"
+    },
+    "sessionGeneration": "session-r1",
+    "type": "studio.command/set-size-role"
+  }
+}

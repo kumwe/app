@@ -1,0 +1,20 @@
+{
+  "schema": "media-upload-session.schema.json",
+  "description": "A complete upload session must carry the accepted stable asset identity.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "media-upload-session",
+    "id": "uploads/2b6f0d31",
+    "request": {
+      "filename": "trail-backpack-side.jpg",
+      "mediaType": "image/jpeg",
+      "byteSize": 3145728,
+      "purpose": "org.example.catalog/product-gallery"
+    },
+    "state": "complete",
+    "progress": {
+      "transferredBytes": 3145728,
+      "totalBytes": 3145728
+    }
+  }
+}

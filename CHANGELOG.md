@@ -24,6 +24,20 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **The Studio contract corpus is vendored at an exact released pin and digest-verified on every
+  build.** `tests/Fixtures/Studio/` now carries the complete `@kumwe/studio-protocol@0.1.0-alpha.6`
+  schema set (37 schemas with their published digest manifest) and the complete
+  `@kumwe/studio-testkit@0.1.0-alpha.8` corpus (260 files in 10 groups: fixtures, command, media,
+  host, host-sequence, preview, schema-profile and canonical vectors, invalid fixtures and the
+  rich-text conformance set), with `PIN.json` recording the exact versions and npm tarball
+  checksums. The new `composer studio:corpus` gate — a member of `composer qa`, the quality
+  contract and the CI quality and preflight jobs — recomputes every SRI digest against the vendored
+  bytes and holds each corpus directory closed in both directions, so composition work builds
+  against frozen contract bytes instead of a moving draft (S-B progress toward `V2-STU-002`,
+  decision D16). Finding `V2-STU-008` records the manifest-6 / SPI-4 canonical-generation
+  requirement from kumwe/app#104, and the Studio integration input document now names `PIN.json`
+  as the version authority for the vendored packages.
+
 - **One vendor-neutral environment bootstrap provisions every agent sandbox.**
   `tools/agent-setup.sh` is the single setup entry point for any coding agent or human
   in any sandbox: it deepens a shallow clone, installs Composer and npm dependencies with

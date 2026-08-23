@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/corpus-manifest.schema.json",
+  "title": "Studio corpus integrity manifest",
+  "description": "The digest of every file in the published conformance corpus, grouped by the directory it ships in. A host that vendors the corpus verifies its copy against this manifest, so a stale or altered fixture is detected before it silently changes what a conformance claim means. The schema manifest covers the schemas; this covers everything replayed against them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "kind", "groups"],
+  "properties": {
+    "contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+    "kind": { "const": "corpus-manifest" },
+    "groups": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["files", "group", "path"],
+        "properties": {
+          "files": {
+            "type": "array",
+            "maxItems": 5000,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["digest", "file"],
+              "properties": {
+                "digest": { "$ref": "common.schema.json#/$defs/integrity" },
+                "file": { "type": "string", "minLength": 1, "maxLength": 200 }
+              }
+            }
+          },
+          "group": {
+            "description": "The stable name of the corpus group.",
+            "$ref": "common.schema.json#/$defs/localName"
+          },
+          "path": {
+            "description": "The package-relative directory the group ships in.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/command-vector.schema.json",
+  "title": "Studio canonical command vector",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "kind", "id", "description", "initial", "command", "expect"],
+  "properties": {
+    "contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+    "kind": { "const": "command-vector" },
+    "id": { "$ref": "common.schema.json#/$defs/stableId" },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "mode": {
+      "enum": ["blueprint", "content", "hybrid", "model", "read-only"]
+    },
+    "initial": { "$ref": "blueprint.schema.json" },
+    "command": { "$ref": "command.schema.json" },
+    "expect": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["document"],
+          "properties": {
+            "document": { "$ref": "blueprint.schema.json" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["errorCode"],
+          "properties": {
+            "errorCode": { "$ref": "#/$defs/commandErrorCode" }
+          }
+        }
+      ]
+    },
+    "inverse": { "$ref": "command.schema.json" }
+  },
+  "$defs": {
+    "commandErrorCode": {
+      "enum": [
+        "artifact-not-draft",
+        "binding-not-found",
+        "duplicate-field",
+        "duplicate-node",
+        "illegal-move",
+        "invalid-batch",
+        "invalid-id-map",
+        "invalid-index",
+        "invalid-order",
+        "locale-mismatch",
+        "mode-forbidden",
+        "node-not-found",
+        "parent-not-found",
+        "property-not-found",
+        "read-only-session",
+        "stale-generation",
+        "stale-state",
+        "unsupported-command"
+      ]
+    }
+  }
+}

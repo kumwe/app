@@ -1,0 +1,93 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-sequence-vector",
+  "id": "vector.host-sequence.recovery.store.rate-limited",
+  "description": "A refused recovery write has no side effect or accepted idempotency record; advancing the logical clock resets the fixed window and the exact failed intent can then succeed.",
+  "profile": "studio.profile/host-baseline-v2",
+  "assertions": ["fixed-window-rate-limit", "fixed-window-reset", "failed-attempt-retry"],
+  "idempotencyPolicy": {
+    "scopeFields": ["idempotencyKey", "operationId", "resourceContextKey", "sessionGeneration"],
+    "argumentCanonicalization": "canonical-json",
+    "intentContextFields": ["expectedRevision", "locale", "protocolVersion"],
+    "absentOptionalFields": "omit",
+    "numberNormalization": "canonical-json",
+    "excludedContextFields": ["requestId", "traceContext"]
+  },
+  "given": {
+    "artifacts": [],
+    "permissions": [],
+    "sessionGeneration": "session-r1",
+    "rateLimits": [
+      {
+        "operationId": "studio.operation/recovery.store",
+        "maximumRequests": 1,
+        "windowMilliseconds": 60000,
+        "retryAfterMilliseconds": 60000
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "invoke",
+      "id": "store-primer",
+      "port": "recovery",
+      "operation": "store",
+      "context": {
+        "operationId": "studio.operation/recovery.store",
+        "protocolVersion": "0.1.0-draft.2",
+        "requestId": "requests/recovery-primer",
+        "resourceContextKey": "contexts/vector",
+        "sessionGeneration": "session-r1",
+        "idempotencyKey": "idempotency/recovery-primer"
+      },
+      "argument": { "draft": "primer" },
+      "completion": "settled",
+      "expect": { "outcome": "result", "value": "null" }
+    },
+    {
+      "action": "invoke",
+      "id": "store-limited",
+      "port": "recovery",
+      "operation": "store",
+      "context": {
+        "operationId": "studio.operation/recovery.store",
+        "protocolVersion": "0.1.0-draft.2",
+        "requestId": "requests/recovery-limited",
+        "resourceContextKey": "contexts/vector",
+        "sessionGeneration": "session-r1",
+        "idempotencyKey": "idempotency/recovery-target"
+      },
+      "argument": { "draft": "target" },
+      "completion": "settled",
+      "expect": {
+        "outcome": "error",
+        "category": "rate-limited",
+        "retryable": true,
+        "retryAfterMilliseconds": 60000
+      }
+    },
+    { "action": "advance-clock", "id": "advance-rate-window", "milliseconds": 60000 },
+    {
+      "action": "invoke",
+      "id": "store-retried",
+      "port": "recovery",
+      "operation": "store",
+      "context": {
+        "operationId": "studio.operation/recovery.store",
+        "protocolVersion": "0.1.0-draft.2",
+        "requestId": "requests/recovery-retried",
+        "resourceContextKey": "contexts/vector",
+        "sessionGeneration": "session-r1",
+        "idempotencyKey": "idempotency/recovery-target"
+      },
+      "argument": { "draft": "target" },
+      "completion": "settled",
+      "expect": { "outcome": "result", "value": "null" }
+    }
+  ],
+  "expectFinal": {
+    "recovery": [{ "resourceContextKey": "contexts/vector", "value": { "draft": "target" } }],
+    "pendingPreviewRenders": 0,
+    "previewDeliveries": []
+  }
+}

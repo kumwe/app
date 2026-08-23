@@ -65,7 +65,7 @@ remains in README.
 | L | `PL-G` | `V2-LNG-010` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
-| S | `S-B` … `S-G` | `V2-STU-002` – `V2-STU-007` |
+| S | `S-B` … `S-G` | `V2-STU-002` – `V2-STU-008` |
 | 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `V2-QA-014`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
 | M | Lane M maintainability backlog | `V2-ARC-002`, `V2-QA-010` |
 | N | Lane N, no packages assigned yet | `V3-NC-001` – `V3-NC-004` |
@@ -98,11 +98,11 @@ Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full 
 
 ## Ledger snapshot
 
-**46 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**47 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 10 |
+| `accepted_for_implementation` | 11 |
 | `reproduced` | 7 |
 | `open` | 20 |
 | `conditional` | 6 |
@@ -123,7 +123,7 @@ Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full 
 | 5 | 7 |
 | 6 | 7 |
 | 7 | 12 |
-| S | 6 |
+| S | 7 |
 | M | 2 |
 | N | 4 |
 | evidence (`GM-AUD-02`, conditional residual) | 1 |
@@ -131,11 +131,11 @@ Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full 
 | Gate | Findings |
 |---|---|
 | A | 0 |
-| B | 23 |
+| B | 24 |
 | none | 23 |
 
-By severity: 0 critical, 19 high, 18 medium, 9 low.
-By origin: 12 from the independent review, 12 still-open entries from the executed gap matrix, 22 discovered
+By severity: 0 critical, 20 high, 18 medium, 9 low.
+By origin: 12 from the independent review, 12 still-open entries from the executed gap matrix, 23 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
 D16 through D18.
 
@@ -175,7 +175,7 @@ were added:
 | # | Criterion | Met | Findings |
 |---|---|---|---|
 | 11 | All nine languages ship and each is qualified in its own right | No | `V2-LNG-010` |
-| 12 | The visual composition integration ships and is qualified | No | `V2-STU-002` – `V2-STU-007` |
+| 12 | The visual composition integration ships and is qualified | No | `V2-STU-002` – `V2-STU-008` |
 
 ## Baseline health at `7a83c295`
 

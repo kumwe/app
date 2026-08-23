@@ -1,0 +1,74 @@
+{
+  "description": "A heading, a paragraph, and a bullet list flatten to leaf block projections in document order; list containers contribute no entries of their own.",
+  "document": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Care guide" }]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "Wash with " },
+          { "type": "text", "text": "cold water", "marks": [{ "type": "bold" }] },
+          { "type": "text", "text": " only." }
+        ]
+      },
+      {
+        "type": "bulletList",
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [{ "type": "text", "text": "Empty all pockets." }]
+              }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  { "type": "text", "text": "Brush off " },
+                  { "type": "text", "text": "dry mud", "marks": [{ "type": "italic" }] },
+                  { "type": "text", "text": "." }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "projection": [
+    {
+      "type": "heading",
+      "text": "Care guide",
+      "spans": [],
+      "embeds": []
+    },
+    {
+      "type": "paragraph",
+      "text": "Wash with cold water only.",
+      "spans": [{ "start": 10, "end": 20, "marks": ["bold"] }],
+      "embeds": []
+    },
+    {
+      "type": "paragraph",
+      "text": "Empty all pockets.",
+      "spans": [],
+      "embeds": []
+    },
+    {
+      "type": "paragraph",
+      "text": "Brush off dry mud.",
+      "spans": [{ "start": 10, "end": 17, "marks": ["italic"] }],
+      "embeds": []
+    }
+  ]
+}

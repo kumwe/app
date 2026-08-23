@@ -1,0 +1,38 @@
+{
+  "name": "@kumwe/studio-protocol",
+  "version": "0.1.0-alpha.6",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kumwe/studio.git",
+    "directory": "packages/protocol"
+  },
+  "homepage": "https://github.com/kumwe/studio/tree/main/packages/protocol#readme",
+  "bugs": "https://github.com/kumwe/studio/issues",
+  "description": "Serializable, framework-neutral contracts for visual composition hosts.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "LICENSE",
+    "dist",
+    "schemas",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/*": "./schemas/*"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

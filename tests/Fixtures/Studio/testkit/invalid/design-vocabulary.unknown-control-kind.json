@@ -1,0 +1,38 @@
+{
+  "schema": "design-vocabulary.schema.json",
+  "description": "Design controls carry only the closed design-control kind vocabulary.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "design-vocabulary",
+    "id": "org.example.catalog/product-vocabulary",
+    "version": "1.0.0",
+    "owner": {
+      "id": "org.example/catalog",
+      "version": "1.0.0"
+    },
+    "label": {
+      "key": "org.example.catalog/product-vocabulary",
+      "defaultMessage": "Product design vocabulary"
+    },
+    "designControls": [
+      {
+        "id": "card-face",
+        "kind": "font-role",
+        "label": {
+          "key": "org.example.catalog/card-face",
+          "defaultMessage": "Card face"
+        },
+        "choices": [
+          {
+            "id": "serif",
+            "label": {
+              "key": "org.example.catalog/card-face-serif",
+              "defaultMessage": "Serif"
+            }
+          }
+        ]
+      }
+    ],
+    "recipes": []
+  }
+}

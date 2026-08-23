@@ -1,0 +1,141 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "content-model",
+  "id": "org.example.models/product",
+  "version": "1.0.0",
+  "revision": "product-model-r1",
+  "owner": {
+    "id": "org.example/catalog",
+    "version": "1.0.0"
+  },
+  "status": "published",
+  "label": {
+    "key": "org.example.catalog/product-model",
+    "defaultMessage": "Product"
+  },
+  "fields": [
+    {
+      "id": "name",
+      "kind": "string",
+      "label": {
+        "key": "org.example.catalog/product-name",
+        "defaultMessage": "Name"
+      },
+      "required": true,
+      "localized": true,
+      "cardinality": "one",
+      "semanticRole": "studio.semantic/title",
+      "authoring": {
+        "control": "studio.control/single-line-text",
+        "group": "identity",
+        "order": 10,
+        "width": "full"
+      },
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    {
+      "id": "price",
+      "kind": "money",
+      "label": {
+        "key": "org.example.catalog/product-price",
+        "defaultMessage": "Price"
+      },
+      "required": true,
+      "localized": false,
+      "cardinality": "one",
+      "semanticRole": "studio.semantic/price",
+      "constraints": {
+        "minimum": "0.00",
+        "scale": 2
+      }
+    },
+    {
+      "id": "featured",
+      "kind": "boolean",
+      "label": {
+        "key": "org.example.catalog/product-featured",
+        "defaultMessage": "Featured product"
+      },
+      "required": true,
+      "localized": false,
+      "cardinality": "one",
+      "defaultValue": false,
+      "authoring": {
+        "control": "studio.control/switch",
+        "group": "presentation",
+        "order": 40,
+        "width": "half"
+      }
+    },
+    {
+      "id": "category",
+      "kind": "resource",
+      "label": {
+        "key": "org.example.catalog/product-category",
+        "defaultMessage": "Category"
+      },
+      "required": false,
+      "localized": false,
+      "cardinality": "one",
+      "authoring": {
+        "control": "studio.control/resource-picker",
+        "group": "classification",
+        "order": 50,
+        "width": "full"
+      }
+    },
+    {
+      "id": "image",
+      "kind": "media",
+      "label": {
+        "key": "org.example.catalog/product-image",
+        "defaultMessage": "Product image"
+      },
+      "required": true,
+      "localized": false,
+      "cardinality": "one",
+      "semanticRole": "studio.semantic/primary-media",
+      "constraints": {
+        "allowedMediaKinds": ["image"]
+      }
+    },
+    {
+      "id": "description",
+      "kind": "rich-text",
+      "label": {
+        "key": "org.example.catalog/product-description",
+        "defaultMessage": "Description"
+      },
+      "required": false,
+      "localized": true,
+      "cardinality": "one"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "category",
+      "kind": "many-to-one",
+      "label": {
+        "key": "org.example.catalog/product-category-relationship",
+        "defaultMessage": "Product category"
+      },
+      "sourceField": "category",
+      "targetModel": {
+        "id": "org.example.models/category",
+        "version": "1.0.0"
+      },
+      "targetField": "name",
+      "required": false,
+      "onDelete": "restrict",
+      "authoring": {
+        "control": "studio.control/resource-picker",
+        "allowCreate": false,
+        "displayField": "name",
+        "searchProvider": "org.example.catalog/category-search"
+      }
+    }
+  ]
+}

@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/common.schema.json",
+  "title": "Studio common contract types",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "contractVersion": {
+      "type": "string",
+      "const": "0.1-draft"
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?![\\s\\S])",
+      "maxLength": 100
+    },
+    "versionRange": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[0-9A-Za-z.*+<>=~^| -]+(?![\\s\\S])"
+    },
+    "qualifiedName": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*(?![\\s\\S])",
+      "maxLength": 160
+    },
+    "localName": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*(?![\\s\\S])",
+      "not": { "enum": ["__proto__", "prototype", "constructor"] },
+      "maxLength": 100
+    },
+    "safeJsonMemberName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\u0000-\\u001F\\u007F]+(?![\\s\\S])",
+      "not": { "enum": ["__proto__", "prototype", "constructor"] }
+    },
+    "packageRelativePath": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9@][A-Za-z0-9._@-]*(?:/[A-Za-z0-9@][A-Za-z0-9._@-]*)*(?![\\s\\S])",
+      "maxLength": 240
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*(?![\\s\\S])",
+      "not": { "enum": ["__proto__", "prototype", "constructor"] },
+      "maxLength": 240
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "integrity": {
+      "type": "string",
+      "pattern": "^(?:sha256-[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=|sha384-[A-Za-z0-9+/]{64}|sha512-[A-Za-z0-9+/]{85}[AQgw]==)(?![\\s\\S])",
+      "maxLength": 200
+    },
+    "locale": {
+      "type": "string",
+      "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*(?![\\s\\S])",
+      "maxLength": 50
+    },
+    "canonicalDecimal": {
+      "type": "string",
+      "pattern": "^(?:-?(?:0|[1-9][0-9]*)\\.[0-9]+|0|-?[1-9][0-9]*)(?![\\s\\S])",
+      "maxLength": 40
+    },
+    "currencyCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}(?![\\s\\S])"
+    },
+    "moneyValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount", "currency"],
+      "properties": {
+        "amount": { "$ref": "#/$defs/canonicalDecimal" },
+        "currency": { "$ref": "#/$defs/currencyCode" }
+      }
+    },
+    "rfc3339Date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])(?![\\s\\S])"
+    },
+    "rfc3339Instant": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:(?:[0-5][0-9]|60)(?:\\.[0-9]{1,9})?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])(?![\\s\\S])",
+      "maxLength": 40
+    },
+    "messageReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key"],
+      "properties": {
+        "key": { "$ref": "#/$defs/qualifiedName" },
+        "defaultMessage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "ownerReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/qualifiedName" },
+        "version": { "$ref": "#/$defs/semanticVersion" }
+      }
+    },
+    "artifactReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "version": { "$ref": "#/$defs/semanticVersion" },
+        "revision": { "$ref": "#/$defs/revision" },
+        "integrity": { "$ref": "#/$defs/integrity" }
+      }
+    },
+    "lockedArtifactReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "revision"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "version": { "$ref": "#/$defs/semanticVersion" },
+        "revision": { "$ref": "#/$defs/revision" },
+        "integrity": { "$ref": "#/$defs/integrity" }
+      }
+    },
+    "resolvedEntryReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "revision"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "revision": { "$ref": "#/$defs/revision" },
+        "integrity": { "$ref": "#/$defs/integrity" }
+      }
+    },
+    "jsonValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        {
+          "type": "array",
+          "maxItems": 10000,
+          "items": { "$ref": "#/$defs/jsonValue" }
+        },
+        {
+          "type": "object",
+          "maxProperties": 10000,
+          "propertyNames": { "$ref": "#/$defs/safeJsonMemberName" },
+          "additionalProperties": { "$ref": "#/$defs/jsonValue" }
+        }
+      ]
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 100,
+      "propertyNames": { "$ref": "#/$defs/qualifiedName" },
+      "additionalProperties": { "$ref": "#/$defs/jsonValue" }
+    },
+    "diagnosticLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "artifactId": { "$ref": "#/$defs/stableId" },
+        "nodeId": { "$ref": "#/$defs/stableId" },
+        "fieldPath": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/localName" }
+        },
+        "jsonPointer": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "message"],
+      "properties": {
+        "code": { "$ref": "#/$defs/qualifiedName" },
+        "severity": {
+          "enum": ["information", "warning", "error", "blocking"]
+        },
+        "message": { "$ref": "#/$defs/messageReference" },
+        "location": { "$ref": "#/$defs/diagnosticLocation" },
+        "parameters": {
+          "type": "object",
+          "maxProperties": 20,
+          "propertyNames": { "$ref": "#/$defs/safeJsonMemberName" },
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" },
+              { "type": "boolean" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "remediations": {
+          "type": "array",
+          "maxItems": 10,
+          "items": { "$ref": "#/$defs/qualifiedName" }
+        }
+      }
+    }
+  }
+}

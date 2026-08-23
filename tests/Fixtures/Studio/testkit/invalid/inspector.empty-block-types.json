@@ -1,0 +1,20 @@
+{
+  "schema": "inspector.schema.json",
+  "description": "An inspector declares the block types it applies to; an empty list would silently apply to none.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "inspector",
+    "id": "org.example.catalog/price-inspector",
+    "version": "1.0.0",
+    "owner": {
+      "id": "org.example/catalog",
+      "version": "1.0.0"
+    },
+    "label": {
+      "key": "org.example.catalog/price-inspector",
+      "defaultMessage": "Price inspector"
+    },
+    "blockTypes": [],
+    "placement": "augment"
+  }
+}

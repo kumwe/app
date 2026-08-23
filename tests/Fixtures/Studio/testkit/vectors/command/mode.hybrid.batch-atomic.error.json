@@ -1,0 +1,158 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "command-vector",
+  "id": "vector.command-vector.mode.hybrid.batch-atomic",
+  "description": "A hybrid batch is validated operation by operation against a trial state and rejects atomically.",
+  "mode": "hybrid",
+  "initial": {
+    "contractVersion": "0.1-draft",
+    "dependencyLock": {
+      "blocks": [
+        {
+          "revision": "block-r1",
+          "type": "studio.vector/section",
+          "version": "1.0.0"
+        },
+        {
+          "revision": "block-r1",
+          "type": "studio.vector/card",
+          "version": "1.0.0"
+        }
+      ],
+      "theme": {
+        "id": "studio.vector/theme",
+        "revision": "theme-r1",
+        "version": "1.0.0"
+      }
+    },
+    "id": "vector.blueprint",
+    "kind": "blueprint",
+    "label": {
+      "defaultMessage": "Vector Blueprint",
+      "key": "studio.vector/blueprint"
+    },
+    "model": {
+      "id": "studio.vector/model",
+      "revision": "model-r1",
+      "version": "1.0.0"
+    },
+    "owner": {
+      "id": "studio.vector/suite",
+      "version": "0.1.0-alpha.0"
+    },
+    "revision": "blueprint-r1",
+    "roots": [
+      {
+        "authoring": {
+          "mode": "designer"
+        },
+        "bindings": {},
+        "id": "shell",
+        "properties": {},
+        "slots": {
+          "main": [
+            {
+              "authoring": {
+                "allowedBlocks": ["studio.vector/card"],
+                "mode": "structural"
+              },
+              "bindings": {},
+              "id": "region",
+              "properties": {},
+              "slots": {
+                "items": [
+                  {
+                    "authoring": {
+                      "mode": "content"
+                    },
+                    "bindings": {},
+                    "id": "card-1",
+                    "properties": {
+                      "title": "First"
+                    },
+                    "slots": {},
+                    "type": "studio.vector/card",
+                    "version": "1.0.0"
+                  },
+                  {
+                    "authoring": {
+                      "mode": "locked"
+                    },
+                    "bindings": {},
+                    "id": "seal",
+                    "properties": {},
+                    "slots": {},
+                    "type": "studio.vector/card",
+                    "version": "1.0.0"
+                  }
+                ]
+              },
+              "type": "studio.vector/section",
+              "version": "1.0.0"
+            }
+          ],
+          "side": [
+            {
+              "authoring": {
+                "mode": "designer"
+              },
+              "bindings": {},
+              "id": "fixed",
+              "properties": {},
+              "slots": {},
+              "type": "studio.vector/section",
+              "version": "1.0.0"
+            }
+          ]
+        },
+        "type": "studio.vector/section",
+        "version": "1.0.0"
+      }
+    ],
+    "status": "draft",
+    "version": "1.0.0"
+  },
+  "command": {
+    "artifactId": "vector.blueprint",
+    "baseStateVersion": 0,
+    "contractVersion": "0.1-draft",
+    "id": "vector.command.mode.hybrid.batch-atomic",
+    "kind": "command",
+    "payload": {
+      "operations": [
+        {
+          "payload": {
+            "destination": {
+              "parentNodeId": "region",
+              "position": 1,
+              "slot": "items"
+            },
+            "node": {
+              "authoring": {
+                "mode": "content"
+              },
+              "bindings": {},
+              "id": "card-2",
+              "properties": {},
+              "slots": {},
+              "type": "studio.vector/card",
+              "version": "1.0.0"
+            }
+          },
+          "type": "studio.command/insert-node"
+        },
+        {
+          "payload": {
+            "nodeId": "fixed"
+          },
+          "type": "studio.command/remove-node"
+        }
+      ]
+    },
+    "sessionGeneration": "session-r1",
+    "type": "studio.command/batch"
+  },
+  "expect": {
+    "errorCode": "mode-forbidden"
+  }
+}

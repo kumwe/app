@@ -1,0 +1,13 @@
+{
+  "schema": "preview-message.schema.json",
+  "description": "The draft.2 preview vocabulary is closed; unknown message types require a negotiated protocol revision.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "preview-message",
+    "channelId": "preview-channel-1",
+    "sessionGeneration": "session-r1",
+    "sequence": 4,
+    "type": "org.example.preview/custom",
+    "payload": {}
+  }
+}

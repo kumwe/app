@@ -1,0 +1,25 @@
+{
+  "schema": "media-reference.schema.json",
+  "description": "Every media reference declares an explicit accessibility mode.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "media-reference",
+    "assetId": "media/trail-backpack-front",
+    "assetRevision": "media-r4",
+    "usage": "org.example.catalog/product-hero",
+    "renditionIntent": {
+      "role": "hero",
+      "fit": "cover",
+      "preferredMediaTypes": ["image/avif", "image/webp"]
+    },
+    "focalPoint": {
+      "x": 0.5,
+      "y": 0.46
+    },
+    "cropIntent": {
+      "mode": "aspect-ratio",
+      "width": 4,
+      "height": 3
+    }
+  }
+}

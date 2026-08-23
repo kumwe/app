@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/pattern.schema.json",
+  "title": "Studio composition pattern",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "kind",
+    "id",
+    "version",
+    "revision",
+    "owner",
+    "label",
+    "blockDependencies",
+    "roots"
+  ],
+  "properties": {
+    "contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+    "kind": { "const": "pattern" },
+    "id": { "$ref": "common.schema.json#/$defs/stableId" },
+    "version": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "owner": { "$ref": "common.schema.json#/$defs/ownerReference" },
+    "label": { "$ref": "common.schema.json#/$defs/messageReference" },
+    "description": { "$ref": "common.schema.json#/$defs/messageReference" },
+    "blockDependencies": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "version", "revision"],
+        "properties": {
+          "type": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+          "version": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+          "revision": { "$ref": "common.schema.json#/$defs/revision" },
+          "integrity": { "$ref": "common.schema.json#/$defs/integrity" }
+        }
+      }
+    },
+    "roots": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": { "$ref": "blueprint.schema.json#/$defs/node" }
+    },
+    "extensions": { "$ref": "common.schema.json#/$defs/extensions" }
+  }
+}

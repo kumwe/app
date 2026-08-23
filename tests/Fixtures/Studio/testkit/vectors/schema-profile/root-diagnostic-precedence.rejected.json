@@ -1,0 +1,16 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/root-diagnostic-precedence",
+  "description": "Competing root-closure failures reject at the first UTF-16 code-unit ordered member.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "additionalProperties": true,
+    "type": "string"
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "invalid-root",
+    "schemaPath": "/additionalProperties"
+  }
+}

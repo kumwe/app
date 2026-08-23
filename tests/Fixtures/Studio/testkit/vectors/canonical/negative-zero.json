@@ -1,0 +1,13 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "canonical-vector",
+  "id": "vector.canonical-vector.negative-zero",
+  "description": "Negative zero canonicalizes to zero so two equal values never differ in bytes.",
+  "value": {
+    "value": -0.0
+  },
+  "expect": {
+    "canonical": "{\"value\":0}",
+    "digest": "sha256-I9eyhr1ClGC5KiocIbavw0EQRGxQNMFzY/2jY6oKfF0="
+  }
+}

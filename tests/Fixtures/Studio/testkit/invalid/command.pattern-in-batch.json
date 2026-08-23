@@ -1,0 +1,40 @@
+{
+  "schema": "command.schema.json",
+  "description": "Pattern application cannot nest inside a batch because its inverse is itself a batch.",
+  "value": {
+    "artifactId": "vector.blueprint",
+    "baseStateVersion": 0,
+    "contractVersion": "0.1-draft",
+    "id": "vector.command.pattern-in-batch",
+    "kind": "command",
+    "payload": {
+      "operations": [
+        {
+          "type": "studio.command/apply-pattern",
+          "payload": {
+            "destination": { "position": 0 },
+            "idMap": { "text-p": "text-p1" },
+            "nodes": [
+              {
+                "authoring": { "mode": "designer" },
+                "bindings": {},
+                "id": "text-p",
+                "properties": {},
+                "slots": {},
+                "type": "studio.vector/text",
+                "version": "1.0.0"
+              }
+            ],
+            "pattern": {
+              "id": "patterns/hero-with-caption",
+              "revision": "pattern-r3",
+              "version": "1.2.0"
+            }
+          }
+        }
+      ]
+    },
+    "sessionGeneration": "session-r1",
+    "type": "studio.command/batch"
+  }
+}

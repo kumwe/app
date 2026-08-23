@@ -1,0 +1,15 @@
+{
+    "note": "Exact released Studio contract pin per kumwe/app#104 and D16/ADR 0007. tools/verify-studio-corpus.php recomputes every digest against these vendored bytes; a re-pin is a deliberate change to this file and the vendored tree together.",
+    "pinned": {
+        "@kumwe/studio-protocol": {
+            "version": "0.1.0-alpha.6",
+            "npm_tarball_sha256": "8d25c5a15f66186950c85e0c2079092a6cb11cf3931d43db069780d002923712"
+        },
+        "@kumwe/studio-testkit": {
+            "version": "0.1.0-alpha.8",
+            "npm_tarball_sha256": "90c06c0e835114f09feafb963f852664b2abb316ae2d5a101094d0594ff51b99"
+        }
+    },
+    "contract_version": "0.1-draft",
+    "source_repository": "https://github.com/kumwe/studio"
+}

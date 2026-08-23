@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/host-result.schema.json",
+  "title": "Studio host port result",
+  "description": "The body a host returns when a port operation succeeds. A failure is never expressed here: it carries the canonical host error document instead, so a client distinguishes outcomes by shape rather than by guessing from a status code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["value"],
+  "properties": {
+    "revision": {
+      "description": "The accepted resource revision. Every operation the registry marks expectsRevision returns the revision it advanced to, so a client never re-reads to learn what it just wrote.",
+      "$ref": "common.schema.json#/$defs/revision"
+    },
+    "value": {
+      "description": "The normalized operation result. Operations that answer with nothing return null rather than omitting the member, so absence is explicit.",
+      "$ref": "common.schema.json#/$defs/jsonValue"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/duplicate-dependent-required",
+  "description": "Dependent-required property names are unique for each trigger.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "dependentRequired": { "country": ["region", "region"] },
+    "properties": {
+      "country": { "type": "string" },
+      "region": { "type": "string" }
+    }
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "invalid-keyword-value",
+    "schemaPath": "/dependentRequired/country/1"
+  }
+}

@@ -55,6 +55,7 @@ jobs:
           composer extension:contract
           composer cli:contract
           composer mcp:contract
+          composer studio:corpus
 
       - name: Verify documentation records
         run: |
@@ -379,6 +380,9 @@ jobs:
         run: |
           composer cli:contract
           composer mcp:contract
+
+      - name: Verify the pinned Studio contract corpus
+        run: composer studio:corpus
 
       - name: Verify the interface programme and the roadmap ledger
         run: |

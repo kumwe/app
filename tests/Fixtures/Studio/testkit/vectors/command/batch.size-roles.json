@@ -1,0 +1,180 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "command-vector",
+  "id": "vector.command-vector.batch.size-roles",
+  "description": "Size-role commands participate in atomic batches: one batch assigns the base role and a responsive override, and the inverse batch unsets them in reverse order.",
+  "initial": {
+    "contractVersion": "0.1-draft",
+    "dependencyLock": {
+      "blocks": [
+        {
+          "revision": "block-r1",
+          "type": "studio.vector/section",
+          "version": "1.0.0"
+        },
+        {
+          "revision": "block-r1",
+          "type": "studio.vector/text",
+          "version": "1.0.0"
+        }
+      ],
+      "theme": {
+        "id": "studio.vector/theme",
+        "revision": "theme-r1",
+        "version": "1.0.0"
+      }
+    },
+    "id": "vector.blueprint",
+    "kind": "blueprint",
+    "label": {
+      "defaultMessage": "Vector Blueprint",
+      "key": "studio.vector/blueprint"
+    },
+    "model": {
+      "id": "studio.vector/model",
+      "revision": "model-r1",
+      "version": "1.0.0"
+    },
+    "owner": {
+      "id": "studio.vector/suite",
+      "version": "0.1.0-alpha.0"
+    },
+    "revision": "blueprint-r1",
+    "roots": [
+      {
+        "authoring": {
+          "mode": "designer"
+        },
+        "bindings": {},
+        "id": "text-a",
+        "properties": {},
+        "slots": {},
+        "type": "studio.vector/text",
+        "version": "1.0.0"
+      }
+    ],
+    "status": "draft",
+    "version": "1.0.0"
+  },
+  "command": {
+    "artifactId": "vector.blueprint",
+    "baseStateVersion": 0,
+    "contractVersion": "0.1-draft",
+    "id": "vector.command.batch.size-roles",
+    "kind": "command",
+    "payload": {
+      "operations": [
+        {
+          "payload": {
+            "axis": "inline",
+            "nodeId": "text-a",
+            "role": "full"
+          },
+          "type": "studio.command/set-size-role"
+        },
+        {
+          "payload": {
+            "axis": "inline",
+            "nodeId": "text-a",
+            "role": "half",
+            "viewport": "wide"
+          },
+          "type": "studio.command/set-size-role"
+        }
+      ]
+    },
+    "sessionGeneration": "session-r1",
+    "type": "studio.command/batch"
+  },
+  "expect": {
+    "document": {
+      "contractVersion": "0.1-draft",
+      "dependencyLock": {
+        "blocks": [
+          {
+            "revision": "block-r1",
+            "type": "studio.vector/section",
+            "version": "1.0.0"
+          },
+          {
+            "revision": "block-r1",
+            "type": "studio.vector/text",
+            "version": "1.0.0"
+          }
+        ],
+        "theme": {
+          "id": "studio.vector/theme",
+          "revision": "theme-r1",
+          "version": "1.0.0"
+        }
+      },
+      "id": "vector.blueprint",
+      "kind": "blueprint",
+      "label": {
+        "defaultMessage": "Vector Blueprint",
+        "key": "studio.vector/blueprint"
+      },
+      "model": {
+        "id": "studio.vector/model",
+        "revision": "model-r1",
+        "version": "1.0.0"
+      },
+      "owner": {
+        "id": "studio.vector/suite",
+        "version": "0.1.0-alpha.0"
+      },
+      "revision": "blueprint-r1",
+      "roots": [
+        {
+          "authoring": {
+            "mode": "designer"
+          },
+          "bindings": {},
+          "id": "text-a",
+          "properties": {},
+          "slots": {},
+          "type": "studio.vector/text",
+          "version": "1.0.0",
+          "responsiveSizeRoles": {
+            "inline": {
+              "wide": "half"
+            }
+          },
+          "sizeRoles": {
+            "inline": "full"
+          }
+        }
+      ],
+      "status": "draft",
+      "version": "1.0.0"
+    }
+  },
+  "inverse": {
+    "artifactId": "vector.blueprint",
+    "baseStateVersion": 1,
+    "contractVersion": "0.1-draft",
+    "id": "vector.inverse.batch.size-roles",
+    "kind": "command",
+    "payload": {
+      "operations": [
+        {
+          "payload": {
+            "axis": "inline",
+            "nodeId": "text-a",
+            "viewport": "wide"
+          },
+          "type": "studio.command/unset-size-role"
+        },
+        {
+          "payload": {
+            "axis": "inline",
+            "nodeId": "text-a"
+          },
+          "type": "studio.command/unset-size-role"
+        }
+      ]
+    },
+    "sessionGeneration": "session-r1",
+    "type": "studio.command/batch"
+  }
+}

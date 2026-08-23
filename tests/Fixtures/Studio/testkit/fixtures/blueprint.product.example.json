@@ -1,0 +1,92 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "blueprint",
+  "id": "org.example.blueprints/product-card",
+  "version": "1.0.0",
+  "revision": "product-card-r5",
+  "owner": {
+    "id": "org.example/catalog",
+    "version": "1.0.0"
+  },
+  "status": "published",
+  "label": {
+    "key": "org.example.catalog/product-card",
+    "defaultMessage": "Product card"
+  },
+  "model": {
+    "id": "org.example.models/product",
+    "version": "1.0.0",
+    "revision": "product-model-r1"
+  },
+  "dependencyLock": {
+    "theme": {
+      "id": "org.example.themes/commerce",
+      "version": "1.0.0",
+      "revision": "commerce-theme-r3"
+    },
+    "blocks": [
+      {
+        "type": "studio.core/grid",
+        "version": "1.0.0",
+        "revision": "grid-block-r1"
+      },
+      {
+        "type": "org.example.catalog/price",
+        "version": "1.0.0",
+        "revision": "price-block-r1"
+      }
+    ]
+  },
+  "roots": [
+    {
+      "id": "node-grid",
+      "type": "studio.core/grid",
+      "version": "1.0.0",
+      "properties": {
+        "columns": 1,
+        "collapse": "stack",
+        "recipe": "product-grid"
+      },
+      "bindings": {},
+      "slots": {
+        "items": [
+          {
+            "id": "node-price",
+            "type": "org.example.catalog/price",
+            "version": "1.0.0",
+            "properties": {
+              "showCurrency": true,
+              "emphasis": "price"
+            },
+            "bindings": {
+              "value": {
+                "source": {
+                  "kind": "entry-field",
+                  "fieldPath": ["price"]
+                },
+                "transforms": [],
+                "onNull": "error",
+                "onError": "error"
+              }
+            },
+            "slots": {},
+            "authoring": {
+              "mode": "content"
+            }
+          }
+        ]
+      },
+      "responsive": {
+        "columns": {
+          "compact": 1,
+          "medium": 2,
+          "expanded": 4
+        }
+      },
+      "authoring": {
+        "mode": "structural",
+        "allowedBlocks": ["org.example.catalog/price"]
+      }
+    }
+  ]
+}

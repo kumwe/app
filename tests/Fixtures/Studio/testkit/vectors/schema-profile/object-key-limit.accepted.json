@@ -1,0 +1,32 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/object-key-limit-boundary",
+  "description": "A JSON object member name at exactly the published character ceiling remains admissible.",
+  "profile": "studio.profile/schema-property",
+  "boundary": {
+    "limit": "maxObjectKeyLength",
+    "position": "at-limit",
+    "value": 200
+  },
+  "schema": {
+    "additionalProperties": false,
+    "properties": {
+      "value": {
+        "const": {
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk": true
+        }
+      }
+    },
+    "type": "object"
+  },
+  "expect": {
+    "outcome": "accepted",
+    "instances": [
+      {
+        "value": {},
+        "valid": true
+      }
+    ]
+  }
+}

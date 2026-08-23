@@ -1,0 +1,16 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "canonical-vector",
+  "id": "vector.canonical-vector.member-order",
+  "description": "Object members sort by Unicode code unit, not by locale or insertion order.",
+  "value": {
+    "b": 1,
+    "A": 2,
+    "a": 3,
+    "Z": 4
+  },
+  "expect": {
+    "canonical": "{\"A\":2,\"Z\":4,\"a\":3,\"b\":1}",
+    "digest": "sha256-Vn19opLXri8fGzPIdqbQbXdepLMLLlGlhBb5yr19cyk="
+  }
+}

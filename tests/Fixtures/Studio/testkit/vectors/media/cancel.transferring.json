@@ -1,0 +1,30 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "media-vector",
+  "id": "vector.media-vector.cancel.transferring",
+  "description": "Cancelling mid-transfer is legal: the session ends in cancelled, keeps the plan and the progress reached so far, and sends no further chunks.",
+  "policy": {
+    "acceptedMediaTypes": ["image/jpeg", "image/png"],
+    "chunkBytes": 1024,
+    "maximumBytes": 4096,
+    "resumable": true
+  },
+  "request": {
+    "filename": "cancelled-mid-transfer.jpg",
+    "mediaType": "image/jpeg",
+    "byteSize": 3000,
+    "purpose": "studio.media/entry-image"
+  },
+  "expect": {
+    "outcome": "accepted",
+    "plan": {
+      "maximumBytes": 4096,
+      "chunkBytes": 1024,
+      "resumable": true
+    }
+  },
+  "cancel": {
+    "during": "transferring",
+    "finalState": "cancelled"
+  }
+}

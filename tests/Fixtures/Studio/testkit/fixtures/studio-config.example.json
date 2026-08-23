@@ -1,0 +1,139 @@
+{
+  "contractVersion": "0.1-draft",
+  "protocolVersion": "0.1.0-draft.2",
+  "sessionId": "session-018f",
+  "sessionGeneration": "session-generation-1",
+  "mode": "content",
+  "composite": "hybrid",
+  "sessionState": "editable",
+  "actor": {
+    "id": "users/designer-17",
+    "displayName": "Example Designer"
+  },
+  "locale": {
+    "requested": "en-NA",
+    "resolved": "en-NA",
+    "fallbacks": ["en"],
+    "direction": "ltr",
+    "timeZone": "Africa/Windhoek"
+  },
+  "displayPreferences": {
+    "calendar": "gregory",
+    "numberingSystem": "latn",
+    "hourCycle": "h23",
+    "measurementSystem": "metric"
+  },
+  "resourceContext": {
+    "key": "contexts/main-site-catalog",
+    "surface": "org.kumwe.surface/administrator",
+    "revision": "context-r7",
+    "scopes": [
+      {
+        "kind": "studio.scope/tenant",
+        "id": "tenants/example"
+      },
+      {
+        "kind": "studio.scope/site",
+        "id": "sites/main"
+      },
+      {
+        "kind": "studio.scope/organization",
+        "id": "organizations/windhoek"
+      }
+    ],
+    "resource": {
+      "type": "org.example.models/product",
+      "id": "products/trail-backpack"
+    }
+  },
+  "permissions": [
+    "studio.permission/edit-content",
+    "studio.permission/edit-blueprint",
+    "studio.permission/upload-media"
+  ],
+  "artifacts": {
+    "model": {
+      "id": "org.example.models/product",
+      "version": "1.0.0",
+      "revision": "product-model-r1"
+    },
+    "blueprint": {
+      "id": "org.example.blueprints/product-card",
+      "version": "1.0.0",
+      "revision": "product-card-r5"
+    },
+    "entry": {
+      "id": "products/trail-backpack",
+      "revision": "entry-r7"
+    },
+    "theme": {
+      "id": "org.example.themes/commerce",
+      "version": "1.0.0",
+      "revision": "commerce-theme-r3"
+    }
+  },
+  "blocks": [
+    {
+      "type": "studio.core/grid",
+      "version": "1.0.0",
+      "revision": "grid-block-r1"
+    },
+    {
+      "type": "org.example.catalog/price",
+      "version": "1.0.0",
+      "revision": "price-block-r1"
+    }
+  ],
+  "plugins": [],
+  "hostCapabilities": {
+    "contractVersion": "0.1-draft",
+    "kind": "host-capabilities",
+    "host": {
+      "id": "org.kumwe/app",
+      "version": "3.0.0-alpha.1",
+      "generation": "runtime-generation-42"
+    },
+    "protocolVersions": ["0.1.0-draft.2"],
+    "ports": [
+      {
+        "id": "studio.port/artifact",
+        "version": "1.0.0",
+        "operations": ["studio.operation/artifact.load", "studio.operation/artifact.save"]
+      }
+    ],
+    "capabilities": []
+  },
+  "limits": {
+    "maxNodes": 5000,
+    "maxDepth": 32,
+    "maxSlotsPerNode": 20,
+    "maxChildrenPerSlot": 1000,
+    "maxPropertyBytes": 1048576,
+    "maxExtensionBytes": 1048576,
+    "maxCommandBatch": 100,
+    "maxHistoryEntries": 1000,
+    "maxRichTextBytes": 1048576,
+    "maxRichTextDepth": 32,
+    "maxPreviewRequestsPerMinute": 600,
+    "maxPreviewBytes": 10485760,
+    "maxMediaUploadBytes": 1073741824,
+    "maxMediaBatch": 50,
+    "maxPluginCount": 50,
+    "maxContributionsPerPlugin": 500,
+    "maxLocaleBytes": 1048576
+  },
+  "features": {
+    "executablePlugins": false,
+    "customInspectors": false,
+    "externalMediaImport": false,
+    "clipboardMediaUpload": true,
+    "collaboration": false,
+    "offlineRecovery": true
+  },
+  "preview": {
+    "enabled": true,
+    "sameOriginRequired": true,
+    "allowApproximateRenderer": false,
+    "initialViewport": "expanded"
+  }
+}

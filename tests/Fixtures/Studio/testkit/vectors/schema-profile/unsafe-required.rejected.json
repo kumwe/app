@@ -1,0 +1,17 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/unsafe-required",
+  "description": "An unsafe required member reports the array position that contains the rejected property name.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["__proto__"]
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "unsafe-member",
+    "schemaPath": "/required/0"
+  }
+}

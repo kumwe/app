@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/preview-vector.schema.json",
+  "title": "Studio preview identity conformance vector",
+  "description": "One complete Blueprint draft, its exact render-attempt identity, and the SHA-256 plus deterministic marker inventory every implementation must reproduce under the preview identity profile.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "kind",
+    "id",
+    "description",
+    "profile",
+    "protocolVersion",
+    "draft",
+    "render",
+    "expect"
+  ],
+  "properties": {
+    "contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+    "kind": { "const": "preview-vector" },
+    "id": { "$ref": "common.schema.json#/$defs/stableId" },
+    "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "profile": { "const": "studio.profile/preview-identity-v1" },
+    "protocolVersion": { "const": "0.1.0-draft.2" },
+    "draft": { "$ref": "blueprint.schema.json" },
+    "render": { "$ref": "preview-message.schema.json#/$defs/render" },
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["draftDigest", "markers", "markerMap"],
+      "properties": {
+        "draftDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "markers": {
+          "type": "array",
+          "maxItems": 100000,
+          "uniqueItems": true,
+          "items": { "$ref": "preview-message.schema.json#/$defs/previewMarker" }
+        },
+        "markerMap": {
+          "type": "object",
+          "maxProperties": 100000,
+          "propertyNames": { "$ref": "preview-message.schema.json#/$defs/previewMarker" },
+          "additionalProperties": { "$ref": "common.schema.json#/$defs/stableId" }
+        }
+      }
+    }
+  }
+}

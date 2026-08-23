@@ -1,0 +1,14 @@
+{
+  "expiresAt": "2026-08-18T23:30:00Z",
+  "headers": {
+    "X-Upload-Session": "uploads-7f2c"
+  },
+  "method": "PUT",
+  "plan": {
+    "chunkBytes": 5242880,
+    "maximumBytes": 52428800,
+    "resumable": true
+  },
+  "uploadId": "uploads/7f2c",
+  "url": "https://media.example.org/uploads/7f2c"
+}

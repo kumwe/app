@@ -1,0 +1,342 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/host-sequence-vector.schema.json",
+  "title": "Studio canonical host sequence conformance vector",
+  "description": "A deterministic sequence of host-port invocations, settlements, logical-clock advances and renderer completions. Every stateful precondition is bounded JSON so another runtime can reproduce retries, rate-limit windows and in-flight cancellation without wall-clock sleeps or executable fixture callbacks.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "kind",
+    "id",
+    "description",
+    "profile",
+    "assertions",
+    "idempotencyPolicy",
+    "given",
+    "steps",
+    "expectFinal"
+  ],
+  "properties": {
+    "contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+    "kind": { "const": "host-sequence-vector" },
+    "id": { "$ref": "common.schema.json#/$defs/stableId" },
+    "description": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "profile": { "const": "studio.profile/host-baseline-v2" },
+    "assertions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/assertion" }
+    },
+    "idempotencyPolicy": { "$ref": "#/$defs/idempotencyPolicy" },
+    "given": { "$ref": "#/$defs/given" },
+    "steps": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 24,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/invokeStep" },
+          { "$ref": "#/$defs/settleStep" },
+          { "$ref": "#/$defs/advanceClockStep" },
+          { "$ref": "#/$defs/releasePreviewRenderStep" }
+        ]
+      }
+    },
+    "expectFinal": { "$ref": "#/$defs/finalState" }
+  },
+  "$defs": {
+    "assertion": {
+      "enum": [
+        "operation-id-mismatch-refusal",
+        "idempotent-in-flight-coalescing",
+        "idempotent-completed-replay",
+        "idempotency-changed-argument-refusal",
+        "idempotency-changed-context-refusal",
+        "idempotency-resource-scope-separation",
+        "canonical-number-equivalence",
+        "failed-attempt-retry",
+        "fixed-window-rate-limit",
+        "fixed-window-reset",
+        "in-flight-preview-cancellation",
+        "cross-context-cancellation-isolation",
+        "late-preview-result-discard"
+      ]
+    },
+    "idempotencyPolicy": {
+      "description": "The exact map key and canonical intent preimage used by this profile. Scope fields select an accepted record; the argument and listed semantic context fields form its canonical JSON fingerprint. Optional semantic fields that are absent are omitted, not serialized as null. Canonical JSON applies its number grammar, including normalization of negative zero to zero. Per-attempt request and trace correlation never affect intent.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopeFields",
+        "argumentCanonicalization",
+        "intentContextFields",
+        "absentOptionalFields",
+        "numberNormalization",
+        "excludedContextFields"
+      ],
+      "properties": {
+        "scopeFields": {
+          "const": ["idempotencyKey", "operationId", "resourceContextKey", "sessionGeneration"]
+        },
+        "argumentCanonicalization": { "const": "canonical-json" },
+        "intentContextFields": {
+          "const": ["expectedRevision", "locale", "protocolVersion"]
+        },
+        "absentOptionalFields": { "const": "omit" },
+        "numberNormalization": { "const": "canonical-json" },
+        "excludedContextFields": { "const": ["requestId", "traceContext"] }
+      }
+    },
+    "port": {
+      "enum": [
+        "artifact",
+        "localization",
+        "media",
+        "model",
+        "permission",
+        "preview",
+        "recovery",
+        "resource",
+        "telemetry"
+      ]
+    },
+    "artifactSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "revision", "status"],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/stableId" },
+        "kind": { "enum": ["blueprint", "content-model", "entry"] },
+        "revision": { "$ref": "common.schema.json#/$defs/revision" },
+        "status": { "enum": ["archived", "draft", "in-review", "published", "retired"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "entry" } }, "required": ["kind"] },
+          "then": {
+            "properties": {
+              "status": { "enum": ["archived", "draft", "in-review", "published"] }
+            }
+          },
+          "else": {
+            "properties": { "status": { "enum": ["draft", "published", "retired"] } }
+          }
+        }
+      ]
+    },
+    "rateLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "maximumRequests",
+        "windowMilliseconds",
+        "retryAfterMilliseconds"
+      ],
+      "properties": {
+        "operationId": { "$ref": "host-operations.schema.json#/$defs/operationCapability" },
+        "maximumRequests": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "windowMilliseconds": { "type": "integer", "minimum": 1, "maximum": 86400000 },
+        "retryAfterMilliseconds": {
+          "description": "The retry delay at logical time zero after the fixed-window bound is reached. It equals the initial window duration.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400000
+        }
+      }
+    },
+    "given": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifacts", "permissions", "sessionGeneration"],
+      "properties": {
+        "artifacts": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/artifactSeed" }
+        },
+        "permissions": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": { "$ref": "common.schema.json#/$defs/qualifiedName" }
+        },
+        "rateLimits": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/rateLimit" }
+        },
+        "sessionGeneration": { "$ref": "common.schema.json#/$defs/revision" }
+      }
+    },
+    "requestContext": {
+      "description": "The canonical host request envelope. Malformed single exchanges remain in the original host corpus; an intentional registered-capability mismatch is an executable invalid-request assertion here.",
+      "$ref": "host-request.schema.json#/$defs/requestContext"
+    },
+    "resultExpectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome"],
+      "properties": {
+        "outcome": { "const": "result" },
+        "revisionAdvancesFrom": { "$ref": "common.schema.json#/$defs/revision" },
+        "sameAs": { "$ref": "common.schema.json#/$defs/stableId" },
+        "value": { "enum": ["null", "rendered"] }
+      }
+    },
+    "errorExpectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "category", "retryable"],
+      "properties": {
+        "outcome": { "const": "error" },
+        "category": {
+          "enum": [
+            "cancelled",
+            "conflict",
+            "forbidden",
+            "incompatible",
+            "internal",
+            "invalid-request",
+            "limit-exceeded",
+            "not-found",
+            "rate-limited",
+            "unauthenticated",
+            "unavailable",
+            "validation-failed"
+          ]
+        },
+        "retryable": { "type": "boolean" },
+        "retryAfterMilliseconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400000
+        }
+      }
+    },
+    "expectation": {
+      "oneOf": [{ "$ref": "#/$defs/resultExpectation" }, { "$ref": "#/$defs/errorExpectation" }]
+    },
+    "invokeStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "id", "port", "operation", "context", "completion"],
+      "properties": {
+        "action": { "const": "invoke" },
+        "id": { "$ref": "common.schema.json#/$defs/stableId" },
+        "port": { "$ref": "#/$defs/port" },
+        "operation": { "$ref": "common.schema.json#/$defs/localName" },
+        "context": { "$ref": "#/$defs/requestContext" },
+        "argument": { "$ref": "common.schema.json#/$defs/jsonValue" },
+        "completion": { "enum": ["pending", "settled"] },
+        "expect": { "$ref": "#/$defs/expectation" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "completion": { "const": "settled" } },
+            "required": ["completion"]
+          },
+          "then": {
+            "properties": { "expect": { "$ref": "#/$defs/expectation" } },
+            "required": ["expect"]
+          },
+          "else": { "not": { "required": ["expect"] } }
+        },
+        {
+          "if": {
+            "properties": {
+              "port": { "const": "preview" },
+              "operation": { "const": "render" }
+            },
+            "required": ["port", "operation"]
+          },
+          "then": {
+            "properties": {
+              "argument": { "$ref": "preview-message.schema.json#/$defs/render" }
+            },
+            "required": ["argument"]
+          }
+        }
+      ]
+    },
+    "settleStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "id", "invocation", "expect"],
+      "properties": {
+        "action": { "const": "settle" },
+        "id": { "$ref": "common.schema.json#/$defs/stableId" },
+        "invocation": { "$ref": "common.schema.json#/$defs/stableId" },
+        "expect": { "$ref": "#/$defs/expectation" }
+      }
+    },
+    "advanceClockStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "id", "milliseconds"],
+      "properties": {
+        "action": { "const": "advance-clock" },
+        "id": { "$ref": "common.schema.json#/$defs/stableId" },
+        "milliseconds": { "type": "integer", "minimum": 1, "maximum": 86400000 }
+      }
+    },
+    "releasePreviewRenderStep": {
+      "description": "A deterministic renderer completion injected after a prior preview.render invocation. It is a harness precondition, not a host port or transport operation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "id", "invocation", "value"],
+      "properties": {
+        "action": { "const": "release-preview-render" },
+        "id": { "$ref": "common.schema.json#/$defs/stableId" },
+        "invocation": { "$ref": "common.schema.json#/$defs/stableId" },
+        "value": { "$ref": "preview-message.schema.json#/$defs/rendered" }
+      }
+    },
+    "artifactFinalState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "revisionFrom"],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/stableId" },
+        "status": { "enum": ["archived", "draft", "in-review", "published", "retired"] },
+        "revisionFrom": { "$ref": "common.schema.json#/$defs/stableId" }
+      }
+    },
+    "recoveryFinalState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceContextKey", "value"],
+      "properties": {
+        "resourceContextKey": { "$ref": "common.schema.json#/$defs/stableId" },
+        "value": { "$ref": "common.schema.json#/$defs/jsonValue" }
+      }
+    },
+    "finalState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pendingPreviewRenders", "previewDeliveries"],
+      "properties": {
+        "artifacts": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/artifactFinalState" }
+        },
+        "recovery": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/recoveryFinalState" }
+        },
+        "pendingPreviewRenders": { "const": 0 },
+        "previewDeliveries": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])" }
+        }
+      }
+    }
+  }
+}

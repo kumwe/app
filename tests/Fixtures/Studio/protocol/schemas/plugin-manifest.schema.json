@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/plugin-manifest.schema.json",
+  "title": "Studio plugin manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "kind",
+    "id",
+    "version",
+    "owner",
+    "label",
+    "activation",
+    "entryModules",
+    "contributions",
+    "requiredCapabilities",
+    "optionalCapabilities",
+    "dependencies",
+    "permissions"
+  ],
+  "properties": {
+    "contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+    "kind": { "const": "plugin-manifest" },
+    "id": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+    "version": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+    "owner": { "$ref": "common.schema.json#/$defs/ownerReference" },
+    "label": { "$ref": "common.schema.json#/$defs/messageReference" },
+    "description": { "$ref": "common.schema.json#/$defs/messageReference" },
+    "activation": { "enum": ["declarative", "executable"] },
+    "entryModules": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["realm", "path", "integrity"],
+        "properties": {
+          "realm": { "enum": ["application", "worker", "sandboxed-frame"] },
+          "path": { "$ref": "common.schema.json#/$defs/packageRelativePath" },
+          "integrity": { "$ref": "common.schema.json#/$defs/integrity" }
+        }
+      }
+    },
+    "contributions": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "id", "version", "resource", "integrity"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "block",
+              "command",
+              "design-vocabulary",
+              "field-adapter",
+              "inspector",
+              "locale",
+              "migration",
+              "panel",
+              "pattern",
+              "renderer-capability",
+              "test-fixture",
+              "transform"
+            ]
+          },
+          "id": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+          "version": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+          "resource": { "$ref": "common.schema.json#/$defs/packageRelativePath" },
+          "integrity": { "$ref": "common.schema.json#/$defs/integrity" },
+          "executable": { "type": "boolean", "default": false }
+        }
+      }
+    },
+    "requiredCapabilities": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/capabilityRequirement" }
+    },
+    "optionalCapabilities": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/capabilityRequirement" }
+    },
+    "dependencies": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "versions", "optional"],
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+          "versions": { "$ref": "common.schema.json#/$defs/versionRange" },
+          "optional": { "type": "boolean" }
+        }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/qualifiedName" }
+    },
+    "locales": {
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/locale" }
+    },
+    "extensions": { "$ref": "common.schema.json#/$defs/extensions" }
+  },
+  "$defs": {
+    "capabilityRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "versions"],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+        "versions": { "$ref": "common.schema.json#/$defs/versionRange" }
+      }
+    }
+  }
+}

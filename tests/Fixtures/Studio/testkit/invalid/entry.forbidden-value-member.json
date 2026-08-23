@@ -1,0 +1,23 @@
+{
+  "schema": "entry.schema.json",
+  "description": "Entry values reject prototype-polluting member names.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "entry",
+    "id": "products/trail-backpack",
+    "revision": "entry-r7",
+    "model": {
+      "id": "org.example.models/product",
+      "version": "1.0.0",
+      "revision": "product-model-r1"
+    },
+    "status": "draft",
+    "locale": "en-NA",
+    "workflowState": "org.example.catalog/draft",
+    "values": {
+      "__proto__": {
+        "polluted": true
+      }
+    }
+  }
+}

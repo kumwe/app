@@ -1,0 +1,21 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "canonical-vector",
+  "id": "vector.canonical-vector.depth-exceeded",
+  "description": "Nesting deeper than the declared bound is refused rather than truncated.",
+  "value": {
+    "a": {
+      "a": {
+        "a": {
+          "a": {
+            "a": 1
+          }
+        }
+      }
+    }
+  },
+  "maximumDepth": 3,
+  "expect": {
+    "rejected": "depth-exceeded"
+  }
+}

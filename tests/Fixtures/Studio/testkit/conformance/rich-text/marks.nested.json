@@ -1,0 +1,29 @@
+{
+  "description": "Nested marks (bold inside an italic run) project to maximal runs whose mark names are sorted lexicographically regardless of the document's mark order, and spans are sorted by (start, end, marks).",
+  "document": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "The ", "marks": [{ "type": "italic" }] },
+          { "type": "text", "text": "quick", "marks": [{ "type": "italic" }, { "type": "bold" }] },
+          { "type": "text", "text": " fox", "marks": [{ "type": "italic" }] },
+          { "type": "text", "text": " runs." }
+        ]
+      }
+    ]
+  },
+  "projection": [
+    {
+      "type": "paragraph",
+      "text": "The quick fox runs.",
+      "spans": [
+        { "start": 0, "end": 4, "marks": ["italic"] },
+        { "start": 4, "end": 9, "marks": ["bold", "italic"] },
+        { "start": 9, "end": 13, "marks": ["italic"] }
+      ],
+      "embeds": []
+    }
+  ]
+}

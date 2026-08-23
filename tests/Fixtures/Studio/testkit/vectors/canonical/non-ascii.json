@@ -1,0 +1,13 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "canonical-vector",
+  "id": "vector.canonical-vector.non-ascii",
+  "description": "Non-ASCII text is emitted as UTF-8, never as escape sequences.",
+  "value": {
+    "value": "héllo — 日本語"
+  },
+  "expect": {
+    "canonical": "{\"value\":\"héllo — 日本語\"}",
+    "digest": "sha256-lrSVhIWiYBcsHDXMZ3FTt4QcB2pNvqKW8TRX2F803+Y="
+  }
+}

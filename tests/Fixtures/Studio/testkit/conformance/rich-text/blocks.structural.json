@@ -1,0 +1,57 @@
+{
+  "description": "Blockquotes and ordered lists flatten to their leaf blocks, a horizontal rule projects as an empty leaf block, and adjacent text nodes with an identical mark set merge into one span.",
+  "document": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "blockquote",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              { "type": "text", "text": "Quoted " },
+              { "type": "text", "text": "wis", "marks": [{ "type": "bold" }] },
+              { "type": "text", "text": "dom", "marks": [{ "type": "bold" }] }
+            ]
+          }
+        ]
+      },
+      { "type": "horizontalRule" },
+      {
+        "type": "orderedList",
+        "attrs": { "start": 3 },
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [{ "type": "text", "text": "Third step first." }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "projection": [
+    {
+      "type": "paragraph",
+      "text": "Quoted wisdom",
+      "spans": [{ "start": 7, "end": 13, "marks": ["bold"] }],
+      "embeds": []
+    },
+    {
+      "type": "horizontalRule",
+      "text": "",
+      "spans": [],
+      "embeds": []
+    },
+    {
+      "type": "paragraph",
+      "text": "Third step first.",
+      "spans": [],
+      "embeds": []
+    }
+  ]
+}

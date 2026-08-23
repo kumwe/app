@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/host-error.schema.json",
+  "title": "Studio host port error",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "kind", "category", "message", "retryable"],
+  "properties": {
+    "contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+    "kind": { "const": "host-error" },
+    "category": {
+      "enum": [
+        "invalid-request",
+        "unauthenticated",
+        "forbidden",
+        "not-found",
+        "conflict",
+        "validation-failed",
+        "incompatible",
+        "limit-exceeded",
+        "rate-limited",
+        "unavailable",
+        "cancelled",
+        "internal"
+      ]
+    },
+    "correlationId": { "$ref": "common.schema.json#/$defs/stableId" },
+    "message": { "$ref": "common.schema.json#/$defs/messageReference" },
+    "retryable": { "type": "boolean" },
+    "retryAfterMilliseconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 86400000
+    },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": { "$ref": "common.schema.json#/$defs/diagnostic" }
+    }
+  }
+}

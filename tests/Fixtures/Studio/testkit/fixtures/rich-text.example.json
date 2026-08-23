@@ -1,0 +1,48 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": { "level": 2 },
+      "content": [{ "type": "text", "text": "Trail care" }]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        { "type": "text", "text": "Wash with " },
+        { "type": "text", "text": "cold water", "marks": [{ "type": "bold" }] },
+        { "type": "text", "text": " only." },
+        { "type": "hardBreak" },
+        { "type": "text", "text": "Air dry away from direct sun.", "marks": [{ "type": "italic" }] }
+      ]
+    },
+    {
+      "type": "orderedList",
+      "attrs": { "start": 1 },
+      "content": [
+        {
+          "type": "listItem",
+          "content": [
+            { "type": "paragraph", "content": [{ "type": "text", "text": "Empty all pockets." }] }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            { "type": "paragraph", "content": [{ "type": "text", "text": "Brush off dry mud." }] }
+          ]
+        }
+      ]
+    },
+    { "type": "horizontalRule" },
+    {
+      "type": "blockquote",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [{ "type": "text", "text": "Repairs beat replacements." }]
+        }
+      ]
+    }
+  ]
+}
