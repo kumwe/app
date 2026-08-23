@@ -31,15 +31,16 @@ must include its tests and relevant documentation.
 ## Required local checks
 
 The canonical commands are declared as Composer scripts. Before submitting a
-change, run `composer qa`. Its member set is
-[`docs/quality/contract.json`](docs/quality/contract.json): architecture policy,
-the reproducible baseline, documentation-block checks, frozen contracts, the
-roadmap lifecycle, translations, coverage attribution, PHP_CodeSniffer, PHPStan,
-and PHPUnit. Adding a test, route, command, or migration also requires
-`composer baseline:record`. [`AGENTS.md`](AGENTS.md) lists the recipes.
+change, run `composer qa`. Its authoritative member set is
+[`docs/quality/contract.json`](docs/quality/contract.json), reproduced in
+[`AGENTS.md`](AGENTS.md) section 6. The complete list of changes that require
+`composer baseline:record` is the watcher table in [`AGENTS.md`](AGENTS.md)
+section 4 — this file deliberately does not restate it. [`AGENTS.md`](AGENTS.md)
+lists the recipes, and `bash tools/agent-setup.sh` provisions a fresh sandbox.
 
-Database integration tests require the PostgreSQL service described by the
-development Compose file.
+Database integration tests run against the database service described by the
+development Compose file — MariaDB by default, with MySQL and PostgreSQL as the
+other supported engines.
 
 The two documentation tools are dependency free and run without `composer install`:
 

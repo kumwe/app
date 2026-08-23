@@ -17,7 +17,8 @@ them automatically and does not carry a second, drifting copy of the rules.
 
 ```bash
 composer qa                 # the local lane (see AGENTS.md for the full member set)
-composer baseline:record    # after tests, routes, commands, migrations, or skips move
+composer baseline:record    # after tests, routes, commands, migrations, skips,
+                            # lockfiles, or OpenAPI operations move (AGENTS.md §4)
 composer cs                 # PSR-12 layout
 composer analyse            # PHPStan level max
 composer test:unit          # unit suite

@@ -24,6 +24,19 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **One vendor-neutral environment bootstrap provisions every agent sandbox.**
+  `tools/agent-setup.sh` is the single setup entry point for any coding agent or human
+  in any sandbox: it deepens a shallow clone, installs Composer and npm dependencies with
+  graceful fallbacks, provisions the CI-identical MariaDB/Redis test lane where the
+  platform allows, writes the test environment to `.agent-env`, and ends with a
+  capability report naming exactly which verification tiers run locally. Vendor files
+  only point at it — the Claude Code cloud SessionStart hook (`.claude/`), the
+  devcontainer (`.devcontainer/`), and other platforms' environment setup fields all
+  invoke the same script — and `tools/agent-egress.txt` is the one canonical outbound
+  allowlist a sandbox needs. `AGENTS.md` section 0 makes running it the first action in
+  any fresh environment, so changes are validated locally before they are pushed instead
+  of discovered red in CI.
+
 - **The operator checklist is the one road for changing this repository.** `AGENTS.md` is now the
   checklist any agent or person follows: where code lives, which gate watches a given change, the
   recipes that keep `composer qa` green, and the dual homes that new work must not make worse.
@@ -1180,6 +1193,18 @@ development programme, from the architecture decision that opened it to the curr
   and export payloads are unchanged. (`72cc3e6`)
 
 ### Fixed
+
+- **The contributor documentation no longer contradicts the gates it describes.** `README.md`'s
+  testing section carried a drifted ten-item copy of the `composer qa` member set that omitted the
+  gates that most often fail pushes (the baseline, documentation, contract and roadmap checks); it
+  now names `docs/quality/contract.json` and `AGENTS.md` section 6 as the only authorities instead
+  of restating them. `CONTRIBUTING.md` wrongly required a PostgreSQL service for integration tests
+  (the development Compose file defaults to MariaDB) and restated an incomplete
+  `baseline:record` trigger list; both now point at the watcher table. `CLAUDE.md`'s trigger
+  summary gained the lockfile and OpenAPI triggers it was missing. `AGENTS.md`'s "Add an HTTP
+  route" recipe now includes the surface-inventory registration that `composer interface:programme`
+  enforces and the handler's own class recipe, the watcher table carries the corresponding row, and
+  the CLI watcher row no longer undercounts where the pinned command count lives.
 
 - **Browser lifecycle tests now converge on the authenticated runtime without hiding product failures.** A
   shared bounded helper probes readiness with the Playwright context's authenticated request client, accepts

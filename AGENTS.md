@@ -10,6 +10,27 @@ them. It is the checklist that makes a change survive the gates they enforce.
 
 ---
 
+## 0. Environment bootstrap
+
+One command provisions any sandbox — Claude Code cloud, OpenAI Codex, Cursor, a
+devcontainer, or a bare checkout. It is idempotent, degrades gracefully, and ends
+with a capability report saying which verification tiers work where you are:
+
+```bash
+bash tools/agent-setup.sh
+```
+
+Vendor files only point at that script; no setup logic lives anywhere else.
+Claude Code cloud runs it automatically (`.claude/settings.json` SessionStart
+hook). On other cloud platforms, paste the command into the environment's
+setup-script field. The outbound domains a sandbox must allow live in
+[`tools/agent-egress.txt`](tools/agent-egress.txt) — when a step is blocked, the
+script names the group to enable. Before any push, the local gate is
+`composer qa` (section 6); the database-backed lane additionally wants
+`. ./.agent-env` first.
+
+---
+
 ## 1. Sixty seconds
 
 Kumwe is two products behind one set of rules: a CMS (pages, media, menus, publishing)
@@ -113,11 +134,12 @@ nobody told the record. This is the hole.
 | Add `#[CoversNothing]` on a behavioural test | `composer coverage:attribution` | Use `#[CoversClass]`. The pending list is empty and cannot grow |
 | Add a test with no coverage attribute | PHPUnit risky | `#[CoversClass]` or a reasoned `#[CoversNothing]` path |
 | Add a Domain → Application or Delivery → Infrastructure import | `composer architecture:policy` | Invert it (port inward). Do not grow `dependency-baseline.json` |
-| Add a CLI command and edit `cli-v1.json` in place | `composer cli:contract` | Additive successor generation; 44 is pinned in three places |
+| Add a CLI command and edit `cli-v1.json` in place | `composer cli:contract` | Additive successor generation; the pinned count lives in the contract, tests, tools and roadmap prose — a successor generation moves them together |
 | Add an MCP tool and edit `mcp-v1.json` in place | `composer mcp:contract` | Same freeze. 75 tools. |
 | Change a public extension type | `composer extension:contract` | New generation + new fixture. Never rewrite `tests/Fixtures/ExtensionApi/` |
 | Edit XLIFF or a user-facing string | `translation:check` / `translation:strings` | `composer translation:compile` and commit compiled catalogues |
 | Rebuild front-end and leave `public/assets/build` dirty | CI frontend job | Commit the hashed build, or don't rebuild |
+| Add a graphical route or template without cataloguing it | `composer interface:programme` | Register it in `docs/interface-standard/programme/surface-inventory.json` |
 | Mark a finding `closed` | `composer roadmap:check` | Delete the finding, remove the STATUS row, write `CHANGELOG.md` |
 | Write "delivered" in the STATUS open-work table | `roadmap:check` | Remove the row. Completion language belongs in the phase board and changelog |
 | Widen a PHPDoc type (`list<string>` → `array`) | PHPStan max | Add prose. Never widen or delete an existing type |
@@ -174,6 +196,12 @@ Pick one. Do every box. Then the hand-back commands.
 [ ] Declare the required capability. Browser forms need CSRF. REST needs the
     exact Kumwe-Site header, ETag, and an idempotency key on mutations.
 [ ] The handler calls an application service. It does not write tables.
+[ ] The handler class itself follows the "Add a PHP class" recipe above
+    (documentation blocks, focused test, baseline).
+[ ] Graphical route (site, administrator, or portal) or a new template:
+    register the surface and template in
+    docs/interface-standard/programme/surface-inventory.json —
+    composer interface:programme compares route and template inventories exactly.
 [ ] composer baseline:record  (route list is pinned)
 [ ] If REST: composer openapi:compile && composer openapi:check
 ```
