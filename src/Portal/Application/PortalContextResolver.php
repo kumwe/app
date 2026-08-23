@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Portal\Application;
 
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Application\PortalContext;
 
 /**
  * Membership boundary that converts an optional workspace hint into a live server-owned portal scope.

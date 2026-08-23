@@ -11,7 +11,7 @@ use Kumwe\App\Portal\Application\PortalAuthenticator;
 use Kumwe\App\Portal\Application\PortalContextResolver;
 use Kumwe\App\Portal\Application\PortalPasswordIdentity;
 use Kumwe\App\Portal\Application\PortalSessionStore;
-use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Application\PortalContext;
 use Kumwe\App\Portal\Http\Middleware\PortalSessionMiddleware;
 use Kumwe\App\Portal\Http\PortalRequest;
 use Kumwe\App\Portal\Presentation\PortalRenderer;

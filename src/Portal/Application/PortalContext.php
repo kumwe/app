@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\App\Portal\Domain;
+namespace Kumwe\App\Portal\Application;
 
 use Kumwe\App\Application\Authorization\MembershipContext;
 use Kumwe\App\Application\Authorization\SiteContext;

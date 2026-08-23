@@ -366,6 +366,11 @@ function extractReferences(string $contents): array
 
         if ($token[0] === T_NAMESPACE) {
             $namespace = readQualifiedName($tokens, $index);
+            // The declaration's own name is not a dependency: skip to the end of the statement so a
+            // class whose layer differs from its namespace's layer never reports a self-edge.
+            while ($index + 1 < $count && $tokens[$index + 1] !== ';' && $tokens[$index + 1] !== '{') {
+                $index++;
+            }
             continue;
         }
 
@@ -611,6 +616,47 @@ function compareWithBaseline(array $violations, string $baselinePath, string $to
         $recorded[$key] = true;
     }
 
+    // A decision-approved exact interface is the one permanent shape an exemption may take: the
+    // recorded decision names the precise members one type may use across the boundary, so the
+    // entry carries no expiry — but its edge must still exist, or the entry has to be deleted.
+    /** @var mixed $approved */
+    $approved = $document['approved_interfaces'] ?? [];
+    if (!is_array($approved) || !array_is_list($approved)) {
+        reportGraphFailure([
+            sprintf('%s must declare "approved_interfaces" as an array when present.', basename($baselinePath)),
+        ]);
+    }
+    $approvedCount = 0;
+    foreach ($approved as $index => $entry) {
+        if (!is_array($entry)) {
+            $errors[] = sprintf('Approved interface at position %d is not an object.', $index);
+            continue;
+        }
+        $from = $entry['from'] ?? null;
+        $to = $entry['to'] ?? null;
+        $decision = $entry['decision'] ?? null;
+        $surface = $entry['interface'] ?? null;
+        $justification = $entry['justification'] ?? null;
+        if (!is_string($from) || !is_string($to) || $from === '' || $to === '') {
+            $errors[] = sprintf('Approved interface at position %d needs "from" and "to".', $index);
+            continue;
+        }
+        $key = $from . ' -> ' . $to;
+        if (
+            !is_string($decision) || trim($decision) === ''
+            || !is_string($surface) || trim($surface) === ''
+            || !is_string($justification) || trim($justification) === ''
+        ) {
+            $errors[] = sprintf(
+                'Approved interface %s needs the recorded decision, the exact interface it approves, '
+                . 'and a justification. An approval nobody decided is a permission.',
+                $key,
+            );
+        }
+        $recorded[$key] = true;
+        $approvedCount++;
+    }
+
     $new = [];
     foreach ($violations as $key => $violation) {
         if (isset($recorded[$key])) {
@@ -658,8 +704,10 @@ function compareWithBaseline(array $violations, string $baselinePath, string $to
     fwrite(
         STDOUT,
         sprintf(
-            "Kumwe dependency direction verified: %d recorded exemption(s), no new violation.\n",
-            count($recorded),
+            "Kumwe dependency direction verified: %d recorded exemption(s), %d decision-approved "
+            . "interface(s), no new violation.\n",
+            count($recorded) - $approvedCount,
+            $approvedCount,
         ),
     );
 

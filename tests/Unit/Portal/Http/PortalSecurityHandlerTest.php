@@ -25,7 +25,7 @@ use Kumwe\App\Portal\Application\PortalSessionIdentity;
 use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
-use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Application\PortalContext;
 use Kumwe\App\Portal\Http\Handler\PortalSecurityHandler;
 use Kumwe\App\Portal\Presentation\PortalNavigationVisibility;
 use Kumwe\App\Portal\Presentation\PortalRenderer;

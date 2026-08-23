@@ -7,7 +7,7 @@ namespace Kumwe\App\Portal\Application;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Application\PortalContext;
 
 /**
  * Deterministic portal context resolver over the canonical live membership directory.

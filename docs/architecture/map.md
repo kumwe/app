@@ -55,10 +55,16 @@ Classification is the last namespace segment (`Domain`, `Application`, …) unle
 - `Kumwe\App\Extension\{Contribution,Runtime,Development}` → application
 - `Kumwe\App\BusinessRecord\Query` → application
 - `Kumwe\App\BusinessSecurity\Policy` → domain
+- `SiteContext` and `AuthenticatedSurface` → shared (classified in place per ADR 0012: a
+  published migration freezes the one name and the SPI fixture the other)
+- `ContributionOwner` and `ContributionDefinition` → domain (ADR 0012);
+  `ContributionDefinitionChecksum` explicitly stays application
 
 Wrong-way edges that already existed sit in [`dependency-baseline.json`](dependency-baseline.json)
-with an owner, a finding, and an expiry. The baseline only shrinks. Phase 3 (`P3-D`)
-empties it.
+with an owner, a finding, and an expiry. The baseline only shrinks. `P3-D` emptied its
+Domain-to-Application family: thirteen entries resolved, and the manifest's contribution parse is
+the one decision-approved exact interface (`approved_interfaces`, ADR 0012). The remaining
+recorded families keep their owner, finding, and expiry and belong to the seams that own them.
 
 ---
 
