@@ -142,6 +142,13 @@ else
         fi
     fi
     if command -v mariadbd >/dev/null 2>&1 || command -v mysqld >/dev/null 2>&1; then
+        # One consistent collation story before the first table exists: the parent schema's bare
+        # `CHARACTER SET utf8mb4` DDL takes the server's charset default, and a default that differs
+        # from the Doctrine-created tables produces "Illegal mix of collations" all over the suite.
+        if [ -d /etc/mysql/mariadb.conf.d ]; then
+            printf '[mysqld]\ncharacter-set-server = utf8mb4\ncollation-server = utf8mb4_unicode_ci\ninit_connect = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"\n' \
+                > /etc/mysql/mariadb.conf.d/99-kumwe-collation.cnf 2>/dev/null || true
+        fi
         (service mariadb start || service mysql start || mariadbd-safe >/dev/null 2>&1 &) >/dev/null 2>&1
         for _ in $(seq 1 30); do db_ready && break; sleep 1; done
         if db_ready; then
@@ -168,6 +175,33 @@ elif command -v apt-get >/dev/null 2>&1; then
     redis_ready && note "Redis installed and started." || note "Redis unavailable; parts of the integration lane will skip or fail."
 fi
 redis_ready || TIER2=no
+
+# ----------------------------------------------------------------- test schema
+# CI installs the immutable parent schema and migrates before the suite runs; a
+# turnkey sandbox does the same. The collation normalizer runs before and after
+# the migrations so every utf8mb4 table converges on one collation whatever the
+# server's charset default resolves to (see tools/agent-collation-normalize.php).
+if [ "$TIER2" = yes ] && [ "$TIER1" = yes ]; then
+    say "Test schema (CI-identical)"
+    if DB_DRIVER=mariadb DB_HOST=127.0.0.1 DB_PORT=3306 DB_NAME=kumwe_test DB_USER=kumwe \
+        DB_PASSWORD=kumwe_test DB_TABLE_PREFIX=kumwe_ APP_ENV=testing APP_DEBUG=false \
+        REDIS_HOST=127.0.0.1 REDIS_PORT=6379 REDIS_DATABASE=0 REDIS_NAMESPACE=kumwe.setup \
+        KUMWE_SITE_CONTENT_PROFILE=blank KUMWE_BUSINESS_DEMO=false \
+        bash -c '
+            set -uo pipefail
+            if ! php -r "exit((new PDO(\"mysql:host=127.0.0.1;dbname=kumwe_test\",\"kumwe\",\"kumwe_test\"))->query(\"SHOW TABLES LIKE \\\"kumwe_sites\\\"\")->fetchColumn() === false ? 1 : 0);" 2>/dev/null; then
+                php tests/Support/install-parent-schema.php || exit 1
+            fi
+            php tools/agent-collation-normalize.php || exit 1
+            php bin/kumwe database:migrate || exit 1
+            php tools/agent-collation-normalize.php || exit 1
+        ' >/tmp/agent-setup-schema.log 2>&1; then
+        note "Parent schema installed, collations normalized, migrations current."
+    else
+        note "Schema preparation failed (see /tmp/agent-setup-schema.log); run the steps by hand before the integration lane."
+        TIER2=partial
+    fi
+fi
 
 # ------------------------------------------------------------------ .agent-env
 # The exact environment the CI database job exports, minus engine matrixing.

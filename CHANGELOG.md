@@ -35,7 +35,13 @@ development programme, from the architecture decision that opened it to the curr
   invoke the same script — and `tools/agent-egress.txt` is the one canonical outbound
   allowlist a sandbox needs. `AGENTS.md` section 0 makes running it the first action in
   any fresh environment, so changes are validated locally before they are pushed instead
-  of discovered red in CI.
+  of discovered red in CI. The database lane is prepared to CI parity: the bootstrap pins
+  the server to one collation story before the first table exists, installs the immutable
+  parent schema, runs the migrations, and `tools/agent-collation-normalize.php` converges
+  every utf8mb4 table on the database's default collation — dropping and faithfully
+  re-creating the foreign keys that block a conversion — because the parent schema's bare
+  `CHARACTER SET utf8mb4` DDL takes each server's own charset default, and a sandbox whose
+  default differs from CI's engine image otherwise fails on "Illegal mix of collations".
 
 - **The operator checklist is the one road for changing this repository.** `AGENTS.md` is now the
   checklist any agent or person follows: where code lives, which gate watches a given change, the
