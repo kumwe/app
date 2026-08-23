@@ -122,6 +122,8 @@
     "quality:run": "php tools/quality-contract.php --run",
     "coverage:attribution": "php tools/coverage-contract.php --attribution",
     "coverage:ratchet": "php tools/coverage-contract.php --ratchet",
+    "perf:plan": "php tools/perf-harness.php --plan",
+    "perf:run": "php tools/perf-harness.php --run",
     "test": "phpunit --colors=always",
     "test:artifact": "bash tools/deployed-artifact-lane.sh",
     "test:idempotency": "php tools/verify-suite-idempotency.php",

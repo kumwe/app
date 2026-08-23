@@ -108,6 +108,10 @@
       {
         "path": "tests/Unit/Tools/RetainedMachineContractWriterTest.php",
         "reason": "The primary subject is tools/RetainedMachineContractWriter.php, a repository generation guard outside src/ and the released package. The CLI assertion proves retained-byte behavior through that tool; assigning a product class as the target would credit the wrong boundary."
+      },
+      {
+        "path": "tests/Unit/Tools/PerfHarnessPlanTest.php",
+        "reason": "The subject is tools/perf-harness.php, the P2-I capacity harness outside src/ and the released package. The test execs the tool in plan mode and holds its dataset plan to seed determinism; no product class is exercised, so attributing one would credit the wrong boundary."
       }
         ],
         "pending": [],

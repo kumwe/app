@@ -24,6 +24,19 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **The capacity contract has its first measuring instrument.** `tools/perf-harness.php` is the
+  `P2-I` seed: a deterministic plan generator (one seed always derives one plan, held to that by a
+  unit test) and a workload driver that boots the same kernel the integration suite uses and
+  measures the contract's interactive operation classes through the real `BusinessRecordService` —
+  bounded primary-key reads, policy-filtered page browses, ordinary small mutations, and 100- and
+  1000-line document commits — reporting p50/p95/p99, coefficient of variation and per-class SLO
+  verdicts to `build/perf/report.json` in the contract's own vocabulary, bound to commit, engine,
+  seed and sample counts. `composer perf:plan` and `composer perf:run` are the entry points. The
+  first recorded characterisation run measured every class within its objective with variation
+  inside the contract's 0.10 budget. The report's limitations block names what the seed does not
+  yet measure — concurrency and contention, write amplification, breakpoints and plan capture —
+  which are the remaining `P2-I` stages.
+
 - **The Studio contract corpus is vendored at an exact released pin and digest-verified on every
   build.** `tests/Fixtures/Studio/` now carries the complete `@kumwe/studio-protocol@0.1.0-alpha.6`
   schema set (37 schemas with their published digest manifest) and the complete
