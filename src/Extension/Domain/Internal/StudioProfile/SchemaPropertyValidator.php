@@ -133,15 +133,15 @@ final class SchemaPropertyValidator
                 return $cached[0];
             }
         }
-        if ($active->contains($schema)) {
+        if ($active->offsetExists($schema)) {
             throw new LogicException('Schema evaluation cycled without consuming instance input.');
         }
-        $active->attach($schema);
+        $active->offsetSet($schema, true);
         $firstNewError = count($errors);
         try {
             $valid = $this->node($schema, $instance, $path, $errors, $active);
         } finally {
-            $active->detach($schema);
+            $active->offsetUnset($schema);
         }
         $diagnostics = self::uniqueDiagnostics(array_slice($errors, $firstNewError));
         if ($valid === ($diagnostics !== [])) {
@@ -183,7 +183,7 @@ final class SchemaPropertyValidator
         };
 
         if (property_exists($schema, '$ref')) {
-            $target = $this->references->contains($schema) ? $this->references[$schema] : null;
+            $target = $this->references->offsetExists($schema) ? $this->references[$schema] : null;
             if ($target === null) {
                 throw new LogicException('Schema reference was not resolved at admission time.');
             }

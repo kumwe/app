@@ -723,14 +723,14 @@ final class SchemaPropertyProfile
      */
     private function trackObject(object $value, string $path): void
     {
-        if ($this->seen->contains($value)) {
+        if ($this->seen->offsetExists($value)) {
             throw new SchemaProfileRejected(
                 'invalid-root',
                 $path,
                 self::displayPath($path) . ' reuses or cycles a JSON object.',
             );
         }
-        $this->seen->attach($value);
+        $this->seen->offsetSet($value, true);
     }
 
     /**
@@ -761,7 +761,7 @@ final class SchemaPropertyProfile
         $eligibleReferences = 0;
 
         $ensureNode = static function (stdClass $node) use ($indexes, &$adjacency, &$reverse): int {
-            if ($indexes->contains($node)) {
+            if ($indexes->offsetExists($node)) {
                 return $indexes[$node];
             }
             $index = count($adjacency);
@@ -781,10 +781,10 @@ final class SchemaPropertyProfile
         while ($stack !== []) {
             $frame = array_pop($stack);
             $node = $frame['node'];
-            if ($expanded->contains($node)) {
+            if ($expanded->offsetExists($node)) {
                 continue;
             }
-            $expanded->attach($node);
+            $expanded->offsetSet($node, true);
             $source = $ensureNode($node);
             $children = [];
             $addChild = static function (
@@ -1164,10 +1164,10 @@ final class SchemaPropertyProfile
         $visited = new SplObjectStorage();
         while ($queue !== []) {
             $node = array_shift($queue);
-            if ($visited->contains($node)) {
+            if ($visited->offsetExists($node)) {
                 continue;
             }
-            $visited->attach($node);
+            $visited->offsetSet($node, true);
             foreach (get_object_vars($node) as $keyword => $operand) {
                 switch ((string) $keyword) {
                     case '$ref':
