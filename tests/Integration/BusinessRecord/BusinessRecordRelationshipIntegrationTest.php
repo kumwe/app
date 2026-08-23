@@ -26,6 +26,7 @@ use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
 use Kumwe\App\BusinessRecord\Query\BooleanFilter;
 use Kumwe\App\BusinessRecord\Query\BooleanOperator;
 use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
@@ -48,6 +49,7 @@ use Ramsey\Uuid\Uuid;
 
 #[CoversClass(BusinessRecordService::class)]
 #[CoversClass(DoctrineBusinessRecordReadRepository::class)]
+#[CoversClass(DoctrineBusinessRecordWriteRepository::class)]
 final class BusinessRecordRelationshipIntegrationTest extends TestCase
 {
     /**

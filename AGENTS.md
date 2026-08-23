@@ -140,6 +140,9 @@ nobody told the record. This is the hole.
 | Edit XLIFF or a user-facing string | `translation:check` / `translation:strings` | `composer translation:compile` and commit compiled catalogues |
 | Rebuild front-end and leave `public/assets/build` dirty | CI frontend job | Commit the hashed build, or don't rebuild |
 | Add a graphical route or template without cataloguing it | `composer interface:programme` | Register it in `docs/interface-standard/programme/surface-inventory.json` |
+| Add runtime lines without a `#[CoversClass]` test executing them | CI coverage ratchet (canonical MariaDB leg only) | 90% changed-line and 80% changed-refusal floors; write the test, name the class |
+| Validate persistence SQL on one engine | The MySQL and PostgreSQL CI legs | Run the cross-engine lane locally: `DB_DRIVER=pgsql DB_PORT=5432` after `tools/agent-setup.sh` |
+| Change visible UI without refreshing browser baselines | Hashed screenshot comparisons in the browser jobs | The `refresh-browser-baselines` workflow regenerates them; a CSS change without it loops CI |
 | Mark a finding `closed` | `composer roadmap:check` | Delete the finding, remove the STATUS row, write `CHANGELOG.md` |
 | Write "delivered" in the STATUS open-work table | `roadmap:check` | Remove the row. Completion language belongs in the phase board and changelog |
 | Widen a PHPDoc type (`list<string>` → `array`) | PHPStan max | Add prose. Never widen or delete an existing type |
@@ -184,6 +187,17 @@ Pick one. Do every box. Then the hand-back commands.
     or process globals. If you need them, you are in the wrong layer: introduce a port.
 [ ] composer docs:format
 [ ] Focused unit test. Integration test if it is an infrastructure boundary.
+[ ] Cover what you wrote, in a test that names the class in #[CoversClass]: CI's canonical
+    MariaDB leg enforces 90% of your changed executable lines and 80% of your changed
+    refusal (throw) lines, and only tests that name the class credit its lines. This
+    ratchet is CI-only — composer qa cannot measure it — so an untested branch is a red
+    build forty minutes out. A refusal nothing has taken is a branch nothing has tested.
+[ ] Persistence SQL or driver-facing change? Run the same tests on the cross-engine lane
+    (DB_DRIVER=pgsql DB_PORT=5432, provisioned by tools/agent-setup.sh where available):
+    PostgreSQL refuses what MariaDB coerces, and only CI runs all three engines.
+[ ] Sandbox on PHP 8.4? Whatever is 8.5-only — deprecations fail both PHPStan and the
+    suite in CI — stays invisible locally until the packages.sury.org egress line is
+    allowed. Treat any 8.5-deprecated API as forbidden.
 [ ] Then the "add a test" recipe, including baseline:record.
 ```
 
