@@ -4,7 +4,7 @@
 **Decided by** Product owner, by accepting package P3-D's own taxonomy (move inward, invert, move
 outward, or record an exact interface); this record applies it to the fifteen Domain-to-Application
 edges the dependency baseline carried
-**Verified against** `834cc4e066845e0c8bb985d615bd189a0990dfcf`
+**Verified against** `ea2a01d11a2b7ee0f3b5adb402b4f6394ef7e4d1`
 **Findings** `V2-ARC-003`
 **Gate** A
 
