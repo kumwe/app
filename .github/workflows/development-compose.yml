@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+  merge_group:
   workflow_dispatch:
 
 permissions:
@@ -22,6 +23,15 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Shares the composer-files cache key the other lanes record, so on a warm key every locked
+      # dist archive is a local read and a GitHub API outage cannot fail the install (V2-REL-002).
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
 
       - name: Configure a custom local listener
         shell: bash
@@ -52,7 +62,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker compose run --rm app composer install --no-interaction --prefer-dist
+          install -d "$HOME/.cache/composer/files"
+          status=1
+          for attempt in 1 2 3; do
+            if docker compose run --rm \
+              --volume "$HOME/.cache/composer:/tmp/composer-cache" \
+              --env COMPOSER_CACHE_DIR=/tmp/composer-cache \
+              app composer install --no-interaction --prefer-dist; then
+              status=0
+              break
+            else
+              status="$?"
+            fi
+            if [ "$status" -ne 100 ]; then
+              exit "$status"
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Composer dependency download failed on attempt ${attempt}; retrying." >&2
+              sleep $(( 10 * attempt ))
+            fi
+          done
+          if [ "$status" -ne 0 ]; then
+            echo 'Composer dependencies could not be installed after three bounded attempts.' >&2
+            exit "$status"
+          fi
           git diff --exit-code -- composer.json composer.lock
 
       - name: Verify the custom port drives the application base URL

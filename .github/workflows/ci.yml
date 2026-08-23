@@ -1,10 +1,15 @@
 name: Kumwe CI
 
+# The merge_group trigger runs this workflow against the rebased merge candidate when the
+# repository's merge queue is enabled: because the merge-lane conditionals key on the event NOT
+# being pull_request, a queued candidate runs the complete evidence set — including the checks a
+# rebase can newly break, like changelog citation reachability — before master ever moves.
 on:
   push:
     branches:
       - master
   pull_request:
+  merge_group:
   workflow_dispatch:
 
 permissions:

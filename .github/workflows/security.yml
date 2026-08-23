@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+  merge_group:
   schedule:
     - cron: '17 3 * * 1'
   workflow_dispatch:
@@ -93,14 +94,19 @@ jobs:
           filesystem --exit-code 1 --ignore-unfixed
           --severity HIGH,CRITICAL --scanners vuln,misconfig,secret /src
 
+      # The runner's Composer cache is restored above and keyed on composer.lock, so seeding it
+      # into the image build makes every locked dist archive a local read: a GitHub API outage
+      # cannot fail a build whose dependencies are already on the runner (V2-REL-002).
       - name: Build production runtime image
         run: >-
-          docker build
+          docker buildx build
           --pull
           --file docker/php/Dockerfile
           --target runtime
           --tag kumwe-security:${GITHUB_SHA}
           --build-arg KUMWE_RELEASE=2.0.0-security-scan
+          --build-context composer-cache="$HOME/.cache/composer/files"
+          --load
           .
 
       - name: Scan production runtime image
@@ -113,12 +119,14 @@ jobs:
 
       - name: Build production web image
         run: >-
-          docker build
+          docker buildx build
           --pull
           --file docker/php/Dockerfile
           --target web
           --tag kumwe-web-security:${GITHUB_SHA}
           --build-arg KUMWE_RELEASE=2.0.0-security-scan
+          --build-context composer-cache="$HOME/.cache/composer/files"
+          --load
           .
 
       - name: Scan production web image

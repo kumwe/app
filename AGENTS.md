@@ -260,7 +260,12 @@ Pick one. Do every box. Then the hand-back commands.
 [ ] Remove the package/finding from the STATUS.md open-work table.
     Do not write complete / delivered / done in that table.
 [ ] Write the substance into CHANGELOG.md under Added / Changed / Fixed / Security /
-    Deprecated / Removed. Cite resolving commits. Keep-a-Changelog format.
+    Deprecated / Removed. Keep-a-Changelog format. Cite the evidence merge-stably:
+    an entry written on a branch cites its pull request as (#123), because the rebase
+    merge rewrites every branch commit hash and roadmap:check refuses a dangling one
+    on the first master run. Cite a commit hash only when it already sits on master;
+    after a rebase leaves an old hash dangling, repoint it to the rebased twin
+    (match by commit message) or replace it with the pull-request citation.
 [ ] Lower the STATUS ledger snapshot counts. Update the phase-board cell if a phase moved.
 [ ] Leave the package definition in docs/roadmap/README.md. That is the durable contract.
 [ ] composer roadmap:check

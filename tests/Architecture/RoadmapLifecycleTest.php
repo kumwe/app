@@ -463,6 +463,45 @@ final class RoadmapLifecycleTest extends TestCase
     }
 
     /**
+     * A merged pull request reference is merge-stable evidence, and never loosens the hash check.
+     *
+     * A rebase merge rewrites every branch commit hash, so an entry written on a branch cites its
+     * pull request instead. That satisfies the evidence-presence requirement on its own — and a
+     * hash cited beside it is still held to reachability, so the alternative form cannot be used
+     * to smuggle a dangling commit past the verifier.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAPullRequestCitationIsMergeStableEvidence(): void
+    {
+        $pullOnly = tempnam(sys_get_temp_dir(), 'kumwe-changelog-');
+        self::assertIsString($pullOnly);
+        file_put_contents($pullOnly, "# Changelog\n\nCompleted work, merged by rebase. (#107)\n");
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', $pullOnly);
+        } finally {
+            @unlink($pullOnly);
+        }
+        self::assertSame(0, $result['status'], $result['output']);
+        self::assertStringContainsString('Kumwe roadmap verified', $result['output']);
+
+        $mixed = tempnam(sys_get_temp_dir(), 'kumwe-changelog-');
+        self::assertIsString($mixed);
+        file_put_contents($mixed, "# Changelog\n\nCompleted work. (#107)\nOlder claim. (`0000000`)\n");
+
+        try {
+            $result = $this->runVerifier($this->root . '/docs/roadmap/findings.json', $mixed);
+        } finally {
+            @unlink($mixed);
+        }
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('not reachable from HEAD', $result['output']);
+    }
+
+    /**
      * An object left dangling by a rebase is not historical evidence merely because it still exists locally.
      *
      * @return  void
