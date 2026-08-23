@@ -148,20 +148,12 @@ docker compose -f compose.production.yaml --profile automation up -d worker sche
 composer qa
 ```
 
-That is the merge gate. Its parts run individually:
-
-```bash
-composer architecture:policy   # layer and dependency policy
-composer cs                    # PSR-12 layout, 120-character lines
-composer analyse               # PHPStan at level max
-composer docs:api              # documentation-block completeness
-composer openapi:check         # the compiled REST contract is current
-composer translation:check     # the compiled message catalogues are current
-composer translation:strings   # no template carries user-facing text inline
-composer assets:direction      # no stylesheet pins a rule to one writing direction
-composer test:unit             # unit suite
-composer test:integration      # integration suite (needs the database)
-```
+That is the local gate every change runs before it is pushed; CI runs the same
+member set. The authoritative member list is
+[`docs/quality/contract.json`](docs/quality/contract.json), reproduced in
+[`AGENTS.md`](AGENTS.md) section 6 — this file deliberately does not carry a
+third copy. A fresh sandbox is provisioned by `bash tools/agent-setup.sh`
+([`AGENTS.md`](AGENTS.md) section 0).
 
 The browser suite runs against the started stack:
 
