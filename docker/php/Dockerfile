@@ -146,12 +146,23 @@ SH
 
 WORKDIR /var/www/kumwe
 
+# An empty default for the dependency-cache build context. A builder that has a warm Composer
+# cache overrides it (docker buildx build --build-context composer-cache=…) so the vendor stage
+# reads known dist archives locally instead of fetching every one from api.github.com at build
+# time; a plain build keeps this empty stage and behaves exactly as before.
+FROM scratch AS composer-cache
+
 FROM php-base AS vendor
 
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 COPY composer.json composer.lock ./
 
-RUN set -eux; \
+RUN --mount=type=bind,from=composer-cache,target=/tmp/composer-cache-seed \
+    set -eux; \
+    if [ -n "$(ls -A /tmp/composer-cache-seed 2>/dev/null)" ]; then \
+        install -d /root/.composer/cache/files; \
+        cp -R /tmp/composer-cache-seed/. /root/.composer/cache/files/; \
+    fi; \
     for attempt in 1 2 3; do \
         if composer install \
             --classmap-authoritative \

@@ -151,6 +151,12 @@ exit(0);
 /**
  * Require every abbreviated commit cited by the changelog to resolve in repository history.
  *
+ * A merged pull request reference (`#123`) is the merge-stable evidence form: a rebase merge
+ * rewrites every branch commit hash, so an entry written on a branch cites its pull request, and
+ * commit hashes are cited only once they sit on the default branch. Hash citations, wherever they
+ * appear, are still held to unambiguous reachability — the alternative form adds evidence that a
+ * history rewrite cannot dangle, it never loosens the check on hashes.
+ *
  * @param   string        $path    Changelog document whose backtick-delimited hashes are citations.
  * @param   string        $root    Repository root whose current history must contain those commits.
  * @param   list<string>  $errors  Accumulated validation failures.
@@ -315,9 +321,14 @@ function verifyChangelogCitations(string $path, string $root, array &$errors): v
         $matched[1] ?? [],
         static fn (string $citation): bool => preg_match('/^[0-9]{9,}$/D', $citation) !== 1,
     )));
-    if ($citations === []) {
-        $errors[] = 'CHANGELOG.md cites no commits, so completed work has no reachable evidence.';
+    $pullRequests = preg_match('/\(#[0-9]+\)/', $contents) === 1;
+    if ($citations === [] && !$pullRequests) {
+        $errors[] = 'CHANGELOG.md cites no commits and no pull requests, so completed work has no '
+            . 'reachable evidence.';
 
+        return;
+    }
+    if ($citations === []) {
         return;
     }
 
@@ -348,7 +359,8 @@ function verifyChangelogCitations(string $path, string $root, array &$errors): v
         sort($unreachable, SORT_STRING);
         $errors[] = sprintf(
             'CHANGELOG.md cites commit(s) that are not reachable from HEAD: %s. Repoint each citation '
-            . 'after a rebase so the historical claim keeps its evidence.',
+            . 'after a rebase so the historical claim keeps its evidence, or cite the merged pull '
+            . 'request as (#123), which no rebase can dangle.',
             implode(', ', $unreachable),
         );
     }
