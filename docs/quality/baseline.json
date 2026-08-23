@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "a75b3e557adb75206a65c7d00d9d95ed717a38ed",
+    "commit": "ea762c7bffb8684b3f1b2d510ade4dea73b16592",
     "recorded_at": "2026-08-23",
     "recorded_from": [],
     "toolchain": {
@@ -555,7 +555,7 @@
             "tests/Unit/Extension/Infrastructure/Trust/FilesystemExtensionArtifactVerifierTest.php": 2
         },
         "recorded_exemptions": {
-            "dependency-graph": 91,
+            "dependency-graph": 76,
             "idempotency": 0,
             "test-documentation": 3679
         }
