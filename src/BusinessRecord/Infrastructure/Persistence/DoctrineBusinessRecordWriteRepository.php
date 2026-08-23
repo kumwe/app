@@ -69,10 +69,10 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
     /**
      * Largest number of links one set-based reorder statement renumbers.
      *
-     * A reorder pair binds three parameters — the link key twice and its new position — so a hundred
-     * links keeps a statement comfortably inside the same parameter and packet ceilings the owned-line
-     * batch reasons from, while a thousand-line document renumbers in ten statements instead of a
-     * thousand (P4-B).
+     * A reorder pair binds the link key twice — in the CASE arm and the IN list — while its new
+     * position is a server-derived integer literal, so a hundred links keeps a statement comfortably
+     * inside the same parameter and packet ceilings the owned-line batch reasons from, while a
+     * thousand-line document renumbers in ten statements instead of a thousand (P4-B).
      *
      * @var    int
      * @since  2.0.0
@@ -684,11 +684,12 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
                 $parameters = [];
                 $types = [];
                 foreach ($chunk as $position => $targetRecordKey) {
-                    $cases[] = 'WHEN ? THEN ?';
+                    // The position is a server-derived integer literal rather than a bound
+                    // parameter: PostgreSQL types a CASE by its THEN operands and refuses to
+                    // assign a parameter-typed (text) result to the integer position column.
+                    $cases[] = 'WHEN ? THEN ' . $position;
                     $parameters[] = $targetRecordKey;
                     $types[] = $targetType;
-                    $parameters[] = $position;
-                    $types[] = Types::INTEGER;
                 }
                 $parameters[] = $actorId;
                 $types[] = Types::STRING;
