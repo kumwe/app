@@ -61,7 +61,8 @@ final class OwnedExtensionContributionRegistrar implements
     MoneyRateProviderRegistrar,
     ContentTranslationRegistrar,
     UnitConversionProviderRegistrar,
-    CompositionContributionRegistrar
+    CompositionContributionRegistrar,
+    CanonicalCompositionRegistrar
 {
     /**
      * Array exports of the manifest declarations, keyed by contribution kind and then by identifier.
@@ -150,6 +151,9 @@ final class OwnedExtensionContributionRegistrar implements
             'composition_inspector' => $this->index($declared->compositionInspectors()),
             'composition_design_vocabulary' => $this->index($declared->compositionDesignVocabularies()),
             'composition_migration' => $this->index($declared->compositionMigrations()),
+            // Host bindings are declaration-only host metadata: the host consumes them from the
+            // manifest, provider code never registers them, so they are absent here on purpose.
+            'canonical_composition_document' => $this->index($declared->canonicalCompositionDocuments()),
         ];
     }
 
@@ -861,6 +865,31 @@ final class OwnedExtensionContributionRegistrar implements
     {
         $this->accept('composition_migration', $declaration->identifier(), $declaration->toArray());
         $this->registries->compositionMigrations()->register($this->owner, $declaration);
+    }
+
+    /**
+     * Register a canonical composition document only as the signed manifest declared it, byte for byte.
+     *
+     * The export carries the document's exact canonical JSON string, so the strict comparison against
+     * the manifest declaration is literal byte equivalence of the documents themselves. Ownership uses
+     * the Studio identity grammar — the owner's namespace before a slash — rather than the dotted App
+     * identifier rule, because the identity lives inside the portable document.
+     *
+     * @param   CanonicalCompositionDocument  $document  Canonical document, byte-identical to the
+     *          manifest's declaration.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identity is outside the owner's Studio namespace,
+     *          repeated, or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function canonicalCompositionDocument(CanonicalCompositionDocument $document): void
+    {
+        $this->accept('canonical_composition_document', $document->identifier(), $document->toArray());
+        $this->registries->canonicalCompositionDocuments()->register($this->owner, $document);
     }
 
     /**

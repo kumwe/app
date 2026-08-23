@@ -129,7 +129,7 @@ final readonly class ExtensionManifest
      * @param   array<mixed>               $events                 Event declaration objects, at most 256.
      * @param   array<mixed>               $assets                 Package-relative asset paths, at most 512.
      * @param   ?ManifestContributionSet   $contributions          Strict contributions; null selects the legacy set.
-     * @param   int                        $schemaVersion          Manifest schema revision; 1 through 5 are supported.
+     * @param   int                        $schemaVersion          Manifest schema revision; 1 through 6 are supported.
      * @param   ?TemplateKisCompatibility  $templateCompatibility  Closed KIS compatibility contract for templates.
      *
      * @throws  InvalidArgumentException  When the schema is unsupported or any declared value fails its check.
@@ -155,7 +155,7 @@ final readonly class ExtensionManifest
         private int $schemaVersion = 1,
         ?TemplateKisCompatibility $templateCompatibility = null,
     ) {
-        if (!in_array($schemaVersion, [1, 2, 3, 4, 5], true)) {
+        if (!in_array($schemaVersion, [1, 2, 3, 4, 5, 6], true)) {
             throw new InvalidArgumentException('The extension manifest schema is unsupported.');
         }
         if (
@@ -272,8 +272,8 @@ final readonly class ExtensionManifest
         /** @var array<string, mixed> $data */
 
         $schema = $data['schema'] ?? null;
-        if (!in_array($schema, [1, 2, 3, 4, 5], true)) {
-            throw new InvalidArgumentException('The extension manifest schema must be 1, 2, 3, 4, or 5.');
+        if (!in_array($schema, [1, 2, 3, 4, 5, 6], true)) {
+            throw new InvalidArgumentException('The extension manifest schema must be 1, 2, 3, 4, 5, or 6.');
         }
         if ($schema >= 2) {
             self::assertKnownKeys($data, ExtensionManifestGrammar::manifestKeys($schema), 'The extension manifest');
@@ -419,7 +419,7 @@ final readonly class ExtensionManifest
     /**
      * Report which manifest revision the package was written against.
      *
-     * @return  int  1 for legacy through 5 for composition contributions, as `fromJson()` accepted it.
+     * @return  int  1 for legacy through 6 for canonical composition contributions, as `fromJson()` accepted it.
      *
      * @since   2.0.0
      */

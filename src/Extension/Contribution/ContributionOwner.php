@@ -21,6 +21,23 @@ use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 final readonly class ContributionOwner
 {
     /**
+     * Kinds whose identifiers follow the Studio identity grammar rather than the dotted App rule.
+     *
+     * A canonical composition identity lives inside the portable Studio document as
+     * `<namespace>/<local-name>`, and its kind-scoped index form prefixes the document kind and one
+     * space. Ownership therefore means the slash-form namespace matches the owner, not the dotted
+     * prefix every App-side identifier carries.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    private const STUDIO_KINDS = [
+        'canonical composition document',
+        'canonical_composition_document',
+        'composition_host_binding',
+    ];
+
+    /**
      * Contribution kinds whose identifiers use the shared graphical dotted grammar.
      *
      * Other typed integration identifiers retain their own established suffix syntax, including
@@ -149,6 +166,22 @@ final readonly class ContributionOwner
      */
     public function assertOwns(string $identifier, string $kind): void
     {
+        if (in_array($kind, self::STUDIO_KINDS, true)) {
+            $identity = ($space = strpos($identifier, ' ')) === false
+                ? $identifier
+                : substr($identifier, $space + 1);
+            $studioNamespace = ($this->identifier === self::CORE ? self::CORE : $this->namespace()) . '/';
+            if (!str_starts_with($identity, $studioNamespace)) {
+                throw new InvalidArgumentException(sprintf(
+                    '%s cannot claim %s identifier %s.',
+                    $this->identifier === self::CORE ? 'Core' : 'Extension ' . $this->identifier,
+                    $kind,
+                    $identifier,
+                ));
+            }
+
+            return;
+        }
         $requiresGraphicalSuffix = in_array($kind, self::GRAPHICAL_KINDS, true);
         if ($this->identifier === self::CORE) {
             if (

@@ -29,6 +29,9 @@ use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use Kumwe\App\Extension\Domain\Internal\ExtensionManifestGrammar;
+use Kumwe\App\Extension\Domain\Internal\StudioProfile\SchemaProfileRejected;
+use Kumwe\App\Extension\Domain\Internal\StudioProfile\SchemaPropertyProfile;
+use Kumwe\App\Extension\Domain\Internal\StudioProfile\StudioContributionSchemas;
 use Kumwe\App\Identity\Domain\Capability;
 use Kumwe\App\InterfaceStandard\SurfaceArea;
 use Kumwe\App\InterfaceStandard\SurfaceDefinition;
@@ -87,6 +90,20 @@ final readonly class ManifestContributionSet
      * @since  2.0.0
      */
     public const COMPOSITION_SPI_VERSION = 3;
+
+    /**
+     * Contribution SPI used by manifest schema 6 packages, which carry canonical Studio documents.
+     *
+     * Schema 6 replaces the frozen schema-5 paraphrase vocabulary with the exact canonical Studio
+     * contribution documents and their separate bounded host bindings (kumwe/app#104, decision
+     * D16). The constant sits beside the earlier versions rather than replacing any of them: a
+     * schema-6 manifest must declare `contributions.version` as 4, an earlier schema refuses SPI 4,
+     * and schema 5 remains frozen on SPI 3 byte for byte.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const CANONICAL_COMPOSITION_SPI_VERSION = 4;
 
     /**
      * Declared permission codes, keyed and sorted by capability identifier.
@@ -361,6 +378,22 @@ final readonly class ManifestContributionSet
     private array $compositionMigrations;
 
     /**
+     * Manifest-declared canonical Studio composition documents keyed by kind-scoped identity.
+     *
+     * @var    array<string, CanonicalCompositionDocument>  Declared canonical documents.
+     * @since  2.0.0
+     */
+    private array $canonicalCompositionDocuments;
+
+    /**
+     * Manifest-declared host bindings keyed by their document's kind-scoped identity.
+     *
+     * @var    array<string, CompositionHostBinding>  Declared bounded host metadata.
+     * @since  2.0.0
+     */
+    private array $compositionHostBindings;
+
+    /**
      * Assemble one package's declarations and reject any set that is already inconsistent.
      *
      * Called directly only for an empty or hand-built set, such as core's; a real manifest arrives
@@ -410,6 +443,10 @@ final readonly class ManifestContributionSet
      *          of tokens, recipes and size roles.
      * @param   iterable<CompositionMigrationDeclaration>         $compositionMigrations     Declared migrations for
      *          documents a declared block appears in.
+     * @param   iterable<CanonicalCompositionDocument>            $canonicalDocuments        Canonical Studio
+     *          documents a schema-6 manifest carries in their exact byte form.
+     * @param   iterable<CompositionHostBinding>                  $compositionHostBindings   Bounded host metadata
+     *          binding canonical documents into this application.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          navigation or a route references something this set does not declare, a business definition
@@ -455,8 +492,15 @@ final readonly class ManifestContributionSet
         iterable $compositionInspectors = [],
         iterable $compositionVocabularies = [],
         iterable $compositionMigrations = [],
+        iterable $canonicalDocuments = [],
+        iterable $compositionHostBindings = [],
     ) {
-        $supported = [self::SPI_VERSION, self::CURRENT_SPI_VERSION, self::COMPOSITION_SPI_VERSION];
+        $supported = [
+            self::SPI_VERSION,
+            self::CURRENT_SPI_VERSION,
+            self::COMPOSITION_SPI_VERSION,
+            self::CANONICAL_COMPOSITION_SPI_VERSION,
+        ];
         if (!in_array($spiVersion, $supported, true)) {
             throw new InvalidArgumentException('The extension contribution SPI version is unsupported.');
         }
@@ -497,6 +541,14 @@ final readonly class ManifestContributionSet
             'composition_design_vocabulary',
         );
         $this->compositionMigrations = $this->index($compositionMigrations, 'composition_migration');
+        $this->canonicalCompositionDocuments = self::canonicalIndex(
+            $canonicalDocuments,
+            'canonical_composition_document',
+        );
+        $this->compositionHostBindings = self::canonicalIndex(
+            $compositionHostBindings,
+            'composition_host_binding',
+        );
         if ($this->spiVersion >= self::CURRENT_SPI_VERSION) {
             $this->assertPortableRelationshipOrdering();
         }
@@ -620,6 +672,83 @@ final readonly class ManifestContributionSet
         }
         $this->assertIntegrationReferences();
         $this->assertCompositionReferences();
+        $this->assertCanonicalComposition();
+    }
+
+    /**
+     * Hold the canonical composition surface to its SPI, its ownership, and its host bindings.
+     *
+     * Canonical documents belong to SPI 4 alone, exactly as the frozen paraphrase vocabulary
+     * belongs to SPI 3: an earlier SPI carrying a canonical document, or SPI 4 carrying a
+     * schema-5 declaration, is refused rather than blended. Every document's identity must sit
+     * in the owner's Studio namespace, every host binding must name a declared document, a block
+     * definition must have exactly one binding carrying an owner-namespaced renderer, and a
+     * binding capability must be one this manifest declares.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When a document or binding breaks any of those rules.
+     *
+     * @since   2.0.0
+     */
+    private function assertCanonicalComposition(): void
+    {
+        $carriesCanonical = $this->canonicalCompositionDocuments !== [] || $this->compositionHostBindings !== [];
+        if ($carriesCanonical && $this->spiVersion < self::CANONICAL_COMPOSITION_SPI_VERSION) {
+            throw new InvalidArgumentException(
+                'Canonical composition documents require contribution SPI 4.',
+            );
+        }
+        $carriesParaphrase = $this->compositionBlocks !== []
+            || $this->compositionPatterns !== []
+            || $this->compositionFieldControls !== []
+            || $this->compositionInspectors !== []
+            || $this->compositionDesignVocabularies !== []
+            || $this->compositionMigrations !== [];
+        if ($carriesParaphrase && $this->spiVersion >= self::CANONICAL_COMPOSITION_SPI_VERSION) {
+            throw new InvalidArgumentException(
+                'SPI 4 carries canonical composition documents; the schema-5 vocabulary is frozen at SPI 3.',
+            );
+        }
+
+        $studioNamespace = ($this->owner->identifier() === ContributionOwner::CORE
+            ? ContributionOwner::CORE
+            : $this->owner->namespace()) . '/';
+        foreach ($this->canonicalCompositionDocuments as $document) {
+            if (!str_starts_with($document->identity(), $studioNamespace)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Canonical composition identity %s must sit in the owner namespace %s.',
+                    $document->identity(),
+                    $studioNamespace,
+                ));
+            }
+        }
+        foreach ($this->compositionHostBindings as $binding) {
+            if (!isset($this->canonicalCompositionDocuments[$binding->identifier()])) {
+                throw new InvalidArgumentException(
+                    'A composition host binding must name a canonical document this manifest declares.',
+                );
+            }
+            if ($binding->renderer !== null) {
+                $this->owner->assertOwns($binding->renderer, 'composition renderer');
+            }
+            if ($binding->capability !== null && !isset($this->capabilities[$binding->capability])) {
+                throw new InvalidArgumentException(
+                    'A composition host binding capability must be one this manifest declares.',
+                );
+            }
+        }
+        foreach ($this->canonicalCompositionDocuments as $identifier => $document) {
+            if ($document->kind !== CanonicalCompositionKind::BlockDefinition) {
+                continue;
+            }
+            $binding = $this->compositionHostBindings[$identifier] ?? null;
+            if ($binding === null || $binding->renderer === null) {
+                throw new InvalidArgumentException(
+                    'A canonical block definition requires a host binding with an owner-namespaced renderer.',
+                );
+            }
+        }
     }
 
     /**
@@ -844,8 +973,10 @@ final readonly class ManifestContributionSet
      */
     public static function fromManifest(ExtensionIdentifier $extension, array $data, int $manifestSchema = 3): self
     {
-        if (!in_array($manifestSchema, [2, 3, 4, 5], true)) {
-            throw new InvalidArgumentException('Typed extension contributions require manifest schema 2, 3, 4, or 5.');
+        if (!in_array($manifestSchema, [2, 3, 4, 5, 6], true)) {
+            throw new InvalidArgumentException(
+                'Typed extension contributions require manifest schema 2, 3, 4, 5, or 6.',
+            );
         }
         $data = self::object($data, 'contributions');
         self::knownKeys(
@@ -854,6 +985,7 @@ final readonly class ManifestContributionSet
             'contributions',
         );
         $expectedSpi = match (true) {
+            $manifestSchema >= 6 => self::CANONICAL_COMPOSITION_SPI_VERSION,
             $manifestSchema >= 5 => self::COMPOSITION_SPI_VERSION,
             $manifestSchema >= 4 => self::CURRENT_SPI_VERSION,
             default => self::SPI_VERSION,
@@ -1215,6 +1347,72 @@ final readonly class ManifestContributionSet
                 => CompositionMigrationDeclaration::fromArray($item),
             self::objects($composition['migrations'] ?? [], 'contributions.composition.migrations'),
         );
+        $canonicalDocuments = [];
+        $compositionHostBindings = [];
+        if ($manifestSchema >= 6) {
+            $schemas = StudioContributionSchemas::fromVendoredCorpus();
+            $canonicalDocuments = array_map(
+                static function (array $item) use ($schemas): CanonicalCompositionDocument {
+                    self::knownKeys($item, ['kind', 'canonical'], 'canonical composition document');
+                    $kind = CanonicalCompositionKind::tryFrom(self::string($item, 'kind'))
+                        ?? throw new InvalidArgumentException(
+                            'A canonical composition document names an unknown kind.',
+                        );
+                    $canonical = $item['canonical'] ?? null;
+                    if (!is_string($canonical)) {
+                        throw new InvalidArgumentException(
+                            'A canonical composition document must carry its canonical JSON string.',
+                        );
+                    }
+                    $document = new CanonicalCompositionDocument($kind, $canonical);
+                    $validator = $schemas->validator($kind->value);
+                    if (!$validator->validate($document->document)) {
+                        $first = $validator->diagnostics()[0] ?? null;
+                        throw new InvalidArgumentException(sprintf(
+                            'A %s document violates its pinned Studio schema%s.',
+                            $kind->value,
+                            $first === null ? '' : sprintf(
+                                ' (%s at %s)',
+                                $first->keyword,
+                                $first->instancePath === '' ? 'the document root' : $first->instancePath,
+                            ),
+                        ));
+                    }
+                    if ($kind === CanonicalCompositionKind::BlockDefinition) {
+                        try {
+                            SchemaPropertyProfile::admit($document->document->propertySchema ?? null);
+                        } catch (SchemaProfileRejected $rejection) {
+                            throw new InvalidArgumentException(sprintf(
+                                'A block definition propertySchema falls outside '
+                                    . 'studio.profile/schema-property (%s at %s).',
+                                $rejection->rejection,
+                                $rejection->schemaPath === '' ? 'the schema root' : $rejection->schemaPath,
+                            ), 0, $rejection);
+                        }
+                    }
+
+                    return $document;
+                },
+                self::objects($composition['documents'] ?? [], 'contributions.composition.documents'),
+            );
+            $compositionHostBindings = array_map(
+                static function (array $item): CompositionHostBinding {
+                    self::knownKeys($item, ['kind', 'id', 'renderer', 'capability'], 'composition host binding');
+                    $kind = CanonicalCompositionKind::tryFrom(self::string($item, 'kind'))
+                        ?? throw new InvalidArgumentException(
+                            'A composition host binding names an unknown kind.',
+                        );
+
+                    return new CompositionHostBinding(
+                        $kind,
+                        self::string($item, 'id'),
+                        ($item['renderer'] ?? null) !== null ? self::string($item, 'renderer') : null,
+                        ($item['capability'] ?? null) !== null ? self::string($item, 'capability') : null,
+                    );
+                },
+                self::objects($composition['host_bindings'] ?? [], 'contributions.composition.host_bindings'),
+            );
+        }
 
         $set = new self(
             $owner,
@@ -1253,6 +1451,8 @@ final readonly class ManifestContributionSet
             $compositionInspectors,
             $compositionVocabularies,
             $compositionMigrations,
+            $canonicalDocuments,
+            $compositionHostBindings,
         );
         $set->assertFieldPresentationCoverage();
 
@@ -1697,6 +1897,30 @@ final readonly class ManifestContributionSet
     }
 
     /**
+     * Return the canonical Studio composition documents carried by this manifest contribution set.
+     *
+     * @return  list<CanonicalCompositionDocument>  Declared canonical documents in identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function canonicalCompositionDocuments(): array
+    {
+        return array_values($this->canonicalCompositionDocuments);
+    }
+
+    /**
+     * Return the bounded host bindings carried by this manifest contribution set.
+     *
+     * @return  list<CompositionHostBinding>  Declared host metadata in identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function compositionHostBindings(): array
+    {
+        return array_values($this->compositionHostBindings);
+    }
+
+    /**
      * Return the SPI version carried by this manifest contribution set.
      *
      * @return  int  Contribution service-provider interface revision.
@@ -1872,6 +2096,20 @@ final readonly class ManifestContributionSet
                 $document['composition'][$key] = $this->exports($declarations);
             }
         }
+        // Canonical documents export their registry form: the kind-scoped identity is repeated beside
+        // the canonical bytes so an inventory reader never decodes a document just to key it.
+        if ($this->canonicalCompositionDocuments !== []) {
+            $document['composition']['documents'] = array_map(
+                static fn (CanonicalCompositionDocument $declared): array => $declared->toArray(),
+                $this->canonicalCompositionDocuments(),
+            );
+        }
+        if ($this->compositionHostBindings !== []) {
+            $document['composition']['host_bindings'] = array_map(
+                static fn (CompositionHostBinding $binding): array => $binding->toArray(),
+                $this->compositionHostBindings(),
+            );
+        }
 
         return $document;
     }
@@ -1926,6 +2164,43 @@ final readonly class ManifestContributionSet
             $result[$identifier] = $item;
         }
         ksort($result, SORT_STRING);
+        return $result;
+    }
+
+    /**
+     * Index canonical composition declarations, whose Studio identity grammar is checked separately.
+     *
+     * A canonical identity lives inside the portable document and follows the Studio slash grammar,
+     * not the dotted App identifier rule, so `assertCanonicalComposition()` owns that check and this
+     * index only refuses repetition.
+     *
+     * @template T of ContributionDefinition
+     *
+     * @param   iterable<T>  $items  Canonical declarations of one kind, as the manifest listed them.
+     * @param   string       $kind   Kind name used in the failure message.
+     *
+     * @return  array<string, T>  The declarations keyed by identifier, sorted by that key.
+     *
+     * @throws  InvalidArgumentException  When an identifier is repeated.
+     *
+     * @since   2.0.0
+     */
+    private static function canonicalIndex(iterable $items, string $kind): array
+    {
+        $result = [];
+        foreach ($items as $item) {
+            $identifier = $item->identifier();
+            if (isset($result[$identifier])) {
+                throw new InvalidArgumentException(sprintf(
+                    'Contribution %s %s is declared more than once.',
+                    $kind,
+                    $identifier,
+                ));
+            }
+            $result[$identifier] = $item;
+        }
+        ksort($result, SORT_STRING);
+
         return $result;
     }
 

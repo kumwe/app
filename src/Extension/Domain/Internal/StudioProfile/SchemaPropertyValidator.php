@@ -47,12 +47,16 @@ final class SchemaPropertyValidator
      * @param  stdClass                                   $root        Admitted schema document root.
      * @param  SplObjectStorage<stdClass, stdClass|bool>  $references  Resolved `$ref` target per
      *         referring schema node.
+     * @param  SplObjectStorage<stdClass, string>|null    $patterns    Compiled lexical pattern per
+     *         schema node, for the reviewed canonical schemas only; a contributed property schema
+     *         never carries `pattern`, so the profile passes null here.
      *
      * @since  2.0.0
      */
     public function __construct(
         private readonly stdClass $root,
         private readonly SplObjectStorage $references,
+        private readonly ?SplObjectStorage $patterns = null,
     ) {
         $this->memo = new SplObjectStorage();
     }
@@ -234,7 +238,7 @@ final class SchemaPropertyValidator
         $this->combinators($schema, $instance, $path, $errors, $active, $fail);
 
         if (is_string($instance)) {
-            self::stringKeywords($schema, $instance, $fail);
+            $this->stringKeywords($schema, $instance, $fail);
         } elseif ((is_int($instance) || is_float($instance)) && is_finite((float) $instance)) {
             self::numberKeywords($schema, $instance, $fail);
         } elseif (is_array($instance)) {
@@ -328,7 +332,7 @@ final class SchemaPropertyValidator
     }
 
     /**
-     * Apply the string keywords by code-point length.
+     * Apply the string keywords: reviewed lexical patterns first, then code-point lengths.
      *
      * @param   stdClass                                  $schema    Schema node.
      * @param   string                                    $instance  String instance.
@@ -338,8 +342,16 @@ final class SchemaPropertyValidator
      *
      * @since   2.0.0
      */
-    private static function stringKeywords(stdClass $schema, string $instance, callable $fail): void
+    private function stringKeywords(stdClass $schema, string $instance, callable $fail): void
     {
+        if (
+            $this->patterns !== null
+            && is_string($schema->pattern ?? null)
+            && $this->patterns->offsetExists($schema)
+            && preg_match($this->patterns[$schema], $instance) !== 1
+        ) {
+            $fail('pattern', sprintf('must match pattern "%s"', $schema->pattern));
+        }
         $minLength = $schema->minLength ?? null;
         $maxLength = $schema->maxLength ?? null;
         if (is_int($minLength) || is_int($maxLength)) {

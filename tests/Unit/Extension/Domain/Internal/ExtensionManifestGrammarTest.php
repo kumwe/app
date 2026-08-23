@@ -150,6 +150,6 @@ final class ExtensionManifestGrammarTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessageMatches('/schema is unsupported/');
 
-        ExtensionManifestGrammar::manifestKeys(6);
+        ExtensionManifestGrammar::manifestKeys(7);
     }
 }

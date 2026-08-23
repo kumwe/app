@@ -35,7 +35,7 @@ until then, which is why every version below is exact.
 
 Seven packages publish to the npm registry under the `kumwe` organization on the `alpha`
 distribution tag. The two contract packages this repository consumes are vendored and pinned:
-[`tests/Fixtures/Studio/PIN.json`](../../tests/Fixtures/Studio/PIN.json) is the authoritative
+[`resources/studio-contract/PIN.json`](../../resources/studio-contract/PIN.json) is the authoritative
 record of their exact versions and tarball checksums, and `composer studio:corpus` fails when the
 vendored bytes and the pin disagree. For the remaining packages, confirm the current set with
 `npm view @kumwe/studio-protocol versions`.

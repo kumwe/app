@@ -797,32 +797,6 @@
             "product_owner_decision": "Decision D16."
         },
         {
-            "id": "V2-STU-008",
-            "title": "Manifest 5 freezes App paraphrases of the Studio contribution documents, so a canonical manifest 6 / SPI 4 generation is required",
-            "severity": "high",
-            "state": "accepted_for_implementation",
-            "phase": "S",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/Extension/Contribution/CompositionPropertySchema.php",
-                    "symbol": "the bounded proprietary property map",
-                    "note": "The frozen schema-5 property vocabulary uses maximum_length, per-property required, choice and host reference kinds. It is not a complete Draft 2020-12 propertySchema admitted by studio.profile/schema-property, and decision D16 says the contract admitted at Gate A is the contract consumed at Gate B."
-                },
-                {
-                    "file": "docs/extension-contract/generations.json",
-                    "symbol": "the manifest-5 / SPI-3 freeze",
-                    "note": "Manifest 5 and contribution SPI 3 are a compatibility promise and must not be rewritten, so the canonical Studio documents arrive as an additive manifest 6 / SPI 4 generation beside them, per kumwe/app#104."
-                }
-            ],
-            "acceptance_test": "Manifest 5 / SPI 3 remain byte- and behavior-compatible while a new manifest schema 6 with contribution SPI 4 carries the canonical Studio contribution documents: block-definition with the complete propertySchema, pattern, field-adapter, inspector, design-vocabulary and migration, with host renderer, reference and authority bindings in separate bounded host metadata. Manifest 6 accepts only SPI 4, earlier manifests refuse SPI 4, and mismatches fail closed. Every schema-6 document validates against the exact schemas of the pinned @kumwe/studio-protocol release, an independent PHP implementation replays the complete studio.profile/schema-property assertion set from the vendored corpus with matching rejection codes and diagnostic pointers, admission and install both repeat the validation atomically, a documented manifest-5 adapter translates only complete, deterministic, lossless mappings, and a signed manifest-6 fixture declaring every new contribution kind passes the full lifecycle.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "work_package": "S-B",
-            "product_owner_decision": "Decision D16; kumwe/app#104."
-        },
-        {
             "id": "V2-UX-003",
             "title": "Closed and immutable records still render edit affordances, and the definition editor cannot declare immutable states",
             "severity": "medium",

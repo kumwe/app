@@ -7,7 +7,7 @@
  * kumwe/app#104 requires the exact `@kumwe/studio-protocol` schema set and the complete
  * `@kumwe/studio-testkit` corpus to be vendored at one released version and digest-verified before
  * any conformance run. This tool is that verification: it recomputes every SRI digest the two
- * published manifests declare against the vendored bytes under `tests/Fixtures/Studio/`, holds each
+ * published manifests declare against the vendored bytes under `resources/studio-contract/` (the runtime protocol schemas) and `tests/Fixtures/Studio/` (the testkit corpus), holds each
  * directory closed in both directions (a listed file must exist, an unlisted file must not), and
  * checks the vendored package versions against the pin record. A Studio contract fix reaches this
  * repository only as a deliberate re-pin: new tarballs, new digests, and a new `PIN.json` in one
@@ -22,7 +22,8 @@
 
 declare(strict_types=1);
 
-$root = dirname(__DIR__) . '/tests/Fixtures/Studio';
+$protocolRoot = dirname(__DIR__) . '/resources/studio-contract';
+$testkitRoot = dirname(__DIR__) . '/tests/Fixtures/Studio';
 $errors = [];
 
 /**
@@ -66,14 +67,14 @@ function decode(string $path, array &$errors): ?array
     return $decoded;
 }
 
-$pin = decode($root . '/PIN.json', $errors);
-$protocolManifest = decode($root . '/protocol/schemas/manifest.json', $errors);
-$corpusManifest = decode($root . '/testkit/corpus-manifest.json', $errors);
+$pin = decode($protocolRoot . '/PIN.json', $errors);
+$protocolManifest = decode($protocolRoot . '/protocol/schemas/manifest.json', $errors);
+$corpusManifest = decode($testkitRoot . '/testkit/corpus-manifest.json', $errors);
 
 if ($pin !== null) {
     foreach ([
-        '@kumwe/studio-protocol' => $root . '/protocol/package.json',
-        '@kumwe/studio-testkit' => $root . '/testkit/package.json',
+        '@kumwe/studio-protocol' => $protocolRoot . '/protocol/package.json',
+        '@kumwe/studio-testkit' => $testkitRoot . '/testkit/package.json',
     ] as $package => $packageFile) {
         $declared = $pin['pinned'][$package]['version'] ?? null;
         $vendored = decode($packageFile, $errors)['version'] ?? null;
@@ -90,7 +91,7 @@ if ($pin !== null) {
 
 $schemaCount = 0;
 if ($protocolManifest !== null) {
-    $schemaDirectory = $root . '/protocol/schemas';
+    $schemaDirectory = $protocolRoot . '/protocol/schemas';
     $listed = ['manifest.json' => true];
     foreach ((array) ($protocolManifest['schemas'] ?? []) as $schema) {
         $file = is_array($schema) ? ($schema['file'] ?? null) : null;
@@ -129,7 +130,7 @@ if ($corpusManifest !== null) {
             continue;
         }
         $groupCount++;
-        $directory = $root . '/testkit/' . $path;
+        $directory = $testkitRoot . '/testkit/' . $path;
         $listed = [];
         foreach ((array) ($group['files'] ?? []) as $entry) {
             $file = is_array($entry) ? ($entry['file'] ?? null) : null;

@@ -122,7 +122,9 @@ final class StudioSchemaProfileConformanceTest extends TestCase
      */
     public function testLimitsMatchThePinnedMetaSchema(): void
     {
-        $metaSchema = self::decode(self::corpusRoot() . '/protocol/schemas/schema-profile.schema.json');
+        $metaSchema = self::decode(
+            dirname(__DIR__, 4) . '/resources/studio-contract/protocol/schemas/schema-profile.schema.json',
+        );
         $published = $metaSchema->{'$defs'}->limits->const ?? null;
         self::assertInstanceOf(stdClass::class, $published);
 
