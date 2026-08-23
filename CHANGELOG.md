@@ -24,6 +24,21 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **Package P4-C is complete: the numbering machinery's remaining demands are proven on the hot
+  paths, and the transition model is recorded.** ADR 0011 pins that the create command is the
+  platform's numbering transition — deriving from ADR 0008's accepted no-second-entry-point
+  constraint — that gapless is the single declared gap policy, and that un-numbered authoring is
+  modelled by the client-reference pattern rather than a provisional number.
+  `BusinessNumberSequenceHotPathIntegrationTest`, green on MariaDB and PostgreSQL, proves the three
+  demands that had no test: a thousand-line sequenced posting holds its counter for a bounded
+  statement span (a warm allocation costs at most three statements and the collection writes inside
+  the pinned twelve-statement budget) and provably releases it at commit; one hot counter sustains
+  a forty-create contiguous run through the real command across two interleaved kernels; and two
+  legal-entity sites number independently end to end, one site's held counter provably unable to
+  delay the other's commit. The capacity harness gains the `hot_sequence_commit` operation class
+  under capacity-contract amendment 1.2.0 — sustained creates serialized on one gapless counter
+  row, the single-sequence worst case decision D1 requires the envelope to disclose — and a smoke
+  run reports it within objective. Only `P4-B` remains open in phase 4. (`605a5301`)
 - **Manifest schema 6 with contribution SPI 4 carries canonical Studio documents beside the frozen
   generations.** The generation kumwe/app#104 requires and finding `V2-STU-008` recorded is
   delivered whole. A schema-6 package declares each composition contribution as the exact canonical
