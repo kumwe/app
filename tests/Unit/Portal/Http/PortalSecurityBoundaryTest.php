@@ -22,7 +22,7 @@ use Kumwe\App\Portal\Application\PortalPasswordIdentity;
 use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Application\PortalSessionIdentity;
 use Kumwe\App\Portal\Application\PortalSessionStore;
-use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Application\PortalContext;
 use Kumwe\App\Portal\Http\Middleware\PortalCsrfMiddleware;
 use Kumwe\App\Portal\Http\Middleware\PortalAuthorizationMiddleware;
 use Kumwe\App\Portal\Http\Middleware\PortalSessionMiddleware;

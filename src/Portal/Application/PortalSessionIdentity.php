@@ -6,7 +6,7 @@ namespace Kumwe\App\Portal\Application;
 
 use InvalidArgumentException;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Application\PortalContext;
 
 /**
  * Live principal and membership snapshot reloaded while a portal session is resolved.

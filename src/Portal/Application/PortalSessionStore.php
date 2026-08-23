@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Portal\Application;
 
-use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Application\PortalContext;
 
 /**
  * Dedicated portal browser-session store, intentionally unrelated to administrator session storage.

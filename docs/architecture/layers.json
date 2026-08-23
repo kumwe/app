@@ -62,6 +62,8 @@
     "Kernel": "kernel"
   },
   "namespace_prefixes": {
+    "Kumwe\\App\\Application\\Authorization\\AuthenticatedSurface": "shared",
+    "Kumwe\\App\\Application\\Authorization\\SiteContext": "shared",
     "Kumwe\\App\\Http": "delivery",
     "Kumwe\\App\\Administrator\\Http": "delivery",
     "Kumwe\\App\\Administrator\\Content": "presentation",
@@ -71,6 +73,9 @@
     "Kumwe\\App\\BusinessRecord\\Query": "application",
     "Kumwe\\App\\BusinessSecurity\\Policy": "domain",
     "Kumwe\\App\\Extension\\Contribution": "application",
+    "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition": "domain",
+    "Kumwe\\App\\Extension\\Contribution\\ContributionDefinitionChecksum": "application",
+    "Kumwe\\App\\Extension\\Contribution\\ContributionOwner": "domain",
     "Kumwe\\App\\Extension\\Runtime": "application",
     "Kumwe\\App\\Extension\\Development": "application",
     "Kumwe\\App\\InterfaceStandard": "domain",

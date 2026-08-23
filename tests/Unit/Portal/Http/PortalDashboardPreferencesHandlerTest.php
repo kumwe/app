@@ -19,7 +19,7 @@ use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Application\PortalSessionIdentity;
 use Kumwe\App\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\App\Portal\Contribution\PortalWorkspaceDefinition;
-use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Application\PortalContext;
 use Kumwe\App\Portal\Http\Handler\PortalDashboardPreferencesHandler;
 use Kumwe\App\Portal\Presentation\PortalNavigationVisibility;
 use Kumwe\App\Portal\Presentation\PortalRenderer;

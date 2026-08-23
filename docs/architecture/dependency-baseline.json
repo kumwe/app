@@ -5,66 +5,6 @@
   "recorded_at": "2026-08-15",
   "violations": [
     {
-      "from": "Kumwe\\App\\BusinessIntegration\\Domain\\IntegrationContract",
-      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\BusinessRecord\\Domain\\MoneyRateProviderDefinition",
-      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\BusinessRecord\\Domain\\RecordScope",
-      "to": "Kumwe\\App\\Application\\Authorization\\SiteContext",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\BusinessReporting\\Domain\\ExportArtifact",
-      "to": "Kumwe\\App\\Application\\Authorization\\AuthenticatedSurface",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\BusinessReporting\\Domain\\ReportDefinition",
-      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\Content\\Domain\\ContentTypeDefinition",
-      "to": "Kumwe\\App\\Application\\Authorization\\SiteContext",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
       "from": "Kumwe\\App\\Delivery\\Console\\Command\\DemoAccessCommand",
       "to": "Kumwe\\App\\Demo\\Infrastructure\\DemoAccessProvisioner",
       "from_layer": "delivery",
@@ -485,26 +425,6 @@
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
-      "from": "Kumwe\\App\\Extension\\Domain\\ExtensionManifest",
-      "to": "Kumwe\\App\\Extension\\Contribution\\CapabilityDefinition",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Domain\\ExtensionManifest",
-      "to": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
       "from": "Kumwe\\App\\Extension\\Infrastructure\\DoctrineExtensionManager",
       "to": "Kumwe\\App\\Presentation\\Application\\ThemeActivationGuard",
       "from_layer": "infrastructure",
@@ -695,46 +615,6 @@
       "justification": "P3-D: the adapter is constructed with its typed configuration rather than importing the composition root's configuration type."
     },
     {
-      "from": "Kumwe\\App\\InterfaceStandard\\PresentationPreference",
-      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionOwner",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\InterfaceStandard\\SurfaceDeclaration",
-      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionOwner",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\InterfaceStandard\\SurfaceDefinition",
-      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionDefinition",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\InterfaceStandard\\SurfaceDefinition",
-      "to": "Kumwe\\App\\Extension\\Contribution\\ContributionOwner",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
       "from": "Kumwe\\App\\OpenApi\\Application\\OpenApiContractCompiler",
       "to": "Kumwe\\App\\OpenApi\\Infrastructure\\CanonicalOpenApiJson",
       "from_layer": "application",
@@ -803,26 +683,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Portal\\Domain\\PortalContext",
-      "to": "Kumwe\\App\\Application\\Authorization\\MembershipContext",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
-    },
-    {
-      "from": "Kumwe\\App\\Portal\\Domain\\PortalContext",
-      "to": "Kumwe\\App\\Application\\Authorization\\SiteContext",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
     },
     {
       "from": "Kumwe\\App\\Presentation\\Infrastructure\\ConsoleAdministratorThemeRecovery",
@@ -903,16 +763,22 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
+    }
+  ],
+  "approved_interfaces": [
+    {
+      "from": "Kumwe\\App\\Extension\\Domain\\ExtensionManifest",
+      "to": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet",
+      "decision": "ADR 0012",
+      "interface": "ManifestContributionSet::fromManifest() and ::legacy() as the manifest's one admission-time contribution parser, and the resulting set held as the typed contributions member.",
+      "justification": "The manifest is the frozen extension-contract artifact: refusing invalid contributions at manifest admission is pinned by six generations of signed fixtures, so the parse cannot move outward without changing when packages are refused. ADR 0012 records the exact interface instead."
     },
     {
-      "from": "Kumwe\\App\\Workflow\\Domain\\WorkflowDefinition",
-      "to": "Kumwe\\App\\Application\\Authorization\\SiteContext",
-      "from_layer": "domain",
-      "to_layer": "application",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-D reconciles each Domain import of an Application type: a genuine domain value moves inward, an application concern is inverted or passed as a domain result."
+      "from": "Kumwe\\App\\Extension\\Domain\\ExtensionManifest",
+      "to": "Kumwe\\App\\Extension\\Contribution\\CapabilityDefinition",
+      "decision": "ADR 0012",
+      "interface": "CapabilityDefinition read only to project declared capability identifiers into the manifest's permission set.",
+      "justification": "Declared capabilities feed the manifest's permission vocabulary at the same admission boundary; the projection reads one identifier and nothing else. ADR 0012 records the exact interface instead."
     }
   ]
 }

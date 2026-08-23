@@ -264,8 +264,8 @@ final class RoadmapLifecycleTest extends TestCase
         $original = $this->contents('docs/roadmap/STATUS.md');
         foreach (['closed', 'complete', 'completed', 'delivered', 'done', 'finished', 'shipped'] as $marker) {
             $status = str_replace(
-                '| 3 | `P3-D` |',
-                sprintf('| 3 | `P3-D` (`P3-A` %s) |', $marker),
+                '| 4 | `P4-B` |',
+                sprintf('| 4 | `P4-B` (`P4-A` %s) |', $marker),
                 $original,
             );
             self::assertNotSame($original, $status);
@@ -279,7 +279,7 @@ final class RoadmapLifecycleTest extends TestCase
 
             self::assertSame(1, $result['status'], sprintf('Marker "%s" must be refused.', $marker));
             self::assertStringContainsString(
-                'open-work row for phase 3 carries a completion marker',
+                'open-work row for phase 4 carries a completion marker',
                 $result['output'],
             );
         }
@@ -295,8 +295,8 @@ final class RoadmapLifecycleTest extends TestCase
     public function testTheVerifierRefusesACompletionMarkerInTheOpenFindingCell(): void
     {
         $status = str_replace(
-            '| 3 | `P3-D` | — |',
-            '| 3 | `P3-D` | `V2-TEST-001` complete |',
+            '| 4 | `P4-B` | — |',
+            '| 4 | `P4-B` | `V2-TEST-001` complete |',
             $this->contents('docs/roadmap/STATUS.md'),
         );
         self::assertNotSame($this->contents('docs/roadmap/STATUS.md'), $status);
@@ -310,7 +310,7 @@ final class RoadmapLifecycleTest extends TestCase
 
         self::assertSame(1, $result['status']);
         self::assertStringContainsString(
-            'open-work row for phase 3 carries a completion marker',
+            'open-work row for phase 4 carries a completion marker',
             $result['output'],
         );
     }

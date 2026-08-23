@@ -26,7 +26,7 @@ use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Application\PortalSessionIdentity;
 use Kumwe\App\Portal\Application\PortalSessionIdentityLoader;
 use Kumwe\App\Portal\Application\PortalSessionStore;
-use Kumwe\App\Portal\Domain\PortalContext;
+use Kumwe\App\Portal\Application\PortalContext;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
