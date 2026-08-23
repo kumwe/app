@@ -377,6 +377,185 @@ final class StudioSchemaProfileEdgeTest extends TestCase
     }
 
     /**
+     * The remaining applicator branches: type lists, combinators, items, additional properties.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testApplicatorBranchesRefuseTheirMismatches(): void
+    {
+        $root = self::closedRoot();
+        $root->properties = json_decode((string) json_encode([
+            'union' => ['type' => ['string', 'null']],
+            'both' => ['allOf' => [['type' => 'string'], ['minLength' => 3]]],
+            'either' => ['anyOf' => [['type' => 'string'], ['type' => 'integer']]],
+            'flag' => ['type' => 'boolean'],
+            'sized' => ['type' => 'string', 'minLength' => 2],
+            'low' => ['type' => 'number', 'maximum' => 10, 'exclusiveMinimum' => 0],
+            'pair' => ['prefixItems' => [['type' => 'string']], 'items' => false],
+            'tail' => ['prefixItems' => [['type' => 'string']], 'items' => ['type' => 'integer']],
+            'filled' => ['type' => 'array', 'minItems' => 2],
+            'map' => ['type' => 'object', 'additionalProperties' => ['type' => 'integer']],
+            'small' => ['type' => 'object', 'maxProperties' => 1],
+        ]), false);
+        $validator = SchemaPropertyProfile::admit($root);
+
+        $failures = [
+            'type list' => [['union' => 5], '/union', 'must be string,null'],
+            'allOf' => [['both' => 5], '/both', 'must match all schemas in allOf'],
+            'anyOf' => [['either' => true], '/either', 'must match a schema in anyOf'],
+            'minLength' => [['sized' => 'a'], '/sized', 'must NOT have fewer than 2 characters'],
+            'maximum' => [['low' => 11], '/low', 'must be <= 10'],
+            'exclusiveMinimum' => [['low' => 0], '/low', 'must be > 0'],
+            'closed tuple' => [['pair' => ['a', 'b']], '/pair', 'must NOT have more than 1 items'],
+            'typed tail' => [['tail' => ['a', 'b']], '/tail/1', 'must be integer'],
+            'minItems' => [['filled' => []], '/filled', 'must NOT have fewer than 2 items'],
+            'typed additional' => [['map' => ['x' => 'no']], '/map/x', 'must be integer'],
+            'maxProperties' => [
+                ['small' => ['a' => 1, 'b' => 2]],
+                '/small',
+                'must NOT have more than 1 properties',
+            ],
+        ];
+        foreach ($failures as $label => [$instance, $path, $message]) {
+            $decoded = json_decode((string) json_encode($instance), false);
+            self::assertInstanceOf(stdClass::class, $decoded);
+            self::assertFalse($validator->validate($decoded), sprintf('The %s instance passed.', $label));
+            $diagnostics = $validator->diagnostics();
+            self::assertNotNull($diagnostics);
+            $found = false;
+            foreach ($diagnostics as $diagnostic) {
+                if ($diagnostic->instancePath === $path && $diagnostic->message === $message) {
+                    $found = true;
+                    break;
+                }
+            }
+            self::assertTrue($found, sprintf('The %s failure did not surface at %s.', $label, $path));
+        }
+
+        $decoded = json_decode('{"union":"text","flag":true,"low":5,"pair":["a"],"tail":["a",1,2]}', false);
+        self::assertInstanceOf(stdClass::class, $decoded);
+        self::assertTrue($validator->validate($decoded), 'The matching instance must pass every branch.');
+    }
+
+    /**
+     * Structured `const` and `enum` operands compare by deep equality, and twins deduplicate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStructuredEqualityAndDiagnosticDeduplication(): void
+    {
+        $root = self::closedRoot();
+        $root->properties = json_decode((string) json_encode([
+            'exact' => ['const' => [1, ['a' => true]]],
+            'pick' => ['enum' => [null, true, ['b' => 2], [1, 2]]],
+            'twice' => ['allOf' => [['type' => 'string'], ['type' => 'string']]],
+        ]), false);
+        $validator = SchemaPropertyProfile::admit($root);
+
+        $matching = json_decode('{"exact":[1,{"a":true}],"pick":[1,2]}', false);
+        self::assertInstanceOf(stdClass::class, $matching);
+        self::assertTrue($validator->validate($matching), 'Deep-equal structures must satisfy const and enum.');
+
+        $mismatch = json_decode('{"exact":[1,{"a":false}],"pick":{"b":3}}', false);
+        self::assertInstanceOf(stdClass::class, $mismatch);
+        self::assertFalse($validator->validate($mismatch));
+
+        $duplicated = json_decode('{"twice":5}', false);
+        self::assertInstanceOf(stdClass::class, $duplicated);
+        self::assertFalse($validator->validate($duplicated));
+        $diagnostics = $validator->diagnostics();
+        self::assertNotNull($diagnostics);
+        $typeFailures = array_values(array_filter(
+            $diagnostics,
+            static fn ($diagnostic): bool => $diagnostic->instancePath === '/twice'
+                && $diagnostic->message === 'must be string',
+        ));
+        self::assertCount(1, $typeFailures, 'Twin diagnostics from twin subschemas deduplicate.');
+    }
+
+    /**
+     * Reference resolution walks every operand family and the closure visits a shared target once.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testReferenceResolutionWalksEveryOperandFamily(): void
+    {
+        $shared = self::closedRoot();
+        $shared->{'$defs'} = json_decode((string) json_encode(['name' => ['type' => 'string']]), false);
+        $shared->properties = json_decode((string) json_encode([
+            'first' => ['$ref' => '#/$defs/name'],
+            'second' => ['$ref' => '#/$defs/name'],
+        ]), false);
+        $validator = SchemaPropertyProfile::admit($shared);
+        $decoded = json_decode('{"first":"a","second":"b"}', false);
+        self::assertInstanceOf(stdClass::class, $decoded);
+        self::assertTrue($validator->validate($decoded), 'A twice-referenced definition resolves once.');
+
+        $arrayTarget = self::closedRoot();
+        $arrayTarget->allOf = json_decode((string) json_encode([['type' => 'object']]), false);
+        $arrayTarget->properties = json_decode((string) json_encode([
+            'inner' => ['$ref' => '#/allOf/0'],
+        ]), false);
+        $validator = SchemaPropertyProfile::admit($arrayTarget);
+        $decoded = json_decode('{"inner":{}}', false);
+        self::assertInstanceOf(stdClass::class, $decoded);
+        self::assertTrue($validator->validate($decoded), 'A schema-array position is referenceable.');
+
+        $whole = self::closedRoot();
+        $whole->properties = json_decode((string) json_encode([
+            'loop' => ['$ref' => '#'],
+        ]), false);
+        $refused = null;
+        try {
+            SchemaPropertyProfile::admit($whole);
+        } catch (SchemaProfileRejected $rejection) {
+            $refused = $rejection;
+        }
+        self::assertNotNull($refused, 'A whole-document self reference must not admit.');
+    }
+
+    /**
+     * The serializer's remaining scalar branches: null members, and non-finite refusals.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSerializerNullAndNonFiniteBranches(): void
+    {
+        $value = new stdClass();
+        $value->gap = null;
+        self::assertSame('{"gap":null}', CanonicalJson::stringify($value));
+
+        $refused = null;
+        try {
+            CanonicalJson::encodeNumber(INF);
+        } catch (CanonicalJsonRejected $rejection) {
+            $refused = $rejection;
+        }
+        self::assertNotNull($refused, 'A non-finite float must refuse encoding.');
+        self::assertSame('not-json', $refused->reason);
+
+        $poisoned = self::closedRoot();
+        $poisoned->properties = new stdClass();
+        $poisoned->properties->x = new stdClass();
+        $poisoned->properties->x->enum = [INF];
+        $rejected = null;
+        try {
+            SchemaPropertyProfile::admit($poisoned);
+        } catch (SchemaProfileRejected $rejection) {
+            $rejected = $rejection;
+        }
+        self::assertNotNull($rejected, 'A schema carrying a non-finite number must not admit.');
+    }
+
+    /**
      * A closed object root ready to be extended by one keyword under test.
      *
      * @return  stdClass  The minimal admissible root.
