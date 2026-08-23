@@ -160,6 +160,27 @@ else
     fi
 fi
 
+# ------------------------------------------------------------------ PostgreSQL
+# The engine-portability blind spot is real: a CASE-typing defect that MariaDB
+# coerces and PostgreSQL refuses reached CI because the sandbox only ran one
+# engine. Where the platform ships PostgreSQL, provision it too, so the
+# cross-engine lane runs locally before any push.
+say "PostgreSQL (cross-engine lane)"
+pg_ready() { (exec 3<>/dev/tcp/127.0.0.1/5432) 2>/dev/null && exec 3>&- && return 0; return 1; }
+if ! pg_ready && command -v pg_ctlcluster >/dev/null 2>&1; then
+    (service postgresql start) >/dev/null 2>&1
+    for _ in $(seq 1 15); do pg_ready && break; sleep 1; done
+fi
+if pg_ready; then
+    su -c "psql -q -tc \"SELECT 1 FROM pg_roles WHERE rolname = 'kumwe'\"" postgres 2>/dev/null | grep -q 1 \
+        || su -c "psql -q -c \"CREATE USER kumwe PASSWORD 'kumwe_test';\"" postgres >/dev/null 2>&1
+    su -c "psql -q -tc \"SELECT 1 FROM pg_database WHERE datname = 'kumwe_test'\"" postgres 2>/dev/null | grep -q 1 \
+        || su -c "psql -q -c \"CREATE DATABASE kumwe_test OWNER kumwe;\"" postgres >/dev/null 2>&1
+    note "PostgreSQL ready; run the cross-engine lane with DB_DRIVER=pgsql DB_PORT=5432 after sourcing .agent-env."
+else
+    note "PostgreSQL unavailable; the cross-engine lane stays CI-only here."
+fi
+
 # ----------------------------------------------------------------------- Redis
 say "Redis"
 redis_ready() { (exec 3<>/dev/tcp/127.0.0.1/6379) 2>/dev/null && exec 3>&- && return 0; return 1; }
@@ -251,5 +272,6 @@ printf '\n'
 printf '   Always available:  php tools/verify-docblocks.php src && php tools/verify-roadmap.php\n'
 [ "$TIER1" = yes ] && printf '   Before any push:   composer qa   (baseline:check ... cs, analyse, test)\n'
 [ "$TIER2" = yes ] && printf '   Database lane:     . ./.agent-env && composer test:integration\n'
+pg_ready && printf '   Cross-engine lane: DB_DRIVER=pgsql DB_PORT=5432 DB_SERVER_VERSION=16 with the same .agent-env\n'
 [ "$TIER1" = yes ] || printf '   BLOCKED: composer dependencies missing — see tools/agent-egress.txt.\n'
 printf '\n   Full gate reference: AGENTS.md section 6. Egress allowlist: tools/agent-egress.txt.\n'
