@@ -79,7 +79,10 @@ development programme, from the architecture decision that opened it to the curr
   invoke the same script — and `tools/agent-egress.txt` is the one canonical outbound
   allowlist a sandbox needs. `AGENTS.md` section 0 makes running it the first action in
   any fresh environment, so changes are validated locally before they are pushed instead
-  of discovered red in CI. The database lane is prepared to CI parity: the bootstrap pins
+  of discovered red in CI. Where the sandbox's network policy admits the PHP package source,
+  the bootstrap installs the real PHP 8.5 with the `pcov` coverage driver and selects it,
+  closing the last platform delta between a sandbox and CI; where it cannot, it degrades to
+  the platform override and names the exact egress line that closes the gap. The database lane is prepared to CI parity: the bootstrap pins
   the server to one collation story before the first table exists, installs the immutable
   parent schema, runs the migrations, and `tools/agent-collation-normalize.php` converges
   every utf8mb4 table on the database's default collation — dropping and faithfully
