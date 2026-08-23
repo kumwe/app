@@ -24,6 +24,17 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **The delivery pipeline is immune to the two failure classes the first rebase-merge surfaced.**
+  A GitHub API outage can no longer fail the dependency-fetching workflows: the production image
+  builds seed the runner's lock-keyed Composer cache into the vendor stage through an optional
+  `composer-cache` build context, and the development-compose install shares the same cache with
+  the bounded retry the image build already had — on a warm key every locked dist archive is a
+  local read (the `V2-REL-002` exposure, narrowed). A rebase can no longer dangle changelog
+  evidence: `roadmap:check` accepts a merged pull-request citation as the merge-stable form while
+  still refusing any commit hash that does not resolve unambiguously from HEAD, with a lifecycle
+  probe pinning both properties. And the gating workflows carry the `merge_group` trigger, so
+  enabling the repository's merge queue runs the complete merge-lane evidence set against the
+  rebased candidate before master moves. (#109)
 - **Package P3-D is complete: no Domain type imports an Application type, and the mechanism is
   recorded in ADR 0012.** The fifteen `V2-ARC-003` Domain-to-Application edges are reconciled
   without changing one byte of any frozen artifact: `SiteContext` and `AuthenticatedSurface` are
