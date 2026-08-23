@@ -972,6 +972,18 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **The merge lane keeps all its evidence; the pull-request lane stops paying for it twice.** A new
+  `preflight` job runs every record gate — baseline, quality contract, frozen contracts, documentation
+  records, roadmap, interface programme, OpenAPI, translations, coverage attribution, coding standard and
+  architecture policy — in minutes, and the database, browser, artifact and deployment jobs only start
+  after it passes, so a push that would fail on a record is refused before the expensive jobs spend
+  runner-hours. On pull-request pushes the database job keeps its complete single-pass suite on all three
+  engines but defers the repeat/reverse idempotency passes and the signed backup/restore/tamper drill to
+  the merge lane, and complete deployment acceptance runs at merge and release rather than a third time
+  per push. Every push to `master` still runs the full evidence set on all three engines, so Gate A
+  criterion 12 and every `docs/quality/contract.json` binding are unchanged. The quality job additionally
+  persists PHPStan's result cache between runs.
+
 - **The remaining live core identity now reads Kumwe App.** Fresh clones enter the canonical `app`
   checkout directory, quality-fixture metadata uses the `Kumwe.App` test namespace, and the default Redis
   key prefix changes from `kumwe.cms` to `kumwe.app` through `REDIS_NAMESPACE`. Existing deployments must
