@@ -15,6 +15,71 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The gates most likely to reject a push are the record gates: an un-re-recorded baseline, a missing
+  # documentation block, a stale contract copy, a changelog citation. They cost seconds; the jobs behind
+  # them cost runner-hours. This job runs every record gate first, so a push that would fail on a record
+  # is refused in minutes before the database, browser, artifact and deployment jobs spend anything.
+  # The quality job remains the substantive verdict and still runs every one of these gates itself.
+  preflight:
+    name: Pre-flight record gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.5'
+          extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer package downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-files-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-files-
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Verify recorded baselines and frozen contracts
+        run: |
+          composer baseline:check
+          composer quality:contract
+          composer extension:contract
+          composer cli:contract
+          composer mcp:contract
+
+      - name: Verify documentation records
+        run: |
+          composer docs:api
+          composer docs:format:check
+          composer docs:tests
+
+      - name: Verify roadmap, interface programme and OpenAPI records
+        run: |
+          composer interface:programme
+          composer roadmap:check
+          composer openapi:check
+
+      - name: Verify translation records and coverage attribution
+        run: |
+          composer translation:check
+          composer translation:strings
+          composer assets:direction
+          composer coverage:attribution
+
+      - name: Verify coding standard and architecture policy
+        run: |
+          composer cs
+          composer architecture:policy
+
   lockfile:
     name: Composer lock consistency
     runs-on: ubuntu-24.04
@@ -69,7 +134,9 @@ jobs:
 
   browser:
     name: Browser / ${{ matrix.database.name }}
-    needs: frontend
+    needs:
+      - frontend
+      - preflight
     runs-on: ubuntu-24.04
     # The complete desktop/mobile evidence matrix includes native no-JavaScript mutation lifecycles.
     timeout-minutes: 45
@@ -277,6 +344,17 @@ jobs:
           path: ~/.cache/composer/files
           key: composer-files-${{ hashFiles('composer.lock') }}
           restore-keys: composer-files-
+      # PHPStan's own result cache makes an incremental level-max analysis of an unchanged file free.
+      # Without persisting it, every run re-analysed the whole tree from cold.
+      - name: Cache the PHPStan result cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .phpstan.cache
+          key: phpstan-${{ hashFiles('composer.lock') }}-${{ github.sha }}
+          restore-keys: |
+            phpstan-${{ hashFiles('composer.lock') }}-
+            phpstan-
+
       - name: Install and validate locked dependencies
         run: |
           composer validate --strict
@@ -365,6 +443,7 @@ jobs:
 
   database:
     name: PHP 8.5 / ${{ matrix.database.name }}
+    needs: preflight
     runs-on: ubuntu-24.04
     # The MariaDB leg alone carries coverage collection, two complete idempotency passes against a
     # reused database and the backup drill on top of the suite. The 3,080-test suite reached its
@@ -571,11 +650,15 @@ jobs:
       #
       # Reverse order is generated as an explicit reverse list of class files; method declaration order is
       # unchanged, so this measures inter-class residue rather than undocumented ordering inside a class.
+      # The repeat and reverse-order passes re-run the whole integration suite twice more. They are
+      # merge-lane evidence: every push to master still proves them on all three engines, while a
+      # pull-request push keeps the complete single pass above and gets its verdict in half the time.
       - name: Prove three integration passes and reverse class order on one database
+        if: github.event_name != 'pull_request'
         run: composer test:idempotency -- --engine=${{ matrix.database.driver }}
 
       - name: Upload the idempotency evidence
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: idempotency-evidence-${{ matrix.database.driver }}
@@ -615,7 +698,11 @@ jobs:
       - name: Verify schema status
         run: php bin/kumwe database:status
 
+      # The backup drill below is merge-lane evidence: every push to master still proves the signed
+      # backup, clean restore and complete tamper drill on all three engines, while a pull-request
+      # push defers it together with the idempotency passes.
       - name: Install database recovery client
+        if: github.event_name != 'pull_request'
         uses: ./.github/actions/database-client
         with:
           driver: ${{ matrix.database.driver }}
@@ -625,12 +712,14 @@ jobs:
       # comes from the distribution archive rather than a release download, so the step cannot start
       # failing because an upstream asset moved.
       - name: Install the backup signing tool
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends minisign
 
       - name: Exercise clean-target backup and restore
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -748,6 +837,7 @@ jobs:
 
   artifact:
     name: Deployed-artifact regression lane
+    needs: preflight
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     # Four defects in the last programme were found only in production deployment acceptance, after a full
@@ -786,6 +876,10 @@ jobs:
 
   deployment:
     name: Complete deployment acceptance
+    # Deployment acceptance runs at merge and again at release; a third execution on every pull-request
+    # push cost up to ninety further minutes without adding evidence. Merge and release keep the
+    # complete acceptance on all three engines and both distribution formats.
+    if: github.event_name != 'pull_request'
     needs:
       - quality
       - database
