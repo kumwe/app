@@ -1,0 +1,22 @@
+{
+  "schema": "migration.schema.json",
+  "description": "A migration declaration must cover at least one artifact kind.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "migration",
+    "id": "org.example.catalog/price-to-money",
+    "version": "1.1.0",
+    "owner": {
+      "id": "org.example/catalog",
+      "version": "1.1.0"
+    },
+    "label": {
+      "key": "org.example.catalog/price-to-money",
+      "defaultMessage": "Price becomes typed money"
+    },
+    "artifactKinds": [],
+    "sourceVersions": ">=1.0.0 <1.1.0",
+    "targetVersion": "1.1.0",
+    "lossClassification": "lossless"
+  }
+}

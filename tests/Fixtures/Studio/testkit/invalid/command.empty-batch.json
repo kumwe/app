@@ -1,0 +1,17 @@
+{
+  "schema": "command.schema.json",
+  "description": "A batch must contain at least one operation.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "command",
+    "id": "command-01J5",
+    "type": "studio.command/batch",
+    "artifactId": "org.example.blueprints/product-card",
+    "expectedRevision": "product-card-r5",
+    "sessionGeneration": "session-generation-1",
+    "baseStateVersion": 12,
+    "payload": {
+      "operations": []
+    }
+  }
+}

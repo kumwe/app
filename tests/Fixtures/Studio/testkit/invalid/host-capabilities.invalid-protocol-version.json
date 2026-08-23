@@ -1,0 +1,40 @@
+{
+  "schema": "host-capabilities.schema.json",
+  "description": "Protocol versions are canonical semantic versions.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "host-capabilities",
+    "host": {
+      "id": "org.kumwe/app",
+      "version": "3.0.0-alpha.1",
+      "generation": "runtime-generation-42"
+    },
+    "protocolVersions": ["v1"],
+    "ports": [
+      {
+        "id": "studio.port/artifact",
+        "version": "1.0.0",
+        "operations": ["studio.operation/load", "studio.operation/save", "studio.operation/publish"]
+      },
+      {
+        "id": "studio.port/preview",
+        "version": "1.0.0",
+        "operations": ["studio.operation/render-preview", "studio.operation/cancel-preview"]
+      },
+      {
+        "id": "studio.port/media",
+        "version": "1.0.0",
+        "operations": ["studio.operation/search-media", "studio.operation/upload-media"]
+      }
+    ],
+    "capabilities": [
+      {
+        "id": "studio.host/server-rendered-preview",
+        "version": "1.0.0",
+        "configuration": {
+          "exact": true
+        }
+      }
+    ]
+  }
+}

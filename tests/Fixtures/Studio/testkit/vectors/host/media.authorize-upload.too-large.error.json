@@ -1,0 +1,38 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-vector",
+  "id": "vector.host-vector.media.authorize-upload.too-large",
+  "description": "An upload larger than the host bound is refused at authorization, so no transfer is ever started.",
+  "profile": "studio.profile/host-baseline",
+  "port": "media",
+  "operation": "authorize-upload",
+  "given": {
+    "artifacts": [
+      {
+        "id": "vector.blueprint",
+        "kind": "blueprint",
+        "revision": "vector.blueprint-r1"
+      }
+    ],
+    "permissions": ["studio.permission/publish", "studio.permission/save"],
+    "sessionGeneration": "session-r1"
+  },
+  "context": {
+    "operationId": "studio.operation/media.authorize-upload",
+    "protocolVersion": "0.1.0-draft.2",
+    "requestId": "requests/vector-1",
+    "resourceContextKey": "contexts/vector",
+    "sessionGeneration": "session-r1"
+  },
+  "argument": {
+    "byteSize": 1073741824,
+    "filename": "huge.bin",
+    "mediaType": "image/jpeg",
+    "purpose": "studio.media/content"
+  },
+  "expect": {
+    "outcome": "error",
+    "category": "limit-exceeded",
+    "retryable": false
+  }
+}

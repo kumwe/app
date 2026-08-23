@@ -1,0 +1,24 @@
+{
+  "description": "Astral-plane characters count as one position each: every offset is a Unicode code-point index, never a UTF-16 code-unit or byte index.",
+  "document": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "𝄞𝄞 " },
+          { "type": "text", "text": "G🎼clef", "marks": [{ "type": "bold" }] },
+          { "type": "text", "text": " coda𐐷" }
+        ]
+      }
+    ]
+  },
+  "projection": [
+    {
+      "type": "paragraph",
+      "text": "𝄞𝄞 G🎼clef coda𐐷",
+      "spans": [{ "start": 3, "end": 9, "marks": ["bold"] }],
+      "embeds": []
+    }
+  ]
+}

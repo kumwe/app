@@ -1,0 +1,13 @@
+{
+  "schema": "preview-message.schema.json",
+  "description": "Explicit preview viewport width and height are each bounded to at least 240 CSS pixels.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "preview-message",
+    "channelId": "preview-channel-1",
+    "sessionGeneration": "session-r1",
+    "sequence": 3,
+    "type": "studio.preview/viewport",
+    "payload": { "height": 239 }
+  }
+}

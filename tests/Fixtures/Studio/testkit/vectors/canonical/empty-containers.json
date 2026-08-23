@@ -1,0 +1,14 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "canonical-vector",
+  "id": "vector.canonical-vector.empty-containers",
+  "description": "Empty objects and arrays serialize without padding.",
+  "value": {
+    "array": [],
+    "object": {}
+  },
+  "expect": {
+    "canonical": "{\"array\":[],\"object\":{}}",
+    "digest": "sha256-E7OK6rLhiixi3ilF25YAcggBtIPkGTb1oVTb2nJhvnA="
+  }
+}

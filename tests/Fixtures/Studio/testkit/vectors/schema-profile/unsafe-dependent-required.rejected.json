@@ -1,0 +1,24 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/unsafe-dependent-required",
+  "description": "An unsafe dependent-required member reports the array position that contains the rejected property name.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "dependentRequired": {
+      "value": ["constructor"]
+    },
+    "properties": {
+      "value": {
+        "type": "string"
+      }
+    }
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "unsafe-member",
+    "schemaPath": "/dependentRequired/value/0"
+  }
+}

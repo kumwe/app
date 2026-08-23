@@ -1,0 +1,26 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "media-vector",
+  "id": "vector.media-vector.accept.plan-deterministic",
+  "description": "A well-formed request inside every policy bound is accepted with the deterministic plan derived from the policy: same maximum, same chunk size, same resumability.",
+  "policy": {
+    "acceptedMediaTypes": ["image/jpeg", "image/png"],
+    "chunkBytes": 1024,
+    "maximumBytes": 4096,
+    "resumable": true
+  },
+  "request": {
+    "filename": "windhoek-skyline.jpg",
+    "mediaType": "image/jpeg",
+    "byteSize": 2500,
+    "purpose": "studio.media/entry-image"
+  },
+  "expect": {
+    "outcome": "accepted",
+    "plan": {
+      "maximumBytes": 4096,
+      "chunkBytes": 1024,
+      "resumable": true
+    }
+  }
+}

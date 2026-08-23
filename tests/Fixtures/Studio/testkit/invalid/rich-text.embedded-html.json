@@ -1,0 +1,13 @@
+{
+  "schema": "rich-text.schema.json",
+  "description": "Rich text stores structured nodes only; raw HTML payloads are rejected.",
+  "value": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "html",
+        "value": "<script>alert(1)</script>"
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "canonical-vector",
+  "id": "vector.canonical-vector.nested-order",
+  "description": "Sorting is recursive: every nested object is ordered the same way.",
+  "value": {
+    "outer": {
+      "z": 1,
+      "a": {
+        "y": 2,
+        "b": 3
+      }
+    }
+  },
+  "expect": {
+    "canonical": "{\"outer\":{\"a\":{\"b\":3,\"y\":2},\"z\":1}}",
+    "digest": "sha256-3TQ80V/GRN0uwwkENcctjI199+5MjvAWVuMxlJcDZRw="
+  }
+}

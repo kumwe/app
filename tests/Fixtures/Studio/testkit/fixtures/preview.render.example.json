@@ -1,0 +1,15 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "preview-message",
+  "channelId": "preview-channel-7f8d",
+  "sessionGeneration": "session-generation-1",
+  "sequence": 14,
+  "type": "studio.preview/render",
+  "payload": {
+    "artifactId": "org.example.blueprints/product-card",
+    "draftDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "draftRevision": "product-card-r5-local-12",
+    "requestId": "renders/product-card-14",
+    "viewport": "expanded"
+  }
+}

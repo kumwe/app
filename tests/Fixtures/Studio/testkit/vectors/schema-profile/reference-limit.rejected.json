@@ -1,0 +1,415 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/reference-limit",
+  "description": "The first same-document reference beyond the published reference budget is rejected deterministically.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "$defs": {
+      "value": {
+        "type": "string"
+      }
+    },
+    "properties": {
+      "p000": {
+        "$ref": "#/$defs/value"
+      },
+      "p001": {
+        "$ref": "#/$defs/value"
+      },
+      "p002": {
+        "$ref": "#/$defs/value"
+      },
+      "p003": {
+        "$ref": "#/$defs/value"
+      },
+      "p004": {
+        "$ref": "#/$defs/value"
+      },
+      "p005": {
+        "$ref": "#/$defs/value"
+      },
+      "p006": {
+        "$ref": "#/$defs/value"
+      },
+      "p007": {
+        "$ref": "#/$defs/value"
+      },
+      "p008": {
+        "$ref": "#/$defs/value"
+      },
+      "p009": {
+        "$ref": "#/$defs/value"
+      },
+      "p010": {
+        "$ref": "#/$defs/value"
+      },
+      "p011": {
+        "$ref": "#/$defs/value"
+      },
+      "p012": {
+        "$ref": "#/$defs/value"
+      },
+      "p013": {
+        "$ref": "#/$defs/value"
+      },
+      "p014": {
+        "$ref": "#/$defs/value"
+      },
+      "p015": {
+        "$ref": "#/$defs/value"
+      },
+      "p016": {
+        "$ref": "#/$defs/value"
+      },
+      "p017": {
+        "$ref": "#/$defs/value"
+      },
+      "p018": {
+        "$ref": "#/$defs/value"
+      },
+      "p019": {
+        "$ref": "#/$defs/value"
+      },
+      "p020": {
+        "$ref": "#/$defs/value"
+      },
+      "p021": {
+        "$ref": "#/$defs/value"
+      },
+      "p022": {
+        "$ref": "#/$defs/value"
+      },
+      "p023": {
+        "$ref": "#/$defs/value"
+      },
+      "p024": {
+        "$ref": "#/$defs/value"
+      },
+      "p025": {
+        "$ref": "#/$defs/value"
+      },
+      "p026": {
+        "$ref": "#/$defs/value"
+      },
+      "p027": {
+        "$ref": "#/$defs/value"
+      },
+      "p028": {
+        "$ref": "#/$defs/value"
+      },
+      "p029": {
+        "$ref": "#/$defs/value"
+      },
+      "p030": {
+        "$ref": "#/$defs/value"
+      },
+      "p031": {
+        "$ref": "#/$defs/value"
+      },
+      "p032": {
+        "$ref": "#/$defs/value"
+      },
+      "p033": {
+        "$ref": "#/$defs/value"
+      },
+      "p034": {
+        "$ref": "#/$defs/value"
+      },
+      "p035": {
+        "$ref": "#/$defs/value"
+      },
+      "p036": {
+        "$ref": "#/$defs/value"
+      },
+      "p037": {
+        "$ref": "#/$defs/value"
+      },
+      "p038": {
+        "$ref": "#/$defs/value"
+      },
+      "p039": {
+        "$ref": "#/$defs/value"
+      },
+      "p040": {
+        "$ref": "#/$defs/value"
+      },
+      "p041": {
+        "$ref": "#/$defs/value"
+      },
+      "p042": {
+        "$ref": "#/$defs/value"
+      },
+      "p043": {
+        "$ref": "#/$defs/value"
+      },
+      "p044": {
+        "$ref": "#/$defs/value"
+      },
+      "p045": {
+        "$ref": "#/$defs/value"
+      },
+      "p046": {
+        "$ref": "#/$defs/value"
+      },
+      "p047": {
+        "$ref": "#/$defs/value"
+      },
+      "p048": {
+        "$ref": "#/$defs/value"
+      },
+      "p049": {
+        "$ref": "#/$defs/value"
+      },
+      "p050": {
+        "$ref": "#/$defs/value"
+      },
+      "p051": {
+        "$ref": "#/$defs/value"
+      },
+      "p052": {
+        "$ref": "#/$defs/value"
+      },
+      "p053": {
+        "$ref": "#/$defs/value"
+      },
+      "p054": {
+        "$ref": "#/$defs/value"
+      },
+      "p055": {
+        "$ref": "#/$defs/value"
+      },
+      "p056": {
+        "$ref": "#/$defs/value"
+      },
+      "p057": {
+        "$ref": "#/$defs/value"
+      },
+      "p058": {
+        "$ref": "#/$defs/value"
+      },
+      "p059": {
+        "$ref": "#/$defs/value"
+      },
+      "p060": {
+        "$ref": "#/$defs/value"
+      },
+      "p061": {
+        "$ref": "#/$defs/value"
+      },
+      "p062": {
+        "$ref": "#/$defs/value"
+      },
+      "p063": {
+        "$ref": "#/$defs/value"
+      },
+      "p064": {
+        "$ref": "#/$defs/value"
+      },
+      "p065": {
+        "$ref": "#/$defs/value"
+      },
+      "p066": {
+        "$ref": "#/$defs/value"
+      },
+      "p067": {
+        "$ref": "#/$defs/value"
+      },
+      "p068": {
+        "$ref": "#/$defs/value"
+      },
+      "p069": {
+        "$ref": "#/$defs/value"
+      },
+      "p070": {
+        "$ref": "#/$defs/value"
+      },
+      "p071": {
+        "$ref": "#/$defs/value"
+      },
+      "p072": {
+        "$ref": "#/$defs/value"
+      },
+      "p073": {
+        "$ref": "#/$defs/value"
+      },
+      "p074": {
+        "$ref": "#/$defs/value"
+      },
+      "p075": {
+        "$ref": "#/$defs/value"
+      },
+      "p076": {
+        "$ref": "#/$defs/value"
+      },
+      "p077": {
+        "$ref": "#/$defs/value"
+      },
+      "p078": {
+        "$ref": "#/$defs/value"
+      },
+      "p079": {
+        "$ref": "#/$defs/value"
+      },
+      "p080": {
+        "$ref": "#/$defs/value"
+      },
+      "p081": {
+        "$ref": "#/$defs/value"
+      },
+      "p082": {
+        "$ref": "#/$defs/value"
+      },
+      "p083": {
+        "$ref": "#/$defs/value"
+      },
+      "p084": {
+        "$ref": "#/$defs/value"
+      },
+      "p085": {
+        "$ref": "#/$defs/value"
+      },
+      "p086": {
+        "$ref": "#/$defs/value"
+      },
+      "p087": {
+        "$ref": "#/$defs/value"
+      },
+      "p088": {
+        "$ref": "#/$defs/value"
+      },
+      "p089": {
+        "$ref": "#/$defs/value"
+      },
+      "p090": {
+        "$ref": "#/$defs/value"
+      },
+      "p091": {
+        "$ref": "#/$defs/value"
+      },
+      "p092": {
+        "$ref": "#/$defs/value"
+      },
+      "p093": {
+        "$ref": "#/$defs/value"
+      },
+      "p094": {
+        "$ref": "#/$defs/value"
+      },
+      "p095": {
+        "$ref": "#/$defs/value"
+      },
+      "p096": {
+        "$ref": "#/$defs/value"
+      },
+      "p097": {
+        "$ref": "#/$defs/value"
+      },
+      "p098": {
+        "$ref": "#/$defs/value"
+      },
+      "p099": {
+        "$ref": "#/$defs/value"
+      },
+      "p100": {
+        "$ref": "#/$defs/value"
+      },
+      "p101": {
+        "$ref": "#/$defs/value"
+      },
+      "p102": {
+        "$ref": "#/$defs/value"
+      },
+      "p103": {
+        "$ref": "#/$defs/value"
+      },
+      "p104": {
+        "$ref": "#/$defs/value"
+      },
+      "p105": {
+        "$ref": "#/$defs/value"
+      },
+      "p106": {
+        "$ref": "#/$defs/value"
+      },
+      "p107": {
+        "$ref": "#/$defs/value"
+      },
+      "p108": {
+        "$ref": "#/$defs/value"
+      },
+      "p109": {
+        "$ref": "#/$defs/value"
+      },
+      "p110": {
+        "$ref": "#/$defs/value"
+      },
+      "p111": {
+        "$ref": "#/$defs/value"
+      },
+      "p112": {
+        "$ref": "#/$defs/value"
+      },
+      "p113": {
+        "$ref": "#/$defs/value"
+      },
+      "p114": {
+        "$ref": "#/$defs/value"
+      },
+      "p115": {
+        "$ref": "#/$defs/value"
+      },
+      "p116": {
+        "$ref": "#/$defs/value"
+      },
+      "p117": {
+        "$ref": "#/$defs/value"
+      },
+      "p118": {
+        "$ref": "#/$defs/value"
+      },
+      "p119": {
+        "$ref": "#/$defs/value"
+      },
+      "p120": {
+        "$ref": "#/$defs/value"
+      },
+      "p121": {
+        "$ref": "#/$defs/value"
+      },
+      "p122": {
+        "$ref": "#/$defs/value"
+      },
+      "p123": {
+        "$ref": "#/$defs/value"
+      },
+      "p124": {
+        "$ref": "#/$defs/value"
+      },
+      "p125": {
+        "$ref": "#/$defs/value"
+      },
+      "p126": {
+        "$ref": "#/$defs/value"
+      },
+      "p127": {
+        "$ref": "#/$defs/value"
+      },
+      "p128": {
+        "$ref": "#/$defs/value"
+      }
+    }
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "limit-exceeded",
+    "schemaPath": "/properties/p128/$ref"
+  },
+  "boundary": {
+    "limit": "maxReferences",
+    "position": "over-limit",
+    "value": 129
+  }
+}

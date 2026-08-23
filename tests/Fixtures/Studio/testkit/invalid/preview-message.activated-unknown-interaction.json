@@ -1,0 +1,16 @@
+{
+  "schema": "preview-message.schema.json",
+  "description": "Activation reports the closed interaction vocabulary, never an arbitrary input event.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "preview-message",
+    "channelId": "preview-channel-1",
+    "sessionGeneration": "session-r1",
+    "sequence": 3,
+    "type": "studio.preview/activated",
+    "payload": {
+      "interaction": "hover",
+      "marker": "studio.preview/node/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/0"
+    }
+  }
+}

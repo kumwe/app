@@ -1,0 +1,50 @@
+{
+  "schema": "host-sequence-vector.schema.json",
+  "description": "A preview render invocation must carry the complete draft.2 render identity, including its session-unique request identifier.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "host-sequence-vector",
+    "id": "vector.host-sequence.invalid.preview-render-missing-request-id",
+    "description": "Invalid preview render identity.",
+    "profile": "studio.profile/host-baseline-v2",
+    "assertions": ["cross-context-cancellation-isolation"],
+    "idempotencyPolicy": {
+      "scopeFields": ["idempotencyKey", "operationId", "resourceContextKey", "sessionGeneration"],
+      "argumentCanonicalization": "canonical-json",
+      "intentContextFields": ["expectedRevision", "locale", "protocolVersion"],
+      "absentOptionalFields": "omit",
+      "numberNormalization": "canonical-json",
+      "excludedContextFields": ["requestId", "traceContext"]
+    },
+    "given": { "artifacts": [], "permissions": [], "sessionGeneration": "session-r1" },
+    "steps": [
+      {
+        "action": "invoke",
+        "id": "render-missing-request-id",
+        "port": "preview",
+        "operation": "render",
+        "context": {
+          "operationId": "studio.operation/preview.render",
+          "protocolVersion": "0.1.0-draft.2",
+          "requestId": "requests/preview-render",
+          "resourceContextKey": "contexts/vector",
+          "sessionGeneration": "session-r1"
+        },
+        "argument": {
+          "artifactId": "vector.blueprint",
+          "draftDigest": "b03cc45a784d7cd4d2836e24694d42f9c8e2ee3dde3ceca79b0a147436db47c6",
+          "draftRevision": "vector-blueprint-r1",
+          "viewport": "desktop"
+        },
+        "completion": "pending"
+      },
+      {
+        "action": "settle",
+        "id": "render-settled",
+        "invocation": "render-missing-request-id",
+        "expect": { "outcome": "error", "category": "invalid-request", "retryable": false }
+      }
+    ],
+    "expectFinal": { "pendingPreviewRenders": 0, "previewDeliveries": [] }
+  }
+}

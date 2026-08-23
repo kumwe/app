@@ -1,0 +1,36 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-vector",
+  "id": "vector.host-vector.envelope.stale-generation",
+  "description": "A request carrying a superseded session generation is refused; a permission or context change mints a new generation.",
+  "profile": "studio.profile/host-baseline",
+  "port": "artifact",
+  "operation": "load",
+  "given": {
+    "artifacts": [
+      {
+        "id": "vector.blueprint",
+        "kind": "blueprint",
+        "revision": "vector.blueprint-r1"
+      }
+    ],
+    "permissions": ["studio.permission/publish", "studio.permission/save"],
+    "sessionGeneration": "session-r1"
+  },
+  "context": {
+    "operationId": "studio.operation/artifact.load",
+    "protocolVersion": "0.1.0-draft.2",
+    "requestId": "requests/vector-1",
+    "resourceContextKey": "contexts/vector",
+    "sessionGeneration": "session-r0"
+  },
+  "argument": {
+    "id": "vector.blueprint",
+    "version": "1.0.0"
+  },
+  "expect": {
+    "outcome": "error",
+    "category": "invalid-request",
+    "retryable": false
+  }
+}

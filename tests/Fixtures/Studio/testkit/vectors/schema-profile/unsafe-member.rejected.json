@@ -1,0 +1,17 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/unsafe-member",
+  "description": "Prototype-sensitive member names are refused at every schema map boundary.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": { "__proto__": { "type": "string" } }
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "unsafe-member",
+    "schemaPath": "/properties/__proto__"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "media-vector",
+  "id": "vector.media-vector.cancel.complete-noop",
+  "description": "Cancelling after the session has completed is not legal and does nothing: the session stays complete and the accepted asset identity is kept.",
+  "policy": {
+    "acceptedMediaTypes": ["image/jpeg", "image/png"],
+    "chunkBytes": 1024,
+    "maximumBytes": 4096,
+    "resumable": true
+  },
+  "request": {
+    "filename": "completed.jpg",
+    "mediaType": "image/jpeg",
+    "byteSize": 1500,
+    "purpose": "studio.media/entry-image"
+  },
+  "expect": {
+    "outcome": "accepted",
+    "plan": {
+      "maximumBytes": 4096,
+      "chunkBytes": 1024,
+      "resumable": true
+    }
+  },
+  "cancel": {
+    "during": "complete",
+    "finalState": "complete"
+  }
+}

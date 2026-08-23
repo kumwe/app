@@ -1,0 +1,36 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-vector",
+  "id": "vector.host-vector.media.complete-upload.unknown",
+  "description": "Completing an upload the host never granted is refused without disclosing whether the identifier exists.",
+  "profile": "studio.profile/host-baseline",
+  "port": "media",
+  "operation": "complete-upload",
+  "given": {
+    "artifacts": [
+      {
+        "id": "vector.blueprint",
+        "kind": "blueprint",
+        "revision": "vector.blueprint-r1"
+      }
+    ],
+    "permissions": ["studio.permission/publish", "studio.permission/save"],
+    "sessionGeneration": "session-r1"
+  },
+  "context": {
+    "operationId": "studio.operation/media.complete-upload",
+    "protocolVersion": "0.1.0-draft.2",
+    "requestId": "requests/vector-1",
+    "resourceContextKey": "contexts/vector",
+    "sessionGeneration": "session-r1"
+  },
+  "argument": {
+    "uploadId": "uploads/never-granted"
+  },
+  "expect": {
+    "outcome": "error",
+    "category": "not-found",
+    "retryable": false,
+    "messageMustNotContain": ["uploads/never-granted"]
+  }
+}

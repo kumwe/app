@@ -1,0 +1,22 @@
+{
+  "schema": "content-model.schema.json",
+  "description": "A published content model must declare at least one field or relationship.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "content-model",
+    "id": "org.example.models/product",
+    "version": "1.0.0",
+    "revision": "product-model-r1",
+    "owner": {
+      "id": "org.example/catalog",
+      "version": "1.0.0"
+    },
+    "status": "published",
+    "label": {
+      "key": "org.example.catalog/product-model",
+      "defaultMessage": "Product"
+    },
+    "fields": [],
+    "relationships": []
+  }
+}

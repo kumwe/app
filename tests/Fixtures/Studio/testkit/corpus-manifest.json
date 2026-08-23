@@ -1,0 +1,1106 @@
+{
+  "contractVersion": "0.1-draft",
+  "groups": [
+    {
+      "files": [
+        {
+          "digest": "sha256-VPvgjeVcou8k/vGgrFXfMOx2ureah7+HADcuV1ze8To=",
+          "file": "block.grid.example.json"
+        },
+        {
+          "digest": "sha256-8XIDP3g1Acb1u+T0t/0GSB96p1BPnRmWPaCz4DCDcGE=",
+          "file": "block.price.example.json"
+        },
+        {
+          "digest": "sha256-44WcjExiOB1vO/vsBwu3IDywZxeiIIE+5y5G42HpQtk=",
+          "file": "blueprint.product.example.json"
+        },
+        {
+          "digest": "sha256-RLYNSjQ1YZ6Sefn/UeNROAQPRXYq7YkYivc+Iz9mfLM=",
+          "file": "command.move-node.example.json"
+        },
+        {
+          "digest": "sha256-UT+m2E6Ue1+Cq6J8cMXF9+lyn7uphq0b9RYwrZk38Qg=",
+          "file": "content-model.product.example.json"
+        },
+        {
+          "digest": "sha256-KlmVAmvvtCTIuMDEDVg7SVcEjDjB4cjhl1yr1wDV1FM=",
+          "file": "design-vocabulary.example.json"
+        },
+        {
+          "digest": "sha256-lIwuTpdKF3jeZMsOZ7ZibynrabOcfV4zx18UlEePxNY=",
+          "file": "entry.product.example.json"
+        },
+        {
+          "digest": "sha256-NPbiWt9I7Y22yqtD4b4E0nm1ZJY3oMs447lEPSCs1E4=",
+          "file": "field-adapter.example.json"
+        },
+        {
+          "digest": "sha256-LvEOb+9bGayzWeYiU+qCHr9qjBNeJUqwyVdok17ITWQ=",
+          "file": "host-capabilities.example.json"
+        },
+        {
+          "digest": "sha256-H1xz9zlMNO10hmrCM7yWe7IM/7N4ieRY3SGSRGjNMsU=",
+          "file": "host-error.conflict.example.json"
+        },
+        {
+          "digest": "sha256-SJwDS1MjbhC9zDyHhmuXPVjhTrxQnxfKhtJ9o2Uvv+Q=",
+          "file": "host-operations.example.json"
+        },
+        {
+          "digest": "sha256-nAY1ZUpT5nxJ5J5lDR0f3Iimgt6jypYCfmkQu0Oz6Xo=",
+          "file": "inspector.example.json"
+        },
+        {
+          "digest": "sha256-LB2KJy5Y8gMr2INr14lkZERI/rte4ch669PHlKrJAVo=",
+          "file": "media-asset.example.json"
+        },
+        {
+          "digest": "sha256-hRoeCMjNFDYz3YoXfV0bYI4g2LycgIHjCqLxPNoDF3g=",
+          "file": "media-asset.processing.example.json"
+        },
+        {
+          "digest": "sha256-X0wBsSN7n52ka4Yfq0Uhq5Z1u+DfJiV/fS22lzxSl3k=",
+          "file": "media-reference.example.json"
+        },
+        {
+          "digest": "sha256-bxJYOD7SQWE7t0nS5ffuycCrSO0vixjRmYGpdrNvZ30=",
+          "file": "media-upload-grant.example.json"
+        },
+        {
+          "digest": "sha256-QxISq6YTzeXdSMuG57VNx05ksISl+OCl7BE5yc9bR/c=",
+          "file": "media-upload-session.transferring.example.json"
+        },
+        {
+          "digest": "sha256-y5uu9/6+cQD61EoIgiqglxkEfrlQmgsek34w5htpKrY=",
+          "file": "migration.example.json"
+        },
+        {
+          "digest": "sha256-G4wa7kCi6AD4idXjkzV48LpkGgFLIwG549Q+b3iZ7KI=",
+          "file": "pattern.example.json"
+        },
+        {
+          "digest": "sha256-RhghT+jsQKZY8AddDzLrzeC92FBj00MT3rlsJm6eXog=",
+          "file": "plugin.example.json"
+        },
+        {
+          "digest": "sha256-YunB5lUf+Dy3jEx6bBPiNaPqcPF34j7g8bkpAKTQAHE=",
+          "file": "preview.render.example.json"
+        },
+        {
+          "digest": "sha256-LYQoj0Jvx3qr4aiqy9r+JhLZixKS1c/rdhrHC2nM5x0=",
+          "file": "provenance.example.json"
+        },
+        {
+          "digest": "sha256-EXaD+hJHyRCGQoxSVo/a7jJBUJ2ZqH5a6eXdjTPfros=",
+          "file": "rich-text.example.json"
+        },
+        {
+          "digest": "sha256-FzjalpM4jDkbkK8rGnmH6HSFxU9PhMp0vI9aPTCyEJE=",
+          "file": "studio-config.example.json"
+        },
+        {
+          "digest": "sha256-fuMTN0/YCVdx5cpXDzT72aoDKe7iKUeOTSGRm3Axq6k=",
+          "file": "theme.example.json"
+        },
+        {
+          "digest": "sha256-ul9CfJYT0nw8mO4WRYWarUBYyyWV+ylWrr67RiM3w+A=",
+          "file": "unresolved-contribution.example.json"
+        }
+      ],
+      "group": "fixtures",
+      "path": "fixtures"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-pNQcoN6Amvd5Q85SdoND5zJNJx0mfjePlRqukVFmeoU=",
+          "file": "apply-pattern.colliding-id.error.json"
+        },
+        {
+          "digest": "sha256-0ZmTxxdA8buTs6+YvqZW/S+Xec4Q7FPEi3SJiY4WVIs=",
+          "file": "apply-pattern.incomplete-id-map.error.json"
+        },
+        {
+          "digest": "sha256-En2z+8c6/NGVwTG9zTuGTa6mj2UUGLzSU29L2yC5d40=",
+          "file": "apply-pattern.two-roots.json"
+        },
+        {
+          "digest": "sha256-R+uIftOV2Z5PKWk82T7Uulxzq6Cb0mfc1EPJgsmVKnQ=",
+          "file": "batch.atomic-failure.error.json"
+        },
+        {
+          "digest": "sha256-YiD+3wufN5TexjLwXDUjhJ2mRUEbjtcrUYrGp9Jbev4=",
+          "file": "batch.insert-and-configure.json"
+        },
+        {
+          "digest": "sha256-iHNI9jkMILuuldRMdkwbna1Gj+qE+qtKMEbGPVP+lyY=",
+          "file": "batch.size-roles.json"
+        },
+        {
+          "digest": "sha256-gFozN3ESvb7os4sf1vMiMacEAqs+7H0IZMfcVFMTgvE=",
+          "file": "duplicate-node.existing-id.error.json"
+        },
+        {
+          "digest": "sha256-+cPuDVuusimeKGRkQspP4kEl8BcTdism4NkUC6R4pP4=",
+          "file": "duplicate-node.explicit-destination.json"
+        },
+        {
+          "digest": "sha256-NX8QwYK2uGYvMzFJVJvBxeiiXS4QZXL1oo+ENFeUb3s=",
+          "file": "duplicate-node.incomplete-id-map.error.json"
+        },
+        {
+          "digest": "sha256-4CWi9yUT5ZLXeO50bObQ4BppK4Fms/kfe5DpG0fDwWA=",
+          "file": "duplicate-node.subtree.json"
+        },
+        {
+          "digest": "sha256-bCp4wIZUpe6He6i5u8+1J3E7ZDunRfcq1ykvX0Ebcqk=",
+          "file": "insert-node.duplicate-id.error.json"
+        },
+        {
+          "digest": "sha256-LK7XqCKVuH1IeTu6qtGm3tFL51tVqBskVJBBn78mQxQ=",
+          "file": "insert-node.inner-duplicate-id.error.json"
+        },
+        {
+          "digest": "sha256-RAE+2wT2/KruL6rPw9ObgqeHoRnmmdAcbqgFlMHL5J0=",
+          "file": "insert-node.invalid-index.error.json"
+        },
+        {
+          "digest": "sha256-4Rxd1/SQDgPym83JUeCfzf0l4kj9/bj4i4Ut9l8aTNA=",
+          "file": "insert-node.root.json"
+        },
+        {
+          "digest": "sha256-t0mJgwOHb27dRPyLr5Yv5HWxRDnWDLQtqD43u2mStR0=",
+          "file": "insert-node.slot.json"
+        },
+        {
+          "digest": "sha256-x9F+lJQ20p+L/sq44EfB0zWdlMhxEMwgMxVM0QqYQxM=",
+          "file": "mode.blueprint.set-field-value.error.json"
+        },
+        {
+          "digest": "sha256-OgEJA8fzXMADVRWinVxJiECxkFzJtifnqEWbiTOM+UA=",
+          "file": "mode.blueprint.set-property.json"
+        },
+        {
+          "digest": "sha256-PNn9r3hLYNhuy5UJmuW5NcZVIxk2CtdEokYhQtezUh8=",
+          "file": "mode.content.insert-node.error.json"
+        },
+        {
+          "digest": "sha256-M4cL6rdMKzNOPOYyNDkmz0QYB3tKDgyW4SvLCMUlYSA=",
+          "file": "mode.hybrid.batch-atomic.error.json"
+        },
+        {
+          "digest": "sha256-lqSe7oJXlKdBxJ+eLQYS36pUj/5qM4e2XWCXbRWe9NM=",
+          "file": "mode.hybrid.insert-allowed.json"
+        },
+        {
+          "digest": "sha256-b+CEWT28dcVdWyWAqXqO7JhSsJURAxOsoP/NsqQT4qM=",
+          "file": "mode.hybrid.insert-designer-slot.error.json"
+        },
+        {
+          "digest": "sha256-pXUYZ9OQAzRa8J5vv91rr5oIHRey76ta/G7dN28Gd7I=",
+          "file": "mode.hybrid.insert-disallowed-type.error.json"
+        },
+        {
+          "digest": "sha256-VFCG5H4O0gE1xtBQLNdLs4EK4uxK/Oxo406of7Y59ko=",
+          "file": "mode.hybrid.insert-roots.error.json"
+        },
+        {
+          "digest": "sha256-47MRAXW/E7DejyAjZoQ9Th/CCkxiSEEHL7sfCF/+rBo=",
+          "file": "mode.hybrid.remove-locked.error.json"
+        },
+        {
+          "digest": "sha256-WZvnLYAUcAhM037X5UKwMRMTWPtfwUcZiG+giTZzZx0=",
+          "file": "mode.hybrid.reorder-with-locked.json"
+        },
+        {
+          "digest": "sha256-DRPnsxj+3kP6R93Cm1pHTOyFcOEF9VioY1ZwzIkV1eY=",
+          "file": "mode.hybrid.set-property.error.json"
+        },
+        {
+          "digest": "sha256-Hwe4A19zM/SnoDKFIHxgoEx1bp6Eexsq8kf8QdzHazs=",
+          "file": "mode.hybrid.slot-marker-disallowed.error.json"
+        },
+        {
+          "digest": "sha256-zIm8bAnF7+acqvqOrLY2OaWe8tceAFfwZHBMpEgwvLY=",
+          "file": "mode.hybrid.slot-marker-insert.json"
+        },
+        {
+          "digest": "sha256-EUaW3U6lAkPMOs2S02oKrCf+Agnah+0o/k1vX3lvOx4=",
+          "file": "mode.hybrid.slot-marker-other-slot.error.json"
+        },
+        {
+          "digest": "sha256-tRd3gLNjS3hi4gF3x228iSO0Be3vr6tvZyEgNGj5OK8=",
+          "file": "mode.model.remove-node.error.json"
+        },
+        {
+          "digest": "sha256-Gy096Wg9mw6vVfrtSwdPLQ38ATIZenPStls9QNfJOM0=",
+          "file": "mode.read-only.set-property.error.json"
+        },
+        {
+          "digest": "sha256-1u4Cm5jBLT0tXpevdjcU1XMT2XoNEzAZflwSET2Wpvc=",
+          "file": "move-node.into-self.error.json"
+        },
+        {
+          "digest": "sha256-H3tv2ksCmeDcrtieXhmIBI+ajr2I6k01CaEapEVeVH0=",
+          "file": "move-node.reparent.json"
+        },
+        {
+          "digest": "sha256-/8Y8Jqgve7Gd6SkjrDVfBwZHs8H0nIMVNlzBmQkDUAY=",
+          "file": "move-node.within-roots.json"
+        },
+        {
+          "digest": "sha256-xezZ6uu8rl5gv6rCoCmT0QnLlluZNr8C2k2m8YLi0Ro=",
+          "file": "remove-binding.base.json"
+        },
+        {
+          "digest": "sha256-ohcPm37PlEP2GaNh4YmOQlkEBU/yC1PL3m0CwNmwPUs=",
+          "file": "remove-binding.missing.error.json"
+        },
+        {
+          "digest": "sha256-BLAGsWELPlxafvLu6u/qY4/CpOL9xpuUV682Baxz2Aw=",
+          "file": "remove-node.empties-slot.json"
+        },
+        {
+          "digest": "sha256-WBioj3pICeERRps6Ezu1ZOtTQGscg9HmBcO0kLmrQW8=",
+          "file": "remove-node.missing.error.json"
+        },
+        {
+          "digest": "sha256-GYffs88H/0oOWO7KrDFEPIt6smhQm8C0tbUww7KQi0c=",
+          "file": "remove-node.nested.json"
+        },
+        {
+          "digest": "sha256-pIPWD6te5x3hXGmEnZ8yQW05bjXGdnXzrfhI2UK47Qs=",
+          "file": "reorder-children.not-permutation.error.json"
+        },
+        {
+          "digest": "sha256-1y96YdBHqtX25SxDDceZAXWeI8c5bQw/JzMBcLUyCgA=",
+          "file": "reorder-children.roots.json"
+        },
+        {
+          "digest": "sha256-geSJdhU1kzO8+plouYgEfS117UBB38a1oRy8ZnlisL4=",
+          "file": "reorder-children.slot.json"
+        },
+        {
+          "digest": "sha256-h6BaZdwKMFuWIwONpKDr8VpBG1n3RKixowj3OoV497g=",
+          "file": "reset-inherited-property.missing.error.json"
+        },
+        {
+          "digest": "sha256-TOVEID6FvNA7yJrfj0Z1iNcy1opUblbBP6ataLo4WVo=",
+          "file": "reset-inherited-property.single-viewport.json"
+        },
+        {
+          "digest": "sha256-2H3+bWniUGj8HAlzijWhmsRVMhRj3IQdnj7lRYGmgdU=",
+          "file": "reset-inherited-property.two-viewports.json"
+        },
+        {
+          "digest": "sha256-cAmlgnZbaVUyqDESLSX33+ylS6yZd8QeWHVC3PAH3iI=",
+          "file": "restore-node.inner-duplicate-id.error.json"
+        },
+        {
+          "digest": "sha256-cnF8qq45hTfOCMUO5H9H0Uo4BbUaJlvWUtNzbaH3wvo=",
+          "file": "restore-node.subtree-into-slot.json"
+        },
+        {
+          "digest": "sha256-uRsgs4I4GvlJdLw/plosnrU/7CfJi+o17FqPx1fDslE=",
+          "file": "set-binding.add.json"
+        },
+        {
+          "digest": "sha256-yrnVW0y1TGB2JGb1Te4Z0Ip0lZ/N3iaUL49T85GiiRk=",
+          "file": "set-binding.replace.json"
+        },
+        {
+          "digest": "sha256-jMIw5QznfGTTrYTeixH5hPe+UIg+tlT2i/mioalBDp8=",
+          "file": "set-property.add.json"
+        },
+        {
+          "digest": "sha256-uMSA2wNs29caqpeOx8cf3P6mu0rcHSozy7uzT+YDyhE=",
+          "file": "set-property.replace.json"
+        },
+        {
+          "digest": "sha256-7fId4KBKwhrX6hzNnn2Ro6i5GoSrUvcaV88I00h8qX0=",
+          "file": "set-property.viewport-add.json"
+        },
+        {
+          "digest": "sha256-PTu0Z8yIvkZ7WWDo2aKy63ApB973GKTM/lHAqx8jrOg=",
+          "file": "set-size-role.base.json"
+        },
+        {
+          "digest": "sha256-Gg9PH74T8ih1D4CRvjOlIw2QRcUGmWcpti/k6JzDcck=",
+          "file": "set-size-role.duplicate.json"
+        },
+        {
+          "digest": "sha256-Yc/mNghMJLQKWC9murj3Tl5fuedyjYJdXpGzK4pFrN0=",
+          "file": "set-size-role.viewport-add.json"
+        },
+        {
+          "digest": "sha256-iK4X1ILxuXQFf24ESQBv2ZxMtltRh+a0AOjzFOat77E=",
+          "file": "unset-property.base.json"
+        },
+        {
+          "digest": "sha256-IrBse4lqF/m9hh9qcW+A+yZvIBGlPNaTMysBpVIjH2A=",
+          "file": "unset-property.missing.error.json"
+        },
+        {
+          "digest": "sha256-DJzEo/9+PieEzIdR/Lr0HnQnm1q4bgu68LuQgojhJyQ=",
+          "file": "unset-property.viewport.json"
+        },
+        {
+          "digest": "sha256-7mzf2NCY26CyRPgZaZZc073tTgxYWHrC5f9iygVgTV4=",
+          "file": "unset-size-role.missing.error.json"
+        },
+        {
+          "digest": "sha256-tG+ACOlsiNr3B3E3nQt5qGNlMBoCrtC/4pI0OTH9XOs=",
+          "file": "unset-size-role.viewport.json"
+        }
+      ],
+      "group": "command-vectors",
+      "path": "vectors/command"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-Ps43DxmCJ4WLKQUXY7qlqhFIu0M1fyoFu9q6NBksaC4=",
+          "file": "accept.plan-deterministic.json"
+        },
+        {
+          "digest": "sha256-v7366aSviRNNKs/XQMnSCjH6KplyZsKvPsTe66o93og=",
+          "file": "accept.size-at-boundary.json"
+        },
+        {
+          "digest": "sha256-XNVHTrXz/89w27TB2+ZGIh0fGB60R9dJWVETh8TxUb0=",
+          "file": "cancel.complete-noop.json"
+        },
+        {
+          "digest": "sha256-NkAn89jdvRi5ry8Xkic8QuxXno0FaS7bIcBnG6eIR20=",
+          "file": "cancel.requested.json"
+        },
+        {
+          "digest": "sha256-TlLcgZUr+OaoZEMFCjS0oN5DS07IKsPZHX0Mk0DVnS4=",
+          "file": "cancel.transferring.json"
+        },
+        {
+          "digest": "sha256-9Been/8oCqIByWx/8yWfnwwPvu5EV1+Lb8HoOHS/SZM=",
+          "file": "cancel.verifying.json"
+        },
+        {
+          "digest": "sha256-X2lBZ04zc4YZocBt7aWzIh3zivJLwSM0R24FVRgr4Xs=",
+          "file": "reject.disallowed-kind.json"
+        },
+        {
+          "digest": "sha256-qvv+RBwrXyEHf6bK9F7y39L1U7T2jqixuqyx2/zf/kQ=",
+          "file": "reject.filename-empty.json"
+        },
+        {
+          "digest": "sha256-SMX3F2DRZ910jRHcbRbzIkessA6JCpNLHmjPrldbn0s=",
+          "file": "reject.filename-path.json"
+        },
+        {
+          "digest": "sha256-6CpVUFI9e1OCNo+tLUxnoxqRNABU/Bu9bT/0YaLmK/I=",
+          "file": "reject.size-one-byte-over.json"
+        },
+        {
+          "digest": "sha256-lJTTM6oLJVwa4RH+9nJXdxiaa0ap2T3ovcZJ/rYiepw=",
+          "file": "retry.fresh-session.json"
+        }
+      ],
+      "group": "media-vectors",
+      "path": "vectors/media"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-ydZULI6/ASwfyjFD4xIpRU4nrTgOkJu9AsJzBgUQKXg=",
+          "file": "artifact.dependencies.result.json"
+        },
+        {
+          "digest": "sha256-hKNuNyzzNWMx5MP7TliHwMo36Bjilcg0QjWSH04Xyvo=",
+          "file": "artifact.load.stored.json"
+        },
+        {
+          "digest": "sha256-w1UatrQlhIX6HwlMtgYerLncjux0akFufLhgp5yYqFQ=",
+          "file": "artifact.load.unknown.error.json"
+        },
+        {
+          "digest": "sha256-4vcPPXzreu791xeNXllZWMJvE2jnSXYYN8+Ig2FP65k=",
+          "file": "artifact.publish.accepted.json"
+        },
+        {
+          "digest": "sha256-xMLhnxKJt014nxQFw8ji6yWxlgoBfYvNfa0Snww/4pc=",
+          "file": "artifact.publish.forbidden.error.json"
+        },
+        {
+          "digest": "sha256-BoUzxgxScMnX2S8Uepjs05HE3E3svNr43RQsRJi5Hwc=",
+          "file": "artifact.publish.stale.error.json"
+        },
+        {
+          "digest": "sha256-wqIt+J0HMW5KlDdqSSyhoGJN1mUz45mAbLed/tuhXTE=",
+          "file": "artifact.save.accepted.json"
+        },
+        {
+          "digest": "sha256-SD5vgEQVaNf8bo8OuauUmu+Htw1wSI1oQYuap3sSFVM=",
+          "file": "artifact.save.forbidden.error.json"
+        },
+        {
+          "digest": "sha256-uGo+aHKZEfmIh7Qn7ClAypJzrJBfvZiL3on0QEDGykE=",
+          "file": "artifact.save.stale.error.json"
+        },
+        {
+          "digest": "sha256-64MnzAEAV2CRjo44DsbqfK3vKgXaz0jhggg9bHmQ2Uc=",
+          "file": "artifact.unpublish.stale.error.json"
+        },
+        {
+          "digest": "sha256-Lxp7+dgciExF992LfHdznx3AusgMwou6pxwTlOtJX2I=",
+          "file": "envelope.malformed-context.error.json"
+        },
+        {
+          "digest": "sha256-IEfTxQ3v58JNO8PtwVCl7yhOz28FTh9yy8wcn1ZeR0E=",
+          "file": "envelope.protocol-version.error.json"
+        },
+        {
+          "digest": "sha256-08aKM610/Mdy8OeKGSBe7jSjPHeQ4DyYVkkoazuw0tc=",
+          "file": "envelope.stale-generation.error.json"
+        },
+        {
+          "digest": "sha256-sUP6y7XqbfMlKSKcPy8bSpDRdTU/uNNqbxm/bSbWwgY=",
+          "file": "localization.messages.unknown-locale.error.json"
+        },
+        {
+          "digest": "sha256-BzlJW89ivZ8mJ7DrT1pnKO90FIca4JAWbgFJssA5PTs=",
+          "file": "media.abort-upload.unknown.error.json"
+        },
+        {
+          "digest": "sha256-9fprMT2KBXaHNDJeCq50X5fpJ7RMvTfLdcmY88URhlc=",
+          "file": "media.authorize-upload.granted.json"
+        },
+        {
+          "digest": "sha256-mBrrmHrUTH77zIVFCPHWmKCouuT8T5du8aARlqrC/p4=",
+          "file": "media.authorize-upload.path-filename.error.json"
+        },
+        {
+          "digest": "sha256-WFUPhLVI7ls+WiNIPB59BZ589j3FQV2W6xYnwFPxFQE=",
+          "file": "media.authorize-upload.too-large.error.json"
+        },
+        {
+          "digest": "sha256-698RIM3kvt/croygrkE1Yx4ca3xtXQWBd5/YIGtsGOg=",
+          "file": "media.complete-upload.unknown.error.json"
+        },
+        {
+          "digest": "sha256-6MOE+uVaY61eXfcK3AGR2JWIcDH8uRzdOUVHYkmKLas=",
+          "file": "media.get.unknown.json"
+        },
+        {
+          "digest": "sha256-cFXsIN/ssXNcOHoqmhColAD1rqKa+nUVGiWx8Cmoqvc=",
+          "file": "media.import-external.private-host.error.json"
+        },
+        {
+          "digest": "sha256-osFldrIdCSx7+LTZJaS7sBIp8oUuktfGml1hfm4jLUQ=",
+          "file": "media.list.cursor.error.json"
+        },
+        {
+          "digest": "sha256-QM1wLPw8PDxHq23adJeFO0nVHoEmF6MR266c1VF9038=",
+          "file": "media.list.limit.error.json"
+        },
+        {
+          "digest": "sha256-6lCxcY8XnoOmYrApFVs0f8lJophb4fJDSY0Rs9Okiss=",
+          "file": "media.upload-status.unknown.error.json"
+        },
+        {
+          "digest": "sha256-WMY/mRoj/RQtTk51Tq4yhObfMO84ZPdnC4LzV5QXaFE=",
+          "file": "permission.explain.withheld.json"
+        },
+        {
+          "digest": "sha256-Pj1d2nKUL2bWXvq5MSJAdopRzTQQJ5j/dpcJyI2ww/8=",
+          "file": "permission.refresh.snapshot.json"
+        },
+        {
+          "digest": "sha256-9Nr+oT8Z2Hus7DEayr9lLw1QoYVImWiBaV2LQvN98+o=",
+          "file": "recovery.load.absent.json"
+        },
+        {
+          "digest": "sha256-r6u3YhuqsV/cB1Q1VNPVW4ok7Pn4U26ilIT4gv5KVkk=",
+          "file": "telemetry.emit.accepted.json"
+        },
+        {
+          "digest": "sha256-UaxLfaD3MVQ+HCpgH2gny1PhwljdzdPBHguSrtQguqk=",
+          "file": "telemetry.emit.non-primitive.error.json"
+        }
+      ],
+      "group": "host-vectors",
+      "path": "vectors/host"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-0aky2qxEPAlTujukSgUegnWCGIINm8RPvanP9YikiTw=",
+          "file": "artifact.publish.changed-intent.sequence.json"
+        },
+        {
+          "digest": "sha256-r+N2rk0C9m0Z8azL2ODCbnupx0V5WP3NzZPmHfxYwsU=",
+          "file": "artifact.publish.idempotent-replay.sequence.json"
+        },
+        {
+          "digest": "sha256-iHqWx7hos7SD3TfdpREzhET+WFymV/Wn/MQiibRhWdg=",
+          "file": "preview.cancel.cross-context.sequence.json"
+        },
+        {
+          "digest": "sha256-cV+tyEOU52pQixA/PIDQ6DQqugH46tMMlNFp3vDDbGY=",
+          "file": "preview.render.cancelled.sequence.json"
+        },
+        {
+          "digest": "sha256-aW9P8eGUjGJ8aGqXgOn6MnhvCEkjCNd/6s2hgBWLuls=",
+          "file": "recovery.store.canonical-number.sequence.json"
+        },
+        {
+          "digest": "sha256-iggSi0IpPG1sntUQDj4QV8hEwYobCBJhGsjpH8onLy4=",
+          "file": "recovery.store.changed-context.sequence.json"
+        },
+        {
+          "digest": "sha256-5sWl2iIySs0+0hGH4lnKoHIIeQEG7J2gVJQlyPla5GE=",
+          "file": "recovery.store.rate-limited.sequence.json"
+        },
+        {
+          "digest": "sha256-LbAndTtFRK5fa0VMPzb9tEA/rkKfpqOxLCPddFgys1Y=",
+          "file": "recovery.store.resource-scope.sequence.json"
+        },
+        {
+          "digest": "sha256-l/g4M7YZj5juZeVLbLImOoQW+gCDKOlK4PeKzzHq2d8=",
+          "file": "recovery.store.wrong-operation-id.sequence.json"
+        }
+      ],
+      "group": "host-sequence-vectors",
+      "path": "vectors/host-sequence"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-6+FxAWx+Ml5Gj5bwlFIo68XVPGwi2sPBf64g5WVjH3U=",
+          "file": "canonical-preorder.json"
+        },
+        {
+          "digest": "sha256-frJQ1q9uQnjbAZkfd2YtsAGpKsEz0hVv3NSnUldgF9I=",
+          "file": "empty-draft.json"
+        }
+      ],
+      "group": "preview-vectors",
+      "path": "vectors/preview"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-TwBq2SWaFjW3IsZlVGIAvIRN1eIdeLkwuDkMmPkpHf4=",
+          "file": "alternative-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-VWqtyYqGM1PFbFkQbGIBtEhoIPIUBPt7mIhboILQKDs=",
+          "file": "alternative-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-E6JothQCmbQpns86xOqmldRGQIYbwN2/cmN+sS8z1fA=",
+          "file": "array-composition.accepted.json"
+        },
+        {
+          "digest": "sha256-455K5YKY9qvmK0cPo2TI/zStFSpu3xWd+doVkuVi84g=",
+          "file": "byte-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-F4kh58JL/puXLxNDtBUzE8+QoOpbWa21HRjByr0cBgE=",
+          "file": "byte-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-HuNG9YzvjgW/fQhneXAhggCBQvJIh39EMy//YehKYNo=",
+          "file": "closed-object.accepted.json"
+        },
+        {
+          "digest": "sha256-4nJ4HVOupqH8OjoIS0VtVRvvhb4jZBaIxYxXG3mScTU=",
+          "file": "decimal-multiple.accepted.json"
+        },
+        {
+          "digest": "sha256-nNohuA4UoOihqwQ8nov3HM2qzCe0BbiAMjwucNmNIXA=",
+          "file": "depth-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-ca488Ty/ss0QsNHNraNeeOmKtbeP1mSGru3VfzOANV4=",
+          "file": "depth-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-BZgF5+kRokfKRPWH1rj3coQ6peMpStYrkJZg37V/U6g=",
+          "file": "description-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-MCvlSchCCrh8YgJULzuoGBjUhjmJn9HxPCZgsNNvDBU=",
+          "file": "description-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-o2kwUOSo5A95ewWG7o5WUUcB6kSN4p9C1HWYzsH6920=",
+          "file": "diagnostic-precedence.rejected.json"
+        },
+        {
+          "digest": "sha256-i9avQJ8klRz7HEEeLKMWbuhFu/eGOpXIHEI5emJdPng=",
+          "file": "duplicate-dependent-required.rejected.json"
+        },
+        {
+          "digest": "sha256-E+v0zlbXe/rq70rrjAZK6N2hb2D/g98LFYf5OODnwbk=",
+          "file": "duplicate-required.rejected.json"
+        },
+        {
+          "digest": "sha256-LkJMqCZbzK3FWiWWN6ftTV9394V59jNlfmVkt0x5FFo=",
+          "file": "empty-combinator.rejected.json"
+        },
+        {
+          "digest": "sha256-HDfHBzSYoN3BiQOTV1Z6pnbldS9aYaR+WujcS5aLY74=",
+          "file": "empty-enum.rejected.json"
+        },
+        {
+          "digest": "sha256-qo+yHMILQ23OntnunU0af+cCNWzUECLMkHip4lvNmqE=",
+          "file": "enum-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-GPkH+NzpSS0l7BuPdrrQHxQ72uWx2rvVnZ3yKaF0thE=",
+          "file": "enum-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-g3zwZVTqi5FqybYuZGC601UNvzPtcDzguv4ojeb7Iig=",
+          "file": "examples-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-KrcK+JWaLZuin43Zihs+rQsbMpjuCqVWTmVMCFkbKpY=",
+          "file": "examples-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-9YDQ07A8USMgcRAZZGG0xVPTqfV5yB3Lx10P1J3ltC8=",
+          "file": "format-keyword.rejected.json"
+        },
+        {
+          "digest": "sha256-cvXRu07GWX4lG5L5z7sv7dkyxP0yUzAC81UOSzatYBA=",
+          "file": "forward-reference-path-precedence.rejected.json"
+        },
+        {
+          "digest": "sha256-oJK8cY0hSwhEfi3mE46To12nBcVsT7kWs1/zAvk2x9M=",
+          "file": "invalid-pointer.rejected.json"
+        },
+        {
+          "digest": "sha256-5Z5Cxd1wR3DB8WqKSC3gHt3Qv9yQHKGZFDNxdS1NFgc=",
+          "file": "json-depth-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-GDFfH7oypzll76fOJx8uyMgEm7CYKteQAF0psWJb7F8=",
+          "file": "json-depth-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-mN9p6KVIEL8UkPr/KYkxbSdQWhxy0vrHNNkLf3W7jUs=",
+          "file": "json-item-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-Y4Wi7efbT9MaNwBqZRwwcreF7KU6kh8LhnvFKUUp2g4=",
+          "file": "json-item-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-BbCxSuNDm2F+8NhZn/1gKK1TEgkEmcEK2vy0MvNbvUk=",
+          "file": "json-property-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-IfFwS7gVLZzoOfyozZTd2rEcB8nB2fpTBgodP8n/Vjo=",
+          "file": "json-property-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-jufpkAfTFK/m9qirukYxtj5GYyJD62hIe0o1i1bilTo=",
+          "file": "local-reference.accepted.json"
+        },
+        {
+          "digest": "sha256-eoH7atvYzx/OwQuuMUXPgiR0x6uJXq2r5kGCcZiW+z4=",
+          "file": "memoized-diagnostic.accepted.json"
+        },
+        {
+          "digest": "sha256-c4zB9yQqQWtqPNlJM7zgS6rg6/BoryYHpvct/fHtR18=",
+          "file": "node-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-q/QNireud+vK/1HNK95Py92WluM37xH+z5LB3JoIEuE=",
+          "file": "node-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-z5lN1dqhaMrzU5h7n1f6cB+a0iIu1ICZICDySDgK7/U=",
+          "file": "non-object-root.rejected.json"
+        },
+        {
+          "digest": "sha256-VVVrr/FxcAHFN6xhCsrM0hR/aIm3OjcsQ90loVqPDfc=",
+          "file": "non-schema-reference.rejected.json"
+        },
+        {
+          "digest": "sha256-q88MR5M79ME64j0cOJc3PAtjAwzq2QQrUfYPphfMz9k=",
+          "file": "object-key-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-3JkKGnvnGphEN8aqWP/5lCVKgtHs44Sk+7tXH6ynn1U=",
+          "file": "object-key-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-vbUrM4bUn3/87oOPJbbtsCz6lXewWsBD4yigV4ZQg2Q=",
+          "file": "open-root.rejected.json"
+        },
+        {
+          "digest": "sha256-13UNXA3BA/17p6uKTtCyZtUnu5bfHmZ0Q3ctBHiCb8A=",
+          "file": "percent-encoded-pointer.rejected.json"
+        },
+        {
+          "digest": "sha256-gsWj/U+BHl0MSYqrj7S4nQsqay+oX1+0qbNNzs1dg6c=",
+          "file": "property-name-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-ROFpDdg7wLMpFDD/cbMD9z+9mOaFpvCkwGlAaVnDqdk=",
+          "file": "property-name-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-MkGCk4oV3BkhYRJLFO3L94EgoIkXoe/uaqm/6BgQWIE=",
+          "file": "recursive-diagnostic-precedence.rejected.json"
+        },
+        {
+          "digest": "sha256-sdTBid88+2831zQB2svi97QaYEAjZNuRNl0WBbO8LNc=",
+          "file": "recursive-reference.rejected.json"
+        },
+        {
+          "digest": "sha256-EozfqMC5QveTyndeAdnpjPXAJh3LyTEvQI6ZOuDQS3E=",
+          "file": "reference-fanout.accepted.json"
+        },
+        {
+          "digest": "sha256-TAY/+RxBFAikc7xUOiwjUa/gmFN3rudC6O1Clxfxa4w=",
+          "file": "reference-length-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-avm+pKENV3tZAnR6Ce/MuTlU8eLDvN1yUzRcJQ5fqtA=",
+          "file": "reference-length-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-qbq0vqz97FC6ec73IOccoFX+sHPfytGRWzDwTBBm7x8=",
+          "file": "reference-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-cPDs9DHd/rYJ6IXKmK/UH/JV7bY1hnUSK3z2kc96ddQ=",
+          "file": "reference-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-Gn+MKtrF0w7Tb693V9ztSFxFW1o/x3APNxQ+ufZYMXY=",
+          "file": "reference-vs-keyword-precedence.rejected.json"
+        },
+        {
+          "digest": "sha256-FsuqyPfDAok+x1gi1P/pIAatLtAYecKH2ZMxb1LI6yQ=",
+          "file": "reserved-pointer.rejected.json"
+        },
+        {
+          "digest": "sha256-Wo0aUVSFdXOwlBpQhf03l1e/29LVW5mrwiz2A2HnU6M=",
+          "file": "root-diagnostic-precedence.rejected.json"
+        },
+        {
+          "digest": "sha256-z6UHIncN/YPJnP6+0hEiDBLDLOBdno50//Ajb7pwzo0=",
+          "file": "root-vs-reference-precedence.rejected.json"
+        },
+        {
+          "digest": "sha256-2G5Q8PxdVQm+pIjmU51j4/N0pQlFcJhtlRChU/MNgSA=",
+          "file": "schema-map-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-4x0uuKQE6e0Uch1j7J4lQn06ihAtiob0/lQwW4GId6I=",
+          "file": "schema-map-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-W1ZdAZmlaku4JOlaoiRjlYY9nT1kKDsaDEq/NoKoHy8=",
+          "file": "semantic-recursion-precedence.rejected.json"
+        },
+        {
+          "digest": "sha256-GsxRnSg0sYZTAeuVAEnR/sWo+ObPhIjEam1jM3sNgoY=",
+          "file": "semantic-reference-precedence.rejected.json"
+        },
+        {
+          "digest": "sha256-HqQlNsHfoSSCPJtgvjlqNdU84u3bDSXlrva1hDUUoMY=",
+          "file": "title-limit.accepted.json"
+        },
+        {
+          "digest": "sha256-FqfwDPZ1xuZHxwpboodHgsTPXvoOtTMVZ+kkaMzciuo=",
+          "file": "title-limit.rejected.json"
+        },
+        {
+          "digest": "sha256-LdBEqO7AQoLxvqQ3ZgzL7iwSSalSTPSev86z4fKPnRQ=",
+          "file": "unresolved-reference.rejected.json"
+        },
+        {
+          "digest": "sha256-WbGGAMEYPGkbcGHS9kr+MFHuo4PFZ6wIOfeDD1PpQvI=",
+          "file": "unsafe-dependent-required.rejected.json"
+        },
+        {
+          "digest": "sha256-OhqGsFhN1nWPMOTau0GkBGqY6TCSYSwY5UdAeoOp378=",
+          "file": "unsafe-member.rejected.json"
+        },
+        {
+          "digest": "sha256-VdZIvd9xPvttTECok0J6TJZcLbY5t9RlDNJhzzAhSbE=",
+          "file": "unsafe-required.rejected.json"
+        }
+      ],
+      "group": "schema-profile-vectors",
+      "path": "vectors/schema-profile"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-X2YFJYZglVWJM2BNa/2EL2uguexTq3mYw10K1RqnR/A=",
+          "file": "array-order.json"
+        },
+        {
+          "digest": "sha256-gW66/EmiMM95vdKUN3PMz+Qi/RBo/bFgTqtibmgbMCo=",
+          "file": "control-characters.json"
+        },
+        {
+          "digest": "sha256-WhoGNTrXFfxMjqFoqRCnWK2sIXJmK6uzk0isPrxEVIw=",
+          "file": "depth-exceeded.json"
+        },
+        {
+          "digest": "sha256-HgIVIigPZIPJk4NL9KzvUu0oQG8FzVPTAGuwwaPCz3c=",
+          "file": "empty-containers.json"
+        },
+        {
+          "digest": "sha256-Ia+6X6zMByuaN/7zkBErTQIEnEL2qp3lle60lUD16V0=",
+          "file": "forbidden-member.json"
+        },
+        {
+          "digest": "sha256-owz9S9d3E0JRhxmvW7uFY3eHO9iKpbLYxTTSTR2J8aY=",
+          "file": "member-order.json"
+        },
+        {
+          "digest": "sha256-XZK7Zeu5F5j9iWBtYx3ylwisulA3MzLDuzZjbbuCckU=",
+          "file": "negative-zero.json"
+        },
+        {
+          "digest": "sha256-5oai5JYm3u6Pfth7juc/jwY+0NQ29DmDC8BVVUYJK6g=",
+          "file": "nested-order.json"
+        },
+        {
+          "digest": "sha256-YjQIE4F7ASx3CI925D7KRLJjy157Eh6IcBD3jlZwFO0=",
+          "file": "non-ascii.json"
+        },
+        {
+          "digest": "sha256-gxyRD6thxs/k3EXoD0VXeReDYG5oUmYCbUS6oII44eg=",
+          "file": "numbers.json"
+        },
+        {
+          "digest": "sha256-yJhu6dWwdY3QndsJpk0qdf1Kjd3ZZhfVZlhZhBuGXEI=",
+          "file": "string-escapes.json"
+        },
+        {
+          "digest": "sha256-JEJrrznFiimBULu9RrKMsBG9Pv9aZ1Zp/dY+uAMuUl4=",
+          "file": "surrogate-pair.json"
+        }
+      ],
+      "group": "canonical-vectors",
+      "path": "vectors/canonical"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-ZpkplYh1yIT/sRYxajj76pydhPqJzAPNdnVvog96oC4=",
+          "file": "blueprint.control-character-member.json"
+        },
+        {
+          "digest": "sha256-uTLQCEN4ADX7xnVSJTRW6RYaRhHW5dE9UlMlO0A5nMM=",
+          "file": "blueprint.forbidden-property-member.json"
+        },
+        {
+          "digest": "sha256-a/AG31Tq18mgyNMU70qUYPqlpoXNhZvjsQxObTaQS9M=",
+          "file": "blueprint.invalid-node-id.json"
+        },
+        {
+          "digest": "sha256-KK6sITAPpNpy7CD03jBbKuWsTharUI13fIDB9lDSWhc=",
+          "file": "blueprint.invalid-slot-name.json"
+        },
+        {
+          "digest": "sha256-TGyeJh98cARcfGUJ2/zegHaGT+Ke9D8yD58MsefWQPI=",
+          "file": "blueprint.published-empty-roots.json"
+        },
+        {
+          "digest": "sha256-gDRxlDA+e+K/odPrsD8gNQYLTjTB7lN5mpWOnzk+uWA=",
+          "file": "blueprint.revoking-slot-marker.json"
+        },
+        {
+          "digest": "sha256-5rp1StBpdI6hMHR97j2i7MA3flLE/V5KQm+kd7BQVb8=",
+          "file": "blueprint.unknown-member.json"
+        },
+        {
+          "digest": "sha256-lrwBnue6iIjTlsE3EGULrkTjIJteqfycmxjAYAcwYIA=",
+          "file": "command-vector.unknown-error-code.json"
+        },
+        {
+          "digest": "sha256-kvJpukH0vGmVdxRCqXJajbpS2z4MehwsD377ckD48Bw=",
+          "file": "command.empty-batch.json"
+        },
+        {
+          "digest": "sha256-Xc3CWN/+x50CRqUXd6TNlrpeFc5aEb0rjQziAY/vJXg=",
+          "file": "command.forbidden-id-map-member.json"
+        },
+        {
+          "digest": "sha256-IDST501Q58KyhC8XJvTaiuNlhyKvFdeXn4Cn05dbslk=",
+          "file": "command.malformed-size-role.json"
+        },
+        {
+          "digest": "sha256-cQEJTQGXpPv5uWhynp8YaD/MojZmBuC/V/NFXxeZ1ag=",
+          "file": "command.negative-position.json"
+        },
+        {
+          "digest": "sha256-7zikLsHVfHL49FEuZrRP9hchOD9rmobPL1e+9QRPBdA=",
+          "file": "command.nested-batch.json"
+        },
+        {
+          "digest": "sha256-zOkzmbXRdKODC7ERbGdyReoBSeOQpNiZEUBczBc9yIg=",
+          "file": "command.pattern-in-batch.json"
+        },
+        {
+          "digest": "sha256-PB4qyf8cNQTsffytiuZmeJ+Pvp/SNX+lcfMxjJIyfhA=",
+          "file": "command.reset-inherited-property-in-batch.json"
+        },
+        {
+          "digest": "sha256-TzsDYwk5FpcXIketV4wsQhwNXy4jsIq2RXznaNG29r8=",
+          "file": "command.unknown-member.json"
+        },
+        {
+          "digest": "sha256-ZcqZZ47AxdqUjqaPo4eSPhW91rnG8nWqU7pumtMUsgk=",
+          "file": "command.wrong-contract-version.json"
+        },
+        {
+          "digest": "sha256-SZaeqgRtGGOOiMdWiKXfWR80wxywbsigj9uvkXxNtQ4=",
+          "file": "content-model.published-empty.json"
+        },
+        {
+          "digest": "sha256-hVG8rb96zAHFikVFnD3z6uRmII4wx0VtQV3AHn7NZts=",
+          "file": "design-vocabulary.unknown-control-kind.json"
+        },
+        {
+          "digest": "sha256-simjWUsvwFdBO5h1fBDH1+SA+Kl6HmqYiV8u+j7NYCk=",
+          "file": "entry.forbidden-value-member.json"
+        },
+        {
+          "digest": "sha256-YSjwtqaISprMrMtzYgSfF381fvHlH03TRVWRRWU/xLE=",
+          "file": "entry.invalid-locale.json"
+        },
+        {
+          "digest": "sha256-uStQRWKgfZNleRDRh3RIPMpONCxXlrwzbAJOSFIoWSU=",
+          "file": "host-capabilities.invalid-protocol-version.json"
+        },
+        {
+          "digest": "sha256-TbyqAfnspj0axcP3sJNAj+Sqqg0XaOpCmYy6l6MEF2Y=",
+          "file": "host-sequence.pending-expectation.json"
+        },
+        {
+          "digest": "sha256-AdoHUaSqNPxNrob++GpX5D1+nkPSwaU7Bo1CheZKJbs=",
+          "file": "host-sequence.preview-render-missing-request-id.json"
+        },
+        {
+          "digest": "sha256-DTGs/q49uj8VR882hukd0i82Esx2iVGN1Jr54BwOc/I=",
+          "file": "inspector.empty-block-types.json"
+        },
+        {
+          "digest": "sha256-ElmhVP+v8//L25w5nPQLrqI6qkxdDOW2P+BE/pMgXiE=",
+          "file": "media-reference.missing-accessibility.json"
+        },
+        {
+          "digest": "sha256-hSiEWL4Ei3JH5F5J86Q3hRhhtJm4IT/ZHqofAH3+a58=",
+          "file": "media-upload-grant.insecure-url.json"
+        },
+        {
+          "digest": "sha256-VhuKWV07HN3NKmOg6RFtlw5K0ur2XpEeQcrRCLOMstQ=",
+          "file": "media-upload-session.complete-without-asset.json"
+        },
+        {
+          "digest": "sha256-IVjfrHtIsFpnPZooCxq0gs4YYmelgUNUQrmP2enLoDg=",
+          "file": "migration.empty-artifact-kinds.json"
+        },
+        {
+          "digest": "sha256-AXA+sQO5XcINDeoDcdP1Tq8r2Ll46Gv4kiNNzuxK0Pc=",
+          "file": "preview-message.activated-unknown-interaction.json"
+        },
+        {
+          "digest": "sha256-RT0CyYY7FkA7Nnv34T841OaPYkOE3Y26875pmoWqXS4=",
+          "file": "preview-message.duplicate-marker.json"
+        },
+        {
+          "digest": "sha256-jji2txtf3U9wP3j9sS1uQa2Uij1w1qTKvsVfvH7dkUA=",
+          "file": "preview-message.invalid-digest.json"
+        },
+        {
+          "digest": "sha256-NLyfTzHImUYIzZ+5Jr2uShv0mghSxqQEsCiT9stHWUg=",
+          "file": "preview-message.invalid-marker-grammar.json"
+        },
+        {
+          "digest": "sha256-tL5xezmGX32duQcg1uYuTDG0qoH40pkWMXmxhp3gWVw=",
+          "file": "preview-message.missing-marker-map.json"
+        },
+        {
+          "digest": "sha256-uDh4+I7VCe62E+k5clj07RXQlr295E1PfTNBMS7QZkc=",
+          "file": "preview-message.missing-render-request-id.json"
+        },
+        {
+          "digest": "sha256-yLEAU9D7Z+aWV03xdUTQSkeIpCXgHCcLSwJUNBgP2A4=",
+          "file": "preview-message.unknown-type.json"
+        },
+        {
+          "digest": "sha256-UBBvBI7lRr7gEiH/guS4r7UxzNvXXG9CitHey2gIUXs=",
+          "file": "preview-message.viewport-height-too-small.json"
+        },
+        {
+          "digest": "sha256-3Uo8XF4hROPnVN34nROt7f2wg5ZHZvPU7KT/F98h/6s=",
+          "file": "preview-message.viewport-role-and-size.json"
+        },
+        {
+          "digest": "sha256-a7E9wkgCsB+d2WxYAjJjmRJJsFhrL+fnZo/aQsMYIE0=",
+          "file": "preview-message.viewport-unsafe-role.json"
+        },
+        {
+          "digest": "sha256-Ha4ygQciWMcqcM8k/7qDW3CW4mr2EIwdrRCxglwBG2c=",
+          "file": "rich-text.embedded-html.json"
+        },
+        {
+          "digest": "sha256-ff5p8K4OUHe0VqfxR15UCUHrhNlRMlsQifJw/wOOXwU=",
+          "file": "rich-text.unknown-mark.json"
+        },
+        {
+          "digest": "sha256-ip22Uidj7KWI9kqcBbB5YphmBjcUSFyJ0hvO28V6I9w=",
+          "file": "theme.unknown-member.json"
+        }
+      ],
+      "group": "invalid-fixtures",
+      "path": "invalid"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-tfrW7o0SAOxFp9pTOi6mXKVmpT/t16ZqEBpyt5CIdNk=",
+          "file": "blocks.structural.json"
+        },
+        {
+          "digest": "sha256-6pPWGTU2qvaAnEZFrTKHe9Bk0t/hVi0AhMm+DZkX80A=",
+          "file": "document.multi-block.json"
+        },
+        {
+          "digest": "sha256-mtE4Xh5DrnWDgfSq2fxKy8SFrKZb1ayw7yvbUnA3bKE=",
+          "file": "embed.hard-break.json"
+        },
+        {
+          "digest": "sha256-dkJX40CRhqOd/dxCk416WOzjt0LNBxMetFS7tIkb/w0=",
+          "file": "marks.nested.json"
+        },
+        {
+          "digest": "sha256-R6TGYrdAo4FQ5XQsUeg+bYCvQfVQxFRHjtzyfSsLbKQ=",
+          "file": "offsets.astral.json"
+        },
+        {
+          "digest": "sha256-dWAziXAEavfHQDjzmkVRWVd7wK1PHvh6ypIpz6N6nXA=",
+          "file": "paragraph.plain.json"
+        },
+        {
+          "digest": "sha256-y88NvHLUhUNXvBc3V7V63r7J/l6rrMa7Xb/VfhzxiDE=",
+          "file": "spans.adjacent.json"
+        }
+      ],
+      "group": "rich-text-conformance",
+      "path": "conformance/rich-text"
+    }
+  ],
+  "kind": "corpus-manifest"
+}

@@ -1,0 +1,55 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "entry",
+  "id": "products/trail-backpack",
+  "revision": "entry-r7",
+  "model": {
+    "id": "org.example.models/product",
+    "version": "1.0.0",
+    "revision": "product-model-r1"
+  },
+  "status": "draft",
+  "locale": "en-NA",
+  "workflowState": "org.example.catalog/draft",
+  "values": {
+    "name": "Trail Backpack",
+    "featured": false,
+    "category": {
+      "resourceType": "org.example.models/category",
+      "id": "categories/outdoor"
+    },
+    "price": {
+      "amount": "1499.00",
+      "currency": "NAD"
+    },
+    "image": {
+      "contractVersion": "0.1-draft",
+      "kind": "media-reference",
+      "assetId": "media/trail-backpack-front",
+      "assetRevision": "media-r4",
+      "usage": "org.example.catalog/product-hero",
+      "renditionIntent": {
+        "role": "hero",
+        "fit": "cover"
+      },
+      "accessibility": {
+        "mode": "informative",
+        "altText": "Green trail backpack shown from the front"
+      }
+    },
+    "description": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "A durable pack for long days outdoors."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

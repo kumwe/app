@@ -1,0 +1,85 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "command-vector",
+  "id": "vector.command-vector.reorder-children.not-permutation.error",
+  "description": "A reorder that is not an exact permutation of the current children is rejected.",
+  "initial": {
+    "contractVersion": "0.1-draft",
+    "dependencyLock": {
+      "blocks": [
+        {
+          "revision": "block-r1",
+          "type": "studio.vector/section",
+          "version": "1.0.0"
+        },
+        {
+          "revision": "block-r1",
+          "type": "studio.vector/text",
+          "version": "1.0.0"
+        }
+      ],
+      "theme": {
+        "id": "studio.vector/theme",
+        "revision": "theme-r1",
+        "version": "1.0.0"
+      }
+    },
+    "id": "vector.blueprint",
+    "kind": "blueprint",
+    "label": {
+      "defaultMessage": "Vector Blueprint",
+      "key": "studio.vector/blueprint"
+    },
+    "model": {
+      "id": "studio.vector/model",
+      "revision": "model-r1",
+      "version": "1.0.0"
+    },
+    "owner": {
+      "id": "studio.vector/suite",
+      "version": "0.1.0-alpha.0"
+    },
+    "revision": "blueprint-r1",
+    "roots": [
+      {
+        "authoring": {
+          "mode": "designer"
+        },
+        "bindings": {},
+        "id": "text-a",
+        "properties": {},
+        "slots": {},
+        "type": "studio.vector/text",
+        "version": "1.0.0"
+      },
+      {
+        "authoring": {
+          "mode": "designer"
+        },
+        "bindings": {},
+        "id": "text-b",
+        "properties": {},
+        "slots": {},
+        "type": "studio.vector/text",
+        "version": "1.0.0"
+      }
+    ],
+    "status": "draft",
+    "version": "1.0.0"
+  },
+  "command": {
+    "artifactId": "vector.blueprint",
+    "baseStateVersion": 0,
+    "contractVersion": "0.1-draft",
+    "id": "vector.command.reorder-children.not-permutation",
+    "kind": "command",
+    "payload": {
+      "order": ["text-a", "text-c"]
+    },
+    "sessionGeneration": "session-r1",
+    "type": "studio.command/reorder-children"
+  },
+  "expect": {
+    "errorCode": "invalid-order"
+  }
+}

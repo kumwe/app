@@ -1,0 +1,56 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-sequence-vector",
+  "id": "vector.host-sequence.recovery.store.wrong-operation-id",
+  "description": "A structurally valid capability for another operation is refused as invalid-request before work, while the exact recovery.store capability succeeds.",
+  "profile": "studio.profile/host-baseline-v2",
+  "assertions": ["operation-id-mismatch-refusal"],
+  "idempotencyPolicy": {
+    "scopeFields": ["idempotencyKey", "operationId", "resourceContextKey", "sessionGeneration"],
+    "argumentCanonicalization": "canonical-json",
+    "intentContextFields": ["expectedRevision", "locale", "protocolVersion"],
+    "absentOptionalFields": "omit",
+    "numberNormalization": "canonical-json",
+    "excludedContextFields": ["requestId", "traceContext"]
+  },
+  "given": { "artifacts": [], "permissions": [], "sessionGeneration": "session-r1" },
+  "steps": [
+    {
+      "action": "invoke",
+      "id": "store-wrong-operation",
+      "port": "recovery",
+      "operation": "store",
+      "context": {
+        "operationId": "studio.operation/recovery.load",
+        "protocolVersion": "0.1.0-draft.2",
+        "requestId": "requests/store-wrong-operation",
+        "resourceContextKey": "contexts/operation-id",
+        "sessionGeneration": "session-r1"
+      },
+      "argument": { "draft": "must-not-store" },
+      "completion": "settled",
+      "expect": { "outcome": "error", "category": "invalid-request", "retryable": false }
+    },
+    {
+      "action": "invoke",
+      "id": "store-exact-operation",
+      "port": "recovery",
+      "operation": "store",
+      "context": {
+        "operationId": "studio.operation/recovery.store",
+        "protocolVersion": "0.1.0-draft.2",
+        "requestId": "requests/store-exact-operation",
+        "resourceContextKey": "contexts/operation-id",
+        "sessionGeneration": "session-r1"
+      },
+      "argument": { "draft": "stored" },
+      "completion": "settled",
+      "expect": { "outcome": "result", "value": "null" }
+    }
+  ],
+  "expectFinal": {
+    "recovery": [{ "resourceContextKey": "contexts/operation-id", "value": { "draft": "stored" } }],
+    "pendingPreviewRenders": 0,
+    "previewDeliveries": []
+  }
+}

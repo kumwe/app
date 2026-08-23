@@ -1,0 +1,24 @@
+{
+  "schema": "preview-message.schema.json",
+  "description": "A rendered marker inventory contains each canonical marker exactly once.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "preview-message",
+    "channelId": "preview-channel-1",
+    "sessionGeneration": "session-r1",
+    "sequence": 4,
+    "type": "studio.preview/rendered",
+    "payload": {
+      "draftDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "markers": [
+        "studio.preview/node/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/0",
+        "studio.preview/node/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/0"
+      ],
+      "markerMap": {
+        "studio.preview/node/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/0": "node-1"
+      },
+      "requestId": "renders/1",
+      "diagnostics": []
+    }
+  }
+}

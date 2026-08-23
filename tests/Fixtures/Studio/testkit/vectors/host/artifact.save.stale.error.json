@@ -1,0 +1,39 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-vector",
+  "id": "vector.host-vector.artifact.save.stale",
+  "description": "A save against a superseded revision conflicts and returns the safe current revision so the client resolves without a second read.",
+  "profile": "studio.profile/host-baseline",
+  "port": "artifact",
+  "operation": "save",
+  "given": {
+    "artifacts": [
+      {
+        "id": "vector.blueprint",
+        "kind": "blueprint",
+        "revision": "vector.blueprint-r1"
+      }
+    ],
+    "permissions": ["studio.permission/publish", "studio.permission/save"],
+    "sessionGeneration": "session-r1"
+  },
+  "context": {
+    "operationId": "studio.operation/artifact.save",
+    "protocolVersion": "0.1.0-draft.2",
+    "requestId": "requests/vector-1",
+    "resourceContextKey": "contexts/vector",
+    "sessionGeneration": "session-r1",
+    "expectedRevision": "vector.blueprint-r0",
+    "idempotencyKey": "idempotency/save-2"
+  },
+  "argument": {
+    "id": "vector.blueprint",
+    "kind": "blueprint"
+  },
+  "expect": {
+    "outcome": "error",
+    "category": "conflict",
+    "retryable": false,
+    "revision": "vector.blueprint-r1"
+  }
+}

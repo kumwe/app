@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/host-operations.schema.json",
+  "title": "Studio host port operation registry",
+  "description": "The closed registry binding every host port operation to its names: the wire operation a transport addresses, the typed method a client calls, and the capability identifier a host advertises. A host cannot publish a truthful capability document without it, because the vocabularies must map one to one. Adding an operation is an additive protocol change; renaming or removing one is breaking.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "kind", "operations"],
+  "properties": {
+    "contractVersion": {
+      "$ref": "common.schema.json#/$defs/contractVersion"
+    },
+    "kind": {
+      "const": "host-operations"
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "capability",
+          "expectsRevision",
+          "method",
+          "mutating",
+          "operation",
+          "port",
+          "portCapability",
+          "required",
+          "route"
+        ],
+        "properties": {
+          "capability": {
+            "$ref": "#/$defs/operationCapability"
+          },
+          "expectsRevision": {
+            "description": "The operation is concurrency-protected: the request envelope carries expectedRevision and a mismatch conflicts.",
+            "type": "boolean"
+          },
+          "method": {
+            "description": "The typed method name a client port interface exposes, which differs from the wire name where the wire spelling is not a valid identifier.",
+            "type": "string",
+            "pattern": "^[a-z][A-Za-z0-9]*(?![\\s\\S])",
+            "maxLength": 100
+          },
+          "mutating": {
+            "description": "The operation changes host state, so it is authorized, audited and idempotent when retried.",
+            "type": "boolean"
+          },
+          "operation": {
+            "$ref": "common.schema.json#/$defs/localName"
+          },
+          "port": {
+            "$ref": "#/$defs/portName"
+          },
+          "portCapability": {
+            "$ref": "#/$defs/portCapability"
+          },
+          "required": {
+            "description": "The port must be present for an editable session; an absent optional port degrades with diagnostics.",
+            "type": "boolean"
+          },
+          "route": {
+            "$ref": "#/$defs/operationRoute"
+          }
+        }
+      }
+    },
+    "extensions": {
+      "$ref": "common.schema.json#/$defs/extensions"
+    }
+  },
+  "$defs": {
+    "operationCapability": {
+      "description": "The capability identifier a host advertises for one port operation.",
+      "enum": [
+        "studio.operation/artifact.dependencies",
+        "studio.operation/artifact.load",
+        "studio.operation/artifact.publish",
+        "studio.operation/artifact.save",
+        "studio.operation/artifact.unpublish",
+        "studio.operation/localization.messages",
+        "studio.operation/media.abort-upload",
+        "studio.operation/media.authorize-upload",
+        "studio.operation/media.complete-upload",
+        "studio.operation/media.get",
+        "studio.operation/media.import-external",
+        "studio.operation/media.list",
+        "studio.operation/media.upload-status",
+        "studio.operation/model.get",
+        "studio.operation/model.list",
+        "studio.operation/permission.explain",
+        "studio.operation/permission.refresh",
+        "studio.operation/preview.cancel",
+        "studio.operation/preview.render",
+        "studio.operation/recovery.discard",
+        "studio.operation/recovery.load",
+        "studio.operation/recovery.store",
+        "studio.operation/resource.search",
+        "studio.operation/telemetry.emit"
+      ]
+    },
+    "operationRoute": {
+      "description": "The transport route segment addressing one port operation.",
+      "enum": [
+        "artifact/dependencies",
+        "artifact/load",
+        "artifact/publish",
+        "artifact/save",
+        "artifact/unpublish",
+        "localization/messages",
+        "media/abort-upload",
+        "media/authorize-upload",
+        "media/complete-upload",
+        "media/get",
+        "media/import-external",
+        "media/list",
+        "media/upload-status",
+        "model/get",
+        "model/list",
+        "permission/explain",
+        "permission/refresh",
+        "preview/cancel",
+        "preview/render",
+        "recovery/discard",
+        "recovery/load",
+        "recovery/store",
+        "resource/search",
+        "telemetry/emit"
+      ]
+    },
+    "portCapability": {
+      "description": "The capability identifier a host advertises for a whole port.",
+      "enum": [
+        "studio.port/artifact",
+        "studio.port/localization",
+        "studio.port/media",
+        "studio.port/model",
+        "studio.port/permission",
+        "studio.port/preview",
+        "studio.port/recovery",
+        "studio.port/resource",
+        "studio.port/telemetry"
+      ]
+    },
+    "portName": {
+      "enum": [
+        "artifact",
+        "localization",
+        "media",
+        "model",
+        "permission",
+        "preview",
+        "recovery",
+        "resource",
+        "telemetry"
+      ]
+    }
+  }
+}

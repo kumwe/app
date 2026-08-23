@@ -1,0 +1,20 @@
+{
+  "schema": "preview-message.schema.json",
+  "description": "A rendered response must carry an exact marker-to-node map for its complete marker inventory.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "preview-message",
+    "channelId": "preview-channel-1",
+    "sessionGeneration": "session-r1",
+    "sequence": 4,
+    "type": "studio.preview/rendered",
+    "payload": {
+      "draftDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "markers": [
+        "studio.preview/node/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/0"
+      ],
+      "requestId": "renders/1",
+      "diagnostics": []
+    }
+  }
+}

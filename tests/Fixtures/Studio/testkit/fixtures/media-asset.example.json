@@ -1,0 +1,29 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "media-asset",
+  "id": "media/trail-backpack-front",
+  "revision": "media-r4",
+  "state": "ready",
+  "mediaKind": "image",
+  "mediaType": "image/avif",
+  "byteSize": 483210,
+  "filename": "trail-backpack-front.avif",
+  "metadata": {
+    "width": 2400,
+    "height": 1800,
+    "altText": "Green trail backpack shown from the front",
+    "decorative": false,
+    "focalPoint": {
+      "x": 0.5,
+      "y": 0.46
+    }
+  },
+  "renditions": [
+    {
+      "id": "card",
+      "mediaType": "image/avif",
+      "width": 800,
+      "height": 600
+    }
+  ]
+}

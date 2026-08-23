@@ -1,0 +1,27 @@
+{
+  "description": "Adjacent but non-overlapping marks produce separate half-open spans that share a boundary offset: the first span's exclusive end equals the next span's inclusive start.",
+  "document": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "alpha", "marks": [{ "type": "bold" }] },
+          { "type": "text", "text": "beta", "marks": [{ "type": "italic" }] },
+          { "type": "text", "text": " tail" }
+        ]
+      }
+    ]
+  },
+  "projection": [
+    {
+      "type": "paragraph",
+      "text": "alphabeta tail",
+      "spans": [
+        { "start": 0, "end": 5, "marks": ["bold"] },
+        { "start": 5, "end": 9, "marks": ["italic"] }
+      ],
+      "embeds": []
+    }
+  ]
+}

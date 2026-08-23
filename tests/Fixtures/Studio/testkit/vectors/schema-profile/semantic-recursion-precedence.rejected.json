@@ -1,0 +1,21 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/semantic-recursion-precedence",
+  "description": "The earliest cyclic reference is selected by canonical document order rather than forward graph traversal order.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "additionalProperties": false,
+    "$defs": {
+      "a": { "$ref": "#/$defs/z" },
+      "b": { "$ref": "#/$defs/b" },
+      "z": { "$ref": "#/$defs/z" }
+    },
+    "type": "object"
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "recursive-schema",
+    "schemaPath": "/$defs/b/$ref"
+  }
+}

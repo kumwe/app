@@ -1,0 +1,30 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "schema-profile-vector",
+  "id": "schema-profile/recursive-diagnostic-precedence",
+  "description": "Competing recursive dependencies reject at the first UTF-16 code-unit ordered schema member.",
+  "profile": "studio.profile/schema-property",
+  "schema": {
+    "additionalProperties": false,
+    "$defs": {
+      "d": {
+        "$defs": {
+          "a": {
+            "$ref": "#/$defs/d"
+          }
+        },
+        "$ref": "#/$defs/d",
+        "additionalProperties": {
+          "$ref": "#/$defs/d"
+        }
+      }
+    },
+    "properties": {},
+    "type": "object"
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "recursive-schema",
+    "schemaPath": "/$defs/d/$defs/a/$ref"
+  }
+}

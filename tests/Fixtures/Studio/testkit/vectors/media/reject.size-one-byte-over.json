@@ -1,0 +1,23 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "media-vector",
+  "id": "vector.media-vector.reject.size-one-byte-over",
+  "description": "A request one byte over the policy maximum fails with the stable oversize code; the user-facing message never echoes the raw byte counts, which travel only as machine-readable diagnostic parameters.",
+  "policy": {
+    "acceptedMediaTypes": ["image/jpeg", "image/png"],
+    "chunkBytes": 1024,
+    "maximumBytes": 4096,
+    "resumable": true
+  },
+  "request": {
+    "filename": "one-byte-over.png",
+    "mediaType": "image/png",
+    "byteSize": 4097,
+    "purpose": "studio.media/entry-image"
+  },
+  "expect": {
+    "outcome": "rejected",
+    "code": "studio.media/upload-too-large",
+    "messageMustNotContain": ["4097", "4096"]
+  }
+}

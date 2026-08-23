@@ -1,0 +1,583 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/preview-message.schema.json",
+  "title": "Studio preview channel message",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "kind",
+    "channelId",
+    "sessionGeneration",
+    "sequence",
+    "type",
+    "payload"
+  ],
+  "properties": {
+    "contractVersion": {
+      "$ref": "common.schema.json#/$defs/contractVersion"
+    },
+    "kind": {
+      "const": "preview-message"
+    },
+    "channelId": {
+      "$ref": "common.schema.json#/$defs/stableId"
+    },
+    "sessionGeneration": {
+      "$ref": "common.schema.json#/$defs/revision"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "type": {
+      "enum": [
+        "studio.preview/activated",
+        "studio.preview/dispose",
+        "studio.preview/error",
+        "studio.preview/measure",
+        "studio.preview/measurements",
+        "studio.preview/ready",
+        "studio.preview/reload",
+        "studio.preview/render",
+        "studio.preview/rendered",
+        "studio.preview/select",
+        "studio.preview/teardown",
+        "studio.preview/viewport"
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "maxProperties": 1000,
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/safeJsonMemberName"
+      },
+      "additionalProperties": {
+        "$ref": "common.schema.json#/$defs/jsonValue"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/ready"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/ready"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/render"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/render"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/rendered"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/rendered"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/select"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/select"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/measure"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/measure"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/measurements"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/measurements"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/error"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/error"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/reload"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/reload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/teardown"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/teardown"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/activated"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/activated"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/viewport"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/viewport"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "studio.preview/dispose"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/dispose"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "previewMarker": {
+      "description": "A deterministic marker for one node in a canonical draft: the draft digest followed by its zero-based Blueprint preorder ordinal.",
+      "type": "string",
+      "pattern": "^studio\\.preview/node/[0-9a-f]{64}/(?:0|[1-9][0-9]{0,4})(?![\\s\\S])",
+      "maxLength": 90
+    },
+    "ready": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocolVersion", "renderer", "viewports"],
+      "properties": {
+        "protocolVersion": {
+          "$ref": "common.schema.json#/$defs/semanticVersion"
+        },
+        "renderer": {
+          "$ref": "common.schema.json#/$defs/qualifiedName"
+        },
+        "viewports": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "common.schema.json#/$defs/localName"
+          }
+        }
+      }
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactId", "draftDigest", "draftRevision", "requestId", "viewport"],
+      "properties": {
+        "artifactId": {
+          "$ref": "common.schema.json#/$defs/stableId"
+        },
+        "draftDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "draftRevision": {
+          "$ref": "common.schema.json#/$defs/revision"
+        },
+        "requestId": {
+          "$ref": "common.schema.json#/$defs/stableId",
+          "description": "A session-unique render attempt identifier. Retries use a new identifier even when draft and viewport are unchanged."
+        },
+        "viewport": {
+          "$ref": "common.schema.json#/$defs/localName"
+        }
+      }
+    },
+    "rendered": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestId", "draftDigest", "markers", "markerMap", "diagnostics"],
+      "properties": {
+        "draftDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "requestId": {
+          "$ref": "common.schema.json#/$defs/stableId",
+          "description": "The exact render attempt this response settles."
+        },
+        "markers": {
+          "type": "array",
+          "maxItems": 100000,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/previewMarker"
+          }
+        },
+        "markerMap": {
+          "type": "object",
+          "maxProperties": 100000,
+          "propertyNames": {
+            "$ref": "#/$defs/previewMarker"
+          },
+          "additionalProperties": {
+            "$ref": "common.schema.json#/$defs/stableId"
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "$ref": "common.schema.json#/$defs/diagnostic"
+          }
+        }
+      }
+    },
+    "select": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeId"],
+      "properties": {
+        "nodeId": {
+          "$ref": "common.schema.json#/$defs/stableId"
+        },
+        "reveal": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "measure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestId", "markers"],
+      "properties": {
+        "requestId": {
+          "$ref": "common.schema.json#/$defs/stableId",
+          "description": "A session-unique measurement attempt identifier, never reused for another render or measurement."
+        },
+        "markers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/previewMarker"
+          }
+        }
+      }
+    },
+    "measurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestId", "draftDigest", "measurements", "unknown", "viewport"],
+      "properties": {
+        "requestId": {
+          "$ref": "common.schema.json#/$defs/stableId"
+        },
+        "draftDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "measurements": {
+          "type": "object",
+          "maxProperties": 1000,
+          "propertyNames": {
+            "$ref": "#/$defs/previewMarker"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/$defs/markerRect"
+            }
+          }
+        },
+        "unknown": {
+          "type": "array",
+          "maxItems": 1000,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/previewMarker"
+          }
+        },
+        "viewport": {
+          "$ref": "#/$defs/viewportMetrics"
+        }
+      }
+    },
+    "markerRect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": -100000000,
+          "maximum": 100000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -100000000,
+          "maximum": 100000000
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000000
+        }
+      }
+    },
+    "viewportMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "scrollX", "scrollY", "devicePixelRatio"],
+      "properties": {
+        "width": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "scrollX": {
+          "type": "number",
+          "minimum": -100000000,
+          "maximum": 100000000
+        },
+        "scrollY": {
+          "type": "number",
+          "minimum": -100000000,
+          "maximum": 100000000
+        },
+        "devicePixelRatio": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "retryable"],
+      "properties": {
+        "code": {
+          "$ref": "common.schema.json#/$defs/qualifiedName"
+        },
+        "message": {
+          "$ref": "common.schema.json#/$defs/messageReference"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "correlationId": {
+          "$ref": "common.schema.json#/$defs/stableId"
+        }
+      }
+    },
+    "reload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": {
+        "reason": {
+          "$ref": "common.schema.json#/$defs/qualifiedName"
+        }
+      }
+    },
+    "teardown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": {
+        "reason": {
+          "$ref": "common.schema.json#/$defs/qualifiedName"
+        }
+      }
+    },
+    "activated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["interaction", "marker"],
+      "properties": {
+        "interaction": {
+          "description": "How the author reached the region. The renderer reports intent, never raw input events.",
+          "enum": ["activate", "context-menu", "focus"]
+        },
+        "marker": {
+          "description": "A marker from the renderer's currently accepted inventory. The channel drops invented and stale markers.",
+          "$ref": "#/$defs/previewMarker"
+        }
+      }
+    },
+    "viewport": {
+      "description": "A semantic viewport role and explicit dimensions are alternatives, never a merge. Each branch is closed, so a payload naming both matches neither.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["viewport"],
+          "properties": {
+            "viewport": {
+              "$ref": "common.schema.json#/$defs/localName",
+              "description": "The theme-declared semantic viewport role to render at."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "height": {
+              "description": "Bounded CSS-pixel height.",
+              "type": "integer",
+              "minimum": 240,
+              "maximum": 10000
+            },
+            "width": {
+              "description": "Bounded CSS-pixel width.",
+              "type": "integer",
+              "minimum": 240,
+              "maximum": 10000
+            }
+          }
+        }
+      ]
+    },
+    "dispose": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": {
+        "draftDigest": {
+          "description": "Revoke only the resources held for this render. Absent revokes every draft resource the renderer holds.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "reason": {
+          "$ref": "common.schema.json#/$defs/qualifiedName"
+        }
+      }
+    }
+  }
+}

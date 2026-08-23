@@ -521,6 +521,32 @@
             }
         },
         {
+            "id": "studio-contract-corpus",
+            "title": "The vendored Studio contract corpus matches its pinned release",
+            "purpose": "Recompute every SRI digest the published Studio protocol and testkit manifests declare against the vendored bytes, hold each corpus directory closed in both directions, and fail when the vendored package versions drift from the PIN record (kumwe/app#104, D16).",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "studio:corpus",
+            "command": "composer studio:corpus",
+            "artifact": "tests/Fixtures/Studio/PIN.json",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer studio:corpus"
+                }
+            }
+        },
+        {
             "id": "openapi-drift",
             "title": "The generated OpenAPI document matches the routes that exist",
             "purpose": "Regenerate the contract and fail when it differs from the committed artifact.",

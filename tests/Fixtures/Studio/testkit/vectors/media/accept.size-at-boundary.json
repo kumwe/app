@@ -1,0 +1,26 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "media-vector",
+  "id": "vector.media-vector.accept.size-at-boundary",
+  "description": "A request of exactly the policy maximum byte size is accepted: the size bound is inclusive.",
+  "policy": {
+    "acceptedMediaTypes": ["image/jpeg", "image/png"],
+    "chunkBytes": 1024,
+    "maximumBytes": 4096,
+    "resumable": true
+  },
+  "request": {
+    "filename": "boundary.png",
+    "mediaType": "image/png",
+    "byteSize": 4096,
+    "purpose": "studio.media/entry-image"
+  },
+  "expect": {
+    "outcome": "accepted",
+    "plan": {
+      "maximumBytes": 4096,
+      "chunkBytes": 1024,
+      "resumable": true
+    }
+  }
+}

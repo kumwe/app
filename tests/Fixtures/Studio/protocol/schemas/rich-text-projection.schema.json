@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/rich-text-projection.schema.json",
+  "title": "Studio rich-text renderer-conformance fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["description", "document", "projection"],
+  "properties": {
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "document": { "$ref": "rich-text.schema.json" },
+    "projection": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": { "$ref": "#/$defs/blockProjection" }
+    }
+  },
+  "$defs": {
+    "blockProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text", "spans", "embeds"],
+      "properties": {
+        "type": { "enum": ["heading", "horizontalRule", "paragraph"] },
+        "text": {
+          "type": "string",
+          "maxLength": 250000
+        },
+        "spans": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": { "$ref": "#/$defs/span" }
+        },
+        "embeds": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": { "$ref": "#/$defs/embed" }
+        }
+      }
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end", "marks"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 0, "maximum": 250000 },
+        "end": { "type": "integer", "minimum": 1, "maximum": 250000 },
+        "marks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["bold", "code", "italic", "strike"] }
+        }
+      }
+    },
+    "embed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "kind"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0, "maximum": 250000 },
+        "kind": { "enum": ["hardBreak"] }
+      }
+    }
+  }
+}

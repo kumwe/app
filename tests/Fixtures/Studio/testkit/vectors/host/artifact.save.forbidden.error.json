@@ -1,0 +1,38 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-vector",
+  "id": "vector.host-vector.artifact.save.forbidden",
+  "description": "A save the acting identity is not authorized for is refused before the artifact is touched, and the refusal does not disclose whether it exists.",
+  "profile": "studio.profile/host-baseline",
+  "port": "artifact",
+  "operation": "save",
+  "given": {
+    "artifacts": [
+      {
+        "id": "vector.blueprint",
+        "kind": "blueprint",
+        "revision": "vector.blueprint-r1"
+      }
+    ],
+    "permissions": ["studio.permission/publish"],
+    "sessionGeneration": "session-r1"
+  },
+  "context": {
+    "operationId": "studio.operation/artifact.save",
+    "protocolVersion": "0.1.0-draft.2",
+    "requestId": "requests/vector-1",
+    "resourceContextKey": "contexts/vector",
+    "sessionGeneration": "session-r1",
+    "expectedRevision": "vector.blueprint-r1"
+  },
+  "argument": {
+    "id": "vector.blueprint",
+    "kind": "blueprint"
+  },
+  "expect": {
+    "outcome": "error",
+    "category": "forbidden",
+    "retryable": false,
+    "messageMustNotContain": ["vector.blueprint"]
+  }
+}

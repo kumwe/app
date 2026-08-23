@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/studio-config.schema.json",
+  "title": "Studio resolved session configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "protocolVersion",
+    "sessionId",
+    "sessionGeneration",
+    "mode",
+    "composite",
+    "sessionState",
+    "actor",
+    "locale",
+    "displayPreferences",
+    "resourceContext",
+    "permissions",
+    "artifacts",
+    "blocks",
+    "plugins",
+    "hostCapabilities",
+    "limits",
+    "features",
+    "preview"
+  ],
+  "properties": {
+    "contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+    "protocolVersion": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+    "sessionId": { "$ref": "common.schema.json#/$defs/stableId" },
+    "sessionGeneration": { "$ref": "common.schema.json#/$defs/revision" },
+    "mode": {
+      "enum": ["model", "blueprint", "content"]
+    },
+    "composite": { "enum": ["single", "hybrid"] },
+    "sessionState": { "enum": ["editable", "read-only"] },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName"],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/stableId" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    },
+    "locale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "resolved", "fallbacks", "direction", "timeZone"],
+      "properties": {
+        "requested": { "$ref": "common.schema.json#/$defs/locale" },
+        "resolved": { "$ref": "common.schema.json#/$defs/locale" },
+        "fallbacks": {
+          "type": "array",
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": { "$ref": "common.schema.json#/$defs/locale" }
+        },
+        "direction": { "enum": ["ltr", "rtl"] },
+        "timeZone": { "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    },
+    "displayPreferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["calendar", "numberingSystem", "hourCycle"],
+      "properties": {
+        "calendar": { "$ref": "common.schema.json#/$defs/localName" },
+        "numberingSystem": { "$ref": "common.schema.json#/$defs/localName" },
+        "hourCycle": { "enum": ["h11", "h12", "h23", "h24"] },
+        "measurementSystem": { "enum": ["metric", "us", "uk"] }
+      }
+    },
+    "resourceContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "surface", "scopes"],
+      "properties": {
+        "key": { "$ref": "common.schema.json#/$defs/stableId" },
+        "surface": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+        "revision": { "$ref": "common.schema.json#/$defs/revision" },
+        "scopes": {
+          "type": "array",
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "id"],
+            "properties": {
+              "kind": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+              "id": { "$ref": "common.schema.json#/$defs/stableId" }
+            }
+          }
+        },
+        "resource": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+            "id": { "$ref": "common.schema.json#/$defs/stableId" }
+          }
+        }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "maxItems": 500,
+      "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/qualifiedName" }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": { "$ref": "common.schema.json#/$defs/lockedArtifactReference" },
+        "blueprint": { "$ref": "common.schema.json#/$defs/lockedArtifactReference" },
+        "entry": { "$ref": "common.schema.json#/$defs/resolvedEntryReference" },
+        "theme": { "$ref": "common.schema.json#/$defs/lockedArtifactReference" }
+      }
+    },
+    "plugins": {
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/lockedArtifactReference" }
+    },
+    "blocks": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "version", "revision"],
+        "properties": {
+          "type": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+          "version": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+          "revision": { "$ref": "common.schema.json#/$defs/revision" },
+          "integrity": { "$ref": "common.schema.json#/$defs/integrity" }
+        }
+      }
+    },
+    "hostCapabilities": {
+      "$ref": "host-capabilities.schema.json"
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxNodes",
+        "maxDepth",
+        "maxSlotsPerNode",
+        "maxChildrenPerSlot",
+        "maxPropertyBytes",
+        "maxExtensionBytes",
+        "maxCommandBatch",
+        "maxHistoryEntries",
+        "maxRichTextBytes",
+        "maxRichTextDepth",
+        "maxPreviewRequestsPerMinute",
+        "maxPreviewBytes",
+        "maxMediaUploadBytes",
+        "maxMediaBatch",
+        "maxPluginCount",
+        "maxContributionsPerPlugin",
+        "maxLocaleBytes"
+      ],
+      "properties": {
+        "maxNodes": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "maxDepth": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "maxSlotsPerNode": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "maxChildrenPerSlot": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "maxPropertyBytes": { "type": "integer", "minimum": 0, "maximum": 10485760 },
+        "maxExtensionBytes": { "type": "integer", "minimum": 0, "maximum": 10485760 },
+        "maxCommandBatch": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "maxHistoryEntries": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "maxRichTextBytes": { "type": "integer", "minimum": 1, "maximum": 10485760 },
+        "maxRichTextDepth": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "maxPreviewRequestsPerMinute": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60000
+        },
+        "maxPreviewBytes": { "type": "integer", "minimum": 1, "maximum": 52428800 },
+        "maxMediaUploadBytes": { "type": "integer", "minimum": 1, "maximum": 1099511627776 },
+        "maxMediaBatch": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "maxPluginCount": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "maxContributionsPerPlugin": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "maxLocaleBytes": { "type": "integer", "minimum": 1, "maximum": 104857600 }
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executablePlugins",
+        "customInspectors",
+        "externalMediaImport",
+        "clipboardMediaUpload",
+        "collaboration",
+        "offlineRecovery"
+      ],
+      "properties": {
+        "executablePlugins": { "type": "boolean" },
+        "customInspectors": { "type": "boolean" },
+        "externalMediaImport": { "type": "boolean" },
+        "clipboardMediaUpload": { "type": "boolean" },
+        "collaboration": { "type": "boolean" },
+        "offlineRecovery": { "type": "boolean" }
+      }
+    },
+    "preview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "sameOriginRequired", "allowApproximateRenderer"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "sameOriginRequired": { "type": "boolean" },
+        "allowApproximateRenderer": { "type": "boolean" },
+        "initialViewport": { "$ref": "common.schema.json#/$defs/localName" }
+      }
+    },
+    "extensions": { "$ref": "common.schema.json#/$defs/extensions" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "composite": { "const": "hybrid" } },
+        "required": ["composite"]
+      },
+      "then": {
+        "properties": {
+          "mode": { "enum": ["blueprint", "content"] }
+        }
+      }
+    }
+  ]
+}

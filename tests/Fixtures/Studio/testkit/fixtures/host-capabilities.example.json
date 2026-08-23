@@ -1,0 +1,42 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-capabilities",
+  "host": {
+    "id": "org.kumwe/app",
+    "version": "3.0.0-alpha.1",
+    "generation": "runtime-generation-42"
+  },
+  "protocolVersions": ["0.1.0-draft.2"],
+  "ports": [
+    {
+      "id": "studio.port/artifact",
+      "version": "1.0.0",
+      "operations": [
+        "studio.operation/artifact.load",
+        "studio.operation/artifact.save",
+        "studio.operation/artifact.publish",
+        "studio.operation/artifact.unpublish",
+        "studio.operation/artifact.dependencies"
+      ]
+    },
+    {
+      "id": "studio.port/preview",
+      "version": "1.0.0",
+      "operations": ["studio.operation/preview.render", "studio.operation/preview.cancel"]
+    },
+    {
+      "id": "studio.port/media",
+      "version": "1.0.0",
+      "operations": ["studio.operation/media.get", "studio.operation/media.list"]
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "studio.host/server-rendered-preview",
+      "version": "1.0.0",
+      "configuration": {
+        "exact": true
+      }
+    }
+  ]
+}

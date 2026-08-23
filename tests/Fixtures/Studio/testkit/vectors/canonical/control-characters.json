@@ -1,0 +1,13 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "canonical-vector",
+  "id": "vector.canonical-vector.control-characters",
+  "description": "Control characters without a short form are escaped as four hex digits.",
+  "value": {
+    "value": "bell\u0007 unit\u001f"
+  },
+  "expect": {
+    "canonical": "{\"value\":\"bell\\u0007 unit\\u001f\"}",
+    "digest": "sha256-V332co6E4LRxsTuTQ5OLD98jGjDBZAAmzZDCJOFGDNA="
+  }
+}

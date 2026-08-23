@@ -34,18 +34,21 @@ until then, which is why every version below is exact.
 ## Published packages
 
 Seven packages publish to the npm registry under the `kumwe` organization on the `alpha`
-distribution tag. Versions verified at the time of writing; confirm the current set with
+distribution tag. The two contract packages this repository consumes are vendored and pinned:
+[`tests/Fixtures/Studio/PIN.json`](../../tests/Fixtures/Studio/PIN.json) is the authoritative
+record of their exact versions and tarball checksums, and `composer studio:corpus` fails when the
+vendored bytes and the pin disagree. For the remaining packages, confirm the current set with
 `npm view @kumwe/studio-protocol versions`.
 
 | Package | Version | What it carries |
 |---|---|---|
-| `@kumwe/studio-protocol` | `0.1.0-alpha.3` | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
-| `@kumwe/studio-core` | `0.1.0-alpha.5` | The deterministic command engine, session, contribution runtime, migrations, URL policy |
-| `@kumwe/studio-preview` | `0.1.0-alpha.3` | Both ends of the origin-pinned preview channel: client, host responder, geometry |
-| `@kumwe/studio-media` | `0.1.0-alpha.4` | Upload orchestration over the canonical media session state machine |
-| `@kumwe/studio-rich-text` | `0.1.0-alpha.3` | The bounded rich-text grammar, parser and renderer projection |
-| `@kumwe/studio` | `0.1.0-alpha.5` | The authoring shell as a web component, keyboard-complete and catalog-localized |
-| `@kumwe/studio-testkit` | `0.1.0-alpha.5` | The canonical fixture corpus and a deterministic in-memory reference host |
+| `@kumwe/studio-protocol` | pinned in `PIN.json` (`0.1.0-alpha.6` at vendoring) | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
+| `@kumwe/studio-core` | `0.1.0-alpha.5`, unvendored | The deterministic command engine, session, contribution runtime, migrations, URL policy |
+| `@kumwe/studio-preview` | `0.1.0-alpha.3`, unvendored | Both ends of the origin-pinned preview channel: client, host responder, geometry |
+| `@kumwe/studio-media` | `0.1.0-alpha.4`, unvendored | Upload orchestration over the canonical media session state machine |
+| `@kumwe/studio-rich-text` | `0.1.0-alpha.3`, unvendored | The bounded rich-text grammar, parser and renderer projection |
+| `@kumwe/studio` | `0.1.0-alpha.5`, unvendored | The authoring shell as a web component, keyboard-complete and catalog-localized |
+| `@kumwe/studio-testkit` | pinned in `PIN.json` (`0.1.0-alpha.8` at vendoring) | The canonical fixture corpus and a deterministic in-memory reference host |
 
 The host adapter's server side needs none of these at runtime — the protocol is JSON over the wire.
 The packages matter in two places: the administrator build consumes `@kumwe/studio` (and transitively

@@ -1,0 +1,35 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-vector",
+  "id": "vector.host-vector.media.list.limit",
+  "description": "A page size outside the declared bound is refused rather than silently clamped.",
+  "profile": "studio.profile/host-baseline",
+  "port": "media",
+  "operation": "list",
+  "given": {
+    "artifacts": [
+      {
+        "id": "vector.blueprint",
+        "kind": "blueprint",
+        "revision": "vector.blueprint-r1"
+      }
+    ],
+    "permissions": ["studio.permission/publish", "studio.permission/save"],
+    "sessionGeneration": "session-r1"
+  },
+  "context": {
+    "operationId": "studio.operation/media.list",
+    "protocolVersion": "0.1.0-draft.2",
+    "requestId": "requests/vector-1",
+    "resourceContextKey": "contexts/vector",
+    "sessionGeneration": "session-r1"
+  },
+  "argument": {
+    "limit": 500
+  },
+  "expect": {
+    "outcome": "error",
+    "category": "invalid-request",
+    "retryable": false
+  }
+}
