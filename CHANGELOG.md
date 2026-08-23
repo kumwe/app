@@ -24,6 +24,20 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **Package P3-D is complete: no Domain type imports an Application type, and the mechanism is
+  recorded in ADR 0012.** The fifteen `V2-ARC-003` Domain-to-Application edges are reconciled
+  without changing one byte of any frozen artifact: `SiteContext` and `AuthenticatedSurface` are
+  classified shared and `ContributionOwner` and `ContributionDefinition` domain via exact
+  class-name prefixes in the layer graph (a published byte-immutable migration and the hash-pinned
+  public SPI fixture rule out physical moves); `PortalContext` moves beside its resolvers in
+  `Portal\Application`, where its pairing of a site with a versioned membership proof belongs; and
+  the manifest's admission-time contribution parse becomes the one decision-approved exact
+  interface, encoded in the dependency baseline's new `approved_interfaces` section that the
+  checker validates without expiry but with delete-when-stale hygiene. The checker also stops
+  recording a file's own namespace declaration as a dependency, a latent false self-edge that
+  class-level classification exposed. Thirteen baseline entries are deleted, the exemption count
+  falls from 91 to 76 with none in the Domain-to-Application family, and phase 3 is delivered.
+  (`ea762c7b`)
 - **Package P4-C is complete: the numbering machinery's remaining demands are proven on the hot
   paths, and the transition model is recorded.** ADR 0011 pins that the create command is the
   platform's numbering transition — deriving from ADR 0008's accepted no-second-entry-point
