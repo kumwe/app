@@ -55,7 +55,34 @@ else
 fi
 
 # ------------------------------------------------------------------------ php
+# The platform requirement is PHP 8.5, and platform identity is the last delta
+# between a sandbox and CI: 8.5-only deprecations fail PHPStan and the suite
+# there while an 8.4 sandbox cannot see them. When the sandbox can reach the
+# sury package source (the PHP lines in tools/agent-egress.txt), install the
+# real 8.5 with the pcov driver so even the coverage ratchet measures locally;
+# when it cannot, degrade to the platform override exactly as before.
 say "PHP"
+if ! command -v php8.5 >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then
+    CODENAME="$(. /etc/os-release 2>/dev/null && echo "${VERSION_CODENAME:-}")"
+    if [ -n "$CODENAME" ] \
+        && curl -fsm 6 -o /dev/null "https://packages.sury.org/php/dists/$CODENAME/Release" 2>/dev/null; then
+        note "Installing PHP 8.5 with pcov from packages.sury.org (cached by the environment snapshot)…"
+        (
+            set -e
+            curl -fsSL -m 20 https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/sury-php.gpg
+            printf 'deb [signed-by=/usr/share/keyrings/sury-php.gpg] https://packages.sury.org/php/ %s main\n' \
+                "$CODENAME" > /etc/apt/sources.list.d/sury-php.list
+            apt-get update -q
+            apt-get install -y -q php8.5-cli php8.5-intl php8.5-mbstring php8.5-xml php8.5-curl \
+                php8.5-zip php8.5-mysql php8.5-pgsql php8.5-redis php8.5-sqlite3 php8.5-pcov
+            update-alternatives --set php /usr/bin/php8.5
+        ) >/tmp/agent-setup-php.log 2>&1 \
+            && note "PHP 8.5 installed and selected; the sandbox now matches the CI platform." \
+            || note "PHP 8.5 install failed (see /tmp/agent-setup-php.log); continuing on the system PHP."
+    else
+        note "packages.sury.org is not reachable; allow the PHP lines in tools/agent-egress.txt for exact platform parity."
+    fi
+fi
 PHP_BIN="php"
 if command -v php8.5 >/dev/null 2>&1; then
     PHP_BIN="php8.5"
