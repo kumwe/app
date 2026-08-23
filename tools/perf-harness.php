@@ -145,6 +145,7 @@ function buildPlan(array $contract, int $seed, string $profile, int $samples, in
             ['class' => 'bounded_primary_key_read', 'samples' => $samples, 'warmup' => $warmup],
             ['class' => 'indexed_policy_filtered_page', 'samples' => $samples, 'warmup' => $warmup],
             ['class' => 'ordinary_small_mutation', 'samples' => $samples, 'warmup' => $warmup],
+            ['class' => 'hot_sequence_commit', 'samples' => $samples, 'warmup' => $warmup],
             ['class' => 'document_100_line_commit', 'samples' => $samples, 'warmup' => min($warmup, 2), 'lines' => 100],
             [
                 'class' => 'document_1000_line_commit',
@@ -306,6 +307,54 @@ $results['ordinary_small_mutation'] = measure($warmup, $samples, function (int $
         recordId: $recordId,
     ));
     $cleanup[] = [$small->handle, $recordId];
+});
+
+// One counter takes every commit of this class, so the sample distribution is the sustained
+// hot-sequence worst case decision D1's envelope names: a legally constrained single gapless
+// sequence, serialized on its counter row. ADR 0011 records the transition model this binds to.
+$sequencedDocument = NeutralBusinessFixture::document(
+    'perfseq' . $nonce,
+    Uuid::uuid7()->toString(),
+);
+$sequencedDocument['fields'][] = [
+    'handle' => 'document_number',
+    'label' => 'Document number',
+    'type' => 'core.sequence',
+    'configuration' => [
+        'scope' => 'site',
+        'reset' => 'yearly',
+        'prefix' => 'PERF-',
+        'padding' => 6,
+        'timezone' => 'UTC',
+    ],
+    'required' => true,
+    'nullable' => false,
+    'length' => 36,
+    'unique' => true,
+    'indexed' => true,
+    'immutable_after_create' => true,
+    'server_only' => true,
+    'read_only' => true,
+    'sortable' => true,
+    'filterable' => true,
+];
+$sequenced = NeutralBusinessFixture::install($container, $context, $sequencedDocument);
+$results['hot_sequence_commit'] = measure($warmup, $samples, function (int $index) use (
+    $records,
+    $context,
+    $sequenced,
+    $nonce,
+    &$cleanup
+): void {
+    $recordId = Uuid::uuid7()->toString();
+    $records->create(new CreateRecordCommand(
+        $context,
+        $sequenced->handle,
+        NeutralBusinessFixture::recordValues('Perf sequence ' . $nonce . ' ' . $index),
+        NeutralBusinessFixture::idempotencyKey('perf-seq-' . $nonce . '-' . ($index + 1000)),
+        recordId: $recordId,
+    ));
+    $cleanup[] = [$sequenced->handle, $recordId];
 });
 
 foreach ([100 => 'document_100_line_commit', 1000 => 'document_1000_line_commit'] as $size => $class) {
