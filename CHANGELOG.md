@@ -51,7 +51,7 @@ development programme, from the architecture decision that opened it to the curr
   The browser qualification journey installs and activates the signed manifest-6 fixture, authors an exact
   field-bound extension composition, previews and publishes it, verifies the real marker-free public route,
   proves disabled code fails closed, reactivates it, and returns the Content record to legacy output. Human
-  journey execution remains explicit release-qualification work rather than fabricated evidence. (`23daa671`)
+  journey execution remains explicit release-qualification work rather than fabricated evidence. (`f10c8f1d`)
 
 - **Studio artifacts and recovery now have a production versioned persistence boundary.** The AP-3
   dispatcher delegates the exact published artifact and recovery HTTP wrappers behind its trusted
@@ -86,7 +86,7 @@ development programme, from the architecture decision that opened it to the curr
   endpoints, bounded structured activity excludes draft and transport secrets, and the Security workflow
   publishes the negative-path suite as P7-C JUnit evidence. ADR 0017 records the boundary and explicitly
   leaves three-engine, built-browser and independent qualification evidence to Gate B rather than claiming
-  it from local SQLite. (`d2e40f56`, `9e1bb306`)
+  it from local SQLite. (`f10c8f1d`)
 
 - **Studio host sessions now have a production trusted-identity, policy, and generation boundary.**
   The administrator opens an opaque Content or Blueprint context under one of the five canonical modes;
@@ -1914,7 +1914,7 @@ development programme, from the architecture decision that opened it to the curr
   `content.unpublish` decision; neither transition can borrow the other's grant through Studio's shared
   lifecycle permission. Both private decisions bind the session generation, the administrator projection
   exposes truthful target-specific controls, and the artifact port still enforces the exact decision before
-  revision lookup, persistence, idempotency or audit side effects.
+  revision lookup, persistence, idempotency or audit side effects. (`f10c8f1d`)
 - **The release web image no longer carries the stale Alpine package set that failed the high/critical gate.**
   The web stage moves from the floating, retired `nginx:1.28-alpine` line to the current stable
   `nginx:1.30.4-alpine3.24` image, refreshes installed packages as part of the web stage, and makes both

@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
+use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
-use Doctrine\DBAL\Schema\UnqualifiedName;
 use Doctrine\DBAL\Types\GuidType;
 use Doctrine\DBAL\Types\IntegerType;
 use Doctrine\DBAL\Types\JsonType;
@@ -105,7 +106,7 @@ final class StudioContentProjectionMigrationTest extends TestCase
                 'blueprint_revision',
                 'binding_revision',
             ],
-            array_keys($bindings->getColumns()),
+            array_map(static fn (Column $column): string => $column->getName(), $bindings->getColumns()),
         );
         self::assertInstanceOf(StringType::class, $bindings->getColumn('site_identifier')->getType());
         self::assertSame(191, $bindings->getColumn('site_identifier')->getLength());
@@ -132,7 +133,7 @@ final class StudioContentProjectionMigrationTest extends TestCase
 
         self::assertSame(
             ['site_identifier', 'content_entry_id', 'override_values', 'override_revision'],
-            array_keys($overrides->getColumns()),
+            array_map(static fn (Column $column): string => $column->getName(), $overrides->getColumns()),
         );
         self::assertInstanceOf(StringType::class, $overrides->getColumn('site_identifier')->getType());
         self::assertContains(get_debug_type($overrides->getColumn('content_entry_id')->getType()), [
