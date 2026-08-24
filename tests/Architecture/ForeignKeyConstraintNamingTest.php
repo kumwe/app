@@ -53,6 +53,8 @@ final class ForeignKeyConstraintNamingTest extends TestCase
         "\$this->tables->raw('fk_site_group_member_site')",
         "\$this->tables->raw('fk_resource_ownership_group')",
         "\$this->tables->raw('fk_message_override_site')",
+        '$bindingForeignKey',
+        '$overrideForeignKey',
     ];
 
     /**
@@ -218,7 +220,7 @@ final class ForeignKeyConstraintNamingTest extends TestCase
         $declarations = self::declarations();
 
         self::assertCount(54, $declarations['literal']);
-        self::assertCount(12, $declarations['derived']);
+        self::assertCount(14, $declarations['derived']);
         self::assertSame(63, ConstraintNameIsolationMigration::MAXIMUM_IDENTIFIER_BYTES);
         self::assertSame(ConstraintNameIsolationMigration::ID, ConstraintNameIsolationCompatibilityMigration::ID);
         self::assertSame(

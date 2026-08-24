@@ -24,10 +24,17 @@ final class TemplateBoundaryTest extends TestCase
     {
         foreach (['src/Http/Handler/HomePageHandler.php', 'src/Http/Handler/PublishedContentHandler.php'] as $file) {
             $source = $this->contents($file);
-            self::assertStringContainsString('SiteRenderer', $source);
+            self::assertStringContainsString('ContentPageRenderService', $source);
+            self::assertStringNotContainsString('SiteRenderer', $source);
             self::assertStringNotContainsString('Twig\\Environment', $source);
             self::assertStringNotContainsString('AdministratorRenderer', $source);
         }
+
+        $service = $this->contents('src/Presentation/ContentPageRenderService.php');
+        self::assertStringContainsString('SiteRenderer', $service);
+        self::assertStringContainsString('$this->renderer->render(', $service);
+        self::assertStringNotContainsString('Twig\\Environment', $service);
+        self::assertStringNotContainsString('AdministratorRenderer', $service);
     }
 
     public function testCoreAdministratorPagesUseTheSurfaceOverridableLayout(): void

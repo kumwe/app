@@ -68,6 +68,11 @@ final readonly class StudioMediaUploadMigration implements RepeatableMigration
     /**
      * Add the scoped upload-session table and its lookup and expiry indexes idempotently.
      *
+     * The scope index deliberately stops before the 200-character session generation. Its three
+     * indexed identifiers occupy at most 622 characters, or 2488 bytes under utf8mb4, while adding
+     * the generation would exceed InnoDB's portable 3072-byte key limit. Repository lookups still
+     * compare the generation as an exact residual predicate.
+     *
      * @param   Connection  $database  Installation connection to migrate.
      *
      * @return  void
@@ -112,7 +117,7 @@ final readonly class StudioMediaUploadMigration implements RepeatableMigration
         $scope = ConstraintNameIsolationMigration::isolatedName($name, 'idx_studio_media_upload_scope');
         if (!$table->hasIndex($scope)) {
             $table->addIndex(
-                ['actor_id', 'site_identifier', 'resource_context_key', 'session_generation'],
+                ['actor_id', 'site_identifier', 'resource_context_key'],
                 $scope,
             );
         }

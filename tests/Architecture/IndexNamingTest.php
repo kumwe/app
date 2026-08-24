@@ -60,6 +60,15 @@ final class IndexNamingTest extends TestCase
         "\$this->tables->raw('idx_site_group_member_site')",
         "\$this->tables->raw('idx_resource_ownership_group')",
         "\$this->tables->raw('idx_extension_runtime_outbox')",
+        '$historyIndex',
+        '$idempotencyIndex',
+        '$typeVersionSiteIndex',
+        '$entrySiteIndex',
+        '$scopeIndex',
+        '$scope',
+        '$expiry',
+        '$grantIndex',
+        '$cancelOrderIndex',
         '$unique',
     ];
 
@@ -145,7 +154,7 @@ final class IndexNamingTest extends TestCase
         $declarations = self::declarations();
 
         self::assertCount(110, $declarations['literal']);
-        self::assertCount(19, $declarations['derived']);
+        self::assertCount(28, $declarations['derived']);
         self::assertSame(5, self::rawCreateIndexStatements());
         self::assertSame(
             ConstraintNameIsolationMigration::MAXIMUM_IDENTIFIER_BYTES,

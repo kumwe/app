@@ -6,6 +6,8 @@ namespace Kumwe\App\Tests\Integration\Studio;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Schema\Index\IndexedColumn;
+use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioMediaUploadMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Domain\Media\StudioMediaUploadPlan;
@@ -26,7 +28,7 @@ use PHPUnit\Framework\TestCase;
 final class StudioMediaPersistenceTest extends TestCase
 {
     /**
-     * Upload snapshots round-trip only under their full trusted scope and advance by compare-and-swap.
+     * Upload snapshots use a portable scope index, round-trip under full scope and advance by compare-and-swap.
      *
      * @return  void
      *
@@ -39,6 +41,28 @@ final class StudioMediaPersistenceTest extends TestCase
         $migration = new StudioMediaUploadMigration($tables);
         $migration->up($database);
         $migration->up($database);
+        $uploads = $database->createSchemaManager()->introspectTableByUnquotedName(
+            $tables->raw('studio_media_uploads'),
+        );
+        $scope = $uploads->getIndex(ConstraintNameIsolationMigration::isolatedName(
+            $tables->raw('studio_media_uploads'),
+            'idx_studio_media_upload_scope',
+        ));
+        $scopeColumns = array_map(
+            static fn (IndexedColumn $column): string => $column->getColumnName()->getIdentifier()->getValue(),
+            $scope->getIndexedColumns(),
+        );
+        self::assertSame(['actor_id', 'site_identifier', 'resource_context_key'], $scopeColumns);
+        $scopeCharacters = 0;
+        foreach ($scopeColumns as $column) {
+            $length = $uploads->getColumn($column)->getLength();
+            self::assertNotNull($length);
+            $scopeCharacters += $length;
+        }
+        self::assertSame(622, $scopeCharacters);
+        self::assertSame(2488, $scopeCharacters * 4);
+        self::assertLessThanOrEqual(3072, $scopeCharacters * 4);
+
         $repository = new DoctrineStudioMediaUploadRepository($database, $tables);
         $session = new StudioMediaUploadSession(
             'uploads/0123456789abcdef0123456789abcdef',
