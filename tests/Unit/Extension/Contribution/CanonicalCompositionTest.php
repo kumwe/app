@@ -50,7 +50,7 @@ use stdClass;
 final class CanonicalCompositionTest extends TestCase
 {
     /**
-     * A schema-6 section with a valid canonical block and bindings parses into the declared set.
+     * A schema-6 section with a valid canonical block and bindings parses and round-trips its wire shape.
      *
      * @return  void
      *
@@ -71,6 +71,19 @@ final class CanonicalCompositionTest extends TestCase
         self::assertSame('acme.shop/grid', $document->identity());
         self::assertSame('block-definition acme.shop/grid', $document->identifier());
         self::assertSame($document->canonical, CanonicalJson::stringify($document->document));
+        $exported = $set->toArray();
+        self::assertSame(
+            ['kind' => 'block-definition', 'canonical' => $document->canonical],
+            $exported['composition']['documents'][0] ?? null,
+        );
+        self::assertSame(
+            $exported,
+            ManifestContributionSet::fromManifest(
+                ExtensionIdentifier::fromString('acme/shop'),
+                $exported,
+                6,
+            )->toArray(),
+        );
     }
 
     /**
