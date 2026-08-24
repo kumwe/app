@@ -108,14 +108,20 @@
     {
       "path": "src/Http/Handler/HomePageHandler.php",
       "surface_ids": ["core.public.home"],
-      "must_contain": ["$variables['surface_id'] = 'core.public.home';", "'current_path'", "'canonical_url'"],
-      "must_not_contain": []
+      "must_contain": ["ContentPageRenderService", "$this->renderer->render("],
+      "must_not_contain": ["SiteRenderer", "Twig\\Environment", "AdministratorRenderer"]
     },
     {
       "path": "src/Http/Handler/PublishedContentHandler.php",
       "surface_ids": ["core.public.page"],
-      "must_contain": ["'surface_id' => 'core.public.page'", "'current_path'", "'canonical_url'"],
-      "must_not_contain": []
+      "must_contain": ["ContentPageRenderService", "$this->renderer->render("],
+      "must_not_contain": ["SiteRenderer", "Twig\\Environment", "AdministratorRenderer"]
+    },
+    {
+      "path": "src/Presentation/ContentPageRenderService.php",
+      "surface_ids": [],
+      "must_contain": ["SiteRenderer", "'current_path' => $currentPath", "'canonical_url' => $canonicalUrl", "'surface_id' => $surfaceId"],
+      "must_not_contain": ["Twig\\Environment", "AdministratorRenderer"]
     },
     {
       "path": "examples/extensions/announcements/templates/views/administrator/announcements.twig",
