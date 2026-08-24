@@ -4,7 +4,7 @@
 **Decided by** ADR 0007 and the published Studio preview, host-sequence and security contracts
 **Findings** Completes `V2-STU-006`; the embedded browser surface and its qualification remain S-G
 **Gate** B integration
-**Verified against** `d2e40f56` and `9e1bb306`
+**Verified against** `f10c8f1d`
 
 ---
 

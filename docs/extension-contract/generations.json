@@ -780,10 +780,11 @@
         ],
         "contributions": {
           "capabilities": 1,
-          "composition.documents": 6
+          "composition.documents": 6,
+          "composition.host_bindings": 2
         }
       },
-      "surface_digest": "2f5d236f0317e708ed519f59a3624bdf0f6b4c4539b3390c60ef653e02261808"
+      "surface_digest": "ef8cae611b59465fc18c7e848ad70d084410d0ddebc5451c878b0b3dd66f9d4e"
     }
   ],
   "spi_generations": [
