@@ -521,8 +521,16 @@ test('AP7 composition provisions by POST and opens an exact measured preview cha
   expect(traffic.documents.map((url) => new URL(url).searchParams.get('sequence')))
     .toEqual(traffic.documents.map((_, index) => String(index)));
 
+  const previewStage = shell.locator('.preview-stage');
+  await expect(previewStage).toHaveAttribute('tabindex', '0');
+  await previewStage.focus();
+  await expect(previewStage).toBeFocused();
+  await expect(shell.locator('iframe[data-studio-preview]')).toHaveAttribute('title', /\S/u);
   const scan = await new AxeBuilder({ page })
     .include('[data-kis-surface="core.administrator.studio-composition"]')
+    // The scriptless preview document is a separately rendered surface. Excluding its frame from
+    // Axe's context keeps this scan on the Studio shell and prevents recursive same-origin analysis.
+    .exclude('iframe[data-studio-preview]')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
     .analyze();
   expect(scan.violations, JSON.stringify(scan.violations, null, 2)).toEqual([]);
@@ -857,8 +865,9 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   expect(rootsBeforeReorder.indexOf(firstSectionId ?? '')).toBeLessThan(
     rootsBeforeReorder.indexOf(secondSectionId ?? ''),
   );
-  // Raw page.mouse coordinates do not auto-scroll like locator actions. Bring the selected
-  // measured region into the browser viewport, then resolve both boxes in the new scroll position.
+  // Raw page.mouse coordinates do not auto-scroll like locator actions. Bring the destination and
+  // selected source into the browser viewport, then resolve both boxes in the final scroll position.
+  await firstSectionRegion.scrollIntoViewIfNeeded();
   await secondSectionRegion.scrollIntoViewIfNeeded();
   const firstSectionBox = await firstSectionRegion.boundingBox();
   const secondSectionBox = await secondSectionRegion.boundingBox();
@@ -884,22 +893,34 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   const gridRegion = shell.locator(`.preview-canvas-region[data-node-id="${gridId ?? ''}"]`).first();
   await expect(source).toHaveCount(1);
   await expect(gridRegion).toHaveCount(1);
-  const sourceBox = await source.boundingBox();
-  const gridBox = await gridRegion.boundingBox();
-  expect(sourceBox).not.toBeNull();
-  expect(gridBox).not.toBeNull();
-  if (sourceBox === null || gridBox === null) return;
+  await source.scrollIntoViewIfNeeded();
+  const selectionSourceBox = await source.boundingBox();
+  expect(selectionSourceBox).not.toBeNull();
+  if (selectionSourceBox === null) return;
 
-  await page.mouse.click(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+  await page.mouse.click(
+    selectionSourceBox.x + selectionSourceBox.width / 2,
+    selectionSourceBox.y + selectionSourceBox.height / 2,
+  );
   await expect(stack).toHaveAttribute('aria-pressed', 'true');
 
   const rootsBeforeCancellation = await documentRoots(shell);
   const commandsBeforeCancellation = (await recordedCommands(page)).length;
-  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+  await gridRegion.scrollIntoViewIfNeeded();
+  await source.scrollIntoViewIfNeeded();
+  const cancellationSourceBox = await source.boundingBox();
+  const cancellationGridBox = await gridRegion.boundingBox();
+  expect(cancellationSourceBox).not.toBeNull();
+  expect(cancellationGridBox).not.toBeNull();
+  if (cancellationSourceBox === null || cancellationGridBox === null) return;
+  await page.mouse.move(
+    cancellationSourceBox.x + cancellationSourceBox.width / 2,
+    cancellationSourceBox.y + cancellationSourceBox.height / 2,
+  );
   await page.mouse.down();
   await page.mouse.move(
-    gridBox.x + gridBox.width / 2,
-    gridBox.y + gridBox.height,
+    cancellationGridBox.x + cancellationGridBox.width / 2,
+    cancellationGridBox.y + cancellationGridBox.height,
     { steps: 8 },
   );
   await expect(shell.locator('.preview-canvas-drop-indicator')).toBeVisible();
@@ -911,6 +932,8 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   expect((await recordedCommands(page)).length).toBe(commandsBeforeCancellation);
   expect(await nodeParentId(shell, stackId ?? '')).toBe(firstSectionId);
 
+  await gridRegion.scrollIntoViewIfNeeded();
+  await source.scrollIntoViewIfNeeded();
   const sourceAfterCancellationBox = await source.boundingBox();
   const gridAfterCancellationBox = await gridRegion.boundingBox();
   expect(sourceAfterCancellationBox).not.toBeNull();
