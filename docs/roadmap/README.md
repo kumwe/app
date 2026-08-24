@@ -851,7 +851,7 @@ answer.
 | Right-to-left presentation | Partial | The stylesheets are direction independent, the layouts emit `dir`, a gate refuses a new physical declaration, and the browser matrix carries a language axis so `he` and `ar` file baselines of their own. `V2-LNG-009` holds the screenshots and the `P2-E` leg that compares them |
 | Multilingual content with per-locale publication state | Provided | `ContentEntry`, `TranslationGroup`, locale-specific slugs and publication windows, negotiated public delivery and explicit root-locale addresses; decision D12 and [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Locale variants on extension-contributed content | Partial | A package can declare a translation set for admission and inventory, but no frozen item-association contract binds contributed content to it at runtime — `V2-LNG-012` |
-| Visual composition authoring over typed, theme-bounded building blocks | **Must add** | Decision D16, [ADR 0007](decisions/0007-studio-visual-composition-integration.md), phase S — the administrator edits content through forms today and no composition surface, host adapter or preview endpoint exists; `V2-STU-002` through `V2-STU-007` |
+| Visual composition authoring over typed, theme-bounded building blocks | **Must add** | Decision D16, [ADR 0007](decisions/0007-studio-visual-composition-integration.md), phase S — the administrator edits content through forms today and no complete composition surface or preview endpoint exists; `V2-STU-002`, `V2-STU-005` through `V2-STU-007` |
 
 #### Processing and integration
 
@@ -1203,7 +1203,7 @@ building against contracts that will not move; they are not building against a q
     administrator content-security policy is unchanged except the recorded same-origin preview frame.
     The signed manifest records the exact Studio package versions the release qualified, and the
     composition contributions frozen at Gate A criterion 13 are consumed by the running surface without
-    a contract change. `V2-STU-002` through `V2-STU-007` remain open until that evidence exists.
+    a contract change. `V2-STU-002` and `V2-STU-005` through `V2-STU-007` remain open until that evidence exists.
 
 ---
 

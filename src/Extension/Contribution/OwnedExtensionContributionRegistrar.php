@@ -893,6 +893,30 @@ final class OwnedExtensionContributionRegistrar implements
     }
 
     /**
+     * Register host-owned metadata for a core canonical composition document.
+     *
+     * Extension bindings remain declaration-only and are activated directly from the signed manifest
+     * by the registry set. This method exists only for core's non-strict registrar so core traverses
+     * the identical owned runtime registry and lifecycle inventory path.
+     *
+     * @param   CompositionHostBinding  $binding  Trusted core host binding metadata.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function compositionHostBinding(CompositionHostBinding $binding): void
+    {
+        if ($this->strict) {
+            throw new \LogicException('Extension composition host bindings are activated from their manifest.');
+        }
+        if ($this->closed) {
+            throw new \LogicException('The contribution phase has already completed.');
+        }
+        $this->registries->compositionHostBindings()->register($this->owner, $binding);
+    }
+
+    /**
      * End the phase, having checked that nothing the manifest declared was left unregistered.
      *
      * This is the half of reconciliation the per-registration checks cannot do: an omission is only

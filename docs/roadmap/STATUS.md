@@ -45,7 +45,7 @@ record is not thereby a new machine-evidence candidate.
 | 5 — Enterprise scale | B | Not started | `P2-I` performance harness |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
 | 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
-| S — Studio visual composition | A, with a B integration | In progress — `S-A` complete, the Gate A declaration contract is frozen; `S-B` … `S-G` open | — |
+| S — Studio visual composition | A, with a B integration | In progress — `S-A`, `S-C` and `S-D` complete; implementation candidates for the exact package pin/corpus, hardened media host, authenticated preview, embedded authoring shell and marker-free public runtime are present, with authoritative Gate B qualification still open; `S-B` and `S-E` … `S-G` remain open | — |
 | **Gate B** | | **Not assessed** | **Phases 7 and S** |
 | M — Maintainability | — | Not started | Phase 3 seams settled. Blocks nothing. |
 | N — Native client platform contracts | — | Version 3 seed — not started | Nothing in Version 2; blocks nothing. Decision D17, [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md). |
@@ -64,7 +64,7 @@ remains in README.
 | L | `PL-G` | `V2-LNG-010` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
-| S | `S-B` … `S-G` | `V2-STU-002` – `V2-STU-007` |
+| S | `S-B`, `S-E` … `S-G` | `V2-STU-002`, `V2-STU-005` – `V2-STU-007` |
 | 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `V2-QA-014`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
 | M | Lane M maintainability backlog | `V2-ARC-002`, `V2-QA-010` |
 | N | Lane N, no packages assigned yet | `V3-NC-001` – `V3-NC-004` |
@@ -97,16 +97,16 @@ Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full 
 
 ## Ledger snapshot
 
-**46 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**44 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 10 |
+| `accepted_for_implementation` | 9 |
 | `reproduced` | 7 |
 | `open` | 20 |
 | `conditional` | 6 |
 | `decision_required` | 1 |
-| `in_progress` | 2 |
+| `in_progress` | 3 |
 | `verified` | 0 |
 | `external` | 0 |
 | `closed` | **not an allowed state** — see [`CHANGELOG.md`](../../CHANGELOG.md) |
@@ -122,7 +122,7 @@ Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full 
 | 5 | 7 |
 | 6 | 7 |
 | 7 | 12 |
-| S | 6 |
+| S | 4 |
 | M | 2 |
 | N | 4 |
 | evidence (`GM-AUD-02`, conditional residual) | 1 |
@@ -130,11 +130,11 @@ Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full 
 | Gate | Findings |
 |---|---|
 | A | 0 |
-| B | 23 |
+| B | 21 |
 | none | 23 |
 
-By severity: 0 critical, 19 high, 18 medium, 9 low.
-By origin: 12 from the independent review, 12 still-open entries from the executed gap matrix, 22 discovered
+By severity: 0 critical, 17 high, 18 medium, 9 low.
+By origin: 12 from the independent review, 12 still-open entries from the executed gap matrix, 20 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
 D16 through D18.
 
@@ -174,12 +174,12 @@ were added:
 | # | Criterion | Met | Findings |
 |---|---|---|---|
 | 11 | All nine languages ship and each is qualified in its own right | No | `V2-LNG-010` |
-| 12 | The visual composition integration ships and is qualified | No | `V2-STU-002` – `V2-STU-007` |
+| 12 | The visual composition integration ships and is qualified | No | `V2-STU-002`, `V2-STU-005` – `V2-STU-007` |
 
 ## Baseline health at `7a83c295`
 
 This is a historical snapshot, kept because it is the last full-programme measurement recorded here, and
-it no longer describes the head: the ledger above holds 46 findings against its 44, recorded dependency
+it no longer describes the head: the ledger above holds 44 findings, recorded dependency
 exemptions have fallen from 115 to 99, and the message catalogue has grown from 117 to 2,102. Read it as
 the record of that revision and nothing else. Current programme figures are in the ledger above;
 exact machine-candidate workflow evidence is `67cf6c02` / run 32582207163 above, while run 32469278190 remains

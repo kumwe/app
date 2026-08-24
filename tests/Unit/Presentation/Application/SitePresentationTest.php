@@ -20,6 +20,7 @@ final class SitePresentationTest extends TestCase
         self::assertSame('corporate', $view['active_scheme']);
         self::assertSame('main', $presentation->primaryMenu());
         self::assertSame('#07182d', $view['css_variables']['--site-navy-950']);
+        self::assertSame('#07182d', $view['theme_color']);
         self::assertSame('#0c9189', $view['css_variables']['--site-accent']);
         self::assertSame('light', $view['color_mode']);
     }

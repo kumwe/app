@@ -6,12 +6,11 @@ namespace Kumwe\App\Http\Handler;
 
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\App\Localization\Application\ActiveLocale;
-use Kumwe\App\Presentation\Application\SitePresentation;
+use Kumwe\App\Presentation\ContentPageRenderService;
 use Kumwe\App\Presentation\ContentLayoutCatalog;
 use Kumwe\App\Presentation\ContentPresenter;
-use Kumwe\App\Presentation\SiteRenderer;
 use Kumwe\App\Site\Application\PublicPageLocator;
-use Kumwe\App\Site\Application\SiteSettings;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -34,29 +33,28 @@ final readonly class HomePageHandler implements RequestHandlerInterface
     /**
      * Bind the front page to the locator, settings, and rendering collaborators it composes.
      *
-     * @param  PublicPageLocator          $pages      Resolver for the nominated homepage record and the site's
+     * @param  PublicPageLocator                $pages      Resolver for the nominated homepage record and the site's
      *         public navigation tree.
-     * @param  SiteSettings               $settings   Source of the site name, presentation contract, and the
-     *         search-indexing switch.
-     * @param  SiteRenderer               $renderer   Site template renderer that produces the HTML body.
-     * @param  ContentPresenter           $presenter  Presenter that escapes and renders the record's stored
+     * @param  ContentPageRenderService         $renderer   Canonical site template/theme path shared with preview.
+     * @param  ContentPresenter                 $presenter  Presenter that escapes and renders the record's stored
      *         bodies before they reach a template.
-     * @param  ContentLayoutCatalog       $layouts    Content-type to site-template layout selection.
-     * @param  TranslationGroupPresenter  $languages  Chooser of which locale of the nominated homepage the
+     * @param  ContentLayoutCatalog             $layouts    Content-type to site-template layout selection.
+     * @param  TranslationGroupPresenter        $languages  Chooser of which locale of the nominated homepage the
      *         reader is served, and builder of the alternate-language links and the language selector.
-     * @param  ActiveLocale               $active     Request locale holder aligned to the resolved homepage
+     * @param  ActiveLocale                     $active     Request locale holder aligned to the resolved homepage
      *         before its template and translated chrome are rendered.
+     * @param  ?StudioPublishedContentRenderer  $studio     Optional exact published Blueprint rendering boundary.
      *
      * @since  2.0.0
      */
     public function __construct(
         private PublicPageLocator $pages,
-        private SiteSettings $settings,
-        private SiteRenderer $renderer,
+        private ContentPageRenderService $renderer,
         private ContentPresenter $presenter,
         private ContentLayoutCatalog $layouts,
         private TranslationGroupPresenter $languages,
         private ActiveLocale $active,
+        private ?StudioPublishedContentRenderer $studio = null,
     ) {
     }
 
@@ -80,7 +78,6 @@ final readonly class HomePageHandler implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $settings = $this->settings->current();
         $record = $this->pages->homepage();
         // The root is the one public entry point that names no language, so it is the one place a
         // reader's negotiated locale — not the URL — decides which locale of the item is served.
@@ -92,32 +89,40 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         $binding = $record === null
             ? ['template' => null, 'color_scheme' => null]
             : $this->pages->presentationBindingFor($record);
-        $template = $record === null ? 'home' : $this->layouts->templateFor($record, $binding['template']);
-        $entry = $record === null ? null : $this->presenter->present($record);
-        $presentation = SitePresentation::from(
-            $settings['presentation'] ?? SitePresentation::defaults(),
-        )->withSchemeOverride($binding['color_scheme'])->toView();
-        $variables = $record === null
-            ? ['site_name' => $settings['site_name'], 'presentation' => $presentation]
-            : ['site_name' => $settings['site_name'], 'entry' => $entry, 'presentation' => $presentation];
-        $variables['site_logo'] = $presentation['logo'];
-        $variables['navigation'] = $this->pages->navigation();
+        $studioBody = $record === null ? null : $this->studio?->render($record);
+        $template = $record === null
+            ? 'home'
+            : ($studioBody === null ? $this->layouts->templateFor($record, $binding['template']) : 'page');
+        $entry = $record === null
+            ? null
+            : ($studioBody === null
+                ? $this->presenter->present($record)
+                : [
+                    'title' => $record->entry->title(),
+                    'data' => [],
+                    'body_html' => $studioBody,
+                ]);
         $languages = $record === null
             ? ['alternates' => [], 'default_href' => null]
             : $this->languages->alternates($record, '/');
-        $variables['current_path'] = '/';
-        $variables['canonical_url'] = $this->canonicalUrl($languages);
-        $variables['surface_id'] = 'core.public.home';
-        $variables['languages'] = $languages;
 
         $headers = [
             'Cache-Control' => 'public, max-age=60, stale-while-revalidate=300',
         ];
-        if ($settings['search_indexing_enabled'] !== true) {
+        if (!$this->renderer->searchIndexingEnabled()) {
             $headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive';
         }
 
-        return new HtmlResponse($this->renderer->render($template, $variables), 200, $headers);
+        return new HtmlResponse($this->renderer->render(
+            $template,
+            $entry,
+            '/',
+            $this->canonicalUrl($languages),
+            $binding['color_scheme'],
+            'core.public.home',
+            $this->pages->navigation(),
+            $languages,
+        ), 200, $headers);
     }
 
     /**

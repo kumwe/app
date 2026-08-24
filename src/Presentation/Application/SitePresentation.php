@@ -234,6 +234,7 @@ final readonly class SitePresentation
 
         return $this->toArray() + [
             'color_mode' => $scheme['color_mode'],
+            'theme_color' => $colors['navy'],
             'css_variables' => [
                 '--site-navy-950' => $colors['navy'],
                 '--site-ink' => $colors['ink'],

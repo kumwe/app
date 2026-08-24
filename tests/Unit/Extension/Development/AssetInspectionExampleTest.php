@@ -602,9 +602,13 @@ final class AssetInspectionExampleTest extends TestCase
                 'integration.unit_conversion_providers' => 'integration.unit_converters',
                 default => $surface,
             };
-            // The canonical Studio surface belongs to the companion SPI-v4 owner; every other
+            // The canonical Studio surfaces belong to the companion SPI-v4 owner; every other
             // surface stays with the paraphrase owner the committed example package declares.
-            $onCanonicalSurface = $surface === 'composition.documents';
+            $onCanonicalSurface = in_array(
+                $surface,
+                ['composition.documents', 'composition.host_bindings'],
+                true,
+            );
             $expected = self::contributionList($onCanonicalSurface ? $canonicalManifest : $manifest, $manifestPath);
             $actual = self::contributionList($onCanonicalSurface ? $canonicalInventory : $inventory, $surface);
             self::assertNotSame([], $expected, sprintf('The full fixture left %s vacuous.', $surface));

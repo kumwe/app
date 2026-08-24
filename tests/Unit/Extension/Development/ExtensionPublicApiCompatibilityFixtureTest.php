@@ -135,9 +135,14 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
                     $actual[] = $this->signature($method);
                 }
             }
+            $expectedSignatures = [];
+            foreach ($expected as $signature) {
+                self::assertIsString($signature);
+                $expectedSignatures[] = $signature;
+            }
             sort($actual, SORT_STRING);
-            sort($expected, SORT_STRING);
-            self::assertSame($expected, $actual, sprintf('Public interface %s changed.', $interface));
+            sort($expectedSignatures, SORT_STRING);
+            self::assertSame($expectedSignatures, $actual, sprintf('Public interface %s changed.', $interface));
         }
         $enums = $fixture['enums'] ?? null;
         self::assertIsArray($enums);
@@ -212,6 +217,47 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
             ksort($actual, SORT_STRING);
             ksort($expected, SORT_STRING);
             self::assertSame($expected, $actual, sprintf('Public enum %s changed.', $enum));
+        }
+    }
+
+    /**
+     * Pin the safe renderer contract that activates schema-six block host bindings at Gate B.
+     *
+     * The manifest and registrar stay frozen: a provider registers the implementation as its own
+     * restricted-container service, while this one-method interface and the two classified value
+     * objects are the additive execution contract the service compiles against.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdditiveStudioPreviewRendererContractRemainsSourceCompatible(): void
+    {
+        $path = dirname(__DIR__, 4) . '/tests/Fixtures/ExtensionApi/studio-preview-block-renderer-v1.json';
+        $json = file_get_contents($path);
+        self::assertIsString($json);
+        self::assertSame(
+            '506d462378dc7ea3ddf7c9b8d4849d471b512e5089670498dda480de732d793c',
+            hash('sha256', $json),
+        );
+        $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
+        self::assertIsArray($fixture);
+        self::assertSame('kumwe-studio-preview-block-renderer-v1', $fixture['format'] ?? null);
+        $interfaces = $fixture['interfaces'] ?? null;
+        self::assertIsArray($interfaces);
+        foreach ($interfaces as $interface => $expected) {
+            self::assertIsString($interface);
+            self::assertIsArray($expected);
+            self::assertTrue(interface_exists($interface), sprintf('Missing public interface %s.', $interface));
+            $actual = [];
+            foreach ((new ReflectionClass($interface))->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+                if ($method->getDeclaringClass()->getName() === $interface) {
+                    $actual[] = $this->signature($method);
+                }
+            }
+            sort($actual, SORT_STRING);
+            sort($expected, SORT_STRING);
+            self::assertSame($expected, $actual, sprintf('Public interface %s changed.', $interface));
         }
     }
 

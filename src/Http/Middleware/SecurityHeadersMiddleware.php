@@ -56,7 +56,11 @@ final readonly class SecurityHeadersMiddleware implements MiddlewareInterface
         $response = $handler->handle($request);
         $secure = $request->getUri()->getScheme() === 'https';
 
-        foreach ((new SecurityHeaders($this->production && $secure, $secure))->values() as $name => $value) {
+        $policy = new SecurityHeaders($this->production && $secure, $secure);
+        $headers = $request->getUri()->getPath() === '/administrator/studio/preview'
+            ? $policy->previewValues()
+            : $policy->values();
+        foreach ($headers as $name => $value) {
             $response = $response->withHeader($name, $value);
         }
         if (str_starts_with(strtolower($response->getHeaderLine('Content-Type')), 'image/svg+xml')) {

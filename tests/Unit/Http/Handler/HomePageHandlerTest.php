@@ -26,12 +26,14 @@ use Kumwe\App\Localization\Domain\LocaleTag;
 use Kumwe\App\Navigation\Application\NavigationRepository;
 use Kumwe\App\Navigation\Application\PublicNavigation;
 use Kumwe\App\Presentation\ContentLayoutCatalog;
+use Kumwe\App\Presentation\ContentPageRenderService;
 use Kumwe\App\Presentation\ContentPresenter;
 use Kumwe\App\Presentation\RichTextFormatter;
 use Kumwe\App\Presentation\SiteRenderer;
 use Kumwe\App\Presentation\Twig\SiteTwigEnvironment;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Site\Application\SiteSettings;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -53,6 +55,7 @@ use Twig\Loader\ArrayLoader;
  * @since  2.0.0
  */
 #[CoversClass(HomePageHandler::class)]
+#[CoversClass(ContentPageRenderService::class)]
 final class HomePageHandlerTest extends TestCase
 {
     /**
@@ -98,11 +101,22 @@ final class HomePageHandlerTest extends TestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(
-            'page|Ueber uns|de:true:/?locale=de en-GB:false:/?locale=en-GB |/?locale=de|Kumwe',
+            'page|Ueber uns|de:true:/?locale=de en-GB:false:/?locale=en-GB |/?locale=de|Kumwe|'
+                . '<p>Ueber uns</p>',
             (string) $response->getBody(),
         );
         self::assertSame('public, max-age=60, stale-while-revalidate=300', $response->getHeaderLine('Cache-Control'));
         self::assertSame('', $response->getHeaderLine('X-Robots-Tag'));
+
+        $studio = $this->handle(
+            'de',
+            studioBody: '<section class="studio-preview-section"><p>Studio home</p></section>',
+        );
+        self::assertSame(
+            'page|Ueber uns|de:true:/?locale=de en-GB:false:/?locale=en-GB |/?locale=de|Kumwe|'
+                . '<section class="studio-preview-section"><p>Studio home</p></section>',
+            (string) $studio->getBody(),
+        );
     }
 
     /**
@@ -151,6 +165,7 @@ final class HomePageHandlerTest extends TestCase
      * @param   bool    $nominated  Whether the site nominates a homepage entry at all.
      * @param   bool    $indexing   Whether the site allows search engines to index it.
      * @param   ?ActiveLocale  $active  Shared locale holder, returned for assertions when requested.
+     * @param   ?string  $studioBody  Safe published Studio fragment, or null for legacy rendering.
      *
      * @return  ResponseInterface  The handler's response.
      *
@@ -161,6 +176,7 @@ final class HomePageHandlerTest extends TestCase
         bool $nominated = true,
         bool $indexing = true,
         ?ActiveLocale &$active = null,
+        ?string $studioBody = null,
     ): ResponseInterface {
         $settings = $this->settings($nominated, $indexing);
         $content = $this->content();
@@ -169,23 +185,44 @@ final class HomePageHandlerTest extends TestCase
         $active->begin(LocaleTag::fromString($locale));
         $handler = new HomePageHandler(
             $locator,
-            $settings,
-            new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader([
+            new ContentPageRenderService($settings, new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader([
                 'page.twig' => 'page|{{ entry.title }}|'
                     . '{% for a in languages.alternates %}{{ a.locale }}:{{ a.current ? "true" : "false" }}:'
-                    . '{{ a.href }} {% endfor %}|{{ canonical_url }}|{{ site_name }}',
+                    . '{{ a.href }} {% endfor %}|{{ canonical_url }}|{{ site_name }}|'
+                    . '{{ entry.body_html|default("")|raw }}',
                 'home.twig' => 'home|{{ languages.alternates|length }}|'
                     . '{{ languages.default_href is null ? "none" : "some" }}|{{ site_name }}',
-            ]))),
+            ])))),
             new ContentPresenter(new RichTextFormatter()),
             new ContentLayoutCatalog($this->createStub(ContentModelRepository::class), SiteContext::DEFAULT),
             $this->languages($content, $locator, $active),
             $active,
+            $this->studio($studioBody),
         );
 
         return $handler->handle(
             (new ServerRequestFactory())->createServerRequest('GET', 'https://kumwe.test/'),
         );
+    }
+
+    /**
+     * Build an optional published Studio rendering seam for the homepage path.
+     *
+     * @param   ?string  $body  Safe Studio body or null to preserve the legacy Content presenter.
+     *
+     * @return  ?StudioPublishedContentRenderer  Configured renderer, or null for the legacy path.
+     *
+     * @since   2.0.0
+     */
+    private function studio(?string $body): ?StudioPublishedContentRenderer
+    {
+        if ($body === null) {
+            return null;
+        }
+        $studio = $this->createStub(StudioPublishedContentRenderer::class);
+        $studio->method('render')->willReturn($body);
+
+        return $studio;
     }
 
     /**

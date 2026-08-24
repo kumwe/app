@@ -1,0 +1,8 @@
+{
+  "format": "kumwe-studio-preview-block-renderer-v1",
+  "interfaces": {
+    "Kumwe\\App\\Studio\\Application\\Preview\\StudioPreviewBlockRenderer": [
+      "render(Kumwe\\App\\Studio\\Application\\Preview\\StudioPreviewBlock $block, Kumwe\\App\\Studio\\Application\\Preview\\StudioPreviewBindingResult $binding, string $viewport): Kumwe\\App\\Studio\\Application\\Preview\\StudioPreviewBlockFragment"
+    ]
+  }
+}

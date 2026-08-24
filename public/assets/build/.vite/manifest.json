@@ -1,42 +1,54 @@
 {
-  "_reveal-validation-DkoA-GGU.js": {
-    "file": "js/reveal-validation-DkoA-GGU.js",
+  "_reveal-validation-D-54v9v1.js": {
+    "file": "js/reveal-validation-D-54v9v1.js",
     "name": "reveal-validation"
   },
+  "assets/administrator/components/studio-composition.ts": {
+    "file": "js/studio-composition-BTpZ1-93.js",
+    "name": "studio-composition",
+    "src": "assets/administrator/components/studio-composition.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_reveal-validation-D-54v9v1.js"
+    ]
+  },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-BQgihsjs.js",
+    "file": "js/administrator-CEfBSaEA.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
     "imports": [
-      "_reveal-validation-DkoA-GGU.js"
+      "_reveal-validation-D-54v9v1.js"
+    ],
+    "dynamicImports": [
+      "assets/administrator/components/studio-composition.ts"
     ],
     "css": [
-      "css/administrator-BHr-BJ3w.css"
+      "css/administrator-twh75RA3.css"
     ]
   },
   "assets/portal/main.ts": {
-    "file": "js/portal-BQQ4NvAl.js",
+    "file": "js/portal-CDMjrnkA.js",
     "name": "portal",
     "src": "assets/portal/main.ts",
     "isEntry": true,
     "imports": [
-      "_reveal-validation-DkoA-GGU.js"
+      "_reveal-validation-D-54v9v1.js"
     ],
     "css": [
       "css/portal-Bm8FY9nM.css"
     ]
   },
   "assets/site/main.ts": {
-    "file": "js/site-x7NLeynX.js",
+    "file": "js/site-EQwpRDZT.js",
     "name": "site",
     "src": "assets/site/main.ts",
     "isEntry": true,
     "imports": [
-      "_reveal-validation-DkoA-GGU.js"
+      "_reveal-validation-D-54v9v1.js"
     ],
     "css": [
-      "css/site-DSOxSHwa.css"
+      "css/site-CGPXwCJ-.css"
     ]
   }
 }

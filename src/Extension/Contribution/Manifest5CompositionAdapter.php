@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\App\Extension\Domain\Internal\StudioProfile\SchemaProfileRejected;
-use Kumwe\App\Extension\Domain\Internal\StudioProfile\SchemaPropertyProfile;
+use Kumwe\App\Studio\Domain\Contract\SchemaProfileRejected;
+use Kumwe\App\Studio\Domain\Contract\SchemaPropertyProfile;
 use stdClass;
 
 /**

@@ -19,8 +19,8 @@ use Kumwe\App\Extension\Contribution\Manifest5CompositionAdapter;
 use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Contribution\OwnedExtensionContributionRegistrar;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
-use Kumwe\App\Extension\Domain\Internal\StudioProfile\CanonicalJson;
-use Kumwe\App\Extension\Domain\Internal\StudioProfile\SchemaPropertyProfile;
+use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
+use Kumwe\App\Studio\Domain\Contract\SchemaPropertyProfile;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -126,6 +126,12 @@ final class CanonicalCompositionTest extends TestCase
                 $contributions['composition']['host_bindings'][0]['id'] = 'other.vendor/grid';
 
                 return $contributions;
+            },
+            'spoofed embedded owner' => static function (array $contributions) use ($document): array {
+                $spoofed = clone $document;
+                $spoofed->owner = (object) ['id' => 'studio.core/blocks', 'version' => '1.0.0'];
+
+                return self::withDocument($contributions, CanonicalJson::stringify($spoofed));
             },
             'block without a renderer binding' => static function (array $contributions): array {
                 $contributions['composition']['host_bindings'] = [];
@@ -386,7 +392,15 @@ final class CanonicalCompositionTest extends TestCase
         $owner = ContributionOwner::extension('acme/shop');
         $document = new CanonicalCompositionDocument(
             CanonicalCompositionKind::Inspector,
-            '{"id":"acme.shop/price"}',
+            '{"id":"acme.shop/price","owner":{"id":"acme.shop/inspectors","version":"1.0.0"}}',
+        );
+        $missingOwner = new CanonicalCompositionDocument(
+            CanonicalCompositionKind::Inspector,
+            '{"id":"acme.shop/missing-owner"}',
+        );
+        $scalarOwner = new CanonicalCompositionDocument(
+            CanonicalCompositionKind::Inspector,
+            '{"id":"acme.shop/scalar-owner","owner":"acme.shop/inspectors"}',
         );
 
         $refusals = [
@@ -441,6 +455,22 @@ final class CanonicalCompositionTest extends TestCase
                     canonicalDocuments: [$document, $document],
                 ),
                 'declared more than once',
+            ],
+            'missing embedded owner' => [
+                static fn (): ManifestContributionSet => new ManifestContributionSet(
+                    $owner,
+                    spiVersion: ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION,
+                    canonicalDocuments: [$missingOwner],
+                ),
+                'document owner (missing) must belong to signed contribution owner',
+            ],
+            'scalar embedded owner' => [
+                static fn (): ManifestContributionSet => new ManifestContributionSet(
+                    $owner,
+                    spiVersion: ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION,
+                    canonicalDocuments: [$scalarOwner],
+                ),
+                'document owner (missing) must belong to signed contribution owner',
             ],
         ];
         foreach ($refusals as $label => [$construct, $message]) {
@@ -519,6 +549,14 @@ final class CanonicalCompositionTest extends TestCase
             $declarations->canonicalCompositionDocuments()[0]->canonical,
             $documents[0]['canonical'],
         );
+        $bindings = $inventory['composition']['host_bindings'] ?? null;
+        self::assertIsArray($bindings);
+        self::assertSame([$declarations->compositionHostBindings()[0]->toArray()], $bindings);
+
+        $registries->remove($declarations->owner);
+
+        self::assertSame([], $registries->compositionHostBindings()->ownedBy($declarations->owner));
+        self::assertSame([], $registries->inventory($declarations->owner)['composition']['host_bindings']);
     }
 
     /**
@@ -540,6 +578,7 @@ final class CanonicalCompositionTest extends TestCase
         );
         self::assertInstanceOf(stdClass::class, $document);
         $document->type = 'acme.shop/grid';
+        $document->owner = (object) ['id' => 'acme.shop/blocks', 'version' => '1.0.0'];
 
         return $document;
     }

@@ -6,12 +6,11 @@ namespace Kumwe\App\Http\Handler;
 
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\App\Localization\Application\ActiveLocale;
-use Kumwe\App\Presentation\Application\SitePresentation;
+use Kumwe\App\Presentation\ContentPageRenderService;
 use Kumwe\App\Presentation\ContentLayoutCatalog;
 use Kumwe\App\Presentation\ContentPresenter;
-use Kumwe\App\Presentation\SiteRenderer;
 use Kumwe\App\Site\Application\PublicPageLocator;
-use Kumwe\App\Site\Application\SiteSettings;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -38,29 +37,28 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
     /**
      * Bind the public content route to the locator, settings, and rendering collaborators it composes.
      *
-     * @param  PublicPageLocator          $pages      Resolver that maps a request path to a published record and
+     * @param  PublicPageLocator                $pages      Resolver that maps a request path to a published record and
      *         reports that record's canonical path.
-     * @param  SiteSettings               $settings   Source of the site name, presentation contract, and the
-     *         search-indexing switch.
-     * @param  SiteRenderer               $renderer   Site template renderer that produces the HTML body.
-     * @param  ContentPresenter           $presenter  Presenter that escapes and renders the record's stored
+     * @param  ContentPageRenderService         $renderer   Canonical site template/theme path shared with preview.
+     * @param  ContentPresenter                 $presenter  Presenter that escapes and renders the record's stored
      *         bodies before they reach a template.
-     * @param  ContentLayoutCatalog       $layouts    Content-type to site-template layout selection.
-     * @param  TranslationGroupPresenter  $languages  Builder of the page's alternate-language links and
+     * @param  ContentLayoutCatalog             $layouts    Content-type to site-template layout selection.
+     * @param  TranslationGroupPresenter        $languages  Builder of the page's alternate-language links and
      *         the language selector, from the translation group the rendered entry belongs to.
-     * @param  ActiveLocale               $active     Request locale holder aligned to a locale-bearing record
+     * @param  ActiveLocale                     $active     Request locale holder aligned to a locale-bearing record
      *         before its template and translated chrome are rendered.
+     * @param  ?StudioPublishedContentRenderer  $studio     Optional exact published Blueprint rendering boundary.
      *
      * @since  2.0.0
      */
     public function __construct(
         private PublicPageLocator $pages,
-        private SiteSettings $settings,
-        private SiteRenderer $renderer,
+        private ContentPageRenderService $renderer,
         private ContentPresenter $presenter,
         private ContentLayoutCatalog $layouts,
         private TranslationGroupPresenter $languages,
         private ActiveLocale $active,
+        private ?StudioPublishedContentRenderer $studio = null,
     ) {
     }
 
@@ -109,28 +107,34 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
             );
         }
 
-        $settings = $this->settings->current();
         $headers = ['Cache-Control' => 'public, max-age=60, stale-while-revalidate=300'];
-        if ($settings['search_indexing_enabled'] !== true) {
+        if (!$this->renderer->searchIndexingEnabled()) {
             $headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive';
         }
         $binding = $this->pages->presentationBindingFor($record);
-        $presentation = SitePresentation::from(
-            $settings['presentation'] ?? SitePresentation::defaults(),
-        )->withSchemeOverride($binding['color_scheme'])->toView();
+        $studioBody = $this->studio?->render($record);
+        $template = $studioBody === null
+            ? $this->layouts->templateFor($record, $binding['template'])
+            : 'page';
+        $entry = $studioBody === null
+            ? $this->presenter->present($record)
+            : [
+                'title' => $record->entry->title(),
+                'data' => [],
+                'body_html' => $studioBody,
+            ];
 
         return new HtmlResponse(
-            $this->renderer->render($this->layouts->templateFor($record, $binding['template']), [
-                'site_name' => $settings['site_name'],
-                'entry' => $this->presenter->present($record),
-                'navigation' => $this->pages->navigation(),
-                'current_path' => $canonicalPath,
-                'canonical_url' => $canonicalPath,
-                'site_logo' => $presentation['logo'],
-                'presentation' => $presentation,
-                'surface_id' => 'core.public.page',
-                'languages' => $this->languages->alternates($record, $canonicalPath),
-            ]),
+            $this->renderer->render(
+                $template,
+                $entry,
+                $canonicalPath,
+                $canonicalPath,
+                $binding['color_scheme'],
+                'core.public.page',
+                $this->pages->navigation(),
+                $this->languages->alternates($record, $canonicalPath),
+            ),
             200,
             $headers,
         );

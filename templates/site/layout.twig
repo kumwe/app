@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="{{ presentation.color_mode|default('light') }}">
-  <meta name="theme-color" content="{{ presentation.css_variables['--site-navy-950']|default('#07182d') }}">
+  <meta name="theme-color" content="{{ presentation.theme_color|default(presentation.css_variables['--site-navy-950']|default('#07182d')) }}">
   <title>{% block title %}{{ site_name }}{% endblock %}</title>
   {% if canonical_url %}<link rel="canonical" href="{{ canonical_url }}">{% endif %}
   {% set language_alternates = languages is defined ? languages.alternates|default([]) : [] %}
@@ -19,7 +19,9 @@
   data-button-style="{{ presentation.button_style|default('solid') }}"
   data-button-shape="{{ presentation.button_shape|default('rounded') }}"
   data-header-style="{{ presentation.header_style|default('glass') }}"
-  style="{% for property, value in presentation.css_variables|default({}) %}{{ property }}:{{ value }};{% endfor %}"
+  {% if presentation.css_variables|default({}) is not empty %}
+    style="{% for property, value in presentation.css_variables %}{{ property }}:{{ value }};{% endfor %}"
+  {% endif %}
 >
   {% import '_navigation.twig' as navigation_tree %}
   <a class="sr-only" href="#site-content">{{ t('core.site.layout.skip_to_content') }}</a>

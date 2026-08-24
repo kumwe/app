@@ -85,6 +85,12 @@ use Kumwe\App\Administrator\Http\Handler\AdministratorMediaHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorNavigationHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorRestoreContentHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorSettingsHandler;
+use Kumwe\App\Administrator\Http\Handler\AdministratorStudioHostHandler;
+use Kumwe\App\Administrator\Http\Handler\AdministratorStudioPreviewDocumentHandler;
+use Kumwe\App\Administrator\Http\Handler\AdministratorStudioPreviewThemeStylesheetHandler;
+use Kumwe\App\Administrator\Http\Handler\AdministratorStudioMediaUploadHandler;
+use Kumwe\App\Administrator\Http\Handler\AdministratorStudioCompositionHandler;
+use Kumwe\App\Administrator\Http\Handler\AdministratorStudioSessionHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorTransitionContentHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorTrashContentHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorWordingHandler;
@@ -314,6 +320,78 @@ use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentModelRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
+use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
+use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
+use Kumwe\App\Studio\Application\Projection\RecordAuthorizedStudioContentFieldDisclosure;
+use Kumwe\App\Studio\Application\Projection\StudioContentFieldDisclosure;
+use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
+use Kumwe\App\Studio\Application\Composition\ContentBlueprintBindingStore;
+use Kumwe\App\Studio\Application\Composition\CanonicalStudioPublishedContentRenderer;
+use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
+use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
+use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedCompositionGuard;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
+use Kumwe\App\Studio\Application\Host\StudioHostDispatcher;
+use Kumwe\App\Studio\Application\Host\StudioHostRequestDecoder;
+use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
+use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
+use Kumwe\App\Studio\Application\Host\StudioLocalizationHostPort;
+use Kumwe\App\Studio\Application\Host\StudioModelHostPort;
+use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
+use Kumwe\App\Studio\Application\Host\StudioArtifactHostPort;
+use Kumwe\App\Studio\Application\Host\StudioArtifactPublicationGuard;
+use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
+use Kumwe\App\Studio\Application\Host\StudioIdempotencyRepository;
+use Kumwe\App\Studio\Application\Host\StudioMutationExecutor;
+use Kumwe\App\Studio\Application\Host\StudioRecoveryHostPort;
+use Kumwe\App\Studio\Application\Host\StudioRecoveryRepository;
+use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
+use Kumwe\App\Studio\Presentation\Preview\CanonicalStudioPreviewRenderer;
+use Kumwe\App\Studio\Application\Preview\ContentStudioPreviewBindingSource;
+use Kumwe\App\Studio\Application\Preview\CoreStudioPreviewBlockRendererRegistry;
+use Kumwe\App\Studio\Application\Preview\StudioCompositionMarkupRenderer;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewActivityRecorder;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingResolver;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingSource;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRendererRegistry;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewDraftSource;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewGrantRepository;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewHostPort;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewRenderer;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewSequenceRepository;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewTransportGuard;
+use Kumwe\App\Studio\Application\Media\StudioExternalAddressResolver;
+use Kumwe\App\Studio\Application\Media\StudioExternalMediaFetcher;
+use Kumwe\App\Studio\Application\Media\StudioMediaAssetProjector;
+use Kumwe\App\Studio\Application\Media\StudioMediaCursorCodec;
+use Kumwe\App\Studio\Application\Media\StudioMediaGrantToken;
+use Kumwe\App\Studio\Application\Media\StudioMediaHostPort;
+use Kumwe\App\Studio\Application\Media\StudioMediaMutationIdempotency;
+use Kumwe\App\Studio\Application\Media\StudioMediaOperations;
+use Kumwe\App\Studio\Application\Media\StudioMediaService;
+use Kumwe\App\Studio\Application\Media\StudioMediaSignatureVerifier;
+use Kumwe\App\Studio\Application\Media\StudioMediaStagingStorage;
+use Kumwe\App\Studio\Application\Media\StudioMediaUploadRepository;
+use Kumwe\App\Studio\Application\Media\StudioPinnedHttpTransport;
+use Kumwe\App\Studio\Application\Host\StudioTelemetryHostPort;
+use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\App\Studio\Domain\Media\StudioExternalUrlPolicy;
+use Kumwe\App\Studio\Domain\Media\StudioMediaUploadPolicy;
+use Kumwe\App\Studio\Infrastructure\Host\RandomStudioResourceContextKeyFactory;
+use Kumwe\App\Studio\Infrastructure\Observability\StructuredLogStudioPreviewActivityRecorder;
+use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentProjectionBindingRepository;
+use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioHostStorage;
+use Kumwe\App\Studio\Infrastructure\Media\FilesystemStudioMediaStagingStorage;
+use Kumwe\App\Studio\Infrastructure\Media\FinfoStudioMediaSignatureVerifier;
+use Kumwe\App\Studio\Infrastructure\Media\NativeStudioExternalAddressResolver;
+use Kumwe\App\Studio\Infrastructure\Media\SocketStudioPinnedHttpTransport;
+use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioMediaUploadRepository;
+use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioHostSessionRepository;
+use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioPreviewDraftSource;
+use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioPreviewRepository;
+use Kumwe\App\Studio\Infrastructure\Transport\NativeStudioPreviewSequenceWaiter;
 use Kumwe\App\Demo\Application\DemoProfileLedger;
 use Kumwe\App\Demo\Application\DemoProfileReconciler;
 use Kumwe\App\Demo\Application\VdmBusinessManifestProjector;
@@ -366,6 +444,7 @@ use Kumwe\App\Extension\Development\ProtectedSigningKeyReader;
 use Kumwe\App\Extension\Development\StaticConformanceRunner;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\CurrentExtensionExecutionGate;
+use Kumwe\App\Extension\Runtime\ContributedStudioPreviewBlockRendererRegistry;
 use Kumwe\App\Extension\Runtime\DeferredExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\AdministratorViewRegistry;
@@ -575,6 +654,11 @@ use Kumwe\App\Infrastructure\Persistence\Migration\NonTransactionalMigrationReco
 use Kumwe\App\Infrastructure\Persistence\Migration\NumberSequenceIdentityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\ResourceOwnershipPortabilityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentProjectionMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioArtifactRecoveryMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioHostSessionMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioPreviewGrantMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioMediaUploadMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\App\Infrastructure\Persistence\ReadinessProbe;
 use Kumwe\App\Infrastructure\Security\DoctrineHighImpactCredentialGuard;
@@ -636,6 +720,7 @@ use Kumwe\App\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
 use Kumwe\App\Presentation\Infrastructure\TwigThemePackageValidator;
 use Kumwe\App\Infrastructure\Presentation\Persistence\DoctrinePresentationPreferenceRepository;
 use Kumwe\App\Presentation\Asset\ViteAssetManifest;
+use Kumwe\App\Presentation\ContentPageRenderService;
 use Kumwe\App\Presentation\ContentLayoutCatalog;
 use Kumwe\App\Presentation\ContentPresenter;
 use Kumwe\App\Presentation\SiteRenderer;
@@ -1555,6 +1640,256 @@ final class ContainerFactory
                 self::service($container, TranslationGroupRepository::class),
                 self::service($container, ExtensionContributionRegistrySet::class)->contentTranslationGroups(),
             ), true);
+        $container->share(
+            ContentProjectionBindingRepository::class,
+            static fn (Container $container): ContentProjectionBindingRepository =>
+                new DoctrineContentProjectionBindingRepository(
+                    self::service($container, Connection::class),
+                    self::service($container, TableNames::class),
+                ),
+            true,
+        );
+        $container->alias(ContentBlueprintBindingStore::class, ContentProjectionBindingRepository::class);
+        $container->share(
+            StudioContentFieldDisclosure::class,
+            new RecordAuthorizedStudioContentFieldDisclosure(),
+            true,
+        );
+        $container->share(
+            StudioContractSchemas::class,
+            static fn (): StudioContractSchemas => StudioContractSchemas::fromVendoredCorpus(),
+            true,
+        );
+        $container->share(ContentStudioProjector::class, static fn (
+            Container $container,
+        ): ContentStudioProjector => new ContentStudioProjector(
+            self::service($container, StudioContractSchemas::class),
+            self::service($container, StudioContentFieldDisclosure::class),
+            self::service($container, JsonSchemaValidator::class),
+        ), true);
+        $container->share(StudioContentProjectionService::class, static fn (
+            Container $container,
+        ): StudioContentProjectionService => new StudioContentProjectionService(
+            self::service($container, ContentModelService::class),
+            self::service($container, ContentService::class),
+            self::service($container, ContentProjectionBindingRepository::class),
+            self::service($container, ContentStudioProjector::class),
+        ), true);
+        $container->share(StudioContentCompositionService::class, static fn (
+            Container $container,
+        ): StudioContentCompositionService => new StudioContentCompositionService(
+            self::service($container, StudioContentProjectionService::class),
+            self::service($container, ContentProjectionBindingRepository::class),
+            self::service($container, ContentBlueprintBindingStore::class),
+            self::service($container, StudioArtifactAdmission::class),
+            self::service($container, StudioArtifactRepository::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, StudioCompositionContributionCatalog::class),
+            self::service($container, StudioPublishedTheme::class),
+        ), true);
+        $container->share(StudioPublishedTheme::class, static fn (
+            Container $container,
+        ): StudioPublishedTheme => new StudioPublishedTheme(
+            self::service($container, SiteSettings::class),
+            self::service($container, ActiveExtensionSet::class),
+            self::service($container, StudioBuiltInThemeRelease::class),
+        ), true);
+        $container->share(StudioBuiltInThemeRelease::class, static fn (): StudioBuiltInThemeRelease =>
+            StudioBuiltInThemeRelease::fromDeployment(
+                $root,
+                $configuration->release,
+                new RuntimeArtifactDigester(),
+            ), true);
+        $container->share(StudioCompositionContributionCatalog::class, static fn (
+            Container $container,
+        ): StudioCompositionContributionCatalog => new StudioCompositionContributionCatalog(
+            self::service($container, ExtensionContributionRegistrySet::class),
+            self::service($container, StudioPreviewBlockRendererRegistry::class),
+        ), true);
+        $container->share(
+            StudioHostSessionRepository::class,
+            static fn (Container $container): StudioHostSessionRepository =>
+                new DoctrineStudioHostSessionRepository(
+                    self::service($container, Connection::class),
+                    self::service($container, TableNames::class),
+                ),
+            true,
+        );
+        $container->share(
+            StudioResourceContextKeyFactory::class,
+            new RandomStudioResourceContextKeyFactory(),
+            true,
+        );
+        $container->share(StudioHostSessionAuthority::class, static fn (
+            Container $container,
+        ): StudioHostSessionAuthority => new StudioHostSessionAuthority(
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, StudioHostSessionRepository::class),
+            self::service($container, StudioResourceContextKeyFactory::class),
+            self::service($container, StudioPublishedTheme::class),
+        ), true);
+        $container->share(StudioHostRequestDecoder::class, static fn (
+            Container $container,
+        ): StudioHostRequestDecoder => new StudioHostRequestDecoder(
+            self::service($container, StudioContractSchemas::class),
+        ), true);
+        $container->share(DoctrineStudioHostStorage::class, static fn (
+            Container $container,
+        ): DoctrineStudioHostStorage => new DoctrineStudioHostStorage(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->alias(StudioArtifactRepository::class, DoctrineStudioHostStorage::class);
+        $container->alias(StudioIdempotencyRepository::class, DoctrineStudioHostStorage::class);
+        $container->alias(StudioRecoveryRepository::class, DoctrineStudioHostStorage::class);
+        $container->share(StudioArtifactAdmission::class, static fn (
+            Container $container,
+        ): StudioArtifactAdmission => new StudioArtifactAdmission(
+            self::service($container, StudioContractSchemas::class),
+        ), true);
+        $container->share(StudioMutationExecutor::class, static fn (
+            Container $container,
+        ): StudioMutationExecutor => new StudioMutationExecutor(
+            self::service($container, TransactionManager::class),
+            self::service($container, StudioIdempotencyRepository::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(StudioArtifactHostPort::class, static fn (
+            Container $container,
+        ): StudioArtifactHostPort => new StudioArtifactHostPort(
+            self::service($container, StudioArtifactRepository::class),
+            self::service($container, StudioArtifactAdmission::class),
+            self::service($container, StudioMutationExecutor::class),
+            self::service($container, StudioArtifactPublicationGuard::class),
+        ), true);
+        $container->share(StudioRecoveryHostPort::class, static fn (
+            Container $container,
+        ): StudioRecoveryHostPort => new StudioRecoveryHostPort(
+            self::service($container, StudioRecoveryRepository::class),
+            self::service($container, StudioMutationExecutor::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(DoctrineStudioPreviewRepository::class, static fn (
+            Container $container,
+        ): DoctrineStudioPreviewRepository => new DoctrineStudioPreviewRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->alias(StudioPreviewGrantRepository::class, DoctrineStudioPreviewRepository::class);
+        $container->alias(StudioPreviewSequenceRepository::class, DoctrineStudioPreviewRepository::class);
+        $container->share(StudioPreviewDraftSource::class, static fn (
+            Container $container,
+        ): StudioPreviewDraftSource => new DoctrineStudioPreviewDraftSource(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, StudioContractSchemas::class),
+        ), true);
+        $container->share(StudioPreviewBindingSource::class, static fn (
+            Container $container,
+        ): StudioPreviewBindingSource => new ContentStudioPreviewBindingSource(
+            self::service($container, StudioContentProjectionService::class),
+        ), true);
+        $container->share(StudioPreviewBindingResolver::class, new StudioPreviewBindingResolver(), true);
+        $container->share(
+            StudioPreviewBlockRendererRegistry::class,
+            static fn (Container $container): StudioPreviewBlockRendererRegistry =>
+                new ContributedStudioPreviewBlockRendererRegistry(
+                    new CoreStudioPreviewBlockRendererRegistry(),
+                    self::service($container, ExtensionContributionRegistrySet::class)->studioPreviewRenderers(),
+                ),
+            true,
+        );
+        $container->share(StudioCompositionMarkupRenderer::class, static fn (
+            Container $container,
+        ): StudioCompositionMarkupRenderer => new StudioCompositionMarkupRenderer(
+            self::service($container, StudioPreviewBindingResolver::class),
+            self::service($container, StudioPreviewBlockRendererRegistry::class),
+        ), true);
+        $container->share(StudioPublishedCompositionGuard::class, static fn (
+            Container $container,
+        ): StudioPublishedCompositionGuard => new StudioPublishedCompositionGuard(
+            self::service($container, StudioArtifactAdmission::class),
+            self::service($container, ContentModelRepository::class),
+            self::service($container, StudioPublishedTheme::class),
+            self::service($container, StudioPreviewBlockRendererRegistry::class),
+            self::service($container, ExtensionContributionRegistrySet::class),
+        ), true);
+        $container->alias(StudioArtifactPublicationGuard::class, StudioPublishedCompositionGuard::class);
+        $container->share(CanonicalStudioPublishedContentRenderer::class, static fn (
+            Container $container,
+        ): CanonicalStudioPublishedContentRenderer => new CanonicalStudioPublishedContentRenderer(
+            self::service($container, ContentProjectionBindingRepository::class),
+            self::service($container, StudioArtifactRepository::class),
+            self::service($container, StudioPublishedCompositionGuard::class),
+            self::service($container, ContentStudioProjector::class),
+            self::service($container, StudioCompositionMarkupRenderer::class),
+        ), true);
+        $container->alias(StudioPublishedContentRenderer::class, CanonicalStudioPublishedContentRenderer::class);
+        $container->share(StudioPreviewActivityRecorder::class, static fn (
+            Container $container,
+        ): StudioPreviewActivityRecorder => new StructuredLogStudioPreviewActivityRecorder(
+            self::service($container, LoggerInterface::class),
+        ), true);
+        $container->share(StudioPreviewRenderer::class, static fn (
+            Container $container,
+        ): StudioPreviewRenderer => new CanonicalStudioPreviewRenderer(
+            self::service($container, ContentPageRenderService::class),
+            self::service($container, StudioCompositionMarkupRenderer::class),
+            self::service($container, StudioPublishedTheme::class),
+            $configuration->publicSite,
+        ), true);
+        $container->share(StudioPreviewTransportGuard::class, static fn (
+            Container $container,
+        ): StudioPreviewTransportGuard => new StudioPreviewTransportGuard(
+            $configuration->baseUrl,
+            self::service($container, StudioPreviewSequenceRepository::class),
+            new NativeStudioPreviewSequenceWaiter(),
+        ), true);
+        $container->share(StudioPreviewHostPort::class, static fn (
+            Container $container,
+        ): StudioPreviewHostPort => new StudioPreviewHostPort(
+            self::service($container, StudioPreviewDraftSource::class),
+            self::service($container, StudioPreviewBindingSource::class),
+            self::service($container, StudioPreviewRenderer::class),
+            self::service($container, StudioPreviewGrantRepository::class),
+            self::service($container, StudioPreviewTransportGuard::class),
+            self::service($container, StudioPreviewActivityRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(StudioModelHostPort::class, static fn (
+            Container $container,
+        ): StudioModelHostPort => new StudioModelHostPort(
+            self::service($container, StudioContentProjectionService::class),
+        ), true);
+        $container->share(StudioLocalizationHostPort::class, static fn (
+            Container $container,
+        ): StudioLocalizationHostPort => new StudioLocalizationHostPort(
+            self::service($container, MessageCatalogueRepository::class),
+            self::service($container, MessageOverrideRepository::class),
+            self::service($container, ActiveLocale::class),
+            self::service($container, SupportedLocales::class),
+        ), true);
+        $container->share(StudioTelemetryHostPort::class, static fn (
+            Container $container,
+        ): StudioTelemetryHostPort => new StudioTelemetryHostPort(
+            self::service($container, LoggerInterface::class),
+        ), true);
+        $container->share(StudioHostDispatcher::class, static fn (
+            Container $container,
+        ): StudioHostDispatcher => new StudioHostDispatcher(
+            self::service($container, StudioHostRequestDecoder::class),
+            self::service($container, StudioHostSessionAuthority::class),
+            self::service($container, StudioArtifactHostPort::class),
+            self::service($container, StudioRecoveryHostPort::class),
+            self::service($container, StudioPreviewHostPort::class),
+            self::service($container, StudioMediaHostPort::class),
+            self::service($container, StudioModelHostPort::class),
+            self::service($container, StudioLocalizationHostPort::class),
+            self::service($container, StudioTelemetryHostPort::class),
+        ), true);
         $container->share(MediaStorage::class, new FilesystemMediaStorage(
             $root . '/storage/media',
             $root . '/resources/media',
@@ -1565,6 +1900,101 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
             $configuration->maxBodyBytes,
+            self::service($container, TransactionManager::class),
+        ), true);
+        $container->share(
+            StudioMediaUploadRepository::class,
+            static fn (Container $container): StudioMediaUploadRepository =>
+                new DoctrineStudioMediaUploadRepository(
+                    self::service($container, Connection::class),
+                    self::service($container, TableNames::class),
+                ),
+            true,
+        );
+        $container->share(
+            StudioMediaStagingStorage::class,
+            new FilesystemStudioMediaStagingStorage($root . '/storage/studio-media/uploads'),
+            true,
+        );
+        $container->share(
+            StudioExternalAddressResolver::class,
+            new NativeStudioExternalAddressResolver(),
+            true,
+        );
+        $container->share(
+            StudioPinnedHttpTransport::class,
+            new SocketStudioPinnedHttpTransport($root . '/storage/studio-media/external'),
+            true,
+        );
+        $container->share(
+            StudioMediaSignatureVerifier::class,
+            new FinfoStudioMediaSignatureVerifier(),
+            true,
+        );
+        $container->share(StudioExternalUrlPolicy::class, new StudioExternalUrlPolicy(), true);
+        $container->share(StudioMediaUploadPolicy::class, new StudioMediaUploadPolicy(
+            ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'application/pdf'],
+            $configuration->maxBodyBytes,
+            false,
+        ), true);
+        $container->share(StudioExternalMediaFetcher::class, static fn (
+            Container $container,
+        ): StudioExternalMediaFetcher => new StudioExternalMediaFetcher(
+            self::service($container, StudioExternalUrlPolicy::class),
+            self::service($container, StudioExternalAddressResolver::class),
+            self::service($container, StudioPinnedHttpTransport::class),
+            self::service($container, StudioMediaSignatureVerifier::class),
+            ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'application/pdf'],
+            $configuration->maxBodyBytes,
+        ), true);
+        $container->share(StudioMediaAssetProjector::class, new StudioMediaAssetProjector(), true);
+        $container->share(StudioMediaCursorCodec::class, new StudioMediaCursorCodec(hash_hkdf(
+            'sha256',
+            $configuration->secret,
+            32,
+            'kumwe-studio-media-cursor-v1',
+        )), true);
+        $container->share(StudioMediaGrantToken::class, new StudioMediaGrantToken(hash_hkdf(
+            'sha256',
+            $configuration->secret,
+            32,
+            'kumwe-studio-media-upload-grant-v1',
+        )), true);
+        $container->share(StudioMediaMutationIdempotency::class, static fn (
+            Container $container,
+        ): StudioMediaMutationIdempotency => new StudioMediaMutationIdempotency(
+            self::service($container, IdempotencyLedger::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(StudioMediaService::class, static fn (
+            Container $container,
+        ): StudioMediaService => new StudioMediaService(
+            self::service($container, MediaService::class),
+            self::service($container, StudioMediaUploadRepository::class),
+            self::service($container, StudioMediaStagingStorage::class),
+            self::service($container, StudioMediaUploadPolicy::class),
+            self::service($container, StudioMediaSignatureVerifier::class),
+            self::service($container, StudioExternalMediaFetcher::class),
+            self::service($container, StudioMediaAssetProjector::class),
+            self::service($container, StudioMediaCursorCodec::class),
+            self::service($container, StudioMediaGrantToken::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+            $configuration->baseUrl,
+        ), true);
+        $container->share(
+            StudioMediaOperations::class,
+            static fn (Container $container): StudioMediaOperations =>
+                self::service($container, StudioMediaService::class),
+            true,
+        );
+        $container->share(StudioMediaHostPort::class, static fn (
+            Container $container,
+        ): StudioMediaHostPort => new StudioMediaHostPort(
+            self::service($container, StudioMediaOperations::class),
+            self::service($container, StudioMediaMutationIdempotency::class),
         ), true);
         $container->share(NavigationRepository::class, static fn (Container $container): NavigationRepository =>
             new DoctrineNavigationRepository(
@@ -1742,7 +2172,12 @@ final class ContainerFactory
                     new ConstraintNameIsolationPortabilityMigration(self::service($container, TableNames::class)),
                     new PeriodPostingLockMigration(self::service($container, TableNames::class)),
                     new NumberSequenceIdentityMigration(self::service($container, TableNames::class)),
+                    new StudioContentProjectionMigration(self::service($container, TableNames::class)),
                     new IndexNameIsolationMigration(self::service($container, TableNames::class)),
+                    new StudioHostSessionMigration(self::service($container, TableNames::class)),
+                    new StudioArtifactRecoveryMigration(self::service($container, TableNames::class)),
+                    new StudioPreviewGrantMigration(self::service($container, TableNames::class)),
+                    new StudioMediaUploadMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -1952,6 +2387,12 @@ final class ContainerFactory
                 self::service($container, ViteAssetManifest::class),
                 $configuration->baseUrl,
             ), true);
+        $container->share(ContentPageRenderService::class, static fn (
+            Container $container,
+        ): ContentPageRenderService => new ContentPageRenderService(
+            self::service($container, SiteSettings::class),
+            self::service($container, SiteRenderer::class),
+        ), true);
         $container->share(RecoveryAdministratorRenderer::class, static fn (
             Container $container,
         ): RecoveryAdministratorRenderer => new RecoveryAdministratorRenderer(
@@ -3360,12 +3801,12 @@ final class ContainerFactory
         $container->share(HomePageHandler::class, static fn (Container $container): HomePageHandler =>
             new HomePageHandler(
                 self::service($container, PublicPageLocator::class),
-                self::service($container, SiteSettings::class),
-                self::service($container, SiteRenderer::class),
+                self::service($container, ContentPageRenderService::class),
                 self::service($container, ContentPresenter::class),
                 self::service($container, ContentLayoutCatalog::class),
                 self::service($container, TranslationGroupPresenter::class),
                 self::service($container, ActiveLocale::class),
+                self::service($container, StudioPublishedContentRenderer::class),
             ), true);
         $container->share(LivenessHandler::class, new LivenessHandler(), true);
         $container->share(MetricsHandler::class, static fn (Container $container): MetricsHandler =>
@@ -3427,12 +3868,12 @@ final class ContainerFactory
             Container $container,
         ): PublishedContentHandler => new PublishedContentHandler(
             self::service($container, PublicPageLocator::class),
-            self::service($container, SiteSettings::class),
-            self::service($container, SiteRenderer::class),
+            self::service($container, ContentPageRenderService::class),
             self::service($container, ContentPresenter::class),
             self::service($container, ContentLayoutCatalog::class),
             self::service($container, TranslationGroupPresenter::class),
             self::service($container, ActiveLocale::class),
+            self::service($container, StudioPublishedContentRenderer::class),
         ), true);
         $container->share(ExtensionAssetHandler::class, static fn (
             Container $container,
@@ -3554,6 +3995,44 @@ final class ContainerFactory
             self::service($container, DashboardPreferenceFormDecoder::class),
             self::service($container, DashboardPreferenceQueryDecoder::class),
             self::service($container, AdministratorRenderer::class),
+        ), true);
+        $container->share(AdministratorStudioSessionHandler::class, static fn (
+            Container $container,
+        ): AdministratorStudioSessionHandler => new AdministratorStudioSessionHandler(
+            self::service($container, StudioHostSessionAuthority::class),
+            self::service($container, StudioPreviewTransportGuard::class),
+        ), true);
+        $container->share(AdministratorStudioHostHandler::class, static fn (
+            Container $container,
+        ): AdministratorStudioHostHandler => new AdministratorStudioHostHandler(
+            self::service($container, StudioHostDispatcher::class),
+        ), true);
+        $container->share(AdministratorStudioPreviewDocumentHandler::class, static fn (
+            Container $container,
+        ): AdministratorStudioPreviewDocumentHandler => new AdministratorStudioPreviewDocumentHandler(
+            self::service($container, StudioHostSessionAuthority::class),
+            self::service($container, StudioPreviewHostPort::class),
+        ), true);
+        $container->share(AdministratorStudioPreviewThemeStylesheetHandler::class, static fn (
+            Container $container,
+        ): AdministratorStudioPreviewThemeStylesheetHandler => new AdministratorStudioPreviewThemeStylesheetHandler(
+            self::service($container, StudioHostSessionAuthority::class),
+            self::service($container, StudioPreviewHostPort::class),
+        ), true);
+        $container->share(AdministratorStudioMediaUploadHandler::class, static fn (
+            Container $container,
+        ): AdministratorStudioMediaUploadHandler => new AdministratorStudioMediaUploadHandler(
+            self::service($container, StudioMediaOperations::class),
+            self::service($container, StudioHostSessionAuthority::class),
+        ), true);
+        $container->share(AdministratorStudioCompositionHandler::class, static fn (
+            Container $container,
+        ): AdministratorStudioCompositionHandler => new AdministratorStudioCompositionHandler(
+            self::service($container, StudioContentCompositionService::class),
+            self::service($container, AdministratorRenderer::class),
+            self::service($container, ActiveLocale::class),
+            self::service($container, SiteSettings::class),
+            self::service($container, StudioCompositionContributionCatalog::class),
         ), true);
         $container->share(AdministratorInterfaceStandardHandler::class, static fn (
             Container $container,
@@ -4204,6 +4683,37 @@ final class ContainerFactory
             [AdministratorCsrfMiddleware::class, AdministratorDashboardPreferencesHandler::class],
             'administrator.dashboard.preferences',
         ), 'administrator.access');
+        self::administratorRoute($application->post(
+            '/administrator/studio/session',
+            [AdministratorCsrfMiddleware::class, AdministratorStudioSessionHandler::class],
+            'administrator.studio.session',
+        ), 'administrator.access');
+        self::administratorRoute($application->post(
+            '/administrator/studio/ports/{port}/{operation}',
+            [AdministratorCsrfMiddleware::class, AdministratorStudioHostHandler::class],
+            'administrator.studio.host',
+        ), 'administrator.access');
+        self::administratorRoute($application->put(
+            '/administrator/studio/media/uploads/{upload}',
+            AdministratorStudioMediaUploadHandler::class,
+            'administrator.studio.media.upload',
+        ), 'administrator.access');
+        self::administratorRoute(
+            $application->get(
+                '/administrator/studio/preview',
+                AdministratorStudioPreviewDocumentHandler::class,
+                'administrator.studio.preview.document',
+            ),
+            'administrator.access',
+        );
+        self::administratorRoute(
+            $application->get(
+                '/administrator/studio/preview/theme.css',
+                AdministratorStudioPreviewThemeStylesheetHandler::class,
+                'administrator.studio.preview.theme',
+            ),
+            'administrator.access',
+        );
         self::administratorRoute(
             $application->get(
                 '/administrator/interface-standard',
@@ -4387,6 +4897,16 @@ final class ContainerFactory
             [AdministratorCsrfMiddleware::class, AdministratorContentModelsHandler::class],
             'administrator.content-models.update',
         ), 'content.update');
+        self::administratorRoute($application->get(
+            '/administrator/content-models/{id}/versions/{version}/composition',
+            AdministratorStudioCompositionHandler::class,
+            'administrator.content-models.composition',
+        ), 'content.read', 'studio.mode.blueprint');
+        self::administratorRoute($application->post(
+            '/administrator/content-models/{id}/versions/{version}/composition',
+            [AdministratorCsrfMiddleware::class, AdministratorStudioCompositionHandler::class],
+            'administrator.content-models.composition.provision',
+        ), 'content.read', 'studio.mode.blueprint');
         self::administratorRoute($application->get(
             '/administrator/business-definitions',
             BusinessDefinitionsHandler::class,

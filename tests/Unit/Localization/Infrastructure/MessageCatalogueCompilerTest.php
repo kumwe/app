@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Localization\Infrastructure;
 
 use Kumwe\App\Localization\Application\MessageFormattingFailed;
+use Kumwe\App\Localization\Application\MessagePatternValidator;
 use Kumwe\App\Localization\Domain\LocaleTag;
 use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
 use Kumwe\App\Localization\Infrastructure\CompiledMessageCatalogueRepository;
@@ -145,6 +146,27 @@ final class MessageCatalogueCompilerTest extends TestCase
             'en-GB',
             'en-GB.xlf',
         );
+    }
+
+    /**
+     * Studio's exact message corpus keeps its own named-placeholder grammar without widening App ICU.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testOnlyTheExactStudioShellNamespaceBypassesAppIcuValidation(): void
+    {
+        $validator = $this->createMock(MessagePatternValidator::class);
+        $validator->expects(self::once())
+            ->method('validate')
+            ->with('Ordinary App message', self::isInstanceOf(LocaleTag::class));
+        $compiled = (new MessageCatalogueCompiler(patterns: $validator))->compile([
+            'core.studio.shell.move-destination-option' => '{value-type} {position}',
+            'core.administrator.studio_composition.ready' => 'Ordinary App message',
+        ], 'en-GB', 'en-GB.xlf');
+
+        self::assertStringContainsString("'{value-type} {position}'", $compiled);
     }
 
     public function testItRefusesADocumentTypeDeclarationRatherThanIgnoringIt(): void

@@ -4,14 +4,18 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.12"
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
   },
   "scripts": {
     "build": "vite build && node tools/refresh-site-fallback.mjs",
-    "check": "npm run check:types && npm run check:schemas && npm run check:manifest && npm run check:site-fallback && npm run check:browser-report",
+    "check": "npm run check:types && npm run check:schemas && npm run check:studio-release && npm run check:studio-corpus && npm run check:studio-localization && npm run check:manifest && npm run check:site-fallback && npm run check:browser-report",
     "check:browser-report": "node tools/verify-browser-attempt-summary.mjs",
     "check:manifest": "node tools/verify-browser-manifest.mjs",
     "check:site-fallback": "node tools/refresh-site-fallback.mjs --check",
+    "check:studio-corpus": "node tools/replay-studio-corpus.mjs",
+    "check:studio-localization": "node tools/sync-studio-localization.mjs --check",
+    "check:studio-release": "node tools/verify-studio-release.mjs",
     "check:types": "tsc --noEmit",
     "check:schemas": "node tools/verify-interface-schemas.mjs",
     "test:browser": "playwright test --project=desktop-chromium --project=mobile-chromium --project=desktop-chromium-he --project=desktop-chromium-ar --project=mobile-chromium-he --project=mobile-chromium-ar",
@@ -20,10 +24,17 @@
     "test:browser:update": "playwright test --update-snapshots"
   },
   "dependencies": {
+    "@kumwe/studio": "file:resources/studio-contract/packages/kumwe-studio-0.1.0-alpha.9.tgz",
+    "@kumwe/studio-core": "file:resources/studio-contract/packages/kumwe-studio-core-0.1.0-alpha.9.tgz",
+    "@kumwe/studio-media": "file:resources/studio-contract/packages/kumwe-studio-media-0.1.0-alpha.9.tgz",
+    "@kumwe/studio-preview": "file:resources/studio-contract/packages/kumwe-studio-preview-0.1.0-alpha.9.tgz",
+    "@kumwe/studio-protocol": "file:resources/studio-contract/packages/kumwe-studio-protocol-0.1.0-alpha.9.tgz",
+    "@kumwe/studio-rich-text": "file:resources/studio-contract/packages/kumwe-studio-rich-text-0.1.0-alpha.9.tgz",
     "lit": "3.3.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
+    "@kumwe/studio-testkit": "file:resources/studio-contract/packages/kumwe-studio-testkit-0.1.0-alpha.9.tgz",
     "@playwright/test": "1.62.1",
     "@types/node": "26.2.0",
     "ajv": "^8.17.1",

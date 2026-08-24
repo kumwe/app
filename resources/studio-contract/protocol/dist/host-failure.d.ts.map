@@ -1,0 +1,1 @@
+{"version":3,"file":"host-failure.d.ts","sourceRoot":"","sources":["../src/host-failure.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,aAAa,EAAE,MAAM,YAAY,CAAC;AAEhD;;;;;;;GAOG;AACH,qBAAa,eAAgB,SAAQ,KAAK;IACxC,SAAgB,KAAK,EAAE,aAAa,CAAC;gBAElB,KAAK,EAAE,aAAa;CAQxC;AAED,0EAA0E;AAC1E,wBAAgB,iBAAiB,CAAC,KAAK,EAAE,OAAO,GAAG,KAAK,IAAI,eAAe,CAM1E"}

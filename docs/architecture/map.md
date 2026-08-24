@@ -147,6 +147,7 @@ grew later keep their own `Application/Domain/Infrastructure/Delivery` trees.
 | `Portal` | Ordinary-user surface | isolated session, membership, CSRF |
 | `Identity` | Users, roles, tokens, sessions, TOTP | `AuthorizationService` (grant combiner — not the gateway) |
 | `Content` | CMS entries, models, revisions | `ContentService` |
+| `Studio` | Neutral Studio contracts and read-only host projections | `StudioContentProjectionService` |
 | `Workflow` | Content-type workflow definitions | `ContentTransitionAuthorizer` |
 | `Navigation` | Menus | `NavigationService` |
 | `Media` | Media library | filesystem storage |

@@ -170,6 +170,31 @@ final class OwnedRuntimeContributionRegistry implements ContributionSurface
     }
 
     /**
+     * List every declarative entry with the owner established by the live registry.
+     *
+     * Consumers that cross a process boundary must use this owner rather than trusting owner-shaped
+     * data embedded in a contribution document. That embedded value remains part of the signed
+     * portable document, while this value is the package identity whose trust lifecycle admitted it.
+     *
+     * @return  list<array{
+     *              owner: ContributionOwner,
+     *              definition: ContributionDefinition
+     *          }>  Active entries in deterministic identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function entries(): array
+    {
+        return array_values(array_map(
+            static fn (array $entry): array => [
+                'owner' => $entry['owner'],
+                'definition' => $entry['definition'],
+            ],
+            $this->entries,
+        ));
+    }
+
+    /**
      * List every executable entry with its definition and owner in deterministic order.
      *
      * @return  list<array{

@@ -57,6 +57,8 @@ final class ActiveExtensionSetTest extends TestCase
                 new RestrictedExtensionContainer($identifier, []),
                 new ManifestContributionSet($owner),
                 true,
+                '1.2.3',
+                hash('sha256', $identifier),
             );
             $active->addExtensionViewPath(ThemeSurface::Site, $identifier, '/runtime/' . $namespace . '/views');
             $active->addPortalTemplatePath($identifier, '/runtime/' . $namespace . '/portal');
@@ -71,6 +73,11 @@ final class ActiveExtensionSetTest extends TestCase
         self::assertCount(2, $active->catalogueDirectories());
         self::assertNotNull($active->themePath(ThemeSurface::Administrator));
         self::assertNotNull($active->siteThemePath('default'));
+        self::assertSame([
+            'id' => 'acme/editor',
+            'version' => '1.2.3',
+            'revision' => hash('sha256', 'acme/editor'),
+        ], $active->siteThemeRelease('default'));
 
         $withdrawal = new DeferredExtensionRuntimeWithdrawal();
         $withdrawal->bind($active);
@@ -82,6 +89,7 @@ final class ActiveExtensionSetTest extends TestCase
         self::assertSame([], $active->catalogueDirectories());
         self::assertNull($active->themePath(ThemeSurface::Administrator));
         self::assertNull($active->siteThemePath('default'));
+        self::assertNull($active->siteThemeRelease('default'));
         foreach (['acme/editor', 'vendor/rates'] as $identifier) {
             self::assertSame(
                 [],

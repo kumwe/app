@@ -138,6 +138,11 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Install Node.js for release evidence
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
       - name: Cache Composer package downloads
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -242,6 +247,13 @@ jobs:
           )
 
       - name: Generate SBOMs and scan published images
+        env:
+          KUMWE_APPLICATION_IMAGE: ${{ steps.release.outputs.app_image }}
+          KUMWE_APPLICATION_IMAGE_DIGEST: ${{ steps.app.outputs.digest }}
+          KUMWE_RELEASE_COMMIT: ${{ github.sha }}
+          KUMWE_RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          KUMWE_WEB_IMAGE: ${{ steps.release.outputs.web_image }}
+          KUMWE_WEB_IMAGE_DIGEST: ${{ steps.web.outputs.digest }}
         shell: bash
         run: |
           set -euo pipefail
@@ -261,9 +273,10 @@ jobs:
             image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL "$web_ref"
           rm -rf dist/package
           rm -rf dist/archive
+          node tools/create-release-manifest.mjs
           (
               cd dist
-              sha256sum kumwe-*.cdx.json kumwe-app-*.zip > SHA256SUMS
+              sha256sum kumwe-*.cdx.json kumwe-app-*.zip kumwe-release-manifest.json > SHA256SUMS
           )
 
       - name: Install Cosign
@@ -323,6 +336,7 @@ jobs:
             dist/kumwe-app.cdx.json \
             dist/kumwe-archive.cdx.json \
             "dist/kumwe-app-${RELEASE_VERSION}.zip" \
+            dist/kumwe-release-manifest.json \
             dist/kumwe-web.cdx.json \
             --generate-notes \
             --title "Kumwe App ${RELEASE_VERSION}" \

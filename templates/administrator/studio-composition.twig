@@ -1,0 +1,52 @@
+{% extends "layout.twig" %}
+{% block title %}{{ t('core.administrator.studio_composition.document_title') }}{% endblock %}
+{% block context_title %}{{ t('core.administrator.studio_composition.context_title') }}{% endblock %}
+{% block content %}
+  <section class="studio-composition stack" data-kis-surface="core.administrator.studio-composition">
+    <header class="page-header">
+      <div><p class="eyebrow">{{ t('core.administrator.studio_composition.eyebrow') }}</p><h1>{{ t('core.administrator.studio_composition.heading') }}</h1><p>{{ t('core.administrator.studio_composition.description') }}</p></div>
+      <a class="button" href="/administrator/content-models">{{ t('core.administrator.studio_composition.back_to_models') }}</a>
+    </header>
+    {% if theme_mismatch %}
+      <div class="notice error stack" role="alert" data-studio-composition-theme-mismatch>
+        <h2>{{ t('core.administrator.studio_composition.theme_mismatch_heading') }}</h2>
+        <p>{{ t('core.administrator.studio_composition.theme_mismatch_description') }}</p>
+      </div>
+    {% elseif composition is null %}
+      <div class="panel stack">
+        <h2>{{ t('core.administrator.studio_composition.provision_heading') }}</h2>
+        <p>{{ t('core.administrator.studio_composition.provision_description') }}</p>
+        <form method="post" action="{{ composition_path }}">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="primary" type="submit">{{ t('core.administrator.studio_composition.provision_action') }}</button>
+        </form>
+      </div>
+    {% else %}
+      <p class="studio-composition-status" role="status" aria-live="polite" data-studio-composition-status>{{ t('core.administrator.studio_composition.loading') }}</p>
+      <div
+        class="studio-composition-runtime"
+        data-studio-composition
+        data-message-change-refused="{{ t('core.administrator.studio_composition.change_refused') }}"
+        data-message-conflict="{{ t('core.administrator.studio_composition.conflict') }}"
+        data-message-open-failed="{{ t('core.administrator.studio_composition.open_failed') }}"
+        data-message-lifecycle-failed="{{ t('core.administrator.studio_composition.lifecycle_failed') }}"
+        data-message-publishing="{{ t('core.administrator.studio_composition.publishing') }}"
+        data-message-ready="{{ t('core.administrator.studio_composition.ready') }}"
+        data-message-save-failed="{{ t('core.administrator.studio_composition.save_failed') }}"
+        data-message-saved="{{ t('core.administrator.studio_composition.saved') }}"
+        data-message-unpublishing="{{ t('core.administrator.studio_composition.unpublishing') }}"
+      >
+        {% if artifact_status == 'draft' %}
+          <button class="primary" type="button" data-studio-publish hidden>{{ t('core.administrator.studio_composition.publish_action') }}</button>
+        {% elseif artifact_status == 'published' %}
+          <button class="button" type="button" data-studio-unpublish hidden>{{ t('core.administrator.studio_composition.unpublish_action') }}</button>
+        {% endif %}
+        <kumwe-studio aria-label="{{ t('core.administrator.studio_composition.canvas_label') }}">
+          <iframe class="studio-preview-frame" title="{{ t('core.administrator.studio_composition.preview_label') }}" data-studio-preview slot="preview" sandbox="allow-same-origin" hidden></iframe>
+        </kumwe-studio>
+        <noscript><p class="notice">{{ t('core.administrator.studio_composition.javascript_required') }}</p></noscript>
+      </div>
+      <script type="application/json" id="studio-composition-boot">{{ studio_boot_json|raw }}</script>
+    {% endif %}
+  </section>
+{% endblock %}

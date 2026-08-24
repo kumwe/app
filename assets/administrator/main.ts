@@ -133,3 +133,7 @@ setupCopyValues();
 setupValidationReveal();
 setupNavigationTargets();
 setupPolicyStepFlows();
+
+if (document.querySelector('[data-studio-composition]') !== null) {
+  void import('./components/studio-composition').then(({ setupStudioComposition }) => setupStudioComposition());
+}

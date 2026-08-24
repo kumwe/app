@@ -87,6 +87,39 @@
   }
 }
 
+.studio-composition-runtime {
+  display: grid;
+  gap: var(--space-4, 1rem);
+  inline-size: 100%;
+  min-inline-size: 0;
+  overflow: clip;
+}
+
+.studio-composition-runtime kumwe-studio {
+  display: block;
+  inline-size: 100%;
+  min-block-size: min(70rem, 72vh);
+  min-inline-size: 0;
+}
+
+.studio-composition-runtime > [data-studio-publish],
+.studio-composition-runtime > [data-studio-unpublish] {
+  justify-self: end;
+}
+
+.studio-preview-frame {
+  background: Canvas;
+  border: 0;
+  inline-size: 100%;
+  min-block-size: 32rem;
+}
+
+@media (max-width: 48rem) {
+  .studio-composition-runtime kumwe-studio {
+    min-block-size: 80vh;
+  }
+}
+
 @layer reset {
   *, *::before, *::after { box-sizing: border-box; }
   html { min-width: 320px; font-family: var(--kumwe-font-sans); line-height: 1.5; text-size-adjust: 100%; }

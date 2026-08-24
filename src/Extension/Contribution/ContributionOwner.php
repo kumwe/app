@@ -35,6 +35,8 @@ final readonly class ContributionOwner
         'canonical composition document',
         'canonical_composition_document',
         'composition_host_binding',
+        'preview renderer capability',
+        'studio preview renderer',
     ];
 
     /**
@@ -170,8 +172,14 @@ final readonly class ContributionOwner
             $identity = ($space = strpos($identifier, ' ')) === false
                 ? $identifier
                 : substr($identifier, $space + 1);
-            $studioNamespace = ($this->identifier === self::CORE ? self::CORE : $this->namespace()) . '/';
-            if (!str_starts_with($identity, $studioNamespace)) {
+            $studioNamespaces = $this->identifier === self::CORE
+                ? ['core/', 'studio.core/']
+                : [$this->namespace() . '/'];
+            $ownsStudioIdentity = array_any(
+                $studioNamespaces,
+                static fn (string $prefix): bool => str_starts_with($identity, $prefix),
+            );
+            if (!$ownsStudioIdentity) {
                 throw new InvalidArgumentException(sprintf(
                     '%s cannot claim %s identifier %s.',
                     $this->identifier === self::CORE ? 'Core' : 'Extension ' . $this->identifier,

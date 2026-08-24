@@ -103,6 +103,19 @@ pinned release (and, for a block definition's `propertySchema`, against the comp
 `studio.profile/schema-property` grammar), while renderer bindings, authority and host references
 live in the separate bounded `host_bindings` section — never inside the portable document.
 
+At Gate B, a block host binding becomes executable only when the verified provider explicitly shares a
+`StudioPreviewBlockRenderer` under `extension.<binding renderer>`. For example, renderer binding
+`acme.shop.renderer.grid` resolves only the owner-local service
+`extension.acme.shop.renderer.grid`; the binding is never read as a PHP class, file, template, or factory.
+The host derives the block type, version, revision, document owner and package version from the reconciled
+canonical document and signed runtime entry, then rechecks the exact runtime generation and live package
+trust before each call. A missing or wrong service, stale lock, owner drift, replaced package, revoked trust,
+or renderer exception stays visible only as the inert `studio-preview-unresolved` fragment.
+The service binding is not a renderer capability. An executable block must also declare exactly one
+`rendererRequirements` entry for the `preview` surface. Runtime catalogues advertise that signed
+capability (for example `acme.shop/grid`) only while its exact executable registry entry is live; they
+never advertise the owner-local service identifier (`acme.shop.renderer.grid`) as a capability.
+
 Pick the **lowest** generation that carries what you need. Nothing is gained by moving to schema 4 for a
 package that only contributes an administrator workspace, and staying low keeps your package installable
 on more sites.

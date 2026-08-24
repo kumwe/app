@@ -71,27 +71,62 @@ final readonly class SecurityHeaders
      */
     public function values(?string $scriptNonce = null): array
     {
+        return $this->build($scriptNonce, false);
+    }
+
+    /**
+     * Build the exact same-origin preview document policy.
+     *
+     * The preview route is the sole framed administrator document. Its policy adds only a same-origin
+     * frame source/ancestor relationship and removes the general site's residual inline-style attribute
+     * allowance; script remains self-only and neither eval nor an inline script/style source is admitted.
+     *
+     * @return  array<string, string>  Hardened headers with SAMEORIGIN framing and no referrer leakage.
+     *
+     * @since   2.0.0
+     */
+    public function previewValues(): array
+    {
+        return $this->build(null, true);
+    }
+
+    /**
+     * Assemble the ordinary or exact preview policy without duplicating shared directives.
+     *
+     * @param   string|null  $scriptNonce  Ordinary response nonce, or null for no inline script.
+     * @param   bool         $preview      Whether to apply the dedicated framed-document delta.
+     *
+     * @return  array<string, string>  Complete response header policy.
+     *
+     * @since   2.0.0
+     */
+    private function build(?string $scriptNonce, bool $preview): array
+    {
         $scriptSource = $scriptNonce === null ? "'self'" : sprintf("'self' 'nonce-%s'", $scriptNonce);
-        $headers = [
-            'Content-Security-Policy' => implode('; ', [
+        $directives = [
                 "default-src 'self'",
                 "base-uri 'self'",
                 "connect-src 'self'",
                 "font-src 'self' data:",
                 "form-action 'self'",
-                "frame-ancestors 'none'",
+                $preview ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
                 "img-src 'self' data: blob:",
                 "object-src 'none'",
                 sprintf('script-src %s', $scriptSource),
                 "style-src 'self'",
-                "style-src-attr 'unsafe-inline'",
+                $preview ? "style-src-attr 'none'" : "style-src-attr 'unsafe-inline'",
                 "style-src-elem 'self'",
-            ]),
+        ];
+        if ($preview) {
+            array_splice($directives, 6, 0, ["frame-src 'self'"]);
+        }
+        $headers = [
+            'Content-Security-Policy' => implode('; ', $directives),
             'Cross-Origin-Opener-Policy' => 'same-origin',
             'Permissions-Policy' => 'camera=(), geolocation=(), microphone=(), payment=(), usb=()',
-            'Referrer-Policy' => 'strict-origin-when-cross-origin',
+            'Referrer-Policy' => $preview ? 'no-referrer' : 'strict-origin-when-cross-origin',
             'X-Content-Type-Options' => 'nosniff',
-            'X-Frame-Options' => 'DENY',
+            'X-Frame-Options' => $preview ? 'SAMEORIGIN' : 'DENY',
         ];
 
         if ($this->upgradeInsecureRequests) {

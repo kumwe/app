@@ -4,6 +4,10 @@
     {
       "files": [
         {
+          "digest": "sha256-3Ym7JF4bCkJYwAEShdm3ztHDQ3PDKdpQxZ/yOx2b6Xs=",
+          "file": "authoring-message-catalog.en.json"
+        },
+        {
           "digest": "sha256-VPvgjeVcou8k/vGgrFXfMOx2ureah7+HADcuV1ze8To=",
           "file": "block.grid.example.json"
         },
@@ -110,6 +114,24 @@
       ],
       "group": "fixtures",
       "path": "fixtures"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-9mVzhFKG6xIkVtGwxzgLRtBv+k57U3xVX8LP4kpROKg=",
+          "file": "app-content-fields.resolved.json"
+        },
+        {
+          "digest": "sha256-OEBnXlw4oNAXpee8Yy3rjlyi++KsE68QddAWBQ3vFSQ=",
+          "file": "field-removed.diagnostic.json"
+        },
+        {
+          "digest": "sha256-xM3yGpWMnTF4s+9OPdf79pg1Tjtgn0FCipXVy8n/V44=",
+          "file": "model-revision-mismatch.diagnostic.json"
+        }
+      ],
+      "group": "binding-projection-vectors",
+      "path": "vectors/binding-projection"
     },
     {
       "files": [
@@ -506,6 +528,14 @@
           "file": "media.upload-status.unknown.error.json"
         },
         {
+          "digest": "sha256-thmjZlZ2aG2wPykTdgqA/f94lHY0jSit03IIR0lCdNE=",
+          "file": "model.get.stored.json"
+        },
+        {
+          "digest": "sha256-OpFkLnn1WCGEL7JHz1aTJ6bcX6Tdq5mWmVsMIdHZADA=",
+          "file": "model.list.authorized.json"
+        },
+        {
           "digest": "sha256-WMY/mRoj/RQtTk51Tq4yhObfMO84ZPdnC4LzV5QXaFE=",
           "file": "permission.explain.withheld.json"
         },
@@ -895,6 +925,10 @@
     },
     {
       "files": [
+        {
+          "digest": "sha256-QioG6zTTAy2LjLUO5oNmYvvvzJ754+kQq9fMCAz2iFA=",
+          "file": "binding-projection-vector.unknown-status.json"
+        },
         {
           "digest": "sha256-ZpkplYh1yIT/sRYxajj76pydhPqJzAPNdnVvog96oC4=",
           "file": "blueprint.control-character-member.json"

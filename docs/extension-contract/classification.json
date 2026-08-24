@@ -1234,6 +1234,46 @@
       "spi": 4,
       "path": "src/Extension/Contribution/Manifest5AdapterResult.php",
       "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\App\\Studio\\Application\\Preview\\StudioPreviewBindingResult",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Studio/Application/Preview/StudioPreviewBindingResult.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\App\\Studio\\Application\\Preview\\StudioPreviewBlock",
+      "kind": "class",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Studio/Application/Preview/StudioPreviewBlock.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\App\\Studio\\Application\\Preview\\StudioPreviewBlockFragment",
+      "kind": "class",
+      "visibility": "public",
+      "role": "construct",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Studio/Application/Preview/StudioPreviewBlockFragment.php",
+      "pinned_by": null
+    },
+    {
+      "type": "Kumwe\\App\\Studio\\Application\\Preview\\StudioPreviewBlockRenderer",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "implement",
+      "reachable_from": "manifest-6",
+      "spi": 4,
+      "path": "src/Studio/Application/Preview/StudioPreviewBlockRenderer.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/studio-preview-block-renderer-v1.json"
     }
   ]
 }
