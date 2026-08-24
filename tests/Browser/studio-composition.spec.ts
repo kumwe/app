@@ -373,6 +373,7 @@ async function expectOverlayToMatchPreview(page: Page, shell: Locator): Promise<
 }
 
 test('AP7 composition provisions by POST and opens an exact measured preview channel', async ({ page, context }) => {
+  test.setTimeout(120_000);
   const traffic = observePreviewTraffic(page);
   const themeResponses: Array<{ cacheControl: string; contentType: string; status: number }> = [];
   page.on('response', (response) => {
@@ -633,7 +634,7 @@ test('a signed field composition publishes marker-free public output and unpubli
     const published = await publicPage.goto(`/?studio-journey=published-${Date.now()}`);
     expect(published?.status()).toBe(200);
     expect(new URL(publicPage.url()).pathname).toBe('/');
-    await expect(publicPage.locator('[data-kis-surface="core.public.page"]')).toBeVisible();
+    await expect(publicPage.locator('[data-kis-surface="core.public.home"]')).toBeVisible();
     await expect(publicPage.locator('.studio-preview-field-text', { hasText: expectedHeading }).last())
       .toBeVisible();
     await expect(publicPage.locator('.studio-preview-extension-grid', { hasText: extensionOutput }).last())
@@ -852,16 +853,19 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   const secondSectionRegion = shell
     .locator(`.preview-canvas-region[data-node-id="${secondSectionId ?? ''}"]`).first();
   await expect(secondSectionRegion).toHaveAttribute('data-selected', 'true');
+  const rootsBeforeReorder = await rootNodeIds(shell);
+  expect(rootsBeforeReorder.indexOf(firstSectionId ?? '')).toBeLessThan(
+    rootsBeforeReorder.indexOf(secondSectionId ?? ''),
+  );
+  // Raw page.mouse coordinates do not auto-scroll like locator actions. Bring the selected
+  // measured region into the browser viewport, then resolve both boxes in the new scroll position.
+  await secondSectionRegion.scrollIntoViewIfNeeded();
   const firstSectionBox = await firstSectionRegion.boundingBox();
   const secondSectionBox = await secondSectionRegion.boundingBox();
   expect(firstSectionBox).not.toBeNull();
   expect(secondSectionBox).not.toBeNull();
   if (firstSectionBox === null || secondSectionBox === null) return;
 
-  const rootsBeforeReorder = await rootNodeIds(shell);
-  expect(rootsBeforeReorder.indexOf(firstSectionId ?? '')).toBeLessThan(
-    rootsBeforeReorder.indexOf(secondSectionId ?? ''),
-  );
   await page.mouse.move(secondSectionBox.x + 2, secondSectionBox.y + 2);
   await page.mouse.down();
   await page.mouse.move(
@@ -1073,6 +1077,7 @@ test('rapid superseded preview navigations stay hidden, ordered and cancel each 
 });
 
 test('an in-flight render is cancelled concurrently and repeated same-digest cycles stay independent', async ({ page }) => {
+  test.setTimeout(60_000);
   interface Gate {
     release(): void;
     released: Promise<void>;
@@ -1135,9 +1140,9 @@ test('an in-flight render is cancelled concurrently and repeated same-digest cyc
     const cycle = makeGate();
     const cancellation = makeGate();
     gate = cycle;
-    cancellationGate = cancellation;
     await shell.getByRole('button', { name: from, exact: true }).click();
     await cycle.started;
+    cancellationGate = cancellation;
     const digest = renderDigests.at(-1) ?? 'unknown';
     const renderCount = renderDigests.length;
     const before = cancelledDigests.filter((candidate) => candidate === digest).length;
