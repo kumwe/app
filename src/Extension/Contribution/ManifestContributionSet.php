@@ -1977,7 +1977,9 @@ final readonly class ManifestContributionSet
      *                  field_controls?: list<array<string, mixed>>,
      *                  inspectors?: list<array<string, mixed>>,
      *                  design_vocabularies?: list<array<string, mixed>>,
-     *                  migrations?: list<array<string, mixed>>
+     *                  migrations?: list<array<string, mixed>>,
+     *                  documents?: list<array{kind: string, canonical: string}>,
+     *                  host_bindings?: list<array<string, mixed>>
      *              },
      *              business: array{
      *                  field_types: list<array<string, mixed>>,
@@ -2115,11 +2117,15 @@ final readonly class ManifestContributionSet
                 $document['composition'][$key] = $this->exports($declarations);
             }
         }
-        // Canonical documents export their registry form: the kind-scoped identity is repeated beside
-        // the canonical bytes so an inventory reader never decodes a document just to key it.
+        // Runtime publications use the manifest wire shape because the loader reparses them through
+        // fromManifest(). Registry inventories call CanonicalCompositionDocument::toArray() directly
+        // and retain the derived identity they need for indexing without widening this closed shape.
         if ($this->canonicalCompositionDocuments !== []) {
             $document['composition']['documents'] = array_map(
-                static fn (CanonicalCompositionDocument $declared): array => $declared->toArray(),
+                static fn (CanonicalCompositionDocument $declared): array => [
+                    'kind' => $declared->kind->value,
+                    'canonical' => $declared->canonical,
+                ],
                 $this->canonicalCompositionDocuments(),
             );
         }
