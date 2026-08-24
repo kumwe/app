@@ -22,6 +22,7 @@ use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
+use stdClass;
 
 /**
  * Replays the exact AP-7 localization and telemetry host vectors.
@@ -37,7 +38,7 @@ use Psr\Log\AbstractLogger;
 final class StudioLocalizationTelemetryHostPortTest extends TestCase
 {
     /**
-     * The exact alpha.9 160-key corpus resolves through an organization/site-aware chain.
+     * The exact corpus resolves through the effective chain and every malformed request is refused.
      *
      * @return  void
      *
@@ -64,19 +65,67 @@ final class StudioLocalizationTelemetryHostPortTest extends TestCase
 
         self::assertCount(160, get_object_vars($result->value));
         self::assertSame('Undo composition', $result->value->{'studio.shell/undo'});
-        try {
-            $port->dispatch('messages', self::request(
+        self::assertPortRefused(
+            static fn () => $port->dispatch('unknown', self::request(
+                'studio.operation/localization.messages',
+                (object) ['locale' => 'en-GB', 'namespaces' => ['studio.shell']],
+            ), self::snapshot()),
+            'incompatible',
+            'studio.host/operation-unavailable',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('messages', self::hostRequest(
+                'studio.operation/localization.messages',
+                (object) ['locale' => 'en-GB', 'namespaces' => ['studio.shell']],
+                expectedRevision: 'revision/not-allowed',
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.host/invalid-context',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('messages', self::hostRequest(
+                'studio.operation/localization.messages',
+                null,
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('messages', self::request(
+                'studio.operation/localization.messages',
+                (object) ['locale' => 'en-GB', 'namespaces' => []],
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('messages', self::request(
+                'studio.operation/localization.messages',
+                (object) ['locale' => 'en-GB', 'namespaces' => ['studio/shell']],
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('messages', self::request(
+                'studio.operation/localization.messages',
+                (object) ['locale' => 'not_locale!', 'namespaces' => ['studio.shell']],
+            ), self::snapshot()),
+            'not-found',
+            'studio.localization/locale-not-found',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('messages', self::request(
                 'studio.operation/localization.messages',
                 (object) ['locale' => 'zz', 'namespaces' => ['studio.shell']],
-            ), self::snapshot());
-            self::fail('The unknown locale vector unexpectedly resolved.');
-        } catch (StudioHostOperationRefused $refused) {
-            self::assertSame('not-found', $refused->category);
-        }
+            ), self::snapshot()),
+            'not-found',
+            'studio.localization/locale-not-found',
+        );
     }
 
     /**
-     * Primitive attributes are accepted without values becoming observability labels or fields.
+     * Primitive attributes are accepted while every unbounded or malformed event is refused.
      *
      * @return  void
      *
@@ -98,18 +147,108 @@ final class StudioLocalizationTelemetryHostPortTest extends TestCase
         self::assertSame(['surface'], $logger->records[0]['context']['attribute_names']);
         self::assertArrayNotHasKey('attributes', $logger->records[0]['context']);
         self::assertNotContains('canvas', $logger->records[0]['context']);
-        try {
-            $port->dispatch('emit', self::request(
+        self::assertPortRefused(
+            static fn () => $port->dispatch('unknown', self::request(
+                'studio.operation/telemetry.emit',
+                (object) ['event' => (object) [
+                    'name' => 'studio.telemetry/vector',
+                ]],
+            ), self::snapshot()),
+            'incompatible',
+            'studio.host/operation-unavailable',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('emit', self::hostRequest(
+                'studio.operation/telemetry.emit',
+                (object) ['event' => (object) ['name' => 'studio.telemetry/vector']],
+                idempotencyKey: 'idempotency/not-allowed',
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.host/invalid-context',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('emit', self::hostRequest(
+                'studio.operation/telemetry.emit',
+                null,
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('emit', self::request(
+                'studio.operation/telemetry.emit',
+                (object) ['event' => 'not-an-object'],
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('emit', self::request(
+                'studio.operation/telemetry.emit',
+                (object) ['event' => (object) [
+                    'extra' => true,
+                    'name' => 'studio.telemetry/vector',
+                ]],
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('emit', self::request(
+                'studio.operation/telemetry.emit',
+                (object) ['event' => (object) ['name' => 'invalid-event-name']],
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.telemetry/invalid-event',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('emit', self::request(
+                'studio.operation/telemetry.emit',
+                (object) ['event' => (object) [
+                    'attributes' => [],
+                    'name' => 'studio.telemetry/vector',
+                ]],
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.telemetry/invalid-attributes',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('emit', self::request(
                 'studio.operation/telemetry.emit',
                 (object) ['event' => (object) [
                     'attributes' => (object) ['surface' => (object) ['nested' => true]],
                     'name' => 'studio.telemetry/vector',
                 ]],
-            ), self::snapshot());
-            self::fail('The nested telemetry vector unexpectedly succeeded.');
-        } catch (StudioHostOperationRefused $refused) {
-            self::assertSame('invalid-request', $refused->category);
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.telemetry/invalid-attributes',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch('emit', self::request(
+                'studio.operation/telemetry.emit',
+                (object) ['event' => (object) [
+                    'attributes' => (object) ['surface' => str_repeat('x', 201)],
+                    'name' => 'studio.telemetry/vector',
+                ]],
+            ), self::snapshot()),
+            'invalid-request',
+            'studio.telemetry/invalid-attributes',
+        );
+        $largeAttributes = new stdClass();
+        for ($index = 0; $index < 32; $index++) {
+            $largeAttributes->{sprintf('attribute_%02d', $index)} = str_repeat('x', 200);
         }
+        self::assertPortRefused(
+            static fn () => $port->dispatch('emit', self::request(
+                'studio.operation/telemetry.emit',
+                (object) ['event' => (object) [
+                    'attributes' => $largeAttributes,
+                    'name' => 'studio.telemetry/vector',
+                ]],
+            ), self::snapshot()),
+            'limit-exceeded',
+            'studio.telemetry/event-too-large',
+        );
     }
 
     /**
@@ -124,6 +263,27 @@ final class StudioLocalizationTelemetryHostPortTest extends TestCase
      */
     private static function request(string $operation, object $arguments): StudioHostRequest
     {
+        return self::hostRequest($operation, $arguments);
+    }
+
+    /**
+     * Build one host request whose malformed runtime values are deliberately under test.
+     *
+     * @param   string       $operation         Canonical operation capability.
+     * @param   mixed        $arguments         Candidate vector arguments.
+     * @param   string|null  $expectedRevision  Optional forbidden read revision.
+     * @param   string|null  $idempotencyKey    Optional forbidden read idempotency key.
+     *
+     * @return  StudioHostRequest  Host request envelope carrying the supplied values.
+     *
+     * @since  2.0.0
+     */
+    private static function hostRequest(
+        string $operation,
+        mixed $arguments,
+        ?string $expectedRevision = null,
+        ?string $idempotencyKey = null,
+    ): StudioHostRequest {
         return new StudioHostRequest(
             $operation,
             '0.1.0-draft.2',
@@ -131,11 +291,33 @@ final class StudioLocalizationTelemetryHostPortTest extends TestCase
             'contexts/vector',
             'session-r1',
             $arguments,
-            null,
-            null,
+            $expectedRevision,
+            $idempotencyKey,
             null,
             null,
         );
+    }
+
+    /**
+     * Assert one host-port refusal without allowing the next rejection vector to be skipped.
+     *
+     * @param   callable(): mixed  $operation  Host operation expected to fail closed.
+     * @param   string             $category   Expected canonical refusal category.
+     * @param   string             $code       Expected canonical diagnostic code.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    private static function assertPortRefused(callable $operation, string $category, string $code): void
+    {
+        try {
+            $operation();
+            self::fail('The malformed host-port request unexpectedly succeeded.');
+        } catch (StudioHostOperationRefused $refused) {
+            self::assertSame($category, $refused->category);
+            self::assertSame($code, $refused->diagnosticCode);
+        }
     }
 
     /**

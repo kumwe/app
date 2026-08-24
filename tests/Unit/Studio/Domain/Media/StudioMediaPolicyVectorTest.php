@@ -114,6 +114,31 @@ final class StudioMediaPolicyVectorTest extends TestCase
     }
 
     /**
+     * Refuse empty, malformed and duplicate host policy media-type vocabularies.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testInvalidPolicyVocabulariesAreRejected(): void
+    {
+        $cases = [
+            'empty policy' => [],
+            'malformed type' => ['IMAGE/PNG'],
+            'duplicate type' => ['image/png', 'image/png'],
+        ];
+
+        foreach ($cases as $case => $mediaTypes) {
+            try {
+                new StudioMediaUploadPolicy($mediaTypes, 1024, false);
+                self::fail('The invalid Studio media policy was accepted: ' . $case);
+            } catch (InvalidArgumentException $failure) {
+                self::assertNotSame('', $failure->getMessage(), $case);
+            }
+        }
+    }
+
+    /**
      * Decode one required JSON vector as an object.
      *
      * @param   string  $path  Absolute fixture path.

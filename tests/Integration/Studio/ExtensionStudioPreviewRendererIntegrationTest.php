@@ -41,9 +41,9 @@ use ZipArchive;
 #[CoversClass(ContributedStudioPreviewBlockRendererRegistry::class)]
 #[CoversClass(StudioPreviewRendererContribution::class)]
 #[CoversClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
-#[UsesClass(ActiveExtensionSet::class)]
+#[CoversClass(ActiveExtensionSet::class)]
 #[UsesClass(DoctrineExtensionManager::class)]
-#[UsesClass(ExtensionRuntimeLoader::class)]
+#[CoversClass(ExtensionRuntimeLoader::class)]
 /**
  * Proves schema-six preview code crosses the real signed extension lifecycle without manifest execution.
  *

@@ -15,6 +15,7 @@ use Kumwe\App\Studio\Domain\Media\StudioExternalUrlPolicy;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * Exercises DNS rebinding, redirect revalidation and response verification around the hardened fetcher.
@@ -127,6 +128,209 @@ final class StudioExternalMediaFetcherTest extends TestCase
         } catch (StudioMediaPortRejected $failure) {
             self::assertSame('studio.media/external-type-refused', $failure->failureCode);
             self::assertFileDoesNotExist($path);
+        }
+    }
+
+    /**
+     * Refuse malformed candidates, exhausted budgets and unusable DNS sets before opening a connection.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testPreConnectionRefusalsFailClosed(): void
+    {
+        $transport = $this->createMock(StudioPinnedHttpTransport::class);
+        $transport->expects(self::never())->method('get');
+
+        self::assertFetchRejected(
+            'studio.media/external-url-refused',
+            new StudioExternalMediaFetcher(
+                new StudioExternalUrlPolicy(),
+                $this->resolver(['93.184.216.34']),
+                $transport,
+                $this->signatures('image/png'),
+                ['image/png'],
+                4096,
+            ),
+            'http://cdn.example/image.png',
+        );
+        self::assertFetchRejected(
+            'studio.media/external-timeout',
+            new StudioExternalMediaFetcher(
+                new StudioExternalUrlPolicy(),
+                $this->resolver(['93.184.216.34']),
+                $transport,
+                $this->signatures('image/png'),
+                ['image/png'],
+                4096,
+                timeoutSeconds: 0,
+            ),
+            'https://cdn.example/image.png',
+        );
+        self::assertFetchRejected(
+            'studio.media/external-host-refused',
+            new StudioExternalMediaFetcher(
+                new StudioExternalUrlPolicy(),
+                $this->resolver([]),
+                $transport,
+                $this->signatures('image/png'),
+                ['image/png'],
+                4096,
+            ),
+            'https://cdn.example/image.png',
+        );
+    }
+
+    /**
+     * Preserve typed transport refusals while mapping all other transport faults to one safe diagnostic.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testTransportFaultsNeverLeakTheirCause(): void
+    {
+        $typed = self::createStub(StudioPinnedHttpTransport::class);
+        $typed->method('get')->willThrowException(new StudioMediaPortRejected(
+            'limit-exceeded',
+            'studio.media/transport-refused',
+        ));
+        self::assertFetchRejected(
+            'studio.media/transport-refused',
+            $this->fetcher($typed),
+            'https://cdn.example/image.png',
+        );
+
+        $faulted = self::createStub(StudioPinnedHttpTransport::class);
+        $faulted->method('get')->willThrowException(new RuntimeException('sensitive transport details'));
+        self::assertFetchRejected(
+            'studio.media/external-fetch-failed',
+            $this->fetcher($faulted),
+            'https://cdn.example/image.png',
+        );
+    }
+
+    /**
+     * Delete and refuse redirects or terminal responses that cannot satisfy the import contract.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testRedirectAndTerminalResponseRefusalsDeletePrivateBodies(): void
+    {
+        $cases = [
+            'redirect limit' => [
+                302,
+                ['location' => 'https://cdn.example/next.png'],
+                8,
+                0,
+                'studio.media/external-redirect-limit',
+            ],
+            'missing redirect location' => [
+                302,
+                [],
+                8,
+                3,
+                'studio.media/external-redirect-refused',
+            ],
+            'non-success response' => [
+                404,
+                ['content-type' => 'image/png'],
+                8,
+                3,
+                'studio.media/external-response-refused',
+            ],
+            'empty response' => [
+                200,
+                ['content-type' => 'image/png'],
+                0,
+                3,
+                'studio.media/external-response-refused',
+            ],
+            'encoded response' => [
+                200,
+                ['content-encoding' => 'gzip', 'content-type' => 'image/png'],
+                8,
+                3,
+                'studio.media/external-response-refused',
+            ],
+        ];
+
+        foreach ($cases as $case => [$status, $headers, $bytes, $redirects, $code]) {
+            $path = tempnam(sys_get_temp_dir(), 'studio-fetch-');
+            self::assertIsString($path);
+            file_put_contents($path, 'response');
+            $transport = self::createStub(StudioPinnedHttpTransport::class);
+            $transport->method('get')->willReturn(new StudioPinnedHttpResponse(
+                $status,
+                $headers,
+                $path,
+                $bytes,
+            ));
+            self::assertFetchRejected(
+                $code,
+                new StudioExternalMediaFetcher(
+                    new StudioExternalUrlPolicy(),
+                    $this->resolver(['93.184.216.34']),
+                    $transport,
+                    $this->signatures('image/png'),
+                    ['image/png'],
+                    4096,
+                    $redirects,
+                ),
+                'https://cdn.example/image.png',
+                $case,
+            );
+            self::assertFileDoesNotExist($path, $case);
+        }
+    }
+
+    /**
+     * Build a fetcher whose only varying edge is its pinned transport.
+     *
+     * @param   StudioPinnedHttpTransport  $transport  Transport behavior under test.
+     *
+     * @return  StudioExternalMediaFetcher  Hardened fetcher.
+     *
+     * @since  2.0.0
+     */
+    private function fetcher(StudioPinnedHttpTransport $transport): StudioExternalMediaFetcher
+    {
+        return new StudioExternalMediaFetcher(
+            new StudioExternalUrlPolicy(),
+            $this->resolver(['93.184.216.34']),
+            $transport,
+            $this->signatures('image/png'),
+            ['image/png'],
+            4096,
+        );
+    }
+
+    /**
+     * Assert a fetch fails with one stable non-disclosing diagnostic.
+     *
+     * @param   string                      $code       Expected diagnostic code.
+     * @param   StudioExternalMediaFetcher  $fetcher    Fetcher under test.
+     * @param   string                      $candidate  Candidate passed to the boundary.
+     * @param   string                      $case       Optional scenario label.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    private static function assertFetchRejected(
+        string $code,
+        StudioExternalMediaFetcher $fetcher,
+        string $candidate,
+        string $case = '',
+    ): void {
+        try {
+            $fetcher->fetch($candidate);
+            self::fail('The unsafe Studio external fetch was accepted: ' . $case);
+        } catch (StudioMediaPortRejected $failure) {
+            self::assertSame($code, $failure->failureCode, $case);
         }
     }
 

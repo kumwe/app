@@ -225,9 +225,9 @@ final class TrustStoreTest extends TestCase
         $context = AuthorizationContext::human(['extensions.manage']);
         $store->add($context, 'vendor.runtime', $this->publicKey(), 'acme', '*', $this->expiry());
         $manifest = json_encode([
-            'schema' => 1,
+            'schema' => 2,
             'name' => 'acme/catalog',
-            'type' => 'plugin',
+            'type' => 'component',
             'version' => '1.0.0',
             'provider' => 'Acme\\Catalog\\Provider',
             'autoload' => ['psr-4' => [
@@ -235,20 +235,28 @@ final class TrustStoreTest extends TestCase
                 'Acme\\Catalog\\Feature\\' => 'src/Feature/',
             ]],
             'requires' => ['kumwe' => '^2.0.0', 'php' => '^8.5.0'],
-            'dependencies' => [],
-            'migrations' => [],
-            'configuration' => new \stdClass(),
-            'permissions' => [],
-            'routes' => [],
-            'events' => [],
-            'assets' => [],
+            'contributions' => [
+                'version' => 1,
+                'capabilities' => [
+                    [
+                        'id' => 'acme.catalog.view',
+                        'label' => 'View catalog',
+                        'description' => 'View the catalog.',
+                    ],
+                    [
+                        'id' => 'acme.catalog.manage',
+                        'label' => 'Manage catalog',
+                        'description' => 'Manage the catalog.',
+                    ],
+                ],
+            ],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
         $repository->active['acme/catalog'] = 'vendor.runtime';
         $repository->releases['acme/catalog'] = [
             'identifier' => 'acme/catalog',
             'installed_version' => '1.0.0',
             'service_provider' => 'Acme\\Catalog\\Provider',
-            'extension_type' => 'plugin',
+            'extension_type' => 'component',
             'runtime_path' => 'acme/catalog/1.0.0',
             'manifest' => $manifest,
             'package_sha256' => str_repeat('a', 64),
@@ -265,10 +273,11 @@ final class TrustStoreTest extends TestCase
             'identifier' => 'acme/catalog',
             'version' => '1.0.0',
             'provider' => 'Acme\\Catalog\\Provider',
-            'type' => 'plugin',
+            'type' => 'component',
             'root' => 'acme/catalog/1.0.0',
             'autoload' => array_reverse($parsedManifest->autoload(), true),
             'contributions' => array_reverse($expectedContributions, true),
+            'manifest_schema' => 2,
             'signing_key_id' => 'vendor.runtime',
             'artifact_sha256' => str_repeat('a', 64),
             'deployed_tree_sha256' => str_repeat('b', 64),
@@ -277,11 +286,34 @@ final class TrustStoreTest extends TestCase
         self::assertNotSame($expectedContributions, $runtimeEntry['contributions']);
         $store->enforceRuntimeEntryTrust($runtimeEntry);
 
-        $runtimeEntry['provider'] = 'Attacker\\Provider';
-        try {
-            $store->enforceRuntimeEntryTrust($runtimeEntry);
-            self::fail('A modified provider mapping must never execute.');
-        } catch (RuntimePublicationMismatch) {
+        $tamperedEntries = [];
+        $tamperedEntries['provider'] = $runtimeEntry;
+        $tamperedEntries['provider']['provider'] = 'Attacker\\Provider';
+        $tamperedEntries['autoload value'] = $runtimeEntry;
+        $tamperedEntries['autoload value']['autoload']['psr-4']['Acme\\Catalog\\'] = 'tampered/';
+        $tamperedEntries['contribution value'] = $runtimeEntry;
+        $tamperedEntries['contribution value']['contributions']['version'] = 2;
+        $tamperedEntries['contribution list order'] = $runtimeEntry;
+        $tamperedEntries['contribution list order']['contributions']['capabilities'] = array_reverse(
+            $expectedContributions['capabilities'],
+        );
+
+        foreach ($tamperedEntries as $label => $tamperedEntry) {
+            try {
+                $store->enforceRuntimeEntryTrust($tamperedEntry);
+                self::fail(sprintf('A modified %s must never execute.', $label));
+            } catch (RuntimePublicationMismatch $failure) {
+                $expectedDiagnostic = match ($label) {
+                    'provider' => 'provider',
+                    'autoload value' => 'autoload map',
+                    default => 'contributions',
+                };
+                self::assertStringContainsString(
+                    $expectedDiagnostic,
+                    $failure->getMessage(),
+                    $label,
+                );
+            }
         }
         self::assertSame([], $repository->quarantined);
         self::assertSame(0, $runtime->rebuilds);

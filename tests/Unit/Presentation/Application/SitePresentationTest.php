@@ -61,12 +61,56 @@ final class SitePresentationTest extends TestCase
 
     public function testRejectsUnsafeLogoUrls(): void
     {
-        $values = SitePresentation::defaults();
-        $values['logo'] = 'javascript:alert(1)';
+        $unsafeCharacter = SitePresentation::defaults();
+        $unsafeCharacter['logo'] = '/media/unsafe"logo.svg';
+        $absoluteLogo = SitePresentation::defaults();
+        $absoluteLogo['logo'] = 'https://assets.example.test/logo.svg';
+        $nonObject = 'not-an-object';
+        $wrongString = SitePresentation::defaults();
+        $wrongString['logo'] = 17;
+        $emptyString = SitePresentation::defaults();
+        $emptyString['footer_text'] = '  ';
+        $invalidHandle = SitePresentation::defaults();
+        $invalidHandle['primary_menu'] = 'Main-Menu';
+        $invalidChoice = SitePresentation::defaults();
+        $invalidChoice['button_style'] = 'scripted';
+        $emptySchemes = SitePresentation::defaults();
+        $emptySchemes['schemes'] = [];
+        $tooManySchemes = SitePresentation::defaults();
+        $tooManySchemes['schemes'] = array_fill(0, 13, $tooManySchemes['schemes'][0]);
+        $nonObjectScheme = SitePresentation::defaults();
+        $nonObjectScheme['schemes'] = ['not-an-object'];
+        $duplicateScheme = SitePresentation::defaults();
+        $duplicateScheme['schemes'][] = $duplicateScheme['schemes'][0];
+        $nonObjectColors = SitePresentation::defaults();
+        $nonObjectColors['schemes'][0]['colors'] = [];
+        $invalidColor = SitePresentation::defaults();
+        $invalidColor['schemes'][0]['colors']['navy'] = 'navy';
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('root-relative');
-        SitePresentation::from($values);
+        foreach (
+            [
+                'unsafe characters' => [$unsafeCharacter, 'unsafe characters'],
+                'absolute logo' => [$absoluteLogo, 'root-relative'],
+                'non-object settings' => [$nonObject, 'must be an object'],
+                'wrong string type' => [$wrongString, 'logo must be a string'],
+                'empty required string' => [$emptyString, 'footer_text must contain'],
+                'invalid handle' => [$invalidHandle, 'must start with a letter'],
+                'invalid choice' => [$invalidChoice, 'button_style must be one of'],
+                'empty schemes' => [$emptySchemes, 'between 1 and 12 schemes'],
+                'too many schemes' => [$tooManySchemes, 'between 1 and 12 schemes'],
+                'non-object scheme' => [$nonObjectScheme, 'scheme must be an object'],
+                'duplicate scheme' => [$duplicateScheme, 'is duplicated'],
+                'non-object colors' => [$nonObjectColors, 'requires a color map'],
+                'invalid color' => [$invalidColor, 'must use #RRGGBB notation'],
+            ] as $label => [$values, $message]
+        ) {
+            try {
+                SitePresentation::from($values);
+                self::fail(sprintf('The %s presentation was accepted.', $label));
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString($message, $exception->getMessage(), $label);
+            }
+        }
     }
 
     public function testRejectsAColorSchemeThatCannotMeetTextContrast(): void

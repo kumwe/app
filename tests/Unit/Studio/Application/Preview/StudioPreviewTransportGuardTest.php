@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Preview;
 
+use InvalidArgumentException;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewRefused;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewSequenceClaim;
@@ -28,6 +29,71 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(NativeStudioPreviewSequenceWaiter::class)]
 final class StudioPreviewTransportGuardTest extends TestCase
 {
+    /**
+     * Reject an invalid configured origin and any delivery lane outside the closed transport vocabulary.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testConfigurationAndLaneVocabulariesAreClosed(): void
+    {
+        $sequences = self::createStub(StudioPreviewSequenceRepository::class);
+        $waiter = self::createStub(StudioPreviewSequenceWaiter::class);
+
+        try {
+            new StudioPreviewTransportGuard('/relative-origin', $sequences, $waiter);
+            self::fail('A relative Studio preview origin was accepted.');
+        } catch (InvalidArgumentException $failure) {
+            self::assertSame('The Studio preview base origin is invalid.', $failure->getMessage());
+        }
+
+        $invalidTransports = [
+            'origin' => static fn () => new StudioPreviewTransport(
+                'https://kumwe.test/path',
+                'channels/one',
+                'sources/one',
+                0,
+            ),
+            'identity' => static fn () => new StudioPreviewTransport(
+                'https://kumwe.test',
+                'bad channel',
+                'sources/one',
+                0,
+            ),
+            'sequence' => static fn () => new StudioPreviewTransport(
+                'https://kumwe.test',
+                'channels/one',
+                'sources/one',
+                -1,
+            ),
+        ];
+        foreach ($invalidTransports as $case => $operation) {
+            try {
+                $operation();
+                self::fail('An invalid Studio preview transport was accepted: ' . $case);
+            } catch (InvalidArgumentException $failure) {
+                self::assertNotSame('', $failure->getMessage(), $case);
+            }
+        }
+
+        $snapshot = self::snapshot();
+        $guard = new StudioPreviewTransportGuard('https://kumwe.test', $sequences, $waiter);
+        self::assertRefusal(
+            'studio.preview/invalid-lane',
+            fn () => $guard->authorize(
+                $snapshot,
+                new StudioPreviewTransport(
+                    'https://kumwe.test',
+                    $guard->channelId($snapshot->session),
+                    $guard->sourceId($snapshot->session),
+                    0,
+                ),
+                'side-channel',
+            ),
+        );
+    }
+
     /**
      * Foreign origin, wrong channel, wrong source and replayed/out-of-order sequence are distinguishable.
      *

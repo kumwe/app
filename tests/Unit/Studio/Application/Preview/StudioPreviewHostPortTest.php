@@ -21,8 +21,10 @@ use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingSource;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingValues;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewDraftSource;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewGrantRepository;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewHostPort;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewRefused;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewRenderAdmission;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewRenderer;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewTransportGuard;
 use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
@@ -229,10 +231,222 @@ final class StudioPreviewHostPortTest extends TestCase
     }
 
     /**
+     * Refuse unknown operations, malformed payloads, missing authority and absent drafts with stable codes.
+     *
+     * @return  void
+     *
+     * @throws  JsonException  When the committed preview vector is invalid.
+     *
+     * @since  2.0.0
+     */
+    public function testDispatchValidationAndAuthorityRefusalsAreStable(): void
+    {
+        $vector = self::vector();
+        self::assertInstanceOf(stdClass::class, $vector->draft);
+        self::assertInstanceOf(stdClass::class, $vector->render);
+        $draft = new StudioPreviewDraft('default', $vector->draft);
+
+        [$port, $guard, $snapshot, $context] = self::runtime($draft);
+        self::assertRefused(
+            'studio.host/operation-unavailable',
+            fn () => $port->dispatch(
+                $context,
+                'unknown',
+                self::hostRequest('studio.operation/preview.unknown', new stdClass()),
+                $snapshot,
+                self::transport($guard, $snapshot, 0),
+            ),
+        );
+
+        [$port, $guard, $snapshot, $context] = self::runtime($draft);
+        self::assertRefused(
+            'studio.preview/invalid-render-payload',
+            fn () => $port->dispatch(
+                $context,
+                'render',
+                self::hostRequest(
+                    'studio.operation/preview.render',
+                    (object) ['payload' => (object) ['artifactId' => $draft->artifactId()]],
+                ),
+                $snapshot,
+                self::transport($guard, $snapshot, 0),
+            ),
+        );
+
+        [$port, $guard, $snapshot, $context] = self::runtime($draft);
+        $withoutRead = new StudioHostSessionSnapshot(
+            $snapshot->session,
+            [],
+            $snapshot->generation,
+            true,
+            false,
+            false,
+        );
+        self::assertRefused(
+            'studio.preview/resource-refused',
+            fn () => $port->dispatch(
+                $context,
+                'render',
+                self::hostRequest('studio.operation/preview.render', (object) ['payload' => $vector->render]),
+                $withoutRead,
+                self::transport($guard, $snapshot, 0),
+            ),
+        );
+
+        $missing = clone $vector->render;
+        $missing->artifactId = 'blueprints/missing';
+        [$port, $guard, $snapshot, $context] = self::runtime($draft);
+        self::assertRefused(
+            'studio.preview/draft-not-found',
+            fn () => $port->dispatch(
+                $context,
+                'render',
+                self::hostRequest('studio.operation/preview.render', (object) ['payload' => $missing]),
+                $snapshot,
+                self::transport($guard, $snapshot, 0),
+            ),
+        );
+
+        [$port, $guard, $snapshot, $context] = self::runtime($draft);
+        self::assertRefused(
+            'studio.preview/invalid-cancel-payload',
+            fn () => $port->dispatch(
+                $context,
+                'cancel',
+                self::hostRequest(
+                    'studio.operation/preview.cancel',
+                    (object) ['draftDigest' => 'not-a-digest'],
+                ),
+                $snapshot,
+                self::transport($guard, $snapshot, 0),
+            ),
+        );
+    }
+
+    /**
+     * Map durable admission races and untyped renderer faults to their closed preview diagnostics.
+     *
+     * @return  void
+     *
+     * @throws  JsonException  When the committed preview vector is invalid.
+     *
+     * @since  2.0.0
+     */
+    public function testAdmissionAndRendererRacesFailClosed(): void
+    {
+        $vector = self::vector();
+        self::assertInstanceOf(stdClass::class, $vector->draft);
+        self::assertInstanceOf(stdClass::class, $vector->render);
+        $draft = new StudioPreviewDraft('default', $vector->draft);
+
+        $cancelled = self::createStub(StudioPreviewGrantRepository::class);
+        $cancelled->method('begin')->willReturn(StudioPreviewRenderAdmission::Cancelled);
+        [$port, $guard, $snapshot, $context] = self::runtime($draft, grants: $cancelled);
+        self::assertRefused(
+            'studio.preview/render-cancelled',
+            fn () => $port->dispatch(
+                $context,
+                'render',
+                self::hostRequest('studio.operation/preview.render', (object) ['payload' => $vector->render]),
+                $snapshot,
+                self::transport($guard, $snapshot, 0),
+            ),
+        );
+
+        $renderer = self::createStub(StudioPreviewRenderer::class);
+        $renderer->method('render')->willThrowException(new RuntimeException('sensitive renderer failure'));
+        [$port, $guard, $snapshot, $context] = self::runtime($draft, $renderer);
+        self::assertRefused(
+            'studio.preview/render-failed',
+            fn () => $port->dispatch(
+                $context,
+                'render',
+                self::hostRequest('studio.operation/preview.render', (object) ['payload' => $vector->render]),
+                $snapshot,
+                self::transport($guard, $snapshot, 0),
+            ),
+        );
+
+        $late = self::createStub(StudioPreviewGrantRepository::class);
+        $late->method('begin')->willReturn(StudioPreviewRenderAdmission::Accepted);
+        $late->method('complete')->willReturn(false);
+        [$port, $guard, $snapshot, $context] = self::runtime($draft, grants: $late);
+        self::assertRefused(
+            'studio.preview/render-cancelled',
+            fn () => $port->dispatch(
+                $context,
+                'render',
+                self::hostRequest('studio.operation/preview.render', (object) ['payload' => $vector->render]),
+                $snapshot,
+                self::transport($guard, $snapshot, 0),
+            ),
+        );
+    }
+
+    /**
+     * Preserve guard refusals across document and stylesheet reads and fail closed when activity recording fails.
+     *
+     * @return  void
+     *
+     * @throws  JsonException  When the committed preview vector is invalid.
+     *
+     * @since  2.0.0
+     */
+    public function testClaimStylesheetAndActivityFailuresRemainClosed(): void
+    {
+        $vector = self::vector();
+        self::assertInstanceOf(stdClass::class, $vector->draft);
+        $draft = new StudioPreviewDraft('default', $vector->draft);
+
+        [$port, $guard, $snapshot, $context] = self::runtime($draft);
+        $foreign = new StudioPreviewTransport(
+            'https://foreign.test',
+            $guard->channelId($snapshot->session),
+            $guard->sourceId($snapshot->session),
+            0,
+        );
+        self::assertRefused(
+            'studio.preview/foreign-origin',
+            fn () => $port->claimDocument($context, $snapshot, 'requests/one', $foreign),
+        );
+
+        [$port, $guard, $snapshot, $context] = self::runtime($draft);
+        $foreign = new StudioPreviewTransport(
+            'https://foreign.test',
+            $guard->channelId($snapshot->session),
+            $guard->sourceId($snapshot->session),
+            0,
+        );
+        self::assertRefused(
+            'studio.preview/foreign-origin',
+            fn () => $port->themeStylesheet($context, $snapshot, 'requests/one', $foreign),
+        );
+
+        $activity = self::createStub(StudioPreviewActivityRecorder::class);
+        $activity->method('record')->willThrowException(new RuntimeException('activity sink unavailable'));
+        [$port, $guard, $snapshot, $context] = self::runtime($draft, activity: $activity);
+        self::assertRefused(
+            'studio.preview/activity-record-unavailable',
+            fn () => $port->dispatch(
+                $context,
+                'cancel',
+                self::hostRequest(
+                    'studio.operation/preview.cancel',
+                    (object) ['draftDigest' => $draft->digest()],
+                ),
+                $snapshot,
+                self::transport($guard, $snapshot, 0),
+            ),
+        );
+    }
+
+    /**
      * Assemble the production port around real persistence and deterministic test edges.
      *
-     * @param   StudioPreviewDraft      $draft     Immutable preview draft resolved by the source double.
-     * @param   ?StudioPreviewRenderer  $renderer  Optional renderer used to exercise a refusal boundary.
+     * @param   StudioPreviewDraft             $draft     Immutable preview draft resolved by the source double.
+     * @param   ?StudioPreviewRenderer         $renderer  Optional renderer used to exercise a refusal boundary.
+     * @param   ?StudioPreviewGrantRepository  $grants    Optional durable grant behavior under test.
+     * @param   ?StudioPreviewActivityRecorder $activity  Optional security activity behavior under test.
      *
      * @return  array{StudioPreviewHostPort, StudioPreviewTransportGuard, StudioHostSessionSnapshot,
      *          ExecutionContext, Connection}
@@ -240,8 +454,12 @@ final class StudioPreviewHostPortTest extends TestCase
      *
      * @since   2.0.0
      */
-    private static function runtime(StudioPreviewDraft $draft, ?StudioPreviewRenderer $renderer = null): array
-    {
+    private static function runtime(
+        StudioPreviewDraft $draft,
+        ?StudioPreviewRenderer $renderer = null,
+        ?StudioPreviewGrantRepository $grants = null,
+        ?StudioPreviewActivityRecorder $activity = null,
+    ): array {
         $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $tables = new TableNames($database, 'kumwe_');
         (new StudioPreviewGrantMigration($tables))->up($database);
@@ -329,7 +547,7 @@ final class StudioPreviewHostPortTest extends TestCase
                 );
             }
         };
-        $activity = new class implements StudioPreviewActivityRecorder {
+        $activity ??= new class implements StudioPreviewActivityRecorder {
             /**
              * Accept one bounded preview activity record.
              *
@@ -371,7 +589,7 @@ final class StudioPreviewHostPortTest extends TestCase
                 $source,
                 $bindings,
                 $renderer,
-                $repository,
+                $grants ?? $repository,
                 $guard,
                 $activity,
                 $clock,
@@ -381,6 +599,30 @@ final class StudioPreviewHostPortTest extends TestCase
             self::context(),
             $database,
         ];
+    }
+
+    /**
+     * Build exact same-origin transport evidence for one preview port sequence.
+     *
+     * @param   StudioPreviewTransportGuard  $guard     Guard deriving channel and source identities.
+     * @param   StudioHostSessionSnapshot    $snapshot  Trusted live session.
+     * @param   int                          $sequence  Monotonic port sequence.
+     *
+     * @return  StudioPreviewTransport  Valid transport evidence.
+     *
+     * @since  2.0.0
+     */
+    private static function transport(
+        StudioPreviewTransportGuard $guard,
+        StudioHostSessionSnapshot $snapshot,
+        int $sequence,
+    ): StudioPreviewTransport {
+        return new StudioPreviewTransport(
+            'https://kumwe.test',
+            $guard->channelId($snapshot->session),
+            $guard->sourceId($snapshot->session),
+            $sequence,
+        );
     }
 
     /**

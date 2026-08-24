@@ -393,6 +393,50 @@ final class ContentStudioProjectorTest extends TestCase
     }
 
     /**
+     * Every supported Content scalar and authoring hint maps to one explicit Studio kind and control.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEverySupportedFieldKindChoosesAnExplicitAuthoringControl(): void
+    {
+        $model = $this->projector()->contentModel(
+            $this->context(),
+            $this->definition([
+                'active' => ['type' => 'boolean'],
+                'birthday' => ['type' => 'string', 'format' => 'date'],
+                'contact' => ['type' => 'string', 'format' => 'email'],
+                'count' => ['type' => 'integer'],
+                'identifier' => ['type' => 'string', 'format' => 'uuid'],
+                'link' => ['type' => 'string', 'format' => 'uri'],
+                'published_at' => ['type' => 'string', 'format' => 'date-time'],
+                'rating' => ['type' => 'number'],
+                'settings' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'properties' => [],
+                ],
+                'tags' => ['type' => 'array', 'items' => ['type' => 'string']],
+                'teaser' => ['type' => 'string'],
+            ]),
+        );
+        $fields = self::fieldsById($model->fields);
+
+        self::assertSame('studio.control/switch', $fields['data_active']->authoring->control);
+        self::assertSame('studio.control/date', $fields['data_birthday']->authoring->control);
+        self::assertSame('kumwe.app/email', $fields['data_contact']->authoring->control);
+        self::assertSame('studio.control/number', $fields['data_count']->authoring->control);
+        self::assertSame('kumwe.app/uuid', $fields['data_identifier']->authoring->control);
+        self::assertSame('kumwe.app/url', $fields['data_link']->authoring->control);
+        self::assertSame('studio.control/date-time', $fields['data_published_at']->authoring->control);
+        self::assertSame('studio.control/number', $fields['data_rating']->authoring->control);
+        self::assertSame('kumwe.app/schema-group', $fields['data_settings']->authoring->control);
+        self::assertSame('kumwe.app/schema-group', $fields['data_tags']->authoring->control);
+        self::assertSame('studio.control/single-line-text', $fields['data_teaser']->authoring->control);
+    }
+
+    /**
      * Unsupported schema constructs report their typed safe path instead of producing a partial model.
      *
      * @return  void
@@ -454,6 +498,28 @@ final class ContentStudioProjectorTest extends TestCase
                 ['type' => 'array', 'items' => ['type' => 'string'], 'maxItems' => 100_001],
                 '/schema/properties/problem/maxItems',
             ],
+            'media hint on a non-string field' => [
+                ['type' => 'integer', 'x-kumwe-field' => 'media'],
+                '/schema/properties/problem/x-kumwe-field',
+            ],
+            'oversized enum vocabulary' => [
+                ['type' => 'string', 'enum' => array_map(
+                    static fn (int $index): string => 'choice_' . $index,
+                    range(0, 1000),
+                )],
+                '/schema/properties/problem/enum',
+            ],
+            'oversized nested property vocabulary' => [
+                [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'properties' => array_fill_keys(
+                        array_map(static fn (int $index): string => 'field_' . $index, range(0, 1000)),
+                        ['type' => 'string'],
+                    ),
+                ],
+                '/schema/properties/problem/properties',
+            ],
         ];
 
         foreach ($cases as $label => [$schema, $path]) {
@@ -476,6 +542,87 @@ final class ContentStudioProjectorTest extends TestCase
             StudioProjectionRejection::UnsupportedField,
             '/schema/properties/invalid__separator',
             'Content key outside the Studio local-name grammar',
+        );
+    }
+
+    /**
+     * Defaults are projection data too, so an incompatible default is refused instead of coerced.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testIncompatibleFieldDefaultsAreRefusedAtTheDefaultCoordinate(): void
+    {
+        $cases = [
+            'string' => [['type' => 'string', 'default' => 7], '/schema/properties/problem/default'],
+            'integer' => [['type' => 'integer', 'default' => '7'], '/schema/properties/problem/default'],
+            'number' => [['type' => 'number', 'default' => INF], '/schema/properties/problem/default'],
+            'boolean' => [['type' => 'boolean', 'default' => 1], '/schema/properties/problem/default'],
+            'array map' => [
+                ['type' => 'array', 'items' => ['type' => 'string'], 'default' => ['key' => 'value']],
+                '/schema/properties/problem/default',
+            ],
+            'object list' => [
+                [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'properties' => [],
+                    'default' => ['value'],
+                ],
+                '/schema/properties/problem/default',
+            ],
+            'oversized array' => [
+                [
+                    'type' => 'array',
+                    'items' => ['type' => 'string'],
+                    'default' => array_fill(0, 10_001, 'value'),
+                ],
+                '/schema/properties/problem/default',
+            ],
+        ];
+
+        foreach ($cases as $label => [$schema, $path]) {
+            $this->assertProjectionRefusal(
+                fn (): stdClass => $this->projector()->contentModel(
+                    $this->context(),
+                    $this->definition(['problem' => $schema]),
+                ),
+                StudioProjectionRejection::LossyValue,
+                $path,
+                $label . ' default',
+            );
+        }
+    }
+
+    /**
+     * The Content validator remains the final authority for keywords Studio can otherwise carry opaquely.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnsupportedContentKeywordIsRefusedAfterLosslessFieldMapping(): void
+    {
+        $definition = $this->definition([
+            'problem' => ['type' => 'string', 'readOnly' => true],
+        ]);
+
+        $this->assertProjectionRefusal(
+            fn (): stdClass => $this->projector()->contentModel($this->context(), $definition),
+            StudioProjectionRejection::UnsupportedField,
+            '/schema',
+            'unsupported model keyword',
+        );
+        $this->assertProjectionRefusal(
+            fn (): stdClass => $this->projector()->entry(
+                $this->context(),
+                $this->record(['problem' => 'value']),
+                $definition,
+            ),
+            StudioProjectionRejection::UnsupportedField,
+            '/schema',
+            'unsupported entry keyword',
         );
     }
 
@@ -757,6 +904,154 @@ final class ContentStudioProjectorTest extends TestCase
             StudioProjectionRejection::InvalidDocument,
             '/workflowState',
             'workflow coordinate',
+        );
+    }
+
+    /**
+     * Site ownership and public model coordinates are checked before projection reveals any document.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSiteAndPublicCoordinatesNeverCrossProjectionBoundaries(): void
+    {
+        $foreignSite = SiteContext::fromString('foreign-site');
+        $foreignDefinition = new ContentTypeDefinition(
+            self::TYPE_ID,
+            $foreignSite,
+            'article',
+            'Article',
+            ContentService::CORE_WORKFLOW_ID,
+            1,
+            [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'properties' => ['body' => ['type' => 'string']],
+            ],
+            4,
+            self::now(),
+            self::now(),
+        );
+
+        $this->assertProjectionRefusal(
+            fn (): stdClass => $this->projector()->contentModel($this->context(), $foreignDefinition),
+            StudioProjectionRejection::InvalidDocument,
+            '/owner',
+            'foreign-site model',
+        );
+        $this->assertProjectionRefusal(
+            fn (): stdClass => $this->projector()->publishedValues(
+                $this->record(['body' => 'value']),
+                $foreignDefinition,
+            ),
+            StudioProjectionRejection::InvalidDocument,
+            '/model',
+            'foreign-site public values',
+        );
+
+        $foreignContext = ExecutionContext::issueSystem(
+            $this,
+            SystemIdentity::Worker,
+            $foreignSite,
+            'studio-foreign-projection-test',
+        );
+        self::assertSame(
+            'content-model:' . self::TYPE_ID,
+            $this->projector()->contentModel($foreignContext, $foreignDefinition)->id,
+        );
+    }
+
+    /**
+     * Studio's bounded field vocabulary is enforced after Content disclosure adds entry properties.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testModelRefusesMoreThanOneThousandDisclosedFields(): void
+    {
+        $properties = [];
+        foreach (range(0, 998) as $index) {
+            $properties['field_' . $index] = ['type' => 'string'];
+        }
+
+        $this->assertProjectionRefusal(
+            fn (): stdClass => $this->projector()->contentModel(
+                $this->context(),
+                $this->definition($properties),
+            ),
+            StudioProjectionRejection::UnsupportedField,
+            '/schema/properties',
+            'one-thousand-and-one-field model',
+        );
+    }
+
+    /**
+     * The public value path remains lossless even for schemas unavailable to Studio model authoring.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPublishedValuesValidateCoordinatesAndRefuseAmbiguousValueSchemas(): void
+    {
+        $nullable = $this->projector()->publishedValues(
+            $this->record(['problem' => null]),
+            $this->definition(['problem' => ['type' => 'null']]),
+        );
+        self::assertNull($nullable->data_problem);
+
+        $this->assertProjectionRefusal(
+            fn (): stdClass => $this->projector()->publishedValues(
+                $this->record(['problem' => ['known' => 'value']]),
+                $this->definition([
+                    'problem' => [
+                        'type' => 'object',
+                        'properties' => ['known' => ['type' => 'string']],
+                        'additionalProperties' => true,
+                    ],
+                ]),
+            ),
+            StudioProjectionRejection::UnsupportedField,
+            '/data/problem',
+            'open public object',
+        );
+        $this->assertProjectionRefusal(
+            fn (): stdClass => $this->projector()->publishedValues(
+                $this->record(['problem' => 'value']),
+                $this->definition([
+                    'problem' => [
+                        'type' => 'string',
+                        'oneOf' => [['const' => 'value']],
+                    ],
+                ]),
+            ),
+            StudioProjectionRejection::UnsupportedField,
+            '/data/problem',
+            'combined public value schema',
+        );
+
+        $customDefinition = $this->definition(
+            ['body' => ['type' => 'string']],
+            workflowId: self::WORKFLOW_ID,
+            workflowVersion: 3,
+        );
+        $this->assertProjectionRefusal(
+            fn (): stdClass => $this->projector()->entry(
+                $this->context(),
+                $this->record(
+                    ['body' => 'value'],
+                    'unlisted',
+                    workflowId: self::WORKFLOW_ID,
+                    workflowVersion: 3,
+                ),
+                $customDefinition,
+                $this->workflow(),
+            ),
+            StudioProjectionRejection::LossyValue,
+            '/status',
+            'custom workflow state absent from its definition',
         );
     }
 

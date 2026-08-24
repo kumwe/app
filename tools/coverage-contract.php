@@ -441,7 +441,7 @@ function checkChangedLineFloor(array $ratchet, string $root, array $lines, ?stri
         . "Uncovered:\n     - %s",
         $percent,
         (string) $floor,
-        implode("\n     - ", array_slice($uncovered, 0, 1_000)),
+        implode("\n     - ", array_slice($uncovered, 0, 40)),
     );
 }
 
@@ -533,7 +533,7 @@ function checkChangedRefusalFloor(array $ratchet, string $root, array $lines, ?s
         . "A refusal nothing has taken is a branch nothing has tested. Unexecuted:\n     - %s",
         $percent,
         (string) $floor,
-        implode("\n     - ", array_slice($unexecuted, 0, 1_000)),
+        implode("\n     - ", array_slice($unexecuted, 0, 40)),
     );
 }
 
