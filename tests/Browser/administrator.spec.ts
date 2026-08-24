@@ -1238,6 +1238,12 @@ test.describe('authenticated administrator', () => {
     const handle = `browser_${testInfo.project.name.replaceAll('-', '_')}`;
     await page.goto('/administrator/settings');
     await expect(page.getByRole('heading', { name: 'Site settings' })).toBeVisible();
+    const retainedAttemptScheme = page.locator('[data-presentation-scheme-row]').filter({
+      has: page.locator(`input[data-presentation-scheme-handle][value="${handle}"]`),
+    });
+    if (await retainedAttemptScheme.count()) {
+      await retainedAttemptScheme.getByRole('button', { name: 'Remove', exact: true }).click();
+    }
     await expect(page.getByLabel('Active color scheme')).toHaveValue(/corporate|browser_/);
 
     await page.getByRole('button', { name: 'Choose media' }).click();
@@ -1268,8 +1274,20 @@ test.describe('authenticated administrator', () => {
     await page.getByLabel('Active color scheme').selectOption('corporate');
     await page.getByLabel('Button treatment').selectOption('solid');
     await page.getByLabel('Button shape').selectOption('rounded');
+    // Restore the complete presentation document, not only its active controls. Studio locks the
+    // whole published presentation revision, so retaining one project-specific inactive scheme would
+    // make the next serial browser project correctly demand an explicit composition theme migration.
+    const customScheme = page.locator('[data-presentation-scheme-row]').filter({
+      has: page.locator(`input[data-presentation-scheme-handle][value="${handle}"]`),
+    });
+    await customScheme.getByRole('button', { name: 'Remove', exact: true }).click();
+    await expect(customScheme).toHaveCount(0);
+    await expect(page.getByLabel('Active color scheme').locator(`option[value="${handle}"]`))
+      .toHaveCount(0);
     await page.getByRole('button', { name: 'Save settings and design' }).click();
     await expect(page).toHaveURL(/\/administrator\/settings\?saved=1$/);
+    await expect(page.getByLabel('Active color scheme').locator(`option[value="${handle}"]`))
+      .toHaveCount(0);
   });
 
   test('automation uses generated job controls rather than JSON', async ({ page }, testInfo) => {

@@ -11258,6 +11258,11 @@ var KumweStudioElement = class extends i {
       position: relative;
     }
 
+    .preview-stage:focus-visible {
+      outline: 0.1875rem solid color-mix(in srgb, var(--studio-primary), transparent 55%);
+      outline-offset: 0.125rem;
+    }
+
     .preview-surface-slot::slotted(iframe) {
       border: 0;
       display: block;
@@ -11600,7 +11605,9 @@ var KumweStudioElement = class extends i {
 	get activeViewport() {
 		const ordered = this.#orderedViewports();
 		if (ordered.length === 0) return;
-		return ordered.find((viewport) => viewport.id === this.#activeViewportId) ?? ordered.find((viewport) => viewport.base) ?? ordered[0];
+		const chosen = ordered.find((viewport) => viewport.id === this.#activeViewportId);
+		const initial = ordered.find((viewport) => viewport.id === this.configuration?.session.preview.initialViewport);
+		return chosen ?? initial ?? ordered.find((viewport) => viewport.base) ?? ordered[0];
 	}
 	get stateVersion() {
 		return this.#session?.stateVersion ?? 0;
@@ -13903,7 +13910,7 @@ var KumweStudioElement = class extends i {
                 </button>
               ` : A}
         ${available && state !== "closed" ? b`
-                <div class="preview-stage">
+                <div class="preview-stage" tabindex="0">
                   <slot
                     class="preview-surface-slot"
                     name="preview"
@@ -13924,6 +13931,9 @@ var KumweStudioElement = class extends i {
 		const geometry = this.canvasGeometry;
 		if (geometry === void 0 || geometry.viewport.width <= 0 || geometry.viewport.height <= 0) return A;
 		const indicator = this.#previewDrag?.active === true ? this.#previewDrag.target?.indicator : void 0;
+		const measurements = Object.entries(geometry.measurements).sort(([left], [right]) => {
+			return (left === this.selectedNodeId ? 1 : 0) - (right === this.selectedNodeId ? 1 : 0);
+		});
 		return b`
       <svg
         class="preview-canvas-overlay"
@@ -13943,7 +13953,7 @@ var KumweStudioElement = class extends i {
 			this.#onPreviewCanvasPointerCancel(event);
 		}}
       >
-        ${Object.entries(geometry.measurements).flatMap(([nodeId, rects]) => rects.map((rect, index) => w`
+        ${measurements.flatMap(([nodeId, rects]) => rects.map((rect, index) => w`
               <rect
                 class="preview-canvas-region"
                 data-node-id=${nodeId}
@@ -14982,7 +14992,7 @@ async function setupStudioComposition() {
 	if (shell === null) return;
 	try {
 		const boot = JSON.parse(encoded.textContent ?? "");
-		if (boot.release !== "0.1.0-alpha.10") throw new Error("Studio release binding mismatch.");
+		if (boot.release !== "0.1.0-alpha.11") throw new Error("Studio release binding mismatch.");
 		const opened = await openHostSession(boot);
 		const advertised = new Set(opened.hostCapabilities);
 		const adapter = createStudioHttpHostAdapter(boot.endpoints.ports, {

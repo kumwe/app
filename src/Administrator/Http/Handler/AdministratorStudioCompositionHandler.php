@@ -188,7 +188,7 @@ final readonly class AdministratorStudioCompositionHandler implements RequestHan
                 'timezone' => $timezone,
             ],
             'model' => $composition->model,
-            'release' => '0.1.0-alpha.10',
+            'release' => '0.1.0-alpha.11',
             'site' => $composition->binding->site->identifier(),
             'status' => $composition->blueprint->document()->status,
         ], JSON_THROW_ON_ERROR | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);

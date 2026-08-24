@@ -4,7 +4,7 @@
     "name": "reveal-validation"
   },
   "assets/administrator/components/studio-composition.ts": {
-    "file": "js/studio-composition-QmdbrGlo.js",
+    "file": "js/studio-composition-DDjAbAXb.js",
     "name": "studio-composition",
     "src": "assets/administrator/components/studio-composition.ts",
     "isDynamicEntry": true,
@@ -13,7 +13,7 @@
     ]
   },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-BZJFek7-.js",
+    "file": "js/administrator-CwF399uW.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
@@ -40,7 +40,7 @@
     ]
   },
   "assets/site/main.ts": {
-    "file": "js/site-ByC0j-z0.js",
+    "file": "js/site-DUE4t0bZ.js",
     "name": "site",
     "src": "assets/site/main.ts",
     "isEntry": true,
@@ -48,7 +48,7 @@
       "_reveal-validation-g1jDnck7.js"
     ],
     "css": [
-      "css/site-CGPXwCJ-.css"
+      "css/site-Bg9wT4O4.css"
     ]
   }
 }
