@@ -875,7 +875,10 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   expect(secondSectionBox).not.toBeNull();
   if (firstSectionBox === null || secondSectionBox === null) return;
 
-  await page.mouse.move(secondSectionBox.x + 2, secondSectionBox.y + 2);
+  await page.mouse.move(
+    secondSectionBox.x + secondSectionBox.width / 2,
+    secondSectionBox.y + 2,
+  );
   await page.mouse.down();
   await page.mouse.move(
     firstSectionBox.x + firstSectionBox.width / 2,
