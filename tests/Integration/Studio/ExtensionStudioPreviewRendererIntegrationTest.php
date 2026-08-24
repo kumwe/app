@@ -16,7 +16,9 @@ use Kumwe\App\Extension\Domain\PackageChecksum;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\ContributedStudioPreviewBlockRendererRegistry;
+use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeLoader;
+use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Studio\Application\Preview\StudioCompositionMarkupRenderer;
@@ -88,6 +90,32 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
             $trust->synchronizeRuntimeMaterialization();
 
             $runtime = TestKernelFactory::create($environment);
+            $materialization = self::service($runtime, RuntimeMaterializationState::class);
+            $compiler = self::service($runtime, ExtensionRuntimeMapCompiler::class);
+            self::assertTrue(
+                $compiler->matchesAuthority($materialization),
+                'The loaded preview publication must still match database authority.',
+            );
+            self::assertTrue(
+                $compiler->isCurrent($materialization),
+                'The loaded preview publication must retain its live replica lease.',
+            );
+            $publication = $materialization->publication;
+            self::assertNotNull($publication);
+            $runtimeEntry = null;
+            foreach ($publication->document['extensions'] ?? [] as $candidate) {
+                if (is_array($candidate) && ($candidate['identifier'] ?? null) === $identifier) {
+                    $runtimeEntry = $candidate;
+                    break;
+                }
+            }
+            self::assertIsArray($runtimeEntry);
+            $runtimeTrust = self::service($runtime, TrustStore::class);
+            $runtimeTrust->synchronizedLifecycle(
+                static function () use ($runtimeTrust, $runtimeEntry): void {
+                    $runtimeTrust->enforceRuntimeEntryTrust($runtimeEntry);
+                },
+            );
             $renderer = self::service($runtime, StudioCompositionMarkupRenderer::class);
             $rendererRegistry = self::service($runtime, StudioPreviewBlockRendererRegistry::class);
             $registries = self::service($runtime, ExtensionContributionRegistrySet::class);
