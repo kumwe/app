@@ -53,7 +53,7 @@ async function openComposition(page: Page, modelHandle?: string): Promise<Locato
   }
   const shell = page.locator('kumwe-studio');
   await expect(shell.getByRole('complementary', { name: 'Block palette' })
-    .getByRole('button', { name: 'Section' })).toBeVisible();
+    .getByRole('button', { name: 'Section', exact: true })).toBeVisible();
   await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
   return shell;
 }
@@ -1003,7 +1003,7 @@ test('a deterministically delayed conflicting save replaces the mutable shell an
   await competingPage.goto(compositionUrl);
   const competingShell = competingPage.locator('kumwe-studio');
   await expect(competingShell.getByRole('complementary', { name: 'Block palette' })
-    .getByRole('button', { name: 'Section' })).toBeVisible();
+    .getByRole('button', { name: 'Section', exact: true })).toBeVisible();
   await previewFrame(competingPage);
   await expect(competingShell.getByText('Preview is current.')).toBeVisible();
   const acceptedDocuments = competingTraffic.documents.length;
@@ -1018,7 +1018,7 @@ test('a deterministically delayed conflicting save replaces the mutable shell an
   await expect(competingPage.locator('kumwe-studio')).toHaveCount(0);
   await expect(competingPage.locator('[data-studio-composition-conflict]'))
     .toHaveText('Another session saved this composition. Reload before making more changes.');
-  await expect(competingPage.getByRole('button', { name: 'Section' })).toHaveCount(0);
+  await expect(competingPage.getByRole('button', { name: 'Section', exact: true })).toHaveCount(0);
   await competingPage.waitForTimeout(750);
   expect(competingTraffic.documents).toHaveLength(acceptedDocuments);
 });

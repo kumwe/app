@@ -13,6 +13,7 @@ interface ResponsiveLayoutSnapshot {
 }
 
 const responsiveMarkup = `
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <div
     id="responsive-grid"
     class="studio-preview-grid"

@@ -203,7 +203,7 @@ test.describe('Right-to-left presentation', () => {
 
     const shell = page.locator('kumwe-studio');
     const section = shell.getByRole('complementary', { name: 'Block palette' })
-      .getByRole('button', { name: 'Section' });
+      .getByRole('button', { name: 'Section', exact: true });
     await expect(section).toBeVisible();
     await section.click();
     const frame = page.locator('iframe[data-studio-preview]').contentFrame();
