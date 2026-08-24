@@ -17,11 +17,14 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
 use Kumwe\App\Studio\Application\Host\StudioArtifactHostPort;
 use Kumwe\App\Studio\Application\Host\StudioArtifactPublicationGuard;
+use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
 use Kumwe\App\Studio\Application\Host\StudioHostOperationRefused;
 use Kumwe\App\Studio\Application\Host\StudioHostResult;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Host\StudioMutationExecutor;
 use Kumwe\App\Studio\Application\Host\StudioRecoveryHostPort;
+use Kumwe\App\Studio\Application\Host\StudioRecoveryRepository;
+use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
 use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
 use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
 use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
@@ -514,7 +517,7 @@ final class StudioArtifactRecoveryHostVectorTest extends TestCase
     }
 
     /**
-     * Prove a bound save cannot mint another artifact version or cross its trusted resource identifier.
+     * Prove bound coordinates and every defensive artifact/recovery wrapper guard fail closed.
      *
      * @return  void
      *
@@ -550,6 +553,429 @@ final class StudioArtifactRecoveryHostVectorTest extends TestCase
         }
         self::assertNull($runtime->current('vector.other-blueprint', '1.0.0'));
         self::assertSame('vector.blueprint-r1', $runtime->current('vector.blueprint', '1.0.0')?->revision);
+
+        $this->assertDefensiveHostPortGuards($vector, $runtime);
+    }
+
+    /**
+     * Exercise runtime guards that sit behind the normal closed HTTP schema and persistence contract.
+     *
+     * @param   stdClass                            $vector   Accepted save vector supplying trusted state.
+     * @param   StudioArtifactRecoveryVectorRuntime $runtime  Real production-port test runtime.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    private function assertDefensiveHostPortGuards(
+        stdClass $vector,
+        StudioArtifactRecoveryVectorRuntime $runtime,
+    ): void {
+        $current = $runtime->current('vector.blueprint', '1.0.0');
+        self::assertInstanceOf(StoredStudioArtifact::class, $current);
+        $reference = (object) ['reference' => (object) [
+            'id' => 'vector.blueprint',
+            'version' => '1.0.0',
+        ]];
+        $read = clone $vector->context;
+        $read->operationId = 'studio.operation/artifact.load';
+        $read->requestId = 'requests/artifact-defensive-read';
+        unset($read->expectedRevision, $read->idempotencyKey);
+
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'artifact',
+                'unknown',
+                $read,
+                new stdClass(),
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'incompatible',
+            'studio.host/operation-unavailable',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'artifact',
+                'load',
+                $read,
+                null,
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'artifact',
+                'load',
+                $read,
+                (object) ['unexpected' => true],
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'artifact',
+                'load',
+                $read,
+                (object) ['reference' => 'not-an-object'],
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'artifact',
+                'load',
+                $read,
+                (object) ['reference' => (object) [
+                    'extra' => true,
+                    'id' => 'vector.blueprint',
+                    'version' => '1.0.0',
+                ]],
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'artifact',
+                'load',
+                $read,
+                (object) ['reference' => (object) ['id' => '', 'version' => '1.0.0']],
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        $writeContext = clone $read;
+        $writeContext->expectedRevision = 'revision/not-allowed';
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'artifact',
+                'load',
+                $writeContext,
+                $reference,
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-context',
+        );
+        $withoutRevision = clone $vector->context;
+        unset($withoutRevision->expectedRevision, $withoutRevision->idempotencyKey);
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'artifact',
+                'save',
+                $withoutRevision,
+                new stdClass(),
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.artifact/expected-revision-required',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'artifact',
+                'load',
+                $read,
+                $reference,
+                'vector.blueprint',
+                'entry',
+            ),
+            'forbidden',
+            'studio.host/session-refused',
+        );
+
+        $candidate = $current->document();
+        $candidate->revision = 'vector.blueprint-r2';
+        $this->assertHostRefusal(
+            static fn () => $runtime->saveDocument($vector->context, $candidate),
+            'conflict',
+            'studio.artifact/revision-conflict',
+        );
+
+        $saveContext = clone $vector->context;
+        $saveContext->requestId = 'requests/artifact-coordinate-conflict';
+        unset($saveContext->idempotencyKey);
+        $candidate = $current->document();
+        $wrongSite = new StoredStudioArtifact(
+            'other-site',
+            $current->id,
+            $current->version,
+            $current->kind,
+            $current->revision,
+            $current->status,
+            $current->canonicalDocument,
+            $current->canonicalDependencies,
+        );
+        $coordinateRepository = $this->createStub(StudioArtifactRepository::class);
+        $coordinateRepository->method('current')->willReturn($wrongSite);
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeArtifactAgainst(
+                $coordinateRepository,
+                'save',
+                $saveContext,
+                (object) ['document' => $candidate],
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'conflict',
+            'studio.artifact/coordinate-conflict',
+        );
+
+        $storeConflictRepository = $this->createStub(StudioArtifactRepository::class);
+        $storeConflictRepository->method('current')->willReturn($current);
+        $storeConflictRepository->method('store')->willReturn(false);
+        $saveContext->requestId = 'requests/artifact-save-store-conflict';
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeArtifactAgainst(
+                $storeConflictRepository,
+                'save',
+                $saveContext,
+                (object) ['document' => $candidate],
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'conflict',
+            'studio.artifact/revision-conflict',
+        );
+
+        $publish = clone $vector->context;
+        $publish->operationId = 'studio.operation/artifact.publish';
+        $publish->requestId = 'requests/artifact-publish-missing';
+        unset($publish->idempotencyKey);
+        $missingRepository = $this->createStub(StudioArtifactRepository::class);
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeArtifactAgainst(
+                $missingRepository,
+                'publish',
+                $publish,
+                $reference,
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'not-found',
+            'studio.artifact/not-found',
+        );
+
+        $retiredDocument = $current->document();
+        $retiredDocument->status = 'retired';
+        $retired = new StoredStudioArtifact(
+            $current->siteIdentifier,
+            $current->id,
+            $current->version,
+            $current->kind,
+            $current->revision,
+            'retired',
+            CanonicalJson::stringify($retiredDocument),
+            $current->canonicalDependencies,
+        );
+        $retiredRepository = $this->createStub(StudioArtifactRepository::class);
+        $retiredRepository->method('current')->willReturn($retired);
+        $publish->requestId = 'requests/artifact-publish-retired';
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeArtifactAgainst(
+                $retiredRepository,
+                'publish',
+                $publish,
+                $reference,
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'conflict',
+            'studio.artifact/retired',
+        );
+
+        $lifecycleConflictRepository = $this->createStub(StudioArtifactRepository::class);
+        $lifecycleConflictRepository->method('current')->willReturn($current);
+        $lifecycleConflictRepository->method('store')->willReturn(false);
+        $publish->requestId = 'requests/artifact-publish-store-conflict';
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeArtifactAgainst(
+                $lifecycleConflictRepository,
+                'publish',
+                $publish,
+                $reference,
+                'vector.blueprint',
+                'blueprint',
+            ),
+            'conflict',
+            'studio.artifact/revision-conflict',
+        );
+
+        $recoveryRead = clone $read;
+        $recoveryRead->operationId = 'studio.operation/recovery.load';
+        $recoveryRead->requestId = 'requests/recovery-defensive-load';
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'recovery',
+                'unknown',
+                $recoveryRead,
+                new stdClass(),
+                'recovery-resource',
+                'blueprint',
+            ),
+            'incompatible',
+            'studio.host/operation-unavailable',
+        );
+        $recoveryWriteContext = clone $recoveryRead;
+        $recoveryWriteContext->expectedRevision = 'revision/not-allowed';
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'recovery',
+                'load',
+                $recoveryWriteContext,
+                new stdClass(),
+                'recovery-resource',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-context',
+        );
+        $recoveryIdempotentRead = clone $recoveryRead;
+        $recoveryIdempotentRead->idempotencyKey = 'idempotency/not-allowed';
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'recovery',
+                'load',
+                $recoveryIdempotentRead,
+                new stdClass(),
+                'recovery-resource',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-context',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'recovery',
+                'load',
+                $recoveryRead,
+                null,
+                'recovery-resource',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'recovery',
+                'load',
+                $recoveryRead,
+                (object) ['unexpected' => true],
+                'recovery-resource',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+
+        $recoveryStore = clone $recoveryRead;
+        $recoveryStore->operationId = 'studio.operation/recovery.store';
+        $recoveryStore->requestId = 'requests/recovery-defensive-store';
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'recovery',
+                'store',
+                $recoveryStore,
+                (object) ['envelope' => []],
+                'recovery-resource',
+                'blueprint',
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'recovery',
+                'store',
+                $recoveryStore,
+                (object) ['envelope' => (object) ['html' => '<script>unsafe</script>']],
+                'recovery-resource',
+                'blueprint',
+            ),
+            'validation-failed',
+            'studio.artifact/unsafe-member',
+        );
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRaw(
+                'recovery',
+                'store',
+                $recoveryStore,
+                (object) ['envelope' => (object) ['value' => str_repeat('x', 262145)]],
+                'recovery-resource',
+                'blueprint',
+            ),
+            'limit-exceeded',
+            'studio.recovery/size-limit',
+        );
+
+        $invalidJsonRepository = $this->createStub(StudioRecoveryRepository::class);
+        $invalidJsonRepository->method('loadEnvelope')->willReturn('{');
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRecoveryAgainst(
+                $invalidJsonRepository,
+                'load',
+                $recoveryRead,
+                new stdClass(),
+            ),
+            'internal',
+            'studio.recovery/corrupt',
+        );
+        $invalidShapeRepository = $this->createStub(StudioRecoveryRepository::class);
+        $invalidShapeRepository->method('loadEnvelope')->willReturn('[]');
+        $this->assertHostRefusal(
+            static fn () => $runtime->invokeRecoveryAgainst(
+                $invalidShapeRepository,
+                'load',
+                $recoveryRead,
+                new stdClass(),
+            ),
+            'internal',
+            'studio.recovery/corrupt',
+        );
+        try {
+            $runtime->recoveryWithLimits(0, 60, 60000);
+            self::fail('The recovery port accepted a non-positive persistence bound.');
+        } catch (RuntimeException $invalidLimits) {
+            self::assertSame('Studio recovery limits must be positive.', $invalidLimits->getMessage());
+        }
+    }
+
+    /**
+     * Assert one defensive public host-port invocation emits its exact stable refusal.
+     *
+     * @param   callable(): mixed  $operation  Host operation expected to fail closed.
+     * @param   string             $category   Expected canonical refusal category.
+     * @param   string             $code       Expected canonical diagnostic code.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    private function assertHostRefusal(callable $operation, string $category, string $code): void
+    {
+        try {
+            $operation();
+            self::fail('The malformed Studio host-port request unexpectedly succeeded.');
+        } catch (StudioHostOperationRefused $refused) {
+            self::assertSame($category, $refused->category);
+            self::assertSame($code, $refused->diagnosticCode);
+        }
     }
 
     /**
@@ -668,6 +1094,14 @@ final class StudioArtifactRecoveryVectorRuntime
     private readonly StudioArtifactAdmission $admission;
 
     /**
+     * Production mutation executor shared by the real and adversarial repository probes.
+     *
+     * @var    StudioMutationExecutor
+     * @since  2.0.0
+     */
+    private readonly StudioMutationExecutor $mutations;
+
+    /**
      * Production artifact host port under test.
      *
      * @var    StudioArtifactHostPort
@@ -751,17 +1185,22 @@ final class StudioArtifactRecoveryVectorRuntime
         $this->admission = new StudioArtifactAdmission(StudioContractSchemas::fromVendoredCorpus());
         $this->clock = new StudioArtifactRecoveryMutableClock();
         $this->audit = $audit ?? new StudioArtifactRecoveryRecordingAudit();
-        $mutations = new StudioMutationExecutor($this->transactions, $this->storage, $this->audit, $this->clock);
+        $this->mutations = new StudioMutationExecutor(
+            $this->transactions,
+            $this->storage,
+            $this->audit,
+            $this->clock,
+        );
         $this->artifact = new StudioArtifactHostPort(
             $this->storage,
             $this->admission,
-            $mutations,
+            $this->mutations,
             $publication ?? new StudioArtifactPublicationGuardProbe(),
         );
         $rate = $vector->given->rateLimits[0] ?? null;
         $this->recovery = new StudioRecoveryHostPort(
             $this->storage,
-            $mutations,
+            $this->mutations,
             $this->clock,
             262144,
             $rate instanceof stdClass ? $rate->maximumRequests : 60,
@@ -854,6 +1293,128 @@ final class StudioArtifactRecoveryVectorRuntime
     }
 
     /**
+     * Dispatch an already-wrapped candidate directly to a production port for defensive-guard probes.
+     *
+     * This bypasses only the vector harness's semantic-to-HTTP translation so malformed runtime wrapper
+     * values can reach the same public port API that the HTTP decoder protects in normal traffic.
+     *
+     * @param   string    $port        Canonical port name.
+     * @param   string    $operation   Candidate operation name.
+     * @param   stdClass  $context     Vendored request context.
+     * @param   mixed     $arguments   Candidate published HTTP wrapper.
+     * @param   string    $resourceId  Trusted resource binding.
+     * @param   string    $kind        Trusted resource artifact kind.
+     *
+     * @return  StudioHostResult  Production port result.
+     *
+     * @since  2.0.0
+     */
+    public function invokeRaw(
+        string $port,
+        string $operation,
+        stdClass $context,
+        mixed $arguments,
+        string $resourceId,
+        string $kind,
+    ): StudioHostResult {
+        $request = self::request($context, $arguments);
+        $snapshot = $this->snapshot($context, $resourceId, $kind);
+
+        return $port === 'artifact'
+            ? $this->artifact->dispatch($operation, $request, $snapshot)
+            : $this->recovery->dispatch($operation, $request, $snapshot);
+    }
+
+    /**
+     * Dispatch through an adversarial artifact repository while retaining every production boundary.
+     *
+     * @param   StudioArtifactRepository  $repository  Repository state machine under test.
+     * @param   string                    $operation   Canonical artifact operation.
+     * @param   stdClass                  $context     Vendored request context.
+     * @param   mixed                     $arguments   Exact published HTTP wrapper.
+     * @param   string                    $resourceId  Trusted resource binding.
+     * @param   string                    $kind        Trusted resource artifact kind.
+     *
+     * @return  StudioHostResult  Production artifact-port result.
+     *
+     * @since  2.0.0
+     */
+    public function invokeArtifactAgainst(
+        StudioArtifactRepository $repository,
+        string $operation,
+        stdClass $context,
+        mixed $arguments,
+        string $resourceId,
+        string $kind,
+    ): StudioHostResult {
+        $port = new StudioArtifactHostPort(
+            $repository,
+            $this->admission,
+            $this->mutations,
+            new StudioArtifactPublicationGuardProbe(),
+        );
+
+        return $port->dispatch(
+            $operation,
+            self::request($context, $arguments),
+            $this->snapshot($context, $resourceId, $kind),
+        );
+    }
+
+    /**
+     * Dispatch through an adversarial recovery repository while retaining production mutation semantics.
+     *
+     * @param   StudioRecoveryRepository  $repository  Recovery repository state under test.
+     * @param   string                    $operation   Canonical recovery operation.
+     * @param   stdClass                  $context     Vendored request context.
+     * @param   mixed                     $arguments   Exact published HTTP wrapper.
+     *
+     * @return  StudioHostResult  Production recovery-port result.
+     *
+     * @since  2.0.0
+     */
+    public function invokeRecoveryAgainst(
+        StudioRecoveryRepository $repository,
+        string $operation,
+        stdClass $context,
+        mixed $arguments,
+    ): StudioHostResult {
+        $port = new StudioRecoveryHostPort($repository, $this->mutations, $this->clock);
+
+        return $port->dispatch(
+            $operation,
+            self::request($context, $arguments),
+            $this->snapshot($context, 'recovery-resource', 'blueprint'),
+        );
+    }
+
+    /**
+     * Construct a recovery port with explicit bounds for constructor-invariant coverage.
+     *
+     * @param   int  $maximumBytes        Maximum canonical envelope bytes.
+     * @param   int  $maximumWrites       Maximum writes per fixed window.
+     * @param   int  $windowMilliseconds  Fixed-window duration.
+     *
+     * @return  StudioRecoveryHostPort  Port when every supplied bound is positive.
+     *
+     * @since  2.0.0
+     */
+    public function recoveryWithLimits(
+        int $maximumBytes,
+        int $maximumWrites,
+        int $windowMilliseconds,
+    ): StudioRecoveryHostPort {
+        return new StudioRecoveryHostPort(
+            $this->storage,
+            $this->mutations,
+            $this->clock,
+            $maximumBytes,
+            $maximumWrites,
+            $windowMilliseconds,
+        );
+    }
+
+    /**
      * Dispatch one already-wrapped request through the production port and trusted session snapshot.
      *
      * @param   string    $port        Canonical port name.
@@ -882,6 +1443,22 @@ final class StudioArtifactRecoveryVectorRuntime
         if (!is_string($resourceId)) {
             throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
         }
+        return $this->invokeRaw($port, $operation, $context, $arguments, $resourceId, $kind);
+    }
+
+    /**
+     * Build the exact trusted session snapshot for one direct port invocation.
+     *
+     * @param   stdClass  $context     Vendored request context.
+     * @param   string    $resourceId  Trusted resource binding.
+     * @param   string    $kind        Trusted resource artifact kind.
+     *
+     * @return  StudioHostSessionSnapshot  Trusted vector snapshot.
+     *
+     * @since  2.0.0
+     */
+    private function snapshot(stdClass $context, string $resourceId, string $kind): StudioHostSessionSnapshot
+    {
         $mode = match ($kind) {
             'content-model' => StudioSessionMode::Model,
             'entry' => StudioSessionMode::Content,
@@ -901,7 +1478,8 @@ final class StudioArtifactRecoveryVectorRuntime
             $resourceId,
             $this->generation,
         );
-        $snapshot = new StudioHostSessionSnapshot(
+
+        return new StudioHostSessionSnapshot(
             $session,
             $this->permissions,
             $this->generation,
@@ -909,7 +1487,21 @@ final class StudioArtifactRecoveryVectorRuntime
             $this->canPublish,
             $this->canUnpublish,
         );
-        $request = new StudioHostRequest(
+    }
+
+    /**
+     * Build one typed request from the exact candidate wrapper and vendored context.
+     *
+     * @param   stdClass  $context    Vendored request context.
+     * @param   mixed     $arguments  Candidate published HTTP wrapper.
+     *
+     * @return  StudioHostRequest  Typed host request passed to the public port API.
+     *
+     * @since  2.0.0
+     */
+    private static function request(stdClass $context, mixed $arguments): StudioHostRequest
+    {
+        return new StudioHostRequest(
             $context->operationId,
             $context->protocolVersion,
             $context->requestId,
@@ -921,10 +1513,6 @@ final class StudioArtifactRecoveryVectorRuntime
             property_exists($context, 'locale') ? $context->locale : null,
             property_exists($context, 'traceContext') ? $context->traceContext : null,
         );
-
-        return $port === 'artifact'
-            ? $this->artifact->dispatch($operation, $request, $snapshot)
-            : $this->recovery->dispatch($operation, $request, $snapshot);
     }
 
     /**

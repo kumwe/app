@@ -159,7 +159,7 @@ final class StudioHostDispatcherTest extends TestCase
     }
 
     /**
-     * Closed schema validation refuses client-asserted actor and capability members before dispatch.
+     * Closed validation refuses spoofed actor and capability members before dispatch.
      *
      * @return  void
      *
@@ -186,7 +186,7 @@ final class StudioHostDispatcherTest extends TestCase
     }
 
     /**
-     * Permission operations return deterministic snapshots independent of correlation and retry metadata.
+     * Permission operations are deterministic and unavailable or malformed later routes fail closed.
      *
      * @return  void
      *
@@ -236,6 +236,42 @@ final class StudioHostDispatcherTest extends TestCase
         $refreshRequest->arguments = (object) ['unexpected' => true];
         $refused = $dispatcher->dispatch($context, 'permission', 'refresh', $refreshRequest);
         self::assertSame('studio.host/invalid-arguments', $refused->document->diagnostics[0]->code);
+
+        $request->arguments = new stdClass();
+        $invalidExplain = $dispatcher->dispatch($context, 'permission', 'explain', $request);
+        self::assertSame('invalid-request', $invalidExplain->document->category);
+        self::assertSame(
+            'studio.host/invalid-arguments',
+            $invalidExplain->document->diagnostics[0]->code,
+        );
+
+        $previewRequest = (object) ['context' => (object) [
+            'operationId' => 'studio.operation/preview.render',
+            'protocolVersion' => StudioHostDispatcher::PROTOCOL_VERSION,
+            'requestId' => 'requests/preview-without-transport',
+            'resourceContextKey' => $snapshot->session->resourceContextKey,
+            'sessionGeneration' => $snapshot->generation,
+        ]];
+        $invalidPreview = $dispatcher->dispatch($context, 'preview', 'render', $previewRequest);
+        self::assertSame('invalid-request', $invalidPreview->document->category);
+        self::assertSame(
+            'studio.preview/invalid-transport',
+            $invalidPreview->document->diagnostics[0]->code,
+        );
+
+        $artifactRequest = (object) ['context' => (object) [
+            'operationId' => 'studio.operation/artifact.load',
+            'protocolVersion' => StudioHostDispatcher::PROTOCOL_VERSION,
+            'requestId' => 'requests/artifact-without-port',
+            'resourceContextKey' => $snapshot->session->resourceContextKey,
+            'sessionGeneration' => $snapshot->generation,
+        ]];
+        $unavailableArtifact = $dispatcher->dispatch($context, 'artifact', 'load', $artifactRequest);
+        self::assertSame('incompatible', $unavailableArtifact->document->category);
+        self::assertSame(
+            'studio.host/operation-unavailable',
+            $unavailableArtifact->document->diagnostics[0]->code,
+        );
     }
 
     /**

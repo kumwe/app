@@ -196,6 +196,73 @@ final class ContributedStudioPreviewBlockRendererRegistryTest extends TestCase
     }
 
     /**
+     * Copied extension blocks reject incomplete coordinates, non-JSON properties and empty lookups.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCopiedPreviewBlockRefusesEveryMalformedPublicInput(): void
+    {
+        $refusals = [
+            'missing id' => static fn (): StudioPreviewBlock => new StudioPreviewBlock(
+                '',
+                'kumwe.contract-manifest-six/grid',
+                '1.0.0',
+                [],
+            ),
+            'missing type' => static fn (): StudioPreviewBlock => new StudioPreviewBlock(
+                'grid-node',
+                '',
+                '1.0.0',
+                [],
+            ),
+            'missing version' => static fn (): StudioPreviewBlock => new StudioPreviewBlock(
+                'grid-node',
+                'kumwe.contract-manifest-six/grid',
+                '',
+                [],
+            ),
+        ];
+        foreach ($refusals as $label => $operation) {
+            try {
+                $operation();
+                self::fail($label . ' must be refused.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertSame('A Studio preview block coordinate is incomplete.', $exception->getMessage());
+            }
+        }
+
+        try {
+            new StudioPreviewBlock(
+                'grid-node',
+                'kumwe.contract-manifest-six/grid',
+                '1.0.0',
+                ['columns' => NAN],
+            );
+            self::fail('A non-JSON copied property must be refused.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame(
+                'Studio preview block properties must stay inside canonical JSON.',
+                $exception->getMessage(),
+            );
+        }
+
+        $block = new StudioPreviewBlock(
+            'grid-node',
+            'kumwe.contract-manifest-six/grid',
+            '1.0.0',
+            ['columns' => 4],
+        );
+        try {
+            $block->property('');
+            self::fail('An empty copied-property lookup must be refused.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('A Studio preview block property name is required.', $exception->getMessage());
+        }
+    }
+
+    /**
      * Build the derived executable definition from the committed signed declaration.
      *
      * @param   ContributionOwner  $owner      Runtime package owner.

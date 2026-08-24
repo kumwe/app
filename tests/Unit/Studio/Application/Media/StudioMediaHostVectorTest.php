@@ -142,6 +142,192 @@ final class StudioMediaHostVectorTest extends TestCase
     }
 
     /**
+     * Refuse unknown operations and every malformed HTTP-adapter wrapper before invoking media custody.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testUnknownOperationsAndMalformedWrappersAreRefused(): void
+    {
+        $context = self::context();
+        $snapshot = self::directSnapshot($context, [
+            'studio.permission/read',
+            'studio.permission/upload-media',
+        ]);
+        $cases = [
+            'unknown operation' => [
+                'studio.operation/media.unknown',
+                new stdClass(),
+                'studio.host/operation-unavailable',
+            ],
+            'invalid upload descriptor' => [
+                'studio.operation/media.authorize-upload',
+                (object) ['request' => (object) ['filename' => 'one.png']],
+                'studio.media/upload-failed',
+            ],
+            'extra wrapper member' => [
+                'studio.operation/media.get',
+                (object) ['assetId' => 'assets/one', 'extra' => true],
+                'studio.host/invalid-arguments',
+            ],
+            'non-object query' => [
+                'studio.operation/media.list',
+                (object) ['query' => 'all'],
+                'studio.host/invalid-arguments',
+            ],
+            'invalid stable identity' => [
+                'studio.operation/media.get',
+                (object) ['assetId' => 'bad identity'],
+                'studio.host/invalid-arguments',
+            ],
+        ];
+        $port = $this->port();
+
+        foreach ($cases as $case => [$operation, $arguments, $code]) {
+            $outcome = $port->dispatch(
+                $context,
+                self::request($operation, $arguments),
+                $snapshot,
+            );
+            self::assertSame($code, $outcome->document->diagnostics[0]->code, $case);
+        }
+    }
+
+    /**
+     * Require read authority for every operation and upload authority for every media mutation.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testReadAndMutationPermissionsAreIndependentlyRequired(): void
+    {
+        $context = self::context();
+        $port = $this->port();
+        $cases = [
+            'missing read' => [
+                self::request('studio.operation/media.get', (object) ['assetId' => 'assets/one']),
+                [],
+            ],
+            'missing upload' => [
+                self::request(
+                    'studio.operation/media.authorize-upload',
+                    (object) ['request' => (object) [
+                        'byteSize' => 128,
+                        'filename' => 'one.jpg',
+                        'mediaType' => 'image/jpeg',
+                        'purpose' => 'studio.media/content',
+                    ]],
+                ),
+                ['studio.permission/read'],
+            ],
+        ];
+
+        foreach ($cases as $case => [$request, $permissions]) {
+            $outcome = $port->dispatch(
+                $context,
+                $request,
+                self::directSnapshot($context, $permissions),
+            );
+            self::assertSame(403, $outcome->status, $case);
+            self::assertSame(
+                'studio.media/permission-refused',
+                $outcome->document->diagnostics[0]->code,
+                $case,
+            );
+        }
+    }
+
+    /**
+     * Compose the host port around deterministic operation and transaction doubles.
+     *
+     * @return  StudioMediaHostPort  Ready media host adapter.
+     *
+     * @since  2.0.0
+     */
+    private function port(): StudioMediaHostPort
+    {
+        $ledger = self::createStub(IdempotencyLedger::class);
+        $transactions = self::createStub(TransactionManager::class);
+        $transactions->method('transactional')->willReturnCallback(
+            static fn (callable $operation): mixed => $operation(),
+        );
+
+        return new StudioMediaHostPort(
+            $this->operations(),
+            new StudioMediaMutationIdempotency(
+                $ledger,
+                $transactions,
+                self::createStub(ClockInterface::class),
+            ),
+        );
+    }
+
+    /**
+     * Build one direct host request around caller-controlled operation arguments.
+     *
+     * @param   string  $operation  Canonical or deliberately unknown operation identifier.
+     * @param   mixed   $arguments  HTTP-adapter argument candidate.
+     *
+     * @return  StudioHostRequest  Request envelope.
+     *
+     * @since  2.0.0
+     */
+    private static function request(string $operation, mixed $arguments): StudioHostRequest
+    {
+        return new StudioHostRequest(
+            $operation,
+            '0.1.0-draft.2',
+            'requests/media-refusal',
+            'contexts/media-refusal',
+            'generation-media-refusal',
+            $arguments,
+            null,
+            null,
+            null,
+            null,
+        );
+    }
+
+    /**
+     * Build a trusted live snapshot with the exact supplied Studio permissions.
+     *
+     * @param   ExecutionContext  $context      Trusted App context.
+     * @param   list<string>      $permissions  Studio permission set.
+     *
+     * @return  StudioHostSessionSnapshot  Matching live snapshot.
+     *
+     * @since  2.0.0
+     */
+    private static function directSnapshot(ExecutionContext $context, array $permissions): StudioHostSessionSnapshot
+    {
+        sort($permissions, SORT_STRING);
+        $session = new StudioHostSession(
+            'contexts/media-refusal',
+            $context->actorId(),
+            $context->site()->identifier(),
+            null,
+            null,
+            'administrator',
+            str_repeat('a', 64),
+            StudioSessionMode::Content,
+            StudioResourceKind::Content,
+            'content-refusal',
+            'generation-media-refusal',
+        );
+
+        return new StudioHostSessionSnapshot(
+            $session,
+            $permissions,
+            'generation-media-refusal',
+            true,
+            false,
+            false,
+        );
+    }
+
+    /**
      * Supply a deterministic semantic double behind the production wrapper decoder.
      *
      * @return  StudioMediaOperations  Operations needed by the canonical vector corpus.

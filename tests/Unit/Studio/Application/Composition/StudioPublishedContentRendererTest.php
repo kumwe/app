@@ -142,6 +142,19 @@ final class StudioPublishedContentRendererTest extends TestCase
     {
         $theme = $this->theme();
         $binding = $this->binding();
+        $wrongBinding = new ContentBlueprintBinding(
+            SiteContext::default(),
+            '018f22e2-7c8b-7ab0-8f3a-88e8026be899',
+            4,
+            $binding->blueprintId,
+            $binding->blueprintVersion,
+            null,
+            1,
+        );
+        $this->assertThrows(
+            StudioPublishedBlueprintMismatch::class,
+            fn (): ?string => $this->renderer($wrongBinding, null, $theme)->render($this->record()),
+        );
         $this->assertThrows(
             StudioPublishedBlueprintUnavailable::class,
             fn (): ?string => $this->renderer($binding, null, $theme)->render($this->record()),
@@ -194,6 +207,45 @@ final class StudioPublishedContentRendererTest extends TestCase
             $incompatibleDocument,
             'studio.artifact/blueprint-incompatible',
         );
+
+        $invalidStatusDocument = self::copy($this->blueprint($theme));
+        $invalidStatusDocument->revision = 'invalid-status-r1';
+        $invalidStatusDocument->status = 'archived';
+        $invalidStatus = new StoredStudioArtifact(
+            SiteContext::DEFAULT,
+            $binding->blueprintId,
+            $binding->blueprintVersion,
+            'blueprint',
+            'invalid-status-r1',
+            'archived',
+            CanonicalJson::stringify($invalidStatusDocument),
+            '[]',
+        );
+        $this->assertThrows(
+            StudioPublishedBlueprintMismatch::class,
+            fn (): ?string => $this->renderer($binding, $invalidStatus, $theme)->render($this->record()),
+        );
+
+        $wrongDocumentIdentity = self::copy($this->blueprint($theme));
+        $wrongDocumentIdentity->version = '2.0.0';
+        $wrongDocumentIdentityArtifact = new StoredStudioArtifact(
+            SiteContext::DEFAULT,
+            $binding->blueprintId,
+            $binding->blueprintVersion,
+            'blueprint',
+            $wrongDocumentIdentity->revision,
+            'published',
+            CanonicalJson::stringify($wrongDocumentIdentity),
+            '[]',
+        );
+        $this->assertThrows(
+            StudioPublishedBlueprintMismatch::class,
+            fn (): ?string => $this->renderer(
+                $binding,
+                $wrongDocumentIdentityArtifact,
+                $theme,
+            )->render($this->record()),
+        );
     }
 
     /**
@@ -222,6 +274,22 @@ final class StudioPublishedContentRendererTest extends TestCase
             'studio.artifact/model-lock-mismatch',
         );
 
+        $modelWithIntegrity = self::copy($this->blueprint($theme));
+        $modelWithIntegrity->model->integrity = 'sha256-' . base64_encode(str_repeat("\0", 32));
+        $this->assertPublicationDiagnostic(
+            $this->guard($theme),
+            $modelWithIntegrity,
+            'studio.artifact/model-lock-mismatch',
+        );
+
+        $missingModels = $this->createStub(ContentModelRepository::class);
+        $missingModels->method('contentType')->willReturn(null);
+        $this->assertPublicationDiagnostic(
+            $this->guard($theme, models: $missingModels),
+            $this->blueprint($theme),
+            'studio.artifact/model-lock-mismatch',
+        );
+
         $themeDrift = self::copy($this->blueprint($theme));
         $themeDrift->dependencyLock->theme->revision = 'published-stale';
         $this->assertThrows(
@@ -236,6 +304,14 @@ final class StudioPublishedContentRendererTest extends TestCase
             $this->guard($theme),
             $themeDrift,
             'studio.artifact/theme-lock-mismatch',
+        );
+
+        $ownerDrift = self::copy($this->blueprint($theme));
+        $ownerDrift->owner->id = 'acme.extension/content';
+        $this->assertPublicationDiagnostic(
+            $this->guard($theme),
+            $ownerDrift,
+            'studio.artifact/blueprint-incompatible',
         );
 
         $rendererDrift = self::copy($this->blueprint($theme));
@@ -253,6 +329,24 @@ final class StudioPublishedContentRendererTest extends TestCase
             $this->guard($theme),
             $rendererDrift,
             'studio.artifact/block-renderer-unavailable',
+        );
+
+        $nodeLockDrift = self::copy($this->blueprint($theme));
+        $nodeLockDrift->roots[0]->type = 'example.extension/missing';
+        $this->assertPublicationDiagnostic(
+            $this->guard($theme),
+            $nodeLockDrift,
+            'studio.artifact/block-renderer-unavailable',
+        );
+
+        $projectionRejected = self::admission()->admit(SiteContext::DEFAULT, $this->blueprint($theme));
+        $this->assertThrows(
+            StudioPublishedModelMismatch::class,
+            fn (): ?string => $this->renderer(
+                $this->binding(),
+                $projectionRejected,
+                $theme,
+            )->render($this->record(42)),
         );
     }
 
@@ -355,6 +449,35 @@ final class StudioPublishedContentRendererTest extends TestCase
             'studio.artifact/block-renderer-unavailable',
         );
 
+        [$minimumRegistries] = self::manifestSixRegistries(
+            static function (stdClass $definition): void {
+                $definition->slots[0]->minimum = 1;
+            },
+        );
+        $this->assertPublicationDiagnostic(
+            $this->guard($theme, $blocks, $minimumRegistries),
+            $valid,
+            'studio.artifact/blueprint-incompatible',
+        );
+
+        [$duplicateSlotRegistries] = self::manifestSixRegistries(
+            static function (stdClass $definition): void {
+                $slot = json_decode(
+                    CanonicalJson::stringify($definition->slots[0]),
+                    false,
+                    16,
+                    JSON_THROW_ON_ERROR,
+                );
+                self::assertInstanceOf(stdClass::class, $slot);
+                $definition->slots[] = $slot;
+            },
+        );
+        $this->assertPublicationDiagnostic(
+            $this->guard($theme, $blocks, $duplicateSlotRegistries),
+            $valid,
+            'studio.artifact/blueprint-incompatible',
+        );
+
         $registries->remove($owner);
         $this->assertPublicationDiagnostic(
             $guard,
@@ -434,17 +557,28 @@ final class StudioPublishedContentRendererTest extends TestCase
     /**
      * Activate only the signed manifest-6 Grid document and its owner-bound host metadata.
      *
+     * @param   (callable(stdClass): void)|null  $mutate  Optional schema-valid definition mutation.
+     *
      * @return  array{ExtensionContributionRegistrySet, ContributionOwner}  Mutable live registries and their
      *          extension owner for withdrawal proof.
      *
      * @since   2.0.0
      */
-    private static function manifestSixRegistries(): array
+    private static function manifestSixRegistries(?callable $mutate = null): array
     {
         $path = dirname(__DIR__, 5) . '/tests/Fixtures/ExtensionApi/generations/manifest-6/kumwe.json';
         $manifest = json_decode((string) file_get_contents($path), true, 64, JSON_THROW_ON_ERROR);
         $canonical = $manifest['contributions']['composition']['documents'][0]['canonical'] ?? null;
         self::assertIsString($canonical);
+        $definition = json_decode($canonical, false, 64, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $definition);
+        if ($mutate !== null) {
+            $mutate($definition);
+            self::assertTrue(
+                StudioContractSchemas::fromVendoredCorpus()->validator('block-definition')->validate($definition),
+            );
+            $canonical = CanonicalJson::stringify($definition);
+        }
 
         $owner = ContributionOwner::extension('kumwe/contract-manifest-six');
         $registries = new ExtensionContributionRegistrySet(withCore: false);
@@ -502,6 +636,7 @@ final class StudioPublishedContentRendererTest extends TestCase
      * @param   StudioPublishedTheme                     $theme       Deterministic live public theme.
      * @param   StudioPreviewBlockRendererRegistry|null  $blocks      Live exact renderer registry override.
      * @param   ExtensionContributionRegistrySet|null    $registries  Live canonical contribution override.
+     * @param   ContentModelRepository|null              $models      Content model authority override.
      *
      * @return  StudioPublishedCompositionGuard  Production guard around deterministic repositories.
      *
@@ -511,9 +646,12 @@ final class StudioPublishedContentRendererTest extends TestCase
         StudioPublishedTheme $theme,
         ?StudioPreviewBlockRendererRegistry $blocks = null,
         ?ExtensionContributionRegistrySet $registries = null,
+        ?ContentModelRepository $models = null,
     ): StudioPublishedCompositionGuard {
-        $models = $this->createStub(ContentModelRepository::class);
-        $models->method('contentType')->willReturn($this->definition());
+        if ($models === null) {
+            $models = $this->createStub(ContentModelRepository::class);
+            $models->method('contentType')->willReturn($this->definition());
+        }
 
         return new StudioPublishedCompositionGuard(
             self::admission(),
@@ -670,18 +808,20 @@ final class StudioPublishedContentRendererTest extends TestCase
     /**
      * Build one published record containing HTML-shaped text that must remain escaped.
      *
+     * @param   mixed  $body  Body-field value to retain without schema-level validation.
+     *
      * @return  ContentRecord  Public record pinned to definition version four.
      *
      * @since   2.0.0
      */
-    private function record(): ContentRecord
+    private function record(mixed $body = '<strong>Exact & safe</strong>'): ContentRecord
     {
         return new ContentRecord(
             ContentEntry::create(
                 self::ENTRY_ID,
                 'Exact title',
                 'exact-title',
-                ['body' => '<strong>Exact & safe</strong>'],
+                ['body' => $body],
                 ContentStatus::Published,
             ),
             self::TYPE_ID,

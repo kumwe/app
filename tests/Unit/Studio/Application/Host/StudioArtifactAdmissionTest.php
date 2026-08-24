@@ -15,6 +15,7 @@ use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use stdClass;
 
 /**
@@ -57,6 +58,77 @@ final class StudioArtifactAdmissionTest extends TestCase
         self::assertSame('product-card-r6', $revised->document()->revision);
         self::assertSame('draft', $revised->document()->status);
         self::assertSame($admitted->canonicalDocument, CanonicalJson::stringify($admitted->document()));
+    }
+
+    /**
+     * Persisted artifact values refuse malformed identities, documents and dependency copies.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStoredArtifactRefusesEveryReachableMalformedPersistedValue(): void
+    {
+        $canonicalDocument = CanonicalJson::stringify((object) [
+            'id' => 'artifact-1',
+            'kind' => 'blueprint',
+            'revision' => 'artifact-r1',
+            'status' => 'draft',
+        ]);
+        $store = static fn (
+            string $document,
+            string $dependencies = '[]',
+            string $siteIdentifier = 'default',
+            string $id = 'artifact-1',
+        ): StoredStudioArtifact => new StoredStudioArtifact(
+            $siteIdentifier,
+            $id,
+            '1.0.0',
+            'blueprint',
+            'artifact-r1',
+            'draft',
+            $document,
+            $dependencies,
+        );
+        $refusals = [
+            'identity' => [
+                static fn (): StoredStudioArtifact => $store($canonicalDocument, siteIdentifier: ''),
+                'A stored Studio artifact identity is invalid.',
+            ],
+            'document identity' => [
+                static fn (): StoredStudioArtifact => $store($canonicalDocument, id: 'artifact-2'),
+                'Stored Studio artifact bytes do not match their identity.',
+            ],
+            'dependency JSON' => [
+                static fn (): StoredStudioArtifact => $store($canonicalDocument, '{'),
+                'Stored Studio dependencies are corrupt.',
+            ],
+            'dependency object' => [
+                static fn (): StoredStudioArtifact => $store($canonicalDocument, '{}'),
+                'Stored Studio dependencies are not a canonical list.',
+            ],
+            'dependency scalar' => [
+                static fn (): array => $store($canonicalDocument, '[1]')->dependencies(),
+                'Stored Studio dependencies are corrupt.',
+            ],
+            'document JSON' => [
+                static fn (): StoredStudioArtifact => $store('{'),
+                'Stored Studio artifact bytes are corrupt.',
+            ],
+            'document list' => [
+                static fn (): StoredStudioArtifact => $store('[]'),
+                'Stored Studio artifact bytes are corrupt.',
+            ],
+        ];
+
+        foreach ($refusals as $label => [$operation, $message]) {
+            try {
+                $operation();
+                self::fail($label . ' must be refused.');
+            } catch (RuntimeException $exception) {
+                self::assertSame($message, $exception->getMessage(), $label);
+            }
+        }
     }
 
     /**

@@ -47,6 +47,7 @@ use Twig\Loader\ArrayLoader;
 #[CoversClass(StudioPreviewBindingResolver::class)]
 #[CoversClass(StudioPreviewBindingValues::class)]
 #[CoversClass(StudioPreviewBlockFragment::class)]
+#[CoversClass(StudioPreviewThemeStylesheet::class)]
 final class StudioPreviewBindingRendererTest extends TestCase
 {
     /**
@@ -187,6 +188,55 @@ final class StudioPreviewBindingRendererTest extends TestCase
         self::assertStringNotContainsString('<style', $rendered->html);
         self::assertCount(1, $rendered->markers);
         self::assertSame('field-node', $rendered->markerMap[$rendered->markers[0]]);
+    }
+
+    /**
+     * Theme stylesheet activation accepts one exact trusted link and rejects unsafe inventory or URLs.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testThemeStylesheetActivationRequiresExactUrlAndInventory(): void
+    {
+        $placeholder = sprintf('href="%s"', StudioPreviewThemeStylesheet::HREF_PLACEHOLDER);
+        $html = '<link ' . $placeholder . ' data-studio-theme>';
+        $href = '/administrator/studio/preview/theme.css?grant=preview-1';
+
+        self::assertSame(
+            '<link href="' . $href . '" data-studio-theme>',
+            StudioPreviewThemeStylesheet::activate($html, $href, true),
+        );
+        self::assertSame('<main>Preview</main>', StudioPreviewThemeStylesheet::activate(
+            '<main>Preview</main>',
+            $href,
+            false,
+        ));
+
+        try {
+            StudioPreviewThemeStylesheet::activate($html, 'https://example.test/theme.css', true);
+            self::fail('A cross-origin stylesheet URL must be refused.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('The Studio preview theme stylesheet URL is invalid.', $exception->getMessage());
+        }
+
+        $invalidInventories = [
+            'required missing' => ['<main>Preview</main>', true],
+            'required duplicate' => [$html . $html, true],
+            'unexpected placeholder' => [$html, false],
+        ];
+        foreach ($invalidInventories as $label => [$candidate, $required]) {
+            try {
+                StudioPreviewThemeStylesheet::activate($candidate, $href, $required);
+                self::fail($label . ' stylesheet inventory must be refused.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertSame(
+                    'The Studio preview theme stylesheet inventory is invalid.',
+                    $exception->getMessage(),
+                    $label,
+                );
+            }
+        }
     }
 
     /**

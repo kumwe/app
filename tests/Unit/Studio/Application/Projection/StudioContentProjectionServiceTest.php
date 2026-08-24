@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Studio\Application\Projection;
 
 use DateTimeImmutable;
+use Kumwe\App\Administrator\Http\Handler\AdministratorStudioCompositionHandler;
+use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\App\Application\Authorization\AuthenticatedSurface;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Audit\Application\AuditRecorder;
@@ -33,12 +38,12 @@ use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\ContentBlueprintBindingStore;
 use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionModelMismatch;
-use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
 use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
+use Kumwe\App\Studio\Application\Host\StudioHostOperationRefused;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Host\StudioModelHostPort;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
@@ -64,6 +69,11 @@ use Kumwe\App\Studio\Domain\Projection\StudioProjectionRejection;
 use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Tests\Support\ImmediateTransactionManager;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\App\Localization\Application\SupportedLocales;
+use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
 use Kumwe\App\Workflow\Domain\Workflow;
 use Kumwe\App\Workflow\Domain\WorkflowDefinition;
 use Kumwe\App\Workflow\Domain\WorkflowStateDefinition;
@@ -71,6 +81,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use RuntimeException;
+use Laminas\Diactoros\ServerRequestFactory;
+use Twig\Loader\ArrayLoader;
 
 /**
  * Proves the Studio Content read boundary delegates only through authorized, version-pinned services.
@@ -82,6 +95,7 @@ use Psr\Clock\ClockInterface;
 #[CoversClass(StudioModelHostPort::class)]
 #[CoversClass(StudioContentCompositionService::class)]
 #[CoversClass(StudioCompositionModelMismatch::class)]
+#[CoversClass(AdministratorStudioCompositionHandler::class)]
 #[UsesClass(ContentModelService::class)]
 #[UsesClass(ContentService::class)]
 #[UsesClass(ContentStudioProjector::class)]
@@ -181,7 +195,7 @@ final class StudioContentProjectionServiceTest extends TestCase
     }
 
     /**
-     * `vector.host-vector.model.get.stored` resolves its exact wrapped reference through AP-2.
+     * The stored model vector resolves through AP-2 while malformed read requests fail closed.
      *
      * @return  void
      *
@@ -190,12 +204,12 @@ final class StudioContentProjectionServiceTest extends TestCase
     public function testModelGetStoredVectorUsesTheAuthorizedExactProjection(): void
     {
         $models = $this->createMock(ContentModelRepository::class);
-        $models->expects(self::once())
+        $models->expects(self::exactly(2))
             ->method('contentType')
             ->with(self::callback(self::isDefaultSite(...)), self::TYPE_ID, 4)
             ->willReturn($this->definition());
         $bindings = $this->createMock(ContentProjectionBindingRepository::class);
-        $bindings->expects(self::once())->method('blueprint')->willReturn($this->binding());
+        $bindings->expects(self::exactly(2))->method('blueprint')->willReturn($this->binding());
         $port = new StudioModelHostPort($this->service(
             $models,
             $this->createStub(ContentRepository::class),
@@ -224,10 +238,114 @@ final class StudioContentProjectionServiceTest extends TestCase
         self::assertSame('content-model:' . self::TYPE_ID, $result->value->id);
         self::assertSame('0.0.4', $result->value->version);
         self::assertSame($result->value->revision, $result->revision);
+        $context = $this->allowedContext();
+        $validReference = (object) [
+            'id' => 'content-model:' . self::TYPE_ID,
+            'version' => '0.0.4',
+        ];
+        self::assertHostRefusal(
+            static fn () => $port->dispatch(
+                $context,
+                'unknown',
+                self::modelRequest(new \stdClass()),
+                $snapshot,
+            ),
+            'incompatible',
+            'studio.host/operation-unavailable',
+        );
+        self::assertHostRefusal(
+            static fn () => $port->dispatch(
+                $context,
+                'get',
+                self::modelRequest((object) ['reference' => (object) [
+                    'id' => 'not-a-content-model',
+                    'version' => '0.0.4',
+                ]]),
+                $snapshot,
+            ),
+            'not-found',
+            'studio.model/not-found',
+        );
+        self::assertHostRefusal(
+            static fn () => $port->dispatch($context, 'get', self::modelRequest(null), $snapshot),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertHostRefusal(
+            static fn () => $port->dispatch(
+                $context,
+                'get',
+                self::modelRequest((object) ['reference' => 'not-an-object']),
+                $snapshot,
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertHostRefusal(
+            static fn () => $port->dispatch(
+                $context,
+                'get',
+                self::modelRequest((object) ['reference' => (object) [
+                    'extra' => true,
+                    'id' => 'content-model:' . self::TYPE_ID,
+                    'version' => '0.0.4',
+                ]]),
+                $snapshot,
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertHostRefusal(
+            static fn () => $port->dispatch(
+                $context,
+                'get',
+                self::modelRequest((object) ['reference' => (object) ['id' => '', 'version' => '0.0.4']]),
+                $snapshot,
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertHostRefusal(
+            static fn () => $port->dispatch(
+                $context,
+                'get',
+                self::modelRequest((object) ['reference' => (object) [
+                    'id' => $validReference->id,
+                    'revision' => 'content-type-v999',
+                    'version' => $validReference->version,
+                ]]),
+                $snapshot,
+            ),
+            'not-found',
+            'studio.model/not-found',
+        );
+        self::assertHostRefusal(
+            static fn () => $port->dispatch(
+                $context,
+                'list',
+                self::modelRequest((object) ['unexpected' => true]),
+                $snapshot,
+            ),
+            'invalid-request',
+            'studio.host/invalid-arguments',
+        );
+        self::assertHostRefusal(
+            static fn () => $port->dispatch(
+                $context,
+                'get',
+                self::modelRequest(
+                    (object) ['reference' => $validReference],
+                    expectedRevision: 'revision/not-allowed',
+                ),
+                $snapshot,
+            ),
+            'invalid-request',
+            'studio.host/invalid-context',
+        );
     }
 
     /**
-     * Provisioning admits one empty draft and binding in one transaction, then reuses that head.
+     * Provisioning and the administrator composition surface preserve every exact draft boundary.
      *
      * @return  void
      *
@@ -269,7 +387,7 @@ final class StudioContentProjectionServiceTest extends TestCase
         $audit = $this->createMock(AuditRecorder::class);
         $audit->expects(self::once())->method('record');
         $catalog = $this->compositionCatalog();
-        $settingsDocument = ['presentation' => SitePresentation::defaults()];
+        $settingsDocument = ['presentation' => SitePresentation::defaults(), 'timezone' => []];
         $settings = $this->createStub(SiteSettings::class);
         $settings->method('current')->willReturnCallback(
             static function () use (&$settingsDocument): array {
@@ -344,6 +462,179 @@ final class StudioContentProjectionServiceTest extends TestCase
             $first->blueprint->document()->dependencyLock->theme->revision,
         );
 
+        $activeLocale = new ActiveLocale(new SupportedLocales());
+        $renderer = new AdministratorRenderer(
+            new AdministratorTwigEnvironment(new ArrayLoader([
+                'studio-composition.twig' => '{% if studio_boot_json is not null %}'
+                    . '{{ studio_boot_json|raw }}{% elseif theme_mismatch %}theme-mismatch{% endif %}',
+            ])),
+            new RecoveryAdministratorRenderer(
+                new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
+            ),
+        );
+        $handler = new AdministratorStudioCompositionHandler(
+            $service,
+            $renderer,
+            $activeLocale,
+            $settings,
+            $catalog,
+        );
+        $principal = AuthorizationContext::principal([
+            'acme.shop.catalog.edit',
+            'content.read',
+        ]);
+        $handlerContext = $principal->context(
+            SiteContext::default(),
+            AuthenticationStrength::Password,
+            'studio-composition-handler',
+            surface: AuthenticatedSurface::Administrator,
+            sessionId: 'administrator-studio-composition-handler',
+        );
+        $session = new AdministratorSession(
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb350',
+            $principal,
+            'csrf-studio-composition',
+            self::now()->modify('+1 hour'),
+            SiteContext::default(),
+        );
+        $request = (new ServerRequestFactory())
+            ->createServerRequest(
+                'GET',
+                'https://kumwe.test/administrator/content-models/' . self::TYPE_ID . '/versions/4/composition',
+            )
+            ->withAttribute('id', self::TYPE_ID)
+            ->withAttribute('version', '4')
+            ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, $session)
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $handlerContext)
+            ->withQueryParams(['locale' => 'de-DE']);
+
+        $response = $handler->handle($request);
+        $boot = json_decode((string) $response->getBody(), false, 64, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(\stdClass::class, $boot);
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertSame($principal->subject(), $boot->actor->id);
+        self::assertSame($first->binding->blueprintId, $boot->artifact->id);
+        self::assertSame('csrf-studio-composition', $boot->csrf);
+        self::assertSame('de-DE', $boot->locale->requested);
+        self::assertSame('en-GB', $boot->locale->resolved);
+        self::assertSame('UTC', $boot->locale->timezone);
+        self::assertSame('draft', $boot->status);
+        self::assertIsArray($boot->contributions);
+
+        $fallbackResponse = $handler->handle($request->withQueryParams(['locale' => 'not_locale!']));
+        $fallbackBoot = json_decode((string) $fallbackResponse->getBody(), false, 64, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(\stdClass::class, $fallbackBoot);
+        self::assertSame('en-GB', $fallbackBoot->locale->requested);
+
+        $post = $handler->handle($request->withMethod('POST'));
+        self::assertSame(303, $post->getStatusCode());
+        self::assertSame(
+            '/administrator/content-models/' . self::TYPE_ID . '/versions/4/composition',
+            $post->getHeaderLine('Location'),
+        );
+
+        try {
+            $handler->handle($request->withAttribute('version', '0'));
+            self::fail('The administrator composition handler accepted an invalid route coordinate.');
+        } catch (\InvalidArgumentException $invalidCoordinate) {
+            self::assertSame(
+                'The Content model composition coordinate is invalid.',
+                $invalidCoordinate->getMessage(),
+            );
+        }
+        $unavailableBindings = $this->createStub(ContentProjectionBindingRepository::class);
+        $unavailableBindings->method('blueprint')->willReturn($first->binding);
+        $unavailableArtifacts = $this->createStub(StudioArtifactRepository::class);
+        $unavailableArtifacts->method('current')->willReturn(null);
+        $unavailable = $this->compositionService(
+            $projection,
+            $unavailableBindings,
+            $this->createStub(ContentBlueprintBindingStore::class),
+            $admission,
+            $unavailableArtifacts,
+            $clock,
+            $catalog,
+            $theme,
+        );
+        $this->assertRuntimeFailure(
+            fn (): ?\Kumwe\App\Studio\Application\Composition\StudioContentComposition => $unavailable->find(
+                $this->allowedContext(),
+                self::TYPE_ID,
+                4,
+            ),
+            'The selected Studio Blueprint is unavailable.',
+        );
+
+        $bindingRaceReads = 0;
+        $bindingRaceBindings = $this->createStub(ContentProjectionBindingRepository::class);
+        $bindingRaceBindings->method('blueprint')->willReturnCallback(
+            static function () use (&$bindingRaceReads, $first): ?ContentBlueprintBinding {
+                $bindingRaceReads++;
+                return $bindingRaceReads === 1 ? null : $first->binding;
+            },
+        );
+        $bindingRaceArtifacts = $this->createStub(StudioArtifactRepository::class);
+        $bindingRaceArtifacts->method('current')->willReturn($first->blueprint);
+        $bindingRace = $this->compositionService(
+            $projection,
+            $bindingRaceBindings,
+            $this->createStub(ContentBlueprintBindingStore::class),
+            $admission,
+            $bindingRaceArtifacts,
+            $clock,
+            $catalog,
+            $theme,
+        )->provision($this->allowedContext(), self::TYPE_ID, 4, []);
+        self::assertSame($first->binding->blueprintId, $bindingRace->binding->blueprintId);
+
+        $artifactRaceReads = 0;
+        $artifactRaceBindings = $this->createStub(ContentProjectionBindingRepository::class);
+        $artifactRaceBindings->method('blueprint')->willReturnCallback(
+            static function () use (&$artifactRaceReads, $first): ?ContentBlueprintBinding {
+                $artifactRaceReads++;
+                return $artifactRaceReads < 3 ? null : $first->binding;
+            },
+        );
+        $artifactRaceArtifacts = $this->createStub(StudioArtifactRepository::class);
+        $artifactRaceArtifacts->method('current')->willReturn($first->blueprint);
+        $artifactRaceArtifacts->method('store')->willReturn(false);
+        $artifactRace = $this->compositionService(
+            $projection,
+            $artifactRaceBindings,
+            $this->createStub(ContentBlueprintBindingStore::class),
+            $admission,
+            $artifactRaceArtifacts,
+            $clock,
+            $catalog,
+            $theme,
+        )->provision($this->allowedContext(), self::TYPE_ID, 4, []);
+        self::assertSame($first->binding->blueprintId, $artifactRace->binding->blueprintId);
+
+        $unresolvedBindings = $this->createStub(ContentProjectionBindingRepository::class);
+        $unresolvedBindings->method('blueprint')->willReturn(null);
+        $unresolvedArtifacts = $this->createStub(StudioArtifactRepository::class);
+        $unresolvedArtifacts->method('store')->willReturn(false);
+        $unresolved = $this->compositionService(
+            $projection,
+            $unresolvedBindings,
+            $this->createStub(ContentBlueprintBindingStore::class),
+            $admission,
+            $unresolvedArtifacts,
+            $clock,
+            $catalog,
+            $theme,
+        );
+        $this->assertRuntimeFailure(
+            fn (): \Kumwe\App\Studio\Application\Composition\StudioContentComposition => $unresolved->provision(
+                $this->allowedContext(),
+                self::TYPE_ID,
+                4,
+                [],
+            ),
+            'The concurrent Studio composition could not be resolved.',
+        );
+
         $modelDrift = [
             'id' => 'content-model:018f22e2-7c8b-7ab0-8f3a-88e8026be711',
             'version' => '0.0.5',
@@ -375,15 +666,10 @@ final class StudioContentProjectionServiceTest extends TestCase
         $stored = $first->blueprint;
 
         $settingsDocument['presentation']['active_scheme'] = 'ocean';
-        $this->expectException(StudioCompositionThemeMismatch::class);
-        $service->find(
-            AuthorizationContext::human(
-                ['content.read'],
-                '018f22e2-7c8b-7ab0-8f3a-88e8026bb305',
-            ),
-            self::TYPE_ID,
-            4,
-        );
+        $mismatch = $handler->handle($request);
+        self::assertSame(409, $mismatch->getStatusCode());
+        self::assertSame('no-store', $mismatch->getHeaderLine('Cache-Control'));
+        self::assertSame('theme-mismatch', (string) $mismatch->getBody());
     }
 
     /**
@@ -687,6 +973,46 @@ final class StudioContentProjectionServiceTest extends TestCase
     }
 
     /**
+     * Compose the Content composition boundary around scenario-specific persistence doubles.
+     *
+     * @param   StudioContentProjectionService        $projection    Authorized Content projection.
+     * @param   ContentProjectionBindingRepository    $bindings      Binding read model double.
+     * @param   ContentBlueprintBindingStore          $bindingStore  Binding write model double.
+     * @param   StudioArtifactAdmission               $admission     Canonical artifact admission.
+     * @param   StudioArtifactRepository              $artifacts     Artifact repository double.
+     * @param   ClockInterface                        $clock         Deterministic audit clock.
+     * @param   StudioCompositionContributionCatalog  $catalog       Live contribution catalogue.
+     * @param   StudioPublishedTheme                  $theme         Exact public theme projection.
+     *
+     * @return  StudioContentCompositionService  Service under the requested race or failure scenario.
+     *
+     * @since   2.0.0
+     */
+    private function compositionService(
+        StudioContentProjectionService $projection,
+        ContentProjectionBindingRepository $bindings,
+        ContentBlueprintBindingStore $bindingStore,
+        StudioArtifactAdmission $admission,
+        StudioArtifactRepository $artifacts,
+        ClockInterface $clock,
+        StudioCompositionContributionCatalog $catalog,
+        StudioPublishedTheme $theme,
+    ): StudioContentCompositionService {
+        return new StudioContentCompositionService(
+            $projection,
+            $bindings,
+            $bindingStore,
+            $admission,
+            $artifacts,
+            new ImmediateTransactionManager(),
+            $this->createStub(AuditRecorder::class),
+            $clock,
+            $catalog,
+            $theme,
+        );
+    }
+
+    /**
      * Build the version-four Content definition projected by the service.
      *
      * @param   string  $workflowId       Workflow coordinate pinned by this version.
@@ -951,6 +1277,58 @@ final class StudioContentProjectionServiceTest extends TestCase
     }
 
     /**
+     * Build one model host request carrying the exact runtime value under test.
+     *
+     * @param   mixed        $arguments         Candidate model operation arguments.
+     * @param   string|null  $expectedRevision  Optional forbidden read revision.
+     * @param   string|null  $idempotencyKey    Optional forbidden read idempotency key.
+     *
+     * @return  StudioHostRequest  Model host request envelope.
+     *
+     * @since   2.0.0
+     */
+    private static function modelRequest(
+        mixed $arguments,
+        ?string $expectedRevision = null,
+        ?string $idempotencyKey = null,
+    ): StudioHostRequest {
+        return new StudioHostRequest(
+            'studio.operation/model.get',
+            '0.1.0-draft.2',
+            'requests/model-negative-vector',
+            'contexts/vector',
+            'session-r1',
+            $arguments,
+            $expectedRevision,
+            $idempotencyKey,
+            null,
+            null,
+        );
+    }
+
+    /**
+     * Assert one model host request is refused with its exact non-disclosing diagnostic.
+     *
+     * @param   callable(): mixed  $operation  Model host operation expected to fail closed.
+     * @param   string             $category   Expected canonical refusal category.
+     * @param   string             $code       Expected canonical diagnostic code.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertHostRefusal(callable $operation, string $category, string $code): void
+    {
+        try {
+            $operation();
+            self::fail('The malformed Studio model host request unexpectedly succeeded.');
+        } catch (StudioHostOperationRefused $refused) {
+            self::assertSame($category, $refused->category);
+            self::assertSame($code, $refused->diagnosticCode);
+        }
+    }
+
+    /**
      * Assert one service read stops with a non-disclosing typed refusal.
      *
      * @param   callable(): mixed          $operation  Read expected to stop.
@@ -972,6 +1350,26 @@ final class StudioContentProjectionServiceTest extends TestCase
             $diagnostic = json_encode($failure->diagnostic(), JSON_THROW_ON_ERROR);
             self::assertStringNotContainsString(self::TYPE_ID, $diagnostic);
             self::assertStringNotContainsString(self::ENTRY_ID, $diagnostic);
+        }
+    }
+
+    /**
+     * Assert one composition operation stops with its exact stable runtime diagnostic.
+     *
+     * @param   callable(): mixed  $operation  Composition operation that must fail closed.
+     * @param   string             $message    Exact expected diagnostic.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function assertRuntimeFailure(callable $operation, string $message): void
+    {
+        try {
+            $operation();
+            self::fail('The incompatible Studio Content composition was accepted.');
+        } catch (RuntimeException $failure) {
+            self::assertSame($message, $failure->getMessage());
         }
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Host;
 
+use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
@@ -17,6 +18,7 @@ use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioHostAccessRefused;
+use Kumwe\App\Studio\Application\Host\StudioHostResult;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
 use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
@@ -27,6 +29,7 @@ use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * Pins mode-specific authorization, trusted scope binding and generation invalidation.
@@ -34,6 +37,7 @@ use PHPUnit\Framework\TestCase;
  * @since  2.0.0
  */
 #[CoversClass(StudioHostAccessRefused::class)]
+#[CoversClass(StudioHostResult::class)]
 #[CoversClass(StudioHostSession::class)]
 #[CoversClass(StudioHostSessionAuthority::class)]
 #[CoversClass(StudioResourceKind::class)]
@@ -113,7 +117,7 @@ final class StudioHostSessionAuthorityTest extends TestCase
     }
 
     /**
-     * Content mode authority cannot be promoted to Blueprint authority by request data.
+     * Content authority cannot be promoted and an authenticated browser session is mandatory.
      *
      * @return  void
      *
@@ -133,6 +137,29 @@ final class StudioHostSessionAuthorityTest extends TestCase
             self::fail('Content authority must not acquire Blueprint mode.');
         } catch (StudioHostAccessRefused $refused) {
             self::assertSame('forbidden', $refused->category);
+        }
+
+        $withoutSession = AuthenticatedPrincipal::issueFromStrings(
+            AuthorizationContext::provenance(),
+            AuthorizationContext::SUBJECT,
+            ['studio.mode.content'],
+        )->context(
+            SiteContext::default(),
+            AuthenticationStrength::Password,
+            'studio-authority-test',
+            surface: AuthenticatedSurface::Administrator,
+        );
+        try {
+            $authority->open(
+                $withoutSession,
+                StudioSessionMode::Content,
+                StudioResourceKind::Content,
+                'content-without-session',
+            );
+            self::fail('Studio authority must not open without an authenticated browser session.');
+        } catch (StudioHostAccessRefused $refused) {
+            self::assertSame('forbidden', $refused->category);
+            self::assertSame('studio.host/session-refused', $refused->diagnosticCode);
         }
 
         $this->expectException(StudioHostAccessRefused::class);
@@ -266,6 +293,77 @@ final class StudioHostSessionAuthorityTest extends TestCase
 
         self::assertNotSame($opened->generation, $resolved->generation);
         self::assertNotSame($opened->session->sessionGeneration, $resolved->generation);
+    }
+
+    /**
+     * Canonical host results reject every malformed persisted wire shape through their public factory.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStoredHostResultRefusesMalformedAndNoncanonicalBytes(): void
+    {
+        $refusals = [
+            'invalid JSON' => ['{', 'A stored Studio host result is corrupt.'],
+            'missing value' => ['{}', 'A stored Studio host result is corrupt.'],
+            'unknown member' => [
+                '{"extra":true,"value":null}',
+                'A stored Studio host result is corrupt.',
+            ],
+            'empty revision' => [
+                '{"revision":"","value":null}',
+                'A stored Studio host result is corrupt.',
+            ],
+            'noncanonical bytes' => ['{"value":null }', 'A stored Studio host result is not canonical.'],
+        ];
+
+        foreach ($refusals as $label => [$bytes, $message]) {
+            try {
+                StudioHostResult::fromCanonicalBytes($bytes);
+                self::fail($label . ' must be refused.');
+            } catch (RuntimeException $exception) {
+                self::assertSame($message, $exception->getMessage(), $label);
+            }
+        }
+    }
+
+    /**
+     * Persisted host sessions reject malformed stable, bounded, binding and scope coordinates.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStoredHostSessionRefusesEveryReachableMalformedCoordinate(): void
+    {
+        $refusals = [
+            'resource context' => [
+                static fn (): StudioHostSession => self::hostSession(resourceContextKey: '__proto__'),
+                'The Studio resource-context key is invalid.',
+            ],
+            'actor' => [
+                static fn (): StudioHostSession => self::hostSession(actorId: ''),
+                'The Studio actor identifier is invalid.',
+            ],
+            'session binding' => [
+                static fn (): StudioHostSession => self::hostSession(sessionBinding: 'not-a-sha256-digest'),
+                'The Studio host-session binding is invalid.',
+            ],
+            'workspace without organization' => [
+                static fn (): StudioHostSession => self::hostSession(organizationId: null),
+                'A Studio workspace binding requires an organization binding.',
+            ],
+        ];
+
+        foreach ($refusals as $label => [$operation, $message]) {
+            try {
+                $operation();
+                self::fail($label . ' must be refused.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertSame($message, $exception->getMessage(), $label);
+            }
+        }
     }
 
     /**
@@ -408,6 +506,41 @@ final class StudioHostSessionAuthorityTest extends TestCase
             new StudioHostSessionAuthority(AuthorizationContext::gateway(), $repository, $keys, $theme),
             $repository,
         ];
+    }
+
+    /**
+     * Build one valid persisted host-session value with selected refusal coordinates overridden.
+     *
+     * @param   string       $resourceContextKey  Candidate stable resource-context key.
+     * @param   string       $actorId             Candidate bounded actor identifier.
+     * @param   string|null  $organizationId      Candidate organization binding.
+     * @param   string|null  $workspaceId         Candidate workspace binding.
+     * @param   string       $sessionBinding      Candidate authenticated-session digest.
+     *
+     * @return  StudioHostSession  Valid session when every candidate coordinate is accepted.
+     *
+     * @since   2.0.0
+     */
+    private static function hostSession(
+        string $resourceContextKey = 'contexts/value-refusal',
+        string $actorId = 'actor-1',
+        ?string $organizationId = 'organization-1',
+        ?string $workspaceId = 'workspace-1',
+        string $sessionBinding = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    ): StudioHostSession {
+        return new StudioHostSession(
+            $resourceContextKey,
+            $actorId,
+            SiteContext::DEFAULT,
+            $organizationId,
+            $workspaceId,
+            AuthenticatedSurface::Administrator->value,
+            $sessionBinding,
+            StudioSessionMode::Content,
+            StudioResourceKind::Content,
+            'content-1',
+            'generation-1',
+        );
     }
 
     /**

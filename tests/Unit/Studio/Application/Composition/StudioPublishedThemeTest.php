@@ -121,6 +121,10 @@ final class StudioPublishedThemeTest extends TestCase
     public function testBuiltInCoordinateTracksOnlyExactPublicThemeRuntime(): void
     {
         $digester = new RuntimeArtifactDigester();
+        $this->assertRuntimeFailure(
+            static fn (): StudioBuiltInThemeRelease => new StudioBuiltInThemeRelease('not-a-digest'),
+            'The built-in public theme revision is invalid.',
+        );
         $first = StudioBuiltInThemeRelease::fromDeployment($this->root, '2.0.0', $digester);
         file_put_contents($this->root . '/public/assets/build/js/admin.js', 'export const admin=false;');
         $administratorChanged = StudioBuiltInThemeRelease::fromDeployment($this->root, '2.0.0', $digester);
@@ -141,6 +145,50 @@ final class StudioPublishedThemeTest extends TestCase
         file_put_contents($this->root . '/templates/site/page.twig', '<main class="changed">{{ body_html }}</main>');
         $templateChanged = StudioBuiltInThemeRelease::fromDeployment($this->root, '2.0.0', $digester);
         self::assertNotSame($siteChanged->revision, $templateChanged->revision);
+
+        $manifestPath = $this->root . '/public/assets/build/.vite/manifest.json';
+        $invalidManifests = [
+            [[['file' => 'js/site.js']], 'The Vite manifest is invalid.'],
+            [['_shared.js' => ['file' => 'js/shared.js']], 'The Vite site entry is unavailable.'],
+            [[
+                'assets/site/main.ts' => ['file' => false],
+            ], 'A Vite site asset coordinate is invalid.'],
+            [[
+                'assets/site/main.ts' => [
+                    'file' => 'js/site.js',
+                    'css' => (object) ['site' => 'css/site.css'],
+                ],
+            ], 'A Vite site asset list is invalid.'],
+            [[
+                'assets/site/main.ts' => ['file' => 'js/site.js', 'css' => [false]],
+            ], 'A Vite site asset coordinate is invalid.'],
+            [[
+                'assets/site/main.ts' => [
+                    'file' => 'js/site.js',
+                    'imports' => (object) ['shared' => '_shared.js'],
+                ],
+            ], 'A Vite site import list is invalid.'],
+            [[
+                'assets/site/main.ts' => ['file' => 'js/site.js', 'imports' => [false]],
+            ], 'A Vite site import coordinate is invalid.'],
+            [[
+                'assets/site/main.ts' => ['file' => '../site.js'],
+            ], 'A Vite site asset path is unsafe.'],
+            [[
+                'assets/site/main.ts' => ['file' => 'js/missing.js'],
+            ], 'A built-in public theme asset is missing or unsafe.'],
+        ];
+        foreach ($invalidManifests as [$manifest, $message]) {
+            file_put_contents($manifestPath, json_encode($manifest, JSON_THROW_ON_ERROR));
+            $this->assertRuntimeFailure(
+                fn (): StudioBuiltInThemeRelease => StudioBuiltInThemeRelease::fromDeployment(
+                    $this->root,
+                    '2.0.0',
+                    $digester,
+                ),
+                $message,
+            );
+        }
     }
 
     /**
@@ -209,6 +257,26 @@ final class StudioPublishedThemeTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('validated public presentation');
         $projection->reference(SiteContext::fromString('default'));
+    }
+
+    /**
+     * Require one malformed deployment coordinate to stop with its exact stable diagnostic.
+     *
+     * @param   callable(): mixed  $operation  Theme operation that must fail closed.
+     * @param   string             $message    Exact expected deployment diagnostic.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function assertRuntimeFailure(callable $operation, string $message): void
+    {
+        try {
+            $operation();
+            self::fail('The malformed built-in public theme deployment was accepted.');
+        } catch (RuntimeException $failure) {
+            self::assertSame($message, $failure->getMessage());
+        }
     }
 }
 
