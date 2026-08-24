@@ -836,6 +836,10 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   const grid = (await outlineEntries(shell, 'Grid')).nth(existingGrids);
   const gridId = await grid.getAttribute('data-node-id');
   expect(gridId).toBeTruthy();
+  // Host-owned insertion selects the admitted child. Select the container again so Studio's
+  // selected-region hit priority can expose the overlapping parent marker for root reordering.
+  await secondSection.click();
+  await expect(secondSection).toHaveAttribute('aria-pressed', 'true');
 
   await previewFrame(page);
   await expect(shell.locator(`.preview-canvas-region[data-node-id="${stackId ?? ''}"]`)).toHaveCount(1);
@@ -847,6 +851,7 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
     .locator(`.preview-canvas-region[data-node-id="${firstSectionId ?? ''}"]`).first();
   const secondSectionRegion = shell
     .locator(`.preview-canvas-region[data-node-id="${secondSectionId ?? ''}"]`).first();
+  await expect(secondSectionRegion).toHaveAttribute('data-selected', 'true');
   const firstSectionBox = await firstSectionRegion.boundingBox();
   const secondSectionBox = await secondSectionRegion.boundingBox();
   expect(firstSectionBox).not.toBeNull();
