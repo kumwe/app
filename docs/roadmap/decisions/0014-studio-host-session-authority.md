@@ -4,7 +4,7 @@
 **Decided by** ADR 0007 and the published Studio host-session and mode contracts
 **Findings** Completes `V2-STU-003`; ADR 0015 later completes `V2-STU-004`; `V2-STU-005` through `V2-STU-007` remain
 **Gate** B foundation
-**Verified against** `57541e67beaef7d1ccfc26a43d804609d35bf299`
+**Verified against** `f10c8f1d`
 
 ---
 

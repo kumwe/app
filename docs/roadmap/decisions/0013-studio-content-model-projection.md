@@ -4,7 +4,7 @@
 **Decided by** ADR 0007's fixed Studio/App division of labour and the approved AP-2 completion sequence
 **Findings** None; `V2-STU-002` remains open for the separate S-B release-pin and corpus-replay work
 **Gate** B foundation
-**Verified against** `fba50bb8753690809dafe37b61c6e9f9fdebe765`
+**Verified against** `f10c8f1d`
 
 ---
 
