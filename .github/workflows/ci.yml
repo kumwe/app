@@ -44,7 +44,7 @@ jobs:
           tools: composer:v2
 
       - name: Cache Composer package downloads
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/composer/files
           key: composer-files-${{ hashFiles('composer.lock') }}
@@ -250,7 +250,7 @@ jobs:
           node-version: '22.12.0'
 
       - name: Cache Composer package downloads
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/composer/files
           key: composer-files-${{ hashFiles('composer.lock') }}
@@ -278,7 +278,7 @@ jobs:
           php tests/Support/prepare-browser-contribution.php
 
       - name: Cache the Playwright browser download
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -345,7 +345,7 @@ jobs:
           tools: composer:v2
 
       - name: Cache Composer package downloads
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/composer/files
           key: composer-files-${{ hashFiles('composer.lock') }}
@@ -353,7 +353,7 @@ jobs:
       # PHPStan's own result cache makes an incremental level-max analysis of an unchanged file free.
       # Without persisting it, every run re-analysed the whole tree from cold.
       - name: Cache the PHPStan result cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .phpstan.cache
           key: phpstan-${{ hashFiles('composer.lock') }}-${{ github.sha }}
@@ -557,7 +557,7 @@ jobs:
         run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
 
       - name: Cache Composer package downloads
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/composer/files
           key: composer-files-${{ hashFiles('composer.lock') }}
