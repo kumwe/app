@@ -27,7 +27,7 @@ jobs:
       # Shares the composer-files cache key the other lanes record, so on a warm key every locked
       # dist archive is a local read and a GitHub API outage cannot fail the install (V2-REL-002).
       - name: Cache Composer package downloads
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/composer/files
           key: composer-files-${{ hashFiles('composer.lock') }}
