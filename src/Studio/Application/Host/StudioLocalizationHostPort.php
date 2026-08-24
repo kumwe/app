@@ -196,7 +196,7 @@ final readonly class StudioLocalizationHostPort
     }
 
     /**
-     * Convert an internal App Studio key to the alpha.9 shell wire identifier.
+     * Convert an internal App Studio key to the alpha.10 shell wire identifier.
      *
      * @param   string  $identifier  Internal compiled message identifier.
      *

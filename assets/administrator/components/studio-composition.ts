@@ -1,7 +1,7 @@
 import { defineKumweStudio, type KumweStudioElement, type StudioDocumentChangeDetail, type StudioInsertRequestDetail, type StudioMessageOverrides, type StudioPreviewBinding } from '@kumwe/studio';
 import { coreLayoutInitialProperties, isCoreLayoutBlockType, openStudioSession, type StudioHostSessionHandle } from '@kumwe/studio-core';
 import { PreviewClient, PreviewHost, computePreviewDraftDigest, type PreviewMeasurement, type PreviewMessageEvent, type PreviewMessageListener, type PreviewMessageSource, type PreviewMessageTarget } from '@kumwe/studio-preview';
-import { STUDIO_WIRE_PROTOCOL_VERSION, isHostPortFailure, type BlueprintCommand, type BlueprintDocument, type ContentModelDocument, type HostCapabilities, type HostRequestContext, type PreviewMarkerRect, type PreviewRenderedPayload, type QualifiedName, type StableId, type StudioConfiguration, type StudioWireProtocolVersion } from '@kumwe/studio-protocol';
+import { STUDIO_WIRE_PROTOCOL_VERSION, isHostPortFailure, type BlueprintDocument, type ContentModelDocument, type HostCapabilities, type HostRequestContext, type InsertNodeCommand, type PreviewMarkerRect, type PreviewRenderedPayload, type QualifiedName, type StableId, type StudioConfiguration, type StudioWireProtocolVersion } from '@kumwe/studio-protocol';
 import { activateHostContributions, activateStudioContributions, coreStudioTheme } from './studio-contributions';
 import { createStudioHttpHostAdapter, type StudioPreviewSessionMetadata } from './studio-host-adapter';
 
@@ -44,7 +44,7 @@ export async function setupStudioComposition(): Promise<void> {
   if (shell === null) return;
   try {
     const boot = JSON.parse(encoded.textContent ?? '') as BootDocument;
-    if (boot.release !== '0.1.0-alpha.9') throw new Error('Studio release binding mismatch.');
+    if (boot.release !== '0.1.0-alpha.10') throw new Error('Studio release binding mismatch.');
     const opened = await openHostSession(boot);
     const advertised = new Set(opened.hostCapabilities);
     const adapter = createStudioHttpHostAdapter(boot.endpoints.ports, {
@@ -137,7 +137,9 @@ export async function setupStudioComposition(): Promise<void> {
     shell.addEventListener('studio-insert-request', (event) => {
       if (conflicted || lifecycleChanging || handle.session.sessionState === 'read-only') return;
       const detail = (event as CustomEvent<StudioInsertRequestDetail>).detail;
-      shell.execute(insertCommand(shell, handle, detail, opened.sessionGeneration));
+      const command = insertCommand(shell, handle, detail, opened.sessionGeneration);
+      shell.execute(command);
+      shell.selectNode(command.payload.node.id);
     });
     if (opened.preview !== undefined && adapter.preview !== undefined) {
       const frame = root.querySelector<HTMLIFrameElement>('[data-studio-preview]');
@@ -385,7 +387,7 @@ function insertCommand(
   handle: StudioHostSessionHandle,
   detail: StudioInsertRequestDetail,
   sessionGeneration: string,
-): BlueprintCommand {
+): InsertNodeCommand {
   const properties = isCoreLayoutBlockType(detail.definition.type)
     ? coreLayoutInitialProperties(detail.definition.type)
     : {};
@@ -487,9 +489,13 @@ function previewBinding(
       }).toString();
       const candidate = createStagingPreviewFrame(activeFrame);
       stagingFrame = candidate;
-      const parent = activeFrame.parentElement;
-      if (parent === null) throw new Error('The Studio preview frame is no longer attached.');
-      parent.append(candidate);
+      if (activeFrame.parentElement === null) {
+        throw new Error('The Studio preview frame is no longer attached.');
+      }
+      // Put the candidate in its final DOM position before loading its single-use document URL.
+      // Moving an already-loaded iframe makes browsers navigate it again, which would replay the
+      // claimed sequence and replace the validated preview with the fail-closed refusal document.
+      activeFrame.after(candidate);
       try {
         // Once a document sequence is sent, wait for that claim to settle even when superseded.
         // The candidate stays hidden, so stale/refused HTML can never become the visual preview.
@@ -497,9 +503,9 @@ function previewBinding(
         throwIfAborted(signal);
         if (disposed || generation !== navigationGeneration) throw abortError();
         geometry.dispose();
+        activeFrame.remove();
         candidate.slot = 'preview';
         candidate.dataset.studioPreview = '';
-        activeFrame.replaceWith(candidate);
         activeFrame = candidate;
         stagingFrame = undefined;
         geometry = observePreviewGeometry(activeFrame, shell);

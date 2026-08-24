@@ -50,7 +50,7 @@ function serialize(value, maximumDepth, depth) {
 	}).join(",")}]`;
 	const prototype = Object.getPrototypeOf(value);
 	if (prototype !== Object.prototype && prototype !== null) throw new TypeError("Canonical JSON only serializes plain objects and arrays.");
-	const members = Object.keys(value).sort(compareCodeUnits$4);
+	const members = Object.keys(value).sort(compareCodeUnits$5);
 	const parts = [];
 	for (const member of members) {
 		if (member === "__proto__" || member === "prototype" || member === "constructor") throw new TypeError(`Canonical JSON forbids the object member name ${member}.`);
@@ -60,7 +60,7 @@ function serialize(value, maximumDepth, depth) {
 	}
 	return `{${parts.join(",")}}`;
 }
-function compareCodeUnits$4(left, right) {
+function compareCodeUnits$5(left, right) {
 	return left < right ? -1 : left > right ? 1 : 0;
 }
 //#endregion
@@ -140,7 +140,7 @@ function appendModelCoordinateDiagnostics(blueprint, model, diagnostics) {
 function projectNode(node, context) {
 	const declaredPorts = context.definitions.get(blockKey$1(node.type, node.version))?.ports ?? [];
 	const declaredIds = new Set(declaredPorts.map((port) => port.id));
-	const preservedPortIds = Object.keys(node.bindings).filter((port) => !declaredIds.has(port)).sort(compareCodeUnits$3);
+	const preservedPortIds = Object.keys(node.bindings).filter((port) => !declaredIds.has(port)).sort(compareCodeUnits$4);
 	const ports = [...declaredPorts.map((port) => projectPort(node, port, context)), ...preservedPortIds.map((port) => projectMissingPort(node, port, context))];
 	return {
 		nodeId: node.id,
@@ -304,7 +304,7 @@ function effectiveFieldKind(field) {
 function visitNodes(nodes, visit) {
 	for (const node of nodes) {
 		visit(node);
-		for (const slot of Object.keys(node.slots).sort(compareCodeUnits$3)) visitNodes(node.slots[slot] ?? [], visit);
+		for (const slot of Object.keys(node.slots).sort(compareCodeUnits$4)) visitNodes(node.slots[slot] ?? [], visit);
 	}
 }
 function diagnostic$1(code, defaultMessage, severity, parameters, location) {
@@ -325,7 +325,7 @@ function blockKey$1(type, version) {
 function samePath(left, right) {
 	return left.length === right.length && left.every((value, index) => value === right[index]);
 }
-function compareCodeUnits$3(left, right) {
+function compareCodeUnits$4(left, right) {
 	return left < right ? -1 : left > right ? 1 : 0;
 }
 //#endregion
@@ -6897,7 +6897,7 @@ function validateArrayKeywords(schema, instance, path, errors, program, memo, fa
 }
 function validateObjectKeywords(schema, instance, path, errors, program, memo, fail) {
 	let valid = true;
-	const memberNames = Object.keys(instance).filter((name) => instance[name] !== void 0).sort(compareCodeUnits$2);
+	const memberNames = Object.keys(instance).filter((name) => instance[name] !== void 0).sort(compareCodeUnits$3);
 	const present = (name) => Object.hasOwn(instance, name) && instance[name] !== void 0;
 	const properties = isSchemaNode(schema.properties) ? schema.properties : void 0;
 	if (properties !== void 0) {
@@ -7012,14 +7012,14 @@ function isDenseArray$1(value) {
 	return keys.length === value.length && keys.every((key, index) => key === String(index));
 }
 function sortedEntries(value) {
-	return Object.entries(value).sort(([left], [right]) => compareCodeUnits$2(left, right));
+	return Object.entries(value).sort(([left], [right]) => compareCodeUnits$3(left, right));
 }
 function sortedStrings(values) {
 	const strings = [];
 	for (const value of values) if (typeof value === "string") strings.push(value);
-	return strings.sort(compareCodeUnits$2);
+	return strings.sort(compareCodeUnits$3);
 }
-function compareCodeUnits$2(left, right) {
+function compareCodeUnits$3(left, right) {
 	return left < right ? -1 : left > right ? 1 : 0;
 }
 function appendPointer$1(pointer, token) {
@@ -7266,7 +7266,7 @@ function visitSchemaMap(value, path, depth, state) {
 	trackObject(value, path, state);
 	const keys = Object.keys(value);
 	if (keys.length > MAX_SCHEMA_MAP_PROPERTIES) reject("limit-exceeded", path, `${displayPath(path)} exceeds ${MAX_SCHEMA_MAP_PROPERTIES} schema entries.`);
-	for (const name of keys.sort(compareCodeUnits$1)) {
+	for (const name of keys.sort(compareCodeUnits$2)) {
 		assertSafeObjectKey(name, path);
 		visitSchema(value[name], appendPointer(path, name), depth, state);
 	}
@@ -7319,7 +7319,7 @@ function visitDependentRequired(value, path, state) {
 	trackObject(value, path, state);
 	const keys = Object.keys(value);
 	if (keys.length > MAX_SCHEMA_MAP_PROPERTIES) reject("limit-exceeded", path, `${displayPath(path)} exceeds ${MAX_SCHEMA_MAP_PROPERTIES} dependency entries.`);
-	for (const name of keys.sort(compareCodeUnits$1)) {
+	for (const name of keys.sort(compareCodeUnits$2)) {
 		assertSafeObjectKey(name, path);
 		visitNameArray(value[name], appendPointer(path, name), MAX_PROPERTY_NAMES, state);
 	}
@@ -7373,7 +7373,7 @@ function visitJsonValue(value, path, depth, state) {
 		trackObject(value, path, state);
 		const keys = Object.keys(value);
 		if (keys.length > MAX_JSON_PROPERTIES) reject("limit-exceeded", path, `${displayPath(path)} exceeds ${MAX_JSON_PROPERTIES} JSON properties.`);
-		for (const key of keys.sort(compareCodeUnits$1)) {
+		for (const key of keys.sort(compareCodeUnits$2)) {
 			assertSafeObjectKey(key, path);
 			visitJsonValue(value[key], appendPointer(path, key), depth + 1, state);
 		}
@@ -7423,7 +7423,7 @@ function compareAdmissionPaths(root, left, right) {
 				const rightIndex = Number(rightToken);
 				if (Number.isSafeInteger(leftIndex) && Number.isSafeInteger(rightIndex)) return leftIndex - rightIndex;
 			}
-			return compareCodeUnits$1(leftToken, rightToken);
+			return compareCodeUnits$2(leftToken, rightToken);
 		}
 		if ((isRecord$1(parent) || Array.isArray(parent)) && Object.hasOwn(parent, leftToken)) parent = parent[leftToken];
 		else parent = void 0;
@@ -7510,7 +7510,7 @@ function assertNonRecursiveSchema(root) {
 					if (isRecord$1(operand)) {
 						const names = Object.keys(operand);
 						const childrenEligible = names.length <= MAX_SCHEMA_MAP_PROPERTIES;
-						if (childrenEligible) names.sort(compareCodeUnits$1);
+						if (childrenEligible) names.sort(compareCodeUnits$2);
 						for (const name of names) addChild(operand[name], appendGraphPath(keywordPath, name), frame.diagnosticsEligible && childrenEligible);
 					}
 					break;
@@ -7773,19 +7773,19 @@ function consumeCanonicalJsonString(value, consume) {
 */
 function boundedSchemaEntries(value) {
 	const keys = Object.keys(value);
-	if (keys.length <= allowedKeywords.size) return keys.sort(compareCodeUnits$1).map((key) => [key, value[key]]);
+	if (keys.length <= allowedKeywords.size) return keys.sort(compareCodeUnits$2).map((key) => [key, value[key]]);
 	const candidates = [];
 	let firstInvalid;
 	for (const key of keys) if (allowedKeywords.has(key)) candidates.push(key);
-	else if (firstInvalid === void 0 || compareCodeUnits$1(key, firstInvalid) < 0) firstInvalid = key;
+	else if (firstInvalid === void 0 || compareCodeUnits$2(key, firstInvalid) < 0) firstInvalid = key;
 	if (firstInvalid !== void 0) candidates.push(firstInvalid);
-	return candidates.sort(compareCodeUnits$1).map((key) => [key, value[key]]);
+	return candidates.sort(compareCodeUnits$2).map((key) => [key, value[key]]);
 }
 function isDenseArray(value) {
 	const keys = Object.keys(value);
 	return keys.length === value.length && keys.every((key, index) => key === String(index));
 }
-function compareCodeUnits$1(left, right) {
+function compareCodeUnits$2(left, right) {
 	return left < right ? -1 : left > right ? 1 : 0;
 }
 function trackObject(value, path, state) {
@@ -9201,9 +9201,9 @@ function lockedReferenceRevision(reference) {
 	return isRevision(candidate.revision) ? candidate.revision : void 0;
 }
 function compareModelCoordinates(left, right) {
-	return compareCodeUnits(left.id, right.id) || compareCodeUnits(left.version, right.version) || compareCodeUnits(left.revision, right.revision);
+	return compareCodeUnits$1(left.id, right.id) || compareCodeUnits$1(left.version, right.version) || compareCodeUnits$1(left.revision, right.revision);
 }
-function compareCodeUnits(left, right) {
+function compareCodeUnits$1(left, right) {
 	return left < right ? -1 : left > right ? 1 : 0;
 }
 function mutationFingerprint(argument, configuration, expectedRevision) {
@@ -9511,14 +9511,50 @@ function validateNodeProperties(node, definition, registry, diagnostics) {
 		cache.set(key, compiled);
 		validator = compiled;
 	}
-	if (!validator.validate(node.properties)) diagnostics.push(...schemaDiagnostics(validator.errors).map((entry) => ({
+	validateEffectiveProperties(node, validator, node.properties, void 0, diagnostics);
+	const effective = /* @__PURE__ */ new Map();
+	for (const property of Object.keys(node.responsive ?? {}).sort(compareCodeUnits)) {
+		const overrides = node.responsive?.[property];
+		if (overrides === void 0) continue;
+		for (const viewport of Object.keys(overrides).sort(compareCodeUnits)) {
+			const override = overrides[viewport];
+			if (override === void 0) continue;
+			const properties = effective.get(viewport) ?? { ...node.properties };
+			properties[property] = override;
+			effective.set(viewport, properties);
+		}
+	}
+	for (const viewport of [...effective.keys()].sort(compareCodeUnits)) {
+		const properties = effective.get(viewport);
+		if (properties !== void 0) validateEffectiveProperties(node, validator, properties, viewport, diagnostics);
+	}
+}
+function validateEffectiveProperties(node, validator, properties, viewport, diagnostics) {
+	if (validator.validate(properties)) return;
+	diagnostics.push(...schemaDiagnostics(validator.errors).map((entry) => ({
 		...entry,
 		code: `studio.validation/block-properties-${entry.code.split("/").at(-1) ?? "invalid"}`,
 		location: {
 			...entry.location,
-			nodeId: node.id
+			nodeId: node.id,
+			...viewport === void 0 ? {} : { jsonPointer: responsivePropertyPointer(entry.location?.jsonPointer, viewport) }
 		}
 	})));
+}
+function responsivePropertyPointer(jsonPointer, viewport) {
+	const segments = jsonPointer?.split("/").slice(1) ?? [];
+	const property = segments.shift();
+	if (property === void 0) return `/responsive/${escapePointerToken(viewport)}`;
+	return [
+		"",
+		"responsive",
+		property,
+		escapePointerToken(viewport),
+		...segments
+	].join("/");
+}
+function escapePointerToken(value) {
+	return value.replaceAll("~", "~0").replaceAll("/", "~1");
 }
 function indexBlockLocks(locks, diagnostics) {
 	const indexed = /* @__PURE__ */ new Map();
@@ -9577,6 +9613,9 @@ function diagnostic(name, message, nodeId, jsonPointer) {
 		if (jsonPointer !== void 0) result.location.jsonPointer = jsonPointer;
 	}
 	return result;
+}
+function compareCodeUnits(left, right) {
+	return left < right ? -1 : left > right ? 1 : 0;
 }
 var en_default = {
 	$schema: "https://schemas.kumwe.org/studio/v1/authoring-message-catalog.schema.json",
@@ -11595,6 +11634,26 @@ var KumweStudioElement = class extends i {
 		});
 		this.#syncDirty();
 		return next;
+	}
+	/**
+	* Select one host-known document node, or clear selection after a host-owned interaction.
+	*
+	* Hosts that allocate node identifiers execute the accepted command through `execute()` and then
+	* use this seam to give palette insertion the same Inspector, outline and preview-selection parity
+	* as commands Studio can construct locally. Invalid identifiers are refused by the core session.
+	*/
+	selectNode(nodeId) {
+		const session = this.#session;
+		if (session === void 0) throw new Error("Load a blueprint document before selecting a node.");
+		if (nodeId === void 0) {
+			session.clearSelection();
+			this.selectedNodeId = void 0;
+			this.#previewSurface?.selectNode(void 0);
+			return;
+		}
+		session.select([nodeId]);
+		this.selectedNodeId = nodeId;
+		this.#previewSurface?.selectNode(nodeId);
 	}
 	/**
 	* Accept a host save acknowledgement without replacing the local session.
@@ -14923,7 +14982,7 @@ async function setupStudioComposition() {
 	if (shell === null) return;
 	try {
 		const boot = JSON.parse(encoded.textContent ?? "");
-		if (boot.release !== "0.1.0-alpha.9") throw new Error("Studio release binding mismatch.");
+		if (boot.release !== "0.1.0-alpha.10") throw new Error("Studio release binding mismatch.");
 		const opened = await openHostSession(boot);
 		const advertised = new Set(opened.hostCapabilities);
 		const adapter = createStudioHttpHostAdapter(boot.endpoints.ports, {
@@ -15013,7 +15072,9 @@ async function setupStudioComposition() {
 		shell.addEventListener("studio-insert-request", (event) => {
 			if (conflicted || lifecycleChanging || handle.session.sessionState === "read-only") return;
 			const detail = event.detail;
-			shell.execute(insertCommand(shell, handle, detail, opened.sessionGeneration));
+			const command = insertCommand(shell, handle, detail, opened.sessionGeneration);
+			shell.execute(command);
+			shell.selectNode(command.payload.node.id);
 		});
 		if (opened.preview !== void 0 && adapter.preview !== void 0) {
 			const frame = root.querySelector("[data-studio-preview]");
@@ -15328,17 +15389,16 @@ function previewBinding(frame, metadata, opened, previewPort, handle, shell, sav
 			}).toString();
 			const candidate = createStagingPreviewFrame(activeFrame);
 			stagingFrame = candidate;
-			const parent = activeFrame.parentElement;
-			if (parent === null) throw new Error("The Studio preview frame is no longer attached.");
-			parent.append(candidate);
+			if (activeFrame.parentElement === null) throw new Error("The Studio preview frame is no longer attached.");
+			activeFrame.after(candidate);
 			try {
 				await loadPreviewFrame(candidate, previewUrl, rendered, signal);
 				throwIfAborted(signal);
 				if (disposed || generation !== navigationGeneration) throw abortError();
 				geometry.dispose();
+				activeFrame.remove();
 				candidate.slot = "preview";
 				candidate.dataset.studioPreview = "";
-				activeFrame.replaceWith(candidate);
 				activeFrame = candidate;
 				stagingFrame = void 0;
 				geometry = observePreviewGeometry(activeFrame, shell);

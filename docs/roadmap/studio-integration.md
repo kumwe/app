@@ -40,13 +40,13 @@ publication; its build consumes only these release-bound bytes.
 
 | Package | Version | What it carries |
 |---|---|---|
-| `@kumwe/studio-protocol` | `0.1.0-alpha.9`, vendored and pinned | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
-| `@kumwe/studio-core` | `0.1.0-alpha.9`, vendored and pinned | The deterministic command engine, session, contribution runtime, migrations, URL policy |
-| `@kumwe/studio-preview` | `0.1.0-alpha.9`, vendored and pinned | Both ends of the origin-pinned preview channel: client, host responder, geometry |
-| `@kumwe/studio-media` | `0.1.0-alpha.9`, vendored and pinned | Upload orchestration over the canonical media session state machine |
-| `@kumwe/studio-rich-text` | `0.1.0-alpha.9`, vendored and pinned | The bounded rich-text grammar, parser and renderer projection |
-| `@kumwe/studio` | `0.1.0-alpha.9`, vendored and pinned | The authoring shell as a web component, keyboard-complete and catalog-localized |
-| `@kumwe/studio-testkit` | `0.1.0-alpha.9`, vendored and pinned | The canonical fixture corpus and a deterministic in-memory reference host |
+| `@kumwe/studio-protocol` | `0.1.0-alpha.10`, vendored and pinned | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
+| `@kumwe/studio-core` | `0.1.0-alpha.10`, vendored and pinned | The deterministic command engine, session, contribution runtime, migrations, URL policy |
+| `@kumwe/studio-preview` | `0.1.0-alpha.10`, vendored and pinned | Both ends of the origin-pinned preview channel: client, host responder, geometry |
+| `@kumwe/studio-media` | `0.1.0-alpha.10`, vendored and pinned | Upload orchestration over the canonical media session state machine |
+| `@kumwe/studio-rich-text` | `0.1.0-alpha.10`, vendored and pinned | The bounded rich-text grammar, parser and renderer projection |
+| `@kumwe/studio` | `0.1.0-alpha.10`, vendored and pinned | The authoring shell as a web component, keyboard-complete and catalog-localized |
+| `@kumwe/studio-testkit` | `0.1.0-alpha.10`, vendored and pinned | The canonical fixture corpus and a deterministic in-memory reference host |
 
 The host adapter's server side needs none of these at runtime — the protocol is JSON over the wire.
 The packages matter in two places: the administrator build consumes `@kumwe/studio` (and transitively

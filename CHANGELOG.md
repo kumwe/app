@@ -26,7 +26,7 @@ development programme, from the architecture decision that opened it to the curr
 
 - **Content-model versions now have a first-party Studio Blueprint composition surface.** The
   capability-gated administrator route provisions an exact, deterministic, version-bound Blueprint
-  only through a CSRF-protected POST and then opens the pinned alpha.9 Studio runtime on GET. Provisioning
+  only through a CSRF-protected POST and then opens the pinned alpha.10 Studio runtime on GET. Provisioning
   atomically admits the initial artifact and its separate binding, locks the authorized Content model,
   exact deployable block catalogue and active published theme, and is idempotent under concurrent first
   use. The browser adapter implements the exact model, localization, telemetry, artifact and preview
