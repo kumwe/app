@@ -66,7 +66,7 @@ development programme, from the architecture decision that opened it to the curr
   artifact or envelope and its claim. Portable DBAL migration `20260824030000_studio_artifact_recovery`,
   all 11 applicable single-operation host vectors, all seven applicable host-sequence vectors, SQLite
   integration proof and the three-engine CI contract complete S-D and remove `V2-STU-004` from the live
-  ledger. (`0678d88e`)
+  ledger. (`f10c8f1d`)
 
 - **Studio now has an authenticated, replay-resistant unpublished preview host.** The exact released
   `preview.render({payload})` and `preview.cancel({draftDigest})` bindings run behind the common live
@@ -99,7 +99,7 @@ development programme, from the architecture decision that opened it to the curr
   `studio.host/stale-session-generation` before any later port runs. The CSRF-protected routes, opaque
   binding repository, replay-safe capability migration, all five relevant vendored permission/envelope
   vectors, adversarial cross-scope tests, and ADR 0014 complete S-C and remove `V2-STU-003` from the live
-  ledger without implementing S-D write behavior. (`57541e67`)
+  ledger without implementing S-D write behavior. (`f10c8f1d`)
 
 - **The App has a read-only, fail-closed Studio Content projection foundation.** Canonical JSON and
   schema-profile interpretation now live in the neutral `Studio\Domain\Contract` namespace, while the
@@ -111,7 +111,7 @@ development programme, from the architecture decision that opened it to the curr
   read-only domain, repository and replay-safe migration foundations without opening a Studio session
   or Content write path. Content and BusinessRecord remain parallel contexts, the latter adapter is
   explicitly deferred to its own policy and exact-value contract, and `V2-STU-002` remains open for
-  the separate Studio release-pin and corpus-replay evidence. (`fba50bb8`)
+  the separate Studio release-pin and corpus-replay evidence. (`f10c8f1d`)
 
 - **The delivery pipeline is immune to the two failure classes the first rebase-merge surfaced.**
   A GitHub API outage can no longer fail the dependency-fetching workflows: the production image

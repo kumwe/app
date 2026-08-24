@@ -1,4 +1,4 @@
-import { n as setupCopyValues, t as setupValidationReveal } from "./reveal-validation-D-54v9v1.js";
+import { n as setupCopyValues, t as setupValidationReveal } from "./reveal-validation-g1jDnck7.js";
 //#region assets/site/main.ts
 var toggle = document.querySelector("[data-site-navigation-toggle]");
 var navigation = document.querySelector("[data-site-navigation]");
