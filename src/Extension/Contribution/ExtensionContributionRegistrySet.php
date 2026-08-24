@@ -33,6 +33,7 @@ use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Contribution\PortalRouteRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRenderer;
 
 /**
  * The one place every contribution registry in a process is created, wired together, and reached.
@@ -350,6 +351,26 @@ final readonly class ExtensionContributionRegistrySet
     private OwnedRuntimeContributionRegistry $canonicalCompositionDocuments;
 
     /**
+     * Active host metadata for canonical composition documents.
+     *
+     * @var    OwnedRuntimeContributionRegistry
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $compositionHostBindings;
+
+    /**
+     * Executable preview renderers activated from reconciled documents and owner-local services.
+     *
+     * This companion registry is deliberately absent from declarative inventory: its definition is
+     * derived from the signed document and host binding, while its implementation is resident code.
+     * Lifecycle removal still sweeps it explicitly so no stale object survives its owner.
+     *
+     * @var    OwnedRuntimeContributionRegistry
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $studioPreviewRenderers;
+
+    /**
      * Every contribution kind, keyed by its dotted inventory path.
      *
      * Inventory and lifecycle removal both derive from this map, so a new kind becomes
@@ -453,6 +474,11 @@ final readonly class ExtensionContributionRegistrySet
         $this->canonicalCompositionDocuments = new OwnedRuntimeContributionRegistry(
             'canonical composition document',
         );
+        $this->compositionHostBindings = new OwnedRuntimeContributionRegistry('composition_host_binding');
+        $this->studioPreviewRenderers = new OwnedRuntimeContributionRegistry(
+            'studio preview renderer',
+            StudioPreviewBlockRenderer::class,
+        );
         $this->surfaces = [
             'capabilities' => $this->capabilities,
             'resource_policies' => $this->resourcePolicies,
@@ -495,6 +521,7 @@ final readonly class ExtensionContributionRegistrySet
             'composition.design_vocabularies' => $this->compositionDesignVocabularies,
             'composition.migrations' => $this->compositionMigrations,
             'composition.documents' => $this->canonicalCompositionDocuments,
+            'composition.host_bindings' => $this->compositionHostBindings,
         ];
         if ($withCore) {
             $registrar = $this->registrar(
@@ -535,6 +562,18 @@ final readonly class ExtensionContributionRegistrySet
             throw new \InvalidArgumentException('Contribution declarations do not belong to this provider.');
         }
         $this->claimOwnerNamespace($owner);
+        foreach ($declared->compositionHostBindings() as $binding) {
+            $active = $this->compositionHostBindings->definition($owner, $binding->identifier());
+            if ($active === null) {
+                $this->compositionHostBindings->register($owner, $binding);
+                continue;
+            }
+            if ($active->toArray() !== $binding->toArray()) {
+                throw new \InvalidArgumentException(
+                    'An active composition host binding changed without lifecycle removal.',
+                );
+            }
+        }
         return new OwnedExtensionContributionRegistrar($owner, $declared, $this, $strict);
     }
 
@@ -1028,6 +1067,30 @@ final readonly class ExtensionContributionRegistrySet
     }
 
     /**
+     * Registry of active declaration-only host bindings for canonical Studio documents.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Metadata withdrawn with its owner on disable or distrust.
+     *
+     * @since   2.0.0
+     */
+    public function compositionHostBindings(): OwnedRuntimeContributionRegistry
+    {
+        return $this->compositionHostBindings;
+    }
+
+    /**
+     * Registry of executable Studio preview renderers activated from trusted extension containers.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Exact owner/version/revision renderer registrations.
+     *
+     * @since   2.0.0
+     */
+    public function studioPreviewRenderers(): OwnedRuntimeContributionRegistry
+    {
+        return $this->studioPreviewRenderers;
+    }
+
+    /**
      * Check the contributed entity types as one graph, after every provider has contributed.
      *
      * Cross-package references only resolve once the last provider has run, so this cannot be folded
@@ -1198,6 +1261,7 @@ final readonly class ExtensionContributionRegistrySet
      */
     public function remove(ContributionOwner $owner): void
     {
+        $this->studioPreviewRenderers->remove($owner);
         foreach (array_reverse($this->surfaces) as $surface) {
             $surface->remove($owner);
         }

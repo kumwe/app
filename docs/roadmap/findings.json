@@ -1,7 +1,7 @@
 {
     "ledger": "kumwe-consolidated-findings",
     "version": "2.0.0",
-    "verified_at_sha": "8455b3769f166077e492a415e888b3c510c74fbd",
+    "verified_at_sha": "509da426d65d9b5ded66a88c0500495931be31ed",
     "authority": "docs/roadmap/README.md",
     "completed_work": "CHANGELOG.md",
     "note": "This ledger holds open work only. A finding that reaches 'closed' leaves this file in the same change that closes it, and its substance becomes an entry in CHANGELOG.md under the category it belongs to; the roadmap therefore shrinks as the programme advances instead of accumulating a tail of finished items. 'closed' is deliberately absent from states for that reason, and tools/verify-roadmap.php fails the build when an entry carries it. Every source anchor in this file was resolved against the repository at verified_at_sha. The 56 entries closed before this rule was introduced were moved to CHANGELOG.md with the commits that closed them.",
@@ -667,62 +667,10 @@
             "product_owner_decision": "Decision D16."
         },
         {
-            "id": "V2-STU-003",
-            "title": "No host adapter implements the identity and policy ports, and no session generation invalidates a composition session",
-            "severity": "high",
-            "state": "accepted_for_implementation",
-            "phase": "S",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/Kernel/ContainerFactory.php",
-                    "symbol": "administratorRoute() and the container host-service allowlist",
-                    "note": "Administrator routes are capability-gated and the extension container exposes five host services, none of them identity, policy, media, preview, localization or telemetry. There is no port surface a composition client could negotiate against."
-                },
-                {
-                    "file": "src/Identity/",
-                    "symbol": "the security epoch and grant resolution",
-                    "note": "Grants are re-read on every session resolve and an epoch advance retires sessions and step-up proofs. A composition session must inherit that invalidation rather than cache an authorization decision."
-                }
-            ],
-            "acceptance_test": "Each implemented port resolves the actor's effective capabilities through the existing deny-by-default gateway and refuses a caller lacking each required capability, proven one capability at a time. Advancing the security epoch or revoking a grant mid-session invalidates the composition session generation, and every subsequent port call is refused with the canonical stale-generation category rather than applied. A client-asserted capability or generation is never trusted.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "work_package": "S-C",
-            "product_owner_decision": "Decision D16."
-        },
-        {
-            "id": "V2-STU-004",
-            "title": "Composition documents have no versioned artifact store, so there is no conflict, replay or refusal contract for them",
-            "severity": "high",
-            "state": "accepted_for_implementation",
-            "phase": "S",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "docs/rest-api.md",
-                    "symbol": "the retry and concurrency contract",
-                    "note": "Mutations require a caller-generated Idempotency-Key with a 24-hour replay window, and versioned resources require the current ETag in If-Match. A composition artifact must inherit exactly this discipline rather than invent a second one."
-                },
-                {
-                    "file": "src/Content/",
-                    "symbol": "ContentService and the content revision path",
-                    "note": "Content carries versions, revisions and a workflow. Composition documents are a different artifact kind and no store, revision path or refusal boundary exists for them."
-                }
-            ],
-            "acceptance_test": "A composition document is stored as a versioned artifact: a write carrying a stale expected revision is refused with the safe current revision and its diagnostics and never overwrites, an identical replay under the same idempotency key returns the recorded outcome once, and the revision history is readable. A document carrying markup, a style declaration, executable content or a URL outside a schema-defined field is refused at the boundary rather than stored and sanitized afterwards. Stored bytes validate against the published schema and round-trip unchanged on MariaDB, MySQL and PostgreSQL.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "work_package": "S-D",
-            "product_owner_decision": "Decision D16."
-        },
-        {
             "id": "V2-STU-005",
             "title": "The media port and the external-source obligations the composition contract names have no host implementation",
             "severity": "high",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "S",
             "gate": "B",
             "origin": "new",

@@ -26,12 +26,14 @@ use Kumwe\App\Navigation\Application\MenuRecord;
 use Kumwe\App\Navigation\Application\NavigationRepository;
 use Kumwe\App\Navigation\Application\PublicNavigation;
 use Kumwe\App\Presentation\ContentLayoutCatalog;
+use Kumwe\App\Presentation\ContentPageRenderService;
 use Kumwe\App\Presentation\ContentPresenter;
 use Kumwe\App\Presentation\RichTextFormatter;
 use Kumwe\App\Presentation\SiteRenderer;
 use Kumwe\App\Presentation\Twig\SiteTwigEnvironment;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Site\Application\SiteSettings;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -123,8 +125,7 @@ final class PublicPageLocatorTest extends TestCase
         $active = new ActiveLocale(new SupportedLocales());
         $handler = new PublishedContentHandler(
             $locator,
-            $settings,
-            new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader())),
+            new ContentPageRenderService($settings, new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader()))),
             new ContentPresenter(new RichTextFormatter()),
             $this->layouts(),
             $this->languages($locator),
@@ -153,10 +154,9 @@ final class PublicPageLocatorTest extends TestCase
         $locator = $this->locator($records, settings: $settings);
         $handler = new PublishedContentHandler(
             $locator,
-            $settings,
-            new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader([
+            new ContentPageRenderService($settings, new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader([
                 'page.twig' => '{{ current_path }}|{{ entry.title }}|{{ entry.body_html|raw }}',
-            ]))),
+            ])))),
             new ContentPresenter(new RichTextFormatter()),
             $this->layouts(),
             $this->languages($locator),
@@ -171,6 +171,30 @@ final class PublicPageLocatorTest extends TestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('/about/team|Team|<p>Team</p>', (string) $response->getBody());
+
+        $studio = $this->createMock(StudioPublishedContentRenderer::class);
+        $studio->expects(self::once())->method('render')->with($records[self::TEAM])->willReturn(
+            '<section class="studio-preview-section"><p>Studio team</p></section>',
+        );
+        $studioHandler = new PublishedContentHandler(
+            $locator,
+            new ContentPageRenderService($settings, new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader([
+                'page.twig' => '{{ current_path }}|{{ entry.title }}|{{ entry.body_html|raw }}|'
+                    . '{{ entry.data|length }}',
+            ])))),
+            new ContentPresenter(new RichTextFormatter()),
+            $this->layouts(),
+            $this->languages($locator),
+            new ActiveLocale(new SupportedLocales()),
+            $studio,
+        );
+        $studioResponse = $studioHandler->handle($request);
+
+        self::assertSame(200, $studioResponse->getStatusCode());
+        self::assertSame(
+            '/about/team|Team|<section class="studio-preview-section"><p>Studio team</p></section>|0',
+            (string) $studioResponse->getBody(),
+        );
     }
 
     public function testPresenterRendersNestedStructuredBodiesWithoutLosingTopLevelCompatibility(): void

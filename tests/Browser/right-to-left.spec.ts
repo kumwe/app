@@ -62,6 +62,10 @@ const surfaces = [
 
 /** Locales this suite knows to be written from the right, keyed by the subtag a project name carries. */
 const rightToLeftLocales = ['he', 'ar'] as const;
+const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL
+  ?? 'browser-administrator@kumwe.test';
+const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD
+  ?? 'browser administrator password';
 
 type RightToLeftLocale = (typeof rightToLeftLocales)[number];
 
@@ -83,6 +87,39 @@ function projectLocale(projectName: string): RightToLeftLocale {
   }
 
   return locale;
+}
+
+async function expectStudioGeometryParity(page: Page, shell: Locator): Promise<void> {
+  await expect.poll(async () => {
+    const markers = await page.locator('iframe[data-studio-preview]').evaluate((element) => {
+      const frame = element as HTMLIFrameElement;
+      const frameRect = frame.getBoundingClientRect();
+      return Array.from(frame.contentDocument?.querySelectorAll<HTMLElement>('[data-studio-preview-marker]') ?? [])
+        .flatMap((marker) => Array.from(marker.getClientRects()).map((rect) => ({
+          height: rect.height,
+          width: rect.width,
+          x: frameRect.x + frame.clientLeft + rect.x,
+          y: frameRect.y + frame.clientTop + rect.y,
+        })));
+    });
+    const overlays = await shell.locator('.preview-canvas-region').evaluateAll((regions) =>
+      regions.map((region) => {
+        const rect = region.getBoundingClientRect();
+        return { height: rect.height, width: rect.width, x: rect.x, y: rect.y };
+      }));
+    const order = (values: typeof markers): typeof markers => values.sort((left, right) =>
+      left.y - right.y || left.x - right.x || left.height - right.height || left.width - right.width);
+    order(markers);
+    order(overlays);
+    return markers.length > 0 && markers.length === overlays.length && markers.every((rect, index) => {
+      const overlay = overlays[index];
+      return overlay !== undefined
+        && Math.abs(rect.x - overlay.x) <= 2
+        && Math.abs(rect.y - overlay.y) <= 2
+        && Math.abs(rect.width - overlay.width) <= 2
+        && Math.abs(rect.height - overlay.height) <= 2;
+    });
+  }).toBe(true);
 }
 
 async function open(page: Page, path: string, locale: string): Promise<void> {
@@ -147,5 +184,44 @@ test.describe('Right-to-left presentation', () => {
     // the wording is still the source language, and that is the point: a message no layer carries
     // renders as the source text rather than as nothing.
     await expect(page.getByRole('button', { name: 'Sign in to Kumwe' })).toBeVisible();
+  });
+
+  test('the Studio composition shell and exact preview remain right-to-left without overflow', async ({
+    page,
+  }, testInfo) => {
+    const locale = projectLocale(testInfo.project.name);
+    await open(page, '/administrator/login', locale);
+    await page.getByLabel('Email address').fill(administratorEmail);
+    await page.getByLabel('Password').fill(administratorPassword);
+    await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
+    await page.goto('/administrator/content-models');
+    const link = page.locator('a[href*="/administrator/content-models/"][href$="/composition"]').first();
+    await expect(link).toBeVisible();
+    await link.click();
+    const provision = page.getByRole('button', { name: 'Create composition' });
+    if (await provision.isVisible()) await provision.click();
+
+    const shell = page.locator('kumwe-studio');
+    const section = shell.getByRole('complementary', { name: 'Block palette' })
+      .getByRole('button', { name: 'Section' });
+    await expect(section).toBeVisible();
+    await section.click();
+    const frame = page.locator('iframe[data-studio-preview]').contentFrame();
+    await expect(frame.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(frame.locator('[data-studio-preview-marker]').first()).toBeVisible();
+    await expectStudioGeometryParity(page, shell);
+    await page.locator('iframe[data-studio-preview]').evaluate((element) => {
+      const previewWindow = (element as HTMLIFrameElement).contentWindow;
+      const previewDocument = (element as HTMLIFrameElement).contentDocument;
+      if (previewWindow === null || previewDocument === null || previewDocument.body === null) return;
+      previewDocument.body.style.minInlineSize = 'calc(100vw + 200px)';
+      previewWindow.scrollTo({ left: -90 });
+    });
+    await expectStudioGeometryParity(page, shell);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(page.locator('html')).toHaveAttribute('lang', locale);
+    await expectNoDocumentOverflow(page);
+    await expect(shell.getByRole('complementary', { name: 'Block palette' }))
+      .toHaveCSS('direction', 'rtl');
   });
 });

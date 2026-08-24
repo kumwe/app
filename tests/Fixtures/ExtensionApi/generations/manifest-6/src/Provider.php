@@ -12,7 +12,7 @@ use Kumwe\App\Extension\Runtime\ExtensionContainer;
 use LogicException;
 
 /**
- * Compatibility provider for the manifest-6 generation and contribution SPI 4.
+ * Compatibility provider for manifest-6 declarations and their Gate-B preview implementation.
  *
  * SPI 4 replaces the frozen schema-5 paraphrases with canonical Studio contribution documents,
  * per decision D16 and kumwe/app#104. This provider registers one document of every canonical
@@ -24,7 +24,7 @@ use LogicException;
 final class Provider implements ExtensionServiceProvider, ExtensionContributionProvider
 {
     /**
-     * Register nothing: the canonical composition contract is declarative and runs no services.
+     * Register the owner-local service named by the signed block host binding.
      *
      * @param   ExtensionContainer  $container  Restricted owner-scoped service surface.
      *
@@ -34,6 +34,10 @@ final class Provider implements ExtensionServiceProvider, ExtensionContributionP
      */
     public function register(ExtensionContainer $container): void
     {
+        $container->share(
+            'extension.kumwe.contract-manifest-six.renderer.grid',
+            static fn (ExtensionContainer $container): GridPreviewRenderer => new GridPreviewRenderer(),
+        );
     }
 
     /**

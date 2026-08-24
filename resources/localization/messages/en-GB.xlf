@@ -16335,4 +16335,1317 @@
       </segment>
     </unit>
   </file>
+  <file id="core-studio-composition-surface">
+    <unit id="core.administrator.studio_composition.document_title"><segment><source>Studio composition · Kumwe</source></segment></unit>
+    <unit id="core.administrator.studio_composition.context_title"><segment><source>Studio composition</source></segment></unit>
+    <unit id="core.administrator.studio_composition.eyebrow"><segment><source>Content model Blueprint</source></segment></unit>
+    <unit id="core.administrator.studio_composition.heading"><segment><source>Compose the page structure</source></segment></unit>
+    <unit id="core.administrator.studio_composition.description"><segment><source>Arrange reusable blocks for this exact published content type version.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.back_to_models"><segment><source>Back to content models</source></segment></unit>
+    <unit id="core.administrator.studio_composition.provision_heading"><segment><source>Create the first Blueprint</source></segment></unit>
+    <unit id="core.administrator.studio_composition.provision_description"><segment><source>This creates an empty draft locked to this exact model version. It does not change any content entry.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.provision_action"><segment><source>Create composition</source></segment></unit>
+    <unit id="core.administrator.studio_composition.loading"><segment><source>Opening Studio…</source></segment></unit>
+    <unit id="core.administrator.studio_composition.canvas_label"><segment><source>Blueprint composition editor</source></segment></unit>
+    <unit id="core.administrator.studio_composition.preview_label"><segment><source>Composition preview</source></segment></unit>
+    <unit id="core.administrator.studio_composition.javascript_required"><segment><source>JavaScript is required for visual composition. Model editing and first Blueprint provisioning remain available without it.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.open_action"><segment><source>Open composition</source></segment></unit>
+    <unit id="core.administrator.studio_composition.change_refused"><segment><source>The requested change was refused and the stored composition is unchanged.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.conflict"><segment><source>Another session saved this composition. Reload before making more changes.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.open_failed"><segment><source>Studio could not be opened. The content model and stored Blueprint were not changed.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.ready"><segment><source>Studio is ready.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.save_failed"><segment><source>The composition could not be saved. Your unsaved changes remain in this session.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.saved"><segment><source>Composition saved.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.publish_action"><segment><source>Publish composition</source></segment></unit>
+    <unit id="core.administrator.studio_composition.unpublish_action"><segment><source>Return composition to draft</source></segment></unit>
+    <unit id="core.administrator.studio_composition.publishing"><segment><source>Publishing the accepted composition…</source></segment></unit>
+    <unit id="core.administrator.studio_composition.unpublishing"><segment><source>Returning the composition to draft…</source></segment></unit>
+    <unit id="core.administrator.studio_composition.lifecycle_failed"><segment><source>The composition status could not be changed. Reopen Studio before trying again.</source></segment></unit>
+    <unit id="core.administrator.studio_composition.theme_mismatch_heading"><segment><source>Composition theme migration required</source></segment></unit>
+    <unit id="core.administrator.studio_composition.theme_mismatch_description"><segment><source>The public site theme changed after this Blueprint was created. Migrate its immutable theme lock, then reopen Studio.</source></segment></unit>
+  </file>
+  <!-- BEGIN GENERATED STUDIO AUTHORING MESSAGES -->
+  <file id="core-studio-authoring">
+    <unit id="core.studio.shell.announce-binding-removed">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-binding-removed.</note>
+      </notes>
+      <segment>
+        <source>Removed the {port} binding</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-binding-set">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-binding-set.</note>
+      </notes>
+      <segment>
+        <source>Set the {port} binding</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-canvas-mode">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-canvas-mode.</note>
+      </notes>
+      <segment>
+        <source>Canvas mode: {state}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-command-failed">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-command-failed.</note>
+      </notes>
+      <segment>
+        <source>Command failed: {message}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-conflict">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-conflict.</note>
+      </notes>
+      <segment>
+        <source>The change was rejected: {message} The document is unchanged; refresh the session or undo before retrying.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-deleted">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-deleted.</note>
+      </notes>
+      <segment>
+        <source>Deleted {label} block</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-drag-cancelled">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-drag-cancelled.</note>
+      </notes>
+      <segment>
+        <source>Reorder cancelled. {label} kept its position.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-dropped">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-dropped.</note>
+      </notes>
+      <segment>
+        <source>Moved {label} to position {position} of {count}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-duplicated">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-duplicated.</note>
+      </notes>
+      <segment>
+        <source>Duplicated {label}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-edit-cancelled">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-edit-cancelled.</note>
+      </notes>
+      <segment>
+        <source>Edit cancelled. {property} kept its value.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-field-bound">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-field-bound.</note>
+      </notes>
+      <segment>
+        <source>Bound {port} to the {field} model field</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-inheritance-reset">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-inheritance-reset.</note>
+      </notes>
+      <segment>
+        <source>Reset every responsive override for {property}; all viewports now inherit the base value</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-inserted">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-inserted.</note>
+      </notes>
+      <segment>
+        <source>Inserted {label}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-invalid-value">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-invalid-value.</note>
+      </notes>
+      <segment>
+        <source>The {label} value is not valid JSON. Nothing was changed.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-moved-down">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-moved-down.</note>
+      </notes>
+      <segment>
+        <source>Moved {label} down</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-moved-to">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-moved-to.</note>
+      </notes>
+      <segment>
+        <source>Moved {label} to {destination}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-moved-up">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-moved-up.</note>
+      </notes>
+      <segment>
+        <source>Moved {label} up</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-name-required">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-name-required.</note>
+      </notes>
+      <segment>
+        <source>Enter a name before applying the change.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-override-removed">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-override-removed.</note>
+      </notes>
+      <segment>
+        <source>Removed the {property} override for the {viewport} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-override-set">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-override-set.</note>
+      </notes>
+      <segment>
+        <source>Set the {property} override for the {viewport} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-pattern-applied">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-pattern-applied.</note>
+      </notes>
+      <segment>
+        <source>Applied the {pattern} pattern</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-preview-reloaded">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-preview-reloaded.</note>
+      </notes>
+      <segment>
+        <source>The preview reloaded ({reason}). The document is unchanged.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-preview-torn-down">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-preview-torn-down.</note>
+      </notes>
+      <segment>
+        <source>The preview closed ({reason}). The document is unchanged.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-property-set">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-property-set.</note>
+      </notes>
+      <segment>
+        <source>Set {property}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-property-unset">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-property-unset.</note>
+      </notes>
+      <segment>
+        <source>Unset {property}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-recipe-applied">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-recipe-applied.</note>
+      </notes>
+      <segment>
+        <source>Applied the {recipe} recipe</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-redid">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-redid.</note>
+      </notes>
+      <segment>
+        <source>Redid change</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-restored">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-restored.</note>
+      </notes>
+      <segment>
+        <source>Restored {label} block</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-selection-cleared">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-selection-cleared.</note>
+      </notes>
+      <segment>
+        <source>Selection cleared</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-size-role-invalid">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-size-role-invalid.</note>
+      </notes>
+      <segment>
+        <source>The {axis} role must be a lower-case identifier such as half or full-width. Nothing was changed.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-size-role-removed">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-size-role-removed.</note>
+      </notes>
+      <segment>
+        <source>Removed the {axis} role</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-size-role-removed-viewport">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-size-role-removed-viewport.</note>
+      </notes>
+      <segment>
+        <source>Removed the {axis} role for the {viewport} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-size-role-set">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-size-role-set.</note>
+      </notes>
+      <segment>
+        <source>Set the {axis} role to {role}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-size-role-set-viewport">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-size-role-set-viewport.</note>
+      </notes>
+      <segment>
+        <source>Set the {axis} role to {role} for the {viewport} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-undid">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-undid.</note>
+      </notes>
+      <segment>
+        <source>Undid change</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.announce-viewport-changed">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/announce-viewport-changed.</note>
+      </notes>
+      <segment>
+        <source>Previewing the {label} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.block-actions">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/block-actions.</note>
+      </notes>
+      <segment>
+        <source>Block actions</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.breadcrumb-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/breadcrumb-label.</note>
+      </notes>
+      <segment>
+        <source>Selection path</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.canvas-edit-toggle">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/canvas-edit-toggle.</note>
+      </notes>
+      <segment>
+        <source>Select and move rendered blocks</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.canvas-empty">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/canvas-empty.</note>
+      </notes>
+      <segment>
+        <source>Choose a block to begin composing.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.canvas-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/canvas-label.</note>
+      </notes>
+      <segment>
+        <source>Blueprint structure</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.canvas-mode-editing">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/canvas-mode-editing.</note>
+      </notes>
+      <segment>
+        <source>selecting and moving blocks</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.canvas-mode-interacting">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/canvas-mode-interacting.</note>
+      </notes>
+      <segment>
+        <source>interacting with the rendered preview</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-apply-pattern">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-apply-pattern.</note>
+      </notes>
+      <segment>
+        <source>Apply pattern {pattern}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-clear-selection">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-clear-selection.</note>
+      </notes>
+      <segment>
+        <source>Clear selection</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-insert">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-insert.</note>
+      </notes>
+      <segment>
+        <source>Insert {label}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-move-to">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-move-to.</note>
+      </notes>
+      <segment>
+        <source>Move to {destination}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-palette-empty">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-palette-empty.</note>
+      </notes>
+      <segment>
+        <source>No commands match the filter.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-palette-hint">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-palette-hint.</note>
+      </notes>
+      <segment>
+        <source>Type to filter commands. Arrow Down moves into the results, Arrow Up returns to the filter, Enter runs a command, Escape closes.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-palette-input-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-palette-input-label.</note>
+      </notes>
+      <segment>
+        <source>Filter commands</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-palette-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-palette-label.</note>
+      </notes>
+      <segment>
+        <source>Command palette</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-palette-results-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-palette-results-label.</note>
+      </notes>
+      <segment>
+        <source>Matching commands</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.command-palette-toggle">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/command-palette-toggle.</note>
+      </notes>
+      <segment>
+        <source>Commands</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.delete">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/delete.</note>
+      </notes>
+      <segment>
+        <source>Delete</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.diagnostics-empty">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/diagnostics-empty.</note>
+      </notes>
+      <segment>
+        <source>No issues</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.diagnostics-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/diagnostics-heading.</note>
+      </notes>
+      <segment>
+        <source>Diagnostics</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.document-roots">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/document-roots.</note>
+      </notes>
+      <segment>
+        <source>document roots</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.drag-drop-position">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/drag-drop-position.</note>
+      </notes>
+      <segment>
+        <source>Moving {label} to position {position} of {count}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.duplicate">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/duplicate.</note>
+      </notes>
+      <segment>
+        <source>Duplicate</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.history-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/history-label.</note>
+      </notes>
+      <segment>
+        <source>History</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-add-override">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-add-override.</note>
+      </notes>
+      <segment>
+        <source>Add override</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-add-override-name-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-add-override-name-label.</note>
+      </notes>
+      <segment>
+        <source>Override property name</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-add-override-value-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-add-override-value-label.</note>
+      </notes>
+      <segment>
+        <source>Override value as JSON</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-add-property">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-add-property.</note>
+      </notes>
+      <segment>
+        <source>Add property</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-add-property-name-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-add-property-name-label.</note>
+      </notes>
+      <segment>
+        <source>New property name</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-add-property-value-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-add-property-value-label.</note>
+      </notes>
+      <segment>
+        <source>New property value as JSON</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-accepts">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-accepts.</note>
+      </notes>
+      <segment>
+        <source>Accepts {cardinality} {value-type} value</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-control-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-control-label.</note>
+      </notes>
+      <segment>
+        <source>Declared {control} control for {field}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-control-preview">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-control-preview.</note>
+      </notes>
+      <segment>
+        <source>Control preview</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-control-unavailable">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-control-unavailable.</note>
+      </notes>
+      <segment>
+        <source>The declared {control} control requires a host field-adapter contribution.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-control-undeclared">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-control-undeclared.</note>
+      </notes>
+      <segment>
+        <source>This field declares no authoring control.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-field-placeholder">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-field-placeholder.</note>
+      </notes>
+      <segment>
+        <source>Choose a model field</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-invalid">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-invalid.</note>
+      </notes>
+      <segment>
+        <source>This binding no longer resolves and requires migration.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-model">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-model.</note>
+      </notes>
+      <segment>
+        <source>Fields from locked model {model}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-model-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-model-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The projected model does not match the Blueprint lock. Binding choices are disabled; see diagnostics.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-model-unavailable">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-model-unavailable.</note>
+      </notes>
+      <segment>
+        <source>The session advertises model reads, but no active model projection is loaded. Binding choices are disabled.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-no-compatible-fields">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-no-compatible-fields.</note>
+      </notes>
+      <segment>
+        <source>No compatible model fields</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-non-field-source">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-non-field-source.</note>
+      </notes>
+      <segment>
+        <source>This port uses a non-field source. Choosing a model field replaces that source explicitly.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-port-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-port-label.</note>
+      </notes>
+      <segment>
+        <source>Binding port name</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-required">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-required.</note>
+      </notes>
+      <segment>
+        <source> (required)</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-binding-value-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-binding-value-label.</note>
+      </notes>
+      <segment>
+        <source>Binding value as JSON</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-bindings-empty">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-bindings-empty.</note>
+      </notes>
+      <segment>
+        <source>No bindings</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-bindings-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-bindings-heading.</note>
+      </notes>
+      <segment>
+        <source>Bindings</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-design-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-design-heading.</note>
+      </notes>
+      <segment>
+        <source>Design</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-design-placeholder">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-design-placeholder.</note>
+      </notes>
+      <segment>
+        <source>Choose a token</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-design-unset">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-design-unset.</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-empty">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-empty.</note>
+      </notes>
+      <segment>
+        <source>Select a block to inspect its contract.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-heading.</note>
+      </notes>
+      <segment>
+        <source>Inspector</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-hint">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-hint.</note>
+      </notes>
+      <segment>
+        <source>Inputs hold JSON values. Enter applies the edit, Escape reverts it.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-identifier">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-identifier.</note>
+      </notes>
+      <segment>
+        <source>Identifier</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-axis-block">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-axis-block.</note>
+      </notes>
+      <segment>
+        <source>Block size</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-axis-inline">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-axis-inline.</note>
+      </notes>
+      <segment>
+        <source>Inline size</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-base-none">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-base-none.</note>
+      </notes>
+      <segment>
+        <source>Base: none</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-base-role">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-base-role.</note>
+      </notes>
+      <segment>
+        <source>Base: {role}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-fallback-hint">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-fallback-hint.</note>
+      </notes>
+      <segment>
+        <source>No theme size-role vocabulary is available. Enter a lower-case role identifier; Enter applies it, Escape cancels.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-heading.</note>
+      </notes>
+      <segment>
+        <source>Layout</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-no-roles">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-no-roles.</note>
+      </notes>
+      <segment>
+        <source>The active theme declares no size roles, so none can be assigned.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-role-label-base">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-role-label-base.</note>
+      </notes>
+      <segment>
+        <source>{axis} role (base)</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-role-label-viewport">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-role-label-viewport.</note>
+      </notes>
+      <segment>
+        <source>{axis} role override for the {viewport} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-role-placeholder">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-role-placeholder.</note>
+      </notes>
+      <segment>
+        <source>Choose a role</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-unset">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-unset.</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-unset-label-base">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-unset-label-base.</note>
+      </notes>
+      <segment>
+        <source>Remove the {axis} base role</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-layout-unset-label-viewport">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-layout-unset-label-viewport.</note>
+      </notes>
+      <segment>
+        <source>Remove the {axis} role override for the {viewport} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-override-value-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-override-value-label.</note>
+      </notes>
+      <segment>
+        <source>Override of {property} for the {viewport} viewport as JSON</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-overrides-empty">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-overrides-empty.</note>
+      </notes>
+      <segment>
+        <source>No overrides for the {viewport} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-overrides-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-overrides-heading.</note>
+      </notes>
+      <segment>
+        <source>Overrides for the {viewport} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-properties">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-properties.</note>
+      </notes>
+      <segment>
+        <source>Properties</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-properties-empty">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-properties-empty.</note>
+      </notes>
+      <segment>
+        <source>No properties</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-property-value-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-property-value-label.</note>
+      </notes>
+      <segment>
+        <source>Value of {property} as JSON</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-provenance-base">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-provenance-base.</note>
+      </notes>
+      <segment>
+        <source>Base value</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-provenance-inherited">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-provenance-inherited.</note>
+      </notes>
+      <segment>
+        <source>Inherited from base: {value}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-provenance-inherited-none">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-provenance-inherited-none.</note>
+      </notes>
+      <segment>
+        <source>Inherited from base: none</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-provenance-overridden">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-provenance-overridden.</note>
+      </notes>
+      <segment>
+        <source>Overridden for the {viewport} viewport: {value}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-read-only">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-read-only.</note>
+      </notes>
+      <segment>
+        <source>Editing is disabled because this session is read-only.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-recipe-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-recipe-label.</note>
+      </notes>
+      <segment>
+        <source>Recipe</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-recipe-placeholder">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-recipe-placeholder.</note>
+      </notes>
+      <segment>
+        <source>Choose a recipe</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-recipes-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-recipes-heading.</note>
+      </notes>
+      <segment>
+        <source>Recipes</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-remove-binding">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-remove-binding.</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-remove-binding-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-remove-binding-label.</note>
+      </notes>
+      <segment>
+        <source>Remove the {port} binding</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-remove-override">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-remove-override.</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-remove-override-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-remove-override-label.</note>
+      </notes>
+      <segment>
+        <source>Remove the {property} override for the {viewport} viewport</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-reset-inheritance">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-reset-inheritance.</note>
+      </notes>
+      <segment>
+        <source>Reset all viewport overrides</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-set-binding">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-set-binding.</note>
+      </notes>
+      <segment>
+        <source>Set binding</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-type">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-type.</note>
+      </notes>
+      <segment>
+        <source>Type</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-unset">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-unset.</note>
+      </notes>
+      <segment>
+        <source>Unset</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-unset-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/inspector-unset-label.</note>
+      </notes>
+      <segment>
+        <source>Unset {property}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.move-destination-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/move-destination-label.</note>
+      </notes>
+      <segment>
+        <source>Move block to another position or slot</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.move-destination-option">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/move-destination-option.</note>
+      </notes>
+      <segment>
+        <source>{collection}, position {position} of {count}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.move-destination-placeholder">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/move-destination-placeholder.</note>
+      </notes>
+      <segment>
+        <source>Choose a destination</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.move-down">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/move-down.</note>
+      </notes>
+      <segment>
+        <source>Move down</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.move-slot-collection">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/move-slot-collection.</note>
+      </notes>
+      <segment>
+        <source>{parent}: {slot} slot</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.move-up">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/move-up.</note>
+      </notes>
+      <segment>
+        <source>Move up</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.outline-empty">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/outline-empty.</note>
+      </notes>
+      <segment>
+        <source>The outline lists blocks once the document has content.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.outline-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/outline-heading.</note>
+      </notes>
+      <segment>
+        <source>Outline</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.outline-hint">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/outline-hint.</note>
+      </notes>
+      <segment>
+        <source>Arrow keys move focus. Alt+Arrow moves the block. Delete removes it. Ctrl+D or Cmd+D duplicates it.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.outline-slot">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/outline-slot.</note>
+      </notes>
+      <segment>
+        <source>Slot: {slot}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.palette-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/palette-heading.</note>
+      </notes>
+      <segment>
+        <source>Blocks</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.palette-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/palette-label.</note>
+      </notes>
+      <segment>
+        <source>Block palette</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.patterns-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/patterns-heading.</note>
+      </notes>
+      <segment>
+        <source>Patterns</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.preview-closed">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/preview-closed.</note>
+      </notes>
+      <segment>
+        <source>Preview is disconnected. Editing remains available.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.preview-connecting">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/preview-connecting.</note>
+      </notes>
+      <segment>
+        <source>Preview is connecting.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.preview-current">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/preview-current.</note>
+      </notes>
+      <segment>
+        <source>Preview is current.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.preview-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/preview-heading.</note>
+      </notes>
+      <segment>
+        <source>Preview</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.preview-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/preview-label.</note>
+      </notes>
+      <segment>
+        <source>Rendered preview</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.preview-rendering">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/preview-rendering.</note>
+      </notes>
+      <segment>
+        <source>Preview is updating.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.preview-stale">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/preview-stale.</note>
+      </notes>
+      <segment>
+        <source>Preview is stale. Editing remains available.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.preview-unavailable">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/preview-unavailable.</note>
+      </notes>
+      <segment>
+        <source>Preview is unavailable for this session. Editing remains available.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.redo">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/redo.</note>
+      </notes>
+      <segment>
+        <source>Redo</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.restore-last-deleted">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/restore-last-deleted.</note>
+      </notes>
+      <segment>
+        <source>Restore last deleted block</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.save-state-saved">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/save-state-saved.</note>
+      </notes>
+      <segment>
+        <source>Saved</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.save-state-unsaved">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/save-state-unsaved.</note>
+      </notes>
+      <segment>
+        <source>Unsaved changes</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.severity-blocking">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/severity-blocking.</note>
+      </notes>
+      <segment>
+        <source>Blocking</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.severity-error">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/severity-error.</note>
+      </notes>
+      <segment>
+        <source>Error</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.severity-information">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/severity-information.</note>
+      </notes>
+      <segment>
+        <source>Information</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.severity-warning">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/severity-warning.</note>
+      </notes>
+      <segment>
+        <source>Warning</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.status-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/status-label.</note>
+      </notes>
+      <segment>
+        <source>Status</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.undo">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/undo.</note>
+      </notes>
+      <segment>
+        <source>Undo</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.unresolved-block">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/unresolved-block.</note>
+      </notes>
+      <segment>
+        <source>(unresolved)</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.viewport-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/viewport-label.</note>
+      </notes>
+      <segment>
+        <source>Preview width</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.visual-drop-target">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message studio.shell/visual-drop-target.</note>
+      </notes>
+      <segment>
+        <source>Moving {label} to {destination}</source>
+      </segment>
+    </unit>
+  </file>
+  <!-- END GENERATED STUDIO AUTHORING MESSAGES -->
 </xliff>

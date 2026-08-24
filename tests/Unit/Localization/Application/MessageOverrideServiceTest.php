@@ -52,6 +52,14 @@ final class MessageOverrideServiceTest extends TestCase
     private const CLIENT = 'core.business.client.label';
 
     /**
+     * Studio shell message whose canonical parameter set includes a hyphenated local name.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const STUDIO_BINDING_ACCEPTS = 'core.studio.shell.inspector-binding-accepts';
+
+    /**
      * Storing an override records the wording, the layer and the instant, and audits the change.
      *
      * @return  void
@@ -321,6 +329,113 @@ final class MessageOverrideServiceTest extends TestCase
     }
 
     /**
+     * Studio's canonical named interpolation remains writable at both administered override layers.
+     *
+     * The shell owns a deliberately smaller grammar than App ICU and publishes `value-type` as one
+     * of its parameter names. Site and organization terminology therefore preserve that exact name
+     * instead of being refused by an ICU parser the Studio runtime never invokes.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStudioNamedInterpolationCanBeOverriddenAtSiteAndOrganizationLayers(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+        $sitePattern = 'Supports {value-type} with {cardinality} cardinality';
+        $organizationPattern = '{cardinality} values of type {value-type}';
+
+        $service->override(
+            $this->actor(),
+            MessageCatalogueLayer::Site,
+            'en-GB',
+            self::STUDIO_BINDING_ACCEPTS,
+            $sitePattern,
+        );
+        $organization = AuthorizationContext::human(
+            ['localization.overrides.manage'],
+            membership: AuthorizationContext::membership('acme'),
+        );
+        $service->override(
+            $organization,
+            MessageCatalogueLayer::Organization,
+            'en-GB',
+            self::STUDIO_BINDING_ACCEPTS,
+            $organizationPattern,
+        );
+
+        $locale = LocaleTag::fromString('en-GB');
+        self::assertSame(
+            [self::STUDIO_BINDING_ACCEPTS => $sitePattern],
+            $store->siteOverrides('default', $locale),
+        );
+        self::assertSame(
+            [self::STUDIO_BINDING_ACCEPTS => $organizationPattern],
+            $store->organizationOverrides('default', 'acme', $locale),
+        );
+    }
+
+    /**
+     * Studio overrides cannot add parameters or smuggle ICU branching into the named subset.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStudioOverridesRefuseParameterDriftAndNonNamedExpressions(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+
+        foreach (
+            [
+                'Supports {value-type} with {unknown}',
+                '{value-type, select, text {Text} other {Other}} and {cardinality}',
+                'Supports {value-type with {cardinality}',
+            ] as $pattern
+        ) {
+            try {
+                $service->override(
+                    $this->actor(),
+                    MessageCatalogueLayer::Site,
+                    'en-GB',
+                    self::STUDIO_BINDING_ACCEPTS,
+                    $pattern,
+                );
+                self::fail('The service stored a Studio pattern outside named interpolation: ' . $pattern);
+            } catch (MessageFormattingFailed $refused) {
+                self::assertStringContainsString('cannot be formatted for locale en-GB', $refused->getMessage());
+            }
+        }
+    }
+
+    /**
+     * A neighbouring namespace still passes through App ICU and receives no Studio exception.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStudioNamedInterpolationExceptionIsRestrictedToTheExactShellNamespace(): void
+    {
+        $store = $this->store();
+        $events = [];
+        $service = $this->service($store, $events);
+
+        $this->expectException(MessageFormattingFailed::class);
+        $service->override(
+            $this->actor(),
+            MessageCatalogueLayer::Site,
+            'en-GB',
+            'core.studio.shellish.inspector-binding-accepts',
+            'Supports {value-type} with {cardinality} cardinality',
+        );
+    }
+
+    /**
      * Quota observation occurs only after the site serialization lock is held.
      *
      * @return  void
@@ -470,6 +585,10 @@ final class MessageOverrideServiceTest extends TestCase
 
                 return new MessageCatalogue($locale, $layer, [
                     'core.business.client.label' => 'Client',
+                    'core.studio.shell.inspector-binding-accepts' =>
+                        'Accepts {cardinality} {value-type} value',
+                    'core.studio.shellish.inspector-binding-accepts' =>
+                        'Accepts {cardinality} value type',
                 ]);
             }
         };

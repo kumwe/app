@@ -1,0 +1,37 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-vector",
+  "id": "vector.host-vector.model.get.stored",
+  "description": "Getting an authorized model resolves one exact ID, semantic version, and immutable revision through the read-only model port.",
+  "profile": "studio.profile/host-baseline",
+  "port": "model",
+  "operation": "get",
+  "given": {
+    "artifacts": [
+      {
+        "id": "studio.test/article-model",
+        "kind": "content-model",
+        "revision": "model-r1"
+      }
+    ],
+    "permissions": [],
+    "sessionGeneration": "session-r1"
+  },
+  "context": {
+    "operationId": "studio.operation/model.get",
+    "protocolVersion": "0.1.0-draft.2",
+    "requestId": "requests/model-get-1",
+    "resourceContextKey": "contexts/vector",
+    "sessionGeneration": "session-r1"
+  },
+  "argument": {
+    "id": "studio.test/article-model",
+    "version": "1.0.0",
+    "revision": "model-r1"
+  },
+  "expect": {
+    "outcome": "result",
+    "revision": "model-r1",
+    "value": "content-model"
+  }
+}

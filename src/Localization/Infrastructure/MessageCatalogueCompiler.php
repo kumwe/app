@@ -23,7 +23,9 @@ use RuntimeException;
  * Compilation is also where the identifier grammar and ICU syntax are enforced against real content.
  * A unit whose `id` is English prose, or is not namespaced, or is not three dotted segments, fails the
  * build here rather than becoming a catalogue entry nobody can rename later. A malformed pattern fails
- * beside it rather than becoming a runtime exception on every surface that looks the message up.
+ * beside it rather than becoming a runtime exception on every surface that looks the message up. The
+ * exact `core.studio.shell.*` corpus is the one narrow exception: Studio owns its placeholder grammar
+ * (including hyphenated parameter names) and consumes those patterns without App ICU formatting.
  *
  * @since  2.0.0
  */
@@ -87,7 +89,9 @@ final readonly class MessageCatalogueCompiler
                 $invalid[] = $identifier;
                 continue;
             }
-            $this->patterns->validate($pattern, $tag);
+            if (!str_starts_with($identifier, 'core.studio.shell.')) {
+                $this->patterns->validate($pattern, $tag);
+            }
         }
         if ($invalid !== []) {
             throw new RuntimeException(sprintf(

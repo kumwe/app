@@ -26,8 +26,9 @@ use Ramsey\Uuid\Uuid;
  * An operator relabelling "Client" as "Patient" is performing an administrative act, not a fork, and
  * this is where that act is validated, authorized and recorded. Every delivery surface that changes
  * wording goes through here, so the rules live once: the identifier must satisfy the frozen grammar,
- * the locale must be one this installation carries, the pattern must be non-empty and bounded, and
- * the actor must hold `localization.overrides.manage` on the scope they are writing into.
+ * the locale must be one this installation carries, the pattern must be non-empty and bounded, App
+ * messages must compile as ICU while the exact Studio shell namespace must satisfy its published
+ * named-interpolation subset, and the actor must hold `localization.overrides.manage` on the scope.
  *
  * Two guards are worth naming because they are what stop terminology adaptation from becoming a
  * denial-of-service against the render path. An override may only be stored for an identifier some
@@ -67,6 +68,22 @@ final readonly class MessageOverrideService
     public const string CAPABILITY = 'localization.overrides.manage';
 
     /**
+     * Catalogue namespace whose patterns are consumed by Studio's deterministic named interpolator.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string STUDIO_SHELL_NAMESPACE = 'core.studio.shell.';
+
+    /**
+     * Studio protocol's closed local-name grammar for one interpolation parameter.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string STUDIO_PARAMETER_GRAMMAR = '/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/D';
+
+    /**
      * Wire the service to its store, the catalogues it validates against, and its bookkeeping.
      *
      * @param  MessageOverrideStore        $store          Store the overrides are listed from and written to.
@@ -75,7 +92,7 @@ final readonly class MessageOverrideService
      * @param  SupportedLocales            $supported      Registry deciding which locales may be written.
      * @param  AuthorizationGateway        $authorization  Policy deciding who may change wording.
      * @param  TransactionManager          $transactions   Atomic boundary shared by state and audit writes.
-     * @param  MessagePatternValidator     $patterns       ICU syntax validator run before wording is stored.
+     * @param  MessagePatternValidator     $patterns       ICU syntax validator run for ordinary App wording.
      * @param  Translator                  $translator     Resolves the refusal wording an operator reads.
      * @param  AuditRecorder               $audit          Sink every wording change is recorded to.
      * @param  ClockInterface              $clock          Source of the instant stored and audited.
@@ -140,7 +157,7 @@ final readonly class MessageOverrideService
      * @throws  InvalidArgumentException  When the layer is not administered, the locale is not carried, the
      *          pattern is blank or too long, no file-shipped layer declares the identifier, or the scope
      *          already holds the maximum number of overrides.
-     * @throws  MessageFormattingFailed  When ICU refuses the replacement pattern for the requested locale.
+     * @throws  MessageFormattingFailed  When ICU or Studio's named interpolation grammar refuses the pattern.
      *
      * @since   2.0.0
      */
@@ -156,8 +173,12 @@ final readonly class MessageOverrideService
         $tag = $this->locale($locale);
         $validated = MessageIdentifier::fromString($identifier)->value;
         $wording = $this->pattern($pattern);
-        $this->patterns->validate($wording, $tag);
-        $this->assertDeclared($validated, $tag);
+        $shipped = $this->declaredPattern($validated, $tag);
+        if (str_starts_with($validated, self::STUDIO_SHELL_NAMESPACE)) {
+            $this->validateStudioPattern($validated, $wording, $shipped, $tag);
+        } else {
+            $this->patterns->validate($wording, $tag);
+        }
 
         $site = $context->site()->identifier();
         $organization = $this->organization($context, $administered);
@@ -493,7 +514,7 @@ final readonly class MessageOverrideService
     }
 
     /**
-     * Refuse an override for an identifier no file-shipped layer declares.
+     * Resolve the file-shipped pattern an administered override is allowed to replace.
      *
      * The check is deliberately made against the source locale as well as the target one: a translator
      * has not yet filed wording for every locale, and refusing an override because the target locale
@@ -502,18 +523,19 @@ final readonly class MessageOverrideService
      * @param   string     $identifier  Validated message identifier.
      * @param   LocaleTag  $locale      Locale the override is being stored at.
      *
-     * @return  void
+     * @return  string  First declared pattern in target/source locale and extension/core precedence order.
      *
      * @throws  InvalidArgumentException  When neither the target locale nor the source locale declares it.
      *
      * @since   2.0.0
      */
-    private function assertDeclared(string $identifier, LocaleTag $locale): void
+    private function declaredPattern(string $identifier, LocaleTag $locale): string
     {
         foreach ([$locale, $this->supported->source()] as $candidate) {
             foreach ([MessageCatalogueLayer::Extension, MessageCatalogueLayer::Core] as $layer) {
-                if ($this->catalogues->catalogue($layer, $candidate)->has($identifier)) {
-                    return;
+                $pattern = $this->catalogues->catalogue($layer, $candidate)->pattern($identifier);
+                if ($pattern !== null) {
+                    return $pattern;
                 }
             }
         }
@@ -521,6 +543,91 @@ final readonly class MessageOverrideService
         throw new InvalidArgumentException(
             $this->translator->translate('core.administrator.wording.error_unknown_identifier'),
         );
+    }
+
+    /**
+     * Validate the exact named-interpolation subset consumed by the Studio shell.
+     *
+     * Studio deliberately does not pass its authoring catalogue through App's ICU formatter: its
+     * published parameter grammar permits names such as `value-type`, and the shell substitutes only
+     * the parameters declared by the canonical entry. An administered override must therefore keep
+     * the shipped parameter set exactly and may contain only `{local-name}` expressions. This narrow
+     * branch does not weaken ICU validation for any neighbouring App namespace.
+     *
+     * @param   string     $identifier  Exact Studio shell identifier being overridden.
+     * @param   string     $pattern     Bounded replacement pattern supplied by the operator.
+     * @param   string     $shipped     File-shipped pattern declaring the canonical parameter set.
+     * @param   LocaleTag  $locale      Locale whose administered layer receives the pattern.
+     *
+     * @return  void
+     *
+     * @throws  MessageFormattingFailed  When the replacement is outside Studio's interpolation grammar
+     *          or changes the canonical parameter set.
+     *
+     * @since   2.0.0
+     */
+    private function validateStudioPattern(
+        string $identifier,
+        string $pattern,
+        string $shipped,
+        LocaleTag $locale,
+    ): void {
+        $expected = $this->studioParameters($identifier, $shipped, $locale);
+        $actual = $this->studioParameters($identifier, $pattern, $locale);
+        if ($actual !== $expected) {
+            throw MessageFormattingFailed::pattern(
+                $locale->toString(),
+                'the Studio shell parameter set differs from the shipped catalogue entry.',
+                $identifier,
+            );
+        }
+    }
+
+    /**
+     * Extract and validate one Studio named-interpolation parameter set.
+     *
+     * @param   string     $identifier  Message identifier named in a formatting refusal.
+     * @param   string     $pattern     Studio shell text to inspect.
+     * @param   LocaleTag  $locale      Locale named in a formatting refusal.
+     *
+     * @return  list<string>  Unique parameter names in ascending byte order.
+     *
+     * @throws  MessageFormattingFailed  When braces do not contain one safe Studio local name.
+     *
+     * @since   2.0.0
+     */
+    private function studioParameters(string $identifier, string $pattern, LocaleTag $locale): array
+    {
+        $parameters = [];
+        $plain = preg_replace_callback('/\{([^{}]*)\}/', static function (array $match) use (&$parameters): string {
+            $name = $match[1];
+            if (
+                strlen($name) > 100
+                || preg_match(self::STUDIO_PARAMETER_GRAMMAR, $name) !== 1
+                || in_array($name, ['__proto__', 'prototype', 'constructor'], true)
+            ) {
+                return $match[0];
+            }
+            $parameters[$name] = true;
+
+            return '';
+        }, $pattern);
+        if (
+            !is_string($plain)
+            || str_contains($plain, '{')
+            || str_contains($plain, '}')
+            || str_contains($pattern, '<')
+            || str_contains($pattern, '>')
+        ) {
+            throw MessageFormattingFailed::pattern(
+                $locale->toString(),
+                'the Studio shell accepts only attribute-free text and {local-name} parameters.',
+                $identifier,
+            );
+        }
+        ksort($parameters, SORT_STRING);
+
+        return array_keys($parameters);
     }
 
     /**

@@ -1,6 +1,6 @@
 {
   "name": "@kumwe/studio-protocol",
-  "version": "0.1.0-alpha.6",
+  "version": "0.1.0-alpha.9",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kumwe/studio.git",
@@ -15,6 +15,7 @@
     "LICENSE",
     "dist",
     "schemas",
+    "studio-release.json",
     "README.md"
   ],
   "exports": {
@@ -22,7 +23,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./schemas/*": "./schemas/*"
+    "./schemas/*": "./schemas/*",
+    "./studio-release.json": "./studio-release.json"
   },
   "scripts": {
     "build": "tsc -b"

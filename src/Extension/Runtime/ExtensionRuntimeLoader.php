@@ -87,7 +87,7 @@ final readonly class ExtensionRuntimeLoader
         array $allowedServices,
         ExtensionContributionRegistrySet $contributions,
     ): ActiveExtensionSet {
-        $active = new ActiveExtensionSet($contributions, $this->trust);
+        $active = new ActiveExtensionSet($contributions, $this->trust, $this->execution);
         $this->publication->assertIntegrity($this->keys);
         $map = $this->publication->document;
 
@@ -99,6 +99,7 @@ final readonly class ExtensionRuntimeLoader
             if (!is_array($extension) || array_is_list($extension)) {
                 throw new RuntimeException('A compiled extension entry is invalid.');
             }
+            $extension = self::runtimeEntry($extension);
 
             $providerClass = $extension['provider'] ?? null;
             $relativeRoot = $extension['root'] ?? null;
@@ -131,7 +132,7 @@ final readonly class ExtensionRuntimeLoader
                 || !is_array($themeSites)
                 || !array_is_list($themeSites)
                 || !is_int($manifestSchema)
-                || !in_array($manifestSchema, [1, 2, 3, 4, 5], true)
+                || !in_array($manifestSchema, [1, 2, 3, 4, 5, 6], true)
                 || ($manifestSchema >= 2 && !is_array($declaredContributions))
             ) {
                 throw new RuntimeException('A compiled extension entry is incomplete.');
@@ -176,7 +177,16 @@ final readonly class ExtensionRuntimeLoader
             }
             $container = new RestrictedExtensionContainer($identifier, $services);
             $provider->register($container);
-            $active->add($identifier, $provider, $container, $declared, $manifestSchema >= 2);
+            $active->add(
+                $identifier,
+                $provider,
+                $container,
+                $declared,
+                $manifestSchema >= 2,
+                $version,
+                $treeDigest,
+                $extension,
+            );
             $this->addPortalTemplates($active, $identifier, $root);
             $this->addMessageCatalogues($active, $identifier, $root);
 
@@ -224,6 +234,30 @@ final readonly class ExtensionRuntimeLoader
         $active->boot();
 
         return $active;
+    }
+
+    /**
+     * Retain one decoded runtime entry only when every map key is a string.
+     *
+     * @param   array<mixed>  $entry  Decoded JSON object candidate.
+     *
+     * @return  array<string, mixed>  String-keyed runtime entry.
+     *
+     * @throws  RuntimeException  When a non-string key contradicts the runtime publication shape.
+     *
+     * @since   2.0.0
+     */
+    private static function runtimeEntry(array $entry): array
+    {
+        $result = [];
+        foreach ($entry as $name => $value) {
+            if (!is_string($name)) {
+                throw new RuntimeException('A compiled extension entry key is invalid.');
+            }
+            $result[$name] = $value;
+        }
+
+        return $result;
     }
 
     /**

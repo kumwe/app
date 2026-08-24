@@ -78,4 +78,54 @@ final class SecurityHeadersTest extends TestCase
             (new SecurityHeaders(false, true))->values(),
         );
     }
+
+    /**
+     * Preview framing changes only the reviewed directives and admits no inline code, style, or eval.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testPreviewPolicyIsOtherwiseByteIdenticalToTheAdministratorPolicy(): void
+    {
+        $headers = new SecurityHeaders(false, false);
+        $ordinary = self::directives($headers->values()['Content-Security-Policy']);
+        $preview = self::directives($headers->previewValues()['Content-Security-Policy']);
+
+        self::assertSame("frame-ancestors 'none'", $ordinary['frame-ancestors']);
+        self::assertSame("frame-ancestors 'self'", $preview['frame-ancestors']);
+        self::assertArrayNotHasKey('frame-src', $ordinary);
+        self::assertSame("frame-src 'self'", $preview['frame-src']);
+        self::assertSame("style-src-attr 'none'", $preview['style-src-attr']);
+        unset($ordinary['frame-ancestors'], $ordinary['style-src-attr']);
+        unset($preview['frame-ancestors'], $preview['frame-src'], $preview['style-src-attr']);
+        self::assertSame($ordinary, $preview);
+
+        $policy = $headers->previewValues()['Content-Security-Policy'];
+        self::assertStringNotContainsString("'unsafe-inline'", $policy);
+        self::assertStringNotContainsString("'unsafe-eval'", $policy);
+        self::assertStringNotContainsString("'nonce-", $policy);
+        self::assertSame('SAMEORIGIN', $headers->previewValues()['X-Frame-Options']);
+        self::assertSame('no-referrer', $headers->previewValues()['Referrer-Policy']);
+    }
+
+    /**
+     * Index a policy by directive name while preserving each directive's exact bytes.
+     *
+     * @param   string  $policy  Complete CSP policy string.
+     *
+     * @return  array<string, string>  Directive name to unmodified directive.
+     *
+     * @since  2.0.0
+     */
+    private static function directives(string $policy): array
+    {
+        $directives = [];
+        foreach (explode('; ', $policy) as $directive) {
+            $name = explode(' ', $directive, 2)[0];
+            $directives[$name] = $directive;
+        }
+
+        return $directives;
+    }
 }

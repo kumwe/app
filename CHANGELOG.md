@@ -24,6 +24,95 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **Content-model versions now have a first-party Studio Blueprint composition surface.** The
+  capability-gated administrator route provisions an exact, deterministic, version-bound Blueprint
+  only through a CSRF-protected POST and then opens the pinned alpha.9 Studio runtime on GET. Provisioning
+  atomically admits the initial artifact and its separate binding, locks the authorized Content model,
+  exact deployable block catalogue and active published theme, and is idempotent under concurrent first
+  use. The browser adapter implements the exact model, localization, telemetry, artifact and preview
+  envelopes; saves are serialized and revision-rebased, conflicts quarantine mutation, and canonical
+  publish/unpublish operations preserve the read-only lifecycle. All six contribution document kinds use
+  the owned runtime registry, while the palette and patterns intersect with the immutable artifact lock and
+  truthful renderer capability set. The same-origin, scriptless preview slot now has sequenced cancellation,
+  validated single-use navigation, exact theme delivery, responsive/RTL layout classes, fragment geometry,
+  viewport/scroll/reflow observation and keyboard-equivalent direct manipulation. The coordinated 160-key
+  Studio message corpus, compiled en-GB catalogue, split production assets, AP7 protocol vectors,
+  architecture and lifecycle tests, declared KIS surface, and accountable-human journey evidence plumbing
+  ship with the surface. Published Content records now resolve their exact site/type/version Blueprint
+  binding through a reusable schema/model/theme/live-renderer guard, project complete public values without
+  fabricating actor authority, and render marker-free safe composition markup through the same themed page,
+  navigation, language, canonical, cache and indexing path as legacy Content. No binding, draft and retired
+  compositions retain the legacy layout; a configured missing, incompatible or dependency-drifted published
+  artifact fails closed. Publication and every public read re-resolve each canonical block's exact live owner,
+  revision, integrity lock, renderer, property schema, responsive effective properties, slot/cardinality rules,
+  accepted child types and projected Content-field binding; withdrawal or semantic drift cannot turn stored
+  JSON into executable output. Public structural blocks preserve the same compact, medium and expanded layout
+  intent through a fixed data-attribute vocabulary and bounded media queries in both light and dark themes.
+  The browser qualification journey installs and activates the signed manifest-6 fixture, authors an exact
+  field-bound extension composition, previews and publishes it, verifies the real marker-free public route,
+  proves disabled code fails closed, reactivates it, and returns the Content record to legacy output. Human
+  journey execution remains explicit release-qualification work rather than fabricated evidence. (`23daa671`)
+
+- **Studio artifacts and recovery now have a production versioned persistence boundary.** The AP-3
+  dispatcher delegates the exact published artifact and recovery HTTP wrappers behind its trusted
+  generation fence. Blueprint, content-model and entry artifacts validate against the vendored schemas,
+  pass a fail-closed no-markup/style/code/unsafe-URL policy, and retain byte-identical canonical JSON in
+  immutable revision history. Save, publish and unpublish require the expected revision; compare-and-set
+  conflicts return only the safe current revision and never overwrite. Actor/session/resource/operation/key
+  idempotency claims are atomic, reject changed intent, and replay the exact completed result. Recovery
+  store/load/discard is actor-, session- and resource-scoped, canonically preserves numeric values, and
+  enforces operation, size, write-rate and replay limits. Every successful mutation writes one redacted
+  audit event in the same transaction, while replay does not duplicate it and audit failure rolls back the
+  artifact or envelope and its claim. Portable DBAL migration `20260824030000_studio_artifact_recovery`,
+  all 11 applicable single-operation host vectors, all seven applicable host-sequence vectors, SQLite
+  integration proof and the three-engine CI contract complete S-D and remove `V2-STU-004` from the live
+  ledger. (`0678d88e`)
+
+- **Studio now has an authenticated, replay-resistant unpublished preview host.** The exact released
+  `preview.render({payload})` and `preview.cancel({draftDigest})` bindings run behind the common live
+  session-generation dispatcher, resolve immutable AP-4 drafts and AP-2-authorized Content bindings, and
+  emit the canonical marker payload for the four `studio.core` structures and all nine core-owned field
+  blocks. Structural output projects only the closed, viewport-resolved core layout vocabulary through
+  deterministic data attributes — including bounded column counts — and refuses malformed, arbitrary, or
+  style-bearing attributes. Published pages and preview now share `ContentPageRenderService`, so templates
+  and themes cannot drift; unknown blocks remain inert diagnostics and media/resource values never become
+  client-supplied URLs. A portable migration persists 60-second grants and independent port/document replay
+  ledgers;
+  cancellation, supersession, cross-context use, expiry and a second claim all fail closed. The
+  authenticated same-origin iframe endpoint rechecks actor, browser session, resource, generation,
+  origin, channel, source and sequence, returns no-store content once, and is the only route whose CSP
+  permits same-origin framing — while removing style attributes and admitting no inline script/style or
+  eval. All four preview/host-sequence corpus vectors replay from JSON, distinct refusal tests cover both
+  endpoints, bounded structured activity excludes draft and transport secrets, and the Security workflow
+  publishes the negative-path suite as P7-C JUnit evidence. ADR 0017 records the boundary and explicitly
+  leaves three-engine, built-browser and independent qualification evidence to Gate B rather than claiming
+  it from local SQLite. (`d2e40f56`, `9e1bb306`)
+
+- **Studio host sessions now have a production trusted-identity, policy, and generation boundary.**
+  The administrator opens an opaque Content or Blueprint context under one of the five canonical modes;
+  actor, site, organization, workspace, surface, and browser-session identity come only from the
+  authenticated App request and are rechecked on every call. Effective permissions resolve through the
+  audited deny-by-default gateway, with canonical `permission.explain` and `permission.refresh` results
+  and no policy-detail disclosure. One normative dispatcher validates the pinned envelope and protocol
+  and fences all 24 registered host operations: a grant, capability, security-epoch, membership, session,
+  mode, permission, resource-context, or host-capability change returns `invalid-request` with
+  `studio.host/stale-session-generation` before any later port runs. The CSRF-protected routes, opaque
+  binding repository, replay-safe capability migration, all five relevant vendored permission/envelope
+  vectors, adversarial cross-scope tests, and ADR 0014 complete S-C and remove `V2-STU-003` from the live
+  ledger without implementing S-D write behavior. (`57541e67`)
+
+- **The App has a read-only, fail-closed Studio Content projection foundation.** Canonical JSON and
+  schema-profile interpretation now live in the neutral `Studio\Domain\Contract` namespace, while the
+  former Extension names remain compatible adapters over the same pinned corpus. Authorized Content
+  models and entries project to schema-valid Studio documents with reversible identity, version,
+  locale, workflow, status, recursive-field and exact-string mappings; unsupported or lossy shapes
+  stop with typed non-disclosing diagnostics, and field policy can omit both descriptions and values.
+  Optional, tenant-bound Blueprint coordinates and canonical per-entry composition overrides have
+  read-only domain, repository and replay-safe migration foundations without opening a Studio session
+  or Content write path. Content and BusinessRecord remain parallel contexts, the latter adapter is
+  explicitly deferred to its own policy and exact-value contract, and `V2-STU-002` remains open for
+  the separate Studio release-pin and corpus-replay evidence. (`fba50bb8`)
+
 - **The delivery pipeline is immune to the two failure classes the first rebase-merge surfaced.**
   A GitHub API outage can no longer fail the dependency-fetching workflows: the production image
   builds seed the runner's lock-keyed Composer cache into the vendor stage through an optional
@@ -1332,6 +1421,13 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **Generic Studio artifact saves cannot bypass lifecycle or Blueprint identity controls.** Save now updates
+  only an existing draft at its exact resource/version coordinate, preserves lifecycle status, and refuses
+  published heads until the canonical publish-permissioned unpublish operation returns them to draft, while
+  retired heads remain closed. Blueprint owner, model and dependency locks remain canonical-byte immutable
+  across saves, closing alternate-version and lock-drift paths without widening AP-4 into Content writes or
+  rendering behavior.
+
 - **The operator checklist maps the gates only CI can measure.** The first tiered run of the new
   pull-request lane surfaced three traps no document named: the coverage ratchet's changed-line and
   changed-refusal floors credit only tests that name the executed class in `#[CoversClass]` and are
@@ -1813,6 +1909,12 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Security
 
+- **Studio lifecycle authority now preserves the platform's publish/unpublish distinction end to end.**
+  `artifact.publish` requires a live `content.publish` decision and `artifact.unpublish` requires a live
+  `content.unpublish` decision; neither transition can borrow the other's grant through Studio's shared
+  lifecycle permission. Both private decisions bind the session generation, the administrator projection
+  exposes truthful target-specific controls, and the artifact port still enforces the exact decision before
+  revision lookup, persistence, idempotency or audit side effects.
 - **The release web image no longer carries the stale Alpine package set that failed the high/critical gate.**
   The web stage moves from the floating, retired `nginx:1.28-alpine` line to the current stable
   `nginx:1.30.4-alpine3.24` image, refreshes installed packages as part of the web stage, and makes both

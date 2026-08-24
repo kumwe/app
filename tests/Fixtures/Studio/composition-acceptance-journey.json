@@ -1,0 +1,61 @@
+{
+  "format": "kumwe-studio-composition-accountable-acceptance-v1",
+  "schemaVersion": 1,
+  "status": "not_run",
+  "studioRelease": "0.1.0-alpha.9",
+  "surface": "core.administrator.studio-composition",
+  "accountableRoles": [
+    "product-owner",
+    "accessibility-reviewer",
+    "localization-reviewer"
+  ],
+  "automationIsNecessaryNotSufficient": true,
+  "steps": [
+    {
+      "id": "compose",
+      "humanTask": "Provision a Content-type-version Blueprint and compose a nested section, grid and field layout using direct manipulation and keyboard commands.",
+      "automatedEvidence": {
+        "path": "tests/Browser/studio-composition.spec.ts",
+        "marker": "measured canvas select, reorder and reparent have keyboard parity"
+      },
+      "humanEvidence": null
+    },
+    {
+      "id": "preview",
+      "humanTask": "Inspect the exact rendered preview at compact, medium and expanded viewports and confirm selection remains aligned after scroll and reflow.",
+      "automatedEvidence": {
+        "path": "tests/Browser/studio-composition.spec.ts",
+        "marker": "closed layout intent renders four, two and one columns without surface overflow"
+      },
+      "humanEvidence": null
+    },
+    {
+      "id": "publish",
+      "humanTask": "Publish the accepted Blueprint through Studio and verify the public composition is the accepted immutable revision.",
+      "automatedEvidence": {
+        "path": "tests/Browser/studio-composition.spec.ts",
+        "marker": "draft lifecycle control sends the canonical publication envelope"
+      },
+      "humanEvidence": null
+    },
+    {
+      "id": "non-source-language",
+      "humanTask": "Repeat compose, preview and publish in a configured non-source language, including one right-to-left locale, and review terminology overrides.",
+      "automatedEvidence": {
+        "path": "tests/Browser/right-to-left.spec.ts",
+        "marker": "the Studio composition shell and exact preview remain right-to-left without overflow"
+      },
+      "humanEvidence": null
+    }
+  ],
+  "qualificationDependencies": {
+    "p7cPreviewMediaSecurity": "pending_independent_review",
+    "p7fSignedContributedBlockAndRenderer": "open",
+    "p7gReleaseRecord": {
+      "status": "declared",
+      "path": "resources/studio-contract/studio-release.json",
+      "pinPath": "resources/studio-contract/PIN.json",
+      "recordSha256": "f3a9ba0e84890d2a325b43fda8c10e61dc22c9b55bd2b5711f44cce941c9e822"
+    }
+  }
+}

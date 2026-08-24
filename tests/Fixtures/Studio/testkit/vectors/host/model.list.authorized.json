@@ -1,0 +1,31 @@
+{
+  "contractVersion": "0.1-draft",
+  "kind": "host-vector",
+  "id": "vector.host-vector.model.list.authorized",
+  "description": "Listing models returns only the authorized content-model projections in deterministic coordinate order.",
+  "profile": "studio.profile/host-baseline",
+  "port": "model",
+  "operation": "list",
+  "given": {
+    "artifacts": [
+      {
+        "id": "studio.test/article-model",
+        "kind": "content-model",
+        "revision": "model-r1"
+      }
+    ],
+    "permissions": [],
+    "sessionGeneration": "session-r1"
+  },
+  "context": {
+    "operationId": "studio.operation/model.list",
+    "protocolVersion": "0.1.0-draft.2",
+    "requestId": "requests/model-list-1",
+    "resourceContextKey": "contexts/vector",
+    "sessionGeneration": "session-r1"
+  },
+  "expect": {
+    "outcome": "result",
+    "value": "content-models"
+  }
+}

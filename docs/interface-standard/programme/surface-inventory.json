@@ -272,9 +272,9 @@
       "fixture_profile_ids": ["fixture.empty", "fixture.sparse", "fixture.representative", "fixture.dense", "fixture.extreme"],
       "coverage": {"responsive": "covered", "accessibility": "covered", "visual": "covered", "security": "covered", "browser_tests": ["tests/Browser/administrator.spec.ts", "tests/Browser/phase-five.spec.ts", "tests/Browser/interface-integrity.spec.ts"]},
       "finding_ids": [],
-      "dependencies": ["content command service", "workflow", "media", "optimistic version", "CSRF"],
+      "dependencies": ["content command service", "workflow", "media", "optimistic version", "CSRF", "Studio host authority", "single-use preview grants", "canonical public renderer"],
       "target": {"patterns": ["detail-workspace", "form", "validation-summary", "confirmation", "dirty-state"], "phase": 5, "complexity": "high", "migration_status": "complete"},
-      "test_disposition": ["new", "existing", "validation-error", "conflict", "transition", "trash-restore", "no-javascript"]
+      "test_disposition": ["new", "existing", "validation-error", "conflict", "transition", "trash-restore", "no-javascript", "same-origin-preview", "single-use-preview", "preview-replay-refused"]
     },
     {
       "id": "core.administrator.media",
@@ -334,6 +334,39 @@
       "dependencies": ["content model service", "workflow", "presentation"],
       "target": {"patterns": ["master-detail", "tabs", "form", "subform", "history"], "phase": 5, "complexity": "high", "migration_status": "complete"},
       "test_disposition": ["empty", "many-fields", "many-states", "validation-error", "long-label", "mobile"]
+    },
+    {
+      "id": "core.administrator.studio-composition",
+      "kis_runtime_disposition": "declared",
+      "area": "administrator",
+      "surface_type": "master-detail-canvas",
+      "owner": "core",
+      "bounded_context": "content-model",
+      "purpose": "Compose and preview the versioned Blueprint owned by one Content model.",
+      "route_contracts": [
+        {"name": "administrator.content-models.composition", "methods": ["GET"], "path": "/administrator/content-models/{id}/versions/{version}/composition", "source_anchor": "/administrator/content-models/{id}/versions/{version}/composition"},
+        {"name": "administrator.content-models.composition.provision", "methods": ["POST"], "path": "/administrator/content-models/{id}/versions/{version}/composition", "source_anchor": "/administrator/content-models/{id}/versions/{version}/composition"},
+        {"name": "administrator.studio.session", "methods": ["POST"], "path": "/administrator/studio/session", "source_anchor": "/administrator/studio/session"},
+        {"name": "administrator.studio.host", "methods": ["POST"], "path": "/administrator/studio/ports/{port}/{operation}", "source_anchor": "/administrator/studio/ports/{port}/{operation}"},
+        {"name": "administrator.studio.preview.document", "methods": ["GET"], "path": "/administrator/studio/preview", "source_anchor": "/administrator/studio/preview"},
+        {"name": "administrator.studio.preview.theme", "methods": ["GET"], "path": "/administrator/studio/preview/theme.css", "source_anchor": "/administrator/studio/preview/theme.css"}
+      ],
+      "handler_sources": ["src/Administrator/Http/Handler/AdministratorStudioCompositionHandler.php", "src/Administrator/Http/Handler/AdministratorStudioSessionHandler.php", "src/Administrator/Http/Handler/AdministratorStudioHostHandler.php", "src/Administrator/Http/Handler/AdministratorStudioPreviewDocumentHandler.php", "src/Administrator/Http/Handler/AdministratorStudioPreviewThemeStylesheetHandler.php"],
+      "templates": ["templates/administrator/studio-composition.twig", "templates/administrator/layout.twig"],
+      "navigation_ids": ["core.models"],
+      "capabilities": ["content.read", "studio.mode.blueprint"],
+      "kis_contract": {"standard":"kis-1.0","area":"administrator","actor":"administrator","intent":"parent-child","resource":"content-composition","purpose":"Compose and preview the versioned Blueprint owned by one Content model.","pattern":"master-detail-workspace","capabilities":["content.read","studio.mode.blueprint"],"states":["default","empty","dense","error","permission-reduced","read-only"],"customization":[{"slot":"density","scope":"user"},{"slot":"layout","scope":"administrator"}],"responsive":[{"element":"content-model-context","priority":"essential","may_collapse":false},{"element":"composition-canvas","priority":"primary","may_collapse":false},{"element":"preview-stage","priority":"primary","may_collapse":true}],"icon":"models"},
+      "actor_ids": ["structure-manager"],
+      "primary_task_id": "task.models.manage",
+      "secondary_task_ids": ["task.content.author"],
+      "journey_ids": ["journey.site-structure", "journey.content-lifecycle"],
+      "current_elements": {"forms": 1, "tables": 0, "disclosures": 0, "dialogs": 0, "field_model": "version-locked Blueprint blocks and bindings", "actions": ["provision", "insert", "select", "reorder", "reparent", "preview", "save", "publish", "unpublish"], "technical_data": ["artifact revision", "artifact status", "model lock", "theme lock", "block locks"]},
+      "fixture_profile_ids": ["fixture.empty", "fixture.sparse", "fixture.representative", "fixture.dense", "fixture.extreme"],
+      "coverage": {"responsive": "covered", "accessibility": "covered", "visual": "covered", "security": "covered", "browser_tests": ["tests/Browser/studio-composition.spec.ts"]},
+      "finding_ids": [],
+      "dependencies": ["AP2 content-model projection", "AP3 Studio session", "AP4 artifact admission", "AP6 preview contract", "CSRF"],
+      "target": {"patterns": ["master-detail-workspace", "composition-canvas", "rendered-preview", "outline", "inspector"], "phase": 6, "complexity": "high", "migration_status": "complete"},
+      "test_disposition": ["unprovisioned", "empty", "dense", "conflict", "permission-reduced", "keyboard-reorder", "visual-reparent", "rtl", "mobile"]
     },
     {
       "id": "core.administrator.navigation",
@@ -1393,6 +1426,7 @@
     {"path": "templates/administrator/content-form.twig", "kind": "surface", "surface_ids": ["core.administrator.content-editor"]},
     {"path": "templates/administrator/content-list.twig", "kind": "surface", "surface_ids": ["core.administrator.content-collection"]},
     {"path": "templates/administrator/content-models.twig", "kind": "surface", "surface_ids": ["core.administrator.content-models"]},
+    {"path": "templates/administrator/studio-composition.twig", "kind": "surface", "surface_ids": ["core.administrator.studio-composition"]},
     {"path": "templates/administrator/dashboard.twig", "kind": "surface", "surface_ids": ["core.administrator.dashboard"]},
     {"path": "templates/administrator/extension-error.twig", "kind": "error-state", "surface_ids": ["core.administrator.extensions", "extension.administrator.route-family"]},
     {"path": "templates/administrator/extensions.twig", "kind": "surface", "surface_ids": ["core.administrator.extensions"]},

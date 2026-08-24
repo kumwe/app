@@ -6,8 +6,8 @@ namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Extension\Domain\Internal\StudioProfile\CanonicalJson;
-use Kumwe\App\Extension\Domain\Internal\StudioProfile\CanonicalJsonRejected;
+use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
+use Kumwe\App\Studio\Domain\Contract\CanonicalJsonRejected;
 use stdClass;
 
 /**

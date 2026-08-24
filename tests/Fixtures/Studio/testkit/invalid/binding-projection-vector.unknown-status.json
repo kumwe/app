@@ -1,0 +1,85 @@
+{
+  "schema": "binding-projection-vector.schema.json",
+  "description": "A binding projection vector cannot invent a status a second host cannot reproduce.",
+  "value": {
+    "contractVersion": "0.1-draft",
+    "kind": "binding-projection-vector",
+    "id": "binding-projection/invalid-status",
+    "description": "Invalid status probe.",
+    "profile": "studio.profile/binding-projection-v1",
+    "blueprint": {
+      "contractVersion": "0.1-draft",
+      "kind": "blueprint",
+      "id": "studio.test/invalid-vector-blueprint",
+      "version": "1.0.0",
+      "revision": "blueprint-r1",
+      "owner": { "id": "studio.test/host", "version": "1.0.0" },
+      "status": "draft",
+      "label": { "key": "studio.test/blueprint", "defaultMessage": "Blueprint" },
+      "model": { "id": "studio.test/model", "version": "1.0.0", "revision": "model-r1" },
+      "dependencyLock": {
+        "theme": { "id": "studio.test/theme", "version": "1.0.0", "revision": "theme-r1" },
+        "blocks": []
+      },
+      "roots": []
+    },
+    "model": {
+      "contractVersion": "0.1-draft",
+      "kind": "content-model",
+      "id": "studio.test/model",
+      "version": "1.0.0",
+      "revision": "model-r1",
+      "owner": { "id": "studio.test/host", "version": "1.0.0" },
+      "status": "published",
+      "label": { "key": "studio.test/model", "defaultMessage": "Model" },
+      "fields": [
+        {
+          "id": "title",
+          "kind": "string",
+          "label": { "key": "studio.test/title", "defaultMessage": "Title" },
+          "required": false,
+          "localized": false,
+          "cardinality": "one"
+        }
+      ],
+      "relationships": []
+    },
+    "blockDefinitions": [
+      {
+        "contractVersion": "0.1-draft",
+        "kind": "block-definition",
+        "type": "studio.test/text",
+        "version": "1.0.0",
+        "revision": "block-r1",
+        "owner": { "id": "studio.test/host", "version": "1.0.0" },
+        "label": { "key": "studio.test/text", "defaultMessage": "Text" },
+        "category": "studio.category/content",
+        "propertySchema": { "type": "object", "additionalProperties": false },
+        "slots": [],
+        "ports": [],
+        "editingModes": ["blueprint"],
+        "themeControls": [],
+        "rendererRequirements": [
+          { "surface": "preview", "capability": "studio.renderer/test", "versions": "^1.0.0" }
+        ],
+        "accessibility": {
+          "category": "text",
+          "accessibleName": "not-applicable",
+          "keyboard": { "key": "studio.test/keyboard", "defaultMessage": "Use the outline." },
+          "reducedMotion": "not-applicable",
+          "outputChecks": ["studio.check/text"]
+        }
+      }
+    ],
+    "expect": {
+      "model": { "id": "studio.test/model", "version": "1.0.0", "revision": "model-r1" },
+      "nodes": [
+        {
+          "nodeId": "node-1",
+          "ports": [{ "port": "title", "status": "silently-repaired", "candidates": [] }]
+        }
+      ],
+      "diagnostics": []
+    }
+  }
+}

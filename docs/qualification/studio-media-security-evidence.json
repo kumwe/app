@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "report_id": "studio-media-p7-c",
+  "candidate": null,
+  "generated_at": null,
+  "scope": {
+    "phase_numbers": [7],
+    "work_item_ids": ["P7-C", "S-E"],
+    "finding_ids": ["V2-STU-005"]
+  },
+  "verification": [
+    {
+      "id": "STUDIO-MEDIA-LEXICAL-SSRF",
+      "category": "security",
+      "requirement": "The canonical Studio lexical URL policy runs before DNS or transport and refuses special-use names and alternate private-address spellings.",
+      "applicability": "required",
+      "status": "not_run",
+      "command": "composer test:unit -- --filter StudioExternalUrlPolicyTest",
+      "environment": "Supported PHP 8.5 qualification image with ext-intl and ext-mbstring.",
+      "result_summary": "Source and adversarial tests are present; execution evidence must be attached for the exact release candidate.",
+      "artifact_paths": [
+        "src/Studio/Domain/Media/StudioExternalUrlPolicy.php",
+        "tests/Unit/Studio/Domain/Media/StudioExternalUrlPolicyTest.php"
+      ],
+      "blocker_finding_ids": ["V2-STU-005"],
+      "evidence_ids": [],
+      "phase_numbers": [7],
+      "work_item_ids": ["P7-C", "S-E"]
+    },
+    {
+      "id": "STUDIO-MEDIA-DNS-PINNING",
+      "category": "security",
+      "requirement": "Every DNS answer is classified and the TLS connection is pinned to one classified address while verifying the original hostname.",
+      "applicability": "required",
+      "status": "not_run",
+      "command": "composer test:unit -- --filter StudioExternalMediaFetcherTest",
+      "environment": "Supported PHP 8.5 qualification image with the complete Composer test runtime.",
+      "result_summary": "Mixed public/private answers and the pinned transport boundary are covered in source; exact-candidate execution remains open.",
+      "artifact_paths": [
+        "src/Studio/Application/Media/StudioExternalMediaFetcher.php",
+        "src/Studio/Infrastructure/Media/NativeStudioExternalAddressResolver.php",
+        "src/Studio/Infrastructure/Media/SocketStudioPinnedHttpTransport.php",
+        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php",
+        "tests/Unit/Studio/Infrastructure/Media/SocketStudioPinnedHttpTransportTest.php"
+      ],
+      "blocker_finding_ids": ["V2-STU-005"],
+      "evidence_ids": [],
+      "phase_numbers": [7],
+      "work_item_ids": ["P7-C", "S-E"]
+    },
+    {
+      "id": "STUDIO-MEDIA-REDIRECT-REVALIDATION",
+      "category": "security",
+      "requirement": "Automatic redirects are disabled and every bounded redirect repeats lexical validation, DNS classification and address pinning.",
+      "applicability": "required",
+      "status": "not_run",
+      "command": "composer test:unit -- --filter 'StudioExternalUrlPolicyTest|StudioExternalMediaFetcherTest'",
+      "environment": "Supported PHP 8.5 qualification image with the complete Composer test runtime.",
+      "result_summary": "Private redirect targets and redirect quotas have source coverage; exact-candidate execution and an independent threat-led review remain open.",
+      "artifact_paths": [
+        "src/Studio/Application/Media/StudioExternalMediaFetcher.php",
+        "src/Studio/Domain/Media/StudioExternalUrlPolicy.php",
+        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php",
+        "tests/Unit/Studio/Domain/Media/StudioExternalUrlPolicyTest.php"
+      ],
+      "blocker_finding_ids": ["V2-STU-005"],
+      "evidence_ids": [],
+      "phase_numbers": [7],
+      "work_item_ids": ["P7-C", "S-E"]
+    },
+    {
+      "id": "STUDIO-MEDIA-RESPONSE-VERIFICATION",
+      "category": "security",
+      "requirement": "Header, body, time and redirect quotas are enforced and declared type must equal byte detection and a supported signature.",
+      "applicability": "required",
+      "status": "not_run",
+      "command": "composer test:unit -- --filter 'StudioExternalMediaFetcherTest|FinfoStudioMediaSignatureVerifierTest'",
+      "environment": "Supported PHP 8.5 qualification image with ext-fileinfo and the complete Composer test runtime.",
+      "result_summary": "Response mismatch, bounded transport and signature tests are present; release-candidate execution evidence remains open.",
+      "artifact_paths": [
+        "src/Studio/Application/Media/StudioExternalMediaFetcher.php",
+        "src/Studio/Infrastructure/Media/FinfoStudioMediaSignatureVerifier.php",
+        "src/Studio/Infrastructure/Media/SocketStudioPinnedHttpTransport.php",
+        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php",
+        "tests/Unit/Studio/Infrastructure/Media/FinfoStudioMediaSignatureVerifierTest.php",
+        "tests/Unit/Studio/Infrastructure/Media/SocketStudioPinnedHttpTransportTest.php"
+      ],
+      "blocker_finding_ids": ["V2-STU-005"],
+      "evidence_ids": [],
+      "phase_numbers": [7],
+      "work_item_ids": ["P7-C", "S-E"]
+    }
+  ],
+  "assessment": {
+    "security": {
+      "status": "not_evaluated",
+      "summary": "Implementation evidence is registered, but P7-C requires exact-candidate automation plus an independent threat-led review before this boundary is qualified."
+    }
+  },
+  "central_aggregate": {
+    "status": "pending",
+    "required_step": "The future P7-C qualification runner must execute these four entries against the build-once release candidate, attach immutable run identifiers, set candidate and generated_at, and include this report in the signed qualification manifest."
+  }
+}

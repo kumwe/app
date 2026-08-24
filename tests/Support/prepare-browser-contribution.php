@@ -88,6 +88,7 @@ if (!is_string($archive)) {
     throw new RuntimeException('The browser fixture package cannot be allocated.');
 }
 $assetArchive = null;
+$manifestSixArchive = null;
 
 try {
     $zip = new ZipArchive();
@@ -185,6 +186,58 @@ try {
         base64_encode(sodium_crypto_sign_detached((string) $assetChecksum, $assetSecretKey)),
     );
     $manager->activate('kumwe/asset-inspection-example', $context);
+    $trust->synchronizeRuntimeMaterialization();
+
+    $manifestSixArchive = tempnam(sys_get_temp_dir(), 'kumwe-browser-manifest-six-');
+    if (!is_string($manifestSixArchive)) {
+        throw new RuntimeException('The browser manifest-six fixture package cannot be allocated.');
+    }
+    $manifestSixRoot = dirname(__DIR__) . '/Fixtures/ExtensionApi/generations/manifest-6';
+    $zip = new ZipArchive();
+    if ($zip->open($manifestSixArchive, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        throw new RuntimeException('The browser manifest-six fixture package cannot be opened.');
+    }
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($manifestSixRoot, FilesystemIterator::SKIP_DOTS),
+    );
+    try {
+        foreach ($iterator as $file) {
+            if (!$file instanceof SplFileInfo || !$file->isFile()) {
+                continue;
+            }
+            $contents = file_get_contents($file->getPathname());
+            $relative = substr($file->getPathname(), strlen($manifestSixRoot) + 1);
+            if (!is_string($contents) || !$zip->addFromString($relative, $contents)) {
+                throw new RuntimeException('The browser manifest-six fixture package cannot include a file.');
+            }
+        }
+    } finally {
+        $zip->close();
+    }
+    $manifestSixBytes = file_get_contents($manifestSixArchive);
+    if (!is_string($manifestSixBytes)) {
+        throw new RuntimeException('The browser manifest-six fixture package cannot be signed.');
+    }
+    $manifestSixChecksum = PackageChecksum::calculate($manifestSixBytes);
+    $manifestSixKeyPair = sodium_crypto_sign_keypair();
+    $manifestSixPublicKey = sodium_crypto_sign_publickey($manifestSixKeyPair);
+    $manifestSixSecretKey = sodium_crypto_sign_secretkey($manifestSixKeyPair);
+    $manifestSixKeyId = 'browser.contract-manifest-six.v1';
+    $trust->add(
+        $context,
+        $manifestSixKeyId,
+        base64_encode($manifestSixPublicKey),
+        'kumwe',
+        'contract-manifest-six',
+        new DateTimeImmutable('+1 year'),
+    );
+    $manager->install(
+        $manifestSixArchive,
+        $context,
+        $manifestSixKeyId,
+        base64_encode(sodium_crypto_sign_detached((string) $manifestSixChecksum, $manifestSixSecretKey)),
+    );
+    $manager->activate('kumwe/contract-manifest-six', $context);
     $trust->synchronizeRuntimeMaterialization();
 
     $assetManifestJson = file_get_contents($assetRoot . '/kumwe.json');
@@ -981,5 +1034,8 @@ try {
     }
     if (is_string($assetArchive) && is_file($assetArchive)) {
         unlink($assetArchive);
+    }
+    if (is_string($manifestSixArchive) && is_file($manifestSixArchive)) {
+        unlink($manifestSixArchive);
     }
 }

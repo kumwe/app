@@ -29,9 +29,9 @@ use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use Kumwe\App\Extension\Domain\Internal\ExtensionManifestGrammar;
-use Kumwe\App\Extension\Domain\Internal\StudioProfile\SchemaProfileRejected;
-use Kumwe\App\Extension\Domain\Internal\StudioProfile\SchemaPropertyProfile;
-use Kumwe\App\Extension\Domain\Internal\StudioProfile\StudioContributionSchemas;
+use Kumwe\App\Studio\Domain\Contract\SchemaProfileRejected;
+use Kumwe\App\Studio\Domain\Contract\SchemaPropertyProfile;
+use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
 use Kumwe\App\Identity\Domain\Capability;
 use Kumwe\App\InterfaceStandard\SurfaceArea;
 use Kumwe\App\InterfaceStandard\SurfaceDefinition;
@@ -39,6 +39,7 @@ use Kumwe\App\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\App\Portal\Contribution\PortalRouteDefinition;
 use Kumwe\App\Portal\Contribution\PortalTemplateDefinition;
 use Kumwe\App\Portal\Contribution\PortalWorkspaceDefinition;
+use stdClass;
 
 /**
  * The contributions one package declares, parsed, ordered, and checked for internal consistency.
@@ -722,6 +723,24 @@ final readonly class ManifestContributionSet
                     $studioNamespace,
                 ));
             }
+            $ownerDocument = $document->document->owner ?? null;
+            $embeddedOwner = $ownerDocument instanceof stdClass ? ($ownerDocument->id ?? null) : null;
+            $allowedOwnerNamespaces = $this->owner->identifier() === ContributionOwner::CORE
+                ? ['core/', 'studio.core/']
+                : [$this->owner->namespace() . '/'];
+            if (
+                !is_string($embeddedOwner)
+                || !array_any(
+                    $allowedOwnerNamespaces,
+                    static fn (string $namespace): bool => str_starts_with($embeddedOwner, $namespace),
+                )
+            ) {
+                throw new InvalidArgumentException(sprintf(
+                    'Canonical composition document owner %s must belong to signed contribution owner %s.',
+                    is_string($embeddedOwner) ? $embeddedOwner : '(missing)',
+                    $this->owner->identifier(),
+                ));
+            }
         }
         foreach ($this->compositionHostBindings as $binding) {
             if (!isset($this->canonicalCompositionDocuments[$binding->identifier()])) {
@@ -1350,7 +1369,7 @@ final readonly class ManifestContributionSet
         $canonicalDocuments = [];
         $compositionHostBindings = [];
         if ($manifestSchema >= 6) {
-            $schemas = StudioContributionSchemas::fromVendoredCorpus();
+            $schemas = StudioContractSchemas::fromVendoredCorpus();
             $canonicalDocuments = array_map(
                 static function (array $item) use ($schemas): CanonicalCompositionDocument {
                     self::knownKeys($item, ['kind', 'canonical'], 'canonical composition document');

@@ -7,6 +7,7 @@ namespace Kumwe\App\Media\Application;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
+use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\Identity\Domain\Capability;
@@ -34,11 +35,12 @@ final readonly class MediaService
     /**
      * Wire the service to its storage, policy, audit and clock collaborators.
      *
-     * @param  MediaStorage          $storage        Library the assets are read from and written to.
-     * @param  AuthorizationGateway  $authorization  Decides whether the caller holds the needed capability.
-     * @param  AuditRecorder         $audit          Receives the `media.upload` and `media.delete` events.
-     * @param  ClockInterface        $clock          Supplies the timestamp shared by the asset and its event.
-     * @param  int                   $maximumBytes   Largest upload accepted, in bytes; the storage enforces it.
+     * @param  MediaStorage             $storage        Library the assets are read from and written to.
+     * @param  AuthorizationGateway     $authorization  Decides whether the caller holds the needed capability.
+     * @param  AuditRecorder            $audit          Receives the `media.upload` and `media.delete` events.
+     * @param  ClockInterface           $clock          Supplies the timestamp shared by the asset and its event.
+     * @param  int                      $maximumBytes   Largest upload accepted, in bytes; the storage enforces it.
+     * @param TransactionManager|null $transactions Compensates stored bytes when composition supplies a transaction.
      *
      * @since  2.0.0
      */
@@ -48,6 +50,7 @@ final readonly class MediaService
         private AuditRecorder $audit,
         private ClockInterface $clock,
         private int $maximumBytes,
+        private ?TransactionManager $transactions = null,
     ) {
     }
 
@@ -130,6 +133,47 @@ final readonly class MediaService
     }
 
     /**
+     * Return the complete validated site catalog for a trusted bounded adapter to filter and page.
+     *
+     * This seam exists for adapters, such as the Studio media port, whose cursor and page contract is
+     * different from the administrator screen. It preserves authorization and site scoping while leaving
+     * protocol-specific filtering outside the core media module.
+     *
+     * @param   ExecutionContext  $context  Identity and exact site whose catalog may be read.
+     *
+     * @return  list<MediaAsset>  Newest-first validated assets.
+     *
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     *
+     * @since   2.0.0
+     */
+    public function catalog(ExecutionContext $context): array
+    {
+        $this->authorize($context, 'content.read');
+
+        return $this->storage->all($context->site());
+    }
+
+    /**
+     * Resolve one validated asset inside the caller's authorized site.
+     *
+     * @param   ExecutionContext  $context  Identity and exact site whose asset may be read.
+     * @param   string            $id       Media-store identity.
+     *
+     * @return  MediaAsset|null  Validated asset or null when absent from this site.
+     *
+     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     *
+     * @since   2.0.0
+     */
+    public function get(ExecutionContext $context, string $id): ?MediaAsset
+    {
+        $this->authorize($context, 'content.read');
+
+        return $this->storage->find($context->site(), $id);
+    }
+
+    /**
      * Add an uploaded file to the site's library and record the upload in the audit trail.
      *
      * The file is stored first and audited second. If the recorder rejects the event the stored asset
@@ -158,6 +202,11 @@ final readonly class MediaService
             $originalName,
             $this->maximumBytes,
             $now,
+        );
+        $this->transactions?->afterRollback(
+            function () use ($context, $asset): void {
+                $this->storage->delete($context->site(), $asset->id);
+            },
         );
         try {
             $this->audit->record(new AuditEvent(

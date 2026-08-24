@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/authoring-message-catalog.schema.json",
+  "title": "Studio authoring message catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "kind", "contractVersion", "catalogVersion", "locale", "messages"],
+  "properties": {
+    "$schema": {
+      "const": "https://schemas.kumwe.org/studio/v1/authoring-message-catalog.schema.json"
+    },
+    "kind": { "const": "authoring-message-catalog" },
+    "contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+    "catalogVersion": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+    "locale": { "$ref": "common.schema.json#/$defs/locale" },
+    "messages": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1000,
+      "propertyNames": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+      "additionalProperties": { "$ref": "#/$defs/message" }
+    }
+  },
+  "$defs": {
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultMessage", "parameters"],
+      "properties": {
+        "defaultMessage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "^[^<>]*(?![\\s\\S])"
+        },
+        "parameters": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": { "$ref": "common.schema.json#/$defs/localName" }
+        }
+      }
+    }
+  }
+}

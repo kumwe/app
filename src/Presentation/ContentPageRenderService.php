@@ -1,0 +1,170 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\App\Presentation;
+
+use Kumwe\App\Presentation\Application\SitePresentation;
+use Kumwe\App\Site\Application\SiteSettings;
+
+/**
+ * Canonical site-template and theme path shared by published and unpublished content rendering.
+ *
+ * @since  2.0.0
+ */
+final readonly class ContentPageRenderService
+{
+    /**
+     * Bind the canonical page path to validated settings and the isolated site Twig renderer.
+     *
+     * @param  SiteSettings  $settings  Site presentation document.
+     * @param  SiteRenderer  $renderer  Isolated site template/theme renderer.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private SiteSettings $settings, private SiteRenderer $renderer)
+    {
+    }
+
+    /**
+     * Render one content page through the same validated site presentation pipeline.
+     *
+     * @param   string                      $template               Site layout name without `.twig`.
+     * @param   array<string, mixed>|null   $entry                  Already presented safe entry, or null for a home
+     *          template with no selected record.
+     * @param   string                      $currentPath            Current application path.
+     * @param   string                      $canonicalUrl           Canonical path or absolute URL.
+     * @param   string|null                 $schemeOverride         Optional menu-bound colour scheme.
+     * @param   string                      $surfaceId              Stable interface surface identity.
+     * @param   list<array<string, mixed>>  $navigation             Presented site navigation.
+     * @param   array<string, mixed>        $languages              Presented language alternates.
+     * @param   bool                        $includeThemeVariables  Whether validated CSS variables may be emitted as
+     *          the existing public theme attribute; preview documents set false under their stricter CSP.
+     *
+     * @return  string  Complete themed HTML document.
+     *
+     * @since   2.0.0
+     */
+    public function render(
+        string $template,
+        ?array $entry,
+        string $currentPath,
+        string $canonicalUrl,
+        ?string $schemeOverride,
+        string $surfaceId,
+        array $navigation = [],
+        array $languages = [],
+        bool $includeThemeVariables = true,
+    ): string {
+        $settings = $this->settings->current();
+        $presentation = SitePresentation::from(
+            $settings['presentation'] ?? SitePresentation::defaults(),
+        )->withSchemeOverride($schemeOverride)->toView();
+        if (!$includeThemeVariables) {
+            $presentation['css_variables'] = [];
+        }
+
+        $variables = [
+            'site_name' => $settings['site_name'],
+            'navigation' => $navigation,
+            'current_path' => $currentPath,
+            'canonical_url' => $canonicalUrl,
+            'site_logo' => $presentation['logo'],
+            'presentation' => $presentation,
+            'surface_id' => $surfaceId,
+            'languages' => $languages,
+        ];
+        if ($entry !== null) {
+            $variables['entry'] = $entry;
+        }
+
+        return $this->renderer->render($template, $variables);
+    }
+
+    /**
+     * Render an exact preview document whose validated theme travels through a same-origin stylesheet.
+     *
+     * @param   string                     $template             Site layout name without `.twig`.
+     * @param   array<string, mixed>|null  $entry                Already presented safe entry.
+     * @param   string                     $currentPath          Current application path.
+     * @param   string                     $canonicalUrl         Canonical path or absolute URL.
+     * @param   string|null                $schemeOverride       Optional menu-bound colour scheme.
+     * @param   string                     $surfaceId            Stable interface surface identity.
+     * @param   string                     $themeStylesheetHref  Trusted root-relative stylesheet sentinel.
+     *
+     * @return  array{html: string, themeStylesheet: string}  Complete HTML and its closed theme stylesheet.
+     *
+     * @since   2.0.0
+     */
+    public function renderPreview(
+        string $template,
+        ?array $entry,
+        string $currentPath,
+        string $canonicalUrl,
+        ?string $schemeOverride,
+        string $surfaceId,
+        string $themeStylesheetHref,
+    ): array {
+        if (
+            preg_match('/^\/[A-Za-z0-9._\/-]{1,255}$/D', $themeStylesheetHref) !== 1
+            || str_contains($themeStylesheetHref, '..')
+        ) {
+            throw new \InvalidArgumentException('The preview theme stylesheet path is invalid.');
+        }
+        $settings = $this->settings->current();
+        $presentation = SitePresentation::from(
+            $settings['presentation'] ?? SitePresentation::defaults(),
+        )->withSchemeOverride($schemeOverride)->toView();
+        $themeVariables = $presentation['css_variables'];
+        if (!is_array($themeVariables) || array_is_list($themeVariables)) {
+            throw new \InvalidArgumentException('The generated theme style variables are invalid.');
+        }
+        $presentation['css_variables'] = [];
+        $variables = [
+            'site_name' => $settings['site_name'],
+            'navigation' => [],
+            'current_path' => $currentPath,
+            'canonical_url' => $canonicalUrl,
+            'site_logo' => $presentation['logo'],
+            'presentation' => $presentation,
+            'surface_id' => $surfaceId,
+            'languages' => [],
+        ];
+        if ($entry !== null) {
+            $variables['entry'] = $entry;
+        }
+        $html = $this->renderer->render($template, $variables);
+        $offset = strripos($html, '</head>');
+        if ($offset === false) {
+            throw new \InvalidArgumentException('A themed content document must contain a closing head tag.');
+        }
+        $link = sprintf('<link rel="stylesheet" href="%s" data-studio-theme>', $themeStylesheetHref);
+        $html = substr_replace($html, $link, $offset, 0);
+        $declarations = '';
+        foreach ($themeVariables as $property => $value) {
+            if (
+                !is_string($property)
+                || preg_match('/^--[a-z0-9-]+$/D', $property) !== 1
+                || !is_string($value)
+                || preg_match('/^#[a-f0-9]{6}$/D', $value) !== 1
+            ) {
+                throw new \InvalidArgumentException('A generated theme style variable is invalid.');
+            }
+            $declarations .= $property . ':' . $value . ';';
+        }
+
+        return ['html' => $html, 'themeStylesheet' => 'body{' . $declarations . '}'];
+    }
+
+    /**
+     * Report whether published pages may be indexed, from the same effective settings snapshot.
+     *
+     * @return  bool  True only for an explicit enabled setting.
+     *
+     * @since   2.0.0
+     */
+    public function searchIndexingEnabled(): bool
+    {
+        return $this->settings->current()['search_indexing_enabled'] === true;
+    }
+}

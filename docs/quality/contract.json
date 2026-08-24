@@ -184,6 +184,29 @@
             }
         },
         {
+            "id": "studio-preview-security-qualification",
+            "title": "Authenticated Studio preview negative-path qualification evidence",
+            "purpose": "Retain the authority, transport, replay, single-use-grant, observability and route-only CSP refusal suite as an explicit P7-C application-security artifact; scanners supplement these proofs and never replace them.",
+            "owner": "security-engineering",
+            "runner": "shell",
+            "command": "vendor/bin/phpunit --colors=always --log-junit build/security/studio-preview-junit.xml",
+            "artifact": "build/security/studio-preview-junit.xml",
+            "in_qa": false,
+            "excluded_from_qa_reason": "The same tests already run in the ordinary local PHPUnit suite; this named invocation exists to retain a separately reviewable P7-C security artifact in the Security workflow.",
+            "cadence": [
+                "ci"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/security.yml",
+                    "job": "source-and-image",
+                    "contains": "vendor/bin/phpunit --colors=always --log-junit build/security/studio-preview-junit.xml"
+                }
+            }
+        },
+        {
             "id": "architecture-policy",
             "title": "Architecture policy: textual predicates and the semantic dependency graph",
             "purpose": "Refuse the product-name transcription error, forbidden direct dependencies, forbidden framework imports and static service location, and then evaluate every dependency edge in src/ against the declared layer graph.",
@@ -528,7 +551,7 @@
             "runner": "composer",
             "composer_script": "studio:corpus",
             "command": "composer studio:corpus",
-            "artifact": "tests/Fixtures/Studio/PIN.json",
+            "artifact": "resources/studio-contract/PIN.json",
             "in_qa": true,
             "cadence": [
                 "local",

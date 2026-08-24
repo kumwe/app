@@ -3,8 +3,8 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "5b2d6b381b40747315e71fc1b691fde99a5bf18e",
-    "recorded_at": "2026-08-23",
+    "commit": "d00bf035dc76b4af9e8453de3d9f04517ffaa367",
+    "recorded_at": "2026-08-24",
     "recorded_from": [],
     "toolchain": {
         "php": "^8.5",
@@ -22,24 +22,24 @@
             "ext-zip"
         ],
         "composer_lock_sha256": "52bc25ec500ef38fd5e115b071da738e52b2d860c015439a93e86924217fa001",
-        "package_lock_sha256": "ccdf34d2e25d4025a8ffe1029461a45f156de3bb9a4cb7d5fa7e25f6b124e0d8"
+        "package_lock_sha256": "142db76541f111ceaad15f23716d2f8abf761c3cb0577d5794393575968923d2"
     },
     "tests": {
         "architecture": {
-            "files": 43,
-            "test_methods": 255
+            "files": 48,
+            "test_methods": 274
         },
         "functional": {
             "files": 9,
             "test_methods": 32
         },
         "integration": {
-            "files": 97,
-            "test_methods": 384
+            "files": 105,
+            "test_methods": 405
         },
         "unit": {
-            "files": 408,
-            "test_methods": 2175
+            "files": 443,
+            "test_methods": 2285
         }
     },
     "coverage": {
@@ -108,6 +108,11 @@
             },
             {
                 "method": "GET",
+                "path": "/administrator/content-models/{id}/versions/{version}/composition",
+                "name": "administrator.content-models.composition"
+            },
+            {
+                "method": "GET",
                 "path": "/administrator/content/{id}/edit",
                 "name": "administrator.content.edit"
             },
@@ -160,6 +165,21 @@
                 "method": "GET",
                 "path": "/administrator/settings",
                 "name": "administrator.settings"
+            },
+            {
+                "method": "PUT",
+                "path": "/administrator/studio/media/uploads/{upload}",
+                "name": "administrator.studio.media.upload"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/studio/preview",
+                "name": "administrator.studio.preview.document"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/studio/preview/theme.css",
+                "name": "administrator.studio.preview.theme"
             },
             {
                 "method": "GET",
@@ -522,7 +542,12 @@
             "20260820010000_constraint_name_isolation_portability",
             "20260821010000_period_posting_lock",
             "20260822010000_number_sequence_identity",
-            "20260823010000_schema_global_index_names"
+            "20260823010000_schema_global_index_names",
+            "20260824010000_studio_content_projection",
+            "20260824020000_studio_host_sessions",
+            "20260824030000_studio_artifact_recovery",
+            "20260824030000_studio_media_uploads",
+            "20260824040000_studio_preview_grants"
         ]
     },
     "quarantine": {

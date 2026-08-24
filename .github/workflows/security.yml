@@ -52,6 +52,22 @@ jobs:
       - name: Install locked dependencies
         run: composer install --no-interaction --prefer-dist
 
+      # P7-C consumes this JUnit artifact as the application-level negative-path inventory for the
+      # authenticated Studio preview boundary. Scanners below supplement these authority, replay,
+      # single-use-grant and route-only CSP proofs; they do not replace them.
+      - name: Qualify authenticated Studio preview boundary
+        run: |
+          install -d build/security
+          vendor/bin/phpunit --colors=always --log-junit build/security/studio-preview-junit.xml \
+            tests/Unit/Administrator/Http/Handler/AdministratorStudioPreviewDocumentHandlerTest.php \
+            tests/Unit/Administrator/Http/StudioPreviewHttpTransportTest.php \
+            tests/Unit/Studio/Application/Preview/StudioPreviewTransportGuardTest.php \
+            tests/Unit/Studio/Application/Preview/StudioPreviewHostPortTest.php \
+            tests/Unit/Studio/Application/Preview/StudioPreviewActivityRecorderTest.php \
+            tests/Integration/Studio/StudioPreviewPersistenceTest.php \
+            tests/Unit/Http/Security/SecurityHeadersTest.php \
+            tests/Unit/Http/Middleware/SecurityMiddlewareTest.php
+
       - name: Validate and audit dependencies
         run: |
           composer validate --strict

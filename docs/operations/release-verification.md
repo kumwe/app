@@ -1,6 +1,6 @@
 # Verify a release
 
-The release workflow accepts protected `v2.x.y` tags only after the complete MariaDB, MySQL, and PostgreSQL deployment gate succeeds. It builds the PHP 8.5 application and web images, creates the dependency-complete ZIP, scans artifacts, generates CycloneDX SBOMs, signs image digests and checksums with keyless Cosign, and publishes provenance attestations.
+The release workflow accepts protected `v2.x.y` tags only after the complete MariaDB, MySQL, and PostgreSQL deployment gate succeeds. It builds the PHP 8.5 application and web images, creates the dependency-complete ZIP, scans artifacts, generates CycloneDX SBOMs, signs image digests and checksums with keyless Cosign, and publishes provenance attestations. The signed checksum set includes `kumwe-release-manifest.json`, which binds those artifacts and image digests to the source commit and the exact seven-package Studio release qualified by the administrator build.
 
 Stable releases publish these image aliases:
 
@@ -24,6 +24,8 @@ cosign verify-blob \
 ```
 
 The checksum list covers the release ZIP and supplied SBOMs. Confirm the certificate identity matches this repository and workflow, the tag points at the expected source commit, and the GitHub release is not a draft or prerelease unless that is the intended rollout.
+
+Inspect `kumwe-release-manifest.json` after its checksum and signature are verified. Its `studio.record.release` value is the single Studio coordinate; every member of `studio.record.packages` must carry that exact version. Compare `studio.recordSha256` with the SHA-256 digest of the vendored `resources/studio-contract/studio-release.json` at the release tag. A package range, a different package version, or a record digest mismatch means the App was not qualified against the claimed Studio release.
 
 ## Verify images and attestations
 

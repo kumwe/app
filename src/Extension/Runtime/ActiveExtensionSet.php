@@ -5,16 +5,22 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Runtime;
 
 use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Contribution\CanonicalCompositionDocument;
+use Kumwe\App\Extension\Contribution\CanonicalCompositionKind;
 use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Portal\Presentation\PortalRenderer;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use LogicException;
 use Mezzio\Application;
+use Throwable;
 
 /**
  * The extensions running in this process, together with the runtime surfaces they contributed.
@@ -42,7 +48,8 @@ final class ActiveExtensionSet
      *             provider: ExtensionServiceProvider,
      *             container: ExtensionContainer,
      *             declared: ManifestContributionSet,
-     *             strict: bool
+     *             strict: bool,
+     *             runtime_entry: array<string, mixed>|null
      *         }>
      * @since  2.0.0
      */
@@ -88,18 +95,33 @@ final class ActiveExtensionSet
     private array $siteThemeOwners = [];
 
     /**
+     * Verified release coordinates for each resident extension.
+     *
+     * The signed runtime publication is the authority for these values. Keeping them beside the
+     * extension provider lets consumers such as Studio lock the exact public theme release instead of
+     * inferring identity or revision from a mutable template path.
+     *
+     * @var    array<string, array{version: string, deployed_tree_sha256: string}>
+     * @since  2.0.0
+     */
+    private array $releases = [];
+
+    /**
      * Start an empty set bound to the registries and the trust boundary its later phases need.
      *
      * @param  ExtensionContributionRegistrySet  $contributions  Registries every contribution is recorded
      *         in and read back from, shared with core so contributors cannot collide.
      * @param  ?TrustStore                       $trust          Trust boundary the routes declared here
      *         consult per request; null yields a set that holds extensions but cannot register routes.
+     * @param  ?ExtensionExecutionGate           $execution      Exact runtime-generation fence used before
+     *         resident extension preview code executes; null keeps executable preview bindings inert.
      *
      * @since  2.0.0
      */
     public function __construct(
         private readonly ExtensionContributionRegistrySet $contributions,
         private ?TrustStore $trust = null,
+        private ?ExtensionExecutionGate $execution = null,
     ) {
     }
 
@@ -109,15 +131,21 @@ final class ActiveExtensionSet
      * Nothing runs here. `contribute()`, `boot()` and `registerRoutes()` visit the recorded entries
      * afterwards, each in the order the extensions were added.
      *
-     * @param   string                    $identifier           Canonical `vendor/name` of the extension.
-     * @param   ExtensionServiceProvider  $provider             Provider instance whose `register()` has
+     * @param   string                     $identifier           Canonical `vendor/name` of the extension.
+     * @param   ExtensionServiceProvider   $provider             Provider instance whose `register()` has
      *          already run.
-     * @param   ExtensionContainer        $container            Restricted container that provider
+     * @param   ExtensionContainer         $container            Restricted container that provider
      *          registered into, handed back to it in the later phases.
-     * @param   ManifestContributionSet   $declared             Contributions the manifest declares, which
+     * @param   ManifestContributionSet    $declared             Contributions the manifest declares, which
      *          the registrar then holds the provider to.
-     * @param   bool                      $strictContributions  True when the manifest is schema 2 or newer, which
+     * @param   bool                       $strictContributions  True when the manifest is schema 2 or newer, which
      *          is what admits the extension to `contribute()`.
+     * @param   ?string                    $version              Verified installed package version, when this set
+     *          was built from a signed runtime publication.
+     * @param   ?string                    $deployedTreeSha256   Verified deployed release-tree digest paired with
+     *          `$version`.
+     * @param   array<string, mixed>|null  $runtimeEntry         Exact signed compiled entry that loaded this code,
+     *          or null for an isolated compatibility fixture that must not execute resident contributions.
      *
      * @return  void
      *
@@ -129,14 +157,36 @@ final class ActiveExtensionSet
         ExtensionContainer $container,
         ManifestContributionSet $declared,
         bool $strictContributions,
+        ?string $version = null,
+        ?string $deployedTreeSha256 = null,
+        ?array $runtimeEntry = null,
     ): void {
+        if (($version === null) !== ($deployedTreeSha256 === null)) {
+            throw new LogicException('Extension release coordinates must be supplied together.');
+        }
+        if (
+            $version !== null
+            && (
+                preg_match('/^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/D', $version) !== 1
+                || preg_match('/^[a-f0-9]{64}$/D', $deployedTreeSha256 ?? '') !== 1
+            )
+        ) {
+            throw new LogicException('Extension release coordinates are invalid.');
+        }
         $this->extensions[] = [
             'identifier' => $identifier,
             'provider' => $provider,
             'container' => $container,
             'declared' => $declared,
             'strict' => $strictContributions,
+            'runtime_entry' => $runtimeEntry,
         ];
+        if ($version !== null && $deployedTreeSha256 !== null) {
+            $this->releases[$identifier] = [
+                'version' => $version,
+                'deployed_tree_sha256' => $deployedTreeSha256,
+            ];
+        }
     }
 
     /**
@@ -304,6 +354,7 @@ final class ActiveExtensionSet
         }
         unset($paths);
         unset($this->portalTemplatePaths[$identifier], $this->catalogueDirectories[$identifier]);
+        unset($this->releases[$identifier]);
         foreach ($this->themeOwners as $surface => $owner) {
             if ($owner === $identifier) {
                 unset($this->themeOwners[$surface], $this->themePaths[$surface]);
@@ -405,9 +456,78 @@ final class ActiveExtensionSet
             );
             $provider->contribute($registrar, $extension['container']);
             $registrar->complete();
+            $this->activateStudioPreviewRenderers($extension);
         }
         $this->contributions->validateBusinessDefinitions();
         $this->contributions->validateIntegrationContributions();
+    }
+
+    /**
+     * Activate only explicit owner-local services behind exact canonical block coordinates.
+     *
+     * A manifest renderer value is never treated as a class or factory. It can only address a service
+     * the already-verified provider shared under its restricted `extension.<owner>.` namespace. Missing,
+     * malformed, foreign, stale-test, or incorrectly typed registrations stay inert so a Gate-A package
+     * that shipped declarations before this execution seam continues to activate unchanged.
+     *
+     * @param   array{
+     *              identifier: string,
+     *              provider: ExtensionServiceProvider,
+     *              container: ExtensionContainer,
+     *              declared: ManifestContributionSet,
+     *              strict: bool,
+     *              runtime_entry: array<string, mixed>|null
+     *          }  $extension  Loaded extension and exact runtime provenance.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function activateStudioPreviewRenderers(array $extension): void
+    {
+        $runtimeEntry = $extension['runtime_entry'];
+        $runtimeVersion = is_array($runtimeEntry) ? $runtimeEntry['version'] ?? null : null;
+        if ($this->trust === null || $this->execution === null || !is_string($runtimeVersion)) {
+            return;
+        }
+        $owner = ContributionOwner::extension($extension['identifier']);
+        foreach ($extension['declared']->compositionHostBindings() as $binding) {
+            if ($binding->kind !== CanonicalCompositionKind::BlockDefinition || $binding->renderer === null) {
+                continue;
+            }
+            $registered = $this->contributions->canonicalCompositionDocuments()->definition(
+                $owner,
+                $binding->identifier(),
+            );
+            if (!$registered instanceof CanonicalCompositionDocument) {
+                continue;
+            }
+            try {
+                $definition = new StudioPreviewRendererContribution(
+                    $owner,
+                    $runtimeVersion,
+                    $registered,
+                    $binding,
+                );
+                $implementation = $extension['container']->get('extension.' . $binding->renderer);
+                if (!$implementation instanceof StudioPreviewBlockRenderer) {
+                    continue;
+                }
+                $this->contributions->studioPreviewRenderers()->register(
+                    $owner,
+                    $definition,
+                    new TrustEnforcingStudioPreviewBlockRenderer(
+                        $implementation,
+                        $this->trust,
+                        $this->execution,
+                        $extension['identifier'],
+                        $runtimeEntry,
+                    ),
+                );
+            } catch (Throwable) {
+                // An unavailable or contradictory executable binding remains an inert unresolved block.
+            }
+        }
     }
 
     /**
@@ -501,6 +621,40 @@ final class ActiveExtensionSet
     public function siteThemePath(string $siteIdentifier): ?string
     {
         return $this->siteThemePaths[$siteIdentifier] ?? null;
+    }
+
+    /**
+     * Resolve the signed release coordinate of the public theme assigned to one site.
+     *
+     * A null result means the site renders the built-in public theme. An extension-owned assignment
+     * without verified release metadata fails closed: callers must never fabricate a revision from a
+     * path or from the contribution document itself.
+     *
+     * @param   string  $siteIdentifier  Site whose public theme assignment is required.
+     *
+     * @return  array{id: string, version: string, revision: string}|null  Exact extension release, or
+     *          null for the built-in public theme.
+     *
+     * @throws  LogicException  When a theme owner was loaded without signed release coordinates.
+     *
+     * @since   2.0.0
+     */
+    public function siteThemeRelease(string $siteIdentifier): ?array
+    {
+        $owner = $this->siteThemeOwners[$siteIdentifier] ?? null;
+        if ($owner === null) {
+            return null;
+        }
+        $release = $this->releases[$owner] ?? null;
+        if ($release === null) {
+            throw new LogicException('The active site theme has no verified release coordinate.');
+        }
+
+        return [
+            'id' => $owner,
+            'version' => $release['version'],
+            'revision' => $release['deployed_tree_sha256'],
+        ];
     }
 
     /**

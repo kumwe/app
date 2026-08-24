@@ -25,6 +25,15 @@ declare(strict_types=1);
 $protocolRoot = dirname(__DIR__) . '/resources/studio-contract';
 $testkitRoot = dirname(__DIR__) . '/tests/Fixtures/Studio';
 $errors = [];
+$studioPackages = [
+    '@kumwe/studio',
+    '@kumwe/studio-core',
+    '@kumwe/studio-media',
+    '@kumwe/studio-preview',
+    '@kumwe/studio-protocol',
+    '@kumwe/studio-rich-text',
+    '@kumwe/studio-testkit',
+];
 
 /**
  * Compute the SRI sha256 digest of one file.
@@ -38,6 +47,20 @@ $errors = [];
 function sriDigest(string $path): string
 {
     return 'sha256-' . base64_encode(hash_file('sha256', $path, true) ?: '');
+}
+
+/**
+ * Compute the lower-case hexadecimal sha256 digest used by the package pin.
+ *
+ * @param   string  $path  File whose bytes are digested.
+ *
+ * @return  string  Digest in lower-case hexadecimal form.
+ *
+ * @since   2.0.0
+ */
+function hexDigest(string $path): string
+{
+    return hash_file('sha256', $path) ?: '';
 }
 
 /**
@@ -70,8 +93,80 @@ function decode(string $path, array &$errors): ?array
 $pin = decode($protocolRoot . '/PIN.json', $errors);
 $protocolManifest = decode($protocolRoot . '/protocol/schemas/manifest.json', $errors);
 $corpusManifest = decode($testkitRoot . '/testkit/corpus-manifest.json', $errors);
+$releasePath = $protocolRoot . '/studio-release.json';
+$release = decode($releasePath, $errors);
 
-if ($pin !== null) {
+if ($pin !== null && $release !== null) {
+    $releaseName = $release['release'] ?? null;
+    $releasePackages = $release['packages'] ?? null;
+    if (
+        ($release['kind'] ?? null) !== 'studio-release'
+        || !is_string($releaseName)
+        || !is_array($releasePackages)
+    ) {
+        $errors[] = 'The vendored Studio release record is malformed.';
+    } else {
+        $actualPackages = array_keys($releasePackages);
+        sort($actualPackages);
+        $expectedPackages = $studioPackages;
+        sort($expectedPackages);
+        if ($actualPackages !== $expectedPackages) {
+            $errors[] = 'The Studio release record does not name exactly the seven public packages.';
+        }
+        foreach ($studioPackages as $package) {
+            if (($releasePackages[$package] ?? null) !== $releaseName) {
+                $errors[] = sprintf('%s is not coordinated at Studio release %s.', $package, $releaseName);
+            }
+        }
+    }
+
+    $releasePin = $pin['release_record'] ?? null;
+    if (
+        !is_array($releasePin)
+        || ($releasePin['file'] ?? null) !== 'studio-release.json'
+        || ($releasePin['release'] ?? null) !== $releaseName
+        || ($releasePin['sha256'] ?? null) !== hexDigest($releasePath)
+    ) {
+        $errors[] = 'PIN.json does not identify the exact vendored Studio release-record bytes.';
+    }
+
+    foreach ([
+        $protocolRoot . '/protocol/studio-release.json',
+        $testkitRoot . '/testkit/studio-release.json',
+    ] as $copy) {
+        if (!is_file($copy) || file_get_contents($copy) !== file_get_contents($releasePath)) {
+            $errors[] = sprintf('Release-record copy %s is missing or differs byte-for-byte.', $copy);
+        }
+    }
+
+    $pinnedNames = array_keys((array) ($pin['pinned'] ?? []));
+    sort($pinnedNames);
+    $expectedPackages = $studioPackages;
+    sort($expectedPackages);
+    if ($pinnedNames !== $expectedPackages) {
+        $errors[] = 'PIN.json does not pin exactly the seven public Studio packages.';
+    }
+
+    foreach ($studioPackages as $package) {
+        $packagePin = $pin['pinned'][$package] ?? null;
+        $file = is_array($packagePin) ? ($packagePin['file'] ?? null) : null;
+        $digest = is_array($packagePin) ? ($packagePin['npm_tarball_sha256'] ?? null) : null;
+        $version = is_array($packagePin) ? ($packagePin['version'] ?? null) : null;
+        if (
+            !is_string($file)
+            || basename($file) !== $file
+            || !is_string($digest)
+            || $version !== ($releasePackages[$package] ?? null)
+        ) {
+            $errors[] = sprintf('PIN.json has an invalid coordinated package pin for %s.', $package);
+            continue;
+        }
+        $tarball = $protocolRoot . '/packages/' . $file;
+        if (!is_file($tarball) || hexDigest($tarball) !== $digest) {
+            $errors[] = sprintf('Pinned tarball %s for %s is missing or has different bytes.', $file, $package);
+        }
+    }
+
     foreach ([
         '@kumwe/studio-protocol' => $protocolRoot . '/protocol/package.json',
         '@kumwe/studio-testkit' => $testkitRoot . '/testkit/package.json',
@@ -172,7 +267,7 @@ if ($errors !== []) {
 }
 
 printf(
-    "Kumwe studio corpus verified: 2 pinned packages, %d protocol schemas, %d corpus files in %d groups.\n",
+    "Kumwe studio corpus verified: 7 coordinated packages, %d protocol schemas, %d corpus files in %d groups.\n",
     $schemaCount,
     $corpusCount,
     $groupCount,

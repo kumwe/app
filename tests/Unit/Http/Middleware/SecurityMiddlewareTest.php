@@ -194,6 +194,40 @@ final class SecurityMiddlewareTest extends TestCase
         self::assertNotSame('', $response->getHeaderLine('Strict-Transport-Security'));
     }
 
+    /**
+     * Only the exact authenticated preview document route receives same-origin framing headers.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testPreviewDocumentRouteReceivesTheDedicatedFramePolicy(): void
+    {
+        $middleware = new SecurityHeadersMiddleware(true);
+        $preview = $middleware->process(
+            (new ServerRequestFactory())->createServerRequest(
+                'GET',
+                'https://kumwe.test/administrator/studio/preview',
+            ),
+            $this->successfulHandler(),
+        );
+        $ordinary = $middleware->process(
+            (new ServerRequestFactory())->createServerRequest(
+                'GET',
+                'https://kumwe.test/administrator/studio/preview-adjacent',
+            ),
+            $this->successfulHandler(),
+        );
+
+        self::assertSame('SAMEORIGIN', $preview->getHeaderLine('X-Frame-Options'));
+        self::assertStringContainsString("frame-src 'self'", $preview->getHeaderLine('Content-Security-Policy'));
+        self::assertSame('DENY', $ordinary->getHeaderLine('X-Frame-Options'));
+        self::assertStringNotContainsString(
+            'frame-src',
+            $ordinary->getHeaderLine('Content-Security-Policy'),
+        );
+    }
+
     public function testSvgMediaReceivesAnIsolatedContentSecurityPolicy(): void
     {
         $handler = new class implements RequestHandlerInterface {

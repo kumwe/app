@@ -133,6 +133,8 @@
               "enum": [
                 "artifact",
                 "artifact-references",
+                "content-model",
+                "content-models",
                 "media-asset",
                 "media-page",
                 "message-bundle",

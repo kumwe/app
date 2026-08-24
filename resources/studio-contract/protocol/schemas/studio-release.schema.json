@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.kumwe.org/studio/v1/studio-release.schema.json",
+  "title": "Studio coordinated release record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "kind",
+    "release",
+    "packages",
+    "protocolVersion",
+    "corpusManifestDigest",
+    "claimedProfiles"
+  ],
+  "properties": {
+    "contractVersion": {
+      "$ref": "common.schema.json#/$defs/contractVersion"
+    },
+    "kind": {
+      "const": "studio-release"
+    },
+    "release": {
+      "$ref": "common.schema.json#/$defs/semanticVersion"
+    },
+    "packages": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "@kumwe/studio-core",
+        "@kumwe/studio-media",
+        "@kumwe/studio-preview",
+        "@kumwe/studio-protocol",
+        "@kumwe/studio-rich-text",
+        "@kumwe/studio",
+        "@kumwe/studio-testkit"
+      ],
+      "properties": {
+        "@kumwe/studio-core": {
+          "$ref": "common.schema.json#/$defs/semanticVersion"
+        },
+        "@kumwe/studio-media": {
+          "$ref": "common.schema.json#/$defs/semanticVersion"
+        },
+        "@kumwe/studio-preview": {
+          "$ref": "common.schema.json#/$defs/semanticVersion"
+        },
+        "@kumwe/studio-protocol": {
+          "$ref": "common.schema.json#/$defs/semanticVersion"
+        },
+        "@kumwe/studio-rich-text": {
+          "$ref": "common.schema.json#/$defs/semanticVersion"
+        },
+        "@kumwe/studio": {
+          "$ref": "common.schema.json#/$defs/semanticVersion"
+        },
+        "@kumwe/studio-testkit": {
+          "$ref": "common.schema.json#/$defs/semanticVersion"
+        }
+      }
+    },
+    "protocolVersion": {
+      "$ref": "common.schema.json#/$defs/semanticVersion"
+    },
+    "corpusManifestDigest": {
+      "$ref": "common.schema.json#/$defs/integrity"
+    },
+    "claimedProfiles": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "common.schema.json#/$defs/qualifiedName"
+      }
+    }
+  }
+}

@@ -86,6 +86,11 @@ final class CoreExtensionContributions
         'reports.consolidated.read' => 'Read consolidated reports across the sites of one site group.',
         'settings.manage' => 'Manage site settings.',
         'sites.group.manage' => 'Declare site groups and change which sites belong to them.',
+        'studio.mode.blueprint' => 'Open Studio with Blueprint structure authoring authority.',
+        'studio.mode.content' => 'Open Studio with Content value authoring authority.',
+        'studio.mode.hybrid' => 'Open Studio with bounded Content and structure authoring authority.',
+        'studio.mode.model' => 'Open Studio with Content model authoring authority.',
+        'studio.mode.read-only' => 'Open Studio without mutation authority.',
         'system.migrate' => 'Apply and recover database schema migrations.',
         'system.scheduler.dispatch' => 'Dispatch due schedules into the durable work queue.',
         'system.worker.operate' => 'Operate durable background work queues.',
@@ -157,6 +162,9 @@ final class CoreExtensionContributions
     {
         if (!$registrar instanceof InterfaceSurfaceRegistrar) {
             throw new \LogicException('Core KIS surfaces require the additive interface-surface registrar.');
+        }
+        if ($registrar instanceof OwnedExtensionContributionRegistrar) {
+            CoreStudioCompositionContributions::register($registrar);
         }
         $registrar->eventSchema(new EventSchemaDefinition(
             'core.business_record.mutated',
@@ -578,6 +586,31 @@ final class CoreExtensionContributions
                 installationGlobal: true,
             ),
             self::policy(
+                'core.studio.mode.blueprint',
+                'studio.mode.blueprint',
+                [new ResourcePolicyTarget('studio_session')],
+            ),
+            self::policy(
+                'core.studio.mode.content',
+                'studio.mode.content',
+                [new ResourcePolicyTarget('studio_session')],
+            ),
+            self::policy(
+                'core.studio.mode.hybrid',
+                'studio.mode.hybrid',
+                [new ResourcePolicyTarget('studio_session')],
+            ),
+            self::policy(
+                'core.studio.mode.model',
+                'studio.mode.model',
+                [new ResourcePolicyTarget('studio_session')],
+            ),
+            self::policy(
+                'core.studio.mode.read-only',
+                'studio.mode.read-only',
+                [new ResourcePolicyTarget('studio_session')],
+            ),
+            self::policy(
                 'core.system.migrate',
                 'system.migrate',
                 [new ResourcePolicyTarget('database_schema')],
@@ -907,6 +940,28 @@ final class CoreExtensionContributions
                     ['element' => 'parent-context', 'priority' => 'essential', 'may_collapse' => false],
                     ['element' => 'child-work', 'priority' => 'primary', 'may_collapse' => false],
                     ['element' => 'technical-context', 'priority' => 'secondary', 'may_collapse' => true],
+                ],
+                'icon' => 'models',
+            ]),
+            SurfaceDefinition::fromArray($owner, [
+                'surface' => 'core.administrator.studio-composition',
+                'standard' => 'kis-1.0',
+                'area' => 'administrator',
+                'actor' => 'administrator',
+                'intent' => 'parent-child',
+                'resource' => 'content-composition',
+                'purpose' => 'Compose and preview the versioned Blueprint owned by one Content model.',
+                'pattern' => 'master-detail-workspace',
+                'capabilities' => ['content.read', 'studio.mode.blueprint'],
+                'states' => ['default', 'empty', 'dense', 'error', 'permission-reduced', 'read-only'],
+                'customization' => [
+                    ['slot' => 'density', 'scope' => 'user'],
+                    ['slot' => 'layout', 'scope' => 'administrator'],
+                ],
+                'responsive' => [
+                    ['element' => 'content-model-context', 'priority' => 'essential', 'may_collapse' => false],
+                    ['element' => 'composition-canvas', 'priority' => 'primary', 'may_collapse' => false],
+                    ['element' => 'preview-stage', 'priority' => 'primary', 'may_collapse' => true],
                 ],
                 'icon' => 'models',
             ]),
