@@ -196,6 +196,10 @@ test.describe('Right-to-left presentation', () => {
     await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
     await page.goto('/administrator/content-models');
     const link = page.locator('a[href*="/administrator/content-models/"][href$="/composition"]').first();
+    const model = link.locator('xpath=ancestor::details[1]');
+    if (await model.getAttribute('open') === null) {
+      await model.locator('summary').first().click();
+    }
     await expect(link).toBeVisible();
     await link.click();
     const provision = page.getByRole('button', { name: 'Create composition' });
