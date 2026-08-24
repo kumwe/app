@@ -18,6 +18,7 @@ use Kumwe\App\Extension\Domain\ExtensionIdentifier;
 use Kumwe\App\Extension\Domain\ExtensionManifest;
 use Kumwe\App\Extension\Domain\PackageChecksum;
 use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -712,15 +713,21 @@ final readonly class TrustStore
                 ));
             }
         }
-        if (($entry['autoload'] ?? null) !== $manifest->autoload()) {
+        $autoload = $entry['autoload'] ?? null;
+        if (
+            !is_array($autoload)
+            || RuntimeCanonicalJson::encode($autoload) !== RuntimeCanonicalJson::encode($manifest->autoload())
+        ) {
             throw new RuntimePublicationMismatch('The compiled extension autoload map is not authoritative.');
         }
         if (($entry['manifest_schema'] ?? 1) !== $manifest->schemaVersion()) {
             throw new RuntimePublicationMismatch('The compiled extension manifest schema is not authoritative.');
         }
+        $expectedContributions = $manifest->contributions()->toArray();
+        $contributions = $entry['contributions'] ?? $expectedContributions;
         if (
-            ($entry['contributions'] ?? $manifest->contributions()->toArray())
-            !== $manifest->contributions()->toArray()
+            !is_array($contributions)
+            || RuntimeCanonicalJson::encode($contributions) !== RuntimeCanonicalJson::encode($expectedContributions)
         ) {
             throw new RuntimePublicationMismatch('The compiled extension contributions are not authoritative.');
         }

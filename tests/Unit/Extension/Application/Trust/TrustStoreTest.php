@@ -19,6 +19,7 @@ use Kumwe\App\Extension\Application\Trust\UntrustedPackage;
 use Kumwe\App\Extension\Application\ExtensionServiceProvider;
 use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Domain\ExtensionManifest;
 use Kumwe\App\Extension\Domain\PackageChecksum;
 use Kumwe\App\Extension\Domain\PackageSignature;
 use Kumwe\App\Extension\Runtime\ExtensionContainer;
@@ -229,7 +230,10 @@ final class TrustStoreTest extends TestCase
             'type' => 'plugin',
             'version' => '1.0.0',
             'provider' => 'Acme\\Catalog\\Provider',
-            'autoload' => ['psr-4' => ['Acme\\Catalog\\' => 'src/']],
+            'autoload' => ['psr-4' => [
+                'Acme\\Catalog\\' => 'src/',
+                'Acme\\Catalog\\Feature\\' => 'src/Feature/',
+            ]],
             'requires' => ['kumwe' => '^2.0.0', 'php' => '^8.5.0'],
             'dependencies' => [],
             'migrations' => [],
@@ -255,18 +259,27 @@ final class TrustStoreTest extends TestCase
             'trust_state' => 'verified',
         ];
 
+        $parsedManifest = ExtensionManifest::fromJson($manifest);
+        $expectedContributions = $parsedManifest->contributions()->toArray();
+        $runtimeEntry = [
+            'identifier' => 'acme/catalog',
+            'version' => '1.0.0',
+            'provider' => 'Acme\\Catalog\\Provider',
+            'type' => 'plugin',
+            'root' => 'acme/catalog/1.0.0',
+            'autoload' => array_reverse($parsedManifest->autoload(), true),
+            'contributions' => array_reverse($expectedContributions, true),
+            'signing_key_id' => 'vendor.runtime',
+            'artifact_sha256' => str_repeat('a', 64),
+            'deployed_tree_sha256' => str_repeat('b', 64),
+        ];
+        self::assertNotSame($parsedManifest->autoload(), $runtimeEntry['autoload']);
+        self::assertNotSame($expectedContributions, $runtimeEntry['contributions']);
+        $store->enforceRuntimeEntryTrust($runtimeEntry);
+
+        $runtimeEntry['provider'] = 'Attacker\\Provider';
         try {
-            $store->enforceRuntimeEntryTrust([
-                'identifier' => 'acme/catalog',
-                'version' => '1.0.0',
-                'provider' => 'Attacker\\Provider',
-                'type' => 'plugin',
-                'root' => 'acme/catalog/1.0.0',
-                'autoload' => ['Acme\\Catalog\\' => 'src/'],
-                'signing_key_id' => 'vendor.runtime',
-                'artifact_sha256' => str_repeat('a', 64),
-                'deployed_tree_sha256' => str_repeat('b', 64),
-            ]);
+            $store->enforceRuntimeEntryTrust($runtimeEntry);
             self::fail('A modified provider mapping must never execute.');
         } catch (RuntimePublicationMismatch) {
         }
