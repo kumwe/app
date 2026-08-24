@@ -247,6 +247,16 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                 if (!is_string($contents)) {
                     throw new RuntimeException('A Studio preview fixture file cannot be read.');
                 }
+                $relative = substr($file->getPathname(), strlen($root) + 1);
+                if ($relative === 'src/Definitions.php') {
+                    // Canonical constants are source-wrapped across adjacent literals. Join them before
+                    // re-owning so a namespace split at a line boundary cannot survive inside signed bytes.
+                    $joined = preg_replace("/'\\s*\\.\\s*'/", '', $contents);
+                    if (!is_string($joined)) {
+                        throw new RuntimeException('The Studio preview fixture definitions cannot be joined.');
+                    }
+                    $contents = $joined;
+                }
                 $contents = str_replace(
                     [
                         'KumweContract\\\\ManifestSix',
@@ -257,7 +267,10 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                     [$jsonNamespace, $phpNamespace, $identifier, $dotted],
                     $contents,
                 );
-                $relative = substr($file->getPathname(), strlen($root) + 1);
+                if ($relative === 'src/Definitions.php') {
+                    self::assertStringNotContainsString('kumwe.contract-manifest-six', $contents);
+                    self::assertStringNotContainsString('kumwe/contract-manifest-six', $contents);
+                }
                 if ($relative === 'kumwe.json') {
                     $manifest = json_decode($contents, true, 64, JSON_THROW_ON_ERROR);
                     if (!is_array($manifest)) {
