@@ -752,17 +752,10 @@ test('private target authority hides and refuses publication despite the shared 
 });
 
 test('published lifecycle control sends the symmetric canonical unpublish envelope', async ({ page }) => {
-  const compositionRoute = '**/administrator/content-models/**/composition';
-  await page.route(compositionRoute, async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.continue();
-      return;
-    }
-    const response = await route.fetch();
-    const body = (await response.text()).replaceAll('"status":"draft"', '"status":"published"');
-    await route.fulfill({ response, body });
-  });
   await openComposition(page);
+  if (await page.getByRole('button', { name: 'Publish composition' }).isVisible()) {
+    await changeCompositionLifecycle(page, 'published');
+  }
   const boot = await page.locator('#studio-composition-boot').evaluate((element) =>
     JSON.parse(element.textContent ?? '{}') as {
       artifact: { id: string; revision: string; version: string };
@@ -780,22 +773,26 @@ test('published lifecycle control sends the symmetric canonical unpublish envelo
       status: 200,
     });
   });
-  await page.getByRole('button', { name: 'Return composition to draft' }).click();
-  await expect.poll(() => unpublication).toBeDefined();
+  try {
+    await page.getByRole('button', { name: 'Return composition to draft' }).click();
+    await expect.poll(() => unpublication).toBeDefined();
 
-  expect(unpublication?.arguments).toEqual({ reference: boot.artifact });
-  expect(unpublication?.context).toMatchObject({
-    expectedRevision: boot.artifact.revision,
-    operationId: 'studio.operation/artifact.unpublish',
-    resourceContextKey: expect.stringMatching(/^contexts\//u),
-    sessionGeneration: expect.stringMatching(/^session-/u),
-  });
-  expect(unpublication?.context?.idempotencyKey).toEqual(expect.stringMatching(/^operations\/browser-/u));
-  expect(unpublication?.context?.requestId).toEqual(expect.stringMatching(/^requests\/browser-/u));
-
-  await page.unroute(unpublishRoute);
-  await expect(page.getByRole('button', { name: 'Return composition to draft' })).toBeVisible();
-  await page.unroute(compositionRoute);
+    expect(unpublication?.arguments).toEqual({ reference: boot.artifact });
+    expect(unpublication?.context).toMatchObject({
+      expectedRevision: boot.artifact.revision,
+      operationId: 'studio.operation/artifact.unpublish',
+      resourceContextKey: expect.stringMatching(/^contexts\//u),
+      sessionGeneration: expect.stringMatching(/^session-/u),
+    });
+    expect(unpublication?.context?.idempotencyKey).toEqual(expect.stringMatching(/^operations\/browser-/u));
+    expect(unpublication?.context?.requestId).toEqual(expect.stringMatching(/^requests\/browser-/u));
+  } finally {
+    await page.unroute(unpublishRoute);
+    if (!page.isClosed()) {
+      await expect(page.getByRole('button', { name: 'Return composition to draft' })).toBeVisible();
+      await changeCompositionLifecycle(page, 'draft');
+    }
+  }
 });
 
 test('measured canvas select, reorder and reparent have keyboard parity', async ({ page }) => {
@@ -813,6 +810,9 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   const existingSections = await shell.getByRole('complementary', { name: 'Outline' })
     .locator('button.outline-entry', { hasText: 'Section' }).count();
   await insertRoot(shell, 'Section');
+  await shell.evaluate((element) => {
+    (element as HTMLElement & { selectNode(nodeId: string | undefined): void }).selectNode(undefined);
+  });
   await insertRoot(shell, 'Section');
   const sections = await outlineEntries(shell, 'Section');
   const firstSection = sections.nth(existingSections);
@@ -1184,9 +1184,12 @@ test('closed layout intent renders four, two and one columns without surface ove
   const shell = await openComposition(page);
   const existingGrids = await shell.getByRole('complementary', { name: 'Outline' })
     .locator('button.outline-entry', { hasText: 'Grid' }).count();
-  await insertRoot(shell, 'Grid');
+  const gridId = await insertRoot(shell, 'Grid');
+  await expect(shell.locator(`button.outline-entry[data-node-id="${gridId}"]`))
+    .toHaveAttribute('aria-pressed', 'true');
   const inspector = shell.getByRole('complementary', { name: 'Inspector' });
   const columns = inspector.getByLabel('Value of columns as JSON');
+  await expect(columns).toBeVisible();
   await columns.fill('4');
   await columns.press('Enter');
   const frame = await previewFrame(page);

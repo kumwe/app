@@ -27,7 +27,7 @@ const units = entries.map(([wireId, message]) => {
   return [
     `    <unit id="${xml(id)}">`,
     '      <notes>',
-    `        <note category="context">Exact @kumwe/studio 0.1.0-alpha.9 authoring message ${xml(wireId)}.</note>`,
+    `        <note category="context">Exact @kumwe/studio 0.1.0-alpha.10 authoring message ${xml(wireId)}.</note>`,
     '      </notes>',
     '      <segment>',
     `        <source>${xml(message.defaultMessage)}</source>`,

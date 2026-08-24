@@ -2,45 +2,45 @@
     "note": "Exact coordinated Studio release pin per kumwe/app#104 and D16/ADR 0007. tools/verify-studio-corpus.php and tools/verify-studio-release.mjs recompute every digest against these vendored bytes; a re-pin changes this record, all seven tarballs, and both published contract trees atomically.",
     "pinned": {
         "@kumwe/studio": {
-            "version": "0.1.0-alpha.9",
-            "file": "kumwe-studio-0.1.0-alpha.9.tgz",
-            "npm_tarball_sha256": "8c9c770c92c7664c29b3c421c13a9a08327b2ca3fb18e35add2feaf218e8e99b"
+            "version": "0.1.0-alpha.10",
+            "file": "kumwe-studio-0.1.0-alpha.10.tgz",
+            "npm_tarball_sha256": "667f546f15949d3beed070d388a40e87df0da8e5ba18ff40bbb9f1bf907f47ed"
         },
         "@kumwe/studio-core": {
-            "version": "0.1.0-alpha.9",
-            "file": "kumwe-studio-core-0.1.0-alpha.9.tgz",
-            "npm_tarball_sha256": "7f22b31671e61e09ae189811eed02e2664bd2544b4f887b6e27e324829efc98b"
+            "version": "0.1.0-alpha.10",
+            "file": "kumwe-studio-core-0.1.0-alpha.10.tgz",
+            "npm_tarball_sha256": "16d3c9d05b319dde198b142f01d3c45665385a04d25e4b828347140166e57841"
         },
         "@kumwe/studio-media": {
-            "version": "0.1.0-alpha.9",
-            "file": "kumwe-studio-media-0.1.0-alpha.9.tgz",
-            "npm_tarball_sha256": "d06004373a7288969791469ec9e342064470bb2acc880de5463f840ad164bfa5"
+            "version": "0.1.0-alpha.10",
+            "file": "kumwe-studio-media-0.1.0-alpha.10.tgz",
+            "npm_tarball_sha256": "d3de2f8d79cd9b6c9fd4dc8ec326593df130c95dd7ea884d62c8be7879e9c26f"
         },
         "@kumwe/studio-preview": {
-            "version": "0.1.0-alpha.9",
-            "file": "kumwe-studio-preview-0.1.0-alpha.9.tgz",
-            "npm_tarball_sha256": "7eb6956775f47e88c02d7b3994995cdab5b40a8dee67593f5fd7c8e1e8af9932"
+            "version": "0.1.0-alpha.10",
+            "file": "kumwe-studio-preview-0.1.0-alpha.10.tgz",
+            "npm_tarball_sha256": "c0ab1e458c1579a91065f69c428fe24ba21dcf2b127c9d77a83987de7061e8a1"
         },
         "@kumwe/studio-protocol": {
-            "version": "0.1.0-alpha.9",
-            "file": "kumwe-studio-protocol-0.1.0-alpha.9.tgz",
-            "npm_tarball_sha256": "5a372a2e5bd91826e997b9f997e1a087c4fe6146843f34b5f203b7efe47fb34e"
+            "version": "0.1.0-alpha.10",
+            "file": "kumwe-studio-protocol-0.1.0-alpha.10.tgz",
+            "npm_tarball_sha256": "bf8a6cd141e684c2c73df5a1822007d6aff17d8520262b22a1be8128ba43c61c"
         },
         "@kumwe/studio-rich-text": {
-            "version": "0.1.0-alpha.9",
-            "file": "kumwe-studio-rich-text-0.1.0-alpha.9.tgz",
-            "npm_tarball_sha256": "48973fd66a91b280c6e2501ccd96a9c46430c60720d66b95c470806fb9a9a09b"
+            "version": "0.1.0-alpha.10",
+            "file": "kumwe-studio-rich-text-0.1.0-alpha.10.tgz",
+            "npm_tarball_sha256": "f854197c4d3f5d5c674a6994f20f7528582048a09839932f0a0b7adf9d583ebf"
         },
         "@kumwe/studio-testkit": {
-            "version": "0.1.0-alpha.9",
-            "file": "kumwe-studio-testkit-0.1.0-alpha.9.tgz",
-            "npm_tarball_sha256": "7d10e6bed07cb08edd530d75508bd74d277b539262fe67cd486e0e3149980d6b"
+            "version": "0.1.0-alpha.10",
+            "file": "kumwe-studio-testkit-0.1.0-alpha.10.tgz",
+            "npm_tarball_sha256": "d0d4a2c194bb14361af1494cfda123f0992a59897bcbd388a7a0fb512efeaee9"
         }
     },
     "release_record": {
         "file": "studio-release.json",
-        "release": "0.1.0-alpha.9",
-        "sha256": "f3a9ba0e84890d2a325b43fda8c10e61dc22c9b55bd2b5711f44cce941c9e822"
+        "release": "0.1.0-alpha.10",
+        "sha256": "f99bdeb20a45652c75ee4d7120024512ab11e387357c2d73657808cc148cfd1c"
     },
     "contract_version": "0.1-draft",
     "source_repository": "https://github.com/kumwe/studio"

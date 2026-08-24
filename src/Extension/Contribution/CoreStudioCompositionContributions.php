@@ -185,7 +185,7 @@ final class CoreStudioCompositionContributions
      * @param   string  $type   Exact canonical block type.
      * @param   string  $local  Local layout family name.
      *
-     * @return  stdClass  Canonical alpha.9 layout block document.
+     * @return  stdClass  Canonical alpha.10 layout block document.
      *
      * @since   2.0.0
      */
