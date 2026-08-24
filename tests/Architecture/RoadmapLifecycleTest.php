@@ -531,9 +531,10 @@ final class RoadmapLifecycleTest extends TestCase
             $this->git($repository, ['add', '--all']);
             $this->git($repository, ['commit', '--quiet', '--message=surviving']);
 
+            // Eight stays below the workflow-run threshold because a valid SHA prefix may be decimal-only.
             file_put_contents(
                 $changelog,
-                sprintf("# Changelog\n\nCompleted work. (`%s`)\n", substr($dangling, 0, 12)),
+                sprintf("# Changelog\n\nCompleted work. (`%s`)\n", substr($dangling, 0, 8)),
             );
             $result = $this->runVerifier(
                 $this->root . '/docs/roadmap/findings.json',
@@ -547,7 +548,7 @@ final class RoadmapLifecycleTest extends TestCase
 
         self::assertSame(1, $result['status']);
         self::assertStringContainsString('not reachable from HEAD', $result['output']);
-        self::assertStringContainsString(substr($dangling, 0, 12), $result['output']);
+        self::assertStringContainsString(substr($dangling, 0, 8), $result['output']);
     }
 
     public function testTheMachineReadableCompanionsParse(): void
