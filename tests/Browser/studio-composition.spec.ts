@@ -25,6 +25,57 @@ interface PreviewRect {
   y: number;
 }
 
+type PreviewPointAnchor = 'start' | 'center' | 'end';
+
+async function visiblePreviewCanvasPoint(
+  page: Page,
+  shell: Locator,
+  region: Locator,
+  verticalAnchor: PreviewPointAnchor = 'center',
+): Promise<{ x: number; y: number }> {
+  const [regionBox, stageBox] = await Promise.all([
+    region.boundingBox(),
+    shell.locator('.preview-stage').boundingBox(),
+  ]);
+  expect(regionBox, 'The preview region must have measurable geometry.').not.toBeNull();
+  expect(stageBox, 'The preview stage must have measurable geometry.').not.toBeNull();
+  if (regionBox === null || stageBox === null) {
+    throw new Error('The preview canvas geometry was unavailable.');
+  }
+
+  const viewport = page.viewportSize() ?? await page.evaluate(() => ({
+    height: window.innerHeight,
+    width: window.innerWidth,
+  }));
+  const left = Math.max(regionBox.x, stageBox.x, 0);
+  const right = Math.min(
+    regionBox.x + regionBox.width,
+    stageBox.x + stageBox.width,
+    viewport.width,
+  );
+  const top = Math.max(regionBox.y, stageBox.y, 0);
+  const bottom = Math.min(
+    regionBox.y + regionBox.height,
+    stageBox.y + stageBox.height,
+    viewport.height,
+  );
+  const visibleWidth = right - left;
+  const visibleHeight = bottom - top;
+  expect(visibleWidth, 'The preview region must intersect the visible canvas horizontally.')
+    .toBeGreaterThan(4);
+  expect(visibleHeight, 'The preview region must intersect the visible canvas vertically.')
+    .toBeGreaterThan(4);
+
+  const edgeInset = Math.min(2, (visibleHeight - 1) / 2);
+  const y = verticalAnchor === 'start'
+    ? top + edgeInset
+    : verticalAnchor === 'end'
+      ? bottom - edgeInset
+      : top + visibleHeight / 2;
+
+  return { x: left + visibleWidth / 2, y };
+}
+
 async function signIn(page: Page): Promise<void> {
   await page.goto('/administrator/login');
   await page.getByLabel('Email address').fill(administratorEmail);
@@ -865,26 +916,27 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   expect(rootsBeforeReorder.indexOf(firstSectionId ?? '')).toBeLessThan(
     rootsBeforeReorder.indexOf(secondSectionId ?? ''),
   );
-  // Raw page.mouse coordinates do not auto-scroll like locator actions. Bring the destination and
-  // selected source into the browser viewport, then resolve both boxes in the final scroll position.
+  // Raw page.mouse coordinates do not auto-scroll like locator actions. SVG region boxes describe
+  // the full responsive canvas, which can be wider than the preview-stage clipping viewport, so
+  // target the visible region/stage/viewport intersection rather than the full box centre.
   await firstSectionRegion.scrollIntoViewIfNeeded();
   await secondSectionRegion.scrollIntoViewIfNeeded();
-  const firstSectionBox = await firstSectionRegion.boundingBox();
-  const secondSectionBox = await secondSectionRegion.boundingBox();
-  expect(firstSectionBox).not.toBeNull();
-  expect(secondSectionBox).not.toBeNull();
-  if (firstSectionBox === null || secondSectionBox === null) return;
+  const secondSectionDragPoint = await visiblePreviewCanvasPoint(
+    page,
+    shell,
+    secondSectionRegion,
+    'start',
+  );
+  const firstSectionDropPoint = await visiblePreviewCanvasPoint(
+    page,
+    shell,
+    firstSectionRegion,
+    'start',
+  );
 
-  await page.mouse.move(
-    secondSectionBox.x + secondSectionBox.width / 2,
-    secondSectionBox.y + 2,
-  );
+  await page.mouse.move(secondSectionDragPoint.x, secondSectionDragPoint.y);
   await page.mouse.down();
-  await page.mouse.move(
-    firstSectionBox.x + firstSectionBox.width / 2,
-    firstSectionBox.y + 1,
-    { steps: 8 },
-  );
+  await page.mouse.move(firstSectionDropPoint.x, firstSectionDropPoint.y, { steps: 8 });
   await expect(shell.locator('.preview-canvas-drop-indicator')).toBeVisible();
   await page.mouse.up();
   await expect.poll(async () => (await rootNodeIds(shell)).indexOf(secondSectionId ?? ''))
@@ -897,35 +949,20 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   await expect(source).toHaveCount(1);
   await expect(gridRegion).toHaveCount(1);
   await source.scrollIntoViewIfNeeded();
-  const selectionSourceBox = await source.boundingBox();
-  expect(selectionSourceBox).not.toBeNull();
-  if (selectionSourceBox === null) return;
+  const selectionSourcePoint = await visiblePreviewCanvasPoint(page, shell, source);
 
-  await page.mouse.click(
-    selectionSourceBox.x + selectionSourceBox.width / 2,
-    selectionSourceBox.y + selectionSourceBox.height / 2,
-  );
+  await page.mouse.click(selectionSourcePoint.x, selectionSourcePoint.y);
   await expect(stack).toHaveAttribute('aria-pressed', 'true');
 
   const rootsBeforeCancellation = await documentRoots(shell);
   const commandsBeforeCancellation = (await recordedCommands(page)).length;
   await gridRegion.scrollIntoViewIfNeeded();
   await source.scrollIntoViewIfNeeded();
-  const cancellationSourceBox = await source.boundingBox();
-  const cancellationGridBox = await gridRegion.boundingBox();
-  expect(cancellationSourceBox).not.toBeNull();
-  expect(cancellationGridBox).not.toBeNull();
-  if (cancellationSourceBox === null || cancellationGridBox === null) return;
-  await page.mouse.move(
-    cancellationSourceBox.x + cancellationSourceBox.width / 2,
-    cancellationSourceBox.y + cancellationSourceBox.height / 2,
-  );
+  const cancellationSourcePoint = await visiblePreviewCanvasPoint(page, shell, source);
+  const cancellationGridPoint = await visiblePreviewCanvasPoint(page, shell, gridRegion, 'end');
+  await page.mouse.move(cancellationSourcePoint.x, cancellationSourcePoint.y);
   await page.mouse.down();
-  await page.mouse.move(
-    cancellationGridBox.x + cancellationGridBox.width / 2,
-    cancellationGridBox.y + cancellationGridBox.height,
-    { steps: 8 },
-  );
+  await page.mouse.move(cancellationGridPoint.x, cancellationGridPoint.y, { steps: 8 });
   await expect(shell.locator('.preview-canvas-drop-indicator')).toBeVisible();
   await page.keyboard.press('Escape');
   await page.mouse.up();
@@ -937,21 +974,11 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
 
   await gridRegion.scrollIntoViewIfNeeded();
   await source.scrollIntoViewIfNeeded();
-  const sourceAfterCancellationBox = await source.boundingBox();
-  const gridAfterCancellationBox = await gridRegion.boundingBox();
-  expect(sourceAfterCancellationBox).not.toBeNull();
-  expect(gridAfterCancellationBox).not.toBeNull();
-  if (sourceAfterCancellationBox === null || gridAfterCancellationBox === null) return;
-  await page.mouse.move(
-    sourceAfterCancellationBox.x + sourceAfterCancellationBox.width / 2,
-    sourceAfterCancellationBox.y + sourceAfterCancellationBox.height / 2,
-  );
+  const sourceAfterCancellationPoint = await visiblePreviewCanvasPoint(page, shell, source);
+  const gridAfterCancellationPoint = await visiblePreviewCanvasPoint(page, shell, gridRegion, 'end');
+  await page.mouse.move(sourceAfterCancellationPoint.x, sourceAfterCancellationPoint.y);
   await page.mouse.down();
-  await page.mouse.move(
-    gridAfterCancellationBox.x + gridAfterCancellationBox.width / 2,
-    gridAfterCancellationBox.y + gridAfterCancellationBox.height,
-    { steps: 8 },
-  );
+  await page.mouse.move(gridAfterCancellationPoint.x, gridAfterCancellationPoint.y, { steps: 8 });
   await expect(shell.locator('.preview-canvas-drop-indicator')).toBeVisible();
   await page.mouse.up();
   await expect.poll(() => nodeParentId(shell, stackId ?? '')).toBe(secondSectionId);
