@@ -71,7 +71,7 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
     }
 
     /**
-     * The browser uses the exact save/preview lifecycle and never advertises an absent resource port.
+     * The browser uses the exact save/preview lifecycle and wires the authorized resource port.
      *
      * @return  void
      *
@@ -107,8 +107,8 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
         self::assertStringContainsString('sandbox="allow-same-origin"', $template);
         self::assertStringContainsString('data-studio-publish', $template);
         self::assertStringContainsString('data-studio-unpublish', $template);
-        self::assertStringNotContainsString('resource:', $adapter);
-        self::assertStringNotContainsString('resource.search', $adapter);
+        self::assertStringContainsString('adapter.resource = {', $adapter);
+        self::assertStringContainsString("call('resource', 'search'", $adapter);
     }
 
     /**

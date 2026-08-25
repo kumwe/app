@@ -1,4 +1,4 @@
-import { n as setupCopyValues, t as setupValidationReveal } from "./reveal-validation-g1jDnck7.js";
+import { n as setupCopyValues, t as setupValidationReveal } from "./reveal-validation-T3VErm9b.js";
 //#region assets/portal/main.ts
 document.documentElement.classList.add("js");
 setupCopyValues();
