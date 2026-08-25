@@ -48,7 +48,7 @@ final readonly class AdministratorStudioCompositionHandler implements RequestHan
      * @param  ActiveLocale                          $locale         Request-resolved locale projection.
      * @param  SiteSettings                          $settings       Validated site settings source.
      * @param  StudioCompositionContributionCatalog  $contributions  Active trusted contribution catalogue.
-     * @param  StudioReleaseRecord                    $studioRelease  Canonical coordinated Studio release.
+     * @param  StudioReleaseRecord                   $studioRelease  Canonical coordinated Studio release.
      *
      * @since  2.0.0
      */
