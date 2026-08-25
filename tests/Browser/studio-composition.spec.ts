@@ -187,7 +187,7 @@ function waitForCompositionReloadReady(page: Page, lifecycleName: string): Promi
       return url.pathname === '/administrator/studio/session'
         && candidate.request().method() === 'POST';
     });
-    expect(response.status()).toBe(200);
+    expect(response.status()).toBe(201);
     const shell = page.locator('kumwe-studio');
     await expect(shell.getByRole('complementary', { name: 'Block palette' })
       .getByRole('button', { name: 'Section', exact: true })).toBeVisible();
@@ -233,6 +233,17 @@ async function changeCompositionLifecycle(
   await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
   await expect(nextButton).toBeVisible();
   await expect(nextButton).toBeEnabled();
+}
+
+async function openDraftComposition(page: Page, modelHandle?: string): Promise<Locator> {
+  await openComposition(page, modelHandle);
+  if (await page.getByRole('button', { name: 'Return composition to draft' }).isVisible()) {
+    await changeCompositionLifecycle(page, 'draft');
+  }
+  const shell = page.locator('kumwe-studio');
+  await expect(page.getByRole('button', { name: 'Publish composition' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Publish composition' })).toBeEnabled();
+  return shell;
 }
 
 async function setManifestSixActive(page: Page, active: boolean): Promise<void> {
@@ -552,7 +563,7 @@ test('AP7 composition provisions by POST and opens an exact measured preview cha
     getComputedStyle(element).getPropertyValue('--site-accent').trim());
   expect(publishedAccent).toMatch(/^#[0-9a-f]{6}$/u);
   await published.close();
-  const shell = await openComposition(page);
+  const shell = await openDraftComposition(page);
 
   expect(await shell.evaluate((element) => {
     const frame = element.querySelector(':scope > iframe[slot="preview"][data-studio-preview]');
@@ -705,10 +716,7 @@ test('a signed field composition publishes marker-free public output and unpubli
   test.setTimeout(120_000);
   const expectedHeading = 'Content systems ready for what comes next.';
   const extensionOutput = 'Contributed grid: 2 columns (expanded)';
-  const shell = await openComposition(page, 'page');
-  if (await page.getByRole('button', { name: 'Return composition to draft' }).isVisible()) {
-    await changeCompositionLifecycle(page, 'draft');
-  }
+  const shell = await openDraftComposition(page, 'page');
   await clearCompositionRoots(page, shell);
   const compositionUrl = page.url();
   const contribution = await shell.evaluate((element) => {
@@ -882,7 +890,7 @@ test('draft lifecycle control sends the canonical publication envelope', async (
       status: 200,
     });
   });
-  await openComposition(page);
+  await openDraftComposition(page);
   const boot = await page.locator('#studio-composition-boot').evaluate((element) =>
     JSON.parse(element.textContent ?? '{}') as {
       artifact: { id: string; revision: string; version: string };
@@ -907,6 +915,7 @@ test('draft lifecycle control sends the canonical publication envelope', async (
 });
 
 test('private target authority hides and refuses publication despite the shared protocol permission', async ({ page }) => {
+  await openDraftComposition(page);
   await page.route('**/administrator/studio/session', async (route) => {
     const response = await route.fetch();
     const document = await response.json() as Record<string, unknown>;
@@ -925,7 +934,11 @@ test('private target authority hides and refuses publication despite the shared 
     });
   });
 
-  await openComposition(page);
+  await page.reload();
+  const shell = page.locator('kumwe-studio');
+  await expect(shell.getByRole('complementary', { name: 'Block palette' })
+    .getByRole('button', { name: 'Section', exact: true })).toBeVisible();
+  await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
   const button = page.locator('[data-studio-publish]');
   await expect(button).toBeHidden();
   await button.evaluate((element) => (element as HTMLButtonElement).click());
@@ -982,7 +995,7 @@ test('published lifecycle control sends the symmetric canonical unpublish envelo
 });
 
 test('measured canvas select, reorder and reparent have keyboard parity', async ({ page }) => {
-  const shell = await openComposition(page);
+  const shell = await openDraftComposition(page);
   await shell.evaluate((element) => {
     (window as Window & { __appStudioCommands?: string[] }).__appStudioCommands = [];
     element.addEventListener('studio-document-change', (event) => {
@@ -1184,7 +1197,7 @@ test('same-origin preview redirects to a different path are refused', async ({ p
 });
 
 test('a deterministically delayed conflicting save replaces the mutable shell and cannot stage', async ({ page, context }) => {
-  const firstShell = await openComposition(page);
+  const firstShell = await openDraftComposition(page);
   await previewFrame(page);
   const compositionUrl = page.url();
   const competingPage = await context.newPage();
@@ -1245,7 +1258,7 @@ test('rapid superseded preview navigations stay hidden, ordered and cancel each 
     await route.fulfill({ response });
   });
 
-  const shell = await openComposition(page);
+  const shell = await openDraftComposition(page);
   await firstDocumentClaimed;
   const active = page.locator('iframe[data-studio-preview]');
   await expect(active).toBeHidden();
@@ -1318,7 +1331,7 @@ test('an in-flight render is cancelled concurrently and repeated same-digest cyc
     await route.fulfill({ response });
   });
 
-  const shell = await openComposition(page);
+  const shell = await openDraftComposition(page);
   await firstGate.started;
   await insertRoot(shell, 'Section');
   await expect.poll(() => cancelledDigests.length).toBeGreaterThan(0);
@@ -1380,7 +1393,7 @@ test('an ambiguous preview transport failure terminally closes the sequenced cha
 });
 
 test('closed layout intent renders four, two and one columns without surface overflow', async ({ page }) => {
-  const shell = await openComposition(page);
+  const shell = await openDraftComposition(page);
   const existingGrids = await shell.getByRole('complementary', { name: 'Outline' })
     .locator('button.outline-entry', { hasText: 'Grid' }).count();
   const gridId = await insertRoot(shell, 'Grid');
