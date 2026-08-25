@@ -1178,6 +1178,15 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **Studio's inline-content boundary is now explicit and portable.** ADR 0018 records that Studio owns the
+  pinned Editor.js implementation behind an editor-neutral factory, while App sees and stores only canonical
+  Studio values. Block-declared profiles govern Markdown, safe HTML, media, advanced content tools and scoped
+  CSS; authored JavaScript and client-side database expressions remain forbidden. App retains media custody,
+  resource/query authorization, persistence, preview, publication, Twig delivery and CSP, and keeps its
+  server-rendered rich-text fallback until the exact coordinated Studio candidate is pinned and qualified.
+  The Apache-2.0 Editor.js versus GPL-2.0-only App distribution question is recorded as an owner/legal release
+  condition rather than silently waived or misrepresented. (#114)
+
 - **Reordering an ordered collection renumbers set-based instead of one statement per link.** The
   write repository's reorder now writes the new positions in bounded `CASE` statements of at most a
   hundred links each — three bound parameters per link, inside the same parameter and packet
