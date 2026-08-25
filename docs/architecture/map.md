@@ -147,7 +147,7 @@ grew later keep their own `Application/Domain/Infrastructure/Delivery` trees.
 | `Portal` | Ordinary-user surface | isolated session, membership, CSRF |
 | `Identity` | Users, roles, tokens, sessions, TOTP | `AuthorizationService` (grant combiner — not the gateway) |
 | `Content` | CMS entries, models, revisions | `ContentService` |
-| `Studio` | Neutral Studio contracts and read-only host projections | `StudioContentProjectionService` |
+| `Studio` | Host-side Studio contracts, authority, artifacts/recovery, media/resources, preview and published composition | `StudioHostDispatcher` |
 | `Workflow` | Content-type workflow definitions | `ContentTransitionAuthorizer` |
 | `Navigation` | Menus | `NavigationService` |
 | `Media` | Media library | filesystem storage |
@@ -167,6 +167,12 @@ grew later keep their own `Application/Domain/Infrastructure/Delivery` trees.
 | `InterfaceStandard` | KIS surface declarations | domain |
 | `Demo` | VDM / content profile install | `resources/demo/` |
 | `Automation` | `CronExpression` only | the engine is `Application\Automation` |
+
+`src/Studio/` is App's authoritative host adapter, not a second page builder. The portable command engine,
+45-block catalog, patterns, Editor.js adapter and renderer-web stay in `kumwe/studio`; App supplies trusted
+ports and Twig delivery. The administrator shell is composed through `src/Administrator/Http/Handler/`,
+`assets/administrator/components/studio-*.ts` and `templates/administrator/studio-composition.twig`. Exact
+released package and corpus bytes live in `resources/studio-contract/` and move only as one coordinated family.
 
 ---
 

@@ -163,6 +163,25 @@ for the coordinated prerelease; they are not evidence that the currently vendore
 has passed it. Studio's browser renderer and App's Twig adapter must both replay the exact corpus before an
 exact coordinated pin can become Gate B evidence. RC adoption remains a later post-M1-04, post-evidence step.
 
+### App verification paths
+
+The integration is protected at each App boundary; no single green suite substitutes for the complete release
+matrix:
+
+| Boundary | Authoritative evidence path | Direct local command |
+|---|---|---|
+| Exact Studio family, schemas and corpus | `resources/studio-contract/`, `tools/verify-studio-{release,corpus}.*` | `composer studio:corpus && npm run check:studio-release && npm run check:studio-corpus` |
+| PHP contracts, policy and host ports | `tests/Unit/Studio/` plus Studio-named administrator and extension tests | `composer test:unit -- --filter Studio` |
+| Persistence and executable host integration | `tests/Integration/Studio/` | `composer test:integration -- --filter Studio` |
+| Layer and dependency ownership | `tests/Architecture/Studio*BoundaryTest.php` | `composer test -- --testsuite architecture --filter Studio` |
+| Built authoring, preview, lifecycle and public output | `tests/Browser/studio-composition.spec.ts`, `tests/Browser/studio-published-responsive.spec.ts` | `npm run test:browser -- tests/Browser/studio-composition.spec.ts tests/Browser/studio-published-responsive.spec.ts` |
+
+The merge lane repeats the relational integration and browser paths on MariaDB, MySQL and PostgreSQL; the
+breadth lane repeats the browser journeys on Firefox and WebKit desktop/mobile; the Security workflow retains
+the Studio preview negative-path JUnit artifact. Final App adoption additionally requires `composer qa`,
+`npm run check`, the committed production build, deployed-artifact verification and the exact Studio candidate's
+renderer-web/Twig conformance replay described above.
+
 ## The host contract
 
 The normative host contract is

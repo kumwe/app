@@ -37,6 +37,10 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 
 - [REST API](rest-api.md): authentication, content, navigation, identity, optimistic concurrency, and retry safety.
 - [MCP](mcp.md): stdio and Streamable HTTP transports, capabilities, tools, resources, and safe writes.
+- [Studio page-builder host integration](studio-composition-authoring.md): standalone Studio ownership,
+  the private Editor.js boundary, production block catalog, Blueprint lifecycle, authenticated preview,
+  published Twig delivery, qualification and coordinated release adoption. See also the
+  [artifact/recovery boundary](studio-artifact-persistence.md) and [media host adapter](studio-media-host.md).
 - [Studio content projection](studio-content-projection.md): read-only Content models and entries,
   Blueprint bindings, composition overrides, lossless mappings, and fail-closed diagnostics.
 - [Extensions](extensions.md): manifests, providers, events, migrations, dependencies, signatures, lifecycle, and tests.
