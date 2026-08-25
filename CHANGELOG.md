@@ -1454,7 +1454,9 @@ development programme, from the architecture decision that opened it to the curr
   public route's exact 500 status and marker-free response bytes through the browser context request boundary,
   avoiding Firefox's engine-owned `NS_ERROR_NET_ERROR_RESPONSE` page while preserving the fail-closed product
   assertion. Lifecycle qualification now waits for the accepted reload, ready state and enabled symmetric action
-  before issuing a follow-up mutation, so Firefox cannot race a correctly disabled pre-navigation control. (#114)
+  before issuing a follow-up mutation, so Firefox cannot race a correctly disabled pre-navigation control.
+  Canvas qualification also establishes a shared visible inline band for raw-pointer endpoints and compares preview
+  layout against stroke-independent SVG fill geometry, preserving the two-pixel alignment contract on Firefox. (#114)
 
 - **Generic Studio artifact saves cannot bypass lifecycle or Blueprint identity controls.** Save now updates
   only an existing draft at its exact resource/version coordinate, preserves lifecycle status, and refuses
