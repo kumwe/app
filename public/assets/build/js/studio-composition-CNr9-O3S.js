@@ -1,5 +1,5 @@
-import { c as A, d as i$1, l as b, s as i, u as w } from "./reveal-validation-T3VErm9b.js";
-//#region ../app/node_modules/@kumwe/studio-core/dist/canonical.js
+import { c as A, d as i$1, l as b, s as i, u as w } from "./reveal-validation-g1jDnck7.js";
+//#region node_modules/@kumwe/studio-core/dist/canonical.js
 var DEFAULT_MAXIMUM_DEPTH = 64;
 /**
 * Serialize a bounded JSON value into the canonical cross-language form the
@@ -64,12 +64,12 @@ function compareCodeUnits$5(left, right) {
 	return left < right ? -1 : left > right ? 1 : 0;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/clone.js
+//#region node_modules/@kumwe/studio-core/dist/clone.js
 function cloneContractValue(value) {
 	return JSON.parse(JSON.stringify(value));
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/binding-projection.js
+//#region node_modules/@kumwe/studio-core/dist/binding-projection.js
 /**
 * Projects the active model into field-binding affordances and diagnostics.
 *
@@ -329,7 +329,7 @@ function compareCodeUnits$4(left, right) {
 	return left < right ? -1 : left > right ? 1 : 0;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/commands.js
+//#region node_modules/@kumwe/studio-core/dist/commands.js
 var StudioCommandError = class extends Error {
 	code;
 	constructor(code, message) {
@@ -667,11 +667,11 @@ function bindingNotFound(nodeId, port) {
 	return new StudioCommandError("binding-not-found", `Binding ${port} is not present on node ${nodeId}.`);
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-protocol/dist/types.js
+//#region node_modules/@kumwe/studio-protocol/dist/types.js
 var STUDIO_CONTRACT_VERSION = "0.1-draft";
 var STUDIO_WIRE_PROTOCOL_VERSION = "0.1.0-draft.2";
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-protocol/dist/guards.js
+//#region node_modules/@kumwe/studio-protocol/dist/guards.js
 var qualifiedName = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u;
 var localName = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/u;
 var previewDigest = /^[a-f0-9]{64}$/u;
@@ -936,7 +936,7 @@ function isForbiddenObjectMemberName(value) {
 	return value === "__proto__" || value === "prototype" || value === "constructor";
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-protocol/dist/host-failure.js
+//#region node_modules/@kumwe/studio-protocol/dist/host-failure.js
 /**
 * The only rejection wrapper a typed host port exposes to Studio callers.
 *
@@ -6346,7 +6346,7 @@ var unresolved_contribution_schema_default = {
 	}
 };
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-protocol/dist/schemas.js
+//#region node_modules/@kumwe/studio-protocol/dist/schemas.js
 var blockDefinitionSchema = block_definition_schema_default;
 var bindingProjectionVectorSchema = binding_projection_vector_schema_default;
 var blueprintSchema = blueprint_schema_default;
@@ -6408,7 +6408,7 @@ Object.freeze([
 	unresolved_contribution_schema_default
 ]);
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/profile-validator.js
+//#region node_modules/@kumwe/studio-core/dist/profile-validator.js
 /**
 * An eval-free interpreting validator for the Studio Schema Profile.
 *
@@ -7036,7 +7036,7 @@ function describeLocation(document, pointer) {
 	return `${document.baseUri ?? "schema"}#${pointer}`;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/schema-profile.js
+//#region node_modules/@kumwe/studio-core/dist/schema-profile.js
 var DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema";
 var MAX_ALTERNATIVES = 64;
 var MAX_DESCRIPTION_LENGTH = 1e4;
@@ -7798,7 +7798,7 @@ function isRecord$1(value) {
 	return prototype === Object.prototype || prototype === null;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/registry.js
+//#region node_modules/@kumwe/studio-core/dist/registry.js
 var BlockRegistry = class {
 	#definitions = /* @__PURE__ */ new Map();
 	constructor(definitions = []) {
@@ -7835,7 +7835,7 @@ function isIntegrity(value) {
 	return /^(?:sha256-[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=|sha384-[A-Za-z0-9+/]{64}|sha512-[A-Za-z0-9+/]{85}[AQgw]==)(?![\s\S])/u.test(value);
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/contributions.js
+//#region node_modules/@kumwe/studio-core/dist/contributions.js
 var StudioContributionError = class extends Error {
 	diagnostics;
 	constructor(message, diagnostics) {
@@ -8198,7 +8198,7 @@ function activationDiagnostic(code, message) {
 	};
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/entry-commands.js
+//#region node_modules/@kumwe/studio-core/dist/entry-commands.js
 function applyEntryCommand(entry, command) {
 	if (command.artifactId !== entry.id) throw new StudioCommandError("node-not-found", `Command targets ${command.artifactId}, not entry ${entry.id}.`);
 	if (command.payload.locale !== void 0 && entry.locale !== void 0 && command.payload.locale !== entry.locale) throw new StudioCommandError("locale-mismatch", `Command targets locale ${command.payload.locale}, but the entry stores ${entry.locale}.`);
@@ -8225,7 +8225,7 @@ function setOwnMember(container, member, value) {
 	});
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/history.js
+//#region node_modules/@kumwe/studio-core/dist/history.js
 var StudioHistory = class {
 	#maximumEntries;
 	#current;
@@ -8295,7 +8295,7 @@ var StudioHistory = class {
 	}
 };
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/layout.js
+//#region node_modules/@kumwe/studio-core/dist/layout.js
 /** The portable layout block family shipped by Studio. */
 var CORE_LAYOUT_BLOCK_TYPES = Object.freeze({
 	columns: "studio.core/columns",
@@ -8337,7 +8337,7 @@ function coreLayoutInitialProperties(type) {
 	}
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/negotiation.js
+//#region node_modules/@kumwe/studio-core/dist/negotiation.js
 var DEFAULT_REQUIRED_PORTS = ["studio.port/artifact"];
 /**
 * Resolve one session posture from a host capability document. Capability
@@ -8615,7 +8615,7 @@ function immutableCommandTypeSet(types) {
 	}));
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/model-commands.js
+//#region node_modules/@kumwe/studio-core/dist/model-commands.js
 function applyModelCommand(model, command) {
 	if (command.artifactId !== model.id) throw new StudioCommandError("node-not-found", `Command targets ${command.artifactId}, not content model ${model.id}.`);
 	if (model.status !== "draft") throw new StudioCommandError("artifact-not-draft", `Content model ${model.id} is ${model.status}; fields are added through a new draft.`);
@@ -8627,7 +8627,7 @@ function applyModelCommand(model, command) {
 	return next;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/session.js
+//#region node_modules/@kumwe/studio-core/dist/session.js
 /**
 * A deterministic editing session over one Blueprint document: bounded
 * history, an explicit selection model, and the session-level guards the
@@ -8781,7 +8781,7 @@ function containsNode(nodes, nodeId) {
 	return false;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/host-session.js
+//#region node_modules/@kumwe/studio-core/dist/host-session.js
 var ARTIFACT_PORT = "studio.port/artifact";
 var MODEL_PORT = "studio.port/model";
 var RECOVERY_PORT = "studio.port/recovery";
@@ -9260,7 +9260,7 @@ function isRevision(value) {
 	return typeof value === "string" && value.length >= 1 && value.length <= 200;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/recipes.js
+//#region node_modules/@kumwe/studio-core/dist/recipes.js
 /**
 * The reserved node property that records which theme recipe an author
 * selected. Recipe selection is canonically an atomic batch of set-property
@@ -9296,7 +9296,7 @@ function recipeSelectionOperations(node, theme, recipeId) {
 	return operations;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-core/dist/validation.js
+//#region node_modules/@kumwe/studio-core/dist/validation.js
 var validateBlueprintSchema = compileProfileSchema(blueprintSchema, { schemas: [commonSchema] });
 var propertyValidators = /* @__PURE__ */ new WeakMap();
 var MAX_BLUEPRINT_JSON_BYTES = 16777216;
@@ -9626,7 +9626,7 @@ var en_default = {
 	messages: /* @__PURE__ */ JSON.parse("{\"studio.shell/announce-binding-removed\":{\"defaultMessage\":\"Removed the {port} binding\",\"parameters\":[\"port\"]},\"studio.shell/announce-binding-set\":{\"defaultMessage\":\"Set the {port} binding\",\"parameters\":[\"port\"]},\"studio.shell/announce-canvas-mode\":{\"defaultMessage\":\"Canvas mode: {state}\",\"parameters\":[\"state\"]},\"studio.shell/announce-command-failed\":{\"defaultMessage\":\"Command failed: {message}\",\"parameters\":[\"message\"]},\"studio.shell/announce-conflict\":{\"defaultMessage\":\"The change was rejected: {message} The document is unchanged; refresh the session or undo before retrying.\",\"parameters\":[\"message\"]},\"studio.shell/announce-deleted\":{\"defaultMessage\":\"Deleted {label} block\",\"parameters\":[\"label\"]},\"studio.shell/announce-drag-cancelled\":{\"defaultMessage\":\"Reorder cancelled. {label} kept its position.\",\"parameters\":[\"label\"]},\"studio.shell/announce-dropped\":{\"defaultMessage\":\"Moved {label} to position {position} of {count}\",\"parameters\":[\"count\",\"label\",\"position\"]},\"studio.shell/announce-duplicated\":{\"defaultMessage\":\"Duplicated {label}\",\"parameters\":[\"label\"]},\"studio.shell/announce-edit-cancelled\":{\"defaultMessage\":\"Edit cancelled. {property} kept its value.\",\"parameters\":[\"property\"]},\"studio.shell/announce-field-bound\":{\"defaultMessage\":\"Bound {port} to the {field} model field\",\"parameters\":[\"field\",\"port\"]},\"studio.shell/announce-inheritance-reset\":{\"defaultMessage\":\"Reset every responsive override for {property}; all viewports now inherit the base value\",\"parameters\":[\"property\"]},\"studio.shell/announce-inserted\":{\"defaultMessage\":\"Inserted {label}\",\"parameters\":[\"label\"]},\"studio.shell/announce-invalid-value\":{\"defaultMessage\":\"The {label} value is not valid JSON. Nothing was changed.\",\"parameters\":[\"label\"]},\"studio.shell/announce-moved-down\":{\"defaultMessage\":\"Moved {label} down\",\"parameters\":[\"label\"]},\"studio.shell/announce-moved-to\":{\"defaultMessage\":\"Moved {label} to {destination}\",\"parameters\":[\"destination\",\"label\"]},\"studio.shell/announce-moved-up\":{\"defaultMessage\":\"Moved {label} up\",\"parameters\":[\"label\"]},\"studio.shell/announce-name-required\":{\"defaultMessage\":\"Enter a name before applying the change.\",\"parameters\":[]},\"studio.shell/announce-override-removed\":{\"defaultMessage\":\"Removed the {property} override for the {viewport} viewport\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/announce-override-set\":{\"defaultMessage\":\"Set the {property} override for the {viewport} viewport\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/announce-pattern-applied\":{\"defaultMessage\":\"Applied the {pattern} pattern\",\"parameters\":[\"pattern\"]},\"studio.shell/announce-preview-reloaded\":{\"defaultMessage\":\"The preview reloaded ({reason}). The document is unchanged.\",\"parameters\":[\"reason\"]},\"studio.shell/announce-preview-torn-down\":{\"defaultMessage\":\"The preview closed ({reason}). The document is unchanged.\",\"parameters\":[\"reason\"]},\"studio.shell/announce-property-set\":{\"defaultMessage\":\"Set {property}\",\"parameters\":[\"property\"]},\"studio.shell/announce-property-unset\":{\"defaultMessage\":\"Unset {property}\",\"parameters\":[\"property\"]},\"studio.shell/announce-recipe-applied\":{\"defaultMessage\":\"Applied the {recipe} recipe\",\"parameters\":[\"recipe\"]},\"studio.shell/announce-redid\":{\"defaultMessage\":\"Redid change\",\"parameters\":[]},\"studio.shell/announce-restored\":{\"defaultMessage\":\"Restored {label} block\",\"parameters\":[\"label\"]},\"studio.shell/announce-selection-cleared\":{\"defaultMessage\":\"Selection cleared\",\"parameters\":[]},\"studio.shell/announce-size-role-invalid\":{\"defaultMessage\":\"The {axis} role must be a lower-case identifier such as half or full-width. Nothing was changed.\",\"parameters\":[\"axis\"]},\"studio.shell/announce-size-role-removed\":{\"defaultMessage\":\"Removed the {axis} role\",\"parameters\":[\"axis\"]},\"studio.shell/announce-size-role-removed-viewport\":{\"defaultMessage\":\"Removed the {axis} role for the {viewport} viewport\",\"parameters\":[\"axis\",\"viewport\"]},\"studio.shell/announce-size-role-set\":{\"defaultMessage\":\"Set the {axis} role to {role}\",\"parameters\":[\"axis\",\"role\"]},\"studio.shell/announce-size-role-set-viewport\":{\"defaultMessage\":\"Set the {axis} role to {role} for the {viewport} viewport\",\"parameters\":[\"axis\",\"role\",\"viewport\"]},\"studio.shell/announce-undid\":{\"defaultMessage\":\"Undid change\",\"parameters\":[]},\"studio.shell/announce-viewport-changed\":{\"defaultMessage\":\"Previewing the {label} viewport\",\"parameters\":[\"label\"]},\"studio.shell/block-actions\":{\"defaultMessage\":\"Block actions\",\"parameters\":[]},\"studio.shell/breadcrumb-label\":{\"defaultMessage\":\"Selection path\",\"parameters\":[]},\"studio.shell/canvas-edit-toggle\":{\"defaultMessage\":\"Select and move rendered blocks\",\"parameters\":[]},\"studio.shell/canvas-empty\":{\"defaultMessage\":\"Choose a block to begin composing.\",\"parameters\":[]},\"studio.shell/canvas-label\":{\"defaultMessage\":\"Blueprint structure\",\"parameters\":[]},\"studio.shell/canvas-mode-editing\":{\"defaultMessage\":\"selecting and moving blocks\",\"parameters\":[]},\"studio.shell/canvas-mode-interacting\":{\"defaultMessage\":\"interacting with the rendered preview\",\"parameters\":[]},\"studio.shell/command-apply-pattern\":{\"defaultMessage\":\"Apply pattern {pattern}\",\"parameters\":[\"pattern\"]},\"studio.shell/command-clear-selection\":{\"defaultMessage\":\"Clear selection\",\"parameters\":[]},\"studio.shell/command-insert\":{\"defaultMessage\":\"Insert {label}\",\"parameters\":[\"label\"]},\"studio.shell/command-move-to\":{\"defaultMessage\":\"Move to {destination}\",\"parameters\":[\"destination\"]},\"studio.shell/command-palette-empty\":{\"defaultMessage\":\"No commands match the filter.\",\"parameters\":[]},\"studio.shell/command-palette-hint\":{\"defaultMessage\":\"Type to filter commands. Arrow Down moves into the results, Arrow Up returns to the filter, Enter runs a command, Escape closes.\",\"parameters\":[]},\"studio.shell/command-palette-input-label\":{\"defaultMessage\":\"Filter commands\",\"parameters\":[]},\"studio.shell/command-palette-label\":{\"defaultMessage\":\"Command palette\",\"parameters\":[]},\"studio.shell/command-palette-results-label\":{\"defaultMessage\":\"Matching commands\",\"parameters\":[]},\"studio.shell/command-palette-toggle\":{\"defaultMessage\":\"Commands\",\"parameters\":[]},\"studio.shell/delete\":{\"defaultMessage\":\"Delete\",\"parameters\":[]},\"studio.shell/diagnostics-empty\":{\"defaultMessage\":\"No issues\",\"parameters\":[]},\"studio.shell/diagnostics-heading\":{\"defaultMessage\":\"Diagnostics\",\"parameters\":[]},\"studio.shell/document-roots\":{\"defaultMessage\":\"document roots\",\"parameters\":[]},\"studio.shell/drag-drop-position\":{\"defaultMessage\":\"Moving {label} to position {position} of {count}\",\"parameters\":[\"count\",\"label\",\"position\"]},\"studio.shell/duplicate\":{\"defaultMessage\":\"Duplicate\",\"parameters\":[]},\"studio.shell/history-label\":{\"defaultMessage\":\"History\",\"parameters\":[]},\"studio.shell/inspector-add-override\":{\"defaultMessage\":\"Add override\",\"parameters\":[]},\"studio.shell/inspector-add-override-name-label\":{\"defaultMessage\":\"Override property name\",\"parameters\":[]},\"studio.shell/inspector-add-override-value-label\":{\"defaultMessage\":\"Override value as JSON\",\"parameters\":[]},\"studio.shell/inspector-add-property\":{\"defaultMessage\":\"Add property\",\"parameters\":[]},\"studio.shell/inspector-add-property-name-label\":{\"defaultMessage\":\"New property name\",\"parameters\":[]},\"studio.shell/inspector-add-property-value-label\":{\"defaultMessage\":\"New property value as JSON\",\"parameters\":[]},\"studio.shell/inspector-binding-accepts\":{\"defaultMessage\":\"Accepts {cardinality} {value-type} value\",\"parameters\":[\"cardinality\",\"value-type\"]},\"studio.shell/inspector-binding-control-label\":{\"defaultMessage\":\"Declared {control} control for {field}\",\"parameters\":[\"control\",\"field\"]},\"studio.shell/inspector-binding-control-preview\":{\"defaultMessage\":\"Control preview\",\"parameters\":[]},\"studio.shell/inspector-binding-control-unavailable\":{\"defaultMessage\":\"The declared {control} control requires a host field-adapter contribution.\",\"parameters\":[\"control\"]},\"studio.shell/inspector-binding-control-undeclared\":{\"defaultMessage\":\"This field declares no authoring control.\",\"parameters\":[]},\"studio.shell/inspector-binding-field-placeholder\":{\"defaultMessage\":\"Choose a model field\",\"parameters\":[]},\"studio.shell/inspector-binding-invalid\":{\"defaultMessage\":\"This binding no longer resolves and requires migration.\",\"parameters\":[]},\"studio.shell/inspector-binding-model\":{\"defaultMessage\":\"Fields from locked model {model}\",\"parameters\":[\"model\"]},\"studio.shell/inspector-binding-model-mismatch\":{\"defaultMessage\":\"The projected model does not match the Blueprint lock. Binding choices are disabled; see diagnostics.\",\"parameters\":[]},\"studio.shell/inspector-binding-model-unavailable\":{\"defaultMessage\":\"The session advertises model reads, but no active model projection is loaded. Binding choices are disabled.\",\"parameters\":[]},\"studio.shell/inspector-binding-no-compatible-fields\":{\"defaultMessage\":\"No compatible model fields\",\"parameters\":[]},\"studio.shell/inspector-binding-non-field-source\":{\"defaultMessage\":\"This port uses a non-field source. Choosing a model field replaces that source explicitly.\",\"parameters\":[]},\"studio.shell/inspector-binding-port-label\":{\"defaultMessage\":\"Binding port name\",\"parameters\":[]},\"studio.shell/inspector-binding-required\":{\"defaultMessage\":\" (required)\",\"parameters\":[]},\"studio.shell/inspector-binding-value-label\":{\"defaultMessage\":\"Binding value as JSON\",\"parameters\":[]},\"studio.shell/inspector-bindings-empty\":{\"defaultMessage\":\"No bindings\",\"parameters\":[]},\"studio.shell/inspector-bindings-heading\":{\"defaultMessage\":\"Bindings\",\"parameters\":[]},\"studio.shell/inspector-design-heading\":{\"defaultMessage\":\"Design\",\"parameters\":[]},\"studio.shell/inspector-design-placeholder\":{\"defaultMessage\":\"Choose a token\",\"parameters\":[]},\"studio.shell/inspector-design-unset\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-empty\":{\"defaultMessage\":\"Select a block to inspect its contract.\",\"parameters\":[]},\"studio.shell/inspector-heading\":{\"defaultMessage\":\"Inspector\",\"parameters\":[]},\"studio.shell/inspector-hint\":{\"defaultMessage\":\"Inputs hold JSON values. Enter applies the edit, Escape reverts it.\",\"parameters\":[]},\"studio.shell/inspector-identifier\":{\"defaultMessage\":\"Identifier\",\"parameters\":[]},\"studio.shell/inspector-layout-axis-block\":{\"defaultMessage\":\"Block size\",\"parameters\":[]},\"studio.shell/inspector-layout-axis-inline\":{\"defaultMessage\":\"Inline size\",\"parameters\":[]},\"studio.shell/inspector-layout-base-none\":{\"defaultMessage\":\"Base: none\",\"parameters\":[]},\"studio.shell/inspector-layout-base-role\":{\"defaultMessage\":\"Base: {role}\",\"parameters\":[\"role\"]},\"studio.shell/inspector-layout-fallback-hint\":{\"defaultMessage\":\"No theme size-role vocabulary is available. Enter a lower-case role identifier; Enter applies it, Escape cancels.\",\"parameters\":[]},\"studio.shell/inspector-layout-heading\":{\"defaultMessage\":\"Layout\",\"parameters\":[]},\"studio.shell/inspector-layout-no-roles\":{\"defaultMessage\":\"The active theme declares no size roles, so none can be assigned.\",\"parameters\":[]},\"studio.shell/inspector-layout-role-label-base\":{\"defaultMessage\":\"{axis} role (base)\",\"parameters\":[\"axis\"]},\"studio.shell/inspector-layout-role-label-viewport\":{\"defaultMessage\":\"{axis} role override for the {viewport} viewport\",\"parameters\":[\"axis\",\"viewport\"]},\"studio.shell/inspector-layout-role-placeholder\":{\"defaultMessage\":\"Choose a role\",\"parameters\":[]},\"studio.shell/inspector-layout-unset\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-layout-unset-label-base\":{\"defaultMessage\":\"Remove the {axis} base role\",\"parameters\":[\"axis\"]},\"studio.shell/inspector-layout-unset-label-viewport\":{\"defaultMessage\":\"Remove the {axis} role override for the {viewport} viewport\",\"parameters\":[\"axis\",\"viewport\"]},\"studio.shell/inspector-override-value-label\":{\"defaultMessage\":\"Override of {property} for the {viewport} viewport as JSON\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/inspector-overrides-empty\":{\"defaultMessage\":\"No overrides for the {viewport} viewport\",\"parameters\":[\"viewport\"]},\"studio.shell/inspector-overrides-heading\":{\"defaultMessage\":\"Overrides for the {viewport} viewport\",\"parameters\":[\"viewport\"]},\"studio.shell/inspector-properties\":{\"defaultMessage\":\"Properties\",\"parameters\":[]},\"studio.shell/inspector-properties-empty\":{\"defaultMessage\":\"No properties\",\"parameters\":[]},\"studio.shell/inspector-property-value-label\":{\"defaultMessage\":\"Value of {property} as JSON\",\"parameters\":[\"property\"]},\"studio.shell/inspector-provenance-base\":{\"defaultMessage\":\"Base value\",\"parameters\":[]},\"studio.shell/inspector-provenance-inherited\":{\"defaultMessage\":\"Inherited from base: {value}\",\"parameters\":[\"value\"]},\"studio.shell/inspector-provenance-inherited-none\":{\"defaultMessage\":\"Inherited from base: none\",\"parameters\":[]},\"studio.shell/inspector-provenance-overridden\":{\"defaultMessage\":\"Overridden for the {viewport} viewport: {value}\",\"parameters\":[\"value\",\"viewport\"]},\"studio.shell/inspector-read-only\":{\"defaultMessage\":\"Editing is disabled because this session is read-only.\",\"parameters\":[]},\"studio.shell/inspector-recipe-label\":{\"defaultMessage\":\"Recipe\",\"parameters\":[]},\"studio.shell/inspector-recipe-placeholder\":{\"defaultMessage\":\"Choose a recipe\",\"parameters\":[]},\"studio.shell/inspector-recipes-heading\":{\"defaultMessage\":\"Recipes\",\"parameters\":[]},\"studio.shell/inspector-remove-binding\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-remove-binding-label\":{\"defaultMessage\":\"Remove the {port} binding\",\"parameters\":[\"port\"]},\"studio.shell/inspector-remove-override\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-remove-override-label\":{\"defaultMessage\":\"Remove the {property} override for the {viewport} viewport\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/inspector-reset-inheritance\":{\"defaultMessage\":\"Reset all viewport overrides\",\"parameters\":[]},\"studio.shell/inspector-set-binding\":{\"defaultMessage\":\"Set binding\",\"parameters\":[]},\"studio.shell/inspector-type\":{\"defaultMessage\":\"Type\",\"parameters\":[]},\"studio.shell/inspector-unset\":{\"defaultMessage\":\"Unset\",\"parameters\":[]},\"studio.shell/inspector-unset-label\":{\"defaultMessage\":\"Unset {property}\",\"parameters\":[\"property\"]},\"studio.shell/move-destination-label\":{\"defaultMessage\":\"Move block to another position or slot\",\"parameters\":[]},\"studio.shell/move-destination-option\":{\"defaultMessage\":\"{collection}, position {position} of {count}\",\"parameters\":[\"collection\",\"count\",\"position\"]},\"studio.shell/move-destination-placeholder\":{\"defaultMessage\":\"Choose a destination\",\"parameters\":[]},\"studio.shell/move-down\":{\"defaultMessage\":\"Move down\",\"parameters\":[]},\"studio.shell/move-slot-collection\":{\"defaultMessage\":\"{parent}: {slot} slot\",\"parameters\":[\"parent\",\"slot\"]},\"studio.shell/move-up\":{\"defaultMessage\":\"Move up\",\"parameters\":[]},\"studio.shell/outline-empty\":{\"defaultMessage\":\"The outline lists blocks once the document has content.\",\"parameters\":[]},\"studio.shell/outline-heading\":{\"defaultMessage\":\"Outline\",\"parameters\":[]},\"studio.shell/outline-hint\":{\"defaultMessage\":\"Arrow keys move focus. Alt+Arrow moves the block. Delete removes it. Ctrl+D or Cmd+D duplicates it.\",\"parameters\":[]},\"studio.shell/outline-slot\":{\"defaultMessage\":\"Slot: {slot}\",\"parameters\":[\"slot\"]},\"studio.shell/palette-heading\":{\"defaultMessage\":\"Blocks\",\"parameters\":[]},\"studio.shell/palette-label\":{\"defaultMessage\":\"Block palette\",\"parameters\":[]},\"studio.shell/patterns-heading\":{\"defaultMessage\":\"Patterns\",\"parameters\":[]},\"studio.shell/preview-closed\":{\"defaultMessage\":\"Preview is disconnected. Editing remains available.\",\"parameters\":[]},\"studio.shell/preview-connecting\":{\"defaultMessage\":\"Preview is connecting.\",\"parameters\":[]},\"studio.shell/preview-current\":{\"defaultMessage\":\"Preview is current.\",\"parameters\":[]},\"studio.shell/preview-heading\":{\"defaultMessage\":\"Preview\",\"parameters\":[]},\"studio.shell/preview-label\":{\"defaultMessage\":\"Rendered preview\",\"parameters\":[]},\"studio.shell/preview-rendering\":{\"defaultMessage\":\"Preview is updating.\",\"parameters\":[]},\"studio.shell/preview-stale\":{\"defaultMessage\":\"Preview is stale. Editing remains available.\",\"parameters\":[]},\"studio.shell/preview-unavailable\":{\"defaultMessage\":\"Preview is unavailable for this session. Editing remains available.\",\"parameters\":[]},\"studio.shell/redo\":{\"defaultMessage\":\"Redo\",\"parameters\":[]},\"studio.shell/restore-last-deleted\":{\"defaultMessage\":\"Restore last deleted block\",\"parameters\":[]},\"studio.shell/save-state-saved\":{\"defaultMessage\":\"Saved\",\"parameters\":[]},\"studio.shell/save-state-unsaved\":{\"defaultMessage\":\"Unsaved changes\",\"parameters\":[]},\"studio.shell/severity-blocking\":{\"defaultMessage\":\"Blocking\",\"parameters\":[]},\"studio.shell/severity-error\":{\"defaultMessage\":\"Error\",\"parameters\":[]},\"studio.shell/severity-information\":{\"defaultMessage\":\"Information\",\"parameters\":[]},\"studio.shell/severity-warning\":{\"defaultMessage\":\"Warning\",\"parameters\":[]},\"studio.shell/status-label\":{\"defaultMessage\":\"Status\",\"parameters\":[]},\"studio.shell/undo\":{\"defaultMessage\":\"Undo\",\"parameters\":[]},\"studio.shell/unresolved-block\":{\"defaultMessage\":\"(unresolved)\",\"parameters\":[]},\"studio.shell/viewport-label\":{\"defaultMessage\":\"Preview width\",\"parameters\":[]},\"studio.shell/visual-drop-target\":{\"defaultMessage\":\"Moving {label} to {destination}\",\"parameters\":[\"destination\",\"label\"]}}")
 };
 //#endregion
-//#region ../app/node_modules/@kumwe/studio/dist/messages.js
+//#region node_modules/@kumwe/studio/dist/messages.js
 /** Backwards-compatible message map used by existing shell integrations. */
 var studioMessages = en_default.messages;
 /**
@@ -9645,7 +9645,7 @@ function messageText(key, overrides, parameters) {
 	return text;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio/dist/outline.js
+//#region node_modules/@kumwe/studio/dist/outline.js
 function findOutlineLocation(roots, nodeId) {
 	return findWithin(roots, nodeId, void 0, void 0);
 }
@@ -9726,7 +9726,7 @@ function findWithin(collection, nodeId, parentNodeId, slot) {
 	}
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-preview/dist/preview-client.js
+//#region node_modules/@kumwe/studio-preview/dist/preview-client.js
 /** Stable client-side and wire failure surfaced by the preview channel. */
 var PreviewChannelError = class extends Error {
 	code;
@@ -10263,7 +10263,7 @@ function normalizeOrigin(input) {
 	return url.origin;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-preview/dist/preview-host.js
+//#region node_modules/@kumwe/studio-preview/dist/preview-host.js
 /**
 * The preview-surface half of the channel: answers `studio.preview/render` and
 * `studio.preview/measure` requests from a `PreviewClient` and forwards
@@ -10670,7 +10670,7 @@ function measureFailed() {
 	};
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio-preview/dist/preview-identity.js
+//#region node_modules/@kumwe/studio-preview/dist/preview-identity.js
 /**
 * Return the exact digest preimage for a complete, schema-valid Studio draft.
 * No transport envelope, prefix, BOM, viewport, revision override, or trailing
@@ -10690,7 +10690,7 @@ async function computePreviewDraftDigest(draft, options = {}) {
 	return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio/dist/preview-surface.js
+//#region node_modules/@kumwe/studio/dist/preview-surface.js
 /**
 * Deterministic shell-side orchestration around the canonical PreviewClient.
 * A microtask is the only coalescing boundary: all synchronous changes reduce
@@ -10980,7 +10980,7 @@ var StudioPreviewSurface = class {
 	}
 };
 //#endregion
-//#region ../app/node_modules/@kumwe/studio/dist/kumwe-studio.js
+//#region node_modules/@kumwe/studio/dist/kumwe-studio.js
 var KumweStudioElement = class extends i {
 	static properties = {
 		announcement: {
@@ -14683,7 +14683,7 @@ function referenceText(reference) {
 	return reference.defaultMessage ?? reference.key;
 }
 //#endregion
-//#region ../app/node_modules/@kumwe/studio/dist/index.js
+//#region node_modules/@kumwe/studio/dist/index.js
 function defineKumweStudio(tagName = "kumwe-studio") {
 	if (customElements.get(tagName) === void 0) customElements.define(tagName, KumweStudioElement);
 }
