@@ -1458,7 +1458,9 @@ development programme, from the architecture decision that opened it to the curr
   `studio-release.json`; the release and corpus verifiers additionally recompute the exact corpus-manifest
   digest, and the accountable journey pins the canonical record bytes. Browser qualification registers and
   awaits the exact cancellation response and the complete post-reload session, palette, status and lifecycle
-  readiness, removing the Firefox boundary races without weakening measured-canvas assertions. (#114)
+  readiness, accepts the session endpoint's canonical creation status, and establishes an editable draft before
+  every mutating or private-authority journey. This removes the cross-engine lifecycle and boundary races without
+  weakening measured-canvas assertions. (#114)
 
 - **Studio preview authoring is deterministic across supported browser engines.** Live preview cancellation
   retains the authenticated page request identity and enables unload keepalive only while the document is
