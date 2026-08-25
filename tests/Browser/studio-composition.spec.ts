@@ -37,9 +37,26 @@ async function revealPreviewCanvasRegions(page: Page, shell: Locator, regions: L
   });
 
   const coordinates = await Promise.all(regions.map((region) => region.evaluate((element) => {
+    const left = Number(element.getAttribute('x'));
     const top = Number(element.getAttribute('y'));
-    return { bottom: top + Number(element.getAttribute('height')), top };
+    return {
+      bottom: top + Number(element.getAttribute('height')),
+      left,
+      right: left + Number(element.getAttribute('width')),
+      top,
+    };
   })));
+  const commonLeft = Math.max(...coordinates.map(({ left }) => left));
+  const commonRight = Math.min(...coordinates.map(({ right }) => right));
+  expect(commonRight - commonLeft, 'Every drag endpoint must share a visible horizontal canvas band.')
+    .toBeGreaterThan(4);
+  await stage.evaluate((element, inlineCenter) => {
+    const stageElement = element as HTMLElement;
+    const maximum = Math.max(0, stageElement.scrollWidth - stageElement.clientWidth);
+    const left = Math.max(0, Math.min(maximum, inlineCenter - stageElement.clientWidth / 2));
+    stageElement.scrollTo({ behavior: 'auto', left });
+  }, commonLeft + (commonRight - commonLeft) / 2);
+
   const frame = page.locator('iframe[data-studio-preview]');
   const frameHeight = await frame.evaluate((element) =>
     (element as HTMLIFrameElement).contentWindow?.innerHeight ?? 0);
@@ -67,14 +84,16 @@ async function revealPreviewCanvasRegions(page: Page, shell: Locator, regions: L
       height: window.innerHeight,
       width: window.innerWidth,
     }));
-    const heights = await Promise.all(regions.map(async (region) => {
+    const visibleExtents = await Promise.all(regions.map(async (region) => {
       const box = await region.boundingBox();
       if (box === null) return 0;
+      const left = Math.max(box.x, stageBox.x, 0);
+      const right = Math.min(box.x + box.width, stageBox.x + stageBox.width, viewport.width);
       const top = Math.max(box.y, stageBox.y, 0);
       const bottom = Math.min(box.y + box.height, stageBox.y + stageBox.height, viewport.height);
-      return bottom - top;
+      return Math.min(right - left, bottom - top);
     }));
-    return Math.min(...heights);
+    return Math.min(...visibleExtents);
   }, { message: 'Every drag endpoint must be materially visible in the preview canvas.' })
     .toBeGreaterThan(4);
 }
@@ -454,8 +473,25 @@ async function previewMarkerRects(page: Page): Promise<PreviewRect[]> {
 
 async function previewOverlayRects(shell: Locator): Promise<PreviewRect[]> {
   return shell.locator('.preview-canvas-region').evaluateAll((regions) => regions.map((region) => {
-    const rect = region.getBoundingClientRect();
-    return { height: rect.height, width: rect.width, x: rect.x, y: rect.y };
+    const overlay = region as SVGGraphicsElement;
+    const rect = overlay.getBBox();
+    const matrix = overlay.getScreenCTM();
+    if (matrix === null) throw new Error('The preview overlay region is not attached to a viewport.');
+    // Firefox includes the selected region's painted stroke in getBoundingClientRect(), while the
+    // preview marker and Studio measurement contract describe the element's layout rectangle. Map
+    // the SVG fill box into viewport coordinates so every engine compares layout geometry to layout
+    // geometry without weakening the two-pixel production alignment threshold.
+    const corners = [
+      new DOMPoint(rect.x, rect.y),
+      new DOMPoint(rect.x + rect.width, rect.y),
+      new DOMPoint(rect.x, rect.y + rect.height),
+      new DOMPoint(rect.x + rect.width, rect.y + rect.height),
+    ].map((point) => point.matrixTransform(matrix));
+    const x = Math.min(...corners.map((point) => point.x));
+    const y = Math.min(...corners.map((point) => point.y));
+    const right = Math.max(...corners.map((point) => point.x));
+    const bottom = Math.max(...corners.map((point) => point.y));
+    return { height: bottom - y, width: right - x, x, y };
   }));
 }
 
