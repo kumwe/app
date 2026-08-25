@@ -75,6 +75,7 @@ Full map: [`docs/architecture/map.md`](docs/architecture/map.md). Compact versio
 | Authorization ("may this actor?") | `src/Application/Authorization/` |
 | Users, sessions, tokens, TOTP | `src/Identity/` |
 | CMS content / workflow / menus | `src/Content/`, `src/Workflow/`, `src/Navigation/` |
+| Studio host integration | `src/Studio/`; browser shell in administrator handlers/assets/templates; exact package family in `resources/studio-contract/` |
 | Business definitions | `src/BusinessDefinition/` |
 | Physical schema / DDL | `src/BusinessSchema/` |
 | Typed business records | `src/BusinessRecord/` (`BusinessRecordService` is the write/read facade) |

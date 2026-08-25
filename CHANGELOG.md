@@ -1178,6 +1178,14 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **The operator map and public documentation index now expose the complete App-owned Studio host seam.**
+  They route changes to authority, artifact/recovery, media/resource, preview and published-composition code,
+  identify the administrator shell and exact vendored package family, and distinguish those host adapters from
+  Studio's portable page builder, 45-block catalog, private Editor.js adapter and renderer-web. The integration
+  guide now maps exact package/corpus, unit, integration, architecture, browser, cross-engine and security
+  evidence paths to their direct commands, so an App re-pin cannot be mistaken for a source-only dependency
+  update. (#114)
+
 - **Studio resource discovery now has a production App host port.** The capability- and
   generation-fenced dispatcher accepts the canonical `resource/search` operation, validates its exact
   qualified resource type, bounded search text, page size and opaque cursor, and delegates only to an
