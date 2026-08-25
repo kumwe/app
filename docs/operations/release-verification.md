@@ -1,6 +1,6 @@
 # Verify a release
 
-The release workflow accepts protected `v2.x.y` tags only after the complete MariaDB, MySQL, and PostgreSQL deployment gate succeeds. It builds the PHP 8.5 application and web images, creates the dependency-complete ZIP, scans artifacts, generates CycloneDX SBOMs, signs image digests and checksums with keyless Cosign, and publishes provenance attestations. The signed checksum set includes `kumwe-release-manifest.json`, which binds those artifacts and image digests to the source commit and the exact seven-package Studio release qualified by the administrator build.
+The release workflow accepts protected `v2.x.y` tags only after the complete MariaDB, MySQL, and PostgreSQL deployment gate succeeds. It builds the PHP 8.5 application and web images, creates the dependency-complete ZIP, scans artifacts, generates CycloneDX SBOMs, signs image digests and checksums with keyless Cosign, and publishes provenance attestations. The signed checksum set includes `kumwe-release-manifest.json`, which binds those artifacts and image digests to the source commit and the complete fixed Studio package family qualified by the administrator build.
 
 Stable releases publish these image aliases:
 

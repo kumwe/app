@@ -15,6 +15,7 @@ use Kumwe\App\Studio\Application\Composition\StudioContentComposition;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
+use Kumwe\App\Studio\Application\Release\StudioReleaseRecord;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -47,6 +48,7 @@ final readonly class AdministratorStudioCompositionHandler implements RequestHan
      * @param  ActiveLocale                          $locale         Request-resolved locale projection.
      * @param  SiteSettings                          $settings       Validated site settings source.
      * @param  StudioCompositionContributionCatalog  $contributions  Active trusted contribution catalogue.
+     * @param  StudioReleaseRecord                    $studioRelease  Canonical coordinated Studio release.
      *
      * @since  2.0.0
      */
@@ -56,6 +58,7 @@ final readonly class AdministratorStudioCompositionHandler implements RequestHan
         private ActiveLocale $locale,
         private SiteSettings $settings,
         private StudioCompositionContributionCatalog $contributions,
+        private StudioReleaseRecord $studioRelease,
     ) {
     }
 
@@ -188,7 +191,7 @@ final readonly class AdministratorStudioCompositionHandler implements RequestHan
                 'timezone' => $timezone,
             ],
             'model' => $composition->model,
-            'release' => '0.1.0-alpha.11',
+            'release' => $this->studioRelease->release,
             'site' => $composition->binding->site->identifier(),
             'status' => $composition->blueprint->document()->status,
         ], JSON_THROW_ON_ERROR | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES);

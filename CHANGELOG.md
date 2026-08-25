@@ -1453,6 +1453,13 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **The Studio host now consumes one release coordinate instead of four copied literals.** PHP bootstrap,
+  the Vite build assertion and localization generation all derive from the canonical vendored
+  `studio-release.json`; the release and corpus verifiers additionally recompute the exact corpus-manifest
+  digest, and the accountable journey pins the canonical record bytes. Browser qualification registers and
+  awaits the exact cancellation response and the complete post-reload session, palette, status and lifecycle
+  readiness, removing the Firefox boundary races without weakening measured-canvas assertions. (#114)
+
 - **Studio preview authoring is deterministic across supported browser engines.** Live preview cancellation
   retains the authenticated page request identity and enables unload keepalive only while the document is
   actually leaving, with cancelled-navigation and back/forward-cache restoration resetting that state. The

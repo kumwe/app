@@ -57,6 +57,7 @@ use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingResult;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewBlock;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockFragment;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRenderer;
+use Kumwe\App\Studio\Application\Release\StudioReleaseRecord;
 use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
 use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
@@ -472,12 +473,18 @@ final class StudioContentProjectionServiceTest extends TestCase
                 new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
             ),
         );
+        $studioReleaseBytes = file_get_contents(
+            dirname(__DIR__, 5) . '/resources/studio-contract/studio-release.json',
+        );
+        self::assertIsString($studioReleaseBytes);
+        $studioRelease = StudioReleaseRecord::fromJson($studioReleaseBytes);
         $handler = new AdministratorStudioCompositionHandler(
             $service,
             $renderer,
             $activeLocale,
             $settings,
             $catalog,
+            $studioRelease,
         );
         $principal = AuthorizationContext::principal([
             'acme.shop.catalog.edit',
@@ -520,6 +527,7 @@ final class StudioContentProjectionServiceTest extends TestCase
         self::assertSame('en-GB', $boot->locale->resolved);
         self::assertSame('UTC', $boot->locale->timezone);
         self::assertSame('draft', $boot->status);
+        self::assertSame($studioRelease->release, $boot->release);
         self::assertIsArray($boot->contributions);
 
         $fallbackResponse = $handler->handle($request->withQueryParams(['locale' => 'not_locale!']));

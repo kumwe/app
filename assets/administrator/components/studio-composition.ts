@@ -44,7 +44,7 @@ export async function setupStudioComposition(): Promise<void> {
   if (shell === null) return;
   try {
     const boot = JSON.parse(encoded.textContent ?? '') as BootDocument;
-    if (boot.release !== '0.1.0-alpha.11') throw new Error('Studio release binding mismatch.');
+    if (boot.release !== __KUMWE_STUDIO_RELEASE__) throw new Error('Studio release binding mismatch.');
     const opened = await openHostSession(boot);
     const advertised = new Set(opened.hostCapabilities);
     const adapter = createStudioHttpHostAdapter(boot.endpoints.ports, {

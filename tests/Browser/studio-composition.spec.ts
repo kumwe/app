@@ -180,6 +180,25 @@ async function openComposition(page: Page, modelHandle?: string): Promise<Locato
   return shell;
 }
 
+function waitForCompositionReloadReady(page: Page, lifecycleName: string): Promise<Locator> {
+  return (async () => {
+    const response = await page.waitForResponse((candidate) => {
+      const url = new URL(candidate.url());
+      return url.pathname === '/administrator/studio/session'
+        && candidate.request().method() === 'POST';
+    });
+    expect(response.status()).toBe(200);
+    const shell = page.locator('kumwe-studio');
+    await expect(shell.getByRole('complementary', { name: 'Block palette' })
+      .getByRole('button', { name: 'Section', exact: true })).toBeVisible();
+    await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
+    const lifecycle = page.getByRole('button', { name: lifecycleName });
+    await expect(lifecycle).toBeVisible();
+    await expect(lifecycle).toBeEnabled();
+    return shell;
+  })();
+}
+
 async function persistCompositionChange<T>(page: Page, change: () => Promise<T>): Promise<T> {
   const accepted = page.waitForResponse((response) => {
     const url = new URL(response.url());
@@ -938,9 +957,7 @@ test('published lifecycle control sends the symmetric canonical unpublish envelo
       status: 200,
     });
   });
-  const reloaded = page.waitForEvent('framenavigated', {
-    predicate: (frame) => frame === page.mainFrame(),
-  });
+  const reloaded = waitForCompositionReloadReady(page, 'Return composition to draft');
   try {
     await page.getByRole('button', { name: 'Return composition to draft' }).click();
     await expect.poll(() => unpublication).toBeDefined();
@@ -959,10 +976,6 @@ test('published lifecycle control sends the symmetric canonical unpublish envelo
     await page.unroute(unpublishRoute);
     if (!page.isClosed()) {
       await reloaded;
-      await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
-      const unpublish = page.getByRole('button', { name: 'Return composition to draft' });
-      await expect(unpublish).toBeVisible();
-      await expect(unpublish).toBeEnabled();
       await changeCompositionLifecycle(page, 'draft');
     }
   }
@@ -1146,17 +1159,28 @@ test('same-origin preview redirects to a different path are refused', async ({ p
       },
     });
   });
+  const cancellationAccepted = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith('/ports/preview/cancel')
+      && response.request().method() === 'POST';
+  });
 
   const shell = await openComposition(page);
+  const cancellationResponse = await cancellationAccepted;
+  expect(cancellationResponse.status()).toBe(200);
+  const cancellationBody = cancellationResponse.request().postDataJSON() as {
+    arguments?: { draftDigest?: string };
+  };
+  const cancelledDigest = cancellationBody.arguments?.draftDigest ?? 'unknown';
   const iframe = page.locator('iframe[data-studio-preview]');
   await expect(iframe).toBeHidden();
   await expect.poll(() => iframe.evaluate((element) =>
     (element as HTMLIFrameElement).contentWindow?.location.pathname ?? ''))
     .not.toBe('/administrator/studio/wrong-preview');
-  await expect.poll(() => cancellations.size).toBeGreaterThan(0);
-  expect([...cancellations.values()]).toEqual([...cancellations.values()].map(() => 1));
   await expect(shell.getByText('Preview is stale. Editing remains available.')).toBeVisible();
   await expect(shell.locator('.preview-canvas-overlay')).toHaveCount(0);
+  await expect.poll(() => cancellations.get(cancelledDigest) ?? 0).toBe(1);
+  expect([...cancellations.values()]).toEqual([...cancellations.values()].map(() => 1));
 });
 
 test('a deterministically delayed conflicting save replaces the mutable shell and cannot stage', async ({ page, context }) => {

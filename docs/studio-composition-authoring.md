@@ -229,7 +229,10 @@ portfolio, lifecycle/backup/upgrade matrix and accountable acceptance still rema
 
 The release chain already binds all seven packages to `0.1.0-alpha.11` in
 `resources/studio-contract/studio-release.json` and records its SHA-256 in
-`resources/studio-contract/PIN.json`; release verification rejects any package or record mismatch.
+`resources/studio-contract/PIN.json`; release verification rejects any package, record or corpus-manifest
+digest mismatch. PHP bootstrap, the Vite build assertion and localization generation read that canonical
+record directly, so adopting a later coordinate does not require synchronizing copied release literals across
+the PHP bootstrap, browser entry point, Vite configuration, and localization generator.
 Studio's next eight-package prerelease set is currently expected to be `0.1.0-alpha.9`; that release-plan
 coordinate is not this App's pin and the numbering discrepancy must be reconciled by Studio's published
 release record. After publication, App adopts one exact `<coordinated-version>` by changing all eight
