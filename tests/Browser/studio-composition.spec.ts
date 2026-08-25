@@ -754,10 +754,24 @@ test('a signed field composition publishes marker-free public output and unpubli
       .toHaveCount(0);
 
     await setManifestSixActive(extensionPage, false);
-    const refused = await publicPage.goto(`/?studio-journey=withdrawn-${Date.now()}`);
-    expect(refused?.status()).toBe(500);
-    await expect(publicPage.locator('.studio-preview-field-text, .studio-preview-extension-grid, .managed-hero'))
-      .toHaveCount(0);
+    // Firefox deliberately refuses to commit an HTTP 500 navigation and reports
+    // NS_ERROR_NET_ERROR_RESPONSE instead of returning Playwright's Response wrapper. Probe the
+    // same public representation through the browser context's request client so the assertion
+    // remains on the server's exact status and bytes rather than on engine-specific error UI.
+    const refused = await context.request.get(`/?studio-journey=withdrawn-${Date.now()}`, {
+      failOnStatusCode: false,
+    });
+    try {
+      expect(refused.status()).toBe(500);
+      const refusedMarkup = await refused.text();
+      expect(refusedMarkup).not.toContain(expectedHeading);
+      expect(refusedMarkup).not.toContain(extensionOutput);
+      expect(refusedMarkup).not.toMatch(
+        /data-studio-preview-marker|studio-preview-field-text|studio-preview-extension-grid|managed-hero/u,
+      );
+    } finally {
+      await refused.dispose();
+    }
 
     await setManifestSixActive(extensionPage, true);
     await expect.poll(async () => {

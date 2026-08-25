@@ -1450,7 +1450,10 @@ development programme, from the architecture decision that opened it to the curr
   actually leaving, with cancelled-navigation and back/forward-cache restoration resetting that state. The
   browser qualification now reveals both drag endpoints inside the preview document before refreshing
   stage-owned geometry, and its fixed, testing-only real redirect seam lets WebKit exercise the same-origin
-  path refusal without an unsupported synthetic redirect. (#114)
+  path refusal without an unsupported synthetic redirect. The signed-renderer withdrawal journey verifies the
+  public route's exact 500 status and marker-free response bytes through the browser context request boundary,
+  avoiding Firefox's engine-owned `NS_ERROR_NET_ERROR_RESPONSE` page while preserving the fail-closed product
+  assertion. (#114)
 
 - **Generic Studio artifact saves cannot bypass lifecycle or Blueprint identity controls.** Save now updates
   only an existing draft at its exact resource/version coordinate, preserves lifecycle status, and refuses
