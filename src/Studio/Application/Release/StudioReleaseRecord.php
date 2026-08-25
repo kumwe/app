@@ -49,7 +49,7 @@ final readonly class StudioReleaseRecord
      *
      * @return  self  Validated immutable runtime projection.
      *
-     * @throws  JsonException            When the record is not valid JSON.
+     * @throws  JsonException  When the record is not valid JSON.
      * @throws  UnexpectedValueException  When the record does not name one coordinated family.
      *
      * @since   2.0.0
