@@ -189,9 +189,12 @@ async function changeCompositionLifecycle(
   await button.click();
   const response = await accepted;
   expect(response.status()).toBe(200);
-  await expect(page.getByRole('button', {
+  const nextButton = page.getByRole('button', {
     name: target === 'published' ? 'Return composition to draft' : 'Publish composition',
-  })).toBeVisible();
+  });
+  await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
+  await expect(nextButton).toBeVisible();
+  await expect(nextButton).toBeEnabled();
 }
 
 async function setManifestSixActive(page: Page, active: boolean): Promise<void> {
@@ -899,6 +902,9 @@ test('published lifecycle control sends the symmetric canonical unpublish envelo
       status: 200,
     });
   });
+  const reloaded = page.waitForEvent('framenavigated', {
+    predicate: (frame) => frame === page.mainFrame(),
+  });
   try {
     await page.getByRole('button', { name: 'Return composition to draft' }).click();
     await expect.poll(() => unpublication).toBeDefined();
@@ -912,10 +918,15 @@ test('published lifecycle control sends the symmetric canonical unpublish envelo
     });
     expect(unpublication?.context?.idempotencyKey).toEqual(expect.stringMatching(/^operations\/browser-/u));
     expect(unpublication?.context?.requestId).toEqual(expect.stringMatching(/^requests\/browser-/u));
+    await reloaded;
   } finally {
     await page.unroute(unpublishRoute);
     if (!page.isClosed()) {
-      await expect(page.getByRole('button', { name: 'Return composition to draft' })).toBeVisible();
+      await reloaded;
+      await expect(page.locator('[data-studio-composition-status]')).toHaveText('Studio is ready.');
+      const unpublish = page.getByRole('button', { name: 'Return composition to draft' });
+      await expect(unpublish).toBeVisible();
+      await expect(unpublish).toBeEnabled();
       await changeCompositionLifecycle(page, 'draft');
     }
   }
