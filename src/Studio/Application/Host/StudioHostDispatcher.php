@@ -41,6 +41,7 @@ final readonly class StudioHostDispatcher
      * @param  StudioPreviewHostPort|null       $preview       Authenticated preview port when composed.
      * @param  StudioMediaHostPort|null         $media         Complete media port when composed.
      * @param  StudioModelHostPort|null         $model         Exact Content-model query port when composed.
+     * @param  StudioResourceHostPort|null      $resource      Authorized dynamic-resource search port when composed.
      * @param  StudioLocalizationHostPort|null  $localization  Compiled Studio message port when composed.
      * @param  StudioTelemetryHostPort|null     $telemetry     Bounded observability port when composed.
      *
@@ -54,6 +55,7 @@ final readonly class StudioHostDispatcher
         private ?StudioPreviewHostPort $preview = null,
         private ?StudioMediaHostPort $media = null,
         private ?StudioModelHostPort $model = null,
+        private ?StudioResourceHostPort $resource = null,
         private ?StudioLocalizationHostPort $localization = null,
         private ?StudioTelemetryHostPort $telemetry = null,
     ) {
@@ -157,6 +159,8 @@ final readonly class StudioHostDispatcher
                 )),
                 $port === 'model' && $this->model !== null =>
                     $this->model->dispatch($context, $operation, $request, $snapshot),
+                $port === 'resource' && $this->resource !== null =>
+                    $this->resource->dispatch($context, $operation, $request, $snapshot),
                 $port === 'localization' && $this->localization !== null =>
                     $this->localization->dispatch($operation, $request, $snapshot),
                 $port === 'telemetry' && $this->telemetry !== null =>

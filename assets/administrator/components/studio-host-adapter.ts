@@ -12,6 +12,7 @@ import {
   type MediaUploadRequestDescriptor,
   type PreviewRenderPayload,
   type QualifiedName,
+  type ResourceSearchQuery,
   type TelemetryEvent,
 } from '@kumwe/studio-protocol';
 
@@ -146,6 +147,12 @@ export function createStudioHttpHostAdapter(baseUrl: string, options: AdapterOpt
       discard: (context) => call('recovery', 'discard', {}, context),
       load: (context) => call('recovery', 'load', {}, context),
       store: (envelope: JsonObject, context) => call('recovery', 'store', { envelope }, context),
+    };
+  }
+  if (hasPort(options.advertised, 'resource')) {
+    adapter.resource = {
+      search: (query: ResourceSearchQuery, context) =>
+        call('resource', 'search', { query: copy(query) }, context),
     };
   }
   if (hasPort(options.advertised, 'telemetry')) {

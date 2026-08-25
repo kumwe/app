@@ -55,6 +55,7 @@ final readonly class StudioHostSessionAuthority
         'studio.operation/recovery.discard',
         'studio.operation/recovery.load',
         'studio.operation/recovery.store',
+        'studio.operation/resource.search',
         'studio.operation/telemetry.emit',
         'studio.port/artifact',
         'studio.port/localization',
@@ -63,6 +64,7 @@ final readonly class StudioHostSessionAuthority
         'studio.port/permission',
         'studio.port/preview',
         'studio.port/recovery',
+        'studio.port/resource',
         'studio.port/telemetry',
     ];
 

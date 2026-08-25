@@ -30,6 +30,7 @@ use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use stdClass;
 
 /**
@@ -328,8 +329,10 @@ final class StudioHostDispatcherTest extends TestCase
         }
         self::assertInvalidArgument(
             static function (): void {
-                /** @phpstan-ignore argument.type (the runtime item guard is the subject) */
-                new StudioResourceSearchPage([new stdClass()], false);
+                (new ReflectionClass(StudioResourceSearchPage::class))->newInstance(
+                    [new stdClass()],
+                    false,
+                );
             },
             'A Studio resource search page contains an invalid item.',
         );
@@ -344,7 +347,7 @@ final class StudioHostDispatcherTest extends TestCase
      */
     public function testResourceProviderRegistryRejectsInvalidAndDuplicateFamilies(): void
     {
-        $validBoundary = $this->createStub(StudioResourceSearchProvider::class);
+        $validBoundary = self::createStub(StudioResourceSearchProvider::class);
         $validBoundary->method('resourceType')->willReturn(
             str_repeat('a', 79) . '/' . str_repeat('b', 80),
         );
@@ -361,7 +364,7 @@ final class StudioHostDispatcherTest extends TestCase
                 str_repeat('a', 80) . '/' . str_repeat('b', 80),
             ] as $resourceType
         ) {
-            $invalid = $this->createStub(StudioResourceSearchProvider::class);
+            $invalid = self::createStub(StudioResourceSearchProvider::class);
             $invalid->method('resourceType')->willReturn($resourceType);
             self::assertInvalidArgument(
                 static fn () => new StudioResourceHostPort([$invalid]),
@@ -369,9 +372,9 @@ final class StudioHostDispatcherTest extends TestCase
             );
         }
 
-        $first = $this->createStub(StudioResourceSearchProvider::class);
+        $first = self::createStub(StudioResourceSearchProvider::class);
         $first->method('resourceType')->willReturn('kumwe.app/content-entry');
-        $second = $this->createStub(StudioResourceSearchProvider::class);
+        $second = self::createStub(StudioResourceSearchProvider::class);
         $second->method('resourceType')->willReturn('kumwe.app/content-entry');
         self::assertInvalidArgument(
             static fn () => new StudioResourceHostPort([$first, $second]),
@@ -430,14 +433,19 @@ final class StudioHostDispatcherTest extends TestCase
             self::resourceHostRequest(self::resourceArguments('kumwe.app/content-entry', 'release', 2)),
             $snapshot,
         );
-        self::assertInstanceOf(stdClass::class, $first->value);
-        self::assertCount(2, $first->value->items);
-        self::assertSame('content-entry:first', $first->value->items[0]->id);
-        self::assertSame('kumwe.app/content-entry', $first->value->items[0]->resourceType);
-        self::assertSame('kumwe.app/resource-label', $first->value->items[0]->label->key);
-        self::assertSame('First release', $first->value->items[0]->label->defaultMessage);
-        self::assertSame(base64_encode('index:2'), $first->value->nextCursor);
-        self::assertStringNotContainsString('index', $first->value->nextCursor);
+        $firstValue = self::resourcePageValue($first->value);
+        $firstItems = self::resourcePageItems($firstValue, 2);
+        self::assertSame('content-entry:first', self::resourceItemMember($firstItems[0], 'id'));
+        self::assertSame(
+            'kumwe.app/content-entry',
+            self::resourceItemMember($firstItems[0], 'resourceType'),
+        );
+        $firstLabel = self::resourceItemObjectMember($firstItems[0], 'label');
+        self::assertSame('kumwe.app/resource-label', self::resourceItemMember($firstLabel, 'key'));
+        self::assertSame('First release', self::resourceItemMember($firstLabel, 'defaultMessage'));
+        $nextCursor = self::resourceItemMember($firstValue, 'nextCursor');
+        self::assertSame(base64_encode('index:2'), $nextCursor);
+        self::assertStringNotContainsString('index', $nextCursor);
 
         $second = $port->dispatch(
             $context,
@@ -446,13 +454,14 @@ final class StudioHostDispatcherTest extends TestCase
                 'kumwe.app/content-entry',
                 'release',
                 2,
-                $first->value->nextCursor,
+                $nextCursor,
             )),
             $snapshot,
         );
-        self::assertInstanceOf(stdClass::class, $second->value);
-        self::assertSame('content-entry:third', $second->value->items[0]->id);
-        self::assertFalse(property_exists($second->value, 'nextCursor'));
+        $secondValue = self::resourcePageValue($second->value);
+        $secondItems = self::resourcePageItems($secondValue, 1);
+        self::assertSame('content-entry:third', self::resourceItemMember($secondItems[0], 'id'));
+        self::assertFalse(property_exists($secondValue, 'nextCursor'));
 
         $unknown = $port->dispatch(
             $context,
@@ -460,9 +469,9 @@ final class StudioHostDispatcherTest extends TestCase
             self::resourceHostRequest(self::resourceArguments('kumwe.app/private-resource', '', 10)),
             $snapshot,
         );
-        self::assertInstanceOf(stdClass::class, $unknown->value);
-        self::assertSame([], $unknown->value->items);
-        self::assertFalse(property_exists($unknown->value, 'nextCursor'));
+        $unknownValue = self::resourcePageValue($unknown->value);
+        self::assertSame([], self::resourcePageItems($unknownValue, 0));
+        self::assertFalse(property_exists($unknownValue, 'nextCursor'));
     }
 
     /**
@@ -577,6 +586,31 @@ final class StudioHostDispatcherTest extends TestCase
             'internal',
             'studio.resource/provider-invalid',
         );
+
+        foreach (
+            [
+                new StudioResourceSearchPage([], true),
+                new StudioResourceSearchPage([
+                    new StudioResourceSearchItem('content-entry:duplicate', 'First copy'),
+                    new StudioResourceSearchItem('content-entry:duplicate', 'Second copy'),
+                ], false),
+            ] as $invalidPage
+        ) {
+            $invalidProvider = self::createStub(StudioResourceSearchProvider::class);
+            $invalidProvider->method('resourceType')->willReturn('kumwe.app/invalid-page');
+            $invalidProvider->method('search')->willReturn($invalidPage);
+            $invalidPort = new StudioResourceHostPort([$invalidProvider]);
+            self::assertPortRefused(
+                static fn () => $invalidPort->dispatch(
+                    $context,
+                    'search',
+                    self::resourceHostRequest(self::resourceArguments('kumwe.app/invalid-page', '', 2)),
+                    $snapshot,
+                ),
+                'internal',
+                'studio.resource/provider-invalid',
+            );
+        }
     }
 
     /**
@@ -613,19 +647,23 @@ final class StudioHostDispatcherTest extends TestCase
 
         $result = $dispatcher->dispatch($context, 'resource', 'search', $request);
         self::assertSame(200, $result->status);
-        self::assertSame('content-entry:visible', $result->document->value->items[0]->id);
+        $resultValue = self::resourcePageValue($result->document->value ?? null);
+        $resultItems = self::resourcePageItems($resultValue, 1);
+        self::assertSame('content-entry:visible', self::resourceItemMember($resultItems[0], 'id'));
         self::assertTrue(StudioContractSchemas::fromVendoredCorpus()->validator('host-result')->validate(
             $result->document,
         ));
 
-        $request->context->requestId = 'requests/resource-invalid-cursor';
-        $request->arguments->query->cursor = 'forged';
-        $invalidCursor = $dispatcher->dispatch($context, 'resource', 'search', $request);
+        $invalidCursor = $dispatcher->dispatch($context, 'resource', 'search', self::resourceEnvelope(
+            $snapshot->session->resourceContextKey,
+            $snapshot->generation,
+            self::resourceArguments('kumwe.app/content-entry', '', 10, 'forged'),
+        ));
         self::assertSame(400, $invalidCursor->status);
         self::assertSame('invalid-request', $invalidCursor->document->category);
         self::assertSame(
             'studio.resource/invalid-cursor',
-            $invalidCursor->document->diagnostics[0]->code,
+            self::firstDiagnosticCode($invalidCursor->document),
         );
 
         $unavailable = (new StudioHostDispatcher(
@@ -640,7 +678,7 @@ final class StudioHostDispatcherTest extends TestCase
         self::assertSame('incompatible', $unavailable->document->category);
         self::assertSame(
             'studio.host/operation-unavailable',
-            $unavailable->document->diagnostics[0]->code,
+            self::firstDiagnosticCode($unavailable->document),
         );
 
         $stale = $dispatcher->dispatch($context, 'resource', 'search', self::resourceEnvelope(
@@ -651,7 +689,7 @@ final class StudioHostDispatcherTest extends TestCase
         self::assertSame('invalid-request', $stale->document->category);
         self::assertSame(
             'studio.host/stale-session-generation',
-            $stale->document->diagnostics[0]->code,
+            self::firstDiagnosticCode($stale->document),
         );
     }
 
@@ -885,6 +923,109 @@ final class StudioHostDispatcherTest extends TestCase
                 'sessionGeneration' => $generation,
             ],
         ];
+    }
+
+    /**
+     * Narrow a resource result to the canonical object shape before inspecting dynamic members.
+     *
+     * @param   mixed  $value  Candidate host-result value.
+     *
+     * @return  stdClass  Canonical resource page object.
+     *
+     * @since   2.0.0
+     */
+    private static function resourcePageValue(mixed $value): stdClass
+    {
+        if (!$value instanceof stdClass) {
+            self::fail('The resource host result value is not an object.');
+        }
+
+        return $value;
+    }
+
+    /**
+     * Narrow and count the canonical resource item collection.
+     *
+     * @param   stdClass  $value          Canonical resource page object.
+     * @param   int       $expectedCount  Exact expected item count.
+     *
+     * @return  list<stdClass>  Canonical resource item objects.
+     *
+     * @since   2.0.0
+     */
+    private static function resourcePageItems(stdClass $value, int $expectedCount): array
+    {
+        $items = $value->items ?? null;
+        if (!is_array($items)) {
+            self::fail('The resource host result does not contain an item collection.');
+        }
+        foreach ($items as $item) {
+            if (!$item instanceof stdClass) {
+                self::fail('The resource host result contains a malformed item.');
+            }
+        }
+        self::assertCount($expectedCount, $items);
+
+        return array_values($items);
+    }
+
+    /**
+     * Read one required string member from a canonical resource object.
+     *
+     * @param   stdClass  $object  Resource item, label or page object.
+     * @param   string    $member  Required member name.
+     *
+     * @return  string  Required canonical string value.
+     *
+     * @since   2.0.0
+     */
+    private static function resourceItemMember(stdClass $object, string $member): string
+    {
+        $value = $object->{$member} ?? null;
+        if (!is_string($value)) {
+            self::fail('The resource host result contains a malformed string member.');
+        }
+
+        return $value;
+    }
+
+    /**
+     * Read one required object member from a canonical resource item.
+     *
+     * @param   stdClass  $object  Resource item object.
+     * @param   string    $member  Required member name.
+     *
+     * @return  stdClass  Required canonical object value.
+     *
+     * @since   2.0.0
+     */
+    private static function resourceItemObjectMember(stdClass $object, string $member): stdClass
+    {
+        $value = $object->{$member} ?? null;
+        if (!$value instanceof stdClass) {
+            self::fail('The resource host result contains a malformed object member.');
+        }
+
+        return $value;
+    }
+
+    /**
+     * Read the first stable diagnostic code from one canonical host error.
+     *
+     * @param   stdClass  $document  Canonical host-error document.
+     *
+     * @return  string  Stable diagnostic code.
+     *
+     * @since   2.0.0
+     */
+    private static function firstDiagnosticCode(stdClass $document): string
+    {
+        $diagnostics = $document->diagnostics ?? null;
+        if (!is_array($diagnostics) || !isset($diagnostics[0]) || !$diagnostics[0] instanceof stdClass) {
+            self::fail('The host error does not contain a canonical diagnostic.');
+        }
+
+        return self::resourceItemMember($diagnostics[0], 'code');
     }
 
     /**

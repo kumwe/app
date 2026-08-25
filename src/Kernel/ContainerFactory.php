@@ -322,6 +322,7 @@ use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupReposit
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
+use Kumwe\App\Studio\Application\Projection\ContentStudioResourceSearchProvider;
 use Kumwe\App\Studio\Application\Projection\RecordAuthorizedStudioContentFieldDisclosure;
 use Kumwe\App\Studio\Application\Projection\StudioContentFieldDisclosure;
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
@@ -348,6 +349,7 @@ use Kumwe\App\Studio\Application\Host\StudioMutationExecutor;
 use Kumwe\App\Studio\Application\Host\StudioRecoveryHostPort;
 use Kumwe\App\Studio\Application\Host\StudioRecoveryRepository;
 use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
+use Kumwe\App\Studio\Application\Host\StudioResourceHostPort;
 use Kumwe\App\Studio\Presentation\Preview\CanonicalStudioPreviewRenderer;
 use Kumwe\App\Studio\Application\Preview\ContentStudioPreviewBindingSource;
 use Kumwe\App\Studio\Application\Preview\CoreStudioPreviewBlockRendererRegistry;
@@ -1864,6 +1866,16 @@ final class ContainerFactory
         ): StudioModelHostPort => new StudioModelHostPort(
             self::service($container, StudioContentProjectionService::class),
         ), true);
+        $container->share(ContentStudioResourceSearchProvider::class, static fn (
+            Container $container,
+        ): ContentStudioResourceSearchProvider => new ContentStudioResourceSearchProvider(
+            self::service($container, ContentService::class),
+        ), true);
+        $container->share(StudioResourceHostPort::class, static fn (
+            Container $container,
+        ): StudioResourceHostPort => new StudioResourceHostPort([
+            self::service($container, ContentStudioResourceSearchProvider::class),
+        ]), true);
         $container->share(StudioLocalizationHostPort::class, static fn (
             Container $container,
         ): StudioLocalizationHostPort => new StudioLocalizationHostPort(
@@ -1887,6 +1899,7 @@ final class ContainerFactory
             self::service($container, StudioPreviewHostPort::class),
             self::service($container, StudioMediaHostPort::class),
             self::service($container, StudioModelHostPort::class),
+            self::service($container, StudioResourceHostPort::class),
             self::service($container, StudioLocalizationHostPort::class),
             self::service($container, StudioTelemetryHostPort::class),
         ), true);
