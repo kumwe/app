@@ -4,17 +4,25 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Host;
 
+use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Studio\Application\Host\StudioHostDispatcher;
+use Kumwe\App\Studio\Application\Host\StudioHostOperationRefused;
 use Kumwe\App\Studio\Application\Host\StudioHostRequestDecoder;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
+use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
+use Kumwe\App\Studio\Application\Host\StudioResourceHostPort;
+use Kumwe\App\Studio\Application\Host\StudioResourceSearchItem;
+use Kumwe\App\Studio\Application\Host\StudioResourceSearchPage;
+use Kumwe\App\Studio\Application\Host\StudioResourceSearchProvider;
 use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
@@ -32,10 +40,13 @@ use stdClass;
  * `vector.host-vector.envelope.malformed-context`, `vector.host-vector.envelope.protocol-version`, and
  * `vector.host-vector.envelope.stale-generation`.
  *
- * @since 2.0.0
+ * @since  2.0.0
  */
 #[CoversClass(StudioHostDispatcher::class)]
 #[CoversClass(StudioHostRequestDecoder::class)]
+#[CoversClass(StudioResourceHostPort::class)]
+#[CoversClass(StudioResourceSearchItem::class)]
+#[CoversClass(StudioResourceSearchPage::class)]
 final class StudioHostDispatcherTest extends TestCase
 {
     /**
@@ -275,6 +286,376 @@ final class StudioHostDispatcherTest extends TestCase
     }
 
     /**
+     * Resource values accept bounded portable identities and refuse malformed or untyped data.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testResourceValueObjectsEnforceTheirPortableBounds(): void
+    {
+        $item = new StudioResourceSearchItem('content-entry:018f22e2', 'Über release notes');
+        self::assertSame('content-entry:018f22e2', $item->id);
+        self::assertSame('Über release notes', $item->label);
+        self::assertSame([$item], (new StudioResourceSearchPage([$item], true))->items);
+        self::assertSame(
+            240,
+            strlen((new StudioResourceSearchItem(str_repeat('a', 240), 'Boundary item'))->id),
+        );
+
+        foreach (
+            [
+                '',
+                '/starts-with-a-separator',
+                'contains a space',
+                'contains~a-tilde',
+                '__proto__',
+                'prototype',
+                'constructor',
+                str_repeat('a', 241),
+            ] as $id
+        ) {
+            self::assertInvalidArgument(
+                static fn () => new StudioResourceSearchItem($id, 'Valid label'),
+                'A Studio resource search item ID is invalid.',
+            );
+        }
+        foreach (['', str_repeat('界', 501)] as $label) {
+            self::assertInvalidArgument(
+                static fn () => new StudioResourceSearchItem('content-entry:valid', $label),
+                'A Studio resource search item label is invalid.',
+            );
+        }
+        self::assertInvalidArgument(
+            static function (): void {
+                /** @phpstan-ignore argument.type (the runtime item guard is the subject) */
+                new StudioResourceSearchPage([new stdClass()], false);
+            },
+            'A Studio resource search page contains an invalid item.',
+        );
+    }
+
+    /**
+     * Provider composition rejects malformed and ambiguous resource-family ownership.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testResourceProviderRegistryRejectsInvalidAndDuplicateFamilies(): void
+    {
+        $validBoundary = $this->createStub(StudioResourceSearchProvider::class);
+        $validBoundary->method('resourceType')->willReturn(
+            str_repeat('a', 79) . '/' . str_repeat('b', 80),
+        );
+        self::assertInstanceOf(StudioResourceHostPort::class, new StudioResourceHostPort([$validBoundary]));
+
+        foreach (
+            [
+                'not-qualified',
+                'kumwe_app/content-entry',
+                'kumwe.app/content_entry',
+                'Kumwe.app/content-entry',
+                'kumwe..app/content-entry',
+                'kumwe.app/-content-entry',
+                str_repeat('a', 80) . '/' . str_repeat('b', 80),
+            ] as $resourceType
+        ) {
+            $invalid = $this->createStub(StudioResourceSearchProvider::class);
+            $invalid->method('resourceType')->willReturn($resourceType);
+            self::assertInvalidArgument(
+                static fn () => new StudioResourceHostPort([$invalid]),
+                'A Studio resource search provider is invalid or duplicated.',
+            );
+        }
+
+        $first = $this->createStub(StudioResourceSearchProvider::class);
+        $first->method('resourceType')->willReturn('kumwe.app/content-entry');
+        $second = $this->createStub(StudioResourceSearchProvider::class);
+        $second->method('resourceType')->willReturn('kumwe.app/content-entry');
+        self::assertInvalidArgument(
+            static fn () => new StudioResourceHostPort([$first, $second]),
+            'A Studio resource search provider is invalid or duplicated.',
+        );
+    }
+
+    /**
+     * Resource searches retain trusted context, serialize safe labels and advance only opaque cursors.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testResourcePortSerializesAuthorizedPagesAndOpaqueCursors(): void
+    {
+        [, $authority, $context] = $this->runtime(['studio.mode.content']);
+        $snapshot = $authority->open(
+            $context,
+            StudioSessionMode::Content,
+            StudioResourceKind::Content,
+            'content-resource-search',
+        );
+        $provider = $this->createMock(StudioResourceSearchProvider::class);
+        $provider->expects(self::once())
+            ->method('resourceType')
+            ->willReturn('kumwe.app/content-entry');
+        $provider->expects(self::exactly(2))
+            ->method('search')
+            ->willReturnCallback(static function (
+                ExecutionContext $actualContext,
+                string $search,
+                int $offset,
+                int $limit,
+            ) use ($context): StudioResourceSearchPage {
+                self::assertSame($context, $actualContext);
+                self::assertSame('release', $search);
+                self::assertSame(2, $limit);
+
+                return match ($offset) {
+                    0 => new StudioResourceSearchPage([
+                        new StudioResourceSearchItem('content-entry:first', 'First release'),
+                        new StudioResourceSearchItem('content-entry:second', 'Second release'),
+                    ], true),
+                    2 => new StudioResourceSearchPage([
+                        new StudioResourceSearchItem('content-entry:third', 'Third release'),
+                    ], false),
+                    default => self::fail('The provider received a non-canonical cursor offset.'),
+                };
+            });
+        $port = new StudioResourceHostPort([$provider]);
+
+        $first = $port->dispatch(
+            $context,
+            'search',
+            self::resourceHostRequest(self::resourceArguments('kumwe.app/content-entry', 'release', 2)),
+            $snapshot,
+        );
+        self::assertInstanceOf(stdClass::class, $first->value);
+        self::assertCount(2, $first->value->items);
+        self::assertSame('content-entry:first', $first->value->items[0]->id);
+        self::assertSame('kumwe.app/content-entry', $first->value->items[0]->resourceType);
+        self::assertSame('kumwe.app/resource-label', $first->value->items[0]->label->key);
+        self::assertSame('First release', $first->value->items[0]->label->defaultMessage);
+        self::assertSame(base64_encode('index:2'), $first->value->nextCursor);
+        self::assertStringNotContainsString('index', $first->value->nextCursor);
+
+        $second = $port->dispatch(
+            $context,
+            'search',
+            self::resourceHostRequest(self::resourceArguments(
+                'kumwe.app/content-entry',
+                'release',
+                2,
+                $first->value->nextCursor,
+            )),
+            $snapshot,
+        );
+        self::assertInstanceOf(stdClass::class, $second->value);
+        self::assertSame('content-entry:third', $second->value->items[0]->id);
+        self::assertFalse(property_exists($second->value, 'nextCursor'));
+
+        $unknown = $port->dispatch(
+            $context,
+            'search',
+            self::resourceHostRequest(self::resourceArguments('kumwe.app/private-resource', '', 10)),
+            $snapshot,
+        );
+        self::assertInstanceOf(stdClass::class, $unknown->value);
+        self::assertSame([], $unknown->value->items);
+        self::assertFalse(property_exists($unknown->value, 'nextCursor'));
+    }
+
+    /**
+     * Resource search rejects writes, open query shapes, forged cursors and over-producing providers.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testResourcePortFailsClosedAcrossEveryUntrustedBoundary(): void
+    {
+        [, $authority, $context] = $this->runtime(['studio.mode.content']);
+        $snapshot = $authority->open(
+            $context,
+            StudioSessionMode::Content,
+            StudioResourceKind::Content,
+            'content-resource-refusal',
+        );
+        $provider = $this->createMock(StudioResourceSearchProvider::class);
+        $provider->expects(self::once())
+            ->method('resourceType')
+            ->willReturn('kumwe.app/content-entry');
+        $provider->expects(self::once())
+            ->method('search')
+            ->willReturn(new StudioResourceSearchPage([
+                new StudioResourceSearchItem('content-entry:first', 'First'),
+                new StudioResourceSearchItem('content-entry:second', 'Second'),
+            ], false));
+        $port = new StudioResourceHostPort([$provider]);
+        $valid = self::resourceArguments('kumwe.app/content-entry', '', 1);
+        $invalidArguments = [
+            null,
+            (object) ['query' => $valid->query, 'unexpected' => true],
+            (object) ['query' => 'not-an-object'],
+            (object) ['query' => (object) [
+                'limit' => 1,
+                'resourceType' => 'kumwe.app/content-entry',
+                'unexpected' => true,
+            ]],
+            self::resourceArguments('kumwe.app/content-entry', '', 0),
+            self::resourceArguments('not-qualified', '', 1),
+            self::resourceArguments('kumwe.app/content-entry', str_repeat('x', 161), 1),
+            self::resourceArguments('kumwe.app/content-entry', '', 1, 42),
+        ];
+
+        self::assertPortRefused(
+            static fn () => $port->dispatch(
+                $context,
+                'unknown',
+                self::resourceHostRequest($valid),
+                $snapshot,
+            ),
+            'incompatible',
+            'studio.host/operation-unavailable',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch(
+                $context,
+                'search',
+                self::resourceHostRequest($valid, expectedRevision: 'revision/not-allowed'),
+                $snapshot,
+            ),
+            'invalid-request',
+            'studio.host/invalid-context',
+        );
+        self::assertPortRefused(
+            static fn () => $port->dispatch(
+                $context,
+                'search',
+                self::resourceHostRequest($valid, idempotencyKey: 'idempotency/not-allowed'),
+                $snapshot,
+            ),
+            'invalid-request',
+            'studio.host/invalid-context',
+        );
+        foreach ($invalidArguments as $arguments) {
+            self::assertPortRefused(
+                static fn () => $port->dispatch(
+                    $context,
+                    'search',
+                    self::resourceHostRequest($arguments),
+                    $snapshot,
+                ),
+                'invalid-request',
+                'studio.host/invalid-arguments',
+            );
+        }
+        foreach (['not-base64', base64_encode('index:01'), base64_encode('index:4999901')] as $cursor) {
+            self::assertPortRefused(
+                static fn () => $port->dispatch(
+                    $context,
+                    'search',
+                    self::resourceHostRequest(self::resourceArguments(
+                        'kumwe.app/content-entry',
+                        '',
+                        1,
+                        $cursor,
+                    )),
+                    $snapshot,
+                ),
+                'invalid-request',
+                'studio.resource/invalid-cursor',
+            );
+        }
+        self::assertPortRefused(
+            static fn () => $port->dispatch(
+                $context,
+                'search',
+                self::resourceHostRequest($valid),
+                $snapshot,
+            ),
+            'internal',
+            'studio.resource/provider-invalid',
+        );
+    }
+
+    /**
+     * The central dispatcher routes resource search after authority and maps every port refusal.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDispatcherRoutesResourceSearchAfterItsSharedAuthorityFence(): void
+    {
+        $provider = $this->createMock(StudioResourceSearchProvider::class);
+        $provider->expects(self::once())
+            ->method('resourceType')
+            ->willReturn('kumwe.app/content-entry');
+        $provider->expects(self::once())
+            ->method('search')
+            ->willReturn(new StudioResourceSearchPage([
+                new StudioResourceSearchItem('content-entry:visible', 'Visible content'),
+            ], false));
+        $resource = new StudioResourceHostPort([$provider]);
+        [$dispatcher, $authority, $context] = $this->runtime(['studio.mode.content'], $resource);
+        $snapshot = $authority->open(
+            $context,
+            StudioSessionMode::Content,
+            StudioResourceKind::Content,
+            'content-dispatch-resource',
+        );
+        $request = self::resourceEnvelope(
+            $snapshot->session->resourceContextKey,
+            $snapshot->generation,
+            self::resourceArguments('kumwe.app/content-entry', '', 10),
+        );
+
+        $result = $dispatcher->dispatch($context, 'resource', 'search', $request);
+        self::assertSame(200, $result->status);
+        self::assertSame('content-entry:visible', $result->document->value->items[0]->id);
+        self::assertTrue(StudioContractSchemas::fromVendoredCorpus()->validator('host-result')->validate(
+            $result->document,
+        ));
+
+        $request->context->requestId = 'requests/resource-invalid-cursor';
+        $request->arguments->query->cursor = 'forged';
+        $invalidCursor = $dispatcher->dispatch($context, 'resource', 'search', $request);
+        self::assertSame(400, $invalidCursor->status);
+        self::assertSame('invalid-request', $invalidCursor->document->category);
+        self::assertSame(
+            'studio.resource/invalid-cursor',
+            $invalidCursor->document->diagnostics[0]->code,
+        );
+
+        $unavailable = (new StudioHostDispatcher(
+            new StudioHostRequestDecoder(StudioContractSchemas::fromVendoredCorpus()),
+            $authority,
+        ))->dispatch($context, 'resource', 'search', self::resourceEnvelope(
+            $snapshot->session->resourceContextKey,
+            $snapshot->generation,
+            self::resourceArguments('kumwe.app/content-entry', '', 10),
+        ));
+        self::assertSame(400, $unavailable->status);
+        self::assertSame('incompatible', $unavailable->document->category);
+        self::assertSame(
+            'studio.host/operation-unavailable',
+            $unavailable->document->diagnostics[0]->code,
+        );
+
+        $stale = $dispatcher->dispatch($context, 'resource', 'search', self::resourceEnvelope(
+            $snapshot->session->resourceContextKey,
+            'session-obsolete',
+            self::resourceArguments('kumwe.app/content-entry', '', 10),
+        ));
+        self::assertSame('invalid-request', $stale->document->category);
+        self::assertSame(
+            'studio.host/stale-session-generation',
+            $stale->document->diagnostics[0]->code,
+        );
+    }
+
+    /**
      * Revoking exact mode authority invalidates the generation without exposing the policy reason.
      *
      * @return  void
@@ -345,14 +726,15 @@ final class StudioHostDispatcherTest extends TestCase
     /**
      * Assemble a deterministic permission-port runtime around production application services.
      *
-     * @param  list<string>  $capabilities  Global capability grants carried by the actor.
+     * @param   list<string>                 $capabilities  Global capability grants carried by the actor.
+     * @param   StudioResourceHostPort|null  $resource      Optional resource port under dispatcher test.
      *
      * @return  array{StudioHostDispatcher, StudioHostSessionAuthority, ExecutionContext}
      *          Dispatcher, authority service and trusted context.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
-    private function runtime(array $capabilities): array
+    private function runtime(array $capabilities, ?StudioResourceHostPort $resource = null): array
     {
         $repository = new class implements StudioHostSessionRepository {
             /**
@@ -407,10 +789,144 @@ final class StudioHostDispatcherTest extends TestCase
         $schemas = StudioContractSchemas::fromVendoredCorpus();
 
         return [
-            new StudioHostDispatcher(new StudioHostRequestDecoder($schemas), $authority),
+            new StudioHostDispatcher(
+                new StudioHostRequestDecoder($schemas),
+                $authority,
+                resource: $resource,
+            ),
             $authority,
             self::context($capabilities),
         ];
+    }
+
+    /**
+     * Build exact resource-search arguments with optional cursor presence.
+     *
+     * @param   string      $resourceType  Qualified resource family selected from the Studio catalog.
+     * @param   string      $search        Bounded human search text.
+     * @param   int         $limit         Requested result-page size.
+     * @param   mixed|null  $cursor        Optional opaque cursor or deliberate malformed candidate.
+     *
+     * @return  stdClass  Canonical resource-search argument object.
+     *
+     * @since   2.0.0
+     */
+    private static function resourceArguments(
+        string $resourceType,
+        string $search,
+        int $limit,
+        mixed $cursor = null,
+    ): stdClass {
+        $query = (object) [
+            'limit' => $limit,
+            'resourceType' => $resourceType,
+            'search' => $search,
+        ];
+        if ($cursor !== null) {
+            $query->cursor = $cursor;
+        }
+
+        return (object) ['query' => $query];
+    }
+
+    /**
+     * Build a validated domain request for direct resource-port refusal and serialization tests.
+     *
+     * @param   mixed        $arguments         Candidate search arguments.
+     * @param   string|null  $expectedRevision  Deliberate read-context revision when under test.
+     * @param   string|null  $idempotencyKey    Deliberate read-context idempotency key when under test.
+     *
+     * @return  StudioHostRequest  Resource request with deterministic context coordinates.
+     *
+     * @since   2.0.0
+     */
+    private static function resourceHostRequest(
+        mixed $arguments,
+        ?string $expectedRevision = null,
+        ?string $idempotencyKey = null,
+    ): StudioHostRequest {
+        return new StudioHostRequest(
+            'studio.operation/resource.search',
+            StudioHostDispatcher::PROTOCOL_VERSION,
+            'requests/resource-search',
+            'contexts/dispatcher-test',
+            'session-r1',
+            $arguments,
+            $expectedRevision,
+            $idempotencyKey,
+            null,
+            null,
+        );
+    }
+
+    /**
+     * Build one canonical wire request for resource dispatch through the closed decoder.
+     *
+     * @param   string    $key         Opaque trusted resource-context key.
+     * @param   string    $generation  Current or deliberately stale authority generation.
+     * @param   stdClass  $arguments   Exact resource-search arguments.
+     *
+     * @return  stdClass  Canonical host-request document.
+     *
+     * @since   2.0.0
+     */
+    private static function resourceEnvelope(
+        string $key,
+        string $generation,
+        stdClass $arguments,
+    ): stdClass {
+        return (object) [
+            'arguments' => $arguments,
+            'context' => (object) [
+                'operationId' => 'studio.operation/resource.search',
+                'protocolVersion' => StudioHostDispatcher::PROTOCOL_VERSION,
+                'requestId' => 'requests/resource-search',
+                'resourceContextKey' => $key,
+                'sessionGeneration' => $generation,
+            ],
+        ];
+    }
+
+    /**
+     * Assert a value-object invariant without allowing a later malformed case to be skipped.
+     *
+     * @param   callable(): mixed  $operation  Construction expected to fail.
+     * @param   string             $message    Exact stable exception message.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertInvalidArgument(callable $operation, string $message): void
+    {
+        try {
+            $operation();
+            self::fail('The malformed resource value unexpectedly succeeded.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame($message, $exception->getMessage());
+        }
+    }
+
+    /**
+     * Assert one resource host-port refusal and its stable diagnostic.
+     *
+     * @param   callable(): mixed  $operation  Host-port call expected to fail closed.
+     * @param   string             $category   Expected protocol error category.
+     * @param   string             $code       Expected stable diagnostic code.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertPortRefused(callable $operation, string $category, string $code): void
+    {
+        try {
+            $operation();
+            self::fail('The malformed resource host request unexpectedly succeeded.');
+        } catch (StudioHostOperationRefused $refused) {
+            self::assertSame($category, $refused->category);
+            self::assertSame($code, $refused->diagnosticCode);
+        }
     }
 
     /**
