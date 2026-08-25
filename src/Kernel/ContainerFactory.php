@@ -364,6 +364,7 @@ use Kumwe\App\Studio\Application\Preview\StudioPreviewHostPort;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewRenderer;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewSequenceRepository;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewTransportGuard;
+use Kumwe\App\Studio\Application\Release\StudioReleaseRecord;
 use Kumwe\App\Studio\Application\Media\StudioExternalAddressResolver;
 use Kumwe\App\Studio\Application\Media\StudioExternalMediaFetcher;
 use Kumwe\App\Studio\Application\Media\StudioMediaAssetProjector;
@@ -1710,6 +1711,14 @@ final class ContainerFactory
             self::service($container, ExtensionContributionRegistrySet::class),
             self::service($container, StudioPreviewBlockRendererRegistry::class),
         ), true);
+        $container->share(StudioReleaseRecord::class, static function () use ($root): StudioReleaseRecord {
+            $record = file_get_contents($root . '/resources/studio-contract/studio-release.json');
+            if (!is_string($record)) {
+                throw new RuntimeException('The canonical Studio release record is unavailable.');
+            }
+
+            return StudioReleaseRecord::fromJson($record);
+        }, true);
         $container->share(
             StudioHostSessionRepository::class,
             static fn (Container $container): StudioHostSessionRepository =>
@@ -4046,6 +4055,7 @@ final class ContainerFactory
             self::service($container, ActiveLocale::class),
             self::service($container, SiteSettings::class),
             self::service($container, StudioCompositionContributionCatalog::class),
+            self::service($container, StudioReleaseRecord::class),
         ), true);
         $container->share(AdministratorInterfaceStandardHandler::class, static fn (
             Container $container,

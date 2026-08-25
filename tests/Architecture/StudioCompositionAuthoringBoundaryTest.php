@@ -64,6 +64,8 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
         self::assertStringContainsString('$this->compositions->provision(', $handler);
         self::assertStringContainsString('new RedirectResponse($path, 303)', $handler);
         self::assertStringContainsString('$this->compositions->find(', $handler);
+        self::assertStringContainsString("StudioReleaseRecord::class", $container);
+        self::assertStringContainsString("'release' => \$this->studioRelease->release", $handler);
         self::assertLessThan(
             strpos($handler, '$this->compositions->find('),
             strpos($handler, "strtoupper(\$request->getMethod()) === 'POST'"),
@@ -84,9 +86,14 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
         $adapter = $this->contents('assets/administrator/components/studio-host-adapter.ts');
         $contributions = $this->contents('assets/administrator/components/studio-contributions.ts');
         $template = $this->contents('templates/administrator/studio-composition.twig');
+        $vite = $this->contents('vite.config.ts');
+        $localization = $this->contents('tools/sync-studio-localization.mjs');
 
         self::assertStringContainsString("querySelector('[data-studio-composition]')", $main);
         self::assertStringContainsString("import('./components/studio-composition')", $main);
+        self::assertStringContainsString('__KUMWE_STUDIO_RELEASE__', $surface);
+        self::assertStringContainsString('resources/studio-contract/studio-release.json', $vite);
+        self::assertStringContainsString('resources/studio-contract/studio-release.json', $localization);
         self::assertStringContainsString('shell.markSaved(accepted.revision, acceptedStateVersion)', $surface);
         self::assertStringContainsString('await shell.updateComplete', $surface);
         self::assertStringContainsString('if (handle.session.dirty)', $surface);
@@ -144,6 +151,10 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
         self::assertIsArray($release);
         self::assertSame('not_run', $journey['status'] ?? null);
         self::assertSame($release['release'] ?? null, $journey['studioRelease'] ?? null);
+        self::assertSame(
+            hash('sha256', $this->contents('resources/studio-contract/studio-release.json')),
+            $journey['qualificationDependencies']['p7gReleaseRecord']['recordSha256'] ?? null,
+        );
         self::assertSame('open', $journey['qualificationDependencies']['p7fSignedContributedBlockAndRenderer'] ?? null);
         foreach ($journey['steps'] ?? [] as $step) {
             self::assertIsArray($step);

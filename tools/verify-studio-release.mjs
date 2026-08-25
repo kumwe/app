@@ -5,8 +5,8 @@
  * A semantic range is not a qualification record. The App therefore accepts
  * either the exact published version or an immutable repository-vendored
  * tarball whose bytes and internal version are pinned in PIN.json. Both forms
- * resolve to the same seven-package release record and the lockfile must name
- * the exact package version actually installed.
+ * resolve to the same complete release record and the lockfile must name the
+ * exact package version actually installed.
  */
 
 import { createHash } from "node:crypto";
@@ -19,6 +19,10 @@ const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 const contractRoot = join(repositoryRoot, "resources/studio-contract");
 const releasePath = join(contractRoot, "studio-release.json");
 const pinPath = join(contractRoot, "PIN.json");
+const corpusManifestPath = join(
+  repositoryRoot,
+  "tests/Fixtures/Studio/testkit/corpus-manifest.json",
+);
 const packagePath = join(repositoryRoot, "package.json");
 const lockPath = join(repositoryRoot, "package-lock.json");
 
@@ -37,6 +41,7 @@ const semanticVersion =
 
 const errors = [];
 const releaseBytes = await readFile(releasePath);
+const corpusManifestBytes = await readFile(corpusManifestPath);
 const release = decode(
   releaseBytes,
   "resources/studio-contract/studio-release.json",
@@ -124,6 +129,11 @@ function verifyReleaseRecord() {
   ) {
     errors.push(
       "studio-release.json lacks its protocol, corpus digest, or profile claims.",
+    );
+  }
+  if (release.corpusManifestDigest !== sriSha256(corpusManifestBytes)) {
+    errors.push(
+      "studio-release.json corpusManifestDigest does not match the vendored corpus manifest bytes.",
     );
   }
 }
@@ -346,6 +356,11 @@ function decode(bytes, label) {
 /** Return a lower-case hexadecimal SHA-256 digest. */
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
+}
+
+/** Return the SRI SHA-256 digest used by the Studio release record. */
+function sriSha256(bytes) {
+  return `sha256-${createHash("sha256").update(bytes).digest("base64")}`;
 }
 
 /**

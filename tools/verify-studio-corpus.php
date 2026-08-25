@@ -138,6 +138,13 @@ if ($pin !== null && $release !== null) {
             $errors[] = sprintf('Release-record copy %s is missing or differs byte-for-byte.', $copy);
         }
     }
+    $corpusManifestPath = $testkitRoot . '/testkit/corpus-manifest.json';
+    if (
+        !is_file($corpusManifestPath)
+        || ($release['corpusManifestDigest'] ?? null) !== sriDigest($corpusManifestPath)
+    ) {
+        $errors[] = 'The Studio release record does not bind the exact vendored corpus manifest bytes.';
+    }
 
     $pinnedNames = array_keys((array) ($pin['pinned'] ?? []));
     sort($pinnedNames);

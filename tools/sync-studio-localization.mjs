@@ -7,6 +7,7 @@ import { dirname, resolve } from 'node:path';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const corpusPath = resolve(root, 'tests/Fixtures/Studio/testkit/fixtures/authoring-message-catalog.en.json');
 const cataloguePath = resolve(root, 'resources/localization/messages/en-GB.xlf');
+const releasePath = resolve(root, 'resources/studio-contract/studio-release.json');
 const begin = '  <!-- BEGIN GENERATED STUDIO AUTHORING MESSAGES -->';
 const end = '  <!-- END GENERATED STUDIO AUTHORING MESSAGES -->';
 
@@ -18,16 +19,21 @@ const xml = (value) => value
   .replaceAll("'", '&apos;');
 
 const corpus = JSON.parse(await readFile(corpusPath, 'utf8'));
+const releaseRecord = JSON.parse(await readFile(releasePath, 'utf8'));
+if (releaseRecord.kind !== 'studio-release' || typeof releaseRecord.release !== 'string') {
+  throw new Error('The canonical Studio release record is malformed.');
+}
 const entries = Object.entries(corpus.messages).sort(([left], [right]) => left.localeCompare(right));
 if (entries.length !== 160) throw new Error(`Expected 160 Studio authoring messages; received ${entries.length}.`);
 
 const units = entries.map(([wireId, message]) => {
   if (!wireId.startsWith('studio.shell/')) throw new Error(`Unexpected Studio namespace: ${wireId}`);
   const id = `core.studio.shell.${wireId.slice('studio.shell/'.length)}`;
+  const context = `Exact @kumwe/studio ${xml(releaseRecord.release)} authoring message ${xml(wireId)}.`;
   return [
     `    <unit id="${xml(id)}">`,
     '      <notes>',
-    `        <note category="context">Exact @kumwe/studio 0.1.0-alpha.11 authoring message ${xml(wireId)}.</note>`,
+    `        <note category="context">${context}</note>`,
     '      </notes>',
     '      <segment>',
     `        <source>${xml(message.defaultMessage)}</source>`,
