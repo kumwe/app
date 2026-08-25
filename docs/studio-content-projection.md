@@ -94,6 +94,35 @@ case for these coordinates, and adding a generic save method here would create a
 before Studio's session-generation and optimistic artifact contracts are available. The later write
 service must supply that authorization, audit, expected-revision, and replay discipline explicitly.
 
+## Dynamic resource and data boundary
+
+Model and entry projection, authoring-time resource discovery and delivery-time data resolution are three
+separate read concerns:
+
+- the model port exposes schema-governed Content model and entry documents needed to bind a Blueprint;
+- `resource.search` helps an author choose a stable reference but returns no entity data; and
+- preview/public delivery resolves a stored, closed binding descriptor through the authoritative application
+  service for that bounded context and purpose.
+
+`StudioResourceHostPort` composes explicit `StudioResourceSearchProvider` instances. Each provider owns one
+qualified type and duplicate ownership fails application composition. Search accepts exactly
+`resourceType`, `limit` from 1 through 100, optional search text up to 160 characters and an optional opaque
+cursor. A result contains only its stable ID, a bounded human label represented through Studio's message
+shape and the same qualified type. The port accepts neither an expected revision nor an idempotency key and
+has no mutation, repository selector, SQL/filter language or arbitrary field projection.
+
+The first provider owns `kumwe.app/content-entry`. It calls policy-aware `ContentService::browse()` with the
+trusted execution context, orders by title, and projects `content-entry:<UUID>` plus the admitted title. Its
+base64 cursor represents host pagination only and is validated before use; it is not a database cursor or a
+capability. An unavailable qualified type returns an empty page rather than leaking provider inventory.
+
+A Studio `content-reference`, `content-collection`, table, chart or other data-aware block can retain only the
+canonical reference/binding descriptor allowed by its schema. The App re-resolves that descriptor at preview
+and delivery through Content application services and reapplies site, publication, locale and field-disclosure
+policy. Studio never receives database credentials or a generic query engine. BusinessRecord remains absent
+until the purpose-specific BusinessSecurity adapter described below exists; Content authorization cannot be
+borrowed for it.
+
 ## Business-record deferral
 
 No BusinessRecord adapter is included. The business runtime has a separate definition vocabulary,

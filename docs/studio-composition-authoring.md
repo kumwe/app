@@ -5,6 +5,11 @@ The administrator can compose the Blueprint owned by one immutable Content-type 
 surface, not a Content-entry editor. The existing server-rendered model and entry editors remain the
 essential authoring paths and are not replaced.
 
+Studio itself is the standalone page builder. It owns layout, the production block catalog, insertion
+patterns, authoring controls, Editor.js integration, semantic web rendering and progressive behavior. This
+App is one host: it supplies authorized Content models and entries, media, resource discovery, persistence,
+preview, Twig delivery and policy. No App module recreates Studio's canvas or Editor.js tool configuration.
+
 ## Provisioning and authority
 
 The first visit is read-only and presents a normal HTML form. Its CSRF-protected `POST` provisions the
@@ -40,8 +45,11 @@ is an explicit external operation until that separately reviewed executor exists
 
 Only this surface dynamically loads the coordinated `0.1.0-alpha.11` Studio packages. It opens the AP-3
 Blueprint session and uses the common CSRF-protected host route for artifact, permission, recovery,
-model, localization, telemetry and—when composed by AP-6—preview operations. It does not advertise the
-absent `resource.search` operation.
+model, localization, telemetry and—when composed by AP-6—preview operations. The coordinated host candidate
+advertises `resource.search` only for a qualified resource type owned by exactly one authorized provider. Its
+closed query contains that type, a limit from 1 through 100, optional search text no longer than 160 characters
+and an optional opaque host cursor. It returns only stable identifier, localized label and qualified type,
+plus the next opaque cursor. It exposes no writes, SQL/filter language, entity data or repository selection.
 
 The next coordinated candidate replaces the former library-specific rich-content implementation with the
 Studio Inline Content Editor. Studio alone owns Editor.js and converts its transient block output to canonical
@@ -50,11 +58,39 @@ the host boundary. This App does not configure Editor.js tools, persist its JSON
 block port selects a governed Studio authoring profile; static values may be edited, while entry, resource,
 query, and other host-resolved bindings remain read-only.
 
-Safe HTML import is admitted only through an exact Studio content policy, and scoped CSS only through an exact
-scoped-style policy with deterministic block-root scoping. Authored JavaScript is never admitted. The App
+Safe HTML import is admitted only as Studio's structural SafeMarkupFragment under an exact content policy;
+raw HTML strings do not become trusted output. A scoped-style control produces canonical structured intent,
+but the App authorizes and stores the resulting deterministic block-root stylesheet separately from the
+Blueprint. Authored JavaScript is never admitted. The App
 continues to own media authorization/upload/finalization, resource search and query execution, preview,
 publication, Twig output and CSP. Until that exact coordinated Studio candidate is pinned and qualified, the
 existing server-rendered `kumwe-rich-text` field remains the non-Studio fallback.
+
+## Studio production catalog
+
+The coordinated Studio family supplies exactly 45 first-party block types. They are Studio-owned capabilities,
+not PHP palette definitions:
+
+| Family | Types |
+|---|---|
+| Layout | `section`, `stack`, `grid`, `columns` |
+| Content and semantics | `heading`, `rich-text`, `article`, `card`, `call-to-action`, `callout`, `badge`, `label`, `divider`, `description-list`, `description-item` |
+| Media and visual | `image`, `gallery`, `video`, `audio`, `attachment`, `cover`, `drawing`, `icon` |
+| Data and source | `chart`, `diagram`, `math`, `code`, `table`, `money`, `content-reference`, `content-collection`, `embed` |
+| Interactive and status | `accordion`, `accordion-item`, `tabs`, `tab`, `dialog`, `popover`, `notice`, `navigation`, `navigation-item`, `countdown`, `progress`, `search`, `spinner` |
+
+Studio also owns the ten starter patterns and the advanced `studio.control/*` controls for chart, drawing,
+media collection/reference, money, presentation, rich text, scoped CSS, source and table. Tabs, dialog,
+notice, popover, countdown, lightbox, navigation, slideshow and motion are progressive enhancements over
+usable semantic fallbacks. App can contribute namespaced definitions and host resource providers through the
+published extension seam; it cannot fork first-party block behavior or leak Editor.js/Chart.js/Mermaid/KaTeX
+configuration into a Blueprint.
+
+Media controls use Studio's injected media provider for all browse/upload/status work. The provider crosses
+the App media port and retains only a canonical media reference in Studio state. Editor.js tools never call the
+App uploader directly. Resource and data-aware controls retain closed references or binding descriptors;
+App resolves them through the existing authorized application service for preview and public delivery. The
+browser receives no database credentials, query language or unrestricted record payload.
 
 The exact AP-7 vector coverage is:
 
@@ -157,6 +193,14 @@ markup shares preview traversal and registry semantics but omits every `data-stu
 attribute. `StudioPublishedCompositionGuard::assertCompatible()` is the reusable application seam for the same
 schema, owner, model, theme, and live-renderer check at artifact publication time.
 
+The coordinated eight-package family adds `@kumwe/studio-renderer-web` as the portable reference renderer.
+App continues to own server delivery through Twig: Studio does not generate or persist Twig. The Twig adapter
+must consume the same canonical document, exact locks, authorized host values and presentation intent and
+replay Studio's language-neutral renderer vectors. The acceptance corpus covers all 45 types, nine progressive
+behavior families, ten presentation axes and five security-fallback classes in eight vectors. Exact canonical
+results and declared semantic fallbacks must agree across renderer-web and Twig; a locally invented PHP block
+meaning or browser-only policy exception fails conformance.
+
 ## Qualification status
 
 Automated coverage declares provisioning, exact sequence order, save conflict refusal, same-origin
@@ -186,3 +230,9 @@ portfolio, lifecycle/backup/upgrade matrix and accountable acceptance still rema
 The release chain already binds all seven packages to `0.1.0-alpha.11` in
 `resources/studio-contract/studio-release.json` and records its SHA-256 in
 `resources/studio-contract/PIN.json`; release verification rejects any package or record mismatch.
+Studio's next eight-package prerelease set is currently expected to be `0.1.0-alpha.9`; that release-plan
+coordinate is not this App's pin and the numbering discrepancy must be reconciled by Studio's published
+release record. After publication, App adopts one exact `<coordinated-version>` by changing all eight
+dependencies, lock entries, tarballs, pin/release records, notices and corpus bytes together. Beta/RC adoption
+is disabled until Studio M1-04 and evidence acceptance, and no release label or source-only green run is Gate B
+evidence.

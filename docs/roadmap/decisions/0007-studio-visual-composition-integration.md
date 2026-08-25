@@ -11,7 +11,7 @@
 
 ## Context
 
-### What exists today, verified
+### What existed at the decision point, verified
 
 The administrator edits content through server-rendered forms: `content-form.twig` behind
 `AdministratorContentEditorHandler` and its write handlers, with optimistic versions, retained input,
@@ -21,15 +21,15 @@ endpoint — the editor links to the published address — and no `@kumwe/studio
 `lit` is the administrator build's single runtime dependency. The security headers send
 `frame-ancestors 'none'` with a self-only script source.
 
-Studio exists as a separate repository, [`kumwe/studio`](https://github.com/kumwe/studio): a
-schema-aware visual composition platform whose contract is a language-neutral corpus of JSON Schemas
-and canonical fixtures, whose engine is deterministic and browser-independent, and whose authoring
-shell is a keyboard-complete web component proven under a content-security policy of
+Studio exists as a separate repository, [`kumwe/studio`](https://github.com/kumwe/studio): a standalone,
+host-neutral page builder whose contract is a language-neutral corpus of JSON Schemas and canonical
+fixtures, whose engine is deterministic and browser-independent, and whose authoring shell is a
+keyboard-complete web component proven under a content-security policy of
 `default-src 'none'` with a bare self script source and enforced Trusted Types. Everything
-authoritative — identity, policy, persistence, media, preview rendering, localization, telemetry —
-stays behind typed host ports the embedding platform implements. Seven packages publish to the npm
-registry under the `kumwe` organization; the corpus they ship is replayable from PHPUnit because it is
-JSON, not code. The integration input is collected in
+authoritative — identity, policy, persistence, media, resource/data resolution, preview delivery,
+localization, telemetry — stays behind typed host ports the embedding platform implements. Its next
+coordinated release family contains eight packages, including the portable semantic-web renderer; the corpus
+they ship is replayable from PHPUnit because it is JSON, not code. The integration input is collected in
 [`docs/roadmap/studio-integration.md`](../studio-integration.md).
 
 ### Why now, and why a decision record
@@ -58,21 +58,24 @@ way phase L carries a Gate B tail, and its qualification rides phase 7.
 
 ### 2. The division of labour is fixed
 
-Studio owns the authoring experience and the protocol: the command engine, the shell, the canonical
-document forms, and their evolution under its own repository's gates and evidence discipline. Kumwe
-owns the host adapter and everything behind it: identity and session generations, policy, artifact
-persistence with optimistic revisions, media, the authenticated preview renderer, localization, and
-telemetry. Composition documents are artifacts the platform stores and versions; the platform never
-interprets or mutates their interior on a write path, and core gains no composition rule. If an
-integration need cannot be met through the host ports, that is a finding against the boundary, raised
-in both repositories — never an inline workaround.
+Studio owns the portable page-building product and protocol: the command engine, production block catalog,
+authoring shell, Editor.js-backed inline-content adapter, canonical document forms, semantic-web renderer,
+trusted progressive enhancements, and their evolution under its own repository's gates and evidence
+discipline. Kumwe owns the host adapter and everything authoritative behind it: identity and session
+generations, policy, artifact persistence with optimistic revisions, media custody, dynamic resource/data
+resolution, authenticated preview delivery, server-side Twig projection, localization, telemetry, and audit.
+Composition documents are artifacts the platform stores and versions; core does not acquire a second page
+model or duplicate Studio's block behavior. If an integration need cannot be met through the host ports, that
+is a finding against the boundary, raised in both repositories — never an inline workaround.
 
 ### 3. Versions are pinned exactly, and the release manifest records them
 
-The Studio contract is prerelease until its own programme ratifies it. The integration pins exact
-package versions, upgrades are deliberate changes with their own evidence, and the Gate B signed
-manifest records the exact versions the release qualified. A floating range on a draft contract is
-prohibited.
+The Studio contract is prerelease until its own programme ratifies it. The integration pins one exact
+coordinated package family, upgrades all eight packages together, and records the exact release record and
+tarball integrity in the Gate B signed manifest. A floating range, partial family, or App integration built
+against an unmerged Studio branch is prohibited. The coordinated adoption sequence is normative in the
+integration document. Studio's release policy disables beta/RC promotion until M1-04 and evidence acceptance;
+a prerelease name alone is not evidence that either product gate passed.
 
 ### 4. Stored composition follows the platform's storage discipline
 
