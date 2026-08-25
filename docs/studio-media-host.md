@@ -20,6 +20,20 @@ Studio does not acquire media storage, policy, authorization or publication owne
 protocol projection over App behavior. It imports no BusinessRecord implementation and does not create a
 parallel media store.
 
+Studio owns the portable `studio.control/media-reference` and `studio.control/media-collection` authoring
+experience. Editor.js image/attachment tools and every other inner-block editor use that Studio control
+registry; they never know an App route, upload grant or `MediaService`. The injected Studio media provider
+maps browse, upload, status, completion and cancellation to the port above. Canonical Studio values retain an
+immutable media reference and presentation intent, never staged bytes, a private path, a grant token or a
+resolved delivery URL.
+
+Preview and publication resolve each reference again through the App host under live scope and policy. The
+portable renderer's blob authority is media-only and defaults off. A reference host may opt in only for a
+trusted resolver-issued syntactically valid `blob:https?://...` upload preview and must revoke the object URL
+on replacement or teardown. That exception admits neither `data:` URLs nor SVG/HTML payloads and does not
+widen resource references, embeds, calls to action or arbitrary URL sinks. Public Twig output always receives
+an App-authorized media projection; it does not replay a browser object URL.
+
 All successful lifecycle effects are appended through the platform `AuditRecorder` in the same transaction:
 authorization, byte transfer, completion, cancellation and external import. Completion/import retain the
 existing `media.upload` asset-admission event as well. Get, list, status and grant replay remain reads. Studio

@@ -13,21 +13,23 @@ phase-7 human/security proof and authoritative contributed-renderer browser/DB q
 
 ## What Studio is
 
-Studio is a schema-aware visual composition platform developed in its own repository,
+Studio is a standalone, schema-aware page builder developed in its own repository,
 [`kumwe/studio`](https://github.com/kumwe/studio). Authors compose pages and reusable structures from
 typed, theme-bounded building blocks; the result is a canonical, portable JSON document. Policy-sanitized
 HTML fragments and policy-scoped CSS rules may be represented as bounded typed values, but raw editor state,
 authored JavaScript, templates, database expressions, and ungoverned markup/styles are never stored. Its
 architecture is contract-first: a language-neutral
 protocol of JSON Schemas and canonical fixtures, a deterministic browser-independent command engine with
-byte-invertible history, an accessibility-complete authoring shell, and a host-port boundary through
+byte-invertible history, a 45-block production catalog, an accessibility-complete authoring shell, a portable
+semantic-web renderer, and a host-port boundary through
 which every authoritative concern — identity, policy, persistence, media, preview rendering,
-localization, telemetry — remains owned by the host platform. Kumwe is such a host. The division of
+dynamic data, localization, telemetry — remains owned by the host platform. Kumwe is such a host. The division of
 labour is fixed in ADR 0007: Studio owns the authoring experience and the protocol; Kumwe owns the host
 adapter and every authoritative service behind it. [ADR 0018](decisions/0018-studio-inline-content-editor-boundary.md)
 fixes the inline-content boundary: Studio owns the pinned Editor.js implementation behind its editor-neutral
 API and exposes no Editor.js JSON or configuration to App; App owns media custody, dynamic resource
-authorization, persistence, preview, Twig delivery and CSP enforcement.
+authorization, persistence, preview, Twig delivery and CSP enforcement. Editor.js edits content inside a
+Studio block; it is not the page model, layout engine, renderer, host API, or persistence format.
 
 Studio's programme runs its own two-gate discipline in its repository —
 [`docs/roadmap/`](https://github.com/kumwe/studio/tree/main/docs/roadmap) there — with machine-checked
@@ -35,9 +37,10 @@ registries for its requirements and threats, a canonical fixture corpus, and an 
 contract is `0.1-draft` until its own first gate ratifies it; consumers pin exact prerelease versions
 until then, which is why every version below is exact.
 
-## Published packages
+## Current App pin and next release family
 
-The coordinated release contains seven packages. All seven exact tarballs are vendored and pinned:
+The App currently consumes the already released seven-package `0.1.0-alpha.11` family. All seven exact
+tarballs are vendored and pinned:
 [`resources/studio-contract/PIN.json`](../../resources/studio-contract/PIN.json) is the authoritative
 record of their exact versions and tarball checksums, and `composer studio:corpus` fails when the
 vendored bytes and the pin disagree. App makes no runtime or qualification claim about a public npm
@@ -58,10 +61,80 @@ The packages matter in two places: the administrator build consumes `@kumwe/stud
 the runtime packages) through the existing Vite entry points, and the test suite consumes the corpus
 shipped inside `@kumwe/studio-testkit` and `@kumwe/studio-protocol`.
 
+The next Studio prerelease set is currently expected to be the eight-package `0.1.0-alpha.9` family. That is a
+Studio release-plan statement, not the App's current pin or evidence that the artifacts have published. The
+App's existing vendor record above remains alpha.11; the apparent numbering mismatch must be reconciled by the
+published release record rather than guessed around. App adopts only a complete published family at the exact
+`<coordinated-version>` recorded by Studio. Studio's release policy disables beta/RC promotion until M1-04 and
+its evidence-acceptance criteria pass, so this document neither promises nor prescribes an RC coordinate.
+
+| Coordinated package | Release-unit responsibility |
+|---|---|
+| `@kumwe/studio-protocol` | Schemas, values, host operations, release record and guards |
+| `@kumwe/studio-core` | Deterministic engine, 45 block definitions, ten patterns and insertion defaults |
+| `@kumwe/studio-preview` | Origin-pinned preview client/host, marker identity and geometry |
+| `@kumwe/studio-media` | Portable media authoring state over a host-injected provider/transport |
+| `@kumwe/studio-rich-text` | Canonical rich-text grammar and the private Editor.js 2.31.6 adapter |
+| `@kumwe/studio-renderer-web` | Semantic HTML, deterministic scoped CSS and disposable trusted enhancement |
+| `@kumwe/studio` | Standalone web authoring shell and editor-neutral control registry |
+| `@kumwe/studio-testkit` | Language-neutral fixtures, vectors, reference host and conformance runners |
+
+No package is upgraded alone. Chart.js 4.5.1, Mermaid 11.17.1 and KaTeX 0.18.4 remain exact optional,
+lazy renderer adapters; they do not enter a Blueprint or become App-facing APIs.
+
+### Coordinated adoption sequence
+
+1. The Studio implementation merges first. Its fixed Changesets family sets all eight manifests, lock data,
+   generated release records, package manifests, notices and tarball contents to one exact coordinated version.
+2. Studio runs its required schema, unit, integration, browser, accessibility, security, conformance, package
+   and clean-consumer lanes. A correction creates a new immutable prerelease; a published version is never
+   rebuilt in place. Beta/RC promotion remains blocked until M1-04 and evidence acceptance.
+3. Studio publishes or otherwise supplies all eight integrity-addressed tarballs and the byte-identical release
+   record. A partial family is not a release and App does not integrate from a branch, workspace link or
+   locally packed substitute.
+4. A later App change updates `package.json`, the npm lock, all eight vendored tarballs, `PIN.json`, the copied
+   Studio release record, license/notices evidence and the complete corpus together. Until that change lands,
+   App remains truthfully on the seven-package alpha.11 family above.
+5. App replays the host, media, rich-text, authoring-web and renderer-web corpus, runs the Twig adapter parity
+   lane, builds the real administrator assets, and runs the database/browser/security/qualification matrix.
+   Only the exact resulting App candidate may enter Gate B assessment.
+
+Rollback selects the last complete compatible family and its matching corpus. Mixing any two Studio versions,
+or completing Core against unreleased Studio bytes, is prohibited.
+
+## Studio-owned production capability
+
+The coordinated catalog is Studio functionality, not App-local palette code. Every definition has a closed property
+schema, declared slots, authoring metadata, accessibility obligations, semantic renderer requirements and a
+schema-valid insertion default. The catalog contains exactly 45 first-party block types:
+
+| Family | Studio block types |
+|---|---|
+| Layout | `section`, `stack`, `grid`, `columns` |
+| Content and semantics | `heading`, `rich-text`, `article`, `card`, `call-to-action`, `callout`, `badge`, `label`, `divider`, `description-list`, `description-item` |
+| Media and visual | `image`, `gallery`, `video`, `audio`, `attachment`, `cover`, `drawing`, `icon` |
+| Data and source | `chart`, `diagram`, `math`, `code`, `table`, `money`, `content-reference`, `content-collection`, `embed` |
+| Interactive and status | `accordion`, `accordion-item`, `tabs`, `tab`, `dialog`, `popover`, `notice`, `navigation`, `navigation-item`, `countdown`, `progress`, `search`, `spinner` |
+
+The fixed starter set is `article`, `collection-index`, `document-header`, `faq`, `feature-grid`, `hero`,
+`media-gallery`, `pricing`, `product` and `tabbed-content`. The stable advanced authoring controls are
+`chart`, `drawing`, `media-collection`, `media-reference`, `money`, `presentation`, `rich-text`, `scoped-css`,
+`source` and `table` in the `studio.control/*` namespace. App may register namespaced host controls, resource
+families and extension definitions, but it does not fork these first-party definitions or expose Editor.js,
+Chart.js, Mermaid or KaTeX configuration through them.
+
+Progressive behavior belongs to Studio's trusted renderer layer. Tabs, dialog, notice, popover, countdown,
+lightbox, nested navigation, slideshow and renderer-owned motion are disposable enhancements over useful
+semantic fallbacks. The closed presentation intent expresses alignment, width/height, spacing, inverse color,
+markers, position, print, scrolling, responsive visibility and renderer-owned motion without persisting CSS or
+JavaScript. Gallery owns both grid and slideshow presentations; navigation owns its closed presentation family;
+dialog and popover own their modal/offcanvas/overlay and dropdown/dropbar/tooltip forms. App supplies host data
+and media, not behavior implementations.
+
 ## The contract corpus, usable from PHPUnit
 
 Every contract artifact is language-neutral JSON, so the host side proves conformance without executing
-any Studio code. The corpus at the versions above:
+any Studio code. The corpus at the currently pinned alpha.11 versions is:
 
 | Corpus | Where it ships | Count |
 |---|---|---|
@@ -83,13 +156,25 @@ What the host test suite asserts with them:
   the engine itself runs in the browser, so the server-side obligation is storage fidelity and revision
   discipline, not reduction.
 
+The eight-package family adds a renderer-web conformance corpus. Its candidate baseline must cover all 45
+first-party block types, all nine progressive-behavior families, all ten presentation axes and the five
+security-fallback classes in eight language-neutral vectors. Those numbers describe the acceptance target
+for the coordinated prerelease; they are not evidence that the currently vendored alpha.11 family or this App
+has passed it. Studio's browser renderer and App's Twig adapter must both replay the exact corpus before an
+exact coordinated pin can become Gate B evidence. RC adoption remains a later post-M1-04, post-evidence step.
+
 ## The host contract
 
 The normative host contract is
 [`docs/contracts/host-adapter.md`](https://github.com/kumwe/studio/blob/main/docs/contracts/host-adapter.md)
 in the Studio repository, with the port types in `@kumwe/studio-protocol`. Typed asynchronous ports
-share one request envelope. App advertises only artifact, permission, recovery, model, media, preview,
-localization and telemetry operations it actually implements; `resource.search` remains absent.
+share one request envelope. App advertises only artifact, permission, recovery, model, media, resource,
+preview, localization and telemetry operations it actually composes. `resource.search` is a read-only
+discovery boundary: a provider owns one qualified resource type; duplicate ownership is invalid; the exact
+query carries that resource type, a limit from 1 through 100, optional search text of at most 160 characters
+and an optional opaque host cursor. Results expose only a stable identifier, localized label and qualified
+resource type, plus another opaque cursor when more results exist. It does not admit writes, SQL, filter
+languages, entity payloads or client-selected repositories.
 Capability negotiation is fail-closed: no common wire version or a missing required port means no
 editable session; missing optional ports degrade with diagnostics.
 
@@ -102,6 +187,8 @@ The mapping to mechanisms Kumwe already has:
 | Persistence and optimistic concurrency | Versioned artifacts with expected-revision writes; a stale write returns the safe current revision, matching the platform's version-conflict contract |
 | Idempotent replay | The `Idempotency-Key` contract already on every API mutation |
 | Media | The media module behind the canonical upload session state machine; the media policy vectors fix the rejection behaviour |
+| Resource discovery | Provider-owned `resource.search` over existing authorized application services; the first Content provider owns `kumwe.app/content-entry` and exposes only stable entry references and localized labels |
+| Dynamic data | Typed model/entry reads and binding descriptors; App resolves them through its existing Content or business application service at preview/publication time after policy, scope and field-disclosure checks |
 | External media and embed sources | Studio's lexical URL policy plus the host runtime obligations its threat registry records: fetch hardening, redirect re-validation, response verification |
 | Preview | The AP-6 authenticated render, single-use document and grant-bound theme stylesheet endpoints behind the origin-pinned, replay-resistant preview channel |
 | Localization | The Studio shell's host-overridable message catalog fed from the XLIFF-compiled catalogue chain, so wording and terminology overrides apply to the composition surface like any other |
@@ -138,8 +225,10 @@ operation and caller key; request and trace IDs do not alter intent, while seman
 locale and expected revision do. A changed intent is refused.
 
 Schema validation and a separate lexical stored-content policy run before persistence. Accepted canonical
-bytes are stored as text and returned unchanged; markup, executable syntax, style declarations, unsafe
-members and unsafe or out-of-schema URLs are rejected rather than sanitized. Recovery bytes are scoped by
+bytes are stored as text and returned unchanged. Raw HTML/CSS strings, executable syntax, unsafe members and
+unsafe or out-of-schema URLs are rejected rather than sanitized. A future coordinated safe-markup value is admitted
+only as the named-policy structural fragment Studio produces; a scoped stylesheet remains a separately
+authorized host artifact and is never embedded in the Blueprint. Recovery bytes are scoped by
 actor, authenticated session and resource context, with canonical-number fidelity and bounded size and
 fixed-window writes. Successful artifact and recovery mutations record one disclosure-safe audit event in
 the same transaction. The audit carries operation and trusted coordinates/digests, never document or
@@ -158,8 +247,9 @@ The migration and architecture decision are recorded in
 its replay/audit boundary and migration are recorded in
 [ADR 0015](decisions/0015-studio-artifact-and-recovery-persistence.md). AP-5 media, AP-6 preview, and
 AP-7 model reads, localization, telemetry and embedded Blueprint shell now cross this same
-authority/dispatcher boundary. Model mutation and `resource.search` are deliberately not advertised;
-an absent operation remains canonically unavailable without weakening the stale fence.
+authority/dispatcher boundary. Model mutation remains deliberately absent. `resource.search` is advertised
+only when exactly one authorized provider owns the requested qualified type; an absent provider remains
+canonically unavailable without weakening the stale fence.
 Every composition lookup reprojects the authorized exact Content model and compares its identifier,
 version and revision with the immutable Blueprint model lock before returning the artifact. Drift in any
 coordinate is a typed migration-required refusal rather than an opportunity to open the Blueprint against
@@ -185,6 +275,43 @@ AP-1 replay accounting for S-D additionally covers these exact vendored IDs:
 - `vector.host-sequence.recovery.store.rate-limited`
 - `vector.host-sequence.recovery.store.resource-scope`
 - `vector.host-sequence.recovery.store.wrong-operation-id`
+
+### Resource, media and dynamic-data authority
+
+Studio owns the portable control and canonical reference shapes; App owns every authoritative lookup and
+byte. An Editor.js media tool therefore calls the Studio media control, which calls the injected Studio media
+provider, which crosses the App media host port. It cannot upload directly, retain an App upload URL or make
+Editor.js part of the host protocol. Documents retain an immutable media reference. Preview and delivery ask
+App to resolve that reference after live authorization. Local upload preview may accept only a resolver-issued
+`blob:https?://...` URL under an explicit media-only authority that defaults off; `data:`, SVG/HTML payloads,
+resource URLs, embeds and actions are not widened, and the host revokes each object URL.
+
+Resource discovery is similarly only an authoring convenience. `resource.search` selects from one
+provider-owned qualified resource family and returns small references; it is not the delivery query engine.
+A resource/reference, collection or other data-aware block stores a closed binding descriptor. At preview and
+public delivery App resolves that descriptor through the existing application service for the bounded context,
+reapplying site, actor or public-purpose policy, field disclosure, locale, publication and pagination rules.
+No database connection, repository, SQL/expression language or unrestricted record JSON crosses into Studio.
+The Content entry provider is the first family; BusinessRecord discovery and projection remain unavailable
+until their purpose-specific BusinessSecurity adapter exists.
+
+### Renderer-web and Twig conformance
+
+`@kumwe/studio-renderer-web` is Studio's portable reference implementation of the production rendering
+contract. It turns a canonical document plus already-authorized host values into semantic HTML and
+deterministic scoped CSS. The renderer performs no fetch or database access. Safe markup is a structural,
+allowlisted tree rather than a trusted HTML string; scoped CSS is a structured, host-authorized sheet passed
+separately from the Blueprint; and authored JavaScript is never an input. Tabs, dialogs, popovers, notices,
+navigation, countdowns, slideshows, lightboxes and motion retain useful HTML semantics without enhancement.
+Studio's self-hosted enhancer may add disposable behavior under the host CSP.
+
+App owns server delivery and therefore owns the Twig adapter. Studio does not generate, persist or execute
+Twig. The adapter receives the same canonical document, exact block locks, presentation intent and resolved
+host values and must reproduce the same semantic/fallback/security contract as renderer-web. The coordinated
+language-neutral renderer vectors are replayed against both implementations; canonical cases compare the
+contract's exact result, while browser-only behavior is assessed through its declared semantic fallback and
+enhancement outcomes. A Twig-only block interpretation, a browser-only policy exception, or a locally copied
+Editor.js renderer is conformance failure, not an integration technique.
 
 ### Implemented S-F authenticated preview boundary
 
