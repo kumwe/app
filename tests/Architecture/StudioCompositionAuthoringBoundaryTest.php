@@ -100,6 +100,13 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
         self::assertStringContainsString('adapter.artifact.publish(reference, context)', $surface);
         self::assertStringContainsString('adapter.artifact.unpublish(reference, context)', $surface);
         self::assertStringContainsString("operation === 'cancel'", $adapter);
+        self::assertStringContainsString("window.addEventListener('beforeunload', markUnloading", $adapter);
+        self::assertStringContainsString("window.addEventListener('pagehide', markUnloading", $adapter);
+        self::assertStringContainsString("window.addEventListener('pageshow', () => { unloading = false; })", $adapter);
+        self::assertStringContainsString(
+            "keepalive: port === 'preview' && operation === 'cancel' && unloading",
+            $adapter,
+        );
         self::assertStringContainsString('runtime.activate(contributionOwner, contributionSet', $contributions);
         self::assertStringNotContainsString("trustedOwner === 'core'", $contributions);
         self::assertStringNotContainsString("type.startsWith('studio.core/')", $contributions);

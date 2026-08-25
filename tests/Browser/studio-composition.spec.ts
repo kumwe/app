@@ -27,6 +27,58 @@ interface PreviewRect {
 
 type PreviewPointAnchor = 'start' | 'center' | 'end';
 
+async function revealPreviewCanvasRegions(page: Page, shell: Locator, regions: Locator[]): Promise<void> {
+  const nodeIds = await Promise.all(regions.map((region) => region.getAttribute('data-node-id')));
+  expect(nodeIds.every((nodeId) => nodeId !== null), 'Every preview region must identify its node.')
+    .toBe(true);
+  const stage = shell.locator('.preview-stage');
+  await stage.evaluate((element) => {
+    element.scrollIntoView({ block: 'center', inline: 'nearest' });
+  });
+
+  const coordinates = await Promise.all(regions.map((region) => region.evaluate((element) => {
+    const top = Number(element.getAttribute('y'));
+    return { bottom: top + Number(element.getAttribute('height')), top };
+  })));
+  const frame = page.locator('iframe[data-studio-preview]');
+  const frameHeight = await frame.evaluate((element) =>
+    (element as HTMLIFrameElement).contentWindow?.innerHeight ?? 0);
+  expect(frameHeight, 'The active preview document must expose a viewport.').toBeGreaterThan(4);
+  const unionTop = Math.min(...coordinates.map(({ top }) => top));
+  const unionBottom = Math.max(...coordinates.map(({ bottom }) => bottom));
+  const scrollDelta = unionTop < 0
+    ? unionTop
+    : unionBottom > frameHeight
+      ? unionBottom - frameHeight
+      : 0;
+  if (scrollDelta !== 0) {
+    await frame.evaluate((element, delta) => {
+      (element as HTMLIFrameElement).contentWindow?.scrollBy({ behavior: 'auto', top: delta });
+    }, scrollDelta);
+    await shell.evaluate((element) => {
+      (element as HTMLElement & { refreshPreviewGeometry(): void }).refreshPreviewGeometry();
+    });
+  }
+
+  await expect.poll(async () => {
+    const stageBox = await stage.boundingBox();
+    if (stageBox === null) return 0;
+    const viewport = page.viewportSize() ?? await page.evaluate(() => ({
+      height: window.innerHeight,
+      width: window.innerWidth,
+    }));
+    const heights = await Promise.all(regions.map(async (region) => {
+      const box = await region.boundingBox();
+      if (box === null) return 0;
+      const top = Math.max(box.y, stageBox.y, 0);
+      const bottom = Math.min(box.y + box.height, stageBox.y + stageBox.height, viewport.height);
+      return bottom - top;
+    }));
+    return Math.min(...heights);
+  }, { message: 'Every drag endpoint must be materially visible in the preview canvas.' })
+    .toBeGreaterThan(4);
+}
+
 async function visiblePreviewCanvasPoint(
   page: Page,
   shell: Locator,
@@ -919,8 +971,7 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   // Raw page.mouse coordinates do not auto-scroll like locator actions. SVG region boxes describe
   // the full responsive canvas, which can be wider than the preview-stage clipping viewport, so
   // target the visible region/stage/viewport intersection rather than the full box centre.
-  await firstSectionRegion.scrollIntoViewIfNeeded();
-  await secondSectionRegion.scrollIntoViewIfNeeded();
+  await revealPreviewCanvasRegions(page, shell, [firstSectionRegion, secondSectionRegion]);
   const secondSectionDragPoint = await visiblePreviewCanvasPoint(
     page,
     shell,
@@ -948,7 +999,7 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   const gridRegion = shell.locator(`.preview-canvas-region[data-node-id="${gridId ?? ''}"]`).first();
   await expect(source).toHaveCount(1);
   await expect(gridRegion).toHaveCount(1);
-  await source.scrollIntoViewIfNeeded();
+  await revealPreviewCanvasRegions(page, shell, [source]);
   const selectionSourcePoint = await visiblePreviewCanvasPoint(page, shell, source);
 
   await page.mouse.click(selectionSourcePoint.x, selectionSourcePoint.y);
@@ -956,8 +1007,7 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
 
   const rootsBeforeCancellation = await documentRoots(shell);
   const commandsBeforeCancellation = (await recordedCommands(page)).length;
-  await gridRegion.scrollIntoViewIfNeeded();
-  await source.scrollIntoViewIfNeeded();
+  await revealPreviewCanvasRegions(page, shell, [source, gridRegion]);
   const cancellationSourcePoint = await visiblePreviewCanvasPoint(page, shell, source);
   const cancellationGridPoint = await visiblePreviewCanvasPoint(page, shell, gridRegion, 'end');
   await page.mouse.move(cancellationSourcePoint.x, cancellationSourcePoint.y);
@@ -972,8 +1022,7 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   expect((await recordedCommands(page)).length).toBe(commandsBeforeCancellation);
   expect(await nodeParentId(shell, stackId ?? '')).toBe(firstSectionId);
 
-  await gridRegion.scrollIntoViewIfNeeded();
-  await source.scrollIntoViewIfNeeded();
+  await revealPreviewCanvasRegions(page, shell, [source, gridRegion]);
   const sourceAfterCancellationPoint = await visiblePreviewCanvasPoint(page, shell, source);
   const gridAfterCancellationPoint = await visiblePreviewCanvasPoint(page, shell, gridRegion, 'end');
   await page.mouse.move(sourceAfterCancellationPoint.x, sourceAfterCancellationPoint.y);
@@ -1029,9 +1078,11 @@ test('same-origin preview redirects to a different path are refused', async ({ p
     });
   });
   await page.route('**/administrator/studio/preview?*', async (route) => {
-    await route.fulfill({
-      headers: { location: '/administrator/studio/wrong-preview' },
-      status: 302,
+    await route.continue({
+      headers: {
+        ...route.request().headers(),
+        'x-kumwe-browser-preview-redirect': 'different-path',
+      },
     });
   });
 

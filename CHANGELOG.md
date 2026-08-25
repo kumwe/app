@@ -1445,6 +1445,13 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **Studio preview authoring is deterministic across supported browser engines.** Live preview cancellation
+  retains the authenticated page request identity and enables unload keepalive only while the document is
+  actually leaving, with cancelled-navigation and back/forward-cache restoration resetting that state. The
+  browser qualification now reveals both drag endpoints inside the preview document before refreshing
+  stage-owned geometry, and its fixed, testing-only real redirect seam lets WebKit exercise the same-origin
+  path refusal without an unsupported synthetic redirect. (#114)
+
 - **Generic Studio artifact saves cannot bypass lifecycle or Blueprint identity controls.** Save now updates
   only an existing draft at its exact resource/version coordinate, preserves lifecycle status, and refuses
   published heads until the canonical publish-permissioned unpublish operation returns them to draft, while
