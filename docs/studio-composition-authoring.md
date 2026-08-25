@@ -43,6 +43,19 @@ Blueprint session and uses the common CSRF-protected host route for artifact, pe
 model, localization, telemetry and—when composed by AP-6—preview operations. It does not advertise the
 absent `resource.search` operation.
 
+The next coordinated candidate replaces the former library-specific rich-content implementation with the
+Studio Inline Content Editor. Studio alone owns Editor.js and converts its transient block output to canonical
+rich-text, safe-markup, media, chart, drawing, source, and other typed values before a document change crosses
+the host boundary. This App does not configure Editor.js tools, persist its JSON, or render its HTML. Each
+block port selects a governed Studio authoring profile; static values may be edited, while entry, resource,
+query, and other host-resolved bindings remain read-only.
+
+Safe HTML import is admitted only through an exact Studio content policy, and scoped CSS only through an exact
+scoped-style policy with deterministic block-root scoping. Authored JavaScript is never admitted. The App
+continues to own media authorization/upload/finalization, resource search and query execution, preview,
+publication, Twig output and CSP. Until that exact coordinated Studio candidate is pinned and qualified, the
+existing server-rendered `kumwe-rich-text` field remains the non-Studio fallback.
+
 The exact AP-7 vector coverage is:
 
 | Port | Vector IDs |

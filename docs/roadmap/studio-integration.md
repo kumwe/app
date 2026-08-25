@@ -15,14 +15,19 @@ phase-7 human/security proof and authoritative contributed-renderer browser/DB q
 
 Studio is a schema-aware visual composition platform developed in its own repository,
 [`kumwe/studio`](https://github.com/kumwe/studio). Authors compose pages and reusable structures from
-typed, theme-bounded building blocks; the result is a canonical, portable JSON document — never stored
-markup, never stored styles, never stored code. Its architecture is contract-first: a language-neutral
+typed, theme-bounded building blocks; the result is a canonical, portable JSON document. Policy-sanitized
+HTML fragments and policy-scoped CSS rules may be represented as bounded typed values, but raw editor state,
+authored JavaScript, templates, database expressions, and ungoverned markup/styles are never stored. Its
+architecture is contract-first: a language-neutral
 protocol of JSON Schemas and canonical fixtures, a deterministic browser-independent command engine with
 byte-invertible history, an accessibility-complete authoring shell, and a host-port boundary through
 which every authoritative concern — identity, policy, persistence, media, preview rendering,
 localization, telemetry — remains owned by the host platform. Kumwe is such a host. The division of
 labour is fixed in ADR 0007: Studio owns the authoring experience and the protocol; Kumwe owns the host
-adapter and every authoritative service behind it.
+adapter and every authoritative service behind it. [ADR 0018](decisions/0018-studio-inline-content-editor-boundary.md)
+fixes the inline-content boundary: Studio owns the pinned Editor.js implementation behind its editor-neutral
+API and exposes no Editor.js JSON or configuration to App; App owns media custody, dynamic resource
+authorization, persistence, preview, Twig delivery and CSP enforcement.
 
 Studio's programme runs its own two-gate discipline in its repository —
 [`docs/roadmap/`](https://github.com/kumwe/studio/tree/main/docs/roadmap) there — with machine-checked
