@@ -14844,6 +14844,18 @@ function createStudioHttpHostAdapter(baseUrl, options) {
 	let previewSequence = 0;
 	let previewRenderTail;
 	let previewUnavailable;
+	let unloading = false;
+	const markUnloading = () => {
+		unloading = true;
+		window.setTimeout(() => {
+			unloading = false;
+		}, 0);
+	};
+	window.addEventListener("beforeunload", markUnloading);
+	window.addEventListener("pagehide", markUnloading);
+	window.addEventListener("pageshow", () => {
+		unloading = false;
+	});
 	const failure = (category, code, retryable = false) => {
 		serial += 1;
 		return new HostPortFailure({
@@ -14882,7 +14894,7 @@ function createStudioHttpHostAdapter(baseUrl, options) {
 					}),
 					credentials: "same-origin",
 					headers,
-					keepalive: port === "preview" && operation === "cancel",
+					keepalive: port === "preview" && operation === "cancel" && unloading,
 					method: "POST",
 					signal: controller.signal
 				});

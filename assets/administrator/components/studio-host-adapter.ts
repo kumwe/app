@@ -37,6 +37,16 @@ export function createStudioHttpHostAdapter(baseUrl: string, options: AdapterOpt
   let previewSequence = 0;
   let previewRenderTail: Promise<void> | undefined;
   let previewUnavailable: HostPortFailure | undefined;
+  let unloading = false;
+  const markUnloading = (): void => {
+    unloading = true;
+    // A cancelled navigation remains on this page, while a BFCache restoration emits pageshow.
+    // Resetting on both paths prevents a later live cancellation from inheriting unload semantics.
+    window.setTimeout(() => { unloading = false; }, 0);
+  };
+  window.addEventListener('beforeunload', markUnloading);
+  window.addEventListener('pagehide', markUnloading);
+  window.addEventListener('pageshow', () => { unloading = false; });
 
   const failure = (category: HostErrorCategory, code: QualifiedName, retryable = false): HostPortFailure => {
     serial += 1;
@@ -77,7 +87,11 @@ export function createStudioHttpHostAdapter(baseUrl: string, options: AdapterOpt
           body: JSON.stringify({ arguments: args, context }),
           credentials: 'same-origin',
           headers,
-          keepalive: port === 'preview' && operation === 'cancel',
+          // A live cancellation must retain the authenticated browser request identity. Firefox can
+          // move a keepalive fetch onto its native network context (rather than the page's emulated
+          // identity), which correctly fails the session binding and then creates a preview-sequence
+          // gap. Keepalive is necessary only while the document is actually leaving the page.
+          keepalive: port === 'preview' && operation === 'cancel' && unloading,
           method: 'POST',
           signal: controller.signal,
         });

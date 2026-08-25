@@ -47,6 +47,30 @@ final class DevelopmentExperienceTest extends TestCase
         self::assertStringContainsString('Kumwe runtime watcher stopped', $server);
     }
 
+    /**
+     * The browser-only redirect fixture remains testing-only, path-bound and non-configurable.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testBrowserPreviewRedirectFixtureCannotEnterProductionOrBecomeOpen(): void
+    {
+        $router = $this->contents('tools/browser-router.php');
+
+        self::assertStringContainsString("getenv('APP_ENV') === 'testing'", $router);
+        self::assertStringContainsString(
+            "\$requestPath === '/administrator/studio/preview'",
+            $router,
+        );
+        self::assertStringContainsString("\$previewRedirect === 'different-path'", $router);
+        self::assertStringContainsString(
+            "header('Location: /administrator/studio/wrong-preview', true, 302)",
+            $router,
+        );
+        self::assertStringNotContainsString("header('Location: ' .", $router);
+    }
+
     public function testFreshDevelopmentInstallIsExecutableOnANonDefaultPort(): void
     {
         $workflow = $this->contents('.github/workflows/development-compose.yml');
