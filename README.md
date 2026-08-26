@@ -197,7 +197,7 @@ The machine-readable API contract is [api/openapi/kumwe-v1.json](api/openapi/kum
 
 ## License
 
-Copyright 2022-2026 Vast Development Method
+Copyright 2022-2026 Vast Development Method Trading Pty Ltd
 
 Kumwe is free and open source software, licensed under the [Apache License 2.0](LICENSE); see also
 the [NOTICE](NOTICE) file.
