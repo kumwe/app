@@ -35,8 +35,6 @@
     "ext-sodium": "*",
     "ext-zip": "*",
     "doctrine/dbal": "^4.4",
-    "joomla/di": "^4.0",
-    "joomla/event": "^4.0",
     "laminas/laminas-authentication": "^2.19",
     "laminas/laminas-diactoros": "^3.8",
     "laminas/laminas-eventmanager": "^3.15",
