@@ -951,7 +951,9 @@ one decision D14 established for point of sale: does this Version 2 change forec
 
 Every phase preserves these unless a separately approved architecture decision proves a required change.
 
-**Platform and stack.** PHP 8.5. Joomla dependency injection and Joomla Event. Mezzio and PSR-15 with
+**Platform and stack.** PHP 8.5. Laminas ServiceManager dependency injection behind the Kumwe kernel
+container and Laminas EventManager dispatch behind the Kumwe extension-event contract —
+[ADR 0019](decisions/0019-laminas-composition-and-event-engines.md). Mezzio and PSR-15 with
 Laminas PSR-7. Doctrine DBAL with portable MariaDB, MySQL and PostgreSQL behaviour. Twig server rendering
 with focused Lit, TypeScript and CSS enhancement. Monolog and the shipped observability contract. The
 official model-context SDK. Vite, Playwright, and accessibility, responsive and visual evidence.

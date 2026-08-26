@@ -21,7 +21,7 @@ This direction is enforced rather than described. [`layers.json`](layers.json) i
 
 ## Composition and framework use
 
-`Kumwe\App\Kernel\ContainerFactory` is the single composition root. Joomla DI owns the service container and Joomla Event owns in-process event dispatch. Mezzio supplies the PSR-15 HTTP pipeline, Laminas Diactoros supplies PSR-7 messages, and Twig renders HTML. Framework objects remain at the composition, infrastructure, and delivery boundaries.
+`Kumwe\App\Kernel\ContainerFactory` is the single composition root. Laminas ServiceManager owns the service container behind the app-owned `Kumwe\App\Kernel\Container` wrapper, and Laminas EventManager owns in-process event dispatch behind the Kumwe `ExtensionEvent` contract. Mezzio supplies the PSR-15 HTTP pipeline, Laminas Diactoros supplies PSR-7 messages, and Twig renders HTML. Framework objects remain at the composition, infrastructure, and delivery boundaries.
 
 Do not add a second service locator, static container, or parallel application pipeline. Constructor injection is the default. An extension provider may resolve dependencies while registering services, but ordinary extension classes should receive their dependencies explicitly.
 

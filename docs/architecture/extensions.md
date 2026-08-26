@@ -67,7 +67,7 @@ Runtime publication keys are independent from the application/session secret. A 
 
 ## Services and events
 
-Providers register services through a restricted Joomla DI adapter. After every active provider has registered
+Providers register services through a restricted adapter over the kernel container. After every active provider has registered
 services, the runtime runs a separate typed contribution phase with a registrar bound to the signed publication's
 extension identifier. The registrar reconciles concrete capability, administrator workspace/navigation, route,
 view, and business definitions against the inspected strict manifest before boot or route compilation. Schema 2
@@ -110,7 +110,7 @@ behavior, so another registry family can be introduced without a central callbac
 
 Contributed routes are compiled under `/administrator/extensions/{vendor}/{name}`, receive the normal administrator session/capability pipeline, add CSRF enforcement for mutations, and wrap execution in live trust enforcement. Views are resolved only through the contributor's registered name and isolated Twig namespace. Duplicate identifiers, route method/path collisions, missing owned references, and provider/manifest drift fail closed.
 
-Runtime extensions attach typed Joomla Event listeners during boot and may retain legacy namespaced routes during route compilation for schema-1 compatibility. Events describe completed facts or explicit lifecycle decisions; they are not an invisible replacement for application-service calls.
+Runtime extensions attach typed `ExtensionEvent` listeners during boot and may retain legacy namespaced routes during route compilation for schema-1 compatibility. Events describe completed facts or explicit lifecycle decisions; they are not an invisible replacement for application-service calls.
 
 Event names and payload objects are public extension API. Document whether listeners may stop propagation, whether failure aborts the transaction, and whether delivery occurs before or after commit. Side effects that may be slow or retried should enqueue a versioned job or consume an outbox event rather than execute during the web transaction.
 
