@@ -1189,10 +1189,10 @@ development programme, from the architecture decision that opened it to the curr
 ### Changed
 
 - **Kumwe 2.0 relicenses from GPL-2.0-only to Apache-2.0.** Both contributors work for Vast Development
-  Method and agreed to the change; the copyright line reads `Copyright 2022-2026 Vast Development
-  Method`. LICENSE now carries the official Apache License 2.0 text unchanged, a NOTICE file names the
-  project, the copyright, and where third-party notices live, and the composer and npm manifests declare
-  `Apache-2.0`. The removal of the Joomla packages was the last copyleft constraint in the dependency
+  Method and agreed to the change; the copyright is held by the company's legal entity, so the line
+  reads `Copyright 2022-2026 Vast Development Method Trading Pty Ltd`. LICENSE now carries the
+  official Apache License 2.0 text unchanged, a NOTICE file names the project, the copyright, and
+  where third-party notices live, and the composer and npm manifests declare `Apache-2.0`. The removal of the Joomla packages was the last copyleft constraint in the dependency
   tree — production dependencies are MIT, BSD-3-Clause and Apache-2.0 throughout — and the README now
   says plainly what the license means here: proprietary products and proprietary extensions are allowed
   and welcome, a hello or a patch is appreciated and neither is owed, the software comes without
