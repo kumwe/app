@@ -58,6 +58,10 @@ export class KumweCommandPalette extends LitElement {
   };
 
   private readonly handleShortcut = (event: KeyboardEvent): void => {
+    // An embedded surface that already consumed the shortcut (the Studio shell binds
+    // Ctrl/Meta+K for its own command palette) keeps it; stealing focus into this
+    // modal dialog would break that surface's palette.
+    if (event.defaultPrevented) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       this.show();

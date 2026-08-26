@@ -1,5 +1,5 @@
 import { c as A, d as i$1, l as b, s as i, u as w } from "./reveal-validation-g1jDnck7.js";
-import { t as __vitePreload } from "./administrator-BGJujI72.js";
+import { t as __vitePreload } from "./administrator-BNhXpvVW.js";
 //#region node_modules/@kumwe/studio-core/dist/canonical.js
 var DEFAULT_MAXIMUM_DEPTH = 64;
 /**
