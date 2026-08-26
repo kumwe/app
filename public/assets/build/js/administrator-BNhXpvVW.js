@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-O9gFWRDp.js","js/reveal-validation-g1jDnck7.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-19ImR37T.js","js/reveal-validation-g1jDnck7.js"])))=>i.map(i=>d[i]);
 import { a as n, c as A, d as i$1, i as r, l as b, n as setupCopyValues, o as t, r as __decorate, s as i, t as setupValidationReveal } from "./reveal-validation-g1jDnck7.js";
 //#region assets/administrator/components/command-palette.ts
 var KumweCommandPalette = class KumweCommandPalette extends i {
@@ -62,6 +62,7 @@ var KumweCommandPalette = class KumweCommandPalette extends i {
 		return typeof item.label === "string" && typeof item.href === "string" && typeof item.description === "string" && typeof item.keywords === "string";
 	};
 	handleShortcut = (event) => {
+		if (event.defaultPrevented) return;
 		if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
 			event.preventDefault();
 			this.show();
@@ -1255,7 +1256,7 @@ setupValidationReveal();
 setupNavigationTargets();
 setupPolicyStepFlows();
 if (document.querySelector("[data-studio-composition]") !== null) __vitePreload(async () => {
-	const { setupStudioComposition } = await import("./studio-composition-O9gFWRDp.js");
+	const { setupStudioComposition } = await import("./studio-composition-19ImR37T.js");
 	return { setupStudioComposition };
 }, __vite__mapDeps([0,1])).then(({ setupStudioComposition }) => setupStudioComposition());
 //#endregion
