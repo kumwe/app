@@ -29,6 +29,7 @@ use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
 use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
 use Ramsey\Uuid\Uuid;
+use Throwable;
 
 /**
  * Decides relationship and owned-line mutations before the record facade writes anything.
@@ -859,7 +860,7 @@ final readonly class BusinessRecordRelationshipCoordinator
         EntityTypeDefinition $definition,
         array $stored,
     ): array {
-        $prepared = [];
+        $normalized = [];
         $claimed = [];
         $renumber = false;
         foreach ($command->lines as $position => $line) {
@@ -876,9 +877,7 @@ final readonly class BusinessRecordRelationshipCoordinator
             if ($existing !== null && $existing->position !== $position) {
                 $renumber = true;
             }
-            $prepared[] = $this->prepareDocumentLine(
-                $command->context,
-                $scope,
+            $normalized[] = $this->normalizeDocumentLine(
                 $access,
                 $definition,
                 $line,
@@ -886,6 +885,11 @@ final readonly class BusinessRecordRelationshipCoordinator
                 $position,
                 $existing,
             );
+        }
+        $index = $this->indexDocumentReferences($command->context, $definition, $scope, $access, $normalized);
+        $prepared = [];
+        foreach ($normalized as $entry) {
+            $prepared[] = $this->settleDocumentLine($command->context, $access, $definition, $entry, $index);
         }
         if ($renumber) {
             $prepared = array_map(
@@ -898,6 +902,7 @@ final readonly class BusinessRecordRelationshipCoordinator
                         $line->values,
                         $line->storedVersion,
                         true,
+                        false,
                     ),
                 $prepared,
             );
@@ -913,10 +918,14 @@ final readonly class BusinessRecordRelationshipCoordinator
     }
 
     /**
-     * Normalize one submitted line and decide whether its row has to be written.
+     * Normalize one submitted line as far as it can go before its references are known.
      *
-     * @param   ExecutionContext          $context     Actor and site the write runs as.
-     * @param   RecordScope               $scope       Scope inherited from the owner.
+     * Everything here is local to the line: field-input policy, identity, and the validator's create or
+     * update rules. Nothing here touches the database, which is what lets the whole collection reach this
+     * point before a single reference lookup is issued. A validation failure is captured rather than
+     * thrown, because the line loop that consumes this has to raise failures in submitted order and the
+     * reference pass sits between the two.
+     *
      * @param   BusinessRecordAccessPlan  $access      Nested row and field policy.
      * @param   EntityTypeDefinition      $definition  Pinned line definition.
      * @param   DocumentLineInput         $line        Submitted line values and optional identity.
@@ -924,20 +933,24 @@ final readonly class BusinessRecordRelationshipCoordinator
      * @param   int                       $position    Dense list position assigned by the command.
      * @param   ?StoredOwnedLine          $existing    Stored line, or null for a new line.
      *
-     * @return  OwnedLineWrite  Fully normalized line write intent.
+     * @return  array{recordKey: string, recordId: string, position: int, values: array<string, mixed>,
+     *          handles: list<string>, usage: FieldAccessUsage, existing: ?StoredOwnedLine,
+     *          failure: ?BusinessRecordValidationFailed}  The line as far as it normalizes, or the
+     *          validation failure to replay in submitted order.
+     *
+     * @throws  BusinessRelationshipRejected  When the submitted field set is not one this access plan
+     *          admits for the usage the line implies.
      *
      * @since   2.0.0
      */
-    private function prepareDocumentLine(
-        ExecutionContext $context,
-        RecordScope $scope,
+    private function normalizeDocumentLine(
         BusinessRecordAccessPlan $access,
         EntityTypeDefinition $definition,
         DocumentLineInput $line,
         string $recordId,
         int $position,
         ?StoredOwnedLine $existing,
-    ): OwnedLineWrite {
+    ): array {
         $usage = $existing === null ? FieldAccessUsage::Create : FieldAccessUsage::Update;
         $this->assertFieldInput($access, $usage, array_keys($line->values));
         $recordKey = $existing->recordKey
@@ -962,29 +975,274 @@ final readonly class BusinessRecordRelationshipCoordinator
                     $recordId,
                 );
         } catch (BusinessRecordValidationFailed $exception) {
-            throw $this->validationForAccess($exception, $context, $definition, $access, $usage);
+            return [
+                'recordKey' => $recordKey,
+                'recordId' => $recordId,
+                'position' => $position,
+                'values' => [],
+                'handles' => [],
+                'usage' => $usage,
+                'existing' => $existing,
+                'failure' => $exception,
+            ];
         }
-        $values = $this->resolveEntityReferences(
-            $context,
-            $definition,
-            $scope,
-            $access,
-            $values,
-            $existing === null ? array_keys($values) : array_keys($line->values),
+
+        return [
+            'recordKey' => $recordKey,
+            'recordId' => $recordId,
+            'position' => $position,
+            'values' => $values,
+            'handles' => $existing === null ? array_keys($values) : array_keys($line->values),
+            'usage' => $usage,
+            'existing' => $existing,
+            'failure' => null,
+        ];
+    }
+
+    /**
+     * Resolve every entity reference the whole collection names, once per target and once per value.
+     *
+     * The un-batched path did this inside the line loop, so a thousand lines naming one target took a
+     * thousand mutation-fence locks, a thousand definition resolutions and a thousand row lookups. The
+     * work does not depend on the line: the target part is identical for every line naming that field, and
+     * the lookup differs only in the value. Targets are therefore locked once, in sorted handle order so
+     * two documents naming the same pair of targets can never take them in opposite orders, and the
+     * distinct values are resolved in bounded batches.
+     *
+     * A target that cannot be reached fails once and the failure is carried, not thrown: the line loop
+     * replays it at the first line that names the field, which is exactly where the un-batched code raised
+     * it.
+     *
+     * @param   ExecutionContext          $context     Actor and site the resolution runs as.
+     * @param   EntityTypeDefinition      $definition  Pinned line definition declaring the reference fields.
+     * @param   RecordScope               $scope       Scope inherited from the owner.
+     * @param   BusinessRecordAccessPlan  $access      Nested row and field policy.
+     * @param   list<array{recordKey: string, recordId: string, position: int, values: array<string, mixed>,
+     *          handles: list<string>, usage: FieldAccessUsage, existing: ?StoredOwnedLine,
+     *          failure: ?BusinessRecordValidationFailed}>  $normalized  The normalized collection.
+     *
+     * @return  OwnedLineReferenceIndex  Resolved keys and per-field failures for the whole collection.
+     *
+     * @since   2.0.0
+     */
+    private function indexDocumentReferences(
+        ExecutionContext $context,
+        EntityTypeDefinition $definition,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        array $normalized,
+    ): OwnedLineReferenceIndex {
+        /** @var array<string, array<string, string>> $wanted */
+        $wanted = [];
+        /** @var array<string, string> $targets */
+        $targets = [];
+        foreach ($definition->fields() as $field) {
+            $target = $field->configuration['target'] ?? null;
+            if ($field->type !== 'core.entity_reference' || !is_string($target)) {
+                continue;
+            }
+            foreach ($normalized as $entry) {
+                if ($entry['failure'] !== null || !in_array($field->handle, $entry['handles'], true)) {
+                    continue;
+                }
+                $value = $entry['values'][$field->handle] ?? null;
+                if (is_string($value)) {
+                    $wanted[$field->handle][$value] = $value;
+                    $targets[$field->handle] = $target;
+                }
+            }
+        }
+        if ($wanted === []) {
+            return OwnedLineReferenceIndex::empty();
+        }
+        // Sorted so the fences below are always taken in one order. Two documents naming the same targets
+        // in opposite field order would otherwise be able to deadlock against each other.
+        ksort($wanted);
+
+        /** @var array<string, array<string, string>> $keys */
+        $keys = [];
+        /** @var array<string, Throwable> $failures */
+        $failures = [];
+        foreach ($wanted as $handle => $values) {
+            try {
+                $keys[$handle] = $this->resolveReferenceBatch(
+                    $context,
+                    $scope,
+                    $access,
+                    $handle,
+                    $targets[$handle],
+                    array_values($values),
+                );
+            } catch (Throwable $exception) {
+                $failures[$handle] = $exception;
+            }
+        }
+
+        return new OwnedLineReferenceIndex($keys, $failures);
+    }
+
+    /**
+     * Resolve one reference field's distinct values against its target definition in one batch.
+     *
+     * @param   ExecutionContext          $context  Actor and site the resolution runs as.
+     * @param   RecordScope               $scope    Scope inherited from the owner.
+     * @param   BusinessRecordAccessPlan  $access   Nested row and field policy.
+     * @param   string                    $handle   Reference field handle being resolved.
+     * @param   string                    $target   Target definition handle the field points at.
+     * @param   list<string>              $values   Distinct submitted values to resolve.
+     *
+     * @return  array<string, string>  Storage key of every value that resolved, keyed by that value.
+     *
+     * @throws  BusinessRecordNotFound  When the target itself is unreachable under this access plan.
+     *
+     * @since   2.0.0
+     */
+    private function resolveReferenceBatch(
+        ExecutionContext $context,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        string $handle,
+        string $target,
+        array $values,
+    ): array {
+        $targetAccess = $access->related($handle);
+        if ($targetAccess === null) {
+            throw new BusinessRecordNotFound();
+        }
+        $generation = $this->fence->lock($context, $target);
+        $resolved = $this->definitions->forCreate($context, $target);
+        $generation->assertMatches($resolved);
+        $targetScope = $this->scope($resolved, $context, $scope->organizationIdentifier);
+        $identityField = $this->identityField($resolved->definition);
+        $this->assertPortalTargetOperation($context, $resolved->definition, PortalOperation::Read);
+        $this->assertRelatedTargetAccess($resolved->definition, $targetAccess);
+
+        /** @var array<string, string> $submittedOf */
+        $submittedOf = [];
+        foreach ($values as $value) {
+            try {
+                $targetId = $this->values->identity(
+                    $resolved->definition,
+                    [$identityField->handle => $value],
+                    null,
+                );
+            } catch (InvalidArgumentException) {
+                // A value the target's identity rules refuse resolves to nothing, which is the same
+                // violation the caller saw when this ran one line at a time.
+                continue;
+            }
+            $submittedOf[$targetId] = $value;
+        }
+        $identities = $this->reads->identities(
+            $resolved,
+            $targetScope,
+            $targetAccess,
+            array_values(array_map(strval(...), array_keys($submittedOf))),
         );
+        /** @var array<string, string> $keys */
+        $keys = [];
+        foreach ($submittedOf as $targetId => $submitted) {
+            $identity = $identities[(string) $targetId] ?? null;
+            if ($identity !== null) {
+                $keys[$submitted] = $identity->recordKey;
+            }
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Finish one normalized line against the collection's resolved references.
+     *
+     * @param   ExecutionContext          $context     Actor and site the write runs as.
+     * @param   BusinessRecordAccessPlan  $access      Nested row and field policy.
+     * @param   EntityTypeDefinition      $definition  Pinned line definition.
+     * @param   array{recordKey: string, recordId: string, position: int, values: array<string, mixed>,
+     *          handles: list<string>, usage: FieldAccessUsage, existing: ?StoredOwnedLine,
+     *          failure: ?BusinessRecordValidationFailed}  $entry  One normalized line.
+     * @param   OwnedLineReferenceIndex   $index       References resolved for the whole collection.
+     *
+     * @return  OwnedLineWrite  Fully normalized line write intent.
+     *
+     * @throws  BusinessRecordValidationFailed  When this line breaks a field rule or names a reference no
+     *          visible row answers to.
+     * @throws  BusinessRecordNotFound  When the line's own values fall outside the nested row policy.
+     *
+     * @since   2.0.0
+     */
+    private function settleDocumentLine(
+        ExecutionContext $context,
+        BusinessRecordAccessPlan $access,
+        EntityTypeDefinition $definition,
+        array $entry,
+        OwnedLineReferenceIndex $index,
+    ): OwnedLineWrite {
+        if ($entry['failure'] !== null) {
+            throw $this->validationForAccess(
+                $entry['failure'],
+                $context,
+                $definition,
+                $access,
+                $entry['usage'],
+            );
+        }
+        $values = $entry['values'];
+        $violations = [];
+        foreach ($definition->fields() as $field) {
+            if ($field->type !== 'core.entity_reference' || !in_array($field->handle, $entry['handles'], true)) {
+                continue;
+            }
+            $value = $values[$field->handle] ?? null;
+            if ($value === null) {
+                continue;
+            }
+            $failure = $index->failure($field->handle);
+            if ($failure !== null && !$failure instanceof BusinessRecordNotFound) {
+                throw $failure;
+            }
+            $target = $field->configuration['target'] ?? null;
+            if (!is_string($value) || !is_string($target)) {
+                $violations[] = new ValidationViolation(
+                    $field->handle,
+                    'reference',
+                    'The entity reference or target definition is invalid.',
+                );
+                continue;
+            }
+            $key = $failure === null ? $index->key($field->handle, $value) : null;
+            if ($key === null) {
+                $violations[] = new ValidationViolation(
+                    $field->handle,
+                    'reference',
+                    'The referenced business record does not exist in this scope.',
+                );
+                continue;
+            }
+            $values[$field->handle] = $key;
+        }
+        if ($violations !== []) {
+            throw $this->validationForAccess(
+                new BusinessRecordValidationFailed($violations),
+                $context,
+                $definition,
+                $access,
+                $entry['usage'],
+            );
+        }
         if (!$access->records->allows($values)) {
             throw new BusinessRecordNotFound();
         }
+        $existing = $entry['existing'];
+        $valuesChanged = $existing === null || $this->valuesDiffer($existing->values, $values);
 
         return new OwnedLineWrite(
-            $recordKey,
-            $recordId,
-            $position,
+            $entry['recordKey'],
+            $entry['recordId'],
+            $entry['position'],
             $values,
             $existing?->version,
-            $existing === null
-                || $existing->position !== $position
-                || $this->valuesDiffer($existing->values, $values),
+            $valuesChanged || $existing->position !== $entry['position'],
+            $valuesChanged,
         );
     }
 

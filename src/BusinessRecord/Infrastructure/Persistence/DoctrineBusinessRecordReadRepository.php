@@ -75,6 +75,18 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     private const int MAX_INCLUDED_ROWS = 1000;
 
     /**
+     * Largest number of caller-facing identities one batched identity statement resolves.
+     *
+     * The list is the whole parameter payload apart from the scope and policy predicates, so a batch of
+     * this size stays an order of magnitude below the bound-parameter ceiling MariaDB, MySQL and
+     * PostgreSQL each impose, and a thousand-line document's references cost a handful of statements.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int IDENTITY_BATCH = 250;
+
+    /**
      * Wire the reader to the connection, codecs and metadata sources one decoded row needs.
      *
      * @param  Connection                            $database       DBAL connection every read runs on,
@@ -177,6 +189,78 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $this->integer($row, $this->physical($table, 'definition_version')),
             $this->integer($row, $this->physical($table, 'version')),
         );
+    }
+
+    /**
+     * Resolve many caller-facing record ids of one definition at once, in bounded batches.
+     *
+     * The statement is `identity()`'s, widened from an equality to an `IN` list and chunked so the bound
+     * parameter list stays far below the ceiling any supported engine enforces. Every predicate stays:
+     * the same scope filter, the same soft-delete rule and the same compiled access predicate, so asking
+     * for a hundred ids never sees a row that asking for one of them would have hidden.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved        Definition whose identity column is matched.
+     * @param   RecordScope                 $scope           Site and organization the rows must belong to.
+     * @param   BusinessRecordAccessPlan    $access          Row policy applied before an identity returns.
+     * @param   list<string>                $recordIds       Caller-facing identities, already normalized.
+     * @param   bool                        $includeDeleted  True to also match soft-deleted rows.
+     *
+     * @return  array<string, StoredRecordIdentity>  Resolved identities keyed by caller-facing id.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the requested scope disagrees with the installed
+     *          columns, or a stored identity is malformed.
+     *
+     * @since   2.0.0
+     */
+    public function identities(
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        array $recordIds,
+        bool $includeDeleted = false,
+    ): array {
+        $wanted = array_values(array_unique($recordIds));
+        if ($wanted === []) {
+            return [];
+        }
+        $table = $this->recordTable($resolved);
+        $identityPhysical = $this->identityPhysical($resolved, $table);
+        $resolvedIdentities = [];
+        foreach (array_chunk($wanted, self::IDENTITY_BATCH) as $batch) {
+            /** @var list<mixed> $parameters */
+            $parameters = [$batch];
+            /** @var list<ArrayParameterType|string> $types */
+            $types = [ArrayParameterType::STRING];
+            $where = ['r0.' . $this->quote($identityPhysical) . ' IN (?)'];
+            $this->qualifiedScope($table, 'r0', $scope, $where, $parameters, $types);
+            if (!$includeDeleted && $table->column('deleted_at') !== null) {
+                $where[] = 'r0.' . $this->quote($this->physical($table, 'deleted_at')) . ' IS NULL';
+            }
+            $policy = $this->queries->compileAccessPredicate($resolved, $scope, $access);
+            $where[] = $policy->sql;
+            array_push($parameters, ...$policy->parameters);
+            array_push($types, ...$policy->types);
+            $rows = $this->database->executeQuery(sprintf(
+                'SELECT r0.%s, r0.%s, r0.%s, r0.%s FROM %s r0 WHERE %s',
+                $this->quote($this->physical($table, 'record_id')),
+                $this->quote($identityPhysical),
+                $this->quote($this->physical($table, 'definition_version')),
+                $this->quote($this->physical($table, 'version')),
+                $this->quote($table->physicalName),
+                implode(' AND ', $where),
+            ), $parameters, $types)->fetchAllAssociative();
+            foreach ($rows as $row) {
+                $identity = $this->string($row, $identityPhysical);
+                $resolvedIdentities[$identity] = new StoredRecordIdentity(
+                    $this->string($row, $this->physical($table, 'record_id')),
+                    $identity,
+                    $this->integer($row, $this->physical($table, 'definition_version')),
+                    $this->integer($row, $this->physical($table, 'version')),
+                );
+            }
+        }
+
+        return $resolvedIdentities;
     }
 
     /**
