@@ -47,7 +47,7 @@ The repository contains small, inspectable packages under [`examples/extensions`
 | [`announcements`](../examples/extensions/announcements) | Schema-3 shell, entity and safe field-presenter contributions, injected service, and portable migration |
 | [`asset-inspection`](../examples/extensions/asset-inspection) | Schema-4 neutral proof with related entities, workflow, policies, durable events/jobs, projection/report, administrator UI, and opt-in portal |
 | [`horizon-theme`](../examples/extensions/horizon-theme) | Branded schema-1 site theme proving the complete template override boundary with its own palette, typography, and assets |
-| [`audit-listener`](../examples/extensions/audit-listener) | Plugin provider and Joomla Event listener registration |
+| [`audit-listener`](../examples/extensions/audit-listener) | Plugin provider and Kumwe domain-event listener registration |
 | [`minimal-template`](../examples/extensions/minimal-template) | Complete site-template override and packaged public asset |
 | [`minimal-administrator-template`](../examples/extensions/minimal-administrator-template) | Installable KIS 1.0 administrator-shell contract and token-safe styling |
 
@@ -229,8 +229,8 @@ Valid schema-1 manifests remain installable and retain their service registratio
 
 ## Provider and runtime contract
 
-Every provider implements `Kumwe\App\Extension\Application\ExtensionServiceProvider`, Kumwe's Joomla DI
-service-provider contract. A schema-2-or-newer contributor also implements `ExtensionContributionProvider`;
+Every provider implements `Kumwe\App\Extension\Application\ExtensionServiceProvider`, Kumwe's
+service-provider contract for the restricted extension container. A schema-2-or-newer contributor also implements `ExtensionContributionProvider`;
 legacy lifecycle hooks remain on `RuntimeExtension`:
 
 ```php
@@ -270,7 +270,7 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
 
     public function boot(ExtensionContainer $container): void
     {
-        // Attach typed Joomla Event listeners.
+        // Attach typed Kumwe domain-event listeners.
     }
 
     public function registerRoutes(ExtensionRouteRegistrar $routes): void
@@ -322,13 +322,13 @@ Contribution capability definitions enter the normal capability catalog but are 
 
 ## Events
 
-Attach typed listeners to Joomla Event's dispatcher in `boot()`. Event objects and names are versioned extension API. A listener must document whether it can stop propagation and whether throwing aborts the current transaction.
+Attach typed listeners through the extension event registrar in `boot()`; each listener receives the Kumwe-owned `ExtensionEvent` contract, never the dispatch engine behind it. Event objects and names are versioned extension API. A listener must document whether it can stop propagation and whether throwing aborts the current transaction.
 
 Keep synchronous listeners fast and deterministic. For email, indexing, webhooks, or remote calls, enqueue a namespaced job or consume a committed outbox event. Never depend on listener registration order for correctness and never use an event to bypass an application service's authorization or audit behavior.
 
 Declare consumed and emitted events in the manifest so compatibility tooling can inspect them. The provider remains responsible for attaching concrete listener classes.
 
-The extension lifecycle emits paired Joomla events:
+The extension lifecycle emits paired domain events:
 
 | Operation | Before | After |
 |---|---|---|

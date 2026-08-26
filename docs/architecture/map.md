@@ -15,7 +15,7 @@ There is one. Do not add a second pipeline, a static container, or a service loc
 
 | Path | Role |
 |---|---|
-| `src/Kernel/ContainerFactory.php` | Wires Joomla DI, the Mezzio pipeline, routes, jobs, MCP, extension boot |
+| `src/Kernel/ContainerFactory.php` | Wires the Laminas ServiceManager-backed kernel container, the Mezzio pipeline, routes, jobs, MCP, extension boot |
 | `src/Kernel/Configuration/` | Env-validated process configuration |
 | `bootstrap/container.php` | Full container for HTTP and tests |
 | `bootstrap/console.php` | Full vs recovery container for CLI |

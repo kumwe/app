@@ -7,7 +7,7 @@ them automatically and does not carry a second, drifting copy of the rules.
 
 ## Quick orientation
 
-- PHP 8.5, Mezzio/Laminas HTTP stack, Joomla Framework components, Doctrine DBAL persistence.
+- PHP 8.5, Mezzio/Laminas HTTP stack, Laminas ServiceManager DI, Laminas EventManager events, Doctrine DBAL persistence.
 - Source is PSR-4 under `Kumwe\App\` in `src/`; tests are `Kumwe\App\Tests\` in `tests/`.
 - `final readonly class` with constructor property promotion is the default class shape.
 - PHPStan runs at level `max`; PHP_CodeSniffer enforces PSR-12 with a 120-character line limit.

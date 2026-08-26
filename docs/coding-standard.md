@@ -265,8 +265,8 @@ carries the description.
 - Product policy belongs in domain and application code; driver behaviour belongs in adapters.
 - Never fetch services from a static container or service locator. Dependencies arrive through the
   constructor.
-- Prefer a maintained Joomla Framework component; reach for Laminas or Mezzio only where Joomla has no
-  maintained equivalent. Symfony and Laravel are not direct production dependencies.
+- Prefer a maintained Laminas or Mezzio component; reach for another maintained, focused package only
+  with explicit justification. Symfony and Laravel are not direct production dependencies.
 
 ## 6. Errors
 
