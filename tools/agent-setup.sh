@@ -99,6 +99,43 @@ case "$PHP_VERSION" in
 esac
 
 # --------------------------------------------------------------- composer deps
+# A sandbox that blocks GitHub's zipball hosts can still install from git
+# sources, except for packages whose lock entry carries no source at all
+# (phpstan/phpstan ships dist-only). For those, build the byte-equivalent
+# archive from an authenticated git clone and place it where composer's
+# cache expects the dist download, keyed exactly as FileDownloader does
+# (packages from Packagist carry no dist shasum, so composer accepts the
+# structurally equivalent git archive).
+seed_distonly_composer_cache() {
+    command -v git >/dev/null 2>&1 || return 0
+    [ -f composer.lock ] || return 0
+    "$PHP_BIN" -r '
+        $lock = json_decode(file_get_contents("composer.lock"), true);
+        foreach (array_merge($lock["packages"] ?? [], $lock["packages-dev"] ?? []) as $p) {
+            if (isset($p["source"])) { continue; }
+            $url = $p["dist"]["url"] ?? "";
+            if (($p["dist"]["type"] ?? "") !== "zip") { continue; }
+            if (!preg_match("#api\.github\.com/repos/([^/]+/[^/]+)/zipball#", $url, $m)) { continue; }
+            echo $p["name"], " ", sha1($url), " ", $p["dist"]["reference"], " ", $m[1], "\n";
+        }' 2>/dev/null | while read -r name key ref repo; do
+        cache_file="${COMPOSER_CACHE_DIR:-$HOME/.cache/composer}/files/$name/$key.zip"
+        [ -f "$cache_file" ] && continue
+        seed_tmp="$(mktemp -d)"
+        if git init -q "$seed_tmp" \
+            && git -C "$seed_tmp" remote add origin "https://github.com/$repo.git" \
+            && git -C "$seed_tmp" fetch -q --depth 1 origin "$ref" >/dev/null 2>&1 \
+            && mkdir -p "$(dirname "$cache_file")" \
+            && git -C "$seed_tmp" archive --format=zip \
+                --prefix="$(printf '%s' "$repo" | tr / -)-$(printf '%.7s' "$ref")/" \
+                -o "$cache_file" "$ref" >/dev/null 2>&1; then
+            printf '   Seeded composer cache for dist-only %s from git.\n' "$name"
+        else
+            rm -f "$cache_file"
+        fi
+        rm -rf "$seed_tmp"
+    done
+}
+
 say "Composer dependencies"
 if [ -f vendor/autoload.php ]; then
     note "vendor/ already present; skipping install."
@@ -107,12 +144,47 @@ elif [ "$PHP_VERSION" != "none" ]; then
     if composer install --no-interaction --no-progress --prefer-dist $PLATFORM_FLAG >/tmp/agent-setup-composer.log 2>&1; then
         note "composer install (dist) succeeded."
         TIER1=yes
-    elif composer install --no-interaction --no-progress --prefer-source $PLATFORM_FLAG >/tmp/agent-setup-composer.log 2>&1; then
-        note "composer install succeeded from git sources (dist downloads blocked)."
-        TIER1=yes
     else
-        note "composer install FAILED (see /tmp/agent-setup-composer.log). Usually the sandbox blocks api.github.com / codeload.github.com — allow the 'Composer' lines in tools/agent-egress.txt and re-run."
+        seed_distonly_composer_cache
+        if composer install --no-interaction --no-progress --prefer-source $PLATFORM_FLAG >/tmp/agent-setup-composer.log 2>&1; then
+            note "composer install succeeded from git sources (dist downloads blocked)."
+            TIER1=yes
+        else
+            note "composer install FAILED (see /tmp/agent-setup-composer.log). Usually the sandbox blocks api.github.com / codeload.github.com — allow the 'Composer' lines in tools/agent-egress.txt and re-run."
+        fi
     fi
+fi
+
+# --------------------------------------------------------------------- node.js
+# The frontend lane requires the Node major from package.json engines; agent
+# sandboxes often default to an older system Node while shipping nvm. Select
+# or install the required major through nvm where present, and record the
+# binary path for later shells via .agent-env below.
+say "Node.js"
+REQUIRED_NODE_MAJOR=24
+NODE_BIN_DIR=""
+node_major() { node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
+if [ "$(node_major)" -lt "$REQUIRED_NODE_MAJOR" ]; then
+    for nvm_dir in "${NVM_DIR:-}" /opt/nvm "$HOME/.nvm"; do
+        if [ -n "$nvm_dir" ] && [ -s "$nvm_dir/nvm.sh" ]; then
+            export NVM_DIR="$nvm_dir"
+            # shellcheck disable=SC1091
+            . "$nvm_dir/nvm.sh" >/dev/null 2>&1
+            nvm install "$REQUIRED_NODE_MAJOR" >/dev/null 2>&1
+            nvm alias default "$REQUIRED_NODE_MAJOR" >/dev/null 2>&1
+            nvm_node="$(nvm which "$REQUIRED_NODE_MAJOR" 2>/dev/null || true)"
+            if [ -n "$nvm_node" ]; then
+                NODE_BIN_DIR="$(dirname "$nvm_node")"
+                PATH="$NODE_BIN_DIR:$PATH"
+            fi
+            break
+        fi
+    done
+fi
+if [ "$(node_major)" -ge "$REQUIRED_NODE_MAJOR" ]; then
+    note "Node $(node --version 2>/dev/null) satisfies the engines requirement."
+else
+    note "Node >= $REQUIRED_NODE_MAJOR unavailable (system Node $(node --version 2>/dev/null || echo none), no usable nvm); the frontend lane may fail engine checks."
 fi
 
 # ------------------------------------------------------------------- node deps
@@ -261,6 +333,9 @@ export KUMWE_SITE_CONTENT_PROFILE=blank
 export KUMWE_BUSINESS_DEMO=false
 export COMPOSER_ALLOW_SUPERUSER=1
 EOF
+if [ -n "$NODE_BIN_DIR" ]; then
+    printf 'export PATH="%s:$PATH"\n' "$NODE_BIN_DIR" >> "$ENV_FILE"
+fi
 note ".agent-env written."
 
 # ----------------------------------------------------------------- test schema
