@@ -34,6 +34,16 @@ if command -v rg >/dev/null 2>&1; then
         rg -n '^use (Symfony|Illuminate)\\' src tests 2>/dev/null
     }
 
+    joomla_dependency_matches() {
+        rg -n '"joomla/[^\"]+"\s*:' composer.json
+    }
+
+    joomla_reference_matches() {
+        rg -nF 'Joomla\' src bootstrap bin public config examples tools tests \
+            --glob '!tests/Fixtures/ExtensionApi/generations/**' \
+            --glob '!tools/verify-policy.sh' 2>/dev/null
+    }
+
     static_locator_matches() {
         find . -path './vendor' -prune -o -type f -name '*.php' -print0 \
             | xargs -0 -r rg -n 'Kumwe\\App\\Factory|Factory::getContainer\(' 2>/dev/null
@@ -58,6 +68,17 @@ else
 
     framework_import_matches() {
         grep -R -I -nE --include='*.php' '^use (Symfony|Illuminate)\\' src tests
+    }
+
+    joomla_dependency_matches() {
+        grep -nE '"joomla/[^\"]+"[[:space:]]*:' composer.json
+    }
+
+    joomla_reference_matches() {
+        find src bootstrap bin public config examples tools tests \
+            -path tests/Fixtures/ExtensionApi/generations -prune -o \
+            -type f ! -path tools/verify-policy.sh -print0 \
+            | xargs -0 -r grep -I -nHF 'Joomla\'
     }
 
     static_locator_matches() {
@@ -94,6 +115,19 @@ fi
 
 if framework_import_matches; then
     echo 'Policy violation: first-party code cannot import Symfony or Laravel classes.' >&2
+    exit 1
+fi
+
+if joomla_dependency_matches; then
+    echo 'Policy violation: joomla/* packages cannot return to composer.json. ADR 0019 replaced the' >&2
+    echo 'Joomla engines with Laminas ServiceManager and EventManager behind Kumwe-owned seams.' >&2
+    exit 1
+fi
+
+if joomla_reference_matches; then
+    echo 'Policy violation: first-party code cannot reference Joomla\ types. ADR 0019 retired the' >&2
+    echo 'Joomla Framework; only the frozen extension-API generation fixtures and prose history in' >&2
+    echo 'docs/ and CHANGELOG.md keep the name.' >&2
     exit 1
 fi
 

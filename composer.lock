@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "75250a8d188d41d8225a817fba09ea55",
+    "content-hash": "40d9344e8e009279f73b5d1c736fded4",
     "packages": [
         {
             "name": "brick/math",
@@ -323,114 +323,6 @@
                 "source": "https://github.com/php-fig/http-message-util/tree/1.1.5"
             },
             "time": "2020-11-24T22:02:12+00:00"
-        },
-        {
-            "name": "joomla/di",
-            "version": "4.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/joomla-framework/di.git",
-                "reference": "e8511111e2b5b239f75116f9ff75b43c18809868"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/joomla-framework/di/zipball/e8511111e2b5b239f75116f9ff75b43c18809868",
-                "reference": "e8511111e2b5b239f75116f9ff75b43c18809868",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.3.0",
-                "psr/container": "^2.0",
-                "symfony/deprecation-contracts": "^2|^3"
-            },
-            "provide": {
-                "psr/container-implementation": "~1.0"
-            },
-            "require-dev": {
-                "joomla/test": "^4.0",
-                "phpstan/phpstan": "^2.1.17",
-                "phpstan/phpstan-deprecation-rules": "^2.0.3",
-                "phpunit/phpunit": "^12.2.6",
-                "squizlabs/php_codesniffer": "~3.7.2"
-            },
-            "type": "joomla-package",
-            "autoload": {
-                "psr-4": {
-                    "Joomla\\DI\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "description": "Joomla DI Package",
-            "homepage": "https://github.com/joomla-framework/di",
-            "keywords": [
-                "container",
-                "dependency injection",
-                "di",
-                "framework",
-                "ioc",
-                "joomla"
-            ],
-            "support": {
-                "issues": "https://github.com/joomla-framework/di/issues",
-                "source": "https://github.com/joomla-framework/di/tree/4.0.0"
-            },
-            "time": "2025-07-24T07:51:22+00:00"
-        },
-        {
-            "name": "joomla/event",
-            "version": "4.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/joomla-framework/event.git",
-                "reference": "4bbbfb0a3444cb3e3f9abd57d623caa06e9207b5"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/joomla-framework/event/zipball/4bbbfb0a3444cb3e3f9abd57d623caa06e9207b5",
-                "reference": "4bbbfb0a3444cb3e3f9abd57d623caa06e9207b5",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.3.0",
-                "symfony/deprecation-contracts": "^2|^3"
-            },
-            "require-dev": {
-                "joomla/console": "^4.0",
-                "phpstan/phpstan": "^2.1.17",
-                "phpstan/phpstan-deprecation-rules": "^2.0.3",
-                "phpunit/phpunit": "^12.2.7",
-                "psr/container": "^2.0",
-                "squizlabs/php_codesniffer": "^3.7.2"
-            },
-            "suggest": {
-                "joomla/console": "If you want to use the DebugEventDispatcherCommand class, please install joomla/console",
-                "psr/container-implementation": "If you want to use the LazyServiceEventListener class, please install a PSR-11 container"
-            },
-            "type": "joomla-package",
-            "autoload": {
-                "psr-4": {
-                    "Joomla\\Event\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "description": "Joomla Event Package",
-            "homepage": "https://github.com/joomla-framework/event",
-            "keywords": [
-                "event",
-                "framework",
-                "joomla"
-            ],
-            "support": {
-                "issues": "https://github.com/joomla-framework/event/issues",
-                "source": "https://github.com/joomla-framework/event/tree/4.0.0"
-            },
-            "time": "2025-07-24T09:34:33+00:00"
         },
         {
             "name": "laminas/laminas-authentication",
