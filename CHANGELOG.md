@@ -1203,19 +1203,19 @@ development programme, from the architecture decision that opened it to the curr
   events behind Kumwe-owned seams.** The four never-referenced Joomla packages — archive, filesystem,
   filter and registry — left the dependency set with no replacement, since the hardened native ZipArchive
   package boundary, typed `ApplicationConfiguration` plus the plain-array `config` service, and native
-  PHP filesystem use already covered their ground (`0d548c76`). The composition root now builds
+  PHP filesystem use already covered their ground. The composition root now builds
   `Kumwe\App\Kernel\Container`, a final PSR-11 wrapper over ServiceManager 4 that keeps the `share()` and
   `alias()` registration vocabulary and turns overwrite protection into the container-wide
   `allowOverride=false` stance, while domain events dispatch through EventManager 3 behind the
   vendor-free `ExtensionEvent` contract — the same `getName`/`getArgument`/`isStopped`/`stopPropagation`
   vocabulary, the same eight `onKumweExtension*` names and argument maps — so the extension SPI never
-  again leaks an engine type (`2a83e4ef`). The new public `ExtensionEvent` interface is byte-pinned as an
+  again leaks an engine type. The new public `ExtensionEvent` interface is byte-pinned as an
   additive compatibility fixture with reflection parity, leaving every frozen contract generation
-  untouched (`16f86009`); ADR 0019 records the decision, the preservation covenant, contribution policy
-  and architecture documents name the Laminas engines (`74319cd4`); the forty-seven container-typed test
+  untouched; ADR 0019 records the decision, the preservation covenant, contribution policy
+  and architecture documents name the Laminas engines; the forty-seven container-typed test
   suites, the boundary pins and new kernel-container, extension-event and registrar unit suites hold the
-  seam (`b0a5fd9d`); and a permanent architecture-policy gate refuses any returning `Joomla\` reference or
-  `joomla/*` requirement.
+  seam; and a permanent architecture-policy gate refuses any returning `Joomla\` reference or
+  `joomla/*` requirement. (#115)
 
 - **The operator map and public documentation index now expose the complete App-owned Studio host seam.**
   They route changes to authority, artifact/recovery, media/resource, preview and published-composition code,
