@@ -8,7 +8,7 @@
  * returns the reduced recovery container for that fixed list, and the full container otherwise, so a
  * site can always be diagnosed and repaired from the command line.
  *
- * @return \Joomla\DI\Container The container appropriate to the requested command.
+ * @return \Kumwe\App\Kernel\Container The container appropriate to the requested command.
  *
  * @since  2.0.0
  */

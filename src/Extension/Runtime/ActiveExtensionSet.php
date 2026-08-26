@@ -333,7 +333,7 @@ final class ActiveExtensionSet
      *
      * Provider objects are dropped with the extension entry; the registry-set sweep removes every
      * declarative and executable contribution; and the owner maps remove Twig theme, namespaced view,
-     * portal-template and compiled-catalogue paths. Raw Joomla listeners cannot be detached safely, so
+     * portal-template and compiled-catalogue paths. Raw event-manager listeners cannot be detached safely, so
      * their generation-aware registration wrapper separately makes them inert after the same change.
      *
      * @param   string  $identifier  Canonical `vendor/name` owner being withdrawn.

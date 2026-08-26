@@ -8,8 +8,6 @@ use InvalidArgumentException;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Types\Types;
-use Joomla\Event\DispatcherInterface;
-use Joomla\Event\Event;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
@@ -39,12 +37,14 @@ use Kumwe\App\Extension\Domain\PackageSignature;
 use Kumwe\App\Extension\Domain\SemanticVersion;
 use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\App\Extension\Runtime\LaminasExtensionEvent;
 use Kumwe\App\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Presentation\Application\ThemeActivationGuard;
 use Kumwe\App\Application\Presentation\ThemePackageValidator;
 use Kumwe\App\Presentation\Application\ThemeMutationAuthorizer;
 use Kumwe\App\Extension\Domain\ThemeSurface;
+use Laminas\EventManager\EventManagerInterface;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -121,7 +121,7 @@ final readonly class DoctrineExtensionManager
      *         to.
      * @param  ClockInterface                  $clock                 Clock stamping install, update and
      *         activation timestamps.
-     * @param  DispatcherInterface             $events                Dispatcher the before and after
+     * @param  EventManagerInterface           $events                Event manager the before and after
      *         lifecycle events are published on.
      * @param  ThemeActivationGuard            $themeActivationGuard  Guard demanding step-up authentication
      *         before a protected surface changes theme.
@@ -156,7 +156,7 @@ final readonly class DoctrineExtensionManager
         private TransactionManager $transactions,
         private AuditRecorder $audit,
         private ClockInterface $clock,
-        private DispatcherInterface $events,
+        private EventManagerInterface $events,
         private ThemeActivationGuard $themeActivationGuard,
         private ThemePackageValidator $themeValidator,
         private ThemeMutationAuthorizer $themeAuthorization,
@@ -3068,7 +3068,7 @@ final readonly class DoctrineExtensionManager
         array $result = [],
         ?ExtensionRegistryLease $lease = null,
     ): void {
-        $this->events->dispatch($name, new Event($name, [
+        $this->events->triggerEvent(new LaminasExtensionEvent($name, [
             'identifier' => $manifest->identifier()->value(),
             'version' => (string) $manifest->version(),
             'actor_id' => $actorId,
