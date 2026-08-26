@@ -1079,8 +1079,10 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   await page.mouse.up();
   await expect.poll(async () => (await rootNodeIds(shell)).indexOf(secondSectionId ?? ''))
     .toBeLessThan((await rootNodeIds(shell)).indexOf(firstSectionId ?? ''));
+  // The published non-drag-move-equivalence conformance vector binds every
+  // input modality to one canonical studio.command/move-node dispatch.
   await expect.poll(async () => (await recordedCommands(page)).at(-1))
-    .toBe('studio.command/reorder-children');
+    .toBe('studio.command/move-node');
 
   const source = shell.locator(`.preview-canvas-region[data-node-id="${stackId ?? ''}"]`).first();
   const gridRegion = shell.locator(`.preview-canvas-region[data-node-id="${gridId ?? ''}"]`).first();
@@ -1131,7 +1133,7 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   await expect.poll(async () => {
     const values = await recordedCommands(page);
     return values.at(-1);
-  }).toBe('studio.command/reorder-children');
+  }).toBe('studio.command/move-node');
 
   await shell.getByRole('button', { name: 'Undo' }).click();
   await shell.getByRole('button', { name: 'Undo' }).click();
