@@ -5,7 +5,7 @@
 **Findings** None; the preservation covenant requires a separately approved architecture decision before
 the platform stack moves, and this record is that decision
 **Gate** None — Gate A remains passed and untouched
-**Verified against** `2a83e4ef` and `0d548c76`, plus the change that removes `joomla/di` and
+**Verified against** `670703a9` and `2821aaf0`, plus the change that removes `joomla/di` and
 `joomla/event` from `composer.json`
 
 ---
@@ -72,7 +72,7 @@ events, and it is the separately approved change the preservation covenant's pla
    dispatch semantic Kumwe does not need. Deferred is not forbidden: `ExtensionEvent` is the seam a
    future decision would change behind.
 5. **The Joomla Framework leaves the requirement blocks, permanently.** `joomla/archive`,
-   `joomla/filesystem`, `joomla/filter` and `joomla/registry` are removed as unused (`0d548c76`);
+   `joomla/filesystem`, `joomla/filter` and `joomla/registry` are removed as unused (`2821aaf0`);
    `joomla/di` and `joomla/event` follow once the test suite is retyped. `composer architecture:policy`
    then holds the line: any `Joomla\` reference in first-party PHP and any `joomla/*` package in a
    `composer.json` requirement block fails the gate. The byte-immutable extension-API generation fixtures
