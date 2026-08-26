@@ -61,7 +61,7 @@ development programme, from the architecture decision that opened it to the curr
   The browser qualification journey installs and activates the signed manifest-6 fixture, authors an exact
   field-bound extension composition, previews and publishes it, verifies the real marker-free public route,
   proves disabled code fails closed, reactivates it, and returns the Content record to legacy output. Human
-  journey execution remains explicit release-qualification work rather than fabricated evidence. (`f10c8f1d`)
+  journey execution remains explicit release-qualification work rather than fabricated evidence. (`b456c484`)
 
 - **Studio artifacts and recovery now have a production versioned persistence boundary.** The AP-3
   dispatcher delegates the exact published artifact and recovery HTTP wrappers behind its trusted
@@ -76,7 +76,7 @@ development programme, from the architecture decision that opened it to the curr
   artifact or envelope and its claim. Portable DBAL migration `20260824030000_studio_artifact_recovery`,
   all 11 applicable single-operation host vectors, all seven applicable host-sequence vectors, SQLite
   integration proof and the three-engine CI contract complete S-D and remove `V2-STU-004` from the live
-  ledger. (`f10c8f1d`)
+  ledger. (`b456c484`)
 
 - **Studio now has an authenticated, replay-resistant unpublished preview host.** The exact released
   `preview.render({payload})` and `preview.cancel({draftDigest})` bindings run behind the common live
@@ -96,7 +96,7 @@ development programme, from the architecture decision that opened it to the curr
   endpoints, bounded structured activity excludes draft and transport secrets, and the Security workflow
   publishes the negative-path suite as P7-C JUnit evidence. ADR 0017 records the boundary and explicitly
   leaves three-engine, built-browser and independent qualification evidence to Gate B rather than claiming
-  it from local SQLite. (`f10c8f1d`)
+  it from local SQLite. (`b456c484`)
 
 - **Studio host sessions now have a production trusted-identity, policy, and generation boundary.**
   The administrator opens an opaque Content or Blueprint context under one of the five canonical modes;
@@ -109,7 +109,7 @@ development programme, from the architecture decision that opened it to the curr
   `studio.host/stale-session-generation` before any later port runs. The CSRF-protected routes, opaque
   binding repository, replay-safe capability migration, all five relevant vendored permission/envelope
   vectors, adversarial cross-scope tests, and ADR 0014 complete S-C and remove `V2-STU-003` from the live
-  ledger without implementing S-D write behavior. (`f10c8f1d`)
+  ledger without implementing S-D write behavior. (`b456c484`)
 
 - **The App has a read-only, fail-closed Studio Content projection foundation.** Canonical JSON and
   schema-profile interpretation now live in the neutral `Studio\Domain\Contract` namespace, while the
@@ -121,7 +121,7 @@ development programme, from the architecture decision that opened it to the curr
   read-only domain, repository and replay-safe migration foundations without opening a Studio session
   or Content write path. Content and BusinessRecord remain parallel contexts, the latter adapter is
   explicitly deferred to its own policy and exact-value contract, and `V2-STU-002` remains open for
-  the separate Studio release-pin and corpus-replay evidence. (`f10c8f1d`)
+  the separate Studio release-pin and corpus-replay evidence. (`b456c484`)
 
 - **The delivery pipeline is immune to the two failure classes the first rebase-merge surfaced.**
   A GitHub API outage can no longer fail the dependency-fetching workflows: the production image
@@ -1978,7 +1978,7 @@ development programme, from the architecture decision that opened it to the curr
   `content.unpublish` decision; neither transition can borrow the other's grant through Studio's shared
   lifecycle permission. Both private decisions bind the session generation, the administrator projection
   exposes truthful target-specific controls, and the artifact port still enforces the exact decision before
-  revision lookup, persistence, idempotency or audit side effects. (`f10c8f1d`)
+  revision lookup, persistence, idempotency or audit side effects. (`b456c484`)
 - **The release web image no longer carries the stale Alpine package set that failed the high/critical gate.**
   The web stage moves from the floating, retired `nginx:1.28-alpine` line to the current stable
   `nginx:1.30.4-alpine3.24` image, refreshes installed packages as part of the web stage, and makes both
