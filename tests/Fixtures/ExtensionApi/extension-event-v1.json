@@ -1,0 +1,11 @@
+{
+  "format": "kumwe-extension-event-v1",
+  "interfaces": {
+    "Kumwe\\App\\Extension\\Runtime\\ExtensionEvent": [
+      "getArgument(string $name, mixed $default = NULL): mixed",
+      "getName(): string",
+      "isStopped(): bool",
+      "stopPropagation(): void"
+    ]
+  }
+}

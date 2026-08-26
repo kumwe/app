@@ -46,6 +46,14 @@ services plus a fixed allowlist of host services, and nothing else — resolving
 fails closed at runtime. The allowlist is in `generations.json` under `host_services`, and it is short on
 purpose. Their identifiers are frozen; the method surface behind each is public but not byte-pinned yet.
 
+One of those services hands objects back: a listener attached through `ExtensionEventRegistrar` receives
+each dispatched event as `Kumwe\App\Extension\Runtime\ExtensionEvent` — a Kumwe-owned contract carrying
+the event's name, its named arguments and the propagation flag, deliberately naming no vendor type so the
+dispatch engine behind it can change without the extension surface moving again. Unlike the registrar
+itself, that interface **is** byte-pinned, by `tests/Fixtures/ExtensionApi/extension-event-v1.json`. The
+event names — the eight `onKumweExtension*` lifecycle events — and their argument maps are versioned
+extension API and did not move with it.
+
 ## Generations
 
 A **manifest generation** is a `schema` number in `kumwe.json`. A **contribution SPI generation** is the
@@ -140,7 +148,7 @@ removing them would break packages that already ship them:
 | Key | Status | What actually happens |
 | --- | --- | --- |
 | `routes` | advisory | Reported by `extension:inspect`. It mounts nothing. Mount routes from `RuntimeExtension::registerRoutes()` or contribute `administrator.routes`. |
-| `events` | advisory | Labels one line in the contribution summary. It subscribes nothing. Register listeners through `ExtensionEventRegistrar` in `boot()`. |
+| `events` | advisory | Labels one line in the contribution summary. It subscribes nothing. Register listeners through `ExtensionEventRegistrar` in `boot()`; each listener receives an `ExtensionEvent`. |
 | `configuration` | accepted, uninterpreted | Nothing reads it. |
 | `permissions` (schema 1 only) | advisory | Nothing grants it. From schema 2 it must match the contributed capability identifiers exactly, order included. |
 

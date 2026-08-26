@@ -1274,6 +1274,16 @@
       "spi": 4,
       "path": "src/Studio/Application/Preview/StudioPreviewBlockRenderer.php",
       "pinned_by": "tests/Fixtures/ExtensionApi/studio-preview-block-renderer-v1.json"
+    },
+    {
+      "type": "Kumwe\\App\\Extension\\Runtime\\ExtensionEvent",
+      "kind": "interface",
+      "visibility": "public",
+      "role": "receive",
+      "reachable_from": "manifest-1",
+      "spi": null,
+      "path": "src/Extension/Runtime/ExtensionEvent.php",
+      "pinned_by": "tests/Fixtures/ExtensionApi/extension-event-v1.json"
     }
   ]
 }
