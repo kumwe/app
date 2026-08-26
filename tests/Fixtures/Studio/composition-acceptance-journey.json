@@ -2,7 +2,7 @@
   "format": "kumwe-studio-composition-accountable-acceptance-v1",
   "schemaVersion": 1,
   "status": "not_run",
-  "studioRelease": "0.1.0-alpha.11",
+  "studioRelease": "0.1.0-rc.1",
   "surface": "core.administrator.studio-composition",
   "accountableRoles": [
     "product-owner",
@@ -55,7 +55,7 @@
       "status": "declared",
       "path": "resources/studio-contract/studio-release.json",
       "pinPath": "resources/studio-contract/PIN.json",
-      "recordSha256": "671210dd2cccfa9458407c271e0b549164e817f107f569815721e16cd6d80d85"
+      "recordSha256": "b891bf573cfac52c751c1f13fa372a4f63ea76795316cce6f881b577f08bce56"
     }
   }
 }
