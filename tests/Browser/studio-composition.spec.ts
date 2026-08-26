@@ -391,7 +391,10 @@ async function moveWithKeyboardPalette(page: Page, shell: Locator, node: Locator
   const filter = shell.getByRole('textbox', { name: 'Filter commands' });
   await expect(filter).toBeFocused();
   await filter.fill(destinationId);
-  const result = shell.getByRole('listbox', { name: 'Matching commands' }).getByRole('option').first();
+  // The shell renders palette matches as a labelled list of command buttons;
+  // slot-destination labels carry the parent node id, which the fill above
+  // uses as the filter.
+  const result = shell.getByRole('list', { name: 'Matching commands' }).getByRole('button').first();
   await expect(result).toContainText(destinationId);
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
