@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Integration\BusinessIntegration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Automation\JitterSource;
 use Kumwe\App\Application\Automation\JobHandler;
 use Kumwe\App\Application\Automation\JobHandlerRegistry;

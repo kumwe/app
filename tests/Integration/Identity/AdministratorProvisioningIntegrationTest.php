@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Integration\Identity;
 
 use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use Doctrine\DBAL\Connection;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Delivery\Console\Command\CreateAdministratorCommand;
 use Kumwe\App\Delivery\Console\Command\MigrateCommand;
 use Kumwe\App\Delivery\Console\Output;

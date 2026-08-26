@@ -11,7 +11,7 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Types\Types;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
 use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;

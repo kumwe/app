@@ -23,7 +23,7 @@ use Kumwe\App\Localization\Domain\LocaleTag;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Tests\Support\TestKernelFactory;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Laminas\Diactoros\ServerRequestFactory;
 use Mezzio\Application;
 use PHPUnit\Framework\Attributes\CoversClass;

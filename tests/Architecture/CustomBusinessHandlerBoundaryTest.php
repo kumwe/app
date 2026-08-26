@@ -46,7 +46,8 @@ final class CustomBusinessHandlerBoundaryTest extends TestCase
                 'Connection',
                 'Repository',
                 'ContainerInterface',
-                'Joomla\\DI',
+                'Laminas\\ServiceManager',
+                'Kumwe\\App\\Kernel\\Container',
                 'callable',
                 'Closure',
                 ] as $forbidden

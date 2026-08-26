@@ -12,7 +12,7 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Types\Types;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRule;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;

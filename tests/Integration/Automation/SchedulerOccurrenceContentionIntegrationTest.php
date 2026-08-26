@@ -10,7 +10,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Automation\JobExecutionClass;
 use Kumwe\App\Application\Automation\ScheduleOccurrenceKey;
 use Kumwe\App\Application\Automation\Scheduler;

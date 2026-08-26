@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Support;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\AuthorizationDenied;

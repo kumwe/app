@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Support;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Automation\IdempotencyKey;
 use Kumwe\App\Application\Persistence\TransactionManager;

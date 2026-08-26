@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
 use DateTimeImmutable;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Automation\IdempotencyKey;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;

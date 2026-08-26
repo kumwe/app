@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Functional\Localization;
 
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Delivery\Console\Command\DemoExportCommand;
 use Kumwe\App\Delivery\Console\Command\MaterializeExtensionRuntimeCommand;
 use Kumwe\App\Delivery\Console\Command\MigrateCommand;
