@@ -29,7 +29,7 @@ if (!is_file($autoload)) {
 
 require $autoload;
 
-/** @var Joomla\DI\Container $container */
+/** @var \Kumwe\App\Kernel\Container $container */
 $requestPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
 $recoverySurface = is_string($requestPath)
     && (in_array($requestPath, ['/health/live', '/health/ready'], true)

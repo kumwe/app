@@ -17,7 +17,7 @@ use Kumwe\App\Delivery\Console\ConsoleApplication;
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
 
-/** @var Joomla\DI\Container $container */
+/** @var \Kumwe\App\Kernel\Container $container */
 $container = require $root . '/bootstrap/console.php';
 /** @var ConsoleApplication $application */
 $application = $container->get(ConsoleApplication::class);

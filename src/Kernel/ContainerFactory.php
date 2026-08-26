@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace Kumwe\App\Kernel;
 
 use Doctrine\DBAL\Connection;
-use Joomla\DI\Container;
-use Joomla\Event\Dispatcher;
-use Joomla\Event\DispatcherInterface;
 use Kumwe\App\Application\Automation\AutomationManagementService;
 use Kumwe\App\Application\Automation\CryptographicJitterSource;
 use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
@@ -456,7 +453,7 @@ use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\App\Extension\Runtime\ExtensionEventRegistrar;
-use Kumwe\App\Extension\Runtime\JoomlaExtensionEventRegistrar;
+use Kumwe\App\Extension\Runtime\LaminasExtensionEventRegistrar;
 use Kumwe\App\Extension\Runtime\LocalRuntimeReadinessProbe;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\App\Extension\Runtime\RuntimeArtifactDigester;
@@ -788,6 +785,8 @@ use Laminas\Stratigility\MiddlewarePipeInterface;
 use Mcp\Server\Session\FileSessionStore;
 use Mcp\Server\Session\SessionStoreInterface;
 use Mezzio\Application;
+use Laminas\EventManager\EventManager;
+use Laminas\EventManager\EventManagerInterface;
 use Mezzio\MiddlewareContainer;
 use Mezzio\MiddlewareFactory;
 use Mezzio\MiddlewareFactoryInterface;
@@ -917,8 +916,8 @@ final class ContainerFactory
             self::service($container, ClockInterface::class),
             self::service($container, JitterSource::class),
         ), true);
-        $container->share(Dispatcher::class, new Dispatcher(), true);
-        $container->alias(DispatcherInterface::class, Dispatcher::class);
+        $container->share(EventManager::class, new EventManager(), true);
+        $container->alias(EventManagerInterface::class, EventManager::class);
 
         $this->registerObservability($container, $configuration, $root, $console);
         $this->registerLogging($container, $configuration);
@@ -3160,7 +3159,7 @@ final class ContainerFactory
                     self::service($container, TransactionManager::class),
                     self::service($container, AuditRecorder::class),
                     self::service($container, ClockInterface::class),
-                    self::service($container, DispatcherInterface::class),
+                    self::service($container, EventManagerInterface::class),
                     self::service($container, ThemeActivationGuard::class),
                     self::service($container, ThemePackageValidator::class),
                     self::service($container, ThemeMutationAuthorizer::class),
@@ -3196,8 +3195,8 @@ final class ContainerFactory
             ))->load([
                 BusinessRecordService::class => self::service($container, BusinessRecordService::class),
                 ContentService::class => self::service($container, ContentService::class),
-                ExtensionEventRegistrar::class => new JoomlaExtensionEventRegistrar(
-                    self::service($container, DispatcherInterface::class),
+                ExtensionEventRegistrar::class => new LaminasExtensionEventRegistrar(
+                    self::service($container, EventManagerInterface::class),
                 ),
                 NavigationService::class => self::service($container, NavigationService::class),
                 SiteSettings::class => self::service($container, SiteSettings::class),
@@ -6473,7 +6472,7 @@ final class ContainerFactory
     /**
      * Resolve a shared service and prove it is of the requested type.
      *
-     * Joomla DI hands back an untyped value, so every factory in this class resolves through here.
+     * The container hands back an untyped value, so every factory in this class resolves through here.
      * That keeps the container's contents typed for static analysis and turns a misregistered
      * service into an immediate composition failure rather than a wrong object reaching a
      * constructor.

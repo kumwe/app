@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Runtime;
 
-use Joomla\Event\EventInterface;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 
@@ -28,7 +27,7 @@ final readonly class TrustEnforcingExtensionEventRegistrar implements ExtensionE
      * Wrap the registrar one extension would otherwise subscribe through.
      *
      * @param  ExtensionEventRegistrar  $inner      Registrar the wrapped listener is actually attached
-     *         to, in the shipped wiring `JoomlaExtensionEventRegistrar`.
+     *         to, in the shipped wiring `LaminasExtensionEventRegistrar`.
      * @param  TrustStore               $trust      Trust boundary consulted on every dispatch, and the
      *         owner of the lifecycle lock the check runs inside.
      * @param  string                   $extension  `vendor/name` of the extension whose trust decides
@@ -56,7 +55,7 @@ final readonly class TrustEnforcingExtensionEventRegistrar implements ExtensionE
      * quarantined by the trust enforcement that follows.
      *
      * @param   string                          $event     Name of the domain event to subscribe to.
-     * @param   callable(EventInterface): void  $listener  Invoked with the dispatched event, once the
+     * @param   callable(ExtensionEvent): void  $listener  Invoked with the dispatched event, once the
      *          extension's trust has been re-established.
      *
      * @return  void
@@ -65,7 +64,7 @@ final readonly class TrustEnforcingExtensionEventRegistrar implements ExtensionE
      */
     public function listen(string $event, callable $listener): void
     {
-        $this->inner->listen($event, function (EventInterface $domainEvent) use ($listener): void {
+        $this->inner->listen($event, function (ExtensionEvent $domainEvent) use ($listener): void {
             if (!$this->execution->isCurrent()) {
                 return;
             }

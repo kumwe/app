@@ -6,7 +6,7 @@
  * `public/index.php` and the test suites require this file to obtain a fully wired container built
  * from the process environment.
  *
- * @return \Joomla\DI\Container The fully wired application container.
+ * @return \Kumwe\App\Kernel\Container The fully wired application container.
  *
  * @since  2.0.0
  */
