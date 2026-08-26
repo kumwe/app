@@ -197,6 +197,15 @@ The machine-readable API contract is [api/openapi/kumwe-v1.json](api/openapi/kum
 
 ## License
 
-Copyright (C) 2022–2026 Vast Development Method.
+Copyright 2022-2026 Vast Development Method
 
-Kumwe is licensed under the GNU General Public License version 2.0; see [LICENSE](LICENSE).
+Kumwe is licensed under the Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+Three things in ordinary language. First, the project is Apache 2.0: the code is yours to use as it
+is or to change, in the open or in private. Second, proprietary products and proprietary extensions
+are allowed and welcome — build on Kumwe, ship under your own terms, and keep what you build for
+your clients to yourselves if that is what the work needs. Third, if you do build on it, we would
+love to hear from you and we would love a patch, and you owe us neither. That is the point: real
+freedom to leave our lane, not a license that forces you to stay in it. The software comes as-is,
+without warranty or liability, and the Kumwe name and logos remain ours — the code, you can take
+anywhere.
