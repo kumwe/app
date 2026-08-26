@@ -1094,6 +1094,26 @@
           "file": "rich-text.unknown-mark.json"
         },
         {
+          "digest": "sha256-w3ZWv4DbsOsPn/99raEr4O1LHinoK5V2AePlIpHtqr8=",
+          "file": "studio-chart.script-config.json"
+        },
+        {
+          "digest": "sha256-m1+/TT3sDNebrcKQjKgnD3VMBZuu0gA5IpPtnvD4N94=",
+          "file": "studio-drawing.svg-payload.json"
+        },
+        {
+          "digest": "sha256-AOCJqRUU3tCVqzkXelDsDeR9kxRTVPbSrenbf0FPEzE=",
+          "file": "studio-money.float.json"
+        },
+        {
+          "digest": "sha256-989o8RxLYQLsIKe/I0B+ETP4DRCjtniMzT57fwxbeGw=",
+          "file": "studio-presentation.css-injection.json"
+        },
+        {
+          "digest": "sha256-oF+T+wJT1px5lPSq1YClUSIZhsIYBw9SMCndc6Ano1Q=",
+          "file": "studio-table.html-cell.json"
+        },
+        {
           "digest": "sha256-ip22Uidj7KWI9kqcBbB5YphmBjcUSFyJ0hvO28V6I9w=",
           "file": "theme.unknown-member.json"
         }
@@ -1103,6 +1123,10 @@
     },
     {
       "files": [
+        {
+          "digest": "sha256-UWgLox9yJZ/L/f3NUC3lMJX2OsZvqo/R7+gO0S39O0A=",
+          "file": "advanced.first-party.json"
+        },
         {
           "digest": "sha256-tfrW7o0SAOxFp9pTOi6mXKVmpT/t16ZqEBpyt5CIdNk=",
           "file": "blocks.structural.json"
@@ -1134,6 +1158,54 @@
       ],
       "group": "rich-text-conformance",
       "path": "conformance/rich-text"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-MQavkWcGxN1RXJoa16WNsFhbvAzfE3Zz+ak++SpX8tQ=",
+          "file": "non-drag-move-equivalence.json"
+        }
+      ],
+      "group": "authoring-web-conformance",
+      "path": "conformance/authoring-web"
+    },
+    {
+      "files": [
+        {
+          "digest": "sha256-um5bUbyx+OjtIAus2YHG00cP/2zSjS3JTCdfnsFOpfw=",
+          "file": "blob-default-deny.json"
+        },
+        {
+          "digest": "sha256-Oehibv24K+zMZTUR12Ixfzb6F8FByn66QJtPrd3nXbI=",
+          "file": "chart-fallback.json"
+        },
+        {
+          "digest": "sha256-NXARG7Ek/CMM4fzudJ5b89syBnQjQCM6nI/2NkFZ7i4=",
+          "file": "complete-catalog.json"
+        },
+        {
+          "digest": "sha256-7lirFue9gaXchg9DzSllFjDp9p4dcW/C4M3+iEdORRQ=",
+          "file": "escaped-heading.json"
+        },
+        {
+          "digest": "sha256-7JwEi3hJV5J21CdHrii1WP28m8wDz9vO0zcxVcTAF48=",
+          "file": "interactive-behaviors.json"
+        },
+        {
+          "digest": "sha256-dgJ3SWlGYPHLQtp1WXgmiWlwE35LitFsrQOgvYw3aqM=",
+          "file": "presentation-capabilities.json"
+        },
+        {
+          "digest": "sha256-mSB0xRbCvWVb1QmcjjKcZEhXibjbr+5Xxg1FKIIkMrk=",
+          "file": "responsive-grid.json"
+        },
+        {
+          "digest": "sha256-e4Y140UiCb3kabaYhc5QzNFvOzCrLpE3RSSXf2c9x8E=",
+          "file": "security-fallbacks.json"
+        }
+      ],
+      "group": "renderer-web-conformance",
+      "path": "conformance/renderer-web"
     }
   ],
   "kind": "corpus-manifest"

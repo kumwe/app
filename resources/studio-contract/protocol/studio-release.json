@@ -1,17 +1,28 @@
 {
   "contractVersion": "0.1-draft",
   "kind": "studio-release",
-  "release": "0.1.0-alpha.11",
+  "release": "0.1.0-rc.1",
   "packages": {
-    "@kumwe/studio-core": "0.1.0-alpha.11",
-    "@kumwe/studio-media": "0.1.0-alpha.11",
-    "@kumwe/studio-preview": "0.1.0-alpha.11",
-    "@kumwe/studio-protocol": "0.1.0-alpha.11",
-    "@kumwe/studio-rich-text": "0.1.0-alpha.11",
-    "@kumwe/studio": "0.1.0-alpha.11",
-    "@kumwe/studio-testkit": "0.1.0-alpha.11"
+    "@kumwe/studio-core": "0.1.0-rc.1",
+    "@kumwe/studio-media": "0.1.0-rc.1",
+    "@kumwe/studio-preview": "0.1.0-rc.1",
+    "@kumwe/studio-protocol": "0.1.0-rc.1",
+    "@kumwe/studio-renderer-web": "0.1.0-rc.1",
+    "@kumwe/studio-rich-text": "0.1.0-rc.1",
+    "@kumwe/studio": "0.1.0-rc.1",
+    "@kumwe/studio-testkit": "0.1.0-rc.1"
   },
   "protocolVersion": "0.1.0-draft.2",
-  "corpusManifestDigest": "sha256-MG2XAmnhYl02ChdT3D893H6Y9psQAmAZreI4J6kf2U4=",
-  "claimedProfiles": []
+  "corpusManifestDigest": "sha256-4/ChS3pCA32CoZ+BjvL2tj2RGOFJNdqXwuqO8gWDxTs=",
+  "claimedProfiles": [
+    "studio.profile/authoring-web",
+    "studio.profile/binding-projection-v1",
+    "studio.profile/engine-core",
+    "studio.profile/host-baseline",
+    "studio.profile/host-baseline-v2",
+    "studio.profile/media-policy",
+    "studio.profile/preview-identity-v1",
+    "studio.profile/renderer-web",
+    "studio.profile/schema-property"
+  ]
 }

@@ -1,0 +1,10 @@
+{
+  "schema": "studio-chart.schema.json",
+  "description": "Chart.js options and authored callbacks are not canonical Studio chart data.",
+  "value": {
+    "type": "bar",
+    "labels": ["Unsafe"],
+    "datasets": [{ "label": "Values", "values": [1] }],
+    "options": { "onClick": "alert(1)" }
+  }
+}

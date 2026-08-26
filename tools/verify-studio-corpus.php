@@ -31,6 +31,7 @@ $studioPackages = [
     '@kumwe/studio-media',
     '@kumwe/studio-preview',
     '@kumwe/studio-protocol',
+    '@kumwe/studio-renderer-web',
     '@kumwe/studio-rich-text',
     '@kumwe/studio-testkit',
 ];
@@ -111,7 +112,7 @@ if ($pin !== null && $release !== null) {
         $expectedPackages = $studioPackages;
         sort($expectedPackages);
         if ($actualPackages !== $expectedPackages) {
-            $errors[] = 'The Studio release record does not name exactly the seven public packages.';
+            $errors[] = 'The Studio release record does not name exactly the eight public packages.';
         }
         foreach ($studioPackages as $package) {
             if (($releasePackages[$package] ?? null) !== $releaseName) {
@@ -151,7 +152,7 @@ if ($pin !== null && $release !== null) {
     $expectedPackages = $studioPackages;
     sort($expectedPackages);
     if ($pinnedNames !== $expectedPackages) {
-        $errors[] = 'PIN.json does not pin exactly the seven public Studio packages.';
+        $errors[] = 'PIN.json does not pin exactly the eight public Studio packages.';
     }
 
     foreach ($studioPackages as $package) {
@@ -274,7 +275,8 @@ if ($errors !== []) {
 }
 
 printf(
-    "Kumwe studio corpus verified: 7 coordinated packages, %d protocol schemas, %d corpus files in %d groups.\n",
+    "Kumwe studio corpus verified: %d coordinated packages, %d protocol schemas, %d corpus files in %d groups.\n",
+    count($studioPackages),
     $schemaCount,
     $corpusCount,
     $groupCount,

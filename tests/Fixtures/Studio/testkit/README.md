@@ -2,11 +2,12 @@
 
 Status: pre-Gate-A foundation alpha. Its conformance helpers do not by themselves constitute gate evidence.
 
-The current alpha exports three builders—`createBlueprintFixture`, `defineTestBlock`, and
-`createStudioConfigurationFixture`—plus `assertBlueprintConforms` and its structured
-`StudioConformanceError`. The assertion checks a Blueprint against supplied block definitions through
-the current core validator. It does not yet prove host, plugin, theme, preview, media, accessibility,
-security, lifecycle, or cross-language conformance.
+The current alpha combines fixture builders and `assertBlueprintConforms` with deterministic host and HTTP
+testbeds plus executable command, canonical, host, host-sequence, media, preview, property-schema,
+binding-projection, renderer-web, rich-text, and authoring-web corpus runners. Those helpers let another
+implementation replay the same portable assertions without adopting Studio internals. A green repository
+replay is implementation evidence, not an accepted gate or support claim; every advertised profile still
+needs exact-candidate evidence and independent review.
 
 Package subpaths under `@kumwe/studio-testkit/fixtures/<filename>` contain byte-identical copies of the
 canonical valid examples, including separate MediaAsset and persisted MediaReference examples. There
@@ -116,13 +117,22 @@ this manifest, so a stale or altered fixture is detected before it silently chan
 claim means. The schema manifest in `@kumwe/studio-protocol` covers the schemas; this covers everything
 replayed against them.
 
+`@kumwe/studio-testkit/conformance/authoring-web/<filename>` publishes selector-neutral authoring
+lanes. `runAuthoringWebVector(vector, adapter)` opens a fresh adapter session for every lane, performs
+only the vector actions, and compares the returned canonical document, command intents, focus,
+selection, announcements and dirty state. The adapter is deliberately injected: a browser host maps
+the semantic steps onto its real DOM without exposing Lit, Editor.js, drag-and-drop, or host types in
+the corpus. The current runner test proves fixture isolation and comparison behavior; it is not a
+claim that the production shell has completed the entire authoring-web profile.
+
 `@kumwe/studio-testkit/studio-release.json` is byte-identical to the workspace and protocol copies. A
-host can vendor this record with the corpus, verify `corpusManifestDigest`, and resolve the exact seven
+host can vendor this record with the corpus, verify `corpusManifestDigest`, and resolve the exact eight
 package versions named by one Studio release coordinate. An empty `claimedProfiles` array is deliberate:
 repository tests and declared targets are not evidence-backed release claims.
 
 Gate A requires valid and invalid fixture corpora plus runner-neutral assertions for block, theme,
 plugin, host-port, command, preview, media, compatibility, migration, lifecycle, security,
-accessibility, localization, and TypeScript/Dart equivalence. The host-port and narrow preview-identity
-corpora are executable increments; the remaining profiles are target deliverables, and this foundation
-alpha must not be cited as gate evidence.
+accessibility, localization, and the applicable Version 2 TypeScript profile. Eight Version 2 profiles are
+declared executable in the repository; `studio.profile/authoring-web` alone remains a target until its complete
+real-shell assertion set and manual matrix exist. None is claimed by the current release record, and this
+foundation alpha must not be cited as accepted gate evidence. Dart/Flutter parity belongs to Version 3.

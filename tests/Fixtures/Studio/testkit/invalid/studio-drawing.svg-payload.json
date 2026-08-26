@@ -1,0 +1,10 @@
+{
+  "schema": "studio-drawing.schema.json",
+  "description": "Drawing colors cannot carry CSS URLs or executable SVG payloads.",
+  "value": {
+    "width": 100,
+    "height": 100,
+    "alt": "Unsafe drawing",
+    "strokes": [{ "color": "url(javascript:alert(1))", "width": 2, "points": [{ "x": 1, "y": 1 }] }]
+  }
+}

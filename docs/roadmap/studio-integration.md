@@ -39,8 +39,8 @@ until then, which is why every version below is exact.
 
 ## Current App pin and next release family
 
-The App currently consumes the already released seven-package `0.1.0-alpha.11` family. All seven exact
-tarballs are vendored and pinned:
+The App currently consumes the published eight-package `0.1.0-rc.1` release-candidate family. All
+eight exact tarballs are vendored and pinned:
 [`resources/studio-contract/PIN.json`](../../resources/studio-contract/PIN.json) is the authoritative
 record of their exact versions and tarball checksums, and `composer studio:corpus` fails when the
 vendored bytes and the pin disagree. App makes no runtime or qualification claim about a public npm
@@ -48,25 +48,25 @@ publication; its build consumes only these release-bound bytes.
 
 | Package | Version | What it carries |
 |---|---|---|
-| `@kumwe/studio-protocol` | `0.1.0-alpha.11`, vendored and pinned | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
-| `@kumwe/studio-core` | `0.1.0-alpha.11`, vendored and pinned | The deterministic command engine, session, contribution runtime, migrations, URL policy |
-| `@kumwe/studio-preview` | `0.1.0-alpha.11`, vendored and pinned | Both ends of the origin-pinned preview channel: client, host responder, geometry |
-| `@kumwe/studio-media` | `0.1.0-alpha.11`, vendored and pinned | Upload orchestration over the canonical media session state machine |
-| `@kumwe/studio-rich-text` | `0.1.0-alpha.11`, vendored and pinned | The bounded rich-text grammar, parser and renderer projection |
-| `@kumwe/studio` | `0.1.0-alpha.11`, vendored and pinned | The authoring shell as a web component, keyboard-complete and catalog-localized |
-| `@kumwe/studio-testkit` | `0.1.0-alpha.11`, vendored and pinned | The canonical fixture corpus and a deterministic in-memory reference host |
+| `@kumwe/studio-protocol` | `0.1.0-rc.1`, vendored and pinned | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
+| `@kumwe/studio-core` | `0.1.0-rc.1`, vendored and pinned | The deterministic command engine, session, contribution runtime, migrations, URL policy |
+| `@kumwe/studio-preview` | `0.1.0-rc.1`, vendored and pinned | Both ends of the origin-pinned preview channel: client, host responder, geometry |
+| `@kumwe/studio-media` | `0.1.0-rc.1`, vendored and pinned | Upload orchestration over the canonical media session state machine |
+| `@kumwe/studio-renderer-web` | `0.1.0-rc.1`, vendored and pinned | The portable semantic web renderer with scoped CSS, safe markup, and the published conformance vector runner |
+| `@kumwe/studio-rich-text` | `0.1.0-rc.1`, vendored and pinned | The bounded rich-text grammar, parser and renderer projection |
+| `@kumwe/studio` | `0.1.0-rc.1`, vendored and pinned | The authoring shell as a web component, keyboard-complete and catalog-localized |
+| `@kumwe/studio-testkit` | `0.1.0-rc.1`, vendored and pinned | The canonical fixture corpus and a deterministic in-memory reference host |
 
 The host adapter's server side needs none of these at runtime — the protocol is JSON over the wire.
 The packages matter in two places: the administrator build consumes `@kumwe/studio` (and transitively
 the runtime packages) through the existing Vite entry points, and the test suite consumes the corpus
 shipped inside `@kumwe/studio-testkit` and `@kumwe/studio-protocol`.
 
-The next Studio prerelease set is currently expected to be the eight-package `0.1.0-alpha.9` family. That is a
-Studio release-plan statement, not the App's current pin or evidence that the artifacts have published. The
-App's existing vendor record above remains alpha.11; the apparent numbering mismatch must be reconciled by the
-published release record rather than guessed around. App adopts only a complete published family at the exact
-`<coordinated-version>` recorded by Studio. Studio's release policy disables beta/RC promotion until M1-04 and
-its evidence-acceptance criteria pass, so this document neither promises nor prescribes an RC coordinate.
+Studio has published the eight-package `0.1.0-rc.1` coordinated family through its governed promotion
+pipeline: the packages are on the public registry under Studio's release-candidate quarantine tag with
+signed provenance, and the vendor record above is that exact published family. Official `rc` channel
+publication on the Studio side remains gated behind its Gate A evidence acceptance; this pin makes no
+claim about that gate.
 
 | Coordinated package | Release-unit responsibility |
 |---|---|
@@ -92,9 +92,8 @@ lazy renderer adapters; they do not enter a Blueprint or become App-facing APIs.
 3. Studio publishes or otherwise supplies all eight integrity-addressed tarballs and the byte-identical release
    record. A partial family is not a release and App does not integrate from a branch, workspace link or
    locally packed substitute.
-4. A later App change updates `package.json`, the npm lock, all eight vendored tarballs, `PIN.json`, the copied
-   Studio release record, license/notices evidence and the complete corpus together. Until that change lands,
-   App remains truthfully on the seven-package alpha.11 family above.
+4. The eight-package re-pin updates `package.json`, the npm lock, all eight vendored tarballs, `PIN.json`,
+   the copied Studio release record and the complete corpus together, exactly as decision D16 requires.
 5. App replays the host, media, rich-text, authoring-web and renderer-web corpus, runs the Twig adapter parity
    lane, builds the real administrator assets, and runs the database/browser/security/qualification matrix.
    Only the exact resulting App candidate may enter Gate B assessment.
@@ -134,7 +133,7 @@ and media, not behavior implementations.
 ## The contract corpus, usable from PHPUnit
 
 Every contract artifact is language-neutral JSON, so the host side proves conformance without executing
-any Studio code. The corpus at the currently pinned alpha.11 versions is:
+any Studio code. The corpus at the currently pinned rc.1 versions is:
 
 | Corpus | Where it ships | Count |
 |---|---|---|
@@ -159,9 +158,9 @@ What the host test suite asserts with them:
 The eight-package family adds a renderer-web conformance corpus. Its candidate baseline must cover all 45
 first-party block types, all nine progressive-behavior families, all ten presentation axes and the five
 security-fallback classes in eight language-neutral vectors. Those numbers describe the acceptance target
-for the coordinated prerelease; they are not evidence that the currently vendored alpha.11 family or this App
-has passed it. Studio's browser renderer and App's Twig adapter must both replay the exact corpus before an
-exact coordinated pin can become Gate B evidence. RC adoption remains a later post-M1-04, post-evidence step.
+for the coordinated prerelease. The App's corpus lane replays all eight vectors through the published
+`runRendererWebVector` runner against the exact installed renderer; the App Twig adapter's replay of the
+same vectors is still open work and remains required before this pin can become Gate B evidence.
 
 ### App verification paths
 

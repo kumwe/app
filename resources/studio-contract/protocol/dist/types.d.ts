@@ -168,11 +168,22 @@ export interface BlockSlotDefinition {
     ordered: boolean;
 }
 export interface BlockPortDefinition {
+    /**
+     * Portable authoring hints. They select a Studio control/profile without
+     * exposing an editor implementation. A read-only port may still be bound by
+     * the host, but Studio never offers a value mutation for it.
+     */
+    authoring?: BlockPortAuthoringMetadata;
     id: LocalName;
     label: MessageReference;
     multiple: boolean;
     required: boolean;
     valueType: string;
+}
+export interface BlockPortAuthoringMetadata {
+    control?: QualifiedName;
+    profile?: QualifiedName;
+    readOnly?: boolean;
 }
 export interface RendererRequirement {
     capability: QualifiedName;
@@ -226,6 +237,63 @@ export interface BlockDefinition {
     themeControls: LocalName[];
     type: BlockType;
     version: SemanticVersion;
+}
+/** Canonical, renderer-neutral chart data. It carries no Chart.js configuration. */
+export interface StudioChartDataset {
+    label: string;
+    values: number[];
+}
+export interface StudioChartSpec {
+    datasets: StudioChartDataset[];
+    labels: string[];
+    title?: string;
+    type: 'bar' | 'doughnut' | 'line' | 'pie';
+}
+export interface StudioDrawingPoint {
+    x: number;
+    y: number;
+}
+export interface StudioDrawingStroke {
+    color: string;
+    points: StudioDrawingPoint[];
+    width: number;
+}
+/** Bounded vector drawing data; never an SVG or canvas command stream. */
+export interface StudioDrawingDocument {
+    alt: string;
+    height: number;
+    strokes: StudioDrawingStroke[];
+    width: number;
+}
+/** Decimal money uses a string so persistence never rounds through a binary float. */
+export interface StudioMoneyValue {
+    amount: string;
+    currency: string;
+}
+/** Portable visual intent resolved by Studio renderers; it contains no CSS values or selectors. */
+export interface StudioPresentationIntent {
+    align?: 'center' | 'end' | 'start' | 'stretch';
+    animation?: 'fade' | 'none' | 'parallax' | 'scale' | 'slide';
+    height?: 'auto' | 'content' | 'full' | 'viewport';
+    inverse?: boolean;
+    margin?: 'comfortable' | 'compact' | 'none' | 'spacious';
+    marker?: 'check' | 'decimal' | 'disc' | 'none';
+    padding?: 'comfortable' | 'compact' | 'none' | 'spacious';
+    position?: 'flow' | 'relative' | 'sticky';
+    print?: 'hide' | 'only' | 'show';
+    scrolling?: 'auto' | 'clip' | 'snap' | 'visible';
+    visibility?: {
+        compact?: 'hidden' | 'visible';
+        expanded?: 'hidden' | 'visible';
+        medium?: 'hidden' | 'visible';
+    };
+    width?: 'auto' | 'content' | 'full';
+}
+/** Canonical bounded table data used by static authoring and host query projections. */
+export interface StudioTableDocument {
+    caption?: string;
+    columns: string[];
+    rows: string[][];
 }
 export interface HostPortCapability {
     id: QualifiedName;
@@ -743,7 +811,8 @@ export interface StudioConfiguration {
     resourceContext: StudioResourceContext;
 }
 export interface ExperimentalShellConfiguration {
-    blockDefinitions: BlockDefinition[];
+    /** Omit to use Studio's complete first-party catalog; an explicit array overrides it. */
+    blockDefinitions?: BlockDefinition[];
     session: StudioConfiguration;
 }
 export interface CommandDestination {

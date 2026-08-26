@@ -1,0 +1,39 @@
+{
+  "id": "renderer-web/chart-fallback",
+  "coverage": {
+    "blockTypes": ["studio.core/chart"],
+    "behaviors": [],
+    "presentation": [],
+    "security": ["typed-data-fallback"]
+  },
+  "roots": [
+    {
+      "authoring": { "mode": "content" },
+      "bindings": {},
+      "id": "chart",
+      "properties": {},
+      "slots": {},
+      "type": "studio.core/chart",
+      "version": "1.0.0"
+    }
+  ],
+  "bindings": [
+    {
+      "nodeId": "chart",
+      "port": "chart",
+      "value": {
+        "type": "bar",
+        "title": "Revenue",
+        "labels": ["Q1", "Q2"],
+        "datasets": [{ "label": "NAD", "values": [10, 20] }]
+      }
+    }
+  ],
+  "media": [],
+  "expect": {
+    "htmlContains": ["<table data-studio-chart-table>", "Revenue", "Q1", "20"],
+    "htmlExcludes": ["<script", "onClick"],
+    "cssContains": ["data-studio-chart-table"],
+    "enhancements": ["chart"]
+  }
+}

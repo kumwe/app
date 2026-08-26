@@ -31,6 +31,7 @@
         "@kumwe/studio-media",
         "@kumwe/studio-preview",
         "@kumwe/studio-protocol",
+        "@kumwe/studio-renderer-web",
         "@kumwe/studio-rich-text",
         "@kumwe/studio",
         "@kumwe/studio-testkit"
@@ -46,6 +47,9 @@
           "$ref": "common.schema.json#/$defs/semanticVersion"
         },
         "@kumwe/studio-protocol": {
+          "$ref": "common.schema.json#/$defs/semanticVersion"
+        },
+        "@kumwe/studio-renderer-web": {
           "$ref": "common.schema.json#/$defs/semanticVersion"
         },
         "@kumwe/studio-rich-text": {

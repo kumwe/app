@@ -140,7 +140,16 @@
             ]
           },
           "required": { "type": "boolean" },
-          "multiple": { "type": "boolean" }
+          "multiple": { "type": "boolean" },
+          "authoring": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "control": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+              "profile": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+              "readOnly": { "type": "boolean" }
+            }
+          }
         }
       }
     },
