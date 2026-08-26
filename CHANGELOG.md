@@ -1188,6 +1188,17 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **Kumwe 2.0 relicenses from GPL-2.0-only to Apache-2.0.** Both contributors work for Vast Development
+  Method and agreed to the change; the copyright line reads `Copyright 2022-2026 Vast Development
+  Method`. LICENSE now carries the official Apache License 2.0 text unchanged, a NOTICE file names the
+  project, the copyright, and where third-party notices live, and the composer and npm manifests declare
+  `Apache-2.0`. The removal of the Joomla packages was the last copyleft constraint in the dependency
+  tree — production dependencies are MIT, BSD-3-Clause and Apache-2.0 throughout — and the README now
+  says plainly what the license means here: proprietary products and proprietary extensions are allowed
+  and welcome, a hello or a patch is appreciated and neither is owed, the software comes without
+  warranty or liability, and the Kumwe name and logos stay with the project. Per-file license headers
+  are deliberately not stamped; the root LICENSE and NOTICE travel with the distribution. (#115)
+
 - **The platform runs Joomla-free: Laminas ServiceManager and EventManager carry composition and domain
   events behind Kumwe-owned seams.** The four never-referenced Joomla packages — archive, filesystem,
   filter and registry — left the dependency set with no replacement, since the hardened native ZipArchive

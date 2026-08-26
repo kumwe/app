@@ -20,7 +20,7 @@
     "source": "https://github.com/kumwe/app",
     "docs": "https://github.com/kumwe/app/blob/master/README.md"
   },
-  "license": "GPL-2.0-only",
+  "license": "Apache-2.0",
   "require": {
     "php": "^8.5",
     "ext-ctype": "*",
