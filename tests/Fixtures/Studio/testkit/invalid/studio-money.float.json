@@ -1,0 +1,8 @@
+{
+  "schema": "studio-money.schema.json",
+  "description": "Persisted money must use an exact decimal string rather than a binary float.",
+  "value": {
+    "amount": 19.99,
+    "currency": "USD"
+  }
+}

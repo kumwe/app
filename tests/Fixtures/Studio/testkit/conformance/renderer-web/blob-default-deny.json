@@ -1,0 +1,47 @@
+{
+  "id": "renderer-web/blob-default-deny",
+  "coverage": {
+    "blockTypes": ["studio.core/image"],
+    "behaviors": [],
+    "presentation": [],
+    "security": ["blob-default-deny"]
+  },
+  "roots": [
+    {
+      "authoring": { "mode": "content" },
+      "bindings": {},
+      "id": "blob-default",
+      "properties": { "fit": "cover", "loading": "lazy" },
+      "slots": {},
+      "type": "studio.core/image",
+      "version": "1.0.0"
+    }
+  ],
+  "bindings": [
+    {
+      "nodeId": "blob-default",
+      "port": "asset",
+      "value": {
+        "contractVersion": "0.1-draft",
+        "kind": "media-reference",
+        "assetId": "local",
+        "usage": "studio.media/content",
+        "accessibility": { "mode": "informative", "altText": "Local" }
+      }
+    }
+  ],
+  "media": [
+    {
+      "assetId": "local",
+      "src": "blob:https://studio.example.test/323e4567-e89b-12d3-a456-426614174000",
+      "altText": "Local",
+      "mediaType": "image/png"
+    }
+  ],
+  "expect": {
+    "htmlContains": ["Image unavailable"],
+    "htmlExcludes": ["blob:https://"],
+    "cssContains": ["prefers-reduced-motion"],
+    "enhancements": []
+  }
+}

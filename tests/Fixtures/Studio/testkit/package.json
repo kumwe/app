@@ -1,6 +1,6 @@
 {
   "name": "@kumwe/studio-testkit",
-  "version": "0.1.0-alpha.11",
+  "version": "0.1.0-rc.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kumwe/studio.git",
@@ -13,6 +13,8 @@
   "sideEffects": false,
   "files": [
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "third-party-licenses",
     "README.md",
     "conformance",
     "corpus-manifest.json",
@@ -38,8 +40,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@kumwe/studio-core": "0.1.0-alpha.11",
-    "@kumwe/studio-protocol": "0.1.0-alpha.11"
+    "@kumwe/studio-core": "0.1.0-rc.1",
+    "@kumwe/studio-protocol": "0.1.0-rc.1"
   },
   "publishConfig": {
     "access": "public",

@@ -29,6 +29,7 @@ import {
   computePreviewDraftDigest,
   createPreviewMarkerInventory,
 } from "@kumwe/studio-preview";
+import { runRendererWebVector } from "@kumwe/studio-renderer-web";
 import {
   parseRichTextDocument,
   projectRichText,
@@ -42,12 +43,14 @@ const commandCount = await replayCommands();
 const canonicalCount = await replayCanonicalSerialization();
 const previewCount = await replayPreviewIdentity();
 const richTextCount = await replayRichTextProjection();
+const rendererCount = await replayRendererConformance();
 const invalidCount = await replayNegativeFixtures();
 
 process.stdout.write(
   `Studio corpus replayed: ${positiveCount} positive schema documents, ${commandCount} commands, ` +
     `${canonicalCount} canonical serializations, ${previewCount} preview identities, ${richTextCount} ` +
-    `rich-text projections, and ${invalidCount} negative fixtures.\n`,
+    `rich-text projections, ${rendererCount} renderer-web conformance vectors, and ${invalidCount} ` +
+    `negative fixtures.\n`,
 );
 
 /**
@@ -79,6 +82,9 @@ async function validatePositiveCorpus() {
     ["fixtures/rich-text.example.json", "rich-text.schema.json"],
     ["fixtures/studio-config.example.json", "studio-config.schema.json"],
   ]);
+  const groupSchemas = new Map([
+    ["conformance/renderer-web", "renderer-web-vector.schema.json"],
+  ]);
   let count = 1;
   for (const group of manifest.groups) {
     if (group.path === "invalid" || group.path === "conformance/rich-text") {
@@ -89,6 +95,7 @@ async function validatePositiveCorpus() {
       const document = await readJson(join(corpusRoot, relative));
       const schemaName =
         explicitSchemas.get(relative) ??
+        groupSchemas.get(group.path) ??
         (typeof document.kind === "string"
           ? `${document.kind}.schema.json`
           : undefined);
@@ -311,6 +318,36 @@ async function replayRichTextProjection() {
       fixture.document,
       pristine,
       `${basename(file)} mutated its rich-text document.`,
+    );
+  }
+
+  return files.length;
+}
+
+/**
+ * Replay every published renderer-web conformance vector through the exact
+ * installed renderer, using the vector runner the package publishes for
+ * host-independent replay. The authoring-web vectors are schema-validated
+ * above and exercised interactively by the browser suites, which are the only
+ * lane able to prove focus, selection, and input-modality behaviour.
+ *
+ * @returns {Promise<number>} Number of vectors replayed.
+ */
+async function replayRendererConformance() {
+  const files = await jsonFiles("conformance/renderer-web");
+  assert.notEqual(
+    files.length,
+    0,
+    "The pinned Studio renderer-web corpus is empty.",
+  );
+
+  for (const file of files) {
+    const vector = await readJson(file);
+    const result = await runRendererWebVector(vector);
+    assert.equal(
+      result.passed,
+      true,
+      `${basename(file)} failed renderer conformance: ${result.failures.join("; ")}`,
     );
   }
 

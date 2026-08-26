@@ -1,0 +1,33 @@
+{
+  "id": "renderer-web/responsive-grid",
+  "coverage": {
+    "blockTypes": ["studio.core/grid"],
+    "behaviors": [],
+    "presentation": ["sizing"],
+    "security": []
+  },
+  "roots": [
+    {
+      "authoring": { "mode": "structural" },
+      "bindings": {},
+      "id": "grid",
+      "properties": { "collapse": "stack", "columns": 1 },
+      "responsive": { "columns": { "medium": 2, "expanded": 4 } },
+      "slots": { "items": [] },
+      "type": "studio.core/grid",
+      "version": "1.0.0"
+    }
+  ],
+  "bindings": [],
+  "media": [],
+  "expect": {
+    "htmlContains": ["data-studio-layout=\"grid\""],
+    "htmlExcludes": ["<script"],
+    "cssContains": [
+      "--studio-columns-compact:1",
+      "--studio-columns-medium:2",
+      "--studio-columns-expanded:4"
+    ],
+    "enhancements": []
+  }
+}

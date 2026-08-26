@@ -24,17 +24,18 @@
     "test:browser:update": "playwright test --update-snapshots"
   },
   "dependencies": {
-    "@kumwe/studio": "file:resources/studio-contract/packages/kumwe-studio-0.1.0-alpha.11.tgz",
-    "@kumwe/studio-core": "file:resources/studio-contract/packages/kumwe-studio-core-0.1.0-alpha.11.tgz",
-    "@kumwe/studio-media": "file:resources/studio-contract/packages/kumwe-studio-media-0.1.0-alpha.11.tgz",
-    "@kumwe/studio-preview": "file:resources/studio-contract/packages/kumwe-studio-preview-0.1.0-alpha.11.tgz",
-    "@kumwe/studio-protocol": "file:resources/studio-contract/packages/kumwe-studio-protocol-0.1.0-alpha.11.tgz",
-    "@kumwe/studio-rich-text": "file:resources/studio-contract/packages/kumwe-studio-rich-text-0.1.0-alpha.11.tgz",
+    "@kumwe/studio": "file:resources/studio-contract/packages/kumwe-studio-0.1.0-rc.1.tgz",
+    "@kumwe/studio-core": "file:resources/studio-contract/packages/kumwe-studio-core-0.1.0-rc.1.tgz",
+    "@kumwe/studio-media": "file:resources/studio-contract/packages/kumwe-studio-media-0.1.0-rc.1.tgz",
+    "@kumwe/studio-preview": "file:resources/studio-contract/packages/kumwe-studio-preview-0.1.0-rc.1.tgz",
+    "@kumwe/studio-protocol": "file:resources/studio-contract/packages/kumwe-studio-protocol-0.1.0-rc.1.tgz",
+    "@kumwe/studio-renderer-web": "file:resources/studio-contract/packages/kumwe-studio-renderer-web-0.1.0-rc.1.tgz",
+    "@kumwe/studio-rich-text": "file:resources/studio-contract/packages/kumwe-studio-rich-text-0.1.0-rc.1.tgz",
     "lit": "3.3.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
-    "@kumwe/studio-testkit": "file:resources/studio-contract/packages/kumwe-studio-testkit-0.1.0-alpha.11.tgz",
+    "@kumwe/studio-testkit": "file:resources/studio-contract/packages/kumwe-studio-testkit-0.1.0-rc.1.tgz",
     "@playwright/test": "1.62.1",
     "@types/node": "26.2.0",
     "ajv": "^8.17.1",

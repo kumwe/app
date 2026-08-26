@@ -24,7 +24,16 @@
       "additionalProperties": false,
       "required": ["type", "text", "spans", "embeds"],
       "properties": {
-        "type": { "enum": ["heading", "horizontalRule", "paragraph"] },
+        "type": {
+          "enum": [
+            "checklistItem",
+            "codeBlock",
+            "heading",
+            "horizontalRule",
+            "paragraph",
+            "tableCell"
+          ]
+        },
         "text": {
           "type": "string",
           "maxLength": 250000
@@ -51,9 +60,9 @@
         "marks": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 4,
+          "maxItems": 5,
           "uniqueItems": true,
-          "items": { "enum": ["bold", "code", "italic", "strike"] }
+          "items": { "enum": ["bold", "code", "highlight", "italic", "strike"] }
         }
       }
     },

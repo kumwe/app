@@ -1,4 +1,5 @@
 import { c as A, d as i$1, l as b, s as i, u as w } from "./reveal-validation-g1jDnck7.js";
+import { t as __vitePreload } from "./administrator-BGJujI72.js";
 //#region node_modules/@kumwe/studio-core/dist/canonical.js
 var DEFAULT_MAXIMUM_DEPTH = 64;
 /**
@@ -691,7 +692,7 @@ var hostErrorCategories = /* @__PURE__ */ new Set([
 	"validation-failed"
 ]);
 function isHostPortError(value) {
-	return isRecord$2(value) && hasExactKeys(value, [
+	return isRecord$6(value) && hasExactKeys$1(value, [
 		"contractVersion",
 		"kind",
 		"category",
@@ -702,10 +703,10 @@ function isHostPortError(value) {
 		"diagnostics",
 		"retryAfterMilliseconds",
 		"revision"
-	]) && value.contractVersion === "0.1-draft" && value.kind === "host-error" && typeof value.category === "string" && hostErrorCategories.has(value.category) && isMessageReference(value.message) && typeof value.retryable === "boolean" && (value.correlationId === void 0 || isStableId$1(value.correlationId)) && (value.revision === void 0 || isRevision$1(value.revision)) && (value.retryAfterMilliseconds === void 0 || isNonNegativeInteger(value.retryAfterMilliseconds) && value.retryAfterMilliseconds <= 864e5) && (value.diagnostics === void 0 || isArrayOf(value.diagnostics, isDiagnostic, 1e3));
+	]) && value.contractVersion === "0.1-draft" && value.kind === "host-error" && typeof value.category === "string" && hostErrorCategories.has(value.category) && isMessageReference$2(value.message) && typeof value.retryable === "boolean" && (value.correlationId === void 0 || isStableId$2(value.correlationId)) && (value.revision === void 0 || isRevision$1(value.revision)) && (value.retryAfterMilliseconds === void 0 || isNonNegativeInteger(value.retryAfterMilliseconds) && value.retryAfterMilliseconds <= 864e5) && (value.diagnostics === void 0 || isArrayOf(value.diagnostics, isDiagnostic, 1e3));
 }
 function isPreviewMessage(value) {
-	if (!isRecord$2(value) || !hasExactKeys(value, [
+	if (!isRecord$6(value) || !hasExactKeys$1(value, [
 		"contractVersion",
 		"kind",
 		"channelId",
@@ -713,7 +714,7 @@ function isPreviewMessage(value) {
 		"sequence",
 		"type",
 		"payload"
-	]) || value.contractVersion !== "0.1-draft" || value.kind !== "preview-message" || !isStableId$1(value.channelId) || !isRevision$1(value.sessionGeneration) || !isNonNegativeInteger(value.sequence) || typeof value.type !== "string" || !isRecord$2(value.payload)) return false;
+	]) || value.contractVersion !== "0.1-draft" || value.kind !== "preview-message" || !isStableId$2(value.channelId) || !isRevision$1(value.sessionGeneration) || !isNonNegativeInteger(value.sequence) || typeof value.type !== "string" || !isRecord$6(value.payload)) return false;
 	switch (value.type) {
 		case "studio.preview/ready": return isReadyPayload(value.payload);
 		case "studio.preview/render": return isRenderPayload(value.payload);
@@ -731,7 +732,7 @@ function isPreviewMessage(value) {
 	}
 }
 function isActivatedPayload(value) {
-	return hasExactKeys(value, ["interaction", "marker"]) && isPreviewMarker(value.marker) && (value.interaction === "activate" || value.interaction === "context-menu" || value.interaction === "focus");
+	return hasExactKeys$1(value, ["interaction", "marker"]) && isPreviewMarker(value.marker) && (value.interaction === "activate" || value.interaction === "context-menu" || value.interaction === "focus");
 }
 /** A semantic role and explicit dimensions are alternatives, never a merge. */
 function isViewportPayload(value) {
@@ -752,37 +753,37 @@ function isBoundedDimension(value) {
 	return typeof value === "number" && Number.isSafeInteger(value) && value >= 240 && value <= 1e4;
 }
 function isDisposePayload(value) {
-	if (!isQualifiedName(value.reason)) return false;
+	if (!isQualifiedName$2(value.reason)) return false;
 	if (Object.keys(value).some((key) => key !== "draftDigest" && key !== "reason")) return false;
 	return value.draftDigest === void 0 || typeof value.draftDigest === "string" && previewDigest.test(value.draftDigest);
 }
 function isReasonPayload(value) {
-	return hasExactKeys(value, ["reason"]) && isQualifiedName(value.reason);
+	return hasExactKeys$1(value, ["reason"]) && isQualifiedName$2(value.reason);
 }
 function isReadyPayload(value) {
-	return hasExactKeys(value, [
+	return hasExactKeys$1(value, [
 		"protocolVersion",
 		"renderer",
 		"viewports"
-	]) && value.protocolVersion === "0.1.0-draft.2" && isQualifiedName(value.renderer) && isStringArray(value.viewports, isLocalName, 20);
+	]) && value.protocolVersion === "0.1.0-draft.2" && isQualifiedName$2(value.renderer) && isStringArray(value.viewports, isLocalName, 20);
 }
 function isRenderPayload(value) {
-	return hasExactKeys(value, [
+	return hasExactKeys$1(value, [
 		"artifactId",
 		"draftDigest",
 		"draftRevision",
 		"requestId",
 		"viewport"
-	]) && isStableId$1(value.artifactId) && typeof value.draftDigest === "string" && previewDigest.test(value.draftDigest) && isRevision$1(value.draftRevision) && isStableId$1(value.requestId) && isLocalName(value.viewport);
+	]) && isStableId$2(value.artifactId) && typeof value.draftDigest === "string" && previewDigest.test(value.draftDigest) && isRevision$1(value.draftRevision) && isStableId$2(value.requestId) && isLocalName(value.viewport);
 }
 function isPreviewRenderedPayload(value) {
-	if (!isRecord$2(value) || !hasExactKeys(value, [
+	if (!isRecord$6(value) || !hasExactKeys$1(value, [
 		"requestId",
 		"draftDigest",
 		"markers",
 		"markerMap",
 		"diagnostics"
-	]) || !isStableId$1(value.requestId) || typeof value.draftDigest !== "string" || !previewDigest.test(value.draftDigest) || !isStringArray(value.markers, isPreviewMarker, 1e5) || new Set(value.markers).size !== value.markers.length || !isArrayOf(value.diagnostics, isDiagnostic, 1e4) || !isMarkerMap(value.markerMap)) return false;
+	]) || !isStableId$2(value.requestId) || typeof value.draftDigest !== "string" || !previewDigest.test(value.draftDigest) || !isStringArray(value.markers, isPreviewMarker, 1e5) || new Set(value.markers).size !== value.markers.length || !isArrayOf(value.diagnostics, isDiagnostic, 1e4) || !isMarkerMap(value.markerMap)) return false;
 	const markerMap = value.markerMap;
 	if (Object.keys(markerMap).length !== value.markers.length) return false;
 	const nodeIds = Object.values(markerMap);
@@ -793,31 +794,31 @@ function isPreviewRenderedPayload(value) {
 	});
 }
 function isMarkerMap(value) {
-	if (!isRecord$2(value)) return false;
+	if (!isRecord$6(value)) return false;
 	const entries = Object.entries(value);
-	return entries.length <= 1e5 && entries.every(([marker, nodeId]) => isPreviewMarker(marker) && isStableId$1(nodeId));
+	return entries.length <= 1e5 && entries.every(([marker, nodeId]) => isPreviewMarker(marker) && isStableId$2(nodeId));
 }
 function isMeasurePayload(value) {
-	return hasExactKeys(value, ["requestId", "markers"]) && isStableId$1(value.requestId) && isStringArray(value.markers, isPreviewMarker, 1e3) && value.markers.length >= 1 && new Set(value.markers).size === value.markers.length;
+	return hasExactKeys$1(value, ["requestId", "markers"]) && isStableId$2(value.requestId) && isStringArray(value.markers, isPreviewMarker, 1e3) && value.markers.length >= 1 && new Set(value.markers).size === value.markers.length;
 }
 function isMeasurementsPayload(value) {
-	if (!hasExactKeys(value, [
+	if (!hasExactKeys$1(value, [
 		"requestId",
 		"draftDigest",
 		"measurements",
 		"unknown",
 		"viewport"
-	]) || !isStableId$1(value.requestId) || typeof value.draftDigest !== "string" || !previewDigest.test(value.draftDigest) || !isMeasurementMap(value.measurements) || !isStringArray(value.unknown, isPreviewMarker, 1e3) || new Set(value.unknown).size !== value.unknown.length || !isViewportMetrics(value.viewport)) return false;
+	]) || !isStableId$2(value.requestId) || typeof value.draftDigest !== "string" || !previewDigest.test(value.draftDigest) || !isMeasurementMap(value.measurements) || !isStringArray(value.unknown, isPreviewMarker, 1e3) || new Set(value.unknown).size !== value.unknown.length || !isViewportMetrics(value.viewport)) return false;
 	const markers = [...Object.keys(value.measurements), ...value.unknown];
 	return new Set(markers).size === markers.length && markers.every((marker) => previewMarker.exec(marker)?.[1] === value.draftDigest);
 }
 function isMeasurementMap(value) {
-	if (!isRecord$2(value)) return false;
+	if (!isRecord$6(value)) return false;
 	const entries = Object.entries(value);
 	return entries.length <= 1e3 && entries.every(([marker, rects]) => isPreviewMarker(marker) && isArrayOf(rects, isMarkerRect, 1e3) && rects.length >= 1);
 }
 function isMarkerRect(value) {
-	return isRecord$2(value) && hasExactKeys(value, [
+	return isRecord$6(value) && hasExactKeys$1(value, [
 		"x",
 		"y",
 		"width",
@@ -825,7 +826,7 @@ function isMarkerRect(value) {
 	]) && isCssCoordinate(value.x) && isCssCoordinate(value.y) && isCssExtent(value.width) && isCssExtent(value.height);
 }
 function isViewportMetrics(value) {
-	return isRecord$2(value) && hasExactKeys(value, [
+	return isRecord$6(value) && hasExactKeys$1(value, [
 		"width",
 		"height",
 		"scrollX",
@@ -834,17 +835,17 @@ function isViewportMetrics(value) {
 	]) && isCssExtent(value.width) && isCssExtent(value.height) && isCssCoordinate(value.scrollX) && isCssCoordinate(value.scrollY) && typeof value.devicePixelRatio === "number" && Number.isFinite(value.devicePixelRatio) && value.devicePixelRatio > 0 && value.devicePixelRatio <= 100;
 }
 function isSelectPayload(value) {
-	return hasExactKeys(value, ["nodeId"], ["reveal"]) && isStableId$1(value.nodeId) && (value.reveal === void 0 || typeof value.reveal === "boolean");
+	return hasExactKeys$1(value, ["nodeId"], ["reveal"]) && isStableId$2(value.nodeId) && (value.reveal === void 0 || typeof value.reveal === "boolean");
 }
 function isErrorPayload(value) {
-	return hasExactKeys(value, [
+	return hasExactKeys$1(value, [
 		"code",
 		"message",
 		"retryable"
-	], ["correlationId"]) && isQualifiedName(value.code) && isMessageReference(value.message) && typeof value.retryable === "boolean" && (value.correlationId === void 0 || isStableId$1(value.correlationId));
+	], ["correlationId"]) && isQualifiedName$2(value.code) && isMessageReference$2(value.message) && typeof value.retryable === "boolean" && (value.correlationId === void 0 || isStableId$2(value.correlationId));
 }
 function isDiagnostic(value) {
-	if (!isRecord$2(value) || !hasExactKeys(value, [
+	if (!isRecord$6(value) || !hasExactKeys$1(value, [
 		"code",
 		"severity",
 		"message"
@@ -852,33 +853,33 @@ function isDiagnostic(value) {
 		"location",
 		"parameters",
 		"remediations"
-	]) || !isQualifiedName(value.code) || typeof value.severity !== "string" || ![
+	]) || !isQualifiedName$2(value.code) || typeof value.severity !== "string" || ![
 		"information",
 		"warning",
 		"error",
 		"blocking"
-	].includes(value.severity) || !isMessageReference(value.message)) return false;
+	].includes(value.severity) || !isMessageReference$2(value.message)) return false;
 	if (value.location !== void 0 && !isDiagnosticLocation(value.location)) return false;
-	if (value.parameters !== void 0 && (!isRecord$2(value.parameters) || Object.keys(value.parameters).length > 20 || !Object.keys(value.parameters).every((key) => isSafeJsonMemberName$1(key)) || !Object.values(value.parameters).every((entry) => entry === null || typeof entry === "boolean" || typeof entry === "string" || typeof entry === "number" && Number.isFinite(entry)))) return false;
-	return value.remediations === void 0 || isStringArray(value.remediations, isQualifiedName, 10);
+	if (value.parameters !== void 0 && (!isRecord$6(value.parameters) || Object.keys(value.parameters).length > 20 || !Object.keys(value.parameters).every((key) => isSafeJsonMemberName$1(key)) || !Object.values(value.parameters).every((entry) => entry === null || typeof entry === "boolean" || typeof entry === "string" || typeof entry === "number" && Number.isFinite(entry)))) return false;
+	return value.remediations === void 0 || isStringArray(value.remediations, isQualifiedName$2, 10);
 }
 function isDiagnosticLocation(value) {
-	if (!isRecord$2(value) || !hasExactKeys(value, [], [
+	if (!isRecord$6(value) || !hasExactKeys$1(value, [], [
 		"artifactId",
 		"nodeId",
 		"fieldPath",
 		"jsonPointer"
 	])) return false;
-	return (value.artifactId === void 0 || isStableId$1(value.artifactId)) && (value.nodeId === void 0 || isStableId$1(value.nodeId)) && (value.fieldPath === void 0 || isStringArray(value.fieldPath, isLocalName, 32)) && (value.jsonPointer === void 0 || typeof value.jsonPointer === "string" && value.jsonPointer.length <= 1e3);
+	return (value.artifactId === void 0 || isStableId$2(value.artifactId)) && (value.nodeId === void 0 || isStableId$2(value.nodeId)) && (value.fieldPath === void 0 || isStringArray(value.fieldPath, isLocalName, 32)) && (value.jsonPointer === void 0 || typeof value.jsonPointer === "string" && value.jsonPointer.length <= 1e3);
 }
-function isMessageReference(value) {
-	return isRecord$2(value) && hasExactKeys(value, ["key"], ["defaultMessage"]) && isQualifiedName(value.key) && (value.defaultMessage === void 0 || typeof value.defaultMessage === "string" && value.defaultMessage.length > 0 && value.defaultMessage.length <= 500);
+function isMessageReference$2(value) {
+	return isRecord$6(value) && hasExactKeys$1(value, ["key"], ["defaultMessage"]) && isQualifiedName$2(value.key) && (value.defaultMessage === void 0 || typeof value.defaultMessage === "string" && value.defaultMessage.length > 0 && value.defaultMessage.length <= 500);
 }
-function hasExactKeys(value, required, optional = []) {
+function hasExactKeys$1(value, required, optional = []) {
 	const allowed = /* @__PURE__ */ new Set([...required, ...optional]);
 	return required.every((key) => Object.hasOwn(value, key)) && Object.keys(value).every((key) => allowed.has(key));
 }
-function isRecord$2(value) {
+function isRecord$6(value) {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
 	const prototype = Object.getPrototypeOf(value);
 	return prototype === Object.prototype || prototype === null;
@@ -893,13 +894,13 @@ function isCssCoordinate(value) {
 function isCssExtent(value) {
 	return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= cssPixelLimit;
 }
-function isQualifiedName(value) {
+function isQualifiedName$2(value) {
 	return typeof value === "string" && value.length <= 160 && qualifiedName.test(value);
 }
 function isLocalName(value) {
 	return typeof value === "string" && value.length <= 100 && !isForbiddenObjectMemberName(value) && localName.test(value);
 }
-function isStableId$1(value) {
+function isStableId$2(value) {
 	return typeof value === "string" && value.length <= 240 && !isForbiddenObjectMemberName(value) && /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/u.test(value);
 }
 /** Whether a value has the canonical preview marker grammar, optionally for one draft. */
@@ -958,6 +959,54 @@ var HostPortFailure = class extends Error {
 function isHostPortFailure(value) {
 	return value instanceof Error && "error" in value && isHostPortError(value.error);
 }
+var authoring_message_catalog_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/authoring-message-catalog.schema.json",
+	title: "Studio authoring message catalog",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"$schema",
+		"kind",
+		"contractVersion",
+		"catalogVersion",
+		"locale",
+		"messages"
+	],
+	properties: {
+		"$schema": { "const": "https://schemas.kumwe.org/studio/v1/authoring-message-catalog.schema.json" },
+		"kind": { "const": "authoring-message-catalog" },
+		"contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+		"catalogVersion": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+		"locale": { "$ref": "common.schema.json#/$defs/locale" },
+		"messages": {
+			"type": "object",
+			"minProperties": 1,
+			"maxProperties": 1e3,
+			"propertyNames": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+			"additionalProperties": { "$ref": "#/$defs/message" }
+		}
+	},
+	$defs: { "message": {
+		"type": "object",
+		"additionalProperties": false,
+		"required": ["defaultMessage", "parameters"],
+		"properties": {
+			"defaultMessage": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 2e3,
+				"pattern": "^[^<>]*(?![\\s\\S])"
+			},
+			"parameters": {
+				"type": "array",
+				"maxItems": 50,
+				"uniqueItems": true,
+				"items": { "$ref": "common.schema.json#/$defs/localName" }
+			}
+		}
+	} }
+};
 var block_definition_schema_default = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://schemas.kumwe.org/studio/v1/block-definition.schema.json",
@@ -1106,7 +1155,16 @@ var block_definition_schema_default = {
 						"resource"
 					] }, { "$ref": "common.schema.json#/$defs/qualifiedName" }] },
 					"required": { "type": "boolean" },
-					"multiple": { "type": "boolean" }
+					"multiple": { "type": "boolean" },
+					"authoring": {
+						"type": "object",
+						"additionalProperties": false,
+						"properties": {
+							"control": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+							"profile": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+							"readOnly": { "type": "boolean" }
+						}
+					}
 				}
 			}
 		},
@@ -1357,6 +1415,298 @@ var binding_projection_vector_schema_default = {
 					"maxItems": 1e5,
 					"items": { "$ref": "#/$defs/diagnostic" }
 				}
+			}
+		}
+	}
+};
+var authoring_web_vector_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/authoring-web-vector.schema.json",
+	title: "Studio portable web-authoring conformance vector",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"contractVersion",
+		"kind",
+		"id",
+		"description",
+		"requirements",
+		"given",
+		"lanes",
+		"expect"
+	],
+	properties: {
+		"contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+		"kind": { "const": "authoring-web-vector" },
+		"id": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+		"description": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 1e3
+		},
+		"requirements": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 100,
+			"uniqueItems": true,
+			"items": {
+				"type": "string",
+				"pattern": "^SR-[0-9]{3}$"
+			}
+		},
+		"given": { "$ref": "#/$defs/given" },
+		"lanes": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 20,
+			"items": { "$ref": "#/$defs/lane" }
+		},
+		"expect": { "$ref": "#/$defs/observation" }
+	},
+	$defs: {
+		"region": { "enum": [
+			"canvas",
+			"command-palette",
+			"inspector",
+			"outline",
+			"palette",
+			"preview",
+			"viewport"
+		] },
+		"given": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"document",
+				"direction",
+				"locale",
+				"readOnly",
+				"reducedMotion",
+				"selection",
+				"viewport"
+			],
+			"properties": {
+				"document": { "$ref": "blueprint.schema.json" },
+				"direction": { "enum": ["ltr", "rtl"] },
+				"locale": { "$ref": "common.schema.json#/$defs/locale" },
+				"readOnly": { "type": "boolean" },
+				"reducedMotion": { "type": "boolean" },
+				"selection": { "oneOf": [{ "$ref": "common.schema.json#/$defs/stableId" }, { "type": "null" }] },
+				"viewport": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": [
+						"height",
+						"width",
+						"zoomPercent"
+					],
+					"properties": {
+						"height": {
+							"type": "integer",
+							"minimum": 256,
+							"maximum": 1e4
+						},
+						"width": {
+							"type": "integer",
+							"minimum": 320,
+							"maximum": 1e4
+						},
+						"zoomPercent": {
+							"type": "integer",
+							"minimum": 100,
+							"maximum": 400
+						}
+					}
+				}
+			}
+		},
+		"lane": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"name",
+				"surface",
+				"steps"
+			],
+			"properties": {
+				"name": { "$ref": "common.schema.json#/$defs/localName" },
+				"surface": { "enum": [
+					"keyboard",
+					"pointer",
+					"structural-control"
+				] },
+				"steps": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 100,
+					"items": { "$ref": "#/$defs/action" }
+				}
+			}
+		},
+		"action": { "oneOf": [
+			{ "$ref": "#/$defs/focusNode" },
+			{ "$ref": "#/$defs/keyAction" },
+			{ "$ref": "#/$defs/dragNode" },
+			{ "$ref": "#/$defs/activateCommand" },
+			{ "$ref": "#/$defs/editProperty" }
+		] },
+		"focusNode": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"kind",
+				"nodeId",
+				"region"
+			],
+			"properties": {
+				"kind": { "const": "focus-node" },
+				"nodeId": { "$ref": "common.schema.json#/$defs/stableId" },
+				"region": { "$ref": "#/$defs/region" }
+			}
+		},
+		"keyAction": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"kind",
+				"key",
+				"modifiers",
+				"region"
+			],
+			"properties": {
+				"kind": { "const": "key" },
+				"key": { "enum": [
+					"ArrowDown",
+					"ArrowLeft",
+					"ArrowRight",
+					"ArrowUp",
+					"Delete",
+					"End",
+					"Enter",
+					"Escape",
+					"Home",
+					"Tab",
+					"d",
+					"y",
+					"z"
+				] },
+				"modifiers": {
+					"type": "array",
+					"maxItems": 4,
+					"uniqueItems": true,
+					"items": { "enum": [
+						"Alt",
+						"Control",
+						"Meta",
+						"Shift"
+					] }
+				},
+				"region": { "$ref": "#/$defs/region" }
+			}
+		},
+		"dragNode": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"kind",
+				"nodeId",
+				"destination"
+			],
+			"properties": {
+				"kind": { "const": "drag-node" },
+				"nodeId": { "$ref": "common.schema.json#/$defs/stableId" },
+				"destination": { "$ref": "command.schema.json#/$defs/destination" }
+			}
+		},
+		"activateCommand": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"kind",
+				"region",
+				"type",
+				"payload"
+			],
+			"properties": {
+				"kind": { "const": "activate-command" },
+				"region": { "$ref": "#/$defs/region" },
+				"type": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+				"payload": { "$ref": "#/$defs/jsonObject" }
+			}
+		},
+		"editProperty": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"kind",
+				"nodeId",
+				"property",
+				"value"
+			],
+			"properties": {
+				"kind": { "const": "edit-property" },
+				"nodeId": { "$ref": "common.schema.json#/$defs/stableId" },
+				"property": { "$ref": "common.schema.json#/$defs/localName" },
+				"viewport": { "$ref": "common.schema.json#/$defs/localName" },
+				"value": { "$ref": "common.schema.json#/$defs/jsonValue" }
+			}
+		},
+		"jsonObject": {
+			"type": "object",
+			"maxProperties": 1e3,
+			"propertyNames": { "$ref": "common.schema.json#/$defs/safeJsonMemberName" },
+			"additionalProperties": { "$ref": "common.schema.json#/$defs/jsonValue" }
+		},
+		"observation": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"announcements",
+				"commands",
+				"dirty",
+				"document",
+				"focus",
+				"selection"
+			],
+			"properties": {
+				"announcements": {
+					"type": "array",
+					"maxItems": 100,
+					"items": {
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["key", "politeness"],
+						"properties": {
+							"key": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+							"politeness": { "enum": ["assertive", "polite"] }
+						}
+					}
+				},
+				"commands": {
+					"type": "array",
+					"maxItems": 100,
+					"items": {
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["type", "payload"],
+						"properties": {
+							"type": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+							"payload": { "$ref": "#/$defs/jsonObject" }
+						}
+					}
+				},
+				"dirty": { "type": "boolean" },
+				"document": { "$ref": "blueprint.schema.json" },
+				"focus": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["region"],
+					"properties": {
+						"region": { "$ref": "#/$defs/region" },
+						"nodeId": { "$ref": "common.schema.json#/$defs/stableId" }
+					}
+				},
+				"selection": { "oneOf": [{ "$ref": "common.schema.json#/$defs/stableId" }, { "type": "null" }] }
 			}
 		}
 	}
@@ -2667,6 +3017,123 @@ var content_model_schema_default = {
 				},
 				"extensions": { "$ref": "common.schema.json#/$defs/extensions" }
 			}
+		}
+	}
+};
+var corpus_manifest_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/corpus-manifest.schema.json",
+	title: "Studio corpus integrity manifest",
+	description: "The digest of every file in the published conformance corpus, grouped by the directory it ships in. A host that vendors the corpus verifies its copy against this manifest, so a stale or altered fixture is detected before it silently changes what a conformance claim means. The schema manifest covers the schemas; this covers everything replayed against them.",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"contractVersion",
+		"kind",
+		"groups"
+	],
+	properties: {
+		"contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+		"kind": { "const": "corpus-manifest" },
+		"groups": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 50,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"files",
+					"group",
+					"path"
+				],
+				"properties": {
+					"files": {
+						"type": "array",
+						"maxItems": 5e3,
+						"items": {
+							"type": "object",
+							"additionalProperties": false,
+							"required": ["digest", "file"],
+							"properties": {
+								"digest": { "$ref": "common.schema.json#/$defs/integrity" },
+								"file": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 200
+								}
+							}
+						}
+					},
+					"group": {
+						"description": "The stable name of the corpus group.",
+						"$ref": "common.schema.json#/$defs/localName"
+					},
+					"path": {
+						"description": "The package-relative directory the group ships in.",
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 200
+					}
+				}
+			}
+		}
+	}
+};
+var canonical_vector_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/canonical-vector.schema.json",
+	title: "Studio canonical serialization vector",
+	description: "One canonical serialization case: a bounded JSON value and either the exact canonical string it serializes to with the digest of its UTF-8 bytes, or the stable reason the canonical form refuses it. Checksums across the contract are computed over exactly these bytes, so an implementation that reproduces this corpus computes the same digests as every other - which is what makes a vendored-corpus check and a stored-document round-trip comparable across languages.",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"contractVersion",
+		"kind",
+		"id",
+		"description",
+		"value",
+		"expect"
+	],
+	properties: {
+		"contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+		"kind": { "const": "canonical-vector" },
+		"id": { "$ref": "common.schema.json#/$defs/stableId" },
+		"description": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 500
+		},
+		"value": { "description": "The input value. Deliberately looser than the canonical JSON value shape so a rejection vector can carry a value the canonical form refuses, such as a forbidden member name. Values the canonical form cannot represent at all - non-finite numbers, undefined - are not expressible in JSON and are proven in implementation tests rather than here." },
+		"expect": { "oneOf": [{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["canonical", "digest"],
+			"properties": {
+				"canonical": {
+					"description": "The exact canonical string, byte for byte.",
+					"type": "string",
+					"maxLength": 2e4
+				},
+				"digest": {
+					"description": "The SRI-style sha256 digest of the canonical UTF-8 bytes.",
+					"$ref": "common.schema.json#/$defs/integrity"
+				}
+			}
+		}, {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["rejected"],
+			"properties": { "rejected": {
+				"description": "The stable reason the canonical form refuses the value.",
+				"enum": ["depth-exceeded", "forbidden-member"]
+			} }
+		}] },
+		"maximumDepth": {
+			"description": "The depth bound to serialize under. Absent means the contract default of 64.",
+			"type": "integer",
+			"minimum": 1,
+			"maximum": 64
 		}
 	}
 };
@@ -4419,6 +4886,162 @@ var media_upload_session_schema_default = {
 		}
 	}
 };
+var media_vector_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/media-vector.schema.json",
+	title: "Studio canonical media policy vector",
+	description: "One canonical upload-policy decision: a host-declared policy, an upload request, and either the deterministic policy-derived plan or a stable failure code, optionally extended with cancellation and retry legality for the media-upload-session state machine.",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"contractVersion",
+		"kind",
+		"id",
+		"description",
+		"policy",
+		"request",
+		"expect"
+	],
+	properties: {
+		"contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+		"kind": { "const": "media-vector" },
+		"id": { "$ref": "common.schema.json#/$defs/stableId" },
+		"description": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 500
+		},
+		"policy": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"acceptedMediaTypes",
+				"maximumBytes",
+				"resumable"
+			],
+			"properties": {
+				"acceptedMediaTypes": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 100,
+					"items": { "$ref": "#/$defs/mediaType" }
+				},
+				"chunkBytes": {
+					"type": "integer",
+					"minimum": 1024,
+					"maximum": 1073741824
+				},
+				"maximumBytes": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 1099511627776
+				},
+				"resumable": { "type": "boolean" }
+			}
+		},
+		"request": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"filename",
+				"mediaType",
+				"byteSize",
+				"purpose"
+			],
+			"properties": {
+				"filename": {
+					"description": "Deliberately looser than the media-upload-session request shape so rejection vectors can carry filenames the canonical contract refuses.",
+					"type": "string",
+					"maxLength": 500
+				},
+				"mediaType": { "$ref": "#/$defs/mediaType" },
+				"byteSize": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 1099511627776
+				},
+				"purpose": { "$ref": "common.schema.json#/$defs/qualifiedName" },
+				"checksum": { "$ref": "common.schema.json#/$defs/integrity" }
+			}
+		},
+		"expect": { "oneOf": [{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["outcome", "plan"],
+			"properties": {
+				"outcome": { "const": "accepted" },
+				"plan": { "$ref": "#/$defs/plan" }
+			}
+		}, {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["outcome", "code"],
+			"properties": {
+				"outcome": { "const": "rejected" },
+				"code": { "$ref": "#/$defs/failureCode" },
+				"messageMustNotContain": {
+					"description": "Raw request or policy values the user-facing failure message MUST NOT echo.",
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 10,
+					"items": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 200
+					}
+				}
+			}
+		}] },
+		"cancel": {
+			"description": "Cancellation legality: the session state during which cancel() is issued and the resulting terminal state. Cancellation from an active state ends in cancelled; cancellation after completion is a no-op.",
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["during", "finalState"],
+			"properties": {
+				"during": { "enum": [
+					"complete",
+					"requested",
+					"transferring",
+					"verifying"
+				] },
+				"finalState": { "enum": ["cancelled", "complete"] }
+			}
+		},
+		"retry": {
+			"description": "Retry legality for a rejected request: retry is legal only from the failed state and always runs under a fresh session identity with the identical request.",
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["freshSession"],
+			"properties": { "freshSession": { "const": true } }
+		}
+	},
+	$defs: {
+		"failureCode": { "enum": ["studio.media/upload-failed", "studio.media/upload-too-large"] },
+		"mediaType": {
+			"type": "string",
+			"pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*(?![\\s\\S])",
+			"maxLength": 120
+		},
+		"plan": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["maximumBytes", "resumable"],
+			"properties": {
+				"maximumBytes": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 1099511627776
+				},
+				"chunkBytes": {
+					"type": "integer",
+					"minimum": 1024,
+					"maximum": 1073741824
+				},
+				"resumable": { "type": "boolean" }
+			}
+		}
+	}
+};
 var migration_schema_default = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://schemas.kumwe.org/studio/v1/migration.schema.json",
@@ -5130,6 +5753,321 @@ var preview_vector_schema_default = {
 		}
 	}
 };
+var renderer_web_vector_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/renderer-web-vector.schema.json",
+	title: "Studio renderer-web conformance vector",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"id",
+		"coverage",
+		"roots",
+		"bindings",
+		"media",
+		"expect"
+	],
+	properties: {
+		"id": { "$ref": "common.schema.json#/$defs/stableId" },
+		"coverage": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"blockTypes",
+				"behaviors",
+				"presentation",
+				"security"
+			],
+			"properties": {
+				"blockTypes": {
+					"type": "array",
+					"maxItems": 100,
+					"uniqueItems": true,
+					"items": { "$ref": "common.schema.json#/$defs/qualifiedName" }
+				},
+				"behaviors": {
+					"type": "array",
+					"maxItems": 50,
+					"uniqueItems": true,
+					"items": { "enum": [
+						"accordion-native",
+						"countdown",
+						"dialog",
+						"lightbox",
+						"navigation-disclosure",
+						"notice-dismiss",
+						"popover",
+						"slideshow",
+						"tabs"
+					] }
+				},
+				"presentation": {
+					"type": "array",
+					"maxItems": 50,
+					"uniqueItems": true,
+					"items": { "enum": [
+						"alignment",
+						"inverse",
+						"markers",
+						"motion",
+						"position",
+						"print",
+						"responsive-visibility",
+						"scrolling",
+						"sizing",
+						"spacing"
+					] }
+				},
+				"security": {
+					"type": "array",
+					"maxItems": 50,
+					"uniqueItems": true,
+					"items": { "enum": [
+						"active-media-deny",
+						"blob-default-deny",
+						"escaped-text",
+						"safe-url-deny",
+						"typed-data-fallback"
+					] }
+				}
+			}
+		},
+		"context": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": { "allowBlobMedia": { "type": "boolean" } }
+		},
+		"roots": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 100,
+			"items": { "$ref": "blueprint.schema.json#/$defs/node" }
+		},
+		"bindings": {
+			"type": "array",
+			"maxItems": 1e3,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"nodeId",
+					"port",
+					"value"
+				],
+				"properties": {
+					"nodeId": { "$ref": "common.schema.json#/$defs/stableId" },
+					"port": { "$ref": "common.schema.json#/$defs/localName" },
+					"value": { "$ref": "common.schema.json#/$defs/jsonValue" }
+				}
+			}
+		},
+		"media": {
+			"type": "array",
+			"maxItems": 1e3,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"assetId",
+					"src",
+					"altText"
+				],
+				"properties": {
+					"assetId": { "$ref": "common.schema.json#/$defs/stableId" },
+					"src": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 2048
+					},
+					"altText": {
+						"type": "string",
+						"maxLength": 5e3
+					},
+					"mediaType": {
+						"type": "string",
+						"maxLength": 255
+					},
+					"caption": {
+						"type": "string",
+						"maxLength": 2e4
+					},
+					"width": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 1e5
+					},
+					"height": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 1e5
+					}
+				}
+			}
+		},
+		"expect": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"htmlContains",
+				"htmlExcludes",
+				"cssContains",
+				"enhancements"
+			],
+			"properties": {
+				"htmlContains": {
+					"type": "array",
+					"maxItems": 100,
+					"items": {
+						"type": "string",
+						"maxLength": 1e4
+					}
+				},
+				"htmlExcludes": {
+					"type": "array",
+					"maxItems": 100,
+					"items": {
+						"type": "string",
+						"maxLength": 1e4
+					}
+				},
+				"cssContains": {
+					"type": "array",
+					"maxItems": 100,
+					"items": {
+						"type": "string",
+						"maxLength": 1e4
+					}
+				},
+				"enhancements": {
+					"type": "array",
+					"maxItems": 100,
+					"items": { "enum": [
+						"chart",
+						"countdown",
+						"diagram",
+						"dialog",
+						"lightbox",
+						"math",
+						"motion",
+						"navigation",
+						"notice",
+						"popover",
+						"slideshow",
+						"tabs"
+					] }
+				}
+			}
+		}
+	}
+};
+var rich_text_projection_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/rich-text-projection.schema.json",
+	title: "Studio rich-text renderer-conformance fixture",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"description",
+		"document",
+		"projection"
+	],
+	properties: {
+		"description": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 500
+		},
+		"document": { "$ref": "rich-text.schema.json" },
+		"projection": {
+			"type": "array",
+			"maxItems": 1e5,
+			"items": { "$ref": "#/$defs/blockProjection" }
+		}
+	},
+	$defs: {
+		"blockProjection": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"type",
+				"text",
+				"spans",
+				"embeds"
+			],
+			"properties": {
+				"type": { "enum": [
+					"checklistItem",
+					"codeBlock",
+					"heading",
+					"horizontalRule",
+					"paragraph",
+					"tableCell"
+				] },
+				"text": {
+					"type": "string",
+					"maxLength": 25e4
+				},
+				"spans": {
+					"type": "array",
+					"maxItems": 1e5,
+					"items": { "$ref": "#/$defs/span" }
+				},
+				"embeds": {
+					"type": "array",
+					"maxItems": 1e5,
+					"items": { "$ref": "#/$defs/embed" }
+				}
+			}
+		},
+		"span": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"start",
+				"end",
+				"marks"
+			],
+			"properties": {
+				"start": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 25e4
+				},
+				"end": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 25e4
+				},
+				"marks": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 5,
+					"uniqueItems": true,
+					"items": { "enum": [
+						"bold",
+						"code",
+						"highlight",
+						"italic",
+						"strike"
+					] }
+				}
+			}
+		},
+		"embed": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["index", "kind"],
+			"properties": {
+				"index": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 25e4
+				},
+				"kind": { "enum": ["hardBreak"] }
+			}
+		}
+	}
+};
 var provenance_schema_default = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://schemas.kumwe.org/studio/v1/provenance.schema.json",
@@ -5231,7 +6169,11 @@ var rich_text_schema_default = {
 			{ "$ref": "#/$defs/blockquote" },
 			{ "$ref": "#/$defs/bulletList" },
 			{ "$ref": "#/$defs/orderedList" },
-			{ "$ref": "#/$defs/horizontalRule" }
+			{ "$ref": "#/$defs/horizontalRule" },
+			{ "$ref": "#/$defs/checklist" },
+			{ "$ref": "#/$defs/table" },
+			{ "$ref": "#/$defs/callout" },
+			{ "$ref": "#/$defs/codeBlock" }
 		] },
 		"paragraph": {
 			"type": "object",
@@ -5341,6 +6283,151 @@ var rich_text_schema_default = {
 			"required": ["type"],
 			"properties": { "type": { "const": "horizontalRule" } }
 		},
+		"checklist": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["type", "content"],
+			"properties": {
+				"type": { "const": "checklist" },
+				"content": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 500,
+					"items": { "$ref": "#/$defs/checklistItem" }
+				}
+			}
+		},
+		"checklistItem": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["type", "attrs"],
+			"properties": {
+				"type": { "const": "checklistItem" },
+				"attrs": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["checked", "level"],
+					"properties": {
+						"checked": { "type": "boolean" },
+						"level": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 4
+						}
+					}
+				},
+				"content": {
+					"type": "array",
+					"maxItems": 5e3,
+					"items": { "$ref": "#/$defs/inline" }
+				}
+			}
+		},
+		"table": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"type",
+				"attrs",
+				"content"
+			],
+			"properties": {
+				"type": { "const": "table" },
+				"attrs": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["header"],
+					"properties": { "header": { "type": "boolean" } }
+				},
+				"content": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 200,
+					"items": { "$ref": "#/$defs/tableRow" }
+				}
+			}
+		},
+		"tableRow": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["type", "content"],
+			"properties": {
+				"type": { "const": "tableRow" },
+				"content": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 50,
+					"items": { "$ref": "#/$defs/tableCell" }
+				}
+			}
+		},
+		"tableCell": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["type"],
+			"properties": {
+				"type": { "const": "tableCell" },
+				"content": {
+					"type": "array",
+					"maxItems": 5e3,
+					"items": { "$ref": "#/$defs/inline" }
+				}
+			}
+		},
+		"callout": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"type",
+				"attrs",
+				"content"
+			],
+			"properties": {
+				"type": { "const": "callout" },
+				"attrs": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["tone"],
+					"properties": { "tone": { "enum": [
+						"danger",
+						"info",
+						"success",
+						"warning"
+					] } }
+				},
+				"content": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 5e3,
+					"items": { "$ref": "#/$defs/block" }
+				}
+			}
+		},
+		"codeBlock": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"type",
+				"attrs",
+				"text"
+			],
+			"properties": {
+				"type": { "const": "codeBlock" },
+				"attrs": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["language"],
+					"properties": { "language": {
+						"type": "string",
+						"pattern": "^[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}$"
+					} }
+				},
+				"text": {
+					"type": "string",
+					"maxLength": 25e4
+				}
+			}
+		},
 		"hardBreak": {
 			"type": "object",
 			"additionalProperties": false,
@@ -5366,7 +6453,7 @@ var rich_text_schema_default = {
 			}
 		},
 		"inline": { "oneOf": [{ "$ref": "#/$defs/text" }, { "$ref": "#/$defs/hardBreak" }] },
-		"mark": {
+		"mark": { "oneOf": [{
 			"type": "object",
 			"additionalProperties": false,
 			"required": ["type"],
@@ -5376,7 +6463,26 @@ var rich_text_schema_default = {
 				"italic",
 				"strike"
 			] } }
-		}
+		}, {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["type", "attrs"],
+			"properties": {
+				"type": { "const": "highlight" },
+				"attrs": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["tone"],
+					"properties": { "tone": { "enum": [
+						"accent",
+						"danger",
+						"info",
+						"success",
+						"warning"
+					] } }
+				}
+			}
+		}] }
 	}
 };
 var schema_profile_schema_default = {
@@ -6071,6 +7177,327 @@ var studio_config_schema_default = {
 		"then": { "properties": { "mode": { "enum": ["blueprint", "content"] } } }
 	}]
 };
+var studio_chart_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/studio-chart.schema.json",
+	title: "Studio canonical chart",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"type",
+		"labels",
+		"datasets"
+	],
+	properties: {
+		"type": { "enum": [
+			"bar",
+			"doughnut",
+			"line",
+			"pie"
+		] },
+		"title": {
+			"type": "string",
+			"maxLength": 500
+		},
+		"labels": {
+			"type": "array",
+			"maxItems": 200,
+			"items": {
+				"type": "string",
+				"maxLength": 500
+			}
+		},
+		"datasets": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 20,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["label", "values"],
+				"properties": {
+					"label": {
+						"type": "string",
+						"maxLength": 500
+					},
+					"values": {
+						"type": "array",
+						"maxItems": 200,
+						"items": {
+							"type": "number",
+							"minimum": -0x38d7ea4c68000,
+							"maximum": 0x38d7ea4c68000
+						}
+					}
+				}
+			}
+		}
+	}
+};
+var studio_drawing_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/studio-drawing.schema.json",
+	title: "Studio canonical drawing",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"width",
+		"height",
+		"alt",
+		"strokes"
+	],
+	properties: {
+		"width": {
+			"type": "integer",
+			"minimum": 1,
+			"maximum": 4096
+		},
+		"height": {
+			"type": "integer",
+			"minimum": 1,
+			"maximum": 4096
+		},
+		"alt": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 5e3
+		},
+		"strokes": {
+			"type": "array",
+			"maxItems": 5e3,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"color",
+					"width",
+					"points"
+				],
+				"properties": {
+					"color": {
+						"type": "string",
+						"pattern": "^(?:#[0-9A-Fa-f]{6}|[a-z][a-z0-9-]{0,62}/[a-z][a-z0-9-]{0,62})$",
+						"maxLength": 127
+					},
+					"width": {
+						"type": "number",
+						"minimum": .25,
+						"maximum": 64
+					},
+					"points": {
+						"type": "array",
+						"minItems": 1,
+						"maxItems": 1e4,
+						"items": {
+							"type": "object",
+							"additionalProperties": false,
+							"required": ["x", "y"],
+							"properties": {
+								"x": {
+									"type": "number",
+									"minimum": 0,
+									"maximum": 4096
+								},
+								"y": {
+									"type": "number",
+									"minimum": 0,
+									"maximum": 4096
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+};
+var studio_money_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/studio-money.schema.json",
+	title: "Studio canonical money",
+	type: "object",
+	additionalProperties: false,
+	required: ["amount", "currency"],
+	properties: {
+		"amount": {
+			"type": "string",
+			"pattern": "^-?(?:0|[1-9][0-9]{0,17})(?:\\.[0-9]{1,6})?$",
+			"maxLength": 26
+		},
+		"currency": {
+			"type": "string",
+			"pattern": "^[A-Z]{3}$"
+		}
+	}
+};
+var studio_presentation_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/studio-presentation.schema.json",
+	title: "Studio presentation intent",
+	type: "object",
+	maxProperties: 12,
+	additionalProperties: false,
+	properties: {
+		"align": { "enum": [
+			"center",
+			"end",
+			"start",
+			"stretch"
+		] },
+		"animation": { "enum": [
+			"fade",
+			"none",
+			"parallax",
+			"scale",
+			"slide"
+		] },
+		"height": { "enum": [
+			"auto",
+			"content",
+			"full",
+			"viewport"
+		] },
+		"inverse": { "type": "boolean" },
+		"margin": { "enum": [
+			"comfortable",
+			"compact",
+			"none",
+			"spacious"
+		] },
+		"marker": { "enum": [
+			"check",
+			"decimal",
+			"disc",
+			"none"
+		] },
+		"padding": { "enum": [
+			"comfortable",
+			"compact",
+			"none",
+			"spacious"
+		] },
+		"position": { "enum": [
+			"flow",
+			"relative",
+			"sticky"
+		] },
+		"print": { "enum": [
+			"hide",
+			"only",
+			"show"
+		] },
+		"scrolling": { "enum": [
+			"auto",
+			"clip",
+			"snap",
+			"visible"
+		] },
+		"visibility": {
+			"type": "object",
+			"maxProperties": 3,
+			"additionalProperties": false,
+			"properties": {
+				"compact": { "enum": ["hidden", "visible"] },
+				"expanded": { "enum": ["hidden", "visible"] },
+				"medium": { "enum": ["hidden", "visible"] }
+			}
+		},
+		"width": { "enum": [
+			"auto",
+			"content",
+			"full"
+		] }
+	}
+};
+var studio_release_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/studio-release.schema.json",
+	title: "Studio coordinated release record",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"contractVersion",
+		"kind",
+		"release",
+		"packages",
+		"protocolVersion",
+		"corpusManifestDigest",
+		"claimedProfiles"
+	],
+	properties: {
+		"contractVersion": { "$ref": "common.schema.json#/$defs/contractVersion" },
+		"kind": { "const": "studio-release" },
+		"release": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+		"packages": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"@kumwe/studio-core",
+				"@kumwe/studio-media",
+				"@kumwe/studio-preview",
+				"@kumwe/studio-protocol",
+				"@kumwe/studio-renderer-web",
+				"@kumwe/studio-rich-text",
+				"@kumwe/studio",
+				"@kumwe/studio-testkit"
+			],
+			"properties": {
+				"@kumwe/studio-core": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+				"@kumwe/studio-media": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+				"@kumwe/studio-preview": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+				"@kumwe/studio-protocol": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+				"@kumwe/studio-renderer-web": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+				"@kumwe/studio-rich-text": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+				"@kumwe/studio": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+				"@kumwe/studio-testkit": { "$ref": "common.schema.json#/$defs/semanticVersion" }
+			}
+		},
+		"protocolVersion": { "$ref": "common.schema.json#/$defs/semanticVersion" },
+		"corpusManifestDigest": { "$ref": "common.schema.json#/$defs/integrity" },
+		"claimedProfiles": {
+			"type": "array",
+			"maxItems": 32,
+			"uniqueItems": true,
+			"items": { "$ref": "common.schema.json#/$defs/qualifiedName" }
+		}
+	}
+};
+var studio_table_schema_default = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	$id: "https://schemas.kumwe.org/studio/v1/studio-table.schema.json",
+	title: "Studio table document",
+	type: "object",
+	additionalProperties: false,
+	required: ["columns", "rows"],
+	properties: {
+		"caption": {
+			"type": "string",
+			"maxLength": 500
+		},
+		"columns": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 50,
+			"items": {
+				"type": "string",
+				"maxLength": 500
+			}
+		},
+		"rows": {
+			"type": "array",
+			"maxItems": 1e3,
+			"items": {
+				"type": "array",
+				"minItems": 1,
+				"maxItems": 50,
+				"items": {
+					"type": "string",
+					"maxLength": 5e3
+				}
+			}
+		}
+	}
+};
 var theme_schema_default = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://schemas.kumwe.org/studio/v1/theme.schema.json",
@@ -6347,13 +7774,17 @@ var unresolved_contribution_schema_default = {
 };
 //#endregion
 //#region node_modules/@kumwe/studio-protocol/dist/schemas.js
+var authoringMessageCatalogSchema = authoring_message_catalog_schema_default;
 var blockDefinitionSchema = block_definition_schema_default;
 var bindingProjectionVectorSchema = binding_projection_vector_schema_default;
+var authoringWebVectorSchema = authoring_web_vector_schema_default;
 var blueprintSchema = blueprint_schema_default;
 var commandSchema = command_schema_default;
 var commandVectorSchema = command_vector_schema_default;
 var commonSchema = common_schema_default;
 var contentModelSchema = content_model_schema_default;
+var corpusManifestSchema = corpus_manifest_schema_default;
+var canonicalVectorSchema = canonical_vector_schema_default;
 var designVocabularySchema = design_vocabulary_schema_default;
 var entrySchema = entry_schema_default;
 var fieldAdapterSchema = field_adapter_schema_default;
@@ -6369,16 +7800,35 @@ var mediaAssetSchema = media_asset_schema_default;
 var mediaReferenceSchema = media_reference_schema_default;
 var mediaUploadGrantSchema = media_upload_grant_schema_default;
 var mediaUploadSessionSchema = media_upload_session_schema_default;
+var mediaVectorSchema = media_vector_schema_default;
 var migrationSchema = migration_schema_default;
 var patternSchema = pattern_schema_default;
+var pluginManifestSchema = plugin_manifest_schema_default;
+var previewMessageSchema = preview_message_schema_default;
+var previewVectorSchema = preview_vector_schema_default;
+var rendererWebVectorSchema = renderer_web_vector_schema_default;
+var provenanceSchema = provenance_schema_default;
+var richTextProjectionSchema = rich_text_projection_schema_default;
+var richTextSchema = rich_text_schema_default;
+var schemaProfileSchema = schema_profile_schema_default;
+var schemaProfileVectorSchema = schema_profile_vector_schema_default;
+var studioConfigurationSchema = studio_config_schema_default;
+var studioChartSchema = studio_chart_schema_default;
+var studioDrawingSchema = studio_drawing_schema_default;
+var studioMoneySchema = studio_money_schema_default;
+var studioPresentationSchema = studio_presentation_schema_default;
 Object.freeze([
 	commonSchema,
+	authoringMessageCatalogSchema,
+	authoringWebVectorSchema,
 	blockDefinitionSchema,
 	bindingProjectionVectorSchema,
 	blueprintSchema,
 	commandSchema,
 	commandVectorSchema,
+	canonicalVectorSchema,
 	contentModelSchema,
+	corpusManifestSchema,
 	designVocabularySchema,
 	entrySchema,
 	fieldAdapterSchema,
@@ -6394,16 +7844,25 @@ Object.freeze([
 	mediaReferenceSchema,
 	mediaUploadGrantSchema,
 	mediaUploadSessionSchema,
+	mediaVectorSchema,
 	migrationSchema,
 	patternSchema,
-	plugin_manifest_schema_default,
-	preview_message_schema_default,
-	preview_vector_schema_default,
-	provenance_schema_default,
-	rich_text_schema_default,
-	schema_profile_schema_default,
-	schema_profile_vector_schema_default,
-	studio_config_schema_default,
+	pluginManifestSchema,
+	previewMessageSchema,
+	previewVectorSchema,
+	rendererWebVectorSchema,
+	provenanceSchema,
+	richTextProjectionSchema,
+	richTextSchema,
+	schemaProfileSchema,
+	schemaProfileVectorSchema,
+	studioConfigurationSchema,
+	studioChartSchema,
+	studioDrawingSchema,
+	studioMoneySchema,
+	studioPresentationSchema,
+	studio_release_schema_default,
+	studio_table_schema_default,
 	theme_schema_default,
 	unresolved_contribution_schema_default
 ]);
@@ -7150,7 +8609,7 @@ var SchemaBytePreflightDeferred = class extends TypeError {};
 * and format-free. The returned interpreter performs no code generation.
 */
 function compileStudioPropertySchema(schema) {
-	if (!isRecord$1(schema)) reject("invalid-root", "", "Studio property schema root must be a JSON Schema object.");
+	if (!isRecord$5(schema)) reject("invalid-root", "", "Studio property schema root must be a JSON Schema object.");
 	try {
 		assertCanonicalSchemaByteBudget(schema);
 	} catch (error) {
@@ -7179,7 +8638,7 @@ function assertStudioPropertySchema(schema) {
 	compileStudioPropertySchema(schema);
 }
 function visitSchema(value, path, depth, state) {
-	if (!isRecord$1(value)) reject("invalid-keyword-value", path, `${displayPath(path)} must be a JSON Schema object.`);
+	if (!isRecord$5(value)) reject("invalid-keyword-value", path, `${displayPath(path)} must be a JSON Schema object.`);
 	trackObject(value, path, state);
 	trackSchemaNode(path, depth, state);
 	for (const [keyword, operand] of boundedSchemaEntries(value)) {
@@ -7262,7 +8721,7 @@ function visitSchema(value, path, depth, state) {
 	}
 }
 function visitSchemaMap(value, path, depth, state) {
-	if (!isRecord$1(value)) reject("invalid-keyword-value", path, `${displayPath(path)} must be an object of schemas.`);
+	if (!isRecord$5(value)) reject("invalid-keyword-value", path, `${displayPath(path)} must be an object of schemas.`);
 	trackObject(value, path, state);
 	const keys = Object.keys(value);
 	if (keys.length > MAX_SCHEMA_MAP_PROPERTIES) reject("limit-exceeded", path, `${displayPath(path)} exceeds ${MAX_SCHEMA_MAP_PROPERTIES} schema entries.`);
@@ -7315,7 +8774,7 @@ function visitExamples(value, path, depth, state) {
 	for (const [index, example] of value.entries()) visitJsonValue(example, appendPointer(path, String(index)), depth, state);
 }
 function visitDependentRequired(value, path, state) {
-	if (!isRecord$1(value)) reject("invalid-keyword-value", path, `${displayPath(path)} must be an object of property-name arrays.`);
+	if (!isRecord$5(value)) reject("invalid-keyword-value", path, `${displayPath(path)} must be an object of property-name arrays.`);
 	trackObject(value, path, state);
 	const keys = Object.keys(value);
 	if (keys.length > MAX_SCHEMA_MAP_PROPERTIES) reject("limit-exceeded", path, `${displayPath(path)} exceeds ${MAX_SCHEMA_MAP_PROPERTIES} dependency entries.`);
@@ -7369,7 +8828,7 @@ function visitJsonValue(value, path, depth, state) {
 		for (const [index, entry] of value.entries()) visitJsonValue(entry, appendPointer(path, String(index)), depth + 1, state);
 		return;
 	}
-	if (isRecord$1(value)) {
+	if (isRecord$5(value)) {
 		trackObject(value, path, state);
 		const keys = Object.keys(value);
 		if (keys.length > MAX_JSON_PROPERTIES) reject("limit-exceeded", path, `${displayPath(path)} exceeds ${MAX_JSON_PROPERTIES} JSON properties.`);
@@ -7425,7 +8884,7 @@ function compareAdmissionPaths(root, left, right) {
 			}
 			return compareCodeUnits$2(leftToken, rightToken);
 		}
-		if ((isRecord$1(parent) || Array.isArray(parent)) && Object.hasOwn(parent, leftToken)) parent = parent[leftToken];
+		if ((isRecord$5(parent) || Array.isArray(parent)) && Object.hasOwn(parent, leftToken)) parent = parent[leftToken];
 		else parent = void 0;
 	}
 	return leftTokens.length - rightTokens.length;
@@ -7491,7 +8950,7 @@ function assertNonRecursiveSchema(root) {
 		const source = ensureNode(frame.node);
 		const children = [];
 		const addChild = (value, path, diagnosticsEligible = frame.diagnosticsEligible) => {
-			if (!isRecord$1(value)) return;
+			if (!isRecord$5(value)) return;
 			const target = ensureNode(value);
 			connect(source, target);
 			const depth = frame.depth + 1;
@@ -7507,7 +8966,7 @@ function assertNonRecursiveSchema(root) {
 			switch (keyword) {
 				case "$defs":
 				case "properties":
-					if (isRecord$1(operand)) {
+					if (isRecord$5(operand)) {
 						const names = Object.keys(operand);
 						const childrenEligible = names.length <= MAX_SCHEMA_MAP_PROPERTIES;
 						if (childrenEligible) names.sort(compareCodeUnits$2);
@@ -7522,7 +8981,7 @@ function assertNonRecursiveSchema(root) {
 							const target = resolveLocalReference(root, operand, referencePath);
 							if (!target.schemaPosition) {
 								if (reportsDiagnostic) failures.push(new StudioSchemaProfileError("invalid-reference", referencePath, `Local schema reference ${operand} does not resolve to a schema position.`));
-							} else if (isRecord$1(target.value)) {
+							} else if (isRecord$5(target.value)) {
 								const targetIndex = ensureNode(target.value);
 								connect(source, targetIndex);
 								if (reportsDiagnostic) referenceSites.push({
@@ -7625,7 +9084,7 @@ function resolveLocalReference(root, reference, path) {
 	for (const encodedToken of reference.slice(2).split("/")) {
 		const token = encodedToken.replaceAll("~1", "/").replaceAll("~0", "~");
 		let nextPosition = "other";
-		if (position === "schema" && isRecord$1(current)) switch (token) {
+		if (position === "schema" && isRecord$5(current)) switch (token) {
 			case "$defs":
 			case "properties":
 				nextPosition = "schema-map";
@@ -7644,14 +9103,14 @@ function resolveLocalReference(root, reference, path) {
 			case "oneOf":
 			case "prefixItems": nextPosition = "schema-array";
 		}
-		else if (position === "schema-map" && isRecord$1(current)) nextPosition = "schema";
+		else if (position === "schema-map" && isRecord$5(current)) nextPosition = "schema";
 		else if (position === "schema-array" && Array.isArray(current)) nextPosition = "schema";
-		if (!isRecord$1(current) && !Array.isArray(current)) reject("invalid-reference", path, `Local schema reference ${reference} does not resolve to a schema.`);
+		if (!isRecord$5(current) && !Array.isArray(current)) reject("invalid-reference", path, `Local schema reference ${reference} does not resolve to a schema.`);
 		if (!Object.hasOwn(current, token)) reject("invalid-reference", path, `Local schema reference ${reference} does not resolve to a schema.`);
 		current = current[token];
 		position = nextPosition;
 	}
-	if (typeof current !== "boolean" && !isRecord$1(current)) reject("invalid-reference", path, `Local schema reference ${reference} does not resolve to a schema.`);
+	if (typeof current !== "boolean" && !isRecord$5(current)) reject("invalid-reference", path, `Local schema reference ${reference} does not resolve to a schema.`);
 	return {
 		schemaPosition: position === "schema",
 		value: current
@@ -7734,7 +9193,7 @@ function assertCanonicalSchemaByteBudget(root) {
 			}
 			continue;
 		}
-		if (!isRecord$1(value)) throw new SchemaBytePreflightDeferred();
+		if (!isRecord$5(value)) throw new SchemaBytePreflightDeferred();
 		const keys = Object.keys(value);
 		consume(2 + Math.max(0, keys.length - 1));
 		for (let index = keys.length - 1; index >= 0; index -= 1) {
@@ -7792,7 +9251,7 @@ function trackObject(value, path, state) {
 	if (state.seen.has(value)) reject("invalid-root", path, `${displayPath(path)} reuses or cycles a JSON object.`);
 	state.seen.add(value);
 }
-function isRecord$1(value) {
+function isRecord$5(value) {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
 	const prototype = Object.getPrototypeOf(value);
 	return prototype === Object.prototype || prototype === null;
@@ -8311,7 +9770,7 @@ var CORE_LAYOUT_THEME_CONTROLS = Object.freeze({
 	spacing: "layout-spacing",
 	visibility: "layout-visibility"
 });
-Object.freeze([{
+var DEFAULT_RENDERER_REQUIREMENTS = Object.freeze([{
 	capability: "studio.renderer/layout",
 	surface: "preview",
 	versions: "^1.0.0"
@@ -8320,9 +9779,45 @@ Object.freeze([{
 	surface: "web",
 	versions: "^1.0.0"
 }]);
+var ALIGNMENTS = [
+	"center",
+	"end",
+	"start",
+	"stretch"
+];
+var COLLAPSE_BEHAVIOURS = [
+	"preserve",
+	"stack",
+	"wrap"
+];
+var DIRECTIONS = ["block", "inline"];
+var SPACING_ROLES = [
+	"comfortable",
+	"compact",
+	"none",
+	"spacious"
+];
+var VISIBILITY_ROLES = ["hidden", "visible"];
 /** True only for the four canonical Studio layout block types. */
 function isCoreLayoutBlockType(type) {
 	return Object.values(CORE_LAYOUT_BLOCK_TYPES).includes(type);
+}
+/**
+* Creates the canonical section, stack, grid, and columns definitions. The
+* family owns its bounded semantic properties while the host explicitly adds
+* content block types and trusted renderer capabilities; no wildcard slot or
+* renderer authority is invented.
+*/
+function createCoreLayoutBlockDefinitions(options = {}) {
+	const acceptedTypes = stableUniqueBlockTypes([...Object.values(CORE_LAYOUT_BLOCK_TYPES), ...options.acceptedChildTypes ?? []]);
+	const rendererRequirements = cloneContractValue(options.rendererRequirements ?? DEFAULT_RENDERER_REQUIREMENTS);
+	if (rendererRequirements.length === 0) throw new RangeError("Core layout blocks require at least one trusted renderer capability.");
+	return [
+		definition("section", acceptedTypes, rendererRequirements),
+		definition("stack", acceptedTypes, rendererRequirements),
+		definition("grid", acceptedTypes, rendererRequirements),
+		definition("columns", acceptedTypes, rendererRequirements)
+	];
 }
 /** Minimal persisted properties for a newly inserted core layout node. */
 function coreLayoutInitialProperties(type) {
@@ -8335,6 +9830,1186 @@ function coreLayoutInitialProperties(type) {
 			columns: 1
 		};
 	}
+}
+function definition(name, acceptedTypes, rendererRequirements) {
+	const type = CORE_LAYOUT_BLOCK_TYPES[name];
+	const title = `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+	const themeControls = [
+		CORE_LAYOUT_THEME_CONTROLS.alignment,
+		CORE_LAYOUT_THEME_CONTROLS.spacing,
+		CORE_LAYOUT_THEME_CONTROLS.visibility
+	];
+	if (name === "stack") themeControls.push(CORE_LAYOUT_THEME_CONTROLS.direction);
+	if (name === "grid" || name === "columns") themeControls.push(CORE_LAYOUT_THEME_CONTROLS.collapse);
+	return {
+		accessibility: {
+			accessibleName: name === "section" ? "derived" : "not-applicable",
+			category: name === "section" ? "landmark" : "structural",
+			keyboard: {
+				defaultMessage: "Use the outline commands to insert, move, and reorder layout children.",
+				key: "studio.blocks/layout-keyboard"
+			},
+			outputChecks: ["studio.check/reading-order", "studio.check/reflow"],
+			reducedMotion: "not-applicable"
+		},
+		category: "studio.category/layout",
+		contractVersion: STUDIO_CONTRACT_VERSION,
+		editingModes: ["blueprint", "content"],
+		icon: {
+			kind: "symbol",
+			value: name
+		},
+		kind: "block-definition",
+		label: {
+			defaultMessage: title,
+			key: `studio.blocks/${name}`
+		},
+		owner: {
+			id: "studio.core/blocks",
+			version: "1.0.0"
+		},
+		ports: [],
+		propertyControls: themeControls.map((control) => ({
+			control: `studio.control/${control}`,
+			property: propertyForControl(control)
+		})),
+		propertySchema: propertySchema(name),
+		rendererRequirements: cloneContractValue([...rendererRequirements]),
+		revision: `layout-${name}-r1`,
+		slots: [layoutSlot(name, acceptedTypes)],
+		themeControls,
+		type,
+		version: "1.0.0"
+	};
+}
+function layoutSlot(name, acceptedTypes) {
+	const id = name === "section" ? "content" : "items";
+	return {
+		accepts: { types: cloneContractValue(acceptedTypes) },
+		id,
+		label: {
+			defaultMessage: name === "section" ? "Content" : "Items",
+			key: name === "section" ? "studio.blocks/section-content" : "studio.blocks/layout-items"
+		},
+		maximum: 100,
+		minimum: 0,
+		ordered: true
+	};
+}
+function propertySchema(name) {
+	const properties = {
+		alignment: { enum: [...ALIGNMENTS] },
+		spacing: { enum: [...SPACING_ROLES] },
+		visibility: { enum: [...VISIBILITY_ROLES] }
+	};
+	if (name === "stack") properties.direction = { enum: [...DIRECTIONS] };
+	if (name === "grid" || name === "columns") {
+		properties.collapse = { enum: [...COLLAPSE_BEHAVIOURS] };
+		properties.columns = {
+			maximum: 12,
+			minimum: 1,
+			type: "integer"
+		};
+	}
+	return {
+		additionalProperties: false,
+		properties,
+		type: "object"
+	};
+}
+function propertyForControl(control) {
+	switch (control) {
+		case CORE_LAYOUT_THEME_CONTROLS.alignment: return "alignment";
+		case CORE_LAYOUT_THEME_CONTROLS.collapse: return "collapse";
+		case CORE_LAYOUT_THEME_CONTROLS.direction: return "direction";
+		case CORE_LAYOUT_THEME_CONTROLS.spacing: return "spacing";
+		case CORE_LAYOUT_THEME_CONTROLS.visibility: return "visibility";
+		default: throw new RangeError(`Unknown core layout control ${control}.`);
+	}
+}
+function stableUniqueBlockTypes(values) {
+	const unique = [...new Set(values)];
+	unique.sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+	if (unique.length === 0) throw new RangeError("A core layout slot requires at least one accepted block type.");
+	return unique;
+}
+//#endregion
+//#region node_modules/@kumwe/studio-core/dist/production.js
+var CORE_PRODUCTION_BLOCK_TYPES = Object.freeze({
+	...CORE_LAYOUT_BLOCK_TYPES,
+	accordion: "studio.core/accordion",
+	accordionItem: "studio.core/accordion-item",
+	article: "studio.core/article",
+	attachment: "studio.core/attachment",
+	audio: "studio.core/audio",
+	badge: "studio.core/badge",
+	callToAction: "studio.core/call-to-action",
+	callout: "studio.core/callout",
+	card: "studio.core/card",
+	chart: "studio.core/chart",
+	code: "studio.core/code",
+	contentCollection: "studio.core/content-collection",
+	contentReference: "studio.core/content-reference",
+	countdown: "studio.core/countdown",
+	cover: "studio.core/cover",
+	descriptionItem: "studio.core/description-item",
+	descriptionList: "studio.core/description-list",
+	diagram: "studio.core/diagram",
+	dialog: "studio.core/dialog",
+	divider: "studio.core/divider",
+	drawing: "studio.core/drawing",
+	embed: "studio.core/embed",
+	gallery: "studio.core/gallery",
+	heading: "studio.core/heading",
+	icon: "studio.core/icon",
+	image: "studio.core/image",
+	label: "studio.core/label",
+	math: "studio.core/math",
+	money: "studio.core/money",
+	navigation: "studio.core/navigation",
+	navigationItem: "studio.core/navigation-item",
+	notice: "studio.core/notice",
+	popover: "studio.core/popover",
+	progress: "studio.core/progress",
+	richText: "studio.core/rich-text",
+	search: "studio.core/search",
+	spinner: "studio.core/spinner",
+	tab: "studio.core/tab",
+	table: "studio.core/table",
+	tabs: "studio.core/tabs",
+	video: "studio.core/video"
+});
+var CORE_PRODUCTION_CONTROL_IDS = Object.freeze({
+	chart: "studio.control/chart",
+	drawing: "studio.control/drawing",
+	mediaCollection: "studio.control/media-collection",
+	mediaReference: "studio.control/media-reference",
+	money: "studio.control/money",
+	presentation: "studio.control/presentation",
+	richText: "studio.control/rich-text",
+	scopedCss: "studio.control/scoped-css",
+	source: "studio.control/source",
+	table: "studio.control/table"
+});
+Object.freeze([
+	"studio.pattern/article",
+	"studio.pattern/collection-index",
+	"studio.pattern/document-header",
+	"studio.pattern/faq",
+	"studio.pattern/feature-grid",
+	"studio.pattern/hero",
+	"studio.pattern/media-gallery",
+	"studio.pattern/pricing",
+	"studio.pattern/product",
+	"studio.pattern/tabbed-content"
+]);
+var VERSION = "1.0.0";
+var OWNER = Object.freeze({
+	id: "studio.core/blocks",
+	version: VERSION
+});
+var WEB_RENDERERS = Object.freeze([{
+	capability: "studio.renderer/semantic-web",
+	surface: "preview",
+	versions: "^1.0.0"
+}, {
+	capability: "studio.renderer/semantic-web",
+	surface: "web",
+	versions: "^1.0.0"
+}]);
+var ALL_TYPES = Object.freeze(Object.values(CORE_PRODUCTION_BLOCK_TYPES));
+var CONTENT_TYPES = Object.freeze(ALL_TYPES.filter((type) => type !== CORE_PRODUCTION_BLOCK_TYPES.accordionItem && type !== CORE_PRODUCTION_BLOCK_TYPES.descriptionItem && type !== CORE_PRODUCTION_BLOCK_TYPES.navigationItem && type !== CORE_PRODUCTION_BLOCK_TYPES.tab));
+var textPort = (id, required = false) => ({
+	authoring: { control: "studio.control/single-line-text" },
+	id,
+	label: message(`port-${id}`, title(id)),
+	multiple: false,
+	required,
+	valueType: "text"
+});
+var numberPort = (id, required = false) => ({
+	authoring: { control: "studio.control/integer" },
+	id,
+	label: message(`port-${id}`, title(id)),
+	multiple: false,
+	required,
+	valueType: "integer"
+});
+var richTextPort = (id = "content") => ({
+	authoring: {
+		control: CORE_PRODUCTION_CONTROL_IDS.richText,
+		profile: "studio.rich-text/marketing"
+	},
+	id,
+	label: message(`port-${id}`, title(id)),
+	multiple: false,
+	required: false,
+	valueType: "rich-text"
+});
+var mediaPort = (id, multiple = false) => ({
+	authoring: { control: multiple ? CORE_PRODUCTION_CONTROL_IDS.mediaCollection : CORE_PRODUCTION_CONTROL_IDS.mediaReference },
+	id,
+	label: message(`port-${id}`, title(id)),
+	multiple,
+	required: false,
+	valueType: "media"
+});
+var sourcePort = (profile) => ({
+	authoring: {
+		control: CORE_PRODUCTION_CONTROL_IDS.source,
+		profile
+	},
+	id: "source",
+	label: message("port-source", "Source"),
+	multiple: false,
+	required: true,
+	valueType: "text"
+});
+var resourcePort = (id, multiple) => ({
+	authoring: { readOnly: true },
+	id,
+	label: message(`port-${id}`, title(id)),
+	multiple,
+	required: true,
+	valueType: "resource"
+});
+var stringSchema = (maximum = 2e4) => ({
+	maxLength: maximum,
+	type: "string"
+});
+var booleanSchema = () => ({ type: "boolean" });
+var enumSchema = (...values) => ({ enum: values });
+var integerSchema = (minimum, maximum) => ({
+	maximum,
+	minimum,
+	type: "integer"
+});
+var PRESENTATION_PROPERTY_SCHEMA = presentationPropertySchema();
+var SPECS = Object.freeze({
+	accordion: {
+		accessibility: "composite",
+		controls: { "allow-multiple": "studio.control/switch" },
+		defaults: { "allow-multiple": false },
+		properties: { "allow-multiple": booleanSchema() },
+		slots: [{
+			accepts: [CORE_PRODUCTION_BLOCK_TYPES.accordionItem],
+			id: "items",
+			maximum: 50
+		}]
+	},
+	accordionItem: {
+		accessibility: "composite",
+		controls: { expanded: "studio.control/switch" },
+		defaults: { expanded: false },
+		ports: [textPort("title", true)],
+		properties: { expanded: booleanSchema() },
+		slots: [{
+			accepts: CONTENT_TYPES,
+			id: "content",
+			maximum: 100
+		}]
+	},
+	article: {
+		accessibility: "landmark",
+		defaults: {},
+		ports: [textPort("title")],
+		slots: [{
+			accepts: CONTENT_TYPES,
+			id: "content",
+			maximum: 200
+		}]
+	},
+	attachment: {
+		accessibility: "media",
+		controls: { download: "studio.control/switch" },
+		defaults: { download: true },
+		ports: [mediaPort("asset"), textPort("label")],
+		properties: { download: booleanSchema() }
+	},
+	audio: {
+		accessibility: "media",
+		controls: {
+			autoplay: "studio.control/switch",
+			controls: "studio.control/switch"
+		},
+		defaults: {
+			autoplay: false,
+			controls: true
+		},
+		ports: [mediaPort("asset"), textPort("transcript")],
+		properties: {
+			autoplay: booleanSchema(),
+			controls: booleanSchema()
+		}
+	},
+	badge: {
+		accessibility: "text",
+		controls: {
+			appearance: "studio.control/select",
+			tone: "studio.control/select"
+		},
+		defaults: {
+			appearance: "solid",
+			tone: "neutral"
+		},
+		ports: [textPort("label", true)],
+		properties: {
+			appearance: enumSchema("outline", "soft", "solid"),
+			tone: enumSchema("error", "information", "neutral", "success", "warning")
+		}
+	},
+	callToAction: {
+		accessibility: "interactive",
+		controls: {
+			appearance: "studio.control/select",
+			href: "studio.control/single-line-text"
+		},
+		defaults: {
+			appearance: "primary",
+			href: ""
+		},
+		ports: [textPort("label", true)],
+		properties: {
+			appearance: enumSchema("primary", "secondary", "link"),
+			href: stringSchema(2048)
+		}
+	},
+	callout: {
+		accessibility: "composite",
+		controls: { tone: "studio.control/select" },
+		defaults: { tone: "information" },
+		ports: [textPort("title"), richTextPort()],
+		properties: { tone: enumSchema("information", "success", "warning", "danger") }
+	},
+	card: {
+		accessibility: "composite",
+		controls: { appearance: "studio.control/select" },
+		defaults: { appearance: "plain" },
+		ports: [
+			mediaPort("media"),
+			textPort("title"),
+			richTextPort("summary")
+		],
+		properties: { appearance: enumSchema("plain", "bordered", "elevated") },
+		slots: [{
+			accepts: CONTENT_TYPES,
+			id: "actions",
+			maximum: 5
+		}]
+	},
+	chart: {
+		accessibility: "data-display",
+		defaults: {},
+		ports: [{
+			authoring: {
+				control: CORE_PRODUCTION_CONTROL_IDS.chart,
+				profile: "studio.chart/canonical"
+			},
+			id: "chart",
+			label: message("port-chart", "Chart"),
+			multiple: false,
+			required: true,
+			valueType: "studio.value/chart"
+		}]
+	},
+	code: {
+		accessibility: "text",
+		controls: {
+			language: "studio.control/single-line-text",
+			"show-line-numbers": "studio.control/switch"
+		},
+		defaults: {
+			language: "text",
+			"show-line-numbers": false
+		},
+		ports: [sourcePort("studio.source/code")],
+		properties: {
+			language: stringSchema(100),
+			"show-line-numbers": booleanSchema()
+		}
+	},
+	contentCollection: {
+		accessibility: "data-display",
+		controls: {
+			limit: "studio.control/integer",
+			presentation: "studio.control/select"
+		},
+		defaults: {
+			limit: 12,
+			presentation: "cards"
+		},
+		ports: [resourcePort("items", true)],
+		properties: {
+			limit: integerSchema(1, 100),
+			presentation: enumSchema("cards", "grid", "list", "slideshow")
+		}
+	},
+	contentReference: {
+		accessibility: "data-display",
+		controls: { presentation: "studio.control/select" },
+		defaults: { presentation: "summary" },
+		ports: [resourcePort("item", false)],
+		properties: { presentation: enumSchema("full", "summary", "title") }
+	},
+	countdown: {
+		accessibility: "data-display",
+		controls: {
+			display: "studio.control/select",
+			"expired-behavior": "studio.control/select"
+		},
+		defaults: {
+			display: "detailed",
+			"expired-behavior": "zero"
+		},
+		ports: [textPort("target", true), textPort("completion-message")],
+		properties: {
+			display: enumSchema("compact", "detailed"),
+			"expired-behavior": enumSchema("hide", "message", "zero")
+		}
+	},
+	cover: {
+		accessibility: "composite",
+		controls: {
+			alignment: "studio.control/select",
+			overlay: "studio.control/select"
+		},
+		defaults: {
+			alignment: "center",
+			overlay: "medium"
+		},
+		ports: [mediaPort("background")],
+		properties: {
+			alignment: enumSchema("center", "end", "start"),
+			overlay: enumSchema("light", "medium", "none", "strong")
+		},
+		slots: [{
+			accepts: CONTENT_TYPES,
+			id: "content",
+			maximum: 100
+		}]
+	},
+	descriptionItem: {
+		accessibility: "text",
+		defaults: {},
+		ports: [textPort("term", true), richTextPort("description")]
+	},
+	descriptionList: {
+		accessibility: "data-display",
+		defaults: {},
+		ports: [textPort("title")],
+		slots: [{
+			accepts: [CORE_PRODUCTION_BLOCK_TYPES.descriptionItem],
+			id: "items",
+			maximum: 100
+		}]
+	},
+	diagram: {
+		accessibility: "data-display",
+		controls: { theme: "studio.control/select" },
+		defaults: { theme: "neutral" },
+		ports: [sourcePort("studio.source/mermaid")],
+		properties: { theme: enumSchema("dark", "forest", "neutral") }
+	},
+	dialog: {
+		accessibility: "interactive",
+		controls: {
+			modal: "studio.control/switch",
+			presentation: "studio.control/select"
+		},
+		defaults: {
+			modal: true,
+			presentation: "modal"
+		},
+		ports: [textPort("trigger-label", true), textPort("title", true)],
+		properties: {
+			modal: booleanSchema(),
+			presentation: enumSchema("modal", "offcanvas", "overlay")
+		},
+		slots: [{
+			accepts: CONTENT_TYPES,
+			id: "content",
+			maximum: 100
+		}]
+	},
+	divider: {
+		accessibility: "structural",
+		controls: { style: "studio.control/select" },
+		defaults: { style: "solid" },
+		ports: [textPort("label")],
+		properties: { style: enumSchema("dashed", "dotted", "solid") }
+	},
+	drawing: {
+		accessibility: "media",
+		defaults: {},
+		ports: [{
+			authoring: {
+				control: CORE_PRODUCTION_CONTROL_IDS.drawing,
+				profile: "studio.drawing/canonical"
+			},
+			id: "drawing",
+			label: message("port-drawing", "Drawing"),
+			multiple: false,
+			required: true,
+			valueType: "studio.value/drawing"
+		}]
+	},
+	embed: {
+		accessibility: "media",
+		controls: { "aspect-ratio": "studio.control/select" },
+		defaults: { "aspect-ratio": "16:9" },
+		ports: [resourcePort("resource", false)],
+		properties: { "aspect-ratio": enumSchema("1:1", "4:3", "16:9", "21:9") }
+	},
+	gallery: {
+		accessibility: "composite",
+		controls: {
+			autoplay: "studio.control/switch",
+			columns: "studio.control/integer",
+			lightbox: "studio.control/switch",
+			presentation: "studio.control/select"
+		},
+		defaults: {
+			autoplay: false,
+			columns: 4,
+			lightbox: false,
+			presentation: "grid"
+		},
+		ports: [mediaPort("items", true)],
+		properties: {
+			autoplay: booleanSchema(),
+			columns: integerSchema(1, 12),
+			lightbox: booleanSchema(),
+			presentation: enumSchema("grid", "slideshow")
+		}
+	},
+	heading: {
+		accessibility: "text",
+		controls: { level: "studio.control/select" },
+		defaults: { level: 2 },
+		ports: [textPort("text", true)],
+		properties: { level: integerSchema(1, 6) }
+	},
+	icon: {
+		accessibility: "media",
+		controls: {
+			decorative: "studio.control/switch",
+			name: "studio.control/single-line-text"
+		},
+		defaults: {
+			decorative: true,
+			name: "symbol"
+		},
+		ports: [textPort("alternative-text")],
+		properties: {
+			decorative: booleanSchema(),
+			name: stringSchema(200)
+		}
+	},
+	image: {
+		accessibility: "media",
+		controls: {
+			fit: "studio.control/select",
+			loading: "studio.control/select"
+		},
+		defaults: {
+			fit: "cover",
+			loading: "lazy"
+		},
+		ports: [mediaPort("asset")],
+		properties: {
+			fit: enumSchema("contain", "cover", "fill", "scale-down"),
+			loading: enumSchema("eager", "lazy")
+		}
+	},
+	label: {
+		accessibility: "text",
+		controls: { tone: "studio.control/select" },
+		defaults: { tone: "neutral" },
+		ports: [textPort("text", true)],
+		properties: { tone: enumSchema("error", "information", "neutral", "success", "warning") }
+	},
+	math: {
+		accessibility: "text",
+		controls: { "display-mode": "studio.control/switch" },
+		defaults: { "display-mode": true },
+		ports: [sourcePort("studio.source/latex")],
+		properties: { "display-mode": booleanSchema() }
+	},
+	money: {
+		accessibility: "data-display",
+		defaults: {},
+		ports: [{
+			authoring: {
+				control: CORE_PRODUCTION_CONTROL_IDS.money,
+				profile: "studio.money/canonical"
+			},
+			id: "amount",
+			label: message("port-amount", "Amount"),
+			multiple: false,
+			required: true,
+			valueType: "money"
+		}]
+	},
+	navigation: {
+		accessibility: "landmark",
+		controls: { presentation: "studio.control/select" },
+		defaults: { presentation: "nav" },
+		ports: [textPort("label")],
+		properties: { presentation: enumSchema("breadcrumbs", "dotnav", "dropnav", "navbar", "nav", "pagination", "subnav", "thumbnav") },
+		slots: [{
+			accepts: [CORE_PRODUCTION_BLOCK_TYPES.navigationItem],
+			id: "items",
+			maximum: 100
+		}]
+	},
+	navigationItem: {
+		accessibility: "interactive",
+		controls: {
+			current: "studio.control/switch",
+			href: "studio.control/single-line-text"
+		},
+		defaults: {
+			current: false,
+			href: ""
+		},
+		ports: [textPort("label", true)],
+		properties: {
+			current: booleanSchema(),
+			href: stringSchema(2048)
+		},
+		slots: [{
+			accepts: [CORE_PRODUCTION_BLOCK_TYPES.navigationItem],
+			id: "children",
+			maximum: 50
+		}]
+	},
+	notice: {
+		accessibility: "composite",
+		controls: {
+			dismissible: "studio.control/switch",
+			tone: "studio.control/select"
+		},
+		defaults: {
+			dismissible: false,
+			tone: "information"
+		},
+		ports: [textPort("title"), richTextPort()],
+		properties: {
+			dismissible: booleanSchema(),
+			tone: enumSchema("comment", "error", "information", "success", "warning")
+		}
+	},
+	popover: {
+		accessibility: "interactive",
+		controls: {
+			"dismiss-on-blur": "studio.control/switch",
+			placement: "studio.control/select",
+			presentation: "studio.control/select"
+		},
+		defaults: {
+			"dismiss-on-blur": true,
+			placement: "auto",
+			presentation: "popover"
+		},
+		ports: [textPort("trigger-label", true), textPort("title")],
+		properties: {
+			"dismiss-on-blur": booleanSchema(),
+			placement: enumSchema("auto", "bottom", "left", "right", "top"),
+			presentation: enumSchema("dropbar", "dropdown", "popover", "tooltip")
+		},
+		slots: [{
+			accepts: CONTENT_TYPES,
+			id: "content",
+			maximum: 100
+		}]
+	},
+	progress: {
+		accessibility: "data-display",
+		controls: { maximum: "studio.control/integer" },
+		defaults: { maximum: 100 },
+		ports: [textPort("label"), numberPort("value", true)],
+		properties: { maximum: integerSchema(1, 1e6) }
+	},
+	richText: {
+		accessibility: "text",
+		defaults: {},
+		ports: [richTextPort()]
+	},
+	search: {
+		accessibility: "interactive",
+		controls: {
+			action: "studio.control/single-line-text",
+			"query-parameter": "studio.control/single-line-text"
+		},
+		defaults: {
+			action: "",
+			"query-parameter": "q"
+		},
+		ports: [textPort("label"), textPort("placeholder")],
+		properties: {
+			action: stringSchema(2048),
+			"query-parameter": stringSchema(100)
+		}
+	},
+	spinner: {
+		accessibility: "data-display",
+		controls: {
+			active: "studio.control/switch",
+			size: "studio.control/select"
+		},
+		defaults: {
+			active: true,
+			size: "medium"
+		},
+		ports: [textPort("label")],
+		properties: {
+			active: booleanSchema(),
+			size: enumSchema("large", "medium", "small")
+		}
+	},
+	tab: {
+		accessibility: "composite",
+		defaults: {},
+		ports: [textPort("title", true)],
+		slots: [{
+			accepts: CONTENT_TYPES,
+			id: "content",
+			maximum: 100
+		}]
+	},
+	tabs: {
+		accessibility: "composite",
+		controls: { activation: "studio.control/select" },
+		defaults: { activation: "automatic" },
+		properties: { activation: enumSchema("automatic", "manual") },
+		slots: [{
+			accepts: [CORE_PRODUCTION_BLOCK_TYPES.tab],
+			id: "items",
+			maximum: 30
+		}]
+	},
+	table: {
+		accessibility: "data-display",
+		defaults: {},
+		ports: [{
+			authoring: {
+				control: CORE_PRODUCTION_CONTROL_IDS.table,
+				profile: "studio.table/canonical"
+			},
+			id: "table",
+			label: message("port-table", "Table"),
+			multiple: false,
+			required: true,
+			valueType: "studio.value/table"
+		}]
+	},
+	video: {
+		accessibility: "media",
+		controls: {
+			autoplay: "studio.control/switch",
+			controls: "studio.control/switch",
+			muted: "studio.control/switch"
+		},
+		defaults: {
+			autoplay: false,
+			controls: true,
+			muted: false
+		},
+		ports: [
+			mediaPort("asset"),
+			mediaPort("poster"),
+			textPort("captions")
+		],
+		properties: {
+			autoplay: booleanSchema(),
+			controls: booleanSchema(),
+			muted: booleanSchema()
+		}
+	}
+});
+/** Build the entire canonical catalog with explicit allowlists and no host imports. */
+function createCoreProductionBlockDefinitions() {
+	const layouts = createCoreLayoutBlockDefinitions({
+		acceptedChildTypes: CONTENT_TYPES,
+		rendererRequirements: WEB_RENDERERS
+	}).map(addPresentationCapability);
+	const content = Object.keys(SPECS).map((name) => createDefinition(name, SPECS[name]));
+	return [...layouts, ...content];
+}
+/** Minimal schema-valid persisted properties for a newly inserted production node. */
+function coreProductionInitialProperties(type) {
+	if (isCoreLayoutBlockType(type)) return coreLayoutInitialProperties(type);
+	return cloneContractValue(SPECS[productionName(type)].defaults);
+}
+function isCoreProductionBlockType(type) {
+	return ALL_TYPES.includes(type);
+}
+/** Create the ten deterministic, schema-valid starter patterns. */
+function createCoreProductionPatterns() {
+	return [
+		pattern("article", [node("article", "stack", {}, [node("article-title", "heading", { text: "Article title" }), node("article-body", "richText", { content: richText("Start writing…") })])]),
+		pattern("collection-index", [node("collection-index", "section", {}, [node("collection-heading", "heading", { text: "Latest content" }), node("collection", "contentCollection", {}, void 0, { items: query("studio.query/content") })])]),
+		pattern("document-header", [node("document-header", "columns", {}, [node("document-logo", "image"), node("document-title", "heading", { text: "Document title" })])]),
+		pattern("faq", [node("faq", "accordion", {}, [node("faq-item", "accordionItem", { title: "Question" }, [node("faq-answer", "richText", { content: richText("Answer") })])])]),
+		pattern("feature-grid", [node("features", "grid", {}, [
+			node("feature-one", "card", { title: "Feature one" }),
+			node("feature-two", "card", { title: "Feature two" }),
+			node("feature-three", "card", { title: "Feature three" })
+		])]),
+		pattern("hero", [node("hero", "section", {}, [node("hero-stack", "stack", {}, [
+			node("hero-title", "heading", { text: "Build something meaningful" }),
+			node("hero-copy", "richText", { content: richText("A portable Studio page.") }),
+			node("hero-action", "callToAction", { label: "Get started" })
+		])])]),
+		pattern("media-gallery", [node("media-gallery", "gallery")]),
+		pattern("pricing", [node("pricing", "card", { title: "Plan" }, [node("price", "money", { amount: {
+			amount: "0.00",
+			currency: "USD"
+		} }), node("price-action", "callToAction", { label: "Choose plan" })])]),
+		pattern("product", [node("product", "columns", {}, [node("product-media", "gallery"), node("product-copy", "stack", {}, [
+			node("product-title", "heading", { text: "Product" }),
+			node("product-description", "richText", { content: richText("Product description") }),
+			node("product-price", "money", {}, void 0, { amount: resource("catalog/product-price", "studio.resource/money") })
+		])])]),
+		pattern("tabbed-content", [node("tabbed-content", "tabs", {}, [node("tab-one", "tab", { title: "First" }, [node("tab-one-copy", "richText", { content: richText("First panel") })]), node("tab-two", "tab", { title: "Second" }, [node("tab-two-copy", "richText", { content: richText("Second panel") })])])])
+	];
+}
+function createDefinition(name, spec) {
+	const type = CORE_PRODUCTION_BLOCK_TYPES[name];
+	return {
+		accessibility: {
+			accessibleName: spec.accessibility === "decorative" || spec.accessibility === "structural" ? "not-applicable" : "derived",
+			category: spec.accessibility,
+			keyboard: message("block-keyboard", "Use Studio controls to edit and reorder this block."),
+			outputChecks: ["studio.check/accessible-name", "studio.check/reflow"],
+			reducedMotion: [
+				"audio",
+				"gallery",
+				"video"
+			].includes(name) ? "disable-motion" : "not-applicable"
+		},
+		category: `studio.category/${categoryFor(spec.accessibility)}`,
+		contractVersion: STUDIO_CONTRACT_VERSION,
+		editingModes: ["blueprint", "content"],
+		icon: {
+			kind: "symbol",
+			value: kebab(name)
+		},
+		kind: "block-definition",
+		label: message(`block-${kebab(name)}`, title(name)),
+		owner: OWNER,
+		ports: cloneContractValue([...spec.ports ?? []]),
+		propertyControls: [...Object.entries(spec.controls ?? {}).map(([property, control]) => ({
+			control,
+			property
+		})), {
+			control: CORE_PRODUCTION_CONTROL_IDS.presentation,
+			property: "design"
+		}],
+		propertySchema: {
+			additionalProperties: false,
+			properties: cloneContractValue({
+				...spec.properties ?? {},
+				design: PRESENTATION_PROPERTY_SCHEMA
+			}),
+			...spec.required === void 0 ? {} : { required: [...spec.required] },
+			type: "object"
+		},
+		rendererRequirements: cloneContractValue([...WEB_RENDERERS]),
+		revision: `production-${kebab(name)}-r1`,
+		slots: (spec.slots ?? []).map((slot) => ({
+			accepts: { types: cloneContractValue([...slot.accepts]) },
+			id: slot.id,
+			label: message(`slot-${slot.id}`, title(slot.id)),
+			maximum: slot.maximum ?? 100,
+			minimum: slot.minimum ?? 0,
+			ordered: true
+		})),
+		themeControls: [],
+		type,
+		version: VERSION
+	};
+}
+function addPresentationCapability(definition) {
+	const properties = definition.propertySchema.properties;
+	if (!isJsonObject(properties)) throw new TypeError(`${definition.type} property schema must declare an object property map.`);
+	return {
+		...definition,
+		propertyControls: [...definition.propertyControls ?? [], {
+			control: CORE_PRODUCTION_CONTROL_IDS.presentation,
+			property: "design"
+		}],
+		propertySchema: {
+			...definition.propertySchema,
+			properties: cloneContractValue({
+				...properties,
+				design: PRESENTATION_PROPERTY_SCHEMA
+			})
+		}
+	};
+}
+function presentationPropertySchema() {
+	const schema = cloneContractValue(studioPresentationSchema);
+	delete schema.$id;
+	delete schema.$schema;
+	delete schema.title;
+	return schema;
+}
+function isJsonObject(value) {
+	return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function pattern(id, roots) {
+	const definitions = new Map(createCoreProductionBlockDefinitions().map((item) => [item.type, item]));
+	const used = /* @__PURE__ */ new Set();
+	const visit = (current) => {
+		used.add(current.type);
+		Object.values(current.slots).flat().forEach(visit);
+	};
+	roots.forEach(visit);
+	return {
+		blockDependencies: [...used].sort().map((type) => {
+			const definition = definitions.get(type);
+			if (definition === void 0) throw new Error(`Pattern ${id} uses unknown block ${type}.`);
+			return {
+				revision: definition.revision,
+				type,
+				version: definition.version
+			};
+		}),
+		contractVersion: STUDIO_CONTRACT_VERSION,
+		id: `studio.pattern/${id}`,
+		kind: "pattern",
+		label: message(`pattern-${id}`, title(id)),
+		owner: OWNER,
+		revision: `production-pattern-${id}-r1`,
+		roots,
+		version: VERSION
+	};
+}
+function node(id, name, staticBindings = {}, children, dynamicBindings = {}) {
+	const type = CORE_PRODUCTION_BLOCK_TYPES[name];
+	const slot = name === "section" || name === "accordionItem" || name === "dialog" || name === "popover" || name === "tab" ? "content" : name === "card" ? "actions" : "items";
+	const bindings = {};
+	for (const [port, value] of Object.entries(staticBindings)) bindings[port] = binding({
+		kind: "static-value",
+		value
+	});
+	for (const [port, source] of Object.entries(dynamicBindings)) bindings[port] = binding(source);
+	const result = {
+		authoring: { mode: isCoreLayoutBlockType(type) || children !== void 0 ? "structural" : "content" },
+		bindings,
+		id,
+		properties: coreProductionInitialProperties(type),
+		slots: children === void 0 ? {} : { [slot]: children },
+		type,
+		version: VERSION
+	};
+	if (name === "grid") result.responsive = { columns: {
+		expanded: 4,
+		medium: 2
+	} };
+	return result;
+}
+function binding(source) {
+	return {
+		onError: "error",
+		onNull: "empty",
+		source,
+		transforms: []
+	};
+}
+function query(queryName) {
+	return {
+		kind: "query-reference",
+		parameters: {},
+		query: queryName,
+		version: VERSION
+	};
+}
+function resource(id, resourceType) {
+	return {
+		id,
+		kind: "resource-reference",
+		resourceType
+	};
+}
+function richText(text) {
+	return {
+		content: [{
+			content: [{
+				text,
+				type: "text"
+			}],
+			type: "paragraph"
+		}],
+		type: "doc"
+	};
+}
+function productionName(type) {
+	const entry = Object.entries(CORE_PRODUCTION_BLOCK_TYPES).find(([, candidate]) => candidate === type);
+	if (entry === void 0 || isCoreLayoutBlockType(type)) throw new TypeError(`Unsupported production block ${type}.`);
+	return entry[0];
+}
+function message(id, defaultMessage) {
+	return {
+		defaultMessage,
+		key: `studio.blocks/${id}`
+	};
+}
+function title(value) {
+	return value.replace(/([a-z])([A-Z])/gu, "$1 $2").replaceAll("-", " ").replace(/^./u, (character) => character.toUpperCase());
+}
+function kebab(value) {
+	return value.replace(/([a-z])([A-Z])/gu, "$1-$2").toLowerCase();
+}
+function categoryFor(category) {
+	return category === "structural" || category === "landmark" ? "layout" : category;
+}
+//#endregion
+//#region node_modules/@kumwe/studio-core/dist/production-values.js
+var CHART_TYPES = /* @__PURE__ */ new Set([
+	"bar",
+	"doughnut",
+	"line",
+	"pie"
+]);
+var MONEY_AMOUNT = /^-?(?:0|[1-9][0-9]{0,17})(?:\.[0-9]{1,6})?$/u;
+var CURRENCY = /^[A-Z]{3}$/u;
+var DRAWING_COLOR = /^(?:#[0-9A-Fa-f]{6}|[a-z][a-z0-9-]{0,62}\/[a-z][a-z0-9-]{0,62})$/u;
+/** Parse and detach one canonical chart spec, refusing library-specific configuration. */
+function parseStudioChartSpec(value) {
+	const record = exactRecord(value, [
+		"datasets",
+		"labels",
+		"title",
+		"type"
+	], "Chart");
+	if (typeof record.type !== "string" || !CHART_TYPES.has(record.type)) throw new TypeError("Chart type must be bar, doughnut, line, or pie.");
+	const labels = stringArray(record.labels, 200, 500, "Chart labels");
+	if (!Array.isArray(record.datasets) || record.datasets.length < 1 || record.datasets.length > 20) throw new RangeError("Chart datasets must contain between 1 and 20 datasets.");
+	const result = {
+		datasets: record.datasets.map((candidate, index) => {
+			const dataset = exactRecord(candidate, ["label", "values"], `Chart dataset ${index}`);
+			if (typeof dataset.label !== "string" || dataset.label.length > 500) throw new TypeError(`Chart dataset ${index} label must be a bounded string.`);
+			if (!Array.isArray(dataset.values) || dataset.values.length > 200) throw new RangeError(`Chart dataset ${index} values exceed the 200-value limit.`);
+			const values = dataset.values.map((item) => {
+				if (typeof item !== "number" || !Number.isFinite(item) || Math.abs(item) > 0x38d7ea4c68000) throw new TypeError(`Chart dataset ${index} contains an invalid finite number.`);
+				return item;
+			});
+			if (values.length !== labels.length) throw new RangeError(`Chart dataset ${index} must have one value per label.`);
+			return {
+				label: dataset.label,
+				values
+			};
+		}),
+		labels,
+		type: record.type
+	};
+	if (record.title !== void 0) {
+		if (typeof record.title !== "string" || record.title.length > 500) throw new TypeError("Chart title must be a bounded string.");
+		result.title = record.title;
+	}
+	return result;
+}
+/** Parse bounded vector strokes and reject SVG, data URLs, and canvas commands. */
+function parseStudioDrawingDocument(value) {
+	const record = exactRecord(value, [
+		"alt",
+		"height",
+		"strokes",
+		"width"
+	], "Drawing");
+	const width = integer(record.width, 1, 4096, "Drawing width");
+	const height = integer(record.height, 1, 4096, "Drawing height");
+	if (typeof record.alt !== "string" || record.alt.length < 1 || record.alt.length > 5e3) throw new TypeError("Drawing alternative text must contain between 1 and 5000 characters.");
+	if (!Array.isArray(record.strokes) || record.strokes.length > 5e3) throw new RangeError("Drawing strokes exceed the 5000-stroke limit.");
+	const strokes = record.strokes.map((candidate, strokeIndex) => {
+		const stroke = exactRecord(candidate, [
+			"color",
+			"points",
+			"width"
+		], `Drawing stroke ${strokeIndex}`);
+		if (typeof stroke.color !== "string" || !DRAWING_COLOR.test(stroke.color)) throw new TypeError(`Drawing stroke ${strokeIndex} uses an invalid color token.`);
+		if (typeof stroke.width !== "number" || !Number.isFinite(stroke.width) || stroke.width < .25 || stroke.width > 64) throw new RangeError(`Drawing stroke ${strokeIndex} width is outside 0.25 through 64.`);
+		if (!Array.isArray(stroke.points) || stroke.points.length < 1 || stroke.points.length > 1e4) throw new RangeError(`Drawing stroke ${strokeIndex} must contain 1 through 10000 points.`);
+		const points = stroke.points.map((candidatePoint, pointIndex) => {
+			const point = exactRecord(candidatePoint, ["x", "y"], `Drawing point ${pointIndex}`);
+			return {
+				x: coordinate(point.x, width, `Drawing point ${pointIndex} x`),
+				y: coordinate(point.y, height, `Drawing point ${pointIndex} y`)
+			};
+		});
+		return {
+			color: stroke.color,
+			points,
+			width: stroke.width
+		};
+	});
+	return {
+		alt: record.alt,
+		height,
+		strokes,
+		width
+	};
+}
+/** Parse exact decimal money without converting through a binary float. */
+function parseStudioMoneyValue(value) {
+	const record = exactRecord(value, ["amount", "currency"], "Money");
+	if (typeof record.amount !== "string" || !MONEY_AMOUNT.test(record.amount)) throw new TypeError("Money amount must be a canonical decimal string with at most six places.");
+	if (typeof record.currency !== "string" || !CURRENCY.test(record.currency)) throw new TypeError("Money currency must be an uppercase ISO-style three-letter code.");
+	return {
+		amount: record.amount,
+		currency: record.currency
+	};
+}
+/** Parse a bounded, text-only table and require one cell per declared column. */
+function parseStudioTableDocument(value) {
+	const record = exactRecord(value, [
+		"caption",
+		"columns",
+		"rows"
+	], "Table");
+	const columns = stringArray(record.columns, 50, 500, "Table columns");
+	if (columns.length === 0) throw new RangeError("Table must declare at least one column.");
+	if (!Array.isArray(record.rows) || record.rows.length > 1e3) throw new RangeError("Table rows exceed the 1000-row limit.");
+	const rows = record.rows.map((candidate, index) => {
+		const cells = stringArray(candidate, 50, 5e3, `Table row ${index}`);
+		if (cells.length !== columns.length) throw new RangeError(`Table row ${index} must contain one cell per column.`);
+		return cells;
+	});
+	let caption;
+	if (record.caption !== void 0) {
+		if (typeof record.caption !== "string" || record.caption.length > 500) throw new TypeError("Table caption must be a bounded string.");
+		caption = record.caption;
+	}
+	return {
+		...caption === void 0 ? {} : { caption },
+		columns,
+		rows
+	};
+}
+function exactRecord(value, keys, name) {
+	if (value === null || typeof value !== "object" || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) throw new TypeError(`${name} must be a plain JSON object.`);
+	const record = value;
+	const allowed = new Set(keys);
+	const unknown = Object.keys(record).find((key) => !allowed.has(key));
+	if (unknown !== void 0) throw new TypeError(`${name} contains unknown member ${unknown}.`);
+	return record;
+}
+function stringArray(value, maximumItems, maximumLength, name) {
+	if (!Array.isArray(value) || value.length > maximumItems) throw new RangeError(`${name} exceed their item limit.`);
+	return value.map((item) => {
+		if (typeof item !== "string" || item.length > maximumLength) throw new TypeError(`${name} must be bounded strings.`);
+		return item;
+	});
+}
+function integer(value, minimum, maximum, name) {
+	if (typeof value !== "number" || !Number.isInteger(value) || value < minimum || value > maximum) throw new RangeError(`${name} must be an integer from ${minimum} through ${maximum}.`);
+	return value;
+}
+function coordinate(value, maximum, name) {
+	if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > maximum) throw new RangeError(`${name} must be a finite coordinate inside the drawing bounds.`);
+	return value;
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/negotiation.js
@@ -8785,6 +11460,7 @@ function containsNode(nodes, nodeId) {
 var ARTIFACT_PORT = "studio.port/artifact";
 var MODEL_PORT = "studio.port/model";
 var RECOVERY_PORT = "studio.port/recovery";
+var RESOURCE_PORT = "studio.port/resource";
 var ARTIFACT_LOAD = "studio.operation/artifact.load";
 var ARTIFACT_SAVE = "studio.operation/artifact.save";
 var MODEL_GET = "studio.operation/model.get";
@@ -8792,12 +11468,21 @@ var MODEL_LIST = "studio.operation/model.list";
 var RECOVERY_STORE = "studio.operation/recovery.store";
 var RECOVERY_LOAD = "studio.operation/recovery.load";
 var RECOVERY_DISCARD = "studio.operation/recovery.discard";
+var RESOURCE_SEARCH = "studio.operation/resource.search";
 var STABLE_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/u;
+var QUALIFIED_NAME = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u;
 var FORBIDDEN_IDENTIFIERS = /* @__PURE__ */ new Set([
 	"__proto__",
 	"prototype",
 	"constructor"
 ]);
+/** Public bounds enforced before a composed session invokes resource search. */
+var STUDIO_RESOURCE_SEARCH_LIMITS = Object.freeze({
+	maximumCursorLength: 500,
+	maximumLimit: 100,
+	maximumSearchLength: 500,
+	minimumLimit: 1
+});
 var validateContentModelSchema = compileProfileSchema(contentModelSchema, { schemas: [commonSchema] });
 var validateArtifactReferenceSchema = compileProfileSchema({
 	$ref: "https://schemas.kumwe.org/studio/v1/common.schema.json#/$defs/artifactReference",
@@ -8834,6 +11519,7 @@ async function openStudioSession(adapter, options) {
 	appendProfileDiagnostics(configuration, negotiation);
 	const recoveryAvailable = appendOperationDiagnostics(adapter, configuration, negotiation);
 	const modelsAvailable = appendModelOperationDiagnostics(adapter, configuration, negotiation);
+	const resourcesAvailable = appendResourceOperationDiagnostics(adapter, configuration, negotiation);
 	if (negotiation.diagnostics.some((entry) => entry.severity === "blocking")) throw new StudioHostSessionError("configuration-blocked", "The resolved Studio configuration cannot open a Blueprint host session.", negotiation.diagnostics);
 	const reference = configuration.artifacts.blueprint;
 	if (reference === void 0) throw new StudioHostSessionError("configuration-blocked", "A Blueprint host session requires an explicit locked Blueprint reference.", negotiation.diagnostics);
@@ -8849,13 +11535,14 @@ async function openStudioSession(adapter, options) {
 		sessionGeneration: configuration.sessionGeneration
 	});
 	session.markSaved(document.revision);
-	return new BoundStudioHostSession(adapter, configuration, identifiers, negotiation, recoveryAvailable, modelsAvailable, session, document.revision);
+	return new BoundStudioHostSession(adapter, configuration, identifiers, negotiation, recoveryAvailable, modelsAvailable, resourcesAvailable, session, document.revision);
 }
 var BoundStudioHostSession = class {
 	diagnostics;
 	negotiation;
 	models;
 	recovery;
+	resources;
 	session;
 	#adapter;
 	#configuration;
@@ -8866,7 +11553,7 @@ var BoundStudioHostSession = class {
 	#lastScheduledSave;
 	#revision;
 	#saveTail = Promise.resolve();
-	constructor(adapter, configuration, identifiers, negotiation, recoveryAvailable, modelsAvailable, session, revision) {
+	constructor(adapter, configuration, identifiers, negotiation, recoveryAvailable, modelsAvailable, resourcesAvailable, session, revision) {
 		this.#adapter = adapter;
 		this.#configuration = configuration;
 		this.#identifiers = identifiers;
@@ -8883,6 +11570,7 @@ var BoundStudioHostSession = class {
 			get: (reference) => this.#getModel(reference),
 			list: () => this.#listModels()
 		}) : void 0;
+		this.resources = resourcesAvailable ? Object.freeze({ search: (query) => this.#searchResources(query) }) : void 0;
 	}
 	get disposed() {
 		return this.#disposed;
@@ -9002,6 +11690,20 @@ var BoundStudioHostSession = class {
 			value: null
 		};
 	}
+	async #searchResources(query) {
+		this.#assertActive();
+		if (!isResourceSearchQuery(query)) throw new StudioHostSessionError("invalid-resource-query", "A resource search requires a canonical resource type, bounded limit, cursor, and search text.");
+		const resource = this.#adapter.resource;
+		if (resource === void 0) throw adapterContractFailure("studio.host/adapter-port-unavailable", "The negotiated resource adapter is unavailable.");
+		const querySnapshot = cloneContractValue(query);
+		const context = createContext(this.#configuration, this.#identifiers.requestId(RESOURCE_SEARCH), { operationId: RESOURCE_SEARCH });
+		const result = await this.#invoke(() => resource.search(querySnapshot, context));
+		if (!isResourceSearchResult(result, querySnapshot)) throw adapterContractFailure("studio.host/unexpected-resource-result", "The resource port returned a malformed, mismatched, duplicate, or oversized search page.");
+		return {
+			...result.revision === void 0 ? {} : { revision: result.revision },
+			value: cloneContractValue(result.value)
+		};
+	}
 	async #storeRecovery(envelope) {
 		this.#assertActive();
 		const recovery = this.#adapter.recovery;
@@ -9078,7 +11780,7 @@ function allocateIdentifier(factory, operationId, purpose) {
 	} catch {
 		throw new StudioHostSessionError("invalid-identifier", `The ${purpose}-ID factory failed to allocate an identifier.`);
 	}
-	if (!isStableId(value)) throw new StudioHostSessionError("invalid-identifier", `The ${purpose}-ID factory returned a non-canonical stable identifier.`);
+	if (!isStableId$1(value)) throw new StudioHostSessionError("invalid-identifier", `The ${purpose}-ID factory returned a non-canonical stable identifier.`);
 	return value;
 }
 function appendOperationDiagnostics(adapter, configuration, negotiation) {
@@ -9120,6 +11822,20 @@ function appendModelOperationDiagnostics(adapter, configuration, negotiation) {
 	}
 	return available;
 }
+function appendResourceOperationDiagnostics(adapter, configuration, negotiation) {
+	const resource = configuration.hostCapabilities.ports.find((entry) => entry.id === RESOURCE_PORT);
+	if (resource === void 0) return false;
+	let available = true;
+	if (!resource.operations.includes(RESOURCE_SEARCH)) {
+		available = false;
+		negotiation.diagnostics.push(createDiagnostic("studio.host/missing-optional-operation", `The resource port omits ${RESOURCE_SEARCH}; resource discovery is disabled.`, "information", { operationId: RESOURCE_SEARCH }));
+	}
+	if (adapter.resource === void 0) {
+		available = false;
+		negotiation.diagnostics.push(createDiagnostic("studio.host/adapter-port-unavailable", "The capability document advertises resource discovery but the adapter does not implement it.", "information", { port: RESOURCE_PORT }));
+	}
+	return available;
+}
 function appendProfileDiagnostics(configuration, negotiation) {
 	if (configuration.artifacts.blueprint === void 0) negotiation.diagnostics.push(createDiagnostic("studio.host/missing-blueprint-artifact", "A Blueprint session requires a locked Blueprint artifact reference.", "blocking"));
 	if (configuration.mode !== "blueprint" || configuration.composite !== "single") negotiation.diagnostics.push(createDiagnostic("studio.host/unsupported-session-profile", "This host-session profile opens only single Blueprint configurations.", "blocking", {
@@ -9132,6 +11848,7 @@ function requestedOptionalPorts(configuration, optionalPorts) {
 	ports.delete(ARTIFACT_PORT);
 	if (configuration.features.offlineRecovery) ports.add(RECOVERY_PORT);
 	if (configuration.hostCapabilities.ports.some((entry) => entry.id === MODEL_PORT)) ports.add(MODEL_PORT);
+	if (configuration.hostCapabilities.ports.some((entry) => entry.id === RESOURCE_PORT)) ports.add(RESOURCE_PORT);
 	return [...ports];
 }
 function createContext(configuration, requestId, options) {
@@ -9185,6 +11902,49 @@ function isModelListResult(value) {
 		coordinates.add(coordinate);
 	}
 	return true;
+}
+function isResourceSearchQuery(value) {
+	if (!isPlainRecord(value) || !hasExactKeys(value, ["limit", "resourceType"], ["cursor", "search"])) return false;
+	return typeof value.limit === "number" && Number.isSafeInteger(value.limit) && value.limit >= STUDIO_RESOURCE_SEARCH_LIMITS.minimumLimit && value.limit <= STUDIO_RESOURCE_SEARCH_LIMITS.maximumLimit && isQualifiedName$1(value.resourceType) && isBoundedOptionalString(value.cursor, STUDIO_RESOURCE_SEARCH_LIMITS.maximumCursorLength, false) && isBoundedOptionalString(value.search, STUDIO_RESOURCE_SEARCH_LIMITS.maximumSearchLength, true);
+}
+function isResourceSearchResult(value, query) {
+	if (!isHostResultRecord(value) || !isResourceSearchPage(value.value, query)) return false;
+	return true;
+}
+function isResourceSearchPage(value, query) {
+	if (!isPlainRecord(value) || !hasExactKeys(value, ["items"], ["nextCursor"])) return false;
+	if (!Array.isArray(value.items) || value.items.length > query.limit || !isBoundedOptionalString(value.nextCursor, STUDIO_RESOURCE_SEARCH_LIMITS.maximumCursorLength, false)) return false;
+	const identifiers = /* @__PURE__ */ new Set();
+	for (const item of value.items) {
+		if (!isResourceSearchHit(item, query.resourceType) || identifiers.has(item.id)) return false;
+		identifiers.add(item.id);
+	}
+	return true;
+}
+function isResourceSearchHit(value, resourceType) {
+	return isPlainRecord(value) && hasExactKeys(value, [
+		"id",
+		"label",
+		"resourceType"
+	]) && isStableId$1(value.id) && value.resourceType === resourceType && isMessageReference$1(value.label);
+}
+function isMessageReference$1(value) {
+	return isPlainRecord(value) && hasExactKeys(value, ["key"], ["defaultMessage"]) && isQualifiedName$1(value.key) && (value.defaultMessage === void 0 || typeof value.defaultMessage === "string" && value.defaultMessage.length >= 1 && value.defaultMessage.length <= 500);
+}
+function isQualifiedName$1(value) {
+	return typeof value === "string" && value.length <= 160 && QUALIFIED_NAME.test(value);
+}
+function isBoundedOptionalString(value, maximumLength, allowEmpty) {
+	return value === void 0 || typeof value === "string" && value.length <= maximumLength && (allowEmpty || value.length >= 1);
+}
+function isPlainRecord(value) {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
+}
+function hasExactKeys(value, required, optional = []) {
+	const allowed = /* @__PURE__ */ new Set([...required, ...optional]);
+	return required.every((key) => Object.hasOwn(value, key)) && Object.keys(value).every((key) => allowed.has(key));
 }
 function isHostResultRecord(value) {
 	if (typeof value !== "object" || value === null || Array.isArray(value) || !("value" in value)) return false;
@@ -9253,7 +12013,7 @@ function cloneNegotiation(value) {
 		sessionState: value.sessionState
 	};
 }
-function isStableId(value) {
+function isStableId$1(value) {
 	return typeof value === "string" && value.length >= 1 && value.length <= 240 && !FORBIDDEN_IDENTIFIERS.has(value) && STABLE_ID.test(value);
 }
 function isRevision(value) {
@@ -9372,7 +12132,7 @@ function validateBlueprint(document, registry, options = {}) {
 	};
 }
 function preflightBlueprintNodes(document, maximumDepth, maximumNodes) {
-	if (!isRecord(document) || !Array.isArray(document.roots)) return [];
+	if (!isRecord$4(document) || !Array.isArray(document.roots)) return [];
 	const roots = document.roots;
 	if (roots.length > maximumNodes) return [diagnostic("maximum-nodes", `Blueprint contains more than the configured limit of ${maximumNodes} nodes.`)];
 	const seen = /* @__PURE__ */ new WeakSet();
@@ -9383,11 +12143,11 @@ function preflightBlueprintNodes(document, maximumDepth, maximumNodes) {
 	})).reverse();
 	while (stack.length > 0) {
 		const frame = stack.pop();
-		if (frame === void 0 || !isRecord(frame.value)) continue;
+		if (frame === void 0 || !isRecord$4(frame.value)) continue;
 		if (seen.has(frame.value)) return [diagnostic("cyclic-blueprint", "Blueprint nodes must form an acyclic JSON tree.")];
 		seen.add(frame.value);
 		if (frame.depth > maximumDepth) return [diagnostic("maximum-depth", `Node depth exceeds the configured limit of ${maximumDepth}.`, typeof frame.value.id === "string" ? frame.value.id : void 0)];
-		if (!isRecord(frame.value.slots)) continue;
+		if (!isRecord$4(frame.value.slots)) continue;
 		for (const children of Object.values(frame.value.slots)) {
 			if (!Array.isArray(children)) continue;
 			scheduled += children.length;
@@ -9456,7 +12216,7 @@ function isDenseJsonArray(value) {
 	return ownNames.length === value.length + 1 && ownNames[value.length] === "length" && ownNames.slice(0, -1).every((name, index) => name === String(index));
 }
 function isJsonRecord(value) {
-	if (!isRecord(value) || Object.getOwnPropertySymbols(value).length > 0) return false;
+	if (!isRecord$4(value) || Object.getOwnPropertySymbols(value).length > 0) return false;
 	const prototype = Object.getPrototypeOf(value);
 	if (prototype !== Object.prototype && prototype !== null) return false;
 	return Object.getOwnPropertyNames(value).length === Object.keys(value).length;
@@ -9492,7 +12252,7 @@ function validationLimit(value, fallback, name) {
 	if (!Number.isInteger(result) || result < 1) throw new RangeError(`${name} must be a positive integer.`);
 	return result;
 }
-function isRecord(value) {
+function isRecord$4(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function schemaDiagnostics(errors) {
@@ -9635,7 +12395,7 @@ var studioMessages = en_default.messages;
 * subset of ICU MessageFormat. Unknown parameters are ignored and missing
 * parameters remain visible so malformed translations never fail silently.
 */
-function messageText(key, overrides, parameters) {
+function messageText$1(key, overrides, parameters) {
 	let text = (overrides?.[key] ?? studioMessages[key]).defaultMessage;
 	if (parameters === void 0) return text;
 	for (const name of en_default.messages[key].parameters) {
@@ -10980,6 +13740,4334 @@ var StudioPreviewSurface = class {
 	}
 };
 //#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/profiles.js
+var PORTABLE_NODES$1 = Object.freeze([
+	"blockquote",
+	"bulletList",
+	"callout",
+	"checklist",
+	"checklistItem",
+	"codeBlock",
+	"doc",
+	"hardBreak",
+	"heading",
+	"horizontalRule",
+	"listItem",
+	"orderedList",
+	"paragraph",
+	"table",
+	"tableCell",
+	"tableRow",
+	"text"
+]);
+var PORTABLE_MARKS$1 = Object.freeze([
+	"bold",
+	"code",
+	"highlight",
+	"italic",
+	"strike"
+]);
+var ATTRIBUTE_LIMITS = Object.freeze({
+	maximumDepth: 8,
+	maximumItemsPerArray: 256,
+	maximumPropertiesPerObject: 64,
+	maximumStringLength: 4096,
+	maximumTotalBytes: 65536
+});
+function profile(maximumTextLength, maximumNodes) {
+	return Object.freeze({
+		allowedAttributes: Object.freeze({
+			callout: Object.freeze(["tone"]),
+			checklistItem: Object.freeze(["checked", "level"]),
+			codeBlock: Object.freeze(["language"]),
+			heading: Object.freeze(["level"]),
+			"mark:highlight": Object.freeze(["tone"]),
+			orderedList: Object.freeze(["start"]),
+			table: Object.freeze(["header"])
+		}),
+		allowedMarks: PORTABLE_MARKS$1,
+		allowedNodes: PORTABLE_NODES$1,
+		attributeLimits: ATTRIBUTE_LIMITS,
+		headingLevels: Object.freeze([
+			2,
+			3,
+			4
+		]),
+		maximumDepth: 32,
+		maximumDocumentBytes: 1048576,
+		maximumMarks: 2e4,
+		maximumMarksPerNode: PORTABLE_MARKS$1.length,
+		maximumNodes,
+		maximumTextLength
+	});
+}
+/** Smallest interoperable profile and the fail-closed default. */
+var PORTABLE_RICH_TEXT_PROFILE = profile(25e4, 5e3);
+/** Content-page prose profile. It intentionally has the same closed grammar with a smaller bound. */
+var MARKETING_RICH_TEXT_PROFILE = profile(1e5, 2e3);
+/** Documentation profile. Code is an inert inline mark; executable code is never accepted. */
+var DOCUMENTATION_RICH_TEXT_PROFILE = profile(5e5, 1e4);
+var PROFILES = Object.freeze({
+	"studio.rich-text/documentation": DOCUMENTATION_RICH_TEXT_PROFILE,
+	"studio.rich-text/marketing": MARKETING_RICH_TEXT_PROFILE,
+	"studio.rich-text/portable": PORTABLE_RICH_TEXT_PROFILE
+});
+/** Resolve only a Studio-owned, versioned profile. Unknown host input never widens the grammar. */
+function resolveRichTextProfile(id = "studio.rich-text/portable") {
+	const resolved = PROFILES[id];
+	if (resolved === void 0) throw new TypeError(`Unknown Studio rich-text profile "${id}".`);
+	return resolved;
+}
+/**
+* Select the closed profile used for prose nested in first-party interactive
+* page controls. Unknown runtime input fails closed instead of silently
+* widening the editor grammar.
+*/
+function resolveContainerRichTextProfile(containerType) {
+	switch (containerType) {
+		case "studio.core/accordion-item":
+		case "studio.core/dialog":
+		case "studio.core/notice":
+		case "studio.core/popover":
+		case "studio.core/tab": return "studio.rich-text/marketing";
+		default: throw new TypeError(`Unknown Studio rich-text container "${String(containerType)}".`);
+	}
+}
+//#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/first-party-tools.js
+var STUDIO_EDITOR_JS_TOOL_NAMES = Object.freeze([
+	"callout",
+	"checklist",
+	"code",
+	"delimiter",
+	"header",
+	"list",
+	"paragraph",
+	"quote",
+	"table"
+]);
+function studioEditorJsTools() {
+	return Object.freeze({
+		callout: StudioCalloutTool,
+		checklist: StudioChecklistTool,
+		code: StudioCodeTool,
+		delimiter: StudioDelimiterTool,
+		header: StudioHeaderTool,
+		list: StudioListTool,
+		paragraph: StudioParagraphTool,
+		quote: StudioQuoteTool,
+		table: StudioTableTool
+	});
+}
+function toStudioEditorJsBlocks(document) {
+	return document.content.map((node) => ({
+		data: { node: structuredClone(node) },
+		type: toolName(node)
+	}));
+}
+function fromStudioEditorJsBlocks(value) {
+	if (!isRecord$3(value) || !Array.isArray(value.blocks)) throw new TypeError("Editor surface returned an invalid block collection.");
+	const content = value.blocks.map((block, index) => {
+		if (!isRecord$3(block) || !STUDIO_EDITOR_JS_TOOL_NAMES.includes(block.type) || !isRecord$3(block.data) || !isRecord$3(block.data.node)) throw new TypeError(`Editor block ${index} is not a Studio first-party block.`);
+		const node = structuredClone(block.data.node);
+		if (toolName(node) !== block.type) throw new TypeError(`Editor block ${index} has a mismatched Studio node type.`);
+		return node;
+	});
+	return {
+		content: content.length > 0 ? content : [{ type: "paragraph" }],
+		type: "doc"
+	};
+}
+function toolName(node) {
+	switch (node.type) {
+		case "heading": return "header";
+		case "blockquote": return "quote";
+		case "horizontalRule": return "delimiter";
+		case "bulletList":
+		case "orderedList": return "list";
+		case "checklist": return "checklist";
+		case "table": return "table";
+		case "callout": return "callout";
+		case "codeBlock": return "code";
+		case "paragraph": return "paragraph";
+		default: throw new TypeError(`Node type "${node.type}" has no first-party Editor.js tool.`);
+	}
+}
+var InlineToolBase = class {
+	static isReadOnlySupported = true;
+	node;
+	readOnly;
+	field;
+	constructor(options, fallback) {
+		this.node = structuredClone(options.data?.node ?? fallback);
+		this.readOnly = options.readOnly === true;
+	}
+	renderInline(label, content) {
+		const field = document.createElement("div");
+		field.className = "studio-rich-text-field";
+		field.contentEditable = this.readOnly ? "false" : "true";
+		field.setAttribute("aria-label", label);
+		field.setAttribute("role", "textbox");
+		field.setAttribute("aria-multiline", "true");
+		field.spellcheck = true;
+		for (const inline of content) appendInline(field, inline);
+		field.addEventListener("paste", pastePlainText);
+		this.field = field;
+		return field;
+	}
+	saveInline(original) {
+		return this.field === void 0 ? structuredClone([...original]) : preserveInlineRepresentation(original, readInline(this.field));
+	}
+};
+var StudioParagraphTool = class extends InlineToolBase {
+	static isReadOnlySupported = true;
+	static toolbox = {
+		icon: "¶",
+		title: "Paragraph"
+	};
+	constructor(options) {
+		super(options, { type: "paragraph" });
+	}
+	render() {
+		return this.renderInline("Paragraph", this.node.content ?? []);
+	}
+	save() {
+		const node = structuredClone(this.node);
+		const content = this.saveInline(node.content ?? []);
+		if (!sameCanonical(node.content ?? [], content)) node.content = content;
+		return { node };
+	}
+};
+var StudioHeaderTool = class extends InlineToolBase {
+	static isReadOnlySupported = true;
+	static toolbox = {
+		icon: "H",
+		title: "Heading"
+	};
+	#level;
+	constructor(options) {
+		super(options, {
+			attrs: { level: 2 },
+			type: "heading"
+		});
+	}
+	render() {
+		const group = editorGroup("Heading");
+		const level = document.createElement("select");
+		const selectedLevel = this.node.attrs?.level === 3 || this.node.attrs?.level === 4 ? this.node.attrs.level : 2;
+		level.setAttribute("aria-label", "Heading level");
+		level.disabled = this.readOnly;
+		for (const value of [
+			2,
+			3,
+			4
+		]) {
+			const option = document.createElement("option");
+			option.value = String(value);
+			option.textContent = `Heading ${value}`;
+			option.selected = selectedLevel === value;
+			level.append(option);
+		}
+		level.value = String(selectedLevel);
+		this.#level = level;
+		group.append(level, this.renderInline("Heading text", this.node.content ?? []));
+		return group;
+	}
+	save() {
+		const node = structuredClone(this.node);
+		const level = Number(this.#level?.value ?? this.node.attrs?.level ?? 2);
+		if (level !== Number(this.node.attrs?.level ?? 2)) node.attrs = { level };
+		const content = this.saveInline(node.content ?? []);
+		if (!sameCanonical(node.content ?? [], content)) node.content = content;
+		return { node };
+	}
+};
+var StudioQuoteTool = class extends InlineToolBase {
+	static isReadOnlySupported = true;
+	static toolbox = {
+		icon: "“",
+		title: "Quote"
+	};
+	constructor(options) {
+		super(options, {
+			content: [{ type: "paragraph" }],
+			type: "blockquote"
+		});
+	}
+	render() {
+		return this.renderInline("Quotation", editableBlockContent(this.node.content ?? []));
+	}
+	save() {
+		const node = structuredClone(this.node);
+		const content = editableBlockContent(node.content ?? []);
+		node.content = mergeEditableBlockContent(node.content ?? [], this.saveInline(content));
+		return { node };
+	}
+};
+var StudioDelimiterTool = class {
+	static isReadOnlySupported = true;
+	static toolbox = {
+		icon: "—",
+		title: "Separator"
+	};
+	render() {
+		const separator = document.createElement("hr");
+		separator.setAttribute("aria-label", "Separator");
+		return separator;
+	}
+	save() {
+		return { node: { type: "horizontalRule" } };
+	}
+};
+var StudioCalloutTool = class extends InlineToolBase {
+	static isReadOnlySupported = true;
+	static toolbox = {
+		icon: "!",
+		title: "Callout"
+	};
+	#tone;
+	constructor(options) {
+		super(options, {
+			attrs: { tone: "info" },
+			content: [{ type: "paragraph" }],
+			type: "callout"
+		});
+	}
+	render() {
+		const group = editorGroup("Callout");
+		this.#tone = selectControl("Callout tone", [
+			"info",
+			"success",
+			"warning",
+			"danger"
+		], stringAttribute(this.node.attrs?.tone, "info"), this.readOnly);
+		group.append(this.#tone, this.renderInline("Callout text", editableBlockContent(this.node.content ?? [])));
+		return group;
+	}
+	save() {
+		const node = structuredClone(this.node);
+		node.attrs = { tone: this.#tone?.value ?? "info" };
+		const content = editableBlockContent(node.content ?? []);
+		node.content = mergeEditableBlockContent(node.content ?? [], this.saveInline(content));
+		return { node };
+	}
+};
+var StudioCodeTool = class {
+	static isReadOnlySupported = true;
+	static toolbox = {
+		icon: "</>",
+		title: "Code"
+	};
+	#node;
+	#readOnly;
+	#language;
+	#source;
+	constructor(options) {
+		this.#node = structuredClone(options.data?.node ?? {
+			attrs: { language: "text" },
+			text: "",
+			type: "codeBlock"
+		});
+		this.#readOnly = options.readOnly === true;
+	}
+	render() {
+		const group = editorGroup("Code sample");
+		this.#language = textInput$1("Code language", stringAttribute(this.#node.attrs?.language, "text"), this.#readOnly);
+		this.#language.pattern = "[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}";
+		this.#language.maxLength = 64;
+		this.#source = document.createElement("textarea");
+		this.#source.setAttribute("aria-label", "Inert code source");
+		this.#source.disabled = this.#readOnly;
+		this.#source.rows = 8;
+		this.#source.value = this.#node.text ?? "";
+		group.append(this.#language, this.#source);
+		return group;
+	}
+	save() {
+		const language = this.#language?.value.trim() ?? "text";
+		return { node: {
+			attrs: { language: /^[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}$/u.test(language) ? language : "text" },
+			text: this.#source?.value ?? "",
+			type: "codeBlock"
+		} };
+	}
+};
+var StudioListTool = class {
+	static isReadOnlySupported = true;
+	static toolbox = {
+		icon: "•",
+		title: "List"
+	};
+	#readOnly;
+	#node;
+	#rows;
+	#root;
+	constructor(options) {
+		const node = structuredClone(options.data?.node ?? {
+			content: [{
+				content: [{ type: "paragraph" }],
+				type: "listItem"
+			}],
+			type: "bulletList"
+		});
+		this.#node = node;
+		this.#readOnly = options.readOnly === true;
+		this.#rows = flattenList(node);
+	}
+	render() {
+		this.#root = editorGroup("List");
+		this.#renderRows();
+		return this.#root;
+	}
+	save() {
+		this.#syncRows();
+		return { node: structuredClone(this.#node) };
+	}
+	#renderRows() {
+		const root = this.#root;
+		if (root === void 0) return;
+		root.replaceChildren();
+		const style = selectControl("List style", ["bullet", "ordered"], this.#node.type === "orderedList" ? "ordered" : "bullet", this.#readOnly);
+		style.addEventListener("change", () => {
+			this.#syncRows();
+			const ordered = style.value === "ordered";
+			const start = orderedListStart(this.#node);
+			this.#node.type = ordered ? "orderedList" : "bulletList";
+			if (ordered && start !== 1) this.#node.attrs = { start };
+			else delete this.#node.attrs;
+			this.#renderRows();
+		});
+		root.append(style);
+		if (this.#node.type === "orderedList") {
+			const start = textInput$1("Ordered list start", String(orderedListStart(this.#node)), this.#readOnly);
+			start.type = "number";
+			start.min = "1";
+			start.max = "1000000";
+			start.addEventListener("change", () => {
+				const value = Math.max(1, Math.min(1e6, Number(start.value) || 1));
+				if (value === orderedListStart(this.#node)) return;
+				if (value === 1) delete this.#node.attrs;
+				else this.#node.attrs = { start: value };
+			});
+			root.append(start);
+		}
+		this.#rows = flattenList(this.#node);
+		const list = document.createElement("ol");
+		list.setAttribute("aria-label", "List items");
+		for (const [index, row] of this.#rows.entries()) {
+			const item = document.createElement("li");
+			item.dataset.index = String(index);
+			item.dataset.studioDepth = String(row.depth);
+			item.setAttribute("aria-level", String(row.depth + 1));
+			const field = inlineField(`List item ${index + 1}`, row.editableBlock.content ?? [], this.#readOnly);
+			field.dataset.listText = String(index);
+			item.append(field);
+			if (!this.#readOnly) item.append(rowButton("Move item up", () => this.#move(index, -1), !canMoveListRow(row, -1)), rowButton("Move item down", () => this.#move(index, 1), !canMoveListRow(row, 1)), rowButton("Indent item", () => this.#indent(index), !canIndentListRow(row)), rowButton("Outdent item", () => this.#outdent(index), row.ownerItem === void 0), rowButton("Remove item", () => this.#remove(index), !canRemoveListRow(row, this.#node)));
+			list.append(item);
+		}
+		root.append(list);
+		if (!this.#readOnly) root.append(rowButton("Add list item", () => this.#add()));
+	}
+	#syncRows() {
+		for (const field of this.#root?.querySelectorAll("[data-list-text]") ?? []) {
+			const index = Number(field.dataset.listText);
+			const row = this.#rows[index];
+			if (row === void 0) continue;
+			const content = preserveInlineRepresentation(row.editableBlock.content ?? [], readInline(field));
+			if (row.syntheticEditable) {
+				if (content.length > 0) {
+					row.editableBlock.content = content;
+					row.item.content = [row.editableBlock, ...row.item.content ?? []];
+					row.syntheticEditable = false;
+				}
+			} else if (!sameCanonical(row.editableBlock.content ?? [], content)) row.editableBlock.content = content;
+		}
+	}
+	#add() {
+		this.#syncRows();
+		if (this.#rows.length < 500) this.#node.content = [...this.#node.content ?? [], {
+			content: [{ type: "paragraph" }],
+			type: "listItem"
+		}];
+		this.#renderRows();
+	}
+	#indent(index) {
+		this.#syncRows();
+		const row = this.#rows[index];
+		if (row === void 0 || !canIndentListRow(row)) return;
+		const siblings = row.parentList.content ?? [];
+		const itemIndex = siblings.indexOf(row.item);
+		const previous = siblings[itemIndex - 1];
+		if (previous === void 0) return;
+		siblings.splice(itemIndex, 1);
+		const existing = previous.content?.at(-1);
+		const nested = existing?.type === row.parentList.type ? existing : {
+			...row.parentList.type === "orderedList" && row.parentList.attrs !== void 0 ? { attrs: structuredClone(row.parentList.attrs) } : {},
+			content: [],
+			type: row.parentList.type
+		};
+		if (nested !== existing) previous.content = [...previous.content ?? [], nested];
+		nested.content = [...nested.content ?? [], row.item];
+		this.#renderRows();
+	}
+	#outdent(index) {
+		this.#syncRows();
+		const row = this.#rows[index];
+		if (row?.ownerItem === void 0 || row.parentListParent === void 0) return;
+		const siblings = row.parentList.content ?? [];
+		const itemIndex = siblings.indexOf(row.item);
+		if (itemIndex < 0) return;
+		const trailing = siblings.splice(itemIndex + 1);
+		siblings.splice(itemIndex, 1);
+		if (trailing.length > 0) row.item.content = [...row.item.content ?? [], {
+			...row.parentList.type === "orderedList" && row.parentList.attrs !== void 0 ? { attrs: structuredClone(row.parentList.attrs) } : {},
+			content: trailing,
+			type: row.parentList.type
+		}];
+		if (siblings.length === 0) removeListFromItem(row.ownerItem, row.parentList);
+		const parentSiblings = row.parentListParent.content ?? [];
+		const ownerIndex = parentSiblings.indexOf(row.ownerItem);
+		if (ownerIndex < 0) return;
+		parentSiblings.splice(ownerIndex + 1, 0, row.item);
+		this.#renderRows();
+	}
+	#move(index, delta) {
+		this.#syncRows();
+		const row = this.#rows[index];
+		if (row === void 0 || !canMoveListRow(row, delta)) return;
+		const siblings = row.parentList.content ?? [];
+		const itemIndex = siblings.indexOf(row.item);
+		const [item] = siblings.splice(itemIndex, 1);
+		if (item !== void 0) siblings.splice(itemIndex + delta, 0, item);
+		this.#renderRows();
+	}
+	#remove(index) {
+		this.#syncRows();
+		const row = this.#rows[index];
+		if (row === void 0 || !canRemoveListRow(row, this.#node)) return;
+		const siblings = row.parentList.content ?? [];
+		const itemIndex = siblings.indexOf(row.item);
+		if (itemIndex < 0) return;
+		siblings.splice(itemIndex, 1);
+		if (siblings.length === 0 && row.ownerItem !== void 0) removeListFromItem(row.ownerItem, row.parentList);
+		this.#renderRows();
+	}
+};
+var StudioChecklistTool = class {
+	static isReadOnlySupported = true;
+	static toolbox = {
+		icon: "☑",
+		title: "Checklist"
+	};
+	#readOnly;
+	#initialRows;
+	#node;
+	#root;
+	#rows;
+	constructor(options) {
+		this.#readOnly = options.readOnly === true;
+		this.#node = structuredClone(options.data?.node ?? {
+			content: [{
+				attrs: {
+					checked: false,
+					level: 0
+				},
+				type: "checklistItem"
+			}],
+			type: "checklist"
+		});
+		const content = this.#node.content ?? [];
+		this.#rows = content.length > 0 ? content.map((item) => ({
+			checked: item.attrs?.checked === true,
+			content: structuredClone(item.content ?? []),
+			contentPresent: item.content !== void 0,
+			depth: Number(item.attrs?.level ?? 0)
+		})) : [{
+			checked: false,
+			content: [],
+			contentPresent: false,
+			depth: 0
+		}];
+		this.#initialRows = structuredClone(this.#rows);
+	}
+	render() {
+		this.#root = editorGroup("Checklist");
+		this.#renderRows();
+		return this.#root;
+	}
+	save() {
+		this.#syncRows();
+		if (sameCanonical(this.#rows, this.#initialRows)) return { node: structuredClone(this.#node) };
+		return { node: {
+			content: this.#rows.map((row) => ({
+				attrs: {
+					checked: row.checked,
+					level: row.depth
+				},
+				...row.contentPresent || row.content.length > 0 ? { content: structuredClone(row.content) } : {},
+				type: "checklistItem"
+			})),
+			type: "checklist"
+		} };
+	}
+	#renderRows() {
+		const root = this.#root;
+		if (root === void 0) return;
+		root.replaceChildren();
+		for (const [index, row] of this.#rows.entries()) {
+			const group = editorGroup(`Checklist item ${index + 1}`);
+			group.dataset.studioDepth = String(row.depth);
+			group.setAttribute("aria-level", String(row.depth + 1));
+			const checked = document.createElement("input");
+			checked.type = "checkbox";
+			checked.checked = row.checked;
+			checked.disabled = this.#readOnly;
+			checked.dataset.checkState = String(index);
+			checked.setAttribute("aria-label", `Checklist item ${index + 1} complete`);
+			const field = inlineField(`Checklist item ${index + 1}`, row.content, this.#readOnly);
+			field.dataset.checkText = String(index);
+			field.addEventListener("input", () => {
+				row.contentPresent = true;
+			});
+			group.append(checked, field);
+			if (!this.#readOnly) group.append(rowButton("Move item up", () => this.#move(index, -1), index === 0), rowButton("Move item down", () => this.#move(index, 1), index === this.#rows.length - 1), rowButton("Indent item", () => this.#indent(index, 1), row.depth >= 4 || index === 0), rowButton("Outdent item", () => this.#indent(index, -1), row.depth === 0), rowButton("Remove item", () => this.#remove(index), this.#rows.length === 1));
+			root.append(group);
+		}
+		if (!this.#readOnly) root.append(rowButton("Add checklist item", () => this.#add()));
+	}
+	#syncRows() {
+		for (const field of this.#root?.querySelectorAll("[data-check-text]") ?? []) {
+			const row = this.#rows[Number(field.dataset.checkText)];
+			if (row !== void 0) row.content = preserveInlineRepresentation(row.content, readInline(field));
+		}
+		for (const input of this.#root?.querySelectorAll("[data-check-state]") ?? []) {
+			const row = this.#rows[Number(input.dataset.checkState)];
+			if (row !== void 0) row.checked = input.checked;
+		}
+	}
+	#add() {
+		this.#syncRows();
+		if (this.#rows.length < 500) this.#rows.push({
+			checked: false,
+			content: [],
+			contentPresent: false,
+			depth: 0
+		});
+		this.#renderRows();
+	}
+	#indent(index, delta) {
+		this.#syncRows();
+		const row = this.#rows[index];
+		if (row !== void 0) row.depth = Math.max(0, Math.min(4, row.depth + delta));
+		this.#renderRows();
+	}
+	#move(index, delta) {
+		this.#syncRows();
+		const target = index + delta;
+		if (target >= 0 && target < this.#rows.length) {
+			const [row] = this.#rows.splice(index, 1);
+			if (row !== void 0) this.#rows.splice(target, 0, row);
+		}
+		this.#renderRows();
+	}
+	#remove(index) {
+		this.#syncRows();
+		if (this.#rows.length > 1) this.#rows.splice(index, 1);
+		this.#renderRows();
+	}
+};
+var StudioTableTool = class {
+	static isReadOnlySupported = true;
+	static toolbox = {
+		icon: "▦",
+		title: "Table"
+	};
+	#readOnly;
+	#initialCells;
+	#initialHeader;
+	#node;
+	#cells;
+	#header;
+	#root;
+	constructor(options) {
+		this.#readOnly = options.readOnly === true;
+		this.#node = structuredClone(options.data?.node ?? {
+			attrs: { header: false },
+			content: [{
+				content: [{ type: "tableCell" }, { type: "tableCell" }],
+				type: "tableRow"
+			}, {
+				content: [{ type: "tableCell" }, { type: "tableCell" }],
+				type: "tableRow"
+			}],
+			type: "table"
+		});
+		this.#header = this.#node.attrs?.header === true;
+		this.#cells = (this.#node.content ?? []).map((row) => (row.content ?? []).map((cell) => ({
+			content: structuredClone(cell.content ?? []),
+			contentPresent: cell.content !== void 0
+		})));
+		this.#initialHeader = this.#header;
+		this.#initialCells = structuredClone(this.#cells);
+	}
+	render() {
+		this.#root = editorGroup("Table");
+		this.#renderTable();
+		return this.#root;
+	}
+	save() {
+		this.#syncCells();
+		if (this.#header === this.#initialHeader && sameCanonical(this.#cells, this.#initialCells)) return { node: structuredClone(this.#node) };
+		return { node: {
+			attrs: { header: this.#header },
+			content: this.#cells.map((row) => ({
+				content: row.map((cell) => ({
+					...cell.contentPresent || cell.content.length > 0 ? { content: structuredClone(cell.content) } : {},
+					type: "tableCell"
+				})),
+				type: "tableRow"
+			})),
+			type: "table"
+		} };
+	}
+	#renderTable() {
+		const root = this.#root;
+		if (root === void 0) return;
+		root.replaceChildren();
+		const header = document.createElement("input");
+		header.type = "checkbox";
+		header.checked = this.#header;
+		header.disabled = this.#readOnly;
+		header.setAttribute("aria-label", "Use first row as table header");
+		header.addEventListener("change", () => {
+			this.#header = header.checked;
+		});
+		root.append(header);
+		const table = document.createElement("table");
+		table.setAttribute("aria-label", "Table data");
+		for (const [rowIndex, row] of this.#cells.entries()) {
+			const tr = document.createElement("tr");
+			for (const [columnIndex, value] of row.entries()) {
+				const cell = document.createElement(rowIndex === 0 && this.#header ? "th" : "td");
+				const field = inlineField(`Row ${rowIndex + 1}, column ${columnIndex + 1}`, value.content, this.#readOnly);
+				field.dataset.tableCell = `${rowIndex}:${columnIndex}`;
+				field.addEventListener("input", () => {
+					value.contentPresent = true;
+				});
+				cell.append(field);
+				tr.append(cell);
+			}
+			table.append(tr);
+		}
+		root.append(table);
+		if (!this.#readOnly) root.append(rowButton("Add table row", () => this.#resize(1, 0), this.#cells.length >= 200), rowButton("Remove table row", () => this.#resize(-1, 0), this.#cells.length <= 1), rowButton("Add table column", () => this.#resize(0, 1), (this.#cells[0]?.length ?? 0) >= 50), rowButton("Remove table column", () => this.#resize(0, -1), (this.#cells[0]?.length ?? 0) <= 1));
+	}
+	#resize(rows, columns) {
+		this.#syncCells();
+		if (rows > 0 && this.#cells.length < 200) this.#cells.push(Array.from({ length: this.#cells[0]?.length ?? 1 }, () => ({
+			content: [],
+			contentPresent: false
+		})));
+		if (rows < 0 && this.#cells.length > 1) this.#cells.pop();
+		if (columns > 0 && (this.#cells[0]?.length ?? 0) < 50) for (const row of this.#cells) row.push({
+			content: [],
+			contentPresent: false
+		});
+		if (columns < 0 && (this.#cells[0]?.length ?? 0) > 1) for (const row of this.#cells) row.pop();
+		this.#renderTable();
+	}
+	#syncCells() {
+		for (const field of this.#root?.querySelectorAll("[data-table-cell]") ?? []) {
+			const [row, column] = (field.dataset.tableCell ?? "").split(":").map(Number);
+			const targetRow = row === void 0 ? void 0 : this.#cells[row];
+			const targetCell = column === void 0 ? void 0 : targetRow?.[column];
+			if (targetCell !== void 0) targetCell.content = preserveInlineRepresentation(targetCell.content, readInline(field));
+		}
+	}
+};
+/** Editor.js inline tool for a bounded semantic highlight tone. */
+var StudioMarkerTool = class {
+	static isInline = true;
+	static sanitize = { mark: { "data-studio-tone": true } };
+	#button;
+	#tone = "accent";
+	checkState(selection) {
+		const active = closestMark(selection.anchorNode) !== void 0;
+		this.#button?.setAttribute("aria-pressed", String(active));
+		return active;
+	}
+	render() {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.textContent = "Highlight";
+		button.setAttribute("aria-label", "Toggle semantic highlight");
+		button.setAttribute("aria-pressed", "false");
+		this.#button = button;
+		return button;
+	}
+	renderActions() {
+		const select = selectControl("Highlight tone", [
+			"accent",
+			"info",
+			"success",
+			"warning",
+			"danger"
+		], this.#tone, false);
+		select.addEventListener("change", () => {
+			this.#tone = select.value;
+		});
+		return select;
+	}
+	surround(range) {
+		const active = closestMark(range.commonAncestorContainer);
+		if (active !== void 0) {
+			const parent = active.parentNode;
+			while (active.firstChild !== null) parent?.insertBefore(active.firstChild, active);
+			active.remove();
+			return;
+		}
+		if (range.collapsed) return;
+		const mark = document.createElement("mark");
+		mark.dataset.studioTone = this.#tone;
+		mark.append(range.extractContents());
+		range.insertNode(mark);
+	}
+};
+function appendInline(parent, node) {
+	if (node.type === "hardBreak") {
+		parent.appendChild(document.createElement("br"));
+		return;
+	}
+	if (node.type !== "text" || (node.text ?? "").length === 0) return;
+	let child = document.createTextNode(node.text ?? "");
+	for (const mark of [...node.marks ?? []].reverse()) {
+		const element = document.createElement(markElement(mark));
+		if (mark.type === "highlight") element.dataset.studioTone = stringAttribute(mark.attrs?.tone, "accent");
+		element.append(child);
+		child = element;
+	}
+	parent.appendChild(child);
+}
+function markElement(mark) {
+	if (mark.type === "bold") return "strong";
+	if (mark.type === "italic") return "em";
+	if (mark.type === "strike") return "s";
+	if (mark.type === "code") return "code";
+	return "mark";
+}
+function readInline(parent) {
+	const result = [];
+	const visit = (node, marks) => {
+		if (node.nodeType === Node.TEXT_NODE) {
+			const text = node.nodeValue ?? "";
+			if (text.length > 0) result.push({
+				...marks.length > 0 ? { marks } : {},
+				text,
+				type: "text"
+			});
+			return;
+		}
+		if (!(node instanceof Element)) return;
+		if (node.localName === "br") {
+			result.push({ type: "hardBreak" });
+			return;
+		}
+		const next = [...marks];
+		const mark = canonicalMark(node);
+		if (mark !== void 0 && !next.some((item) => item.type === mark.type)) {
+			if (mark.type === "code") next.splice(0, next.length, mark);
+			else if (!next.some((item) => item.type === "code")) next.push(mark);
+		}
+		for (const child of node.childNodes) visit(child, next);
+	};
+	for (const child of parent.childNodes) visit(child, []);
+	return result;
+}
+function preserveInlineRepresentation(original, rendered) {
+	return sameCanonical(projectInline(original), projectInline(rendered)) ? structuredClone([...original]) : rendered;
+}
+function projectInline(content) {
+	const projection = [];
+	for (const node of content) {
+		if (node.type === "hardBreak") {
+			projection.push({ kind: "hard-break" });
+			continue;
+		}
+		if (node.type !== "text") continue;
+		const marks = (node.marks ?? []).map((mark) => {
+			if (mark.type !== "highlight") return mark.type;
+			const tone = mark.attrs?.tone;
+			return `${mark.type}:${typeof tone === "string" ? tone : ""}`;
+		}).sort();
+		const previous = projection.at(-1);
+		if (previous?.kind === "text" && sameCanonical(previous.marks, marks)) previous.text += node.text ?? "";
+		else projection.push({
+			kind: "text",
+			marks,
+			text: node.text ?? ""
+		});
+	}
+	return projection;
+}
+function canonicalMark(element) {
+	if (element.localName === "strong" || element.localName === "b") return { type: "bold" };
+	if (element.localName === "em" || element.localName === "i") return { type: "italic" };
+	if (element.localName === "s" || element.localName === "del") return { type: "strike" };
+	if (element.localName === "code") return { type: "code" };
+	if (element.localName === "mark") {
+		const tone = element.getAttribute("data-studio-tone");
+		return {
+			attrs: { tone: [
+				"accent",
+				"danger",
+				"info",
+				"success",
+				"warning"
+			].includes(tone ?? "") ? tone ?? "accent" : "accent" },
+			type: "highlight"
+		};
+	}
+}
+function pastePlainText(event) {
+	event.preventDefault();
+	const text = event.clipboardData?.getData("text/plain") ?? "";
+	const selection = globalThis.getSelection();
+	if (selection === null || selection.rangeCount === 0) return;
+	const range = selection.getRangeAt(0);
+	range.deleteContents();
+	range.insertNode(document.createTextNode(text.slice(0, 25e4)));
+	range.collapse(false);
+}
+function flattenList(node, depth = 0, ownerItem, parentListParent) {
+	const rows = [];
+	for (const item of node.content ?? []) {
+		const existingEditable = (item.content ?? []).find((block) => block.type === "paragraph" || block.type === "heading");
+		const editableBlock = existingEditable ?? { type: "paragraph" };
+		rows.push({
+			depth,
+			editableBlock,
+			item,
+			...ownerItem === void 0 ? {} : { ownerItem },
+			parentList: node,
+			...parentListParent === void 0 ? {} : { parentListParent },
+			syntheticEditable: existingEditable === void 0
+		});
+		for (const nested of item.content ?? []) if (nested.type === "bulletList" || nested.type === "orderedList") rows.push(...flattenList(nested, depth + 1, item, node));
+	}
+	return rows;
+}
+function orderedListStart(node) {
+	const value = Number(node.attrs?.start ?? 1);
+	return Number.isSafeInteger(value) && value >= 1 && value <= 1e6 ? value : 1;
+}
+function canMoveListRow(row, delta) {
+	const siblings = row.parentList.content ?? [];
+	const index = siblings.indexOf(row.item);
+	return index >= 0 && index + delta >= 0 && index + delta < siblings.length;
+}
+function canIndentListRow(row) {
+	if (row.depth >= 4) return false;
+	return (row.parentList.content ?? []).indexOf(row.item) > 0;
+}
+function canRemoveListRow(row, root) {
+	return row.parentList !== root || (root.content?.length ?? 0) > 1;
+}
+function removeListFromItem(item, list) {
+	item.content = (item.content ?? []).filter((block) => block !== list);
+}
+function editableBlockContent(blocks) {
+	return blocks.find((block) => block.type === "paragraph" || block.type === "heading")?.content ?? [];
+}
+function mergeEditableBlockContent(blocks, content) {
+	const result = structuredClone([...blocks]);
+	const index = result.findIndex((block) => block.type === "paragraph" || block.type === "heading");
+	if (index < 0) {
+		if (content.length > 0) result.unshift({
+			content: structuredClone([...content]),
+			type: "paragraph"
+		});
+		return result;
+	}
+	const block = result[index];
+	if (block !== void 0 && !sameCanonical(block.content ?? [], content)) block.content = structuredClone([...content]);
+	return result;
+}
+function inlineField(label, content, readOnly) {
+	const field = document.createElement("div");
+	field.className = "studio-rich-text-field";
+	field.contentEditable = readOnly ? "false" : "true";
+	field.setAttribute("aria-label", label);
+	field.setAttribute("aria-multiline", "true");
+	field.setAttribute("role", "textbox");
+	field.spellcheck = true;
+	for (const inline of content) appendInline(field, inline);
+	field.addEventListener("paste", pastePlainText);
+	return field;
+}
+function sameCanonical(left, right) {
+	if (Object.is(left, right)) return true;
+	if (Array.isArray(left) || Array.isArray(right)) return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((value, index) => sameCanonical(value, right[index]));
+	if (!isRecord$3(left) || !isRecord$3(right)) return false;
+	const leftKeys = Object.keys(left).sort();
+	const rightKeys = Object.keys(right).sort();
+	return leftKeys.length === rightKeys.length && leftKeys.every((key, index) => key === rightKeys[index] && sameCanonical(left[key], right[key]));
+}
+function editorGroup(label) {
+	const group = document.createElement("div");
+	group.setAttribute("aria-label", label);
+	group.setAttribute("role", "group");
+	return group;
+}
+function textInput$1(label, value, readOnly) {
+	const input = document.createElement("input");
+	input.type = "text";
+	input.setAttribute("aria-label", label);
+	input.disabled = readOnly;
+	input.value = value;
+	return input;
+}
+function selectControl(label, values, selected, readOnly) {
+	const select = document.createElement("select");
+	select.setAttribute("aria-label", label);
+	select.disabled = readOnly;
+	for (const value of values) {
+		const option = document.createElement("option");
+		option.value = value;
+		option.textContent = value;
+		option.selected = value === selected;
+		select.append(option);
+	}
+	select.value = selected;
+	return select;
+}
+function rowButton(label, action, disabled = false) {
+	const button = document.createElement("button");
+	button.type = "button";
+	button.textContent = label;
+	button.setAttribute("aria-label", label);
+	button.disabled = disabled;
+	button.addEventListener("click", action);
+	return button;
+}
+function closestMark(node) {
+	let candidate = node instanceof HTMLElement ? node : node?.parentElement;
+	while (candidate !== null && candidate !== void 0) {
+		if (candidate.localName === "mark") return candidate;
+		candidate = candidate.parentElement ?? void 0;
+	}
+}
+function isRecord$3(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function stringAttribute(value, fallback) {
+	return typeof value === "string" ? value : fallback;
+}
+//#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/studio-rich-text-editor.js
+/**
+* The only public construction path for block prose. Hosts configure Studio
+* profiles and canonical values; the selected editor remains an implementation
+* detail and can never leak its document shape into an artifact.
+*/
+var StudioRichTextEditorFactory = class {
+	#surfaceAdapter;
+	constructor(surfaceAdapter = new EditorJsSurfaceAdapter()) {
+		this.#surfaceAdapter = surfaceAdapter;
+	}
+	async create(options) {
+		const profile = resolveRichTextProfile(options.profile ?? (options.containerType === void 0 ? "studio.rich-text/portable" : resolveContainerRichTextProfile(options.containerType)));
+		let lastValid = parseRichTextDocument(options.value, profile);
+		const readOnly = options.readOnly === true || options.binding !== void 0 && options.binding.source.kind !== "static-value";
+		const mounted = {};
+		let changeQueue = Promise.resolve();
+		const readCanonical = async () => {
+			if (mounted.surface === void 0) return lastValid;
+			lastValid = parseRichTextDocument(await mounted.surface.read(), profile);
+			return lastValid;
+		};
+		mounted.surface = await this.#surfaceAdapter.mount({
+			holder: options.holder,
+			initialValue: lastValid,
+			onChange: () => {
+				changeQueue = changeQueue.then(async () => {
+					try {
+						const value = await readCanonical();
+						options.onChange?.({
+							diagnostics: [],
+							valid: true,
+							value
+						});
+					} catch {
+						options.onChange?.({
+							diagnostics: [invalidEditorDiagnostic()],
+							valid: false,
+							value: lastValid
+						});
+					}
+				});
+			},
+			...options.placeholder === void 0 ? {} : { placeholder: options.placeholder },
+			readOnly
+		});
+		return {
+			destroy: () => mounted.surface?.destroy(),
+			focus: () => mounted.surface?.focus(),
+			readOnly,
+			replace: async (value) => {
+				const canonical = parseRichTextDocument(value, profile);
+				await mounted.surface?.replace(canonical);
+				lastValid = canonical;
+			},
+			save: async () => {
+				await changeQueue;
+				try {
+					return await readCanonical();
+				} catch {
+					return lastValid;
+				}
+			}
+		};
+	}
+};
+function invalidEditorDiagnostic() {
+	return {
+		code: "studio.rich-text/invalid-editor-state",
+		message: {
+			defaultMessage: "The latest edit is not valid for this rich-text profile.",
+			key: "studio.rich-text/invalid-editor-state"
+		},
+		severity: "error"
+	};
+}
+var EditorJsSurfaceAdapter = class {
+	async mount(options) {
+		const Runtime = (await __vitePreload(() => import("./editorjs-BQPU4-8b.js"), [])).default;
+		const runtime = new Runtime({
+			data: toEditorJs(options.initialValue),
+			holder: options.holder,
+			inlineToolbar: [
+				"bold",
+				"italic",
+				"marker"
+			],
+			minHeight: 0,
+			onChange: options.onChange,
+			placeholder: options.placeholder ?? "",
+			readOnly: options.readOnly,
+			tools: {
+				...studioEditorJsTools(),
+				marker: StudioMarkerTool
+			}
+		});
+		await runtime.isReady;
+		return {
+			destroy: () => runtime.destroy(),
+			focus: () => {
+				runtime.caret?.focus(true);
+			},
+			read: async () => fromEditorJs(await runtime.save()),
+			replace: async (value) => runtime.render(toEditorJs(value))
+		};
+	}
+};
+function toEditorJs(document) {
+	return {
+		blocks: toStudioEditorJsBlocks(document),
+		version: "2.31.6"
+	};
+}
+function fromEditorJs(value) {
+	return fromStudioEditorJsBlocks(value);
+}
+//#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/strict-csp-surface.js
+/**
+* Sink-free authoring surface for hosts enforcing strict style CSP and
+* Trusted Types. It shares Studio's canonical first-party tools but never
+* creates style elements, style attributes, or HTML-string sinks.
+*/
+var StudioStrictCspRichTextSurfaceAdapter = class {
+	mount(options) {
+		return Promise.resolve(new StrictCspRichTextSurface(options));
+	}
+};
+var StrictCspRichTextSurface = class {
+	#blocks = document.createElement("div");
+	#options;
+	#root = document.createElement("section");
+	#mounted = [];
+	constructor(options) {
+		this.#options = options;
+		this.#root.className = "studio-rich-text-strict-surface";
+		this.#root.dataset.studioRichTextSurface = "strict-csp";
+		this.#root.setAttribute("aria-label", options.readOnly ? "Rich text preview" : "Rich text editor");
+		this.#root.setAttribute("role", "region");
+		this.#blocks.className = "studio-rich-text-strict-blocks";
+		this.#blocks.addEventListener("change", this.#notifyChange);
+		this.#blocks.addEventListener("input", this.#notifyChange);
+		this.#render(options.initialValue);
+		options.holder.replaceChildren(this.#root);
+	}
+	destroy() {
+		this.#blocks.removeEventListener("change", this.#notifyChange);
+		this.#blocks.removeEventListener("input", this.#notifyChange);
+		this.#mounted = [];
+		this.#root.remove();
+	}
+	focus() {
+		const target = this.#root.querySelector("[contenteditable=\"true\"], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)");
+		if (target !== null) {
+			target.focus();
+			return;
+		}
+		this.#root.tabIndex = -1;
+		this.#root.focus();
+	}
+	read() {
+		return Promise.resolve(structuredClone(this.#snapshot()));
+	}
+	replace(value) {
+		this.#render(value);
+		return Promise.resolve();
+	}
+	#notifyChange = () => {
+		this.#options.onChange();
+	};
+	#add(type) {
+		const document = this.#snapshot();
+		document.content.push(defaultNode(type));
+		this.#render(document);
+		this.#options.onChange();
+	}
+	#move(index, delta) {
+		const document = this.#snapshot();
+		const target = index + delta;
+		if (target < 0 || target >= document.content.length) return;
+		const [node] = document.content.splice(index, 1);
+		if (node === void 0) return;
+		document.content.splice(target, 0, node);
+		this.#render(document);
+		this.#options.onChange();
+		this.#focusBlock(target);
+	}
+	#remove(index) {
+		const document = this.#snapshot();
+		document.content.splice(index, 1);
+		if (document.content.length === 0) document.content.push(defaultNode("paragraph"));
+		this.#render(document);
+		this.#options.onChange();
+		this.#focusBlock(Math.min(index, document.content.length - 1));
+	}
+	#focusBlock(index) {
+		this.#blocks.querySelector(`[data-studio-rich-text-index="${String(index)}"]`)?.querySelector("[contenteditable=\"true\"], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)")?.focus();
+	}
+	#render(value) {
+		const tools = studioEditorJsTools();
+		const blocks = toStudioEditorJsBlocks(value);
+		this.#mounted = blocks.map((block) => {
+			const Tool = tools[block.type];
+			return {
+				tool: new Tool({
+					data: block.data,
+					readOnly: this.#options.readOnly
+				}),
+				type: block.type
+			};
+		});
+		this.#root.replaceChildren();
+		if (!this.#options.readOnly) this.#root.append(this.#createToolbar());
+		this.#blocks.replaceChildren(...this.#mounted.map((block, index) => this.#renderBlock(block, index)));
+		this.#root.append(this.#blocks);
+	}
+	#renderBlock(block, index) {
+		const group = document.createElement("section");
+		const title = studioEditorJsTools()[block.type].toolbox.title;
+		group.className = "studio-rich-text-strict-block";
+		group.dataset.studioRichTextIndex = String(index);
+		group.setAttribute("aria-label", `${title} block ${String(index + 1)}`);
+		group.setAttribute("role", "group");
+		if (!this.#options.readOnly) {
+			const controls = document.createElement("div");
+			controls.className = "studio-rich-text-strict-block-controls";
+			controls.setAttribute("aria-label", `${title} block actions`);
+			controls.setAttribute("role", "toolbar");
+			controls.append(actionButton$2("Move block up", () => this.#move(index, -1), index === 0), actionButton$2("Move block down", () => this.#move(index, 1), index === this.#mounted.length - 1), actionButton$2("Remove block", () => this.#remove(index)));
+			group.append(controls);
+		}
+		group.append(block.tool.render());
+		return group;
+	}
+	#createToolbar() {
+		const tools = studioEditorJsTools();
+		const toolbar = document.createElement("div");
+		const select = document.createElement("select");
+		select.setAttribute("aria-label", "Rich text block type");
+		for (const type of STUDIO_EDITOR_JS_TOOL_NAMES) {
+			const option = document.createElement("option");
+			option.textContent = tools[type].toolbox.title;
+			option.value = type;
+			select.append(option);
+		}
+		toolbar.className = "studio-rich-text-strict-toolbar";
+		toolbar.setAttribute("aria-label", "Rich text tools");
+		toolbar.setAttribute("role", "toolbar");
+		toolbar.append(select, actionButton$2("Add rich text block", () => {
+			if (isToolName(select.value)) this.#add(select.value);
+		}));
+		const tone = highlightToneControl();
+		toolbar.append(inlineActionButton("Bold selected text", () => this.#formatInline("bold")), inlineActionButton("Italicize selected text", () => this.#formatInline("italic")), inlineActionButton("Strike selected text", () => this.#formatInline("strike")), inlineActionButton("Format selected text as code", () => this.#formatInline("code")), tone, inlineActionButton("Highlight selected text", () => this.#formatInline("highlight", highlightTone(tone.value))), inlineActionButton("Insert line break", () => this.#formatInline("hard-break")));
+		return toolbar;
+	}
+	#formatInline(action, tone = "accent") {
+		const selection = globalThis.getSelection();
+		if (selection === null || selection.rangeCount === 0) return;
+		const range = selection.getRangeAt(0);
+		const start = closestEditable(range.startContainer, this.#root);
+		const end = closestEditable(range.endContainer, this.#root);
+		if (start === void 0 || start !== end) return;
+		if (action === "hard-break") {
+			range.deleteContents();
+			const lineBreak = document.createElement("br");
+			range.insertNode(lineBreak);
+			range.setStartAfter(lineBreak);
+			range.collapse(true);
+			selection.removeAllRanges();
+			selection.addRange(range);
+			this.#options.onChange();
+			return;
+		}
+		if (range.collapsed) return;
+		const localName = inlineElementName(action);
+		const existing = closestInlineElement(range.commonAncestorContainer, start, localName);
+		if (existing !== void 0) {
+			const parent = existing.parentNode;
+			while (existing.firstChild !== null) parent?.insertBefore(existing.firstChild, existing);
+			existing.remove();
+			this.#options.onChange();
+			return;
+		}
+		const wrapper = document.createElement(localName);
+		if (action === "highlight") wrapper.dataset.studioTone = tone;
+		wrapper.append(range.extractContents());
+		range.insertNode(wrapper);
+		range.selectNodeContents(wrapper);
+		selection.removeAllRanges();
+		selection.addRange(range);
+		this.#options.onChange();
+	}
+	#snapshot() {
+		return {
+			content: this.#mounted.map((block) => block.tool.save().node),
+			type: "doc"
+		};
+	}
+};
+function actionButton$2(label, action, disabled = false) {
+	const button = document.createElement("button");
+	button.disabled = disabled;
+	button.textContent = label;
+	button.type = "button";
+	button.setAttribute("aria-label", label);
+	button.addEventListener("click", action);
+	return button;
+}
+function inlineActionButton(label, action) {
+	const button = actionButton$2(label, action);
+	button.addEventListener("mousedown", (event) => event.preventDefault());
+	return button;
+}
+function highlightToneControl() {
+	const select = document.createElement("select");
+	select.setAttribute("aria-label", "Highlight tone");
+	for (const tone of [
+		"accent",
+		"info",
+		"success",
+		"warning",
+		"danger"
+	]) {
+		const option = document.createElement("option");
+		option.textContent = tone;
+		option.value = tone;
+		select.append(option);
+	}
+	return select;
+}
+function closestEditable(node, root) {
+	let candidate = node instanceof HTMLElement ? node : node.parentElement;
+	while (candidate !== null) {
+		if (candidate.getAttribute("contenteditable") === "true") return candidate;
+		if (candidate === root) return void 0;
+		candidate = candidate.parentElement;
+	}
+}
+function closestInlineElement(node, boundary, localName) {
+	let candidate = node instanceof HTMLElement ? node : node.parentElement;
+	while (candidate !== null && candidate !== boundary) {
+		if (candidate.localName === localName) return candidate;
+		candidate = candidate.parentElement;
+	}
+}
+function inlineElementName(action) {
+	if (action === "bold") return "strong";
+	if (action === "italic") return "em";
+	if (action === "strike") return "s";
+	if (action === "code") return "code";
+	return "mark";
+}
+function isToolName(value) {
+	return STUDIO_EDITOR_JS_TOOL_NAMES.some((name) => name === value);
+}
+function highlightTone(value) {
+	return [
+		"accent",
+		"danger",
+		"info",
+		"success",
+		"warning"
+	].includes(value) ? value : "accent";
+}
+function defaultNode(type) {
+	switch (type) {
+		case "callout": return {
+			attrs: { tone: "info" },
+			content: [{ type: "paragraph" }],
+			type: "callout"
+		};
+		case "checklist": return {
+			content: [{
+				attrs: {
+					checked: false,
+					level: 0
+				},
+				type: "checklistItem"
+			}],
+			type: "checklist"
+		};
+		case "code": return {
+			attrs: { language: "text" },
+			type: "codeBlock"
+		};
+		case "delimiter": return { type: "horizontalRule" };
+		case "header": return {
+			attrs: { level: 2 },
+			type: "heading"
+		};
+		case "list": return {
+			content: [{
+				content: [{ type: "paragraph" }],
+				type: "listItem"
+			}],
+			type: "bulletList"
+		};
+		case "paragraph": return { type: "paragraph" };
+		case "quote": return {
+			content: [{ type: "paragraph" }],
+			type: "blockquote"
+		};
+		case "table": return {
+			attrs: { header: false },
+			content: [{
+				content: [{ type: "tableCell" }, { type: "tableCell" }],
+				type: "tableRow"
+			}, {
+				content: [{ type: "tableCell" }, { type: "tableCell" }],
+				type: "tableRow"
+			}],
+			type: "table"
+		};
+	}
+}
+//#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/index.js
+var PORTABLE_MARKS = Object.freeze([
+	"bold",
+	"code",
+	"highlight",
+	"italic",
+	"strike"
+]);
+var PORTABLE_NODES = Object.freeze([
+	"blockquote",
+	"bulletList",
+	"callout",
+	"checklist",
+	"checklistItem",
+	"codeBlock",
+	"doc",
+	"hardBreak",
+	"heading",
+	"horizontalRule",
+	"listItem",
+	"orderedList",
+	"paragraph",
+	"table",
+	"tableCell",
+	"tableRow",
+	"text"
+]);
+var DEFAULT_HEADING_LEVELS = Object.freeze([
+	2,
+	3,
+	4
+]);
+var DEFAULT_MAXIMUM_DOCUMENT_BYTES = 1048576;
+var DEFAULT_MAXIMUM_MARKS = 2e4;
+var DEFAULT_MAXIMUM_MARKS_PER_NODE = PORTABLE_MARKS.length;
+var RICH_TEXT_HARD_LIMITS = Object.freeze({
+	maximumDepth: 128,
+	maximumDocumentBytes: 10485760,
+	maximumMarks: 4e5,
+	maximumMarksPerNode: PORTABLE_MARKS.length,
+	maximumNodes: 1e5,
+	maximumTextLength: 10485760
+});
+var ATTRIBUTE_HARD_LIMITS = Object.freeze({
+	maximumDepth: 32,
+	maximumItemsPerArray: 1e4,
+	maximumPropertiesPerObject: 1e3,
+	maximumStringLength: 1048576,
+	maximumTotalBytes: RICH_TEXT_HARD_LIMITS.maximumDocumentBytes
+});
+var DEFAULT_RICH_TEXT_ATTRIBUTE_LIMITS = Object.freeze({
+	maximumDepth: 8,
+	maximumItemsPerArray: 256,
+	maximumPropertiesPerObject: 64,
+	maximumStringLength: 4096,
+	maximumTotalBytes: 65536
+});
+var DEFAULT_RICH_TEXT_PROFILE = Object.freeze({
+	allowedAttributes: Object.freeze({
+		callout: Object.freeze(["tone"]),
+		checklistItem: Object.freeze(["checked", "level"]),
+		codeBlock: Object.freeze(["language"]),
+		heading: Object.freeze(["level"]),
+		"mark:highlight": Object.freeze(["tone"]),
+		orderedList: Object.freeze(["start"]),
+		table: Object.freeze(["header"])
+	}),
+	allowedMarks: PORTABLE_MARKS,
+	allowedNodes: PORTABLE_NODES,
+	attributeLimits: DEFAULT_RICH_TEXT_ATTRIBUTE_LIMITS,
+	headingLevels: DEFAULT_HEADING_LEVELS,
+	maximumDepth: 32,
+	maximumDocumentBytes: DEFAULT_MAXIMUM_DOCUMENT_BYTES,
+	maximumMarks: DEFAULT_MAXIMUM_MARKS,
+	maximumMarksPerNode: DEFAULT_MAXIMUM_MARKS_PER_NODE,
+	maximumNodes: 5e3,
+	maximumTextLength: 25e4
+});
+function parseRichTextDocument(value, profile = DEFAULT_RICH_TEXT_PROFILE) {
+	validateProfile(profile);
+	const node = parseNode(value, "$", 1, profile, resolveAttributeLimits(profile), {
+		attributeBytes: 0,
+		markCount: 0,
+		nodeCount: 0,
+		textLength: 0
+	});
+	if (node.type !== "doc") throw new TypeError("Rich-text document root must have type \"doc\".");
+	const document = {
+		...node,
+		content: node.content ?? [],
+		type: "doc"
+	};
+	if (utf8ByteLength(JSON.stringify(document)) > maximumDocumentBytes(profile)) throw new RangeError("Rich-text document exceeds its total-byte limit.");
+	return document;
+}
+function parseNode(value, path, depth, profile, attributeLimits, state) {
+	if (!isRecord$2(value)) throw new TypeError(`${path} must be a rich-text node with a non-empty type.`);
+	assertKnownKeys(value, path, [
+		"attrs",
+		"content",
+		"marks",
+		"text",
+		"type"
+	]);
+	if (typeof value.type !== "string" || value.type.length === 0) throw new TypeError(`${path} must be a rich-text node with a non-empty type.`);
+	if (!profile.allowedNodes.includes(value.type)) throw new TypeError(`${path} uses disallowed node type "${value.type}".`);
+	if (depth > profile.maximumDepth) throw new RangeError(`${path} exceeds the rich-text depth limit.`);
+	state.nodeCount += 1;
+	if (state.nodeCount > profile.maximumNodes) throw new RangeError("Rich-text document exceeds its node limit.");
+	const node = { type: value.type };
+	if (value.text !== void 0) {
+		if (typeof value.text !== "string") throw new TypeError(`${path}.text must be a string.`);
+		node.text = value.text;
+		state.textLength += value.text.length;
+		if (state.textLength > profile.maximumTextLength) throw new RangeError("Rich-text document exceeds its text-length limit.");
+	}
+	if (value.attrs !== void 0) node.attrs = parseAttributes(value.attrs, `${path}.attrs`, value.type, profile, attributeLimits, state);
+	if (value.content !== void 0) {
+		if (!Array.isArray(value.content)) throw new TypeError(`${path}.content must be an array.`);
+		assertStructuralArray(value.content, `${path}.content`);
+		node.content = value.content.map((child, index) => parseNode(child, `${path}.content[${index}]`, depth + 1, profile, attributeLimits, state));
+	}
+	if (value.marks !== void 0) {
+		if (!Array.isArray(value.marks)) throw new TypeError(`${path}.marks must be an array.`);
+		assertStructuralArray(value.marks, `${path}.marks`);
+		const maximumPerNode = profile.maximumMarksPerNode ?? DEFAULT_MAXIMUM_MARKS_PER_NODE;
+		const maximumMarks = profile.maximumMarks ?? DEFAULT_MAXIMUM_MARKS;
+		if (value.marks.length > maximumPerNode) throw new RangeError(`${path}.marks exceeds the per-node mark limit.`);
+		if (state.markCount + value.marks.length > maximumMarks) throw new RangeError("Rich-text document exceeds its aggregate mark limit.");
+		state.markCount += value.marks.length;
+		node.marks = value.marks.map((mark, index) => parseMark(mark, `${path}.marks[${index}]`, profile, attributeLimits, state));
+		assertPortableMarkSet(node.marks, `${path}.marks`);
+	}
+	assertNodeGrammar(node, path, profile);
+	return node;
+}
+function parseMark(value, path, profile, attributeLimits, state) {
+	if (!isRecord$2(value)) throw new TypeError(`${path} must be a mark with a non-empty type.`);
+	assertKnownKeys(value, path, ["attrs", "type"]);
+	if (typeof value.type !== "string" || value.type.length === 0) throw new TypeError(`${path} must be a mark with a non-empty type.`);
+	if (!profile.allowedMarks.includes(value.type)) throw new TypeError(`${path} uses disallowed mark type "${value.type}".`);
+	const mark = { type: value.type };
+	if (value.attrs !== void 0) mark.attrs = parseAttributes(value.attrs, `${path}.attrs`, `mark:${value.type}`, profile, attributeLimits, state);
+	if (mark.type === "highlight") {
+		const tone = mark.attrs?.tone;
+		if (typeof tone !== "string" || ![
+			"accent",
+			"danger",
+			"info",
+			"success",
+			"warning"
+		].includes(tone)) throw new TypeError(`${path}.attrs.tone must be a configured highlight tone.`);
+	} else if (mark.attrs !== void 0) throw new TypeError(`${path} cannot carry attributes in the portable rich-text grammar.`);
+	return mark;
+}
+function assertNodeGrammar(node, path, profile) {
+	switch (node.type) {
+		case "doc":
+			assertNoNodeFields(node, path, [
+				"attrs",
+				"marks",
+				"text"
+			]);
+			if (node.content === void 0 || node.content.length === 0) throw new TypeError(`${path}.content must contain at least one block node.`);
+			assertChildTypes(node.content, path, blockNodeTypes);
+			break;
+		case "text":
+			assertNoNodeFields(node, path, ["attrs", "content"]);
+			if (node.text === void 0) throw new TypeError(`${path}.text is required for a text node.`);
+			if (node.text.length === 0) throw new TypeError(`${path}.text cannot be empty.`);
+			break;
+		case "paragraph":
+			assertNoNodeFields(node, path, [
+				"attrs",
+				"marks",
+				"text"
+			]);
+			assertChildTypes(node.content ?? [], path, inlineNodeTypes);
+			break;
+		case "heading": {
+			assertNoNodeFields(node, path, ["marks", "text"]);
+			assertChildTypes(node.content ?? [], path, inlineNodeTypes);
+			const level = node.attrs?.level;
+			const levels = profile.headingLevels ?? DEFAULT_HEADING_LEVELS;
+			if (typeof level !== "number" || !Number.isInteger(level) || !levels.includes(level)) throw new TypeError(`${path}.attrs.level must be a configured heading level.`);
+			break;
+		}
+		case "orderedList": {
+			assertNoNodeFields(node, path, ["marks", "text"]);
+			assertNonEmptyChildTypes(node.content, path, listItemNodeTypes);
+			const start = node.attrs?.start;
+			if (start !== void 0 && (!Number.isSafeInteger(start) || Number(start) < 1)) throw new TypeError(`${path}.attrs.start must be a positive integer.`);
+			break;
+		}
+		case "bulletList":
+			assertNoNodeFields(node, path, [
+				"attrs",
+				"marks",
+				"text"
+			]);
+			assertNonEmptyChildTypes(node.content, path, listItemNodeTypes);
+			break;
+		case "listItem":
+			assertNoNodeFields(node, path, [
+				"attrs",
+				"marks",
+				"text"
+			]);
+			assertNonEmptyChildTypes(node.content, path, blockNodeTypes);
+			if (node.content?.[0]?.type !== "paragraph") throw new TypeError(`${path}.content must begin with a paragraph node.`);
+			break;
+		case "blockquote":
+			assertNoNodeFields(node, path, [
+				"attrs",
+				"marks",
+				"text"
+			]);
+			assertNonEmptyChildTypes(node.content, path, blockNodeTypes);
+			break;
+		case "callout":
+			assertNoNodeFields(node, path, ["marks", "text"]);
+			assertNonEmptyChildTypes(node.content, path, blockNodeTypes);
+			if (typeof node.attrs?.tone !== "string" || ![
+				"danger",
+				"info",
+				"success",
+				"warning"
+			].includes(node.attrs.tone)) throw new TypeError(`${path}.attrs.tone must be a configured callout tone.`);
+			break;
+		case "checklist":
+			assertNoNodeFields(node, path, [
+				"attrs",
+				"marks",
+				"text"
+			]);
+			assertNonEmptyChildTypes(node.content, path, checklistItemNodeTypes);
+			break;
+		case "checklistItem":
+			assertNoNodeFields(node, path, ["marks", "text"]);
+			assertChildTypes(node.content ?? [], path, inlineNodeTypes);
+			if (typeof node.attrs?.checked !== "boolean") throw new TypeError(`${path}.attrs.checked must be a boolean.`);
+			if (!Number.isSafeInteger(node.attrs.level) || Number(node.attrs.level) < 0 || Number(node.attrs.level) > 4) throw new TypeError(`${path}.attrs.level must be an integer from zero through four.`);
+			break;
+		case "table":
+			assertNoNodeFields(node, path, ["marks", "text"]);
+			assertNonEmptyChildTypes(node.content, path, tableRowNodeTypes);
+			if (typeof node.attrs?.header !== "boolean") throw new TypeError(`${path}.attrs.header must be a boolean.`);
+			assertRectangularTable(node.content, path);
+			break;
+		case "tableRow":
+			assertNoNodeFields(node, path, [
+				"attrs",
+				"marks",
+				"text"
+			]);
+			assertNonEmptyChildTypes(node.content, path, tableCellNodeTypes);
+			break;
+		case "tableCell":
+			assertNoNodeFields(node, path, [
+				"attrs",
+				"marks",
+				"text"
+			]);
+			assertChildTypes(node.content ?? [], path, inlineNodeTypes);
+			break;
+		case "codeBlock":
+			assertNoNodeFields(node, path, ["content", "marks"]);
+			if (node.text === void 0) throw new TypeError(`${path}.text is required for a code block.`);
+			if (typeof node.attrs?.language !== "string" || !/^[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}$/u.test(node.attrs.language)) throw new TypeError(`${path}.attrs.language must be a bounded language identifier.`);
+			break;
+		case "hardBreak":
+		case "horizontalRule":
+			assertNoNodeFields(node, path, [
+				"attrs",
+				"content",
+				"marks",
+				"text"
+			]);
+			break;
+		default: throw new TypeError(`${path} uses a node without a portable grammar.`);
+	}
+}
+function assertPortableMarkSet(marks, path) {
+	const types = /* @__PURE__ */ new Set();
+	for (const mark of marks) {
+		if (types.has(mark.type)) throw new TypeError(`${path} cannot contain duplicate ${mark.type} marks.`);
+		types.add(mark.type);
+	}
+	if (types.has("code") && types.size > 1) throw new TypeError(`${path} cannot combine code with another mark.`);
+}
+var blockNodeTypes = /* @__PURE__ */ new Set([
+	"blockquote",
+	"bulletList",
+	"callout",
+	"checklist",
+	"codeBlock",
+	"heading",
+	"horizontalRule",
+	"orderedList",
+	"paragraph",
+	"table"
+]);
+var inlineNodeTypes = /* @__PURE__ */ new Set(["hardBreak", "text"]);
+var listItemNodeTypes = /* @__PURE__ */ new Set(["listItem"]);
+var checklistItemNodeTypes = /* @__PURE__ */ new Set(["checklistItem"]);
+var tableRowNodeTypes = /* @__PURE__ */ new Set(["tableRow"]);
+var tableCellNodeTypes = /* @__PURE__ */ new Set(["tableCell"]);
+function assertRectangularTable(rows, path) {
+	const width = rows?.[0]?.content?.length ?? 0;
+	const invalid = rows?.findIndex((row) => row.content?.length !== width) ?? -1;
+	if (width < 1 || invalid >= 0) throw new TypeError(`${path}.content must be a non-empty rectangular table.`);
+}
+function assertNoNodeFields(node, path, fields) {
+	const present = fields.find((field) => node[field] !== void 0);
+	if (present !== void 0) throw new TypeError(`${path}.${present} is not valid on a ${node.type} node.`);
+}
+function assertChildTypes(content, path, allowed) {
+	const invalidIndex = content.findIndex((child) => !allowed.has(child.type));
+	if (invalidIndex >= 0) throw new TypeError(`${path}.content[${invalidIndex}] is not valid inside this node.`);
+}
+function assertNonEmptyChildTypes(content, path, allowed) {
+	if (content === void 0 || content.length === 0) throw new TypeError(`${path}.content must contain at least one child node.`);
+	assertChildTypes(content, path, allowed);
+}
+function parseAttributes(value, path, ownerType, profile, limits, state) {
+	const attributes = parseJsonObject(value, path, 1, limits, state);
+	const allowed = profile.allowedAttributes[ownerType] ?? [];
+	for (const key of Object.keys(attributes)) if (!allowed.includes(key)) throw new TypeError(`${path}.${key} is not allowed for ${ownerType}.`);
+	return attributes;
+}
+function parseJsonObject(value, path, depth, limits, state) {
+	if (!isRecord$2(value)) throw new TypeError(`${path} must be an object.`);
+	assertAttributeDepth(depth, path, limits);
+	const entries = Object.entries(value);
+	if (entries.length > limits.maximumPropertiesPerObject) throw new RangeError(`${path} exceeds the attribute property limit.`);
+	addAttributeBytes(state, limits, 2);
+	const parsed = {};
+	for (const [index, [key, entry]] of entries.entries()) {
+		assertAttributeKey(key, path, limits);
+		addAttributeBytes(state, limits, (index === 0 ? 0 : 1) + jsonByteLength(key) + 1);
+		parsed[key] = parseJsonValue(entry, `${path}.${key}`, depth + 1, limits, state);
+	}
+	return parsed;
+}
+function parseJsonValue(value, path, depth, limits, state) {
+	if (typeof value === "string") {
+		if (value.length > limits.maximumStringLength) throw new RangeError(`${path} exceeds the attribute string limit.`);
+		addAttributeBytes(state, limits, jsonByteLength(value));
+		return value;
+	}
+	if (value === null || typeof value === "boolean") {
+		addAttributeBytes(state, limits, jsonByteLength(value));
+		return value;
+	}
+	if (typeof value === "number" && Number.isFinite(value)) {
+		addAttributeBytes(state, limits, jsonByteLength(value));
+		return value;
+	}
+	if (Array.isArray(value)) {
+		assertAttributeDepth(depth, path, limits);
+		assertJsonArray(value, path, limits);
+		addAttributeBytes(state, limits, 2);
+		return value.map((entry, index) => {
+			if (index > 0) addAttributeBytes(state, limits, 1);
+			return parseJsonValue(entry, `${path}[${index}]`, depth + 1, limits, state);
+		});
+	}
+	if (isRecord$2(value)) return parseJsonObject(value, path, depth, limits, state);
+	throw new TypeError(`${path} is not JSON-compatible.`);
+}
+function addAttributeBytes(state, limits, count) {
+	state.attributeBytes += count;
+	if (state.attributeBytes > limits.maximumTotalBytes) throw new RangeError("Rich-text attributes exceed the total-byte limit.");
+}
+function assertAttributeDepth(depth, path, limits) {
+	if (depth > limits.maximumDepth) throw new RangeError(`${path} exceeds the attribute depth limit.`);
+}
+function assertAttributeKey(key, path, limits) {
+	if (key === "__proto__" || key === "constructor" || key === "prototype") throw new TypeError(`${path}.${key} is a forbidden object key.`);
+	if (key.length > limits.maximumStringLength) throw new RangeError(`${path} contains an attribute key that exceeds the string limit.`);
+}
+function assertJsonArray(value, path, limits) {
+	if (value.length > limits.maximumItemsPerArray) throw new RangeError(`${path} exceeds the attribute item limit.`);
+	const keys = Object.keys(value);
+	for (const key of keys) if (key === "__proto__" || key === "constructor" || key === "prototype") throw new TypeError(`${path}.${key} is a forbidden object key.`);
+	if (keys.length !== value.length || keys.some((key, index) => key !== String(index))) throw new TypeError(`${path} must be a dense JSON array without extra properties.`);
+}
+function assertStructuralArray(value, path) {
+	if (Object.getPrototypeOf(value) !== Array.prototype || Object.getOwnPropertySymbols(value).length) throw new TypeError(`${path} must be a dense JSON array without extra properties.`);
+	const names = Object.getOwnPropertyNames(value);
+	if (names.length !== value.length + 1 || names[value.length] !== "length" || names.slice(0, -1).some((name, index) => name !== String(index))) throw new TypeError(`${path} must be a dense JSON array without extra properties.`);
+}
+function assertKnownKeys(value, path, allowedKeys) {
+	const allowed = new Set(allowedKeys);
+	const unknown = Object.keys(value).find((key) => !allowed.has(key));
+	if (unknown !== void 0) throw new TypeError(`${path}.${unknown} is not a recognized rich-text key.`);
+}
+function jsonByteLength(value) {
+	const serialized = JSON.stringify(value);
+	if (serialized === void 0) throw new TypeError("Attribute value is not JSON-compatible.");
+	return utf8ByteLength(serialized);
+}
+function utf8ByteLength(value) {
+	let bytes = 0;
+	for (let index = 0; index < value.length; index += 1) {
+		const code = value.charCodeAt(index);
+		if (code <= 127) bytes += 1;
+		else if (code <= 2047) bytes += 2;
+		else if (code >= 55296 && code <= 56319) {
+			const next = value.charCodeAt(index + 1);
+			if (next >= 56320 && next <= 57343) {
+				bytes += 4;
+				index += 1;
+			} else bytes += 3;
+		} else bytes += 3;
+	}
+	return bytes;
+}
+function isRecord$2(value) {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
+}
+function validateProfile(profile) {
+	for (const [name, value] of [
+		["maximumDepth", profile.maximumDepth],
+		["maximumNodes", profile.maximumNodes],
+		["maximumTextLength", profile.maximumTextLength]
+	]) assertBoundedProfileLimit(name, value, RICH_TEXT_HARD_LIMITS[name]);
+	for (const [name, value] of [
+		["maximumDocumentBytes", maximumDocumentBytes(profile)],
+		["maximumMarks", profile.maximumMarks ?? DEFAULT_MAXIMUM_MARKS],
+		["maximumMarksPerNode", profile.maximumMarksPerNode ?? DEFAULT_MAXIMUM_MARKS_PER_NODE]
+	]) assertBoundedProfileLimit(name, value, RICH_TEXT_HARD_LIMITS[name]);
+	if ((profile.maximumMarksPerNode ?? DEFAULT_MAXIMUM_MARKS_PER_NODE) > (profile.maximumMarks ?? DEFAULT_MAXIMUM_MARKS)) throw new RangeError("maximumMarksPerNode cannot exceed maximumMarks.");
+	if (!profile.allowedNodes.includes("doc") || !profile.allowedNodes.includes("text")) throw new TypeError("Rich-text profile must allow doc and text nodes.");
+	if (new Set(profile.allowedNodes).size !== profile.allowedNodes.length) throw new TypeError("Rich-text profile node names must be unique.");
+	if (new Set(profile.allowedMarks).size !== profile.allowedMarks.length) throw new TypeError("Rich-text profile mark names must be unique.");
+	const unsupportedNode = profile.allowedNodes.find((name) => !PORTABLE_NODES.includes(name));
+	if (unsupportedNode !== void 0) throw new TypeError(`Rich-text profile node "${unsupportedNode}" has no portable grammar.`);
+	const unsupportedMark = profile.allowedMarks.find((name) => !PORTABLE_MARKS.includes(name));
+	if (unsupportedMark !== void 0) throw new TypeError(`Rich-text profile mark "${unsupportedMark}" has no portable grammar.`);
+	validateHeadingLevels(profile.headingLevels ?? DEFAULT_HEADING_LEVELS);
+	resolveAttributeLimits(profile);
+}
+function assertBoundedProfileLimit(name, value, hardMaximum) {
+	if (!Number.isInteger(value) || value < 1) throw new RangeError(`${name} must be a positive integer.`);
+	if (value > hardMaximum) throw new RangeError(`${name} exceeds the immutable safety ceiling of ${hardMaximum}.`);
+}
+function validateHeadingLevels(levels) {
+	if (levels.length === 0 || new Set(levels).size !== levels.length || levels.some((level) => !Number.isInteger(level) || level < 1 || level > 6)) throw new RangeError("headingLevels must contain unique integer levels from 1 through 6.");
+}
+function maximumDocumentBytes(profile) {
+	return profile.maximumDocumentBytes ?? DEFAULT_MAXIMUM_DOCUMENT_BYTES;
+}
+function resolveAttributeLimits(profile) {
+	const limits = {
+		...DEFAULT_RICH_TEXT_ATTRIBUTE_LIMITS,
+		...profile.attributeLimits
+	};
+	for (const [name, value] of Object.entries(limits)) assertBoundedProfileLimit(name, value, ATTRIBUTE_HARD_LIMITS[name]);
+	return limits;
+}
+//#endregion
+//#region node_modules/@kumwe/studio-renderer-web/dist/scoped-css.js
+var TARGETS = Object.freeze({
+	action: "[data-studio-part=\"action\"]",
+	content: "[data-studio-part=\"content\"]",
+	heading: "[data-studio-part=\"heading\"]",
+	media: "[data-studio-part=\"media\"]",
+	self: ""
+});
+var ALLOWED_PROPERTIES = /* @__PURE__ */ new Set([
+	"background-color",
+	"border-color",
+	"border-radius",
+	"border-style",
+	"border-width",
+	"color",
+	"font-family",
+	"font-size",
+	"font-style",
+	"font-weight",
+	"gap",
+	"letter-spacing",
+	"line-height",
+	"margin-block",
+	"margin-inline",
+	"max-inline-size",
+	"min-block-size",
+	"opacity",
+	"padding-block",
+	"padding-inline",
+	"text-align",
+	"text-decoration",
+	"text-transform"
+]);
+var VALUE = /^(?:#[0-9A-Fa-f]{3,8}|-?[0-9]+(?:\.[0-9]+)?(?:ch|em|rem|%|px)?|[a-z][a-z0-9 -]{0,126}|var\(--studio-[a-z0-9-]{1,100}\))$/u;
+/** Compile structured host style intent into one node-bounded stylesheet. */
+function compileStudioScopedStyleSheet(scope, sheet) {
+	if (!/^[A-Za-z][A-Za-z0-9_-]{0,511}$/u.test(scope)) throw new TypeError("Scoped CSS scope must be a bounded CSS-safe identifier.");
+	if (sheet.rules.length > 100) throw new RangeError("Scoped stylesheet exceeds 100 rules.");
+	const base = `[data-studio-scope="${scope}"]`;
+	return sheet.rules.map((rule) => {
+		if (!Object.hasOwn(TARGETS, rule.target)) throw new TypeError(`Scoped CSS target ${rule.target} is not allowed.`);
+		const entries = Object.entries(rule.declarations);
+		if (entries.length > 50) throw new RangeError("Scoped style rule exceeds 50 declarations.");
+		const declarations = entries.sort(([left], [right]) => left.localeCompare(right)).map(([property, value]) => {
+			if (!ALLOWED_PROPERTIES.has(property)) throw new TypeError(`Scoped CSS property ${property} is not allowed.`);
+			if (value.length > 256 || !VALUE.test(value) || /(?:url|expression|javascript|@|[;{}])/iu.test(value)) throw new TypeError(`Scoped CSS value for ${property} is not allowed.`);
+			return `${property}:${value}`;
+		}).join(";");
+		return `${base}${TARGETS[rule.target]}{${declarations}}`;
+	}).join("");
+}
+//#endregion
+//#region node_modules/@kumwe/studio-media/dist/media-library.js
+var MEDIA_PROVIDER_FAILURE = Object.freeze({
+	defaultMessage: "The media library could not be loaded.",
+	key: "studio.media/provider-failed"
+});
+var MediaLibrary = class {
+	#listeners = /* @__PURE__ */ new Set();
+	#provider;
+	#abortController;
+	#state = {
+		assets: [],
+		status: "idle"
+	};
+	constructor(provider) {
+		this.#provider = provider;
+	}
+	get state() {
+		return structuredClone(this.#state);
+	}
+	dispose() {
+		this.#abortController?.abort();
+		this.#listeners.clear();
+	}
+	async loadNext() {
+		if (this.#state.query === void 0 || this.#state.nextCursor === void 0) return this.state;
+		return this.#load({
+			...this.#state.query,
+			cursor: this.#state.nextCursor
+		}, [...this.#state.assets]);
+	}
+	async search(query) {
+		const normalized = { limit: Math.max(1, Math.min(100, Math.trunc(query.limit))) };
+		if (query.mediaTypes !== void 0) normalized.mediaTypes = [...query.mediaTypes];
+		if (query.search !== void 0) normalized.search = query.search;
+		return this.#load(normalized, []);
+	}
+	subscribe(listener) {
+		this.#listeners.add(listener);
+		listener(this.state);
+		return () => {
+			this.#listeners.delete(listener);
+		};
+	}
+	async #load(query, existing) {
+		this.#abortController?.abort();
+		const controller = new AbortController();
+		this.#abortController = controller;
+		this.#setState({
+			assets: existing,
+			query,
+			status: "loading"
+		});
+		try {
+			const page = await this.#provider.list(query, controller.signal);
+			if (controller.signal.aborted) return this.state;
+			const next = {
+				assets: [...existing, ...page.assets],
+				query,
+				status: "ready"
+			};
+			if (page.nextCursor !== void 0) next.nextCursor = page.nextCursor;
+			this.#setState(next);
+		} catch {
+			if (!controller.signal.aborted) this.#setState({
+				assets: existing,
+				error: { ...MEDIA_PROVIDER_FAILURE },
+				query,
+				status: "error"
+			});
+		}
+		return this.state;
+	}
+	#setState(state) {
+		this.#state = state;
+		for (const listener of this.#listeners) listener(this.state);
+	}
+};
+//#endregion
+//#region node_modules/@kumwe/studio-media/dist/upload-controller.js
+var MEDIA_UPLOAD_FAILURE = Object.freeze({
+	defaultMessage: "The upload could not be completed.",
+	key: "studio.media/upload-failed"
+});
+var MEDIA_UPLOAD_TOO_LARGE = Object.freeze({
+	defaultMessage: "The file is larger than the host allows for this upload.",
+	key: "studio.media/upload-too-large"
+});
+var ACTIVE_STATES = /* @__PURE__ */ new Set([
+	"authorized",
+	"requested",
+	"transferring",
+	"verifying"
+]);
+var MediaUploadController = class {
+	#listeners = /* @__PURE__ */ new Set();
+	#sessionId;
+	#transport;
+	#abortController;
+	#file;
+	#session;
+	constructor(transport, options) {
+		this.#transport = transport;
+		this.#sessionId = options?.sessionId ?? (() => crypto.randomUUID());
+	}
+	get session() {
+		if (this.#session === void 0) throw new Error("No upload session has been started.");
+		return structuredClone(this.#session);
+	}
+	cancel() {
+		const current = this.#session;
+		if (current === void 0 || !ACTIVE_STATES.has(current.state)) return;
+		this.#abortController?.abort();
+		this.#setSession({
+			...structuredClone(current),
+			state: "cancelled"
+		});
+		this.#transport.abort(current.id).catch(() => void 0);
+	}
+	async retry() {
+		const current = this.#session;
+		const file = this.#file;
+		if (current?.state !== "failed" || file === void 0) throw new Error("Only a failed upload session can be retried.");
+		return this.#run(file, structuredClone(current.request));
+	}
+	subscribe(listener) {
+		this.#listeners.add(listener);
+		if (this.#session !== void 0) listener(this.session);
+		return () => {
+			this.#listeners.delete(listener);
+		};
+	}
+	async upload(file, request) {
+		if (this.#session !== void 0 && ACTIVE_STATES.has(this.#session.state)) throw new Error("An upload session is already in progress.");
+		if (file.size < 1) throw new Error("Cannot upload an empty file.");
+		const descriptor = {
+			byteSize: file.size,
+			filename: request.filename,
+			mediaType: request.mediaType,
+			purpose: request.purpose
+		};
+		if (request.checksum !== void 0) descriptor.checksum = request.checksum;
+		this.#file = file;
+		return this.#run(file, descriptor);
+	}
+	#fail() {
+		const current = this.#session;
+		if (current === void 0) return;
+		const failed = {
+			contractVersion: current.contractVersion,
+			failure: {
+				code: "studio.media/upload-failed",
+				message: { ...MEDIA_UPLOAD_FAILURE },
+				severity: "error"
+			},
+			id: current.id,
+			kind: "media-upload-session",
+			progress: { ...current.progress },
+			request: { ...current.request },
+			state: "failed"
+		};
+		if (current.plan !== void 0) failed.plan = { ...current.plan };
+		this.#setSession(failed);
+	}
+	async #run(file, request) {
+		const controller = new AbortController();
+		this.#abortController = controller;
+		const totalBytes = request.byteSize;
+		const base = {
+			contractVersion: STUDIO_CONTRACT_VERSION,
+			id: this.#sessionId(request),
+			kind: "media-upload-session",
+			request
+		};
+		this.#setSession({
+			...base,
+			progress: {
+				totalBytes,
+				transferredBytes: 0
+			},
+			state: "requested"
+		});
+		try {
+			const plan = await this.#transport.authorize(request, controller.signal);
+			if (controller.signal.aborted) return this.session;
+			if (totalBytes > plan.maximumBytes) {
+				this.#setSession({
+					...base,
+					failure: {
+						code: "studio.media/upload-too-large",
+						message: { ...MEDIA_UPLOAD_TOO_LARGE },
+						parameters: {
+							byteSize: totalBytes,
+							maximumBytes: plan.maximumBytes
+						},
+						severity: "error"
+					},
+					plan,
+					progress: {
+						totalBytes,
+						transferredBytes: 0
+					},
+					state: "failed"
+				});
+				return this.session;
+			}
+			this.#setSession({
+				...base,
+				plan,
+				progress: {
+					totalBytes,
+					transferredBytes: 0
+				},
+				state: "authorized"
+			});
+			this.#setSession({
+				...base,
+				plan,
+				progress: {
+					totalBytes,
+					transferredBytes: 0
+				},
+				state: "transferring"
+			});
+			const chunkBytes = Math.max(1, plan.chunkBytes ?? totalBytes);
+			let transferredBytes = 0;
+			while (transferredBytes < totalBytes) {
+				const data = file.slice(transferredBytes, Math.min(transferredBytes + chunkBytes, totalBytes));
+				await this.#transport.transfer({
+					data,
+					offset: transferredBytes,
+					sessionId: base.id
+				}, controller.signal);
+				if (controller.signal.aborted) return this.session;
+				transferredBytes = Math.min(transferredBytes + data.size, totalBytes);
+				this.#setSession({
+					...base,
+					plan,
+					progress: {
+						totalBytes,
+						transferredBytes
+					},
+					state: "transferring"
+				});
+			}
+			this.#setSession({
+				...base,
+				plan,
+				progress: {
+					totalBytes,
+					transferredBytes: totalBytes
+				},
+				state: "verifying"
+			});
+			const asset = await this.#transport.finalize(base.id, controller.signal);
+			if (controller.signal.aborted) return this.session;
+			this.#setSession({
+				...base,
+				asset,
+				plan,
+				progress: {
+					totalBytes,
+					transferredBytes: totalBytes
+				},
+				state: "complete"
+			});
+		} catch {
+			if (!controller.signal.aborted) this.#fail();
+		}
+		return this.session;
+	}
+	#setSession(session) {
+		this.#session = session;
+		for (const listener of this.#listeners) listener(this.session);
+	}
+};
+//#endregion
+//#region node_modules/@kumwe/studio-media/dist/validate-media-reference.js
+/**
+* Semantic validation the media-reference schema cannot express: a
+* rectangle crop uses normalized coordinates and MUST remain inside the
+* source bounds. Schema validation is assumed to have passed already.
+*/
+function validateMediaReference(reference) {
+	const diagnostics = [];
+	const crop = reference.cropIntent;
+	if (crop?.mode === "rectangle") {
+		if (crop.x + crop.width > 1 || crop.y + crop.height > 1) diagnostics.push({
+			code: "studio.media/crop-out-of-bounds",
+			location: { artifactId: reference.assetId },
+			message: {
+				defaultMessage: "The crop rectangle extends beyond the source media bounds.",
+				key: "studio.media/crop-out-of-bounds"
+			},
+			severity: "error"
+		});
+	}
+	return diagnostics;
+}
+//#endregion
+//#region node_modules/@kumwe/studio-media/dist/media-field.js
+/**
+* Host-neutral media-field state machine. It coordinates the complete author
+* journey while persisting only a canonical MediaReference — never bytes,
+* delivery URLs, upload grants, Editor state, or catalogue projections.
+*/
+var StudioMediaFieldController = class {
+	#library;
+	#listeners = /* @__PURE__ */ new Set();
+	#mediaTypes;
+	#onChange;
+	#provider;
+	#readOnly;
+	#upload;
+	#usage;
+	#asset;
+	#libraryState = {
+		assets: [],
+		status: "idle"
+	};
+	#status;
+	#uploadState;
+	#value;
+	constructor(options) {
+		this.#provider = options.provider;
+		this.#usage = options.usage;
+		this.#mediaTypes = options.mediaTypes === void 0 ? void 0 : [...options.mediaTypes];
+		this.#onChange = options.onChange;
+		this.#readOnly = options.readOnly === true || options.binding !== void 0 && options.binding.source.kind !== "static-value";
+		this.#value = options.value === void 0 ? void 0 : structuredClone(options.value);
+		this.#upload = options.uploadTransport === void 0 ? void 0 : new MediaUploadController(options.uploadTransport);
+		this.#status = this.#value === void 0 ? "empty" : "browsing";
+		this.#library = new MediaLibrary(options.provider);
+		this.#library.subscribe((library) => {
+			this.#libraryState = library;
+			if (library.status === "error") this.#status = "error";
+			this.#emit(false);
+		});
+		if (this.#upload !== void 0) this.#upload.subscribe((upload) => {
+			this.#uploadState = upload;
+			this.#status = upload.state === "failed" ? "error" : upload.state === "complete" ? "browsing" : "uploading";
+			this.#emit(false);
+		});
+	}
+	get state() {
+		const state = {
+			diagnostics: this.#value === void 0 ? [] : validateMediaReference(this.#value),
+			library: structuredClone(this.#libraryState),
+			readOnly: this.#readOnly,
+			status: this.#status
+		};
+		if (this.#asset !== void 0) state.asset = structuredClone(this.#asset);
+		if (this.#uploadState !== void 0) state.upload = structuredClone(this.#uploadState);
+		if (this.#value !== void 0) state.value = structuredClone(this.#value);
+		return state;
+	}
+	cancelUpload() {
+		this.#assertMutable();
+		this.#upload?.cancel();
+	}
+	clear() {
+		this.#assertMutable();
+		this.#asset = void 0;
+		this.#value = void 0;
+		this.#status = "empty";
+		this.#emit(true);
+	}
+	dispose() {
+		this.#library.dispose();
+		this.#listeners.clear();
+	}
+	async drop(files) {
+		return this.#uploadFiles([...files]);
+	}
+	async loadNext() {
+		this.#status = "browsing";
+		await this.#library.loadNext();
+		return this.state;
+	}
+	async open() {
+		return this.search("");
+	}
+	async paste(items) {
+		const files = [...items].filter((item) => item.kind === "file").map((item) => item.getAsFile()).filter((file) => file !== null);
+		return this.#uploadFiles(files);
+	}
+	async resolve() {
+		if (this.#value === void 0) return this.state;
+		this.#status = "browsing";
+		this.#emit(false);
+		try {
+			const asset = await this.#provider.get(this.#value.assetId);
+			if (asset === null) {
+				this.#asset = void 0;
+				this.#status = "orphaned";
+			} else {
+				this.#asset = asset;
+				this.#status = asset.state === "rejected" || asset.state === "quarantined" ? "error" : "ready";
+			}
+		} catch {
+			this.#status = "error";
+		}
+		this.#emit(false);
+		return this.state;
+	}
+	async retryUpload() {
+		this.#assertMutable();
+		if (this.#upload === void 0) throw new Error("This media field has no upload transport.");
+		const result = await this.#upload.retry();
+		await this.#acceptCompletedUpload(result);
+		return this.state;
+	}
+	async search(search) {
+		this.#status = "browsing";
+		await this.#library.search({
+			limit: 40,
+			...this.#mediaTypes === void 0 ? {} : { mediaTypes: this.#mediaTypes },
+			...search.trim().length === 0 ? {} : { search: search.trim().slice(0, 500) }
+		});
+		return this.state;
+	}
+	select(asset) {
+		this.#assertMutable();
+		this.#asset = structuredClone(asset);
+		const alt = asset.metadata.altText?.trim();
+		this.#value = {
+			accessibility: {
+				altText: alt === void 0 || alt.length === 0 ? asset.filename : alt,
+				...asset.metadata.caption === void 0 ? {} : { caption: asset.metadata.caption },
+				mode: "informative"
+			},
+			assetId: asset.id,
+			assetRevision: asset.revision,
+			contractVersion: STUDIO_CONTRACT_VERSION,
+			kind: "media-reference",
+			usage: this.#usage
+		};
+		this.#status = asset.state === "ready" ? "ready" : asset.state === "processing" ? "uploading" : "error";
+		this.#emit(true);
+	}
+	setAltText(altText) {
+		this.#assertMutable();
+		const value = this.#requireValue();
+		const caption = value.accessibility.mode === "informative" ? value.accessibility.caption : void 0;
+		value.accessibility = {
+			altText: altText.trim().slice(0, 5e3),
+			...caption === void 0 ? {} : { caption },
+			mode: "informative"
+		};
+		this.#emit(true);
+	}
+	setCaption(caption) {
+		this.#assertMutable();
+		const value = this.#requireValue();
+		if (value.accessibility.mode !== "informative") return;
+		value.accessibility = {
+			...value.accessibility,
+			...caption === void 0 || caption.length === 0 ? {} : { caption: caption.slice(0, 2e4) }
+		};
+		this.#emit(true);
+	}
+	setDecorative(decorative) {
+		this.#assertMutable();
+		const value = this.#requireValue();
+		if (decorative) value.accessibility = { mode: "decorative" };
+		else {
+			const metadataAlt = this.#asset?.metadata.altText?.trim() ?? "";
+			const filename = this.#asset?.filename ?? "";
+			value.accessibility = {
+				altText: metadataAlt.length > 0 ? metadataAlt : filename.length > 0 ? filename : "Media",
+				mode: "informative"
+			};
+		}
+		this.#emit(true);
+	}
+	setFocalPoint(point) {
+		this.#assertMutable();
+		const value = this.#requireValue();
+		if (point === void 0) delete value.focalPoint;
+		else value.focalPoint = {
+			x: clampUnit(point.x),
+			y: clampUnit(point.y)
+		};
+		this.#emit(true);
+	}
+	setRenditionIntent(intent) {
+		this.#assertMutable();
+		const value = this.#requireValue();
+		if (intent === void 0) delete value.renditionIntent;
+		else value.renditionIntent = structuredClone(intent);
+		this.#emit(true);
+	}
+	subscribe(listener) {
+		this.#listeners.add(listener);
+		listener(this.state);
+		return () => {
+			this.#listeners.delete(listener);
+		};
+	}
+	async upload(file) {
+		return this.#uploadFiles([file]);
+	}
+	#assertMutable() {
+		if (this.#readOnly) throw new Error("Dynamic and read-only media fields cannot be mutated.");
+	}
+	async #acceptCompletedUpload(session) {
+		if (session.state !== "complete" || session.asset === void 0) return;
+		const asset = await this.#provider.get(session.asset.id);
+		if (asset === null) {
+			this.#value = {
+				accessibility: {
+					altText: session.request.filename,
+					mode: "informative"
+				},
+				assetId: session.asset.id,
+				assetRevision: session.asset.revision,
+				contractVersion: STUDIO_CONTRACT_VERSION,
+				kind: "media-reference",
+				usage: this.#usage
+			};
+			this.#asset = void 0;
+			this.#status = "orphaned";
+			this.#emit(true);
+			return;
+		}
+		this.select(asset);
+	}
+	#emit(changed) {
+		const state = this.state;
+		if (changed) this.#onChange?.(state);
+		for (const listener of this.#listeners) listener(state);
+	}
+	#requireValue() {
+		if (this.#value === void 0) throw new Error("Select media before editing its usage.");
+		return this.#value;
+	}
+	async #uploadFiles(files) {
+		this.#assertMutable();
+		const file = files[0];
+		if (file === void 0) return this.state;
+		if (this.#mediaTypes !== void 0 && !this.#mediaTypes.includes(file.type)) throw new TypeError(`Media type "${file.type}" is not accepted by this field.`);
+		this.#status = "uploading";
+		this.#emit(false);
+		if (this.#upload === void 0) {
+			const asset = await this.#provider.upload({
+				alt: file.name,
+				file
+			});
+			this.select(asset);
+			return this.state;
+		}
+		const result = await this.#upload.upload(file, {
+			filename: file.name,
+			mediaType: file.type || "application/octet-stream",
+			purpose: this.#usage
+		});
+		await this.#acceptCompletedUpload(result);
+		return this.state;
+	}
+};
+function clampUnit(value) {
+	if (!Number.isFinite(value)) throw new TypeError("Focal coordinates must be finite numbers.");
+	return Math.max(0, Math.min(1, value));
+}
+//#endregion
+//#region node_modules/@kumwe/studio/dist/media-authoring-control.js
+function mountStudioMediaReferenceControl(options, services) {
+	return new StudioMediaReferenceControl(options, services);
+}
+function mountStudioMediaCollectionControl(options, services) {
+	return new StudioMediaCollectionControl(options, services);
+}
+var StudioMediaReferenceControl = class {
+	#controller;
+	#holder;
+	#onChange;
+	#unsubscribe;
+	readOnly;
+	#error;
+	#lastValid;
+	constructor(options, services) {
+		this.#holder = group(options.holder, "Media picker");
+		this.#onChange = options.onChange;
+		this.#lastValid = optionalReference(options.value);
+		this.#controller = new StudioMediaFieldController({
+			...options.binding === void 0 ? {} : { binding: options.binding },
+			...options.mediaTypes === void 0 ? {} : { mediaTypes: [...options.mediaTypes] },
+			onChange: (state) => this.#acceptChange(state),
+			provider: services.provider,
+			...options.readOnly === void 0 ? {} : { readOnly: options.readOnly },
+			...services.uploadTransport === void 0 ? {} : { uploadTransport: services.uploadTransport },
+			usage: options.usage ?? this.#lastValid?.usage ?? "studio.media/content",
+			...this.#lastValid === void 0 ? {} : { value: this.#lastValid }
+		});
+		this.readOnly = this.#controller.state.readOnly;
+		this.#holder.addEventListener("dragover", (event) => {
+			if (!this.readOnly) event.preventDefault();
+		});
+		this.#holder.addEventListener("drop", (event) => {
+			if (this.readOnly || event.dataTransfer === null) return;
+			event.preventDefault();
+			this.#run(() => this.#controller.drop(event.dataTransfer?.files ?? []));
+		});
+		this.#holder.addEventListener("paste", (event) => {
+			if (this.readOnly || event.clipboardData === null) return;
+			this.#run(() => this.#controller.paste(event.clipboardData?.items ?? []));
+		});
+		this.#unsubscribe = this.#controller.subscribe(() => this.#render());
+		if (this.#lastValid === void 0) this.#run(() => this.#controller.open());
+		else this.#run(() => this.#controller.resolve());
+	}
+	destroy() {
+		this.#unsubscribe();
+		this.#controller.dispose();
+		this.#holder.remove();
+	}
+	focus() {
+		this.#holder.querySelector("[aria-label=\"Search media\"]")?.focus();
+	}
+	value() {
+		return this.#lastValid === void 0 ? void 0 : structuredClone(this.#lastValid);
+	}
+	#acceptChange(state) {
+		let valid = !state.diagnostics.some((diagnostic) => diagnostic.severity === "error");
+		if (valid && state.value !== void 0) try {
+			this.#lastValid = canonicalReference(state.value);
+		} catch {
+			valid = false;
+		}
+		else if (valid) this.#lastValid = void 0;
+		this.#onChange?.({
+			valid,
+			value: this.value()
+		});
+	}
+	#render() {
+		const state = this.#controller.state;
+		const browser = document.createElement("section");
+		browser.setAttribute("aria-label", "Media library");
+		const search = input("Search media", "", this.readOnly);
+		const searchButton = button("Search media library", () => {
+			this.#run(() => this.#controller.search(search.value));
+		});
+		searchButton.disabled = this.readOnly;
+		browser.append(search, searchButton);
+		for (const asset of state.library.assets) browser.append(button(`Select ${mediaAssetLabel(asset)}`, () => this.#controller.select(asset), this.readOnly));
+		if (state.library.nextCursor !== void 0) browser.append(button("Load more media", () => {
+			this.#run(() => this.#controller.loadNext());
+		}, this.readOnly));
+		const upload = document.createElement("input");
+		upload.type = "file";
+		upload.setAttribute("aria-label", "Upload media");
+		upload.disabled = this.readOnly;
+		if (state.library.query?.mediaTypes !== void 0) upload.accept = state.library.query.mediaTypes.join(",");
+		upload.addEventListener("change", () => {
+			const file = upload.files?.[0];
+			if (file !== void 0) this.#run(() => this.#controller.upload(file));
+		});
+		browser.append(upload);
+		const status = document.createElement("p");
+		status.setAttribute("role", state.status === "error" ? "alert" : "status");
+		status.setAttribute("aria-live", "polite");
+		status.textContent = this.#statusText(state);
+		browser.append(status);
+		if (state.upload?.state === "failed") browser.append(button("Retry media upload", () => {
+			this.#run(() => this.#controller.retryUpload());
+		}, this.readOnly));
+		if (state.upload !== void 0 && ![
+			"cancelled",
+			"complete",
+			"failed"
+		].includes(state.upload.state)) browser.append(button("Cancel media upload", () => this.#controller.cancelUpload()));
+		const usage = document.createElement("section");
+		usage.setAttribute("aria-label", "Selected media usage");
+		if (state.value === void 0) usage.append(document.createTextNode("No media selected."));
+		else this.#renderUsage(usage, state);
+		this.#holder.replaceChildren(browser, usage);
+	}
+	#renderUsage(holder, state) {
+		const value = state.value;
+		if (value === void 0) return;
+		const selected = document.createElement("p");
+		selected.textContent = state.status === "orphaned" ? `Missing media ${value.assetId}. Select a replacement.` : `Selected media ${state.asset?.filename ?? value.assetId}.`;
+		holder.append(selected);
+		const decorative = document.createElement("input");
+		decorative.type = "checkbox";
+		decorative.checked = value.accessibility.mode === "decorative";
+		decorative.disabled = this.readOnly;
+		decorative.setAttribute("aria-label", "Media is decorative");
+		decorative.addEventListener("change", () => this.#controller.setDecorative(decorative.checked));
+		holder.append(decorative);
+		const accessibility = value.accessibility;
+		const informative = accessibility.mode === "informative";
+		const alt = input("Media alternative text", accessibility.mode === "informative" ? accessibility.altText : "", this.readOnly || !informative);
+		alt.maxLength = 5e3;
+		alt.addEventListener("input", () => this.#controller.setAltText(alt.value));
+		const caption = input("Media caption", accessibility.mode === "informative" ? accessibility.caption ?? "" : "", this.readOnly || !informative);
+		caption.maxLength = 2e4;
+		caption.addEventListener("input", () => this.#controller.setCaption(caption.value));
+		holder.append(alt, caption);
+		const focalX = numberInput$1("Media focal point x", value.focalPoint?.x ?? .5, this.readOnly);
+		const focalY = numberInput$1("Media focal point y", value.focalPoint?.y ?? .5, this.readOnly);
+		const setFocal = () => {
+			this.#controller.setFocalPoint({
+				x: focalX.valueAsNumber,
+				y: focalY.valueAsNumber
+			});
+		};
+		focalX.addEventListener("change", setFocal);
+		focalY.addEventListener("change", setFocal);
+		holder.append(focalX, focalY);
+		const role = input("Media rendition role", value.renditionIntent?.role ?? "content", this.readOnly);
+		role.maxLength = 64;
+		const fit = select("Media rendition fit", [
+			"contain",
+			"cover",
+			"fill",
+			"scale-down"
+		], value.renditionIntent?.fit ?? "cover", this.readOnly);
+		const setRendition = () => {
+			this.#controller.setRenditionIntent({
+				fit: fit.value,
+				role: role.value.trim() || "content"
+			});
+		};
+		role.addEventListener("change", setRendition);
+		fit.addEventListener("change", setRendition);
+		holder.append(role, fit);
+		holder.append(button("Replace media", () => this.focus(), this.readOnly), button("Clear media", () => this.#controller.clear(), this.readOnly));
+	}
+	async #run(action) {
+		try {
+			this.#error = void 0;
+			await action();
+		} catch (error) {
+			this.#error = error instanceof Error ? error.message : "Media operation failed.";
+			this.#render();
+		}
+	}
+	#statusText(state) {
+		if (this.#error !== void 0) return this.#error;
+		if (state.upload !== void 0 && state.status === "uploading") {
+			const { totalBytes, transferredBytes } = state.upload.progress;
+			return `Uploading media: ${transferredBytes} of ${totalBytes} bytes.`;
+		}
+		switch (state.status) {
+			case "browsing": return "Browse, search, paste, drop, or upload media.";
+			case "empty": return "No media selected.";
+			case "error": return "The media operation needs attention.";
+			case "orphaned": return "The stored media reference is missing. Select a replacement.";
+			case "ready": return "Media is ready.";
+			case "uploading": return "Media is processing.";
+		}
+	}
+};
+var StudioMediaCollectionControl = class {
+	#holder;
+	#list;
+	#onChange;
+	#picker;
+	readOnly;
+	#lastValid;
+	constructor(options, services) {
+		this.#holder = group(options.holder, "Media collection editor");
+		this.#list = document.createElement("ol");
+		this.#list.setAttribute("aria-label", "Selected media order");
+		this.#onChange = options.onChange;
+		this.#lastValid = referenceCollection(options.value);
+		this.readOnly = readOnly(options);
+		const pickerHolder = document.createElement("div");
+		this.#picker = new StudioMediaReferenceControl({
+			...options.binding === void 0 ? {} : { binding: options.binding },
+			holder: pickerHolder,
+			...options.mediaTypes === void 0 ? {} : { mediaTypes: options.mediaTypes },
+			onChange: (change) => {
+				if (change.valid && change.value !== void 0) this.#append(canonicalReference(change.value));
+			},
+			readOnly: this.readOnly,
+			usage: options.usage ?? "studio.media/collection",
+			value: void 0
+		}, services);
+		this.#holder.append(pickerHolder, this.#list);
+		this.#render();
+	}
+	destroy() {
+		this.#picker.destroy();
+		this.#holder.remove();
+	}
+	focus() {
+		this.#picker.focus();
+	}
+	value() {
+		return structuredClone(this.#lastValid);
+	}
+	#append(value) {
+		if (this.readOnly || this.#lastValid.length >= 100) return;
+		if (this.#lastValid.some((item) => item.assetId === value.assetId)) return;
+		this.#commit([...this.#lastValid, canonicalReference(value)]);
+	}
+	#commit(value) {
+		try {
+			this.#lastValid = referenceCollection(value);
+			this.#onChange?.({
+				valid: true,
+				value: this.value()
+			});
+			this.#render();
+		} catch {
+			this.#onChange?.({
+				valid: false,
+				value: this.value()
+			});
+		}
+	}
+	#move(index, delta) {
+		const target = index + delta;
+		if (this.readOnly || target < 0 || target >= this.#lastValid.length) return;
+		const next = [...this.#lastValid];
+		const current = next[index];
+		const other = next[target];
+		if (current === void 0 || other === void 0) return;
+		next[index] = other;
+		next[target] = current;
+		this.#commit(next);
+	}
+	#render() {
+		this.#list.replaceChildren();
+		for (const [index, reference] of this.#lastValid.entries()) {
+			const item = document.createElement("li");
+			const label = document.createElement("p");
+			label.textContent = `${index + 1}. ${reference.assetId}`;
+			item.append(label);
+			const decorative = document.createElement("input");
+			decorative.type = "checkbox";
+			decorative.checked = reference.accessibility.mode === "decorative";
+			decorative.disabled = this.readOnly;
+			decorative.setAttribute("aria-label", `Media ${index + 1} is decorative`);
+			decorative.addEventListener("change", () => {
+				const next = structuredClone(this.#lastValid);
+				const selected = next[index];
+				if (selected === void 0) return;
+				selected.accessibility = decorative.checked ? { mode: "decorative" } : {
+					altText: selected.assetId,
+					mode: "informative"
+				};
+				this.#commit(next);
+			});
+			item.append(decorative);
+			const alt = input(`Media ${index + 1} alternative text`, reference.accessibility.mode === "informative" ? reference.accessibility.altText : "", this.readOnly || reference.accessibility.mode !== "informative");
+			alt.addEventListener("change", () => {
+				const next = structuredClone(this.#lastValid);
+				const selected = next[index];
+				if (selected?.accessibility.mode !== "informative") return;
+				selected.accessibility.altText = alt.value;
+				this.#commit(next);
+			});
+			item.append(alt);
+			item.append(button(`Move media ${index + 1} up`, () => this.#move(index, -1), this.readOnly || index === 0), button(`Move media ${index + 1} down`, () => this.#move(index, 1), this.readOnly || index === this.#lastValid.length - 1), button(`Remove media ${index + 1}`, () => this.#commit(this.#lastValid.filter((_, itemIndex) => itemIndex !== index)), this.readOnly));
+			this.#list.append(item);
+		}
+	}
+};
+function optionalReference(value) {
+	if (value === void 0 || value === null) return void 0;
+	return canonicalReference(value);
+}
+function referenceCollection(value) {
+	if (!Array.isArray(value) || value.length > 100) throw new RangeError("Media collection must contain at most 100 references.");
+	return value.map(canonicalReference);
+}
+function canonicalReference(value) {
+	const record = exactObject(value, [
+		"accessibility",
+		"assetId",
+		"assetRevision",
+		"contractVersion",
+		"cropIntent",
+		"focalPoint",
+		"kind",
+		"renditionIntent",
+		"usage"
+	], "Media reference");
+	if (record.contractVersion !== "0.1-draft" || record.kind !== "media-reference") throw new TypeError("Media reference has an unsupported contract or kind.");
+	const assetId = boundedName(record.assetId, /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/u, 240, "asset id");
+	const usage = boundedName(record.usage, /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u, 160, "usage");
+	const candidate = {
+		accessibility: parseAccessibility(record.accessibility),
+		assetId,
+		contractVersion: "0.1-draft",
+		kind: "media-reference",
+		usage
+	};
+	if (record.assetRevision !== void 0) candidate.assetRevision = boundedName(record.assetRevision, /^.{1,200}$/u, 200, "revision");
+	if (record.focalPoint !== void 0) candidate.focalPoint = parseFocalPoint(record.focalPoint);
+	if (record.cropIntent !== void 0) candidate.cropIntent = parseCropIntent(record.cropIntent);
+	if (record.renditionIntent !== void 0) candidate.renditionIntent = parseRenditionIntent(record.renditionIntent);
+	if (validateMediaReference(candidate).some((diagnostic) => diagnostic.severity === "error")) throw new TypeError("Media value must be a canonical Studio media reference.");
+	return candidate;
+}
+function parseAccessibility(value) {
+	const record = exactObject(value, [
+		"altFieldPath",
+		"altText",
+		"caption",
+		"captionFieldPath",
+		"mode"
+	], "Media accessibility");
+	switch (record.mode) {
+		case "decorative":
+			exactKeys(record, ["mode"], "Decorative media accessibility");
+			return { mode: "decorative" };
+		case "informative": {
+			exactKeys(record, [
+				"altText",
+				"caption",
+				"mode"
+			], "Informative media accessibility");
+			const altText = boundedText(record.altText, 1, 5e3, "Media alternative text");
+			const caption = record.caption === void 0 ? void 0 : boundedText(record.caption, 0, 2e4, "Media caption");
+			return {
+				altText,
+				...caption === void 0 ? {} : { caption },
+				mode: "informative"
+			};
+		}
+		case "bound": {
+			exactKeys(record, [
+				"altFieldPath",
+				"captionFieldPath",
+				"mode"
+			], "Bound media accessibility");
+			const altFieldPath = localPath(record.altFieldPath, "Alternative-text field path");
+			const captionFieldPath = record.captionFieldPath === void 0 ? void 0 : localPath(record.captionFieldPath, "Caption field path");
+			return {
+				altFieldPath,
+				...captionFieldPath === void 0 ? {} : { captionFieldPath },
+				mode: "bound"
+			};
+		}
+		default: throw new TypeError("Media accessibility mode is invalid.");
+	}
+}
+function parseFocalPoint(value) {
+	const record = exactObject(value, ["x", "y"], "Media focal point");
+	return {
+		x: unit(record.x, "Focal x"),
+		y: unit(record.y, "Focal y")
+	};
+}
+function parseCropIntent(value) {
+	const record = exactObject(value, [
+		"height",
+		"mode",
+		"width",
+		"x",
+		"y"
+	], "Media crop intent");
+	if (record.mode === "aspect-ratio") {
+		exactKeys(record, [
+			"height",
+			"mode",
+			"width"
+		], "Aspect-ratio crop");
+		return {
+			height: boundedInteger(record.height, 1, 1e4, "Crop height"),
+			mode: "aspect-ratio",
+			width: boundedInteger(record.width, 1, 1e4, "Crop width")
+		};
+	}
+	if (record.mode === "rectangle") {
+		exactKeys(record, [
+			"height",
+			"mode",
+			"width",
+			"x",
+			"y"
+		], "Rectangle crop");
+		const width = unit(record.width, "Crop width");
+		const height = unit(record.height, "Crop height");
+		if (width === 0 || height === 0) throw new RangeError("Crop dimensions must be positive.");
+		return {
+			height,
+			mode: "rectangle",
+			width,
+			x: unit(record.x, "Crop x"),
+			y: unit(record.y, "Crop y")
+		};
+	}
+	throw new TypeError("Media crop mode is invalid.");
+}
+function parseRenditionIntent(value) {
+	const record = exactObject(value, [
+		"fit",
+		"preferredMediaTypes",
+		"role"
+	], "Media rendition intent");
+	const role = boundedName(record.role, /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/u, 100, "rendition role");
+	const fit = record.fit;
+	if (fit !== void 0 && fit !== "contain" && fit !== "cover" && fit !== "fill" && fit !== "scale-down") throw new TypeError("Media rendition fit is invalid.");
+	let preferredMediaTypes;
+	if (record.preferredMediaTypes !== void 0) {
+		if (!Array.isArray(record.preferredMediaTypes) || record.preferredMediaTypes.length > 10) throw new RangeError("Preferred media types exceed their item limit.");
+		preferredMediaTypes = record.preferredMediaTypes.map((item) => boundedName(item, /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/u, 200, "preferred media type"));
+		if (new Set(preferredMediaTypes).size !== preferredMediaTypes.length) throw new TypeError("Preferred media types must be unique.");
+	}
+	return {
+		...fit === void 0 ? {} : { fit },
+		...preferredMediaTypes === void 0 ? {} : { preferredMediaTypes },
+		role
+	};
+}
+function localPath(value, name) {
+	if (!Array.isArray(value) || value.length < 1 || value.length > 32) throw new RangeError(`${name} must have 1 through 32 segments.`);
+	return value.map((segment) => boundedName(segment, /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/u, 100, `${name} segment`));
+}
+function exactObject(value, keys, name) {
+	if (typeof value !== "object" || value === null || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) throw new TypeError(`${name} must be a plain JSON object.`);
+	const record = value;
+	exactKeys(record, keys, name);
+	return record;
+}
+function exactKeys(record, keys, name) {
+	const allowed = new Set(keys);
+	const unknown = Object.keys(record).find((key) => !allowed.has(key));
+	if (unknown !== void 0) throw new TypeError(`${name} contains unknown member ${unknown}.`);
+}
+function boundedName(value, pattern, maximum, name) {
+	if (typeof value !== "string" || value.length > maximum || [
+		"__proto__",
+		"constructor",
+		"prototype"
+	].includes(value) || !pattern.test(value)) throw new TypeError(`Media ${name} is invalid.`);
+	return value;
+}
+function boundedText(value, minimum, maximum, name) {
+	if (typeof value !== "string" || value.length < minimum || value.length > maximum) throw new RangeError(`${name} must contain ${minimum} through ${maximum} characters.`);
+	return value;
+}
+function boundedInteger(value, minimum, maximum, name) {
+	if (typeof value !== "number" || !Number.isInteger(value) || value < minimum || value > maximum) throw new RangeError(`${name} must be an integer from ${minimum} through ${maximum}.`);
+	return value;
+}
+function unit(value, name) {
+	if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) throw new RangeError(`${name} must be a finite number from 0 through 1.`);
+	return value;
+}
+function readOnly(options) {
+	return options.readOnly === true || options.binding !== void 0 && options.binding.source.kind !== "static-value";
+}
+function group(holder, label) {
+	const element = document.createElement("section");
+	element.className = "studio-authoring-control studio-media-control";
+	element.setAttribute("aria-label", label);
+	holder.append(element);
+	return element;
+}
+function input(label, value, disabled) {
+	const element = document.createElement("input");
+	element.type = "text";
+	element.value = value;
+	element.disabled = disabled;
+	element.setAttribute("aria-label", label);
+	return element;
+}
+function numberInput$1(label, value, disabled) {
+	const element = document.createElement("input");
+	element.type = "number";
+	element.min = "0";
+	element.max = "1";
+	element.step = "0.01";
+	element.value = String(value);
+	element.disabled = disabled;
+	element.setAttribute("aria-label", label);
+	return element;
+}
+function select(label, values, selected, disabled) {
+	const element = document.createElement("select");
+	element.disabled = disabled;
+	element.setAttribute("aria-label", label);
+	for (const value of values) {
+		const option = document.createElement("option");
+		option.value = value;
+		option.textContent = value;
+		option.selected = value === selected;
+		element.append(option);
+	}
+	return element;
+}
+function button(label, action, disabled = false) {
+	const element = document.createElement("button");
+	element.type = "button";
+	element.textContent = label;
+	element.disabled = disabled;
+	element.setAttribute("aria-label", label);
+	element.addEventListener("click", action);
+	return element;
+}
+function mediaAssetLabel(asset) {
+	return `${asset.filename} (${asset.mediaKind})`;
+}
+//#endregion
+//#region node_modules/@kumwe/studio/dist/authoring-controls.js
+var STUDIO_AUTHORING_CONTROL_IDS = Object.freeze({
+	chart: "studio.control/chart",
+	drawing: "studio.control/drawing",
+	mediaCollection: "studio.control/media-collection",
+	mediaReference: "studio.control/media-reference",
+	money: "studio.control/money",
+	richText: "studio.control/rich-text",
+	scopedCss: "studio.control/scoped-css",
+	source: "studio.control/source",
+	table: "studio.control/table"
+});
+/**
+* Studio-owned registry for first-party page controls. Hosts see stable
+* control identifiers and canonical values, never Editor.js/CodeMirror/chart
+* library configuration.
+*/
+var StudioAuthoringControlRegistry = class {
+	#codeField;
+	#media;
+	#richTextFactory;
+	#sourcePreview;
+	constructor(services = {}) {
+		this.#codeField = services.codeField ?? new TextareaCodeFieldAdapter();
+		this.#media = services.media;
+		this.#richTextFactory = services.richTextFactory ?? new StudioRichTextEditorFactory(services.strictContentSecurityPolicy === true ? new StudioStrictCspRichTextSurfaceAdapter() : void 0);
+		this.#sourcePreview = services.sourcePreview;
+	}
+	async mount(control, options) {
+		switch (control) {
+			case "studio.control/rich-text": return this.#mountRichText(options);
+			case "studio.control/source": return new StudioSourceControl(options, this.#codeField, this.#sourcePreview);
+			case "studio.control/chart": return new StudioChartControl(options);
+			case "studio.control/drawing": return new StudioDrawingControl(options);
+			case "studio.control/media-reference": return mountStudioMediaReferenceControl(options, this.#requireMedia());
+			case "studio.control/media-collection": return mountStudioMediaCollectionControl(options, this.#requireMedia());
+			case "studio.control/money": return new StudioMoneyControl(options);
+			case "studio.control/scoped-css": return new StudioScopedCssControl(options);
+			case "studio.control/table": return new StudioTableControl(options);
+			default: throw new Error(`Unknown Studio authoring control ${String(control)}.`);
+		}
+	}
+	async #mountRichText(options) {
+		if (!isRecord$1(options.value) || options.value.type !== "doc") throw new TypeError("Rich-text control requires a canonical Studio document.");
+		const profile = parseRichTextProfile(options.profile);
+		let value = structuredClone(options.value);
+		const editor = await this.#richTextFactory.create({
+			...options.binding === void 0 ? {} : { binding: options.binding },
+			holder: options.holder,
+			onChange: (change) => {
+				value = change.value;
+				options.onChange?.({
+					valid: change.valid,
+					value: change.value
+				});
+			},
+			...profile === void 0 ? {} : { profile },
+			readOnly: isReadOnly(options),
+			value: options.value
+		});
+		value = await editor.save();
+		return {
+			destroy: () => editor.destroy(),
+			focus: () => editor.focus(),
+			readOnly: editor.readOnly,
+			value: () => structuredClone(value)
+		};
+	}
+	#requireMedia() {
+		if (this.#media === void 0) throw new Error("Studio media controls require host-injected media services.");
+		return this.#media;
+	}
+};
+var TextareaCodeFieldAdapter = class {
+	mount(options) {
+		const textarea = document.createElement("textarea");
+		textarea.className = "studio-source-editor";
+		textarea.setAttribute("aria-label", `${options.language} source`);
+		textarea.disabled = options.readOnly;
+		textarea.rows = 12;
+		textarea.spellcheck = false;
+		textarea.value = options.source;
+		textarea.addEventListener("input", () => options.onChange(textarea.value));
+		options.holder.append(textarea);
+		return {
+			destroy: () => textarea.remove(),
+			focus: () => textarea.focus(),
+			source: () => textarea.value
+		};
+	}
+};
+var StudioSourceControl = class {
+	#code;
+	#language;
+	#onChange;
+	#preview;
+	#previewRegion;
+	readOnly;
+	#abort;
+	#lastValid;
+	constructor(options, codeAdapter, preview) {
+		this.readOnly = isReadOnly(options);
+		this.#onChange = options.onChange;
+		this.#preview = preview;
+		this.#lastValid = parseSourceText(options.value);
+		this.#language = parseSourceProfile(options.profile);
+		const group = controlGroup(options.holder, "Source editor");
+		const codeHolder = document.createElement("div");
+		const previewButton = actionButton$1("Preview source", () => void this.#renderPreview());
+		previewButton.disabled = preview === void 0;
+		this.#previewRegion = document.createElement("div");
+		this.#previewRegion.setAttribute("aria-live", "polite");
+		this.#previewRegion.setAttribute("aria-label", "Trusted source preview");
+		group.append(codeHolder, previewButton, this.#previewRegion);
+		this.#code = codeAdapter.mount({
+			holder: codeHolder,
+			language: this.#language,
+			onChange: (source) => this.#change(source),
+			readOnly: this.readOnly,
+			source: this.#lastValid
+		});
+	}
+	destroy() {
+		this.#abort?.abort();
+		this.#code.destroy();
+	}
+	focus() {
+		this.#code.focus();
+	}
+	value() {
+		return this.#lastValid;
+	}
+	#change(source) {
+		if (this.readOnly) return;
+		try {
+			this.#lastValid = parseSourceText(source);
+			this.#onChange?.({
+				valid: true,
+				value: this.value()
+			});
+		} catch {
+			this.#onChange?.({
+				valid: false,
+				value: this.value()
+			});
+		}
+	}
+	async #renderPreview() {
+		if (this.#preview === void 0) return;
+		this.#abort?.abort();
+		const controller = new AbortController();
+		this.#abort = controller;
+		this.#previewRegion.replaceChildren(document.createTextNode("Rendering preview…"));
+		try {
+			const node = await this.#preview.render({
+				language: this.#language,
+				source: this.value()
+			}, controller.signal);
+			if (!controller.signal.aborted) this.#previewRegion.replaceChildren(node);
+		} catch {
+			if (!controller.signal.aborted) this.#previewRegion.replaceChildren(document.createTextNode("Preview is unavailable."));
+		}
+	}
+};
+var StudioChartControl = class {
+	#holder;
+	#onChange;
+	readOnly;
+	#lastValid;
+	#working;
+	constructor(options) {
+		this.readOnly = isReadOnly(options);
+		this.#holder = controlGroup(options.holder, "Chart editor");
+		this.#onChange = options.onChange;
+		this.#lastValid = parseStudioChartSpec(options.value);
+		this.#working = structuredClone(this.#lastValid);
+		this.#render();
+	}
+	destroy() {
+		this.#holder.remove();
+	}
+	focus() {
+		this.#holder.querySelector("input,select,button")?.focus();
+	}
+	value() {
+		return structuredClone(this.#lastValid);
+	}
+	#commit() {
+		if (this.readOnly) return;
+		try {
+			this.#lastValid = parseStudioChartSpec(this.#working);
+			this.#onChange?.({
+				valid: true,
+				value: this.value()
+			});
+		} catch {
+			this.#onChange?.({
+				valid: false,
+				value: this.value()
+			});
+		}
+	}
+	#render() {
+		this.#holder.replaceChildren();
+		const type = selectInput("Chart type", [
+			"bar",
+			"line",
+			"pie",
+			"doughnut"
+		], this.#working.type, this.readOnly);
+		type.addEventListener("change", () => {
+			this.#working.type = type.value;
+			this.#commit();
+		});
+		const title = textInput("Chart title", this.#working.title ?? "", this.readOnly);
+		title.maxLength = 500;
+		title.addEventListener("input", () => {
+			const value = title.value;
+			if (value.length === 0) delete this.#working.title;
+			else this.#working.title = value;
+			this.#commit();
+		});
+		this.#holder.append(type, title);
+		const table = document.createElement("table");
+		table.setAttribute("aria-label", "Chart data");
+		const header = document.createElement("tr");
+		header.append(tableHeader("Label"));
+		for (const [datasetIndex, dataset] of this.#working.datasets.entries()) {
+			const cell = tableHeader(`Dataset ${datasetIndex + 1}`);
+			const label = textInput(`Dataset ${datasetIndex + 1} label`, dataset.label, this.readOnly);
+			label.addEventListener("input", () => {
+				dataset.label = label.value.slice(0, 500);
+				this.#commit();
+			});
+			cell.replaceChildren(label);
+			header.append(cell);
+		}
+		table.append(header);
+		for (const [rowIndex, labelValue] of this.#working.labels.entries()) {
+			const row = document.createElement("tr");
+			const labelCell = document.createElement("td");
+			const label = textInput(`Chart label ${rowIndex + 1}`, labelValue, this.readOnly);
+			label.addEventListener("input", () => {
+				this.#working.labels[rowIndex] = label.value.slice(0, 500);
+				this.#commit();
+			});
+			labelCell.append(label);
+			row.append(labelCell);
+			for (const [datasetIndex, dataset] of this.#working.datasets.entries()) {
+				const cell = document.createElement("td");
+				const input = textInput(`Value for label ${rowIndex + 1}, dataset ${datasetIndex + 1}`, String(dataset.values[rowIndex] ?? 0), this.readOnly);
+				input.inputMode = "decimal";
+				input.addEventListener("input", () => {
+					const value = Number(input.value);
+					if (!Number.isFinite(value)) {
+						this.#onChange?.({
+							valid: false,
+							value: this.value()
+						});
+						return;
+					}
+					dataset.values[rowIndex] = value;
+					this.#commit();
+				});
+				cell.append(input);
+				row.append(cell);
+			}
+			table.append(row);
+		}
+		this.#holder.append(table);
+		if (!this.readOnly) this.#holder.append(actionButton$1("Add chart row", () => this.#addRow(), this.#working.labels.length >= 200), actionButton$1("Remove chart row", () => this.#removeRow(), this.#working.labels.length <= 1), actionButton$1("Add chart dataset", () => this.#addDataset(), this.#working.datasets.length >= 20), actionButton$1("Remove chart dataset", () => this.#removeDataset(), this.#working.datasets.length <= 1));
+	}
+	#addRow() {
+		if (this.#working.labels.length >= 200) return;
+		this.#working.labels.push(`Label ${this.#working.labels.length + 1}`);
+		for (const dataset of this.#working.datasets) dataset.values.push(0);
+		this.#commit();
+		this.#render();
+	}
+	#removeRow() {
+		if (this.#working.labels.length <= 1) return;
+		this.#working.labels.pop();
+		for (const dataset of this.#working.datasets) dataset.values.pop();
+		this.#commit();
+		this.#render();
+	}
+	#addDataset() {
+		if (this.#working.datasets.length >= 20) return;
+		this.#working.datasets.push({
+			label: `Dataset ${this.#working.datasets.length + 1}`,
+			values: this.#working.labels.map(() => 0)
+		});
+		this.#commit();
+		this.#render();
+	}
+	#removeDataset() {
+		if (this.#working.datasets.length <= 1) return;
+		this.#working.datasets.pop();
+		this.#commit();
+		this.#render();
+	}
+};
+var SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+/**
+* Native, dependency-free vector authoring over Studio's bounded drawing value.
+* The SVG is a view only: only detached points, color tokens, and widths cross
+* the control boundary.
+*/
+var StudioDrawingControl = class {
+	#alt;
+	#color;
+	#commitStroke;
+	#height;
+	#holder;
+	#onChange;
+	#pointX;
+	#pointY;
+	#status;
+	#strokeWidth;
+	#svg;
+	#width;
+	readOnly;
+	#activePointerId;
+	#lastValid;
+	#pendingPoints = [];
+	#working;
+	constructor(options) {
+		parseCanonicalControlProfile(options.profile, "studio.drawing/canonical", "drawing");
+		this.readOnly = isReadOnly(options);
+		this.#lastValid = parseStudioDrawingDocument(options.value);
+		this.#working = structuredClone(this.#lastValid);
+		this.#onChange = options.onChange;
+		this.#holder = controlGroup(options.holder, "Drawing editor");
+		const help = document.createElement("p");
+		help.textContent = this.readOnly ? "Drawing is read-only." : "Draw with a pointer, or enter a point and use Add point. Arrow keys move the point; Space adds it and Enter commits the stroke.";
+		this.#alt = document.createElement("textarea");
+		this.#alt.setAttribute("aria-label", "Drawing alternative text");
+		this.#alt.disabled = this.readOnly;
+		this.#alt.maxLength = 5e3;
+		this.#alt.rows = 3;
+		this.#alt.value = this.#lastValid.alt;
+		this.#alt.addEventListener("input", () => {
+			this.#working.alt = this.#alt.value;
+			this.#commitWorking();
+		});
+		this.#width = numberInput("Drawing width", this.#lastValid.width, this.readOnly, 1, 4096, 1);
+		this.#height = numberInput("Drawing height", this.#lastValid.height, this.readOnly, 1, 4096, 1);
+		this.#width.addEventListener("input", () => this.#changeDimensions());
+		this.#height.addEventListener("input", () => this.#changeDimensions());
+		this.#color = textInput("Drawing color token", "#000000", this.readOnly);
+		this.#color.maxLength = 127;
+		this.#color.spellcheck = false;
+		this.#color.addEventListener("input", () => this.#validateStrokeSettings());
+		this.#strokeWidth = numberInput("Drawing stroke width", 2, this.readOnly, .25, 64, .25);
+		this.#strokeWidth.addEventListener("input", () => this.#validateStrokeSettings());
+		this.#svg = document.createElementNS(SVG_NAMESPACE, "svg");
+		this.#svg.classList.add("studio-drawing-canvas");
+		this.#svg.setAttribute("role", "img");
+		this.#svg.setAttribute("aria-label", this.#lastValid.alt);
+		this.#svg.setAttribute("aria-description", "Arrow keys move the drawing point. Space adds a point. Enter commits and Escape discards the current stroke.");
+		this.#svg.setAttribute("aria-keyshortcuts", "ArrowUp ArrowDown ArrowLeft ArrowRight Space Enter Escape");
+		this.#svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+		this.#svg.tabIndex = this.readOnly ? -1 : 0;
+		this.#svg.addEventListener("pointerdown", (event) => this.#beginPointerStroke(event));
+		this.#svg.addEventListener("pointermove", (event) => this.#continuePointerStroke(event));
+		this.#svg.addEventListener("pointerup", (event) => this.#finishPointerStroke(event));
+		this.#svg.addEventListener("pointercancel", (event) => this.#cancelPointerStroke(event));
+		this.#svg.addEventListener("keydown", (event) => this.#handleCanvasKey(event));
+		this.#pointX = numberInput("Drawing point x", 0, this.readOnly, 0, this.#lastValid.width, 1);
+		this.#pointY = numberInput("Drawing point y", 0, this.readOnly, 0, this.#lastValid.height, 1);
+		const addPoint = actionButton$1("Add drawing point", () => this.#addKeyboardPoint());
+		this.#commitStroke = actionButton$1("Commit drawing stroke", () => this.#completeStroke(), true);
+		const discardStroke = actionButton$1("Discard current drawing stroke", () => {
+			this.#pendingPoints = [];
+			this.#renderDrawing();
+		});
+		const removeStroke = actionButton$1("Remove last drawing stroke", () => this.#removeLastStroke(), this.#lastValid.strokes.length === 0);
+		for (const button of [
+			addPoint,
+			this.#commitStroke,
+			discardStroke,
+			removeStroke
+		]) button.hidden = this.readOnly;
+		this.#status = document.createElement("p");
+		this.#status.setAttribute("aria-live", "polite");
+		this.#status.className = "studio-authoring-status";
+		this.#holder.append(help, this.#alt, this.#width, this.#height, this.#color, this.#strokeWidth, this.#svg, this.#pointX, this.#pointY, addPoint, this.#commitStroke, discardStroke, removeStroke, this.#status);
+		this.#renderDrawing();
+	}
+	destroy() {
+		this.#holder.remove();
+	}
+	focus() {
+		this.#svg.focus();
+	}
+	value() {
+		return structuredClone(this.#lastValid);
+	}
+	#addKeyboardPoint() {
+		if (this.readOnly) return;
+		const point = {
+			x: Number(this.#pointX.value),
+			y: Number(this.#pointY.value)
+		};
+		if (!this.#validPoint(point)) {
+			this.#invalid();
+			return;
+		}
+		this.#appendPoint(point);
+		this.#renderDrawing();
+	}
+	#appendPoint(point) {
+		if (this.#pendingPoints.length >= 1e4) {
+			this.#status.textContent = "A drawing stroke can contain at most 10000 points.";
+			return;
+		}
+		const previous = this.#pendingPoints.at(-1);
+		if (previous?.x === point.x && previous.y === point.y) return;
+		this.#pendingPoints.push(point);
+	}
+	#beginPointerStroke(event) {
+		if (this.readOnly || event.button !== 0) return;
+		event.preventDefault();
+		this.#activePointerId = event.pointerId;
+		this.#pendingPoints = [this.#pointFromPointer(event)];
+		try {
+			this.#svg.setPointerCapture(event.pointerId);
+		} catch {}
+		this.#renderDrawing();
+	}
+	#cancelPointerStroke(event) {
+		if (event.pointerId !== this.#activePointerId) return;
+		this.#activePointerId = void 0;
+		this.#pendingPoints = [];
+		this.#renderDrawing();
+	}
+	#changeDimensions() {
+		if (this.readOnly) return;
+		this.#working.width = Number(this.#width.value);
+		this.#working.height = Number(this.#height.value);
+		if (this.#commitWorking()) {
+			this.#pointX.max = String(this.#lastValid.width);
+			this.#pointY.max = String(this.#lastValid.height);
+			this.#pointX.value = String(clamp(Number(this.#pointX.value), 0, this.#lastValid.width));
+			this.#pointY.value = String(clamp(Number(this.#pointY.value), 0, this.#lastValid.height));
+			this.#renderDrawing();
+		}
+	}
+	#commitWorking() {
+		if (this.readOnly) return false;
+		try {
+			this.#lastValid = parseStudioDrawingDocument(this.#working);
+			this.#working = structuredClone(this.#lastValid);
+			this.#onChange?.({
+				valid: true,
+				value: this.value()
+			});
+			this.#svg.setAttribute("aria-label", this.#lastValid.alt);
+			return true;
+		} catch {
+			this.#invalid();
+			return false;
+		}
+	}
+	#completeStroke() {
+		if (this.readOnly || this.#pendingPoints.length === 0) return;
+		try {
+			const stroke = this.#parseStroke(this.#pendingPoints);
+			this.#working.strokes = [...this.#lastValid.strokes, stroke];
+			if (!this.#commitWorking()) return;
+			this.#pendingPoints = [];
+			this.#renderDrawing();
+		} catch {
+			this.#invalid();
+		}
+	}
+	#continuePointerStroke(event) {
+		if (event.pointerId !== this.#activePointerId) return;
+		event.preventDefault();
+		this.#appendPoint(this.#pointFromPointer(event));
+		this.#renderDrawing();
+	}
+	#finishPointerStroke(event) {
+		if (event.pointerId !== this.#activePointerId) return;
+		event.preventDefault();
+		this.#appendPoint(this.#pointFromPointer(event));
+		this.#activePointerId = void 0;
+		this.#completeStroke();
+	}
+	#handleCanvasKey(event) {
+		if (this.readOnly) return;
+		const step = event.shiftKey ? 10 : 1;
+		let x = Number(this.#pointX.value);
+		let y = Number(this.#pointY.value);
+		switch (event.key) {
+			case "ArrowLeft":
+				x -= step;
+				break;
+			case "ArrowRight":
+				x += step;
+				break;
+			case "ArrowUp":
+				y -= step;
+				break;
+			case "ArrowDown":
+				y += step;
+				break;
+			case " ":
+				event.preventDefault();
+				this.#addKeyboardPoint();
+				return;
+			case "Enter":
+				event.preventDefault();
+				this.#completeStroke();
+				return;
+			case "Escape":
+				event.preventDefault();
+				this.#pendingPoints = [];
+				this.#renderDrawing();
+				return;
+			default: return;
+		}
+		event.preventDefault();
+		this.#pointX.value = String(clamp(x, 0, this.#lastValid.width));
+		this.#pointY.value = String(clamp(y, 0, this.#lastValid.height));
+	}
+	#invalid() {
+		this.#onChange?.({
+			valid: false,
+			value: this.value()
+		});
+	}
+	#parseStroke(points) {
+		const candidate = parseStudioDrawingDocument({
+			alt: this.#lastValid.alt,
+			height: this.#lastValid.height,
+			strokes: [{
+				color: this.#color.value,
+				points: structuredClone(points),
+				width: Number(this.#strokeWidth.value)
+			}],
+			width: this.#lastValid.width
+		}).strokes[0];
+		if (candidate === void 0) throw new TypeError("Drawing stroke is unavailable.");
+		return candidate;
+	}
+	#pointFromPointer(event) {
+		const bounds = this.#svg.getBoundingClientRect();
+		const x = bounds.width > 0 ? (event.clientX - bounds.left) / bounds.width * this.#lastValid.width : event.offsetX;
+		const y = bounds.height > 0 ? (event.clientY - bounds.top) / bounds.height * this.#lastValid.height : event.offsetY;
+		return {
+			x: clamp(Number.isFinite(x) ? x : 0, 0, this.#lastValid.width),
+			y: clamp(Number.isFinite(y) ? y : 0, 0, this.#lastValid.height)
+		};
+	}
+	#removeLastStroke() {
+		if (this.readOnly || this.#lastValid.strokes.length === 0) return;
+		this.#working = structuredClone(this.#lastValid);
+		this.#working.strokes.pop();
+		if (this.#commitWorking()) this.#renderDrawing();
+	}
+	#renderDrawing() {
+		this.#svg.setAttribute("viewBox", `0 0 ${String(this.#lastValid.width)} ${String(this.#lastValid.height)}`);
+		this.#svg.replaceChildren();
+		for (const stroke of this.#lastValid.strokes) this.#svg.append(this.#strokeElement(stroke));
+		if (this.#pendingPoints.length > 0) try {
+			this.#svg.append(this.#strokeElement(this.#parseStroke(this.#pendingPoints)));
+		} catch {}
+		this.#commitStroke.disabled = this.#pendingPoints.length === 0;
+		this.#status.textContent = `${String(this.#lastValid.strokes.length)} committed strokes; ${String(this.#pendingPoints.length)} points in the current stroke.`;
+		const remove = this.#holder.querySelector("[aria-label=\"Remove last drawing stroke\"]");
+		if (remove !== null) remove.disabled = this.#lastValid.strokes.length === 0;
+	}
+	#strokeElement(stroke) {
+		const polyline = document.createElementNS(SVG_NAMESPACE, "polyline");
+		polyline.setAttribute("fill", "none");
+		polyline.setAttribute("points", stroke.points.map((point) => `${point.x},${point.y}`).join(" "));
+		polyline.setAttribute("stroke", stroke.color.startsWith("#") ? stroke.color : "currentColor");
+		polyline.setAttribute("stroke-linecap", "round");
+		polyline.setAttribute("stroke-linejoin", "round");
+		polyline.setAttribute("stroke-width", String(stroke.width));
+		return polyline;
+	}
+	#validPoint(point) {
+		try {
+			this.#parseStroke([point]);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+	#validateStrokeSettings() {
+		if (this.readOnly) return;
+		try {
+			this.#parseStroke(this.#pendingPoints.length === 0 ? [{
+				x: 0,
+				y: 0
+			}] : this.#pendingPoints);
+		} catch {
+			this.#invalid();
+		}
+		this.#renderDrawing();
+	}
+};
+/** Text-only canonical table editor; DOM table markup is never the value. */
+var StudioTableControl = class {
+	#holder;
+	#onChange;
+	readOnly;
+	#lastValid;
+	#working;
+	constructor(options) {
+		parseCanonicalControlProfile(options.profile, "studio.table/canonical", "table");
+		this.readOnly = isReadOnly(options);
+		this.#lastValid = parseStudioTableDocument(options.value);
+		this.#working = structuredClone(this.#lastValid);
+		this.#onChange = options.onChange;
+		this.#holder = controlGroup(options.holder, "Table editor");
+		this.#render();
+	}
+	destroy() {
+		this.#holder.remove();
+	}
+	focus() {
+		this.#holder.querySelector("input,textarea,button")?.focus();
+	}
+	value() {
+		return structuredClone(this.#lastValid);
+	}
+	#addColumn() {
+		if (this.readOnly || this.#lastValid.columns.length >= 50) return;
+		this.#working = structuredClone(this.#lastValid);
+		this.#working.columns.push(`Column ${String(this.#working.columns.length + 1)}`);
+		for (const row of this.#working.rows) row.push("");
+		if (this.#commit()) this.#render();
+	}
+	#addRow() {
+		if (this.readOnly || this.#lastValid.rows.length >= 1e3) return;
+		this.#working = structuredClone(this.#lastValid);
+		this.#working.rows.push(this.#working.columns.map(() => ""));
+		if (this.#commit()) this.#render();
+	}
+	#commit() {
+		if (this.readOnly) return false;
+		try {
+			this.#lastValid = parseStudioTableDocument(this.#working);
+			this.#working = structuredClone(this.#lastValid);
+			this.#onChange?.({
+				valid: true,
+				value: this.value()
+			});
+			return true;
+		} catch {
+			this.#onChange?.({
+				valid: false,
+				value: this.value()
+			});
+			return false;
+		}
+	}
+	#removeColumn() {
+		if (this.readOnly || this.#lastValid.columns.length <= 1) return;
+		this.#working = structuredClone(this.#lastValid);
+		this.#working.columns.pop();
+		for (const row of this.#working.rows) row.pop();
+		if (this.#commit()) this.#render();
+	}
+	#removeRow() {
+		if (this.readOnly || this.#lastValid.rows.length === 0) return;
+		this.#working = structuredClone(this.#lastValid);
+		this.#working.rows.pop();
+		if (this.#commit()) this.#render();
+	}
+	#render() {
+		this.#holder.replaceChildren();
+		const help = document.createElement("p");
+		help.textContent = "Table cells are text. HTML and executable content are not interpreted.";
+		const caption = textInput("Table caption", this.#working.caption ?? "", this.readOnly);
+		caption.maxLength = 500;
+		caption.addEventListener("input", () => {
+			if (caption.value.length === 0) delete this.#working.caption;
+			else this.#working.caption = caption.value;
+			this.#commit();
+		});
+		this.#holder.append(help, caption);
+		const table = document.createElement("table");
+		table.setAttribute("aria-label", "Table data");
+		const head = document.createElement("thead");
+		const headerRow = document.createElement("tr");
+		headerRow.append(tableHeader("Row"));
+		for (const [columnIndex, columnValue] of this.#working.columns.entries()) {
+			const header = tableHeader(`Column ${String(columnIndex + 1)}`);
+			const input = textInput(`Table column ${String(columnIndex + 1)} heading`, columnValue, this.readOnly);
+			input.maxLength = 500;
+			input.addEventListener("input", () => {
+				this.#working.columns[columnIndex] = input.value;
+				this.#commit();
+			});
+			header.replaceChildren(input);
+			headerRow.append(header);
+		}
+		head.append(headerRow);
+		table.append(head);
+		const body = document.createElement("tbody");
+		for (const [rowIndex, rowValue] of this.#working.rows.entries()) {
+			const row = document.createElement("tr");
+			const rowHeader = document.createElement("th");
+			rowHeader.scope = "row";
+			rowHeader.textContent = String(rowIndex + 1);
+			row.append(rowHeader);
+			for (const [columnIndex, cellValue] of rowValue.entries()) {
+				const cell = document.createElement("td");
+				const input = document.createElement("textarea");
+				input.setAttribute("aria-label", `Table row ${String(rowIndex + 1)}, column ${String(columnIndex + 1)}`);
+				input.disabled = this.readOnly;
+				input.maxLength = 5e3;
+				input.rows = 2;
+				input.value = cellValue;
+				input.addEventListener("input", () => {
+					const targetRow = this.#working.rows[rowIndex];
+					if (targetRow === void 0) return;
+					targetRow[columnIndex] = input.value;
+					this.#commit();
+				});
+				cell.append(input);
+				row.append(cell);
+			}
+			body.append(row);
+		}
+		table.append(body);
+		this.#holder.append(table);
+		if (!this.readOnly) {
+			const actions = document.createElement("div");
+			actions.className = "studio-authoring-actions";
+			actions.append(actionButton$1("Add table row", () => this.#addRow(), this.#working.rows.length >= 1e3), actionButton$1("Remove last table row", () => this.#removeRow(), this.#working.rows.length === 0), actionButton$1("Add table column", () => this.#addColumn(), this.#working.columns.length >= 50), actionButton$1("Remove last table column", () => this.#removeColumn(), this.#working.columns.length <= 1));
+			this.#holder.append(actions);
+		}
+	}
+};
+var StudioMoneyControl = class {
+	#amount;
+	#currency;
+	#holder;
+	#onChange;
+	readOnly;
+	#lastValid;
+	constructor(options) {
+		this.readOnly = isReadOnly(options);
+		this.#lastValid = parseStudioMoneyValue(options.value);
+		this.#onChange = options.onChange;
+		this.#holder = controlGroup(options.holder, "Money editor");
+		this.#amount = textInput("Exact decimal amount", this.#lastValid.amount, this.readOnly);
+		this.#amount.inputMode = "decimal";
+		this.#currency = textInput("Three-letter currency", this.#lastValid.currency, this.readOnly);
+		this.#currency.maxLength = 3;
+		this.#currency.autocapitalize = "characters";
+		this.#amount.addEventListener("input", () => this.#commit());
+		this.#currency.addEventListener("input", () => this.#commit());
+		this.#holder.append(this.#amount, this.#currency);
+	}
+	destroy() {
+		this.#holder.remove();
+	}
+	focus() {
+		this.#amount.focus();
+	}
+	value() {
+		return structuredClone(this.#lastValid);
+	}
+	#commit() {
+		if (this.readOnly) return;
+		try {
+			this.#lastValid = parseStudioMoneyValue({
+				amount: this.#amount.value,
+				currency: this.#currency.value.toUpperCase()
+			});
+			this.#onChange?.({
+				valid: true,
+				value: this.value()
+			});
+		} catch {
+			this.#onChange?.({
+				valid: false,
+				value: this.value()
+			});
+		}
+	}
+};
+var StudioScopedCssControl = class {
+	#holder;
+	#onChange;
+	#source;
+	readOnly;
+	#lastValid;
+	constructor(options) {
+		this.readOnly = isReadOnly(options);
+		this.#lastValid = parseScopedStyleSheet(options.value);
+		this.#onChange = options.onChange;
+		this.#holder = controlGroup(options.holder, "Scoped style editor");
+		const help = document.createElement("p");
+		help.textContent = "Use only self, heading, content, media, or action targets and approved properties.";
+		this.#source = document.createElement("textarea");
+		this.#source.setAttribute("aria-label", "Scoped CSS source");
+		this.#source.disabled = this.readOnly;
+		this.#source.rows = 10;
+		this.#source.value = serializeScopedCss(this.#lastValid);
+		this.#source.addEventListener("input", () => this.#commit());
+		this.#holder.append(help, this.#source);
+	}
+	destroy() {
+		this.#holder.remove();
+	}
+	focus() {
+		this.#source.focus();
+	}
+	value() {
+		return structuredClone(this.#lastValid);
+	}
+	#commit() {
+		if (this.readOnly) return;
+		try {
+			const parsed = parseScopedCss(this.#source.value);
+			compileStudioScopedStyleSheet("authoring-preview", parsed);
+			this.#lastValid = parsed;
+			this.#onChange?.({
+				valid: true,
+				value: this.value()
+			});
+		} catch {
+			this.#onChange?.({
+				valid: false,
+				value: this.value()
+			});
+		}
+	}
+};
+function parseScopedCss(source) {
+	if (source.length > 1e5) throw new RangeError("Scoped CSS source exceeds 100000 characters.");
+	const rules = [];
+	const pattern = /\s*(self|heading|content|media|action)\s*\{([^{}]*)\}\s*/guy;
+	let cursor = 0;
+	while (cursor < source.length) {
+		pattern.lastIndex = cursor;
+		const match = pattern.exec(source);
+		if (match?.index !== cursor) throw new TypeError(`Scoped CSS is invalid near character ${cursor + 1}.`);
+		const declarations = Object.create(null);
+		for (const declaration of (match[2] ?? "").split(";")) {
+			if (declaration.trim().length === 0) continue;
+			const colon = declaration.indexOf(":");
+			if (colon < 1) throw new TypeError("Scoped CSS declaration requires property: value.");
+			const property = declaration.slice(0, colon).trim().toLowerCase();
+			const value = declaration.slice(colon + 1).trim();
+			if (Object.hasOwn(declarations, property)) throw new TypeError(`Scoped CSS property ${property} is declared twice.`);
+			declarations[property] = value;
+		}
+		rules.push({
+			declarations,
+			target: match[1]
+		});
+		cursor = pattern.lastIndex;
+	}
+	const sheet = { rules };
+	compileStudioScopedStyleSheet("authoring-preview", sheet);
+	return sheet;
+}
+function serializeScopedCss(sheet) {
+	return sheet.rules.map((rule) => {
+		const declarations = Object.entries(rule.declarations).sort(([left], [right]) => left.localeCompare(right)).map(([property, value]) => `  ${property}: ${value};`).join("\n");
+		return `${rule.target} {\n${declarations}\n}`;
+	}).join("\n\n");
+}
+function parseScopedStyleSheet(value) {
+	if (!isRecord$1(value) || !Array.isArray(value.rules)) throw new TypeError("Scoped styles require a structured rule collection.");
+	const sheet = structuredClone(value);
+	compileStudioScopedStyleSheet("authoring-preview", sheet);
+	return sheet;
+}
+function parseSourceText(value) {
+	if (typeof value !== "string" || value.length > 1e6) throw new RangeError("Source text exceeds its 1000000-character limit.");
+	return value;
+}
+function parseSourceProfile(profile) {
+	switch (profile) {
+		case "studio.source/code": return "code";
+		case "studio.source/latex": return "latex";
+		case "studio.source/mermaid": return "mermaid";
+		default: throw new TypeError(`Unknown Studio source profile "${String(profile)}".`);
+	}
+}
+function parseCanonicalControlProfile(value, expected, name) {
+	if (value !== void 0 && value !== expected) throw new TypeError(`Unknown Studio ${name} profile "${value}".`);
+}
+function isReadOnly(options) {
+	return options.readOnly === true || options.binding !== void 0 && options.binding.source.kind !== "static-value";
+}
+function parseRichTextProfile(value) {
+	if (value === void 0) return void 0;
+	if (value === "studio.rich-text/documentation" || value === "studio.rich-text/marketing" || value === "studio.rich-text/portable") return value;
+	throw new TypeError(`Unknown Studio rich-text profile "${value}".`);
+}
+function controlGroup(holder, label) {
+	const group = document.createElement("section");
+	group.className = "studio-authoring-control";
+	group.setAttribute("aria-label", label);
+	holder.append(group);
+	return group;
+}
+function textInput(label, value, readOnly) {
+	const input = document.createElement("input");
+	input.type = "text";
+	input.setAttribute("aria-label", label);
+	input.disabled = readOnly;
+	input.value = value;
+	return input;
+}
+function numberInput(label, value, readOnly, minimum, maximum, step) {
+	const input = document.createElement("input");
+	input.type = "number";
+	input.setAttribute("aria-label", label);
+	input.disabled = readOnly;
+	input.max = String(maximum);
+	input.min = String(minimum);
+	input.step = String(step);
+	input.value = String(value);
+	return input;
+}
+function selectInput(label, values, selected, readOnly) {
+	const select = document.createElement("select");
+	select.setAttribute("aria-label", label);
+	select.disabled = readOnly;
+	for (const value of values) {
+		const option = document.createElement("option");
+		option.value = value;
+		option.textContent = value;
+		option.selected = value === selected;
+		select.append(option);
+	}
+	return select;
+}
+function tableHeader(text) {
+	const header = document.createElement("th");
+	header.scope = "col";
+	header.textContent = text;
+	return header;
+}
+function actionButton$1(label, action, disabled = false) {
+	const button = document.createElement("button");
+	button.type = "button";
+	button.textContent = label;
+	button.setAttribute("aria-label", label);
+	button.disabled = disabled;
+	button.addEventListener("click", action);
+	return button;
+}
+function clamp(value, minimum, maximum) {
+	return Math.min(maximum, Math.max(minimum, value));
+}
+function isRecord$1(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+//#endregion
+//#region node_modules/@kumwe/studio/dist/resource-authoring-control.js
+var SEARCH_DELAY_MILLISECONDS = 300;
+var SEARCH_LIMIT = 20;
+/** Mount Studio's accessible resource browser and optional canonical picker. */
+function mountStudioResourceBindingControl(options) {
+	return new StudioResourceBindingControl(options);
+}
+/** Runtime guard for the only binding source this picker may persist. */
+function isStudioResourceReference(value) {
+	if (!isRecord(value) || !hasOnly(value, [
+		"id",
+		"kind",
+		"resourceType"
+	])) return false;
+	return value.kind === "resource-reference" && isStableId(value.id) && isQualifiedName(value.resourceType);
+}
+var StudioResourceBindingControl = class {
+	#cancel;
+	#clear;
+	#currentRegion;
+	#holder;
+	#loadMore;
+	#onChange;
+	#results;
+	#retry;
+	#search;
+	#searchButton;
+	#service;
+	#status;
+	#type;
+	#types;
+	readOnly;
+	#abort;
+	#current;
+	#debounce;
+	#destroyed = false;
+	#items = [];
+	#nextCursor;
+	#requestSequence = 0;
+	#retryQuery;
+	constructor(options) {
+		this.readOnly = options.readOnly || nonResourceBinding(options.binding);
+		this.#current = resourceSource(options.binding);
+		this.#holder = document.createElement("section");
+		this.#holder.className = "studio-resource-binding-control";
+		this.#holder.setAttribute("aria-label", `Resource browser for ${options.label}`);
+		this.#onChange = options.onChange;
+		this.#service = options.service;
+		this.#types = parseResourceTypes(options.service.resourceTypes);
+		this.#currentRegion = document.createElement("p");
+		this.#currentRegion.className = "studio-resource-current";
+		this.#currentRegion.setAttribute("aria-live", "polite");
+		this.#type = document.createElement("select");
+		this.#type.setAttribute("aria-label", "Resource type");
+		for (const type of this.#types) {
+			const choice = document.createElement("option");
+			choice.value = type.id;
+			choice.textContent = messageText(type.label);
+			choice.selected = type.id === this.#current?.resourceType;
+			this.#type.append(choice);
+		}
+		this.#type.disabled = this.#types.length === 0;
+		this.#type.addEventListener("change", () => this.#resetSearch());
+		this.#search = document.createElement("input");
+		this.#search.type = "search";
+		this.#search.maxLength = 160;
+		this.#search.setAttribute("aria-label", "Search authorized resources");
+		this.#search.disabled = this.#types.length === 0;
+		this.#search.addEventListener("input", () => this.#scheduleSearch());
+		this.#search.addEventListener("keydown", (event) => {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				this.#runSearch(void 0, false);
+			}
+		});
+		this.#searchButton = actionButton("Search resources", () => {
+			this.#runSearch(void 0, false);
+		});
+		this.#searchButton.disabled = this.#types.length === 0;
+		this.#cancel = actionButton("Cancel resource search", () => this.#cancelSearch(true));
+		this.#cancel.hidden = true;
+		this.#retry = actionButton("Retry resource search", () => {
+			const query = this.#retryQuery;
+			if (query !== void 0) this.#runSearch(query.cursor, query.cursor !== void 0);
+		});
+		this.#retry.hidden = true;
+		this.#clear = actionButton("Clear selected resource", () => this.#clearSelection());
+		this.#clear.disabled = this.readOnly || this.#current === void 0;
+		this.#status = document.createElement("p");
+		this.#status.className = "studio-resource-status";
+		this.#status.setAttribute("aria-live", "polite");
+		this.#status.textContent = this.#types.length === 0 ? "No authorized resource types are available." : "Enter a search term or browse all authorized resources.";
+		this.#results = document.createElement("ul");
+		this.#results.className = "studio-resource-results";
+		this.#results.setAttribute("aria-label", "Authorized resource results");
+		this.#loadMore = actionButton("Load more resources", () => {
+			if (this.#nextCursor !== void 0) this.#runSearch(this.#nextCursor, true);
+		});
+		this.#loadMore.hidden = true;
+		const searchGroup = document.createElement("div");
+		searchGroup.className = "studio-resource-search";
+		searchGroup.append(this.#type, this.#search, this.#searchButton, this.#cancel, this.#retry);
+		this.#holder.append(this.#currentRegion, searchGroup, this.#status, this.#results, this.#loadMore, this.#clear);
+		options.holder.append(this.#holder);
+		this.#renderCurrent(options.binding, options.multiple);
+	}
+	current() {
+		return this.#current === void 0 ? void 0 : structuredClone(this.#current);
+	}
+	destroy() {
+		this.#destroyed = true;
+		this.#cancelSearch(false);
+		this.#holder.remove();
+	}
+	focus() {
+		this.#search.focus();
+	}
+	#cancelSearch(announce) {
+		if (this.#debounce !== void 0) {
+			clearTimeout(this.#debounce);
+			this.#debounce = void 0;
+		}
+		this.#abort?.abort();
+		this.#abort = void 0;
+		this.#requestSequence += 1;
+		this.#setBusy(false);
+		if (announce && !this.#destroyed) this.#status.textContent = "Resource search cancelled.";
+	}
+	#clearSelection() {
+		if (this.readOnly || this.#current === void 0) return;
+		this.#current = void 0;
+		this.#clear.disabled = true;
+		this.#currentRegion.textContent = "No resource selected.";
+		this.#onChange?.({});
+	}
+	#renderCurrent(binding, multiple) {
+		if (this.#current !== void 0) this.#currentRegion.textContent = `Selected ${this.#current.resourceType}: ${this.#current.id}.`;
+		else if (binding !== void 0) this.#currentRegion.textContent = `This ${binding.source.kind} binding is host-managed.`;
+		else this.#currentRegion.textContent = "No resource selected.";
+		if (this.readOnly) this.#currentRegion.append(document.createTextNode(` Selection is read-only${multiple ? " for this collection port" : ""}.`));
+	}
+	#renderResults() {
+		const rows = this.#items.map((hit) => {
+			const row = document.createElement("li");
+			const label = messageText(hit.label);
+			const summary = document.createElement("span");
+			summary.textContent = `${label} (${hit.id})`;
+			row.append(summary);
+			if (!this.readOnly) row.append(actionButton(this.#current?.id === hit.id && this.#current.resourceType === hit.resourceType ? `Selected ${label}` : this.#current === void 0 ? `Select ${label}` : `Replace with ${label}`, () => this.#select(hit), this.#current?.id === hit.id && this.#current.resourceType === hit.resourceType));
+			return row;
+		});
+		this.#results.replaceChildren(...rows);
+		this.#loadMore.hidden = this.#nextCursor === void 0;
+	}
+	#resetSearch() {
+		this.#cancelSearch(false);
+		this.#items = [];
+		this.#nextCursor = void 0;
+		this.#retryQuery = void 0;
+		this.#renderResults();
+		this.#status.textContent = "Enter a search term or browse all authorized resources.";
+	}
+	async #runSearch(cursor, append) {
+		if (this.#destroyed || this.#type.value === "") return;
+		this.#cancelSearch(false);
+		const controller = new AbortController();
+		this.#abort = controller;
+		const sequence = ++this.#requestSequence;
+		const query = {
+			...cursor === void 0 ? {} : { cursor },
+			limit: SEARCH_LIMIT,
+			resourceType: this.#type.value,
+			...this.#search.value === "" ? {} : { search: this.#search.value }
+		};
+		Object.freeze(query);
+		this.#retryQuery = query;
+		this.#retry.hidden = true;
+		this.#status.textContent = append ? "Loading more authorized resources…" : "Searching…";
+		this.#setBusy(true);
+		try {
+			const page = parseResourcePage(await this.#service.search(query, controller.signal), query);
+			if (controller.signal.aborted || this.#destroyed || sequence !== this.#requestSequence) return;
+			this.#items = append ? appendPage(this.#items, page.items) : page.items;
+			this.#nextCursor = page.nextCursor;
+			this.#retryQuery = void 0;
+			this.#renderResults();
+			this.#status.textContent = this.#items.length === 0 ? "No authorized resources match this search." : `${this.#items.length} authorized resource${this.#items.length === 1 ? "" : "s"} shown.`;
+		} catch {
+			if (controller.signal.aborted || this.#destroyed || sequence !== this.#requestSequence) return;
+			this.#retry.hidden = false;
+			this.#status.textContent = "Resource search is unavailable. No selection was changed.";
+		} finally {
+			if (sequence === this.#requestSequence) {
+				this.#abort = void 0;
+				this.#setBusy(false);
+			}
+		}
+	}
+	#scheduleSearch() {
+		if (this.#debounce !== void 0) clearTimeout(this.#debounce);
+		this.#debounce = setTimeout(() => {
+			this.#debounce = void 0;
+			this.#runSearch(void 0, false);
+		}, SEARCH_DELAY_MILLISECONDS);
+	}
+	#select(hit) {
+		if (this.readOnly) return;
+		this.#current = {
+			id: hit.id,
+			kind: "resource-reference",
+			resourceType: hit.resourceType
+		};
+		this.#clear.disabled = false;
+		this.#currentRegion.textContent = `Selected ${hit.resourceType}: ${hit.id}.`;
+		this.#renderResults();
+		this.#onChange?.({ source: structuredClone(this.#current) });
+	}
+	#setBusy(busy) {
+		this.#cancel.hidden = !busy;
+		this.#searchButton.disabled = this.#types.length === 0;
+		this.#type.disabled = this.#types.length === 0;
+		this.#search.disabled = this.#types.length === 0;
+		this.#loadMore.disabled = busy;
+		this.#results.setAttribute("aria-busy", String(busy));
+	}
+};
+function actionButton(label, action, disabled = false) {
+	const button = document.createElement("button");
+	button.type = "button";
+	button.textContent = label;
+	button.setAttribute("aria-label", label);
+	button.disabled = disabled;
+	button.addEventListener("click", action);
+	return button;
+}
+function appendPage(current, next) {
+	const seen = new Set(current.map((hit) => `${hit.resourceType}\u0000${hit.id}`));
+	for (const hit of next) {
+		const key = `${hit.resourceType}\u0000${hit.id}`;
+		if (seen.has(key)) throw new TypeError("Resource search repeated an existing item.");
+		seen.add(key);
+	}
+	return [...current, ...next];
+}
+function messageText(message) {
+	return message.defaultMessage ?? message.key;
+}
+function nonResourceBinding(binding) {
+	return binding !== void 0 && binding.source.kind !== "resource-reference";
+}
+function parseResourcePage(page, query) {
+	if (!isRecord(page) || !hasOnly(page, ["items", "nextCursor"]) || !Array.isArray(page.items)) throw new TypeError("Resource search returned an invalid page.");
+	if (page.items.length > query.limit) throw new RangeError("Resource search returned too many items.");
+	const items = page.items.map((hit) => parseResourceHit(hit, query.resourceType));
+	if (new Set(items.map((hit) => `${hit.resourceType}\u0000${hit.id}`)).size !== items.length) throw new TypeError("Resource search returned duplicate items.");
+	const nextCursor = page.nextCursor;
+	if (nextCursor !== void 0 && (typeof nextCursor !== "string" || nextCursor.length === 0 || nextCursor.length > 500)) throw new TypeError("Resource search returned an invalid cursor.");
+	return {
+		items,
+		...nextCursor === void 0 ? {} : { nextCursor }
+	};
+}
+function parseResourceHit(hit, resourceType) {
+	if (!isRecord(hit) || !hasOnly(hit, [
+		"id",
+		"label",
+		"resourceType"
+	]) || !isStableId(hit.id) || hit.resourceType !== resourceType || !isMessageReference(hit.label)) throw new TypeError("Resource search returned an invalid item.");
+	return {
+		id: hit.id,
+		label: structuredClone(hit.label),
+		resourceType
+	};
+}
+function parseResourceTypes(options) {
+	if (options.length > 100) throw new RangeError("Resource type inventory exceeds 100 entries.");
+	const seen = /* @__PURE__ */ new Set();
+	return options.map((option) => {
+		if (!isRecord(option) || !hasOnly(option, ["id", "label"]) || !isQualifiedName(option.id) || !isMessageReference(option.label) || seen.has(option.id)) throw new TypeError("Resource type inventory is invalid or duplicated.");
+		seen.add(option.id);
+		return structuredClone(option);
+	});
+}
+function resourceSource(binding) {
+	if (binding?.source.kind !== "resource-reference") return void 0;
+	if (!isStudioResourceReference(binding.source)) throw new TypeError("Resource binding is not canonical.");
+	return structuredClone(binding.source);
+}
+function hasOnly(value, allowed) {
+	const keys = Object.keys(value);
+	return keys.length <= allowed.length && keys.every((key) => allowed.includes(key));
+}
+function isMessageReference(value) {
+	if (!isRecord(value) || !hasOnly(value, ["key", "defaultMessage"]) || !isQualifiedName(value.key)) return false;
+	return value.defaultMessage === void 0 || typeof value.defaultMessage === "string" && value.defaultMessage.length >= 1 && value.defaultMessage.length <= 500;
+}
+function isQualifiedName(value) {
+	return typeof value === "string" && value.length <= 160 && /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u.test(value);
+}
+function isRecord(value) {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
+}
+function isStableId(value) {
+	return typeof value === "string" && value.length <= 240 && ![
+		"__proto__",
+		"prototype",
+		"constructor"
+	].includes(value) && /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/u.test(value);
+}
+//#endregion
 //#region node_modules/@kumwe/studio/dist/kumwe-studio.js
 var KumweStudioElement = class extends i {
 	static properties = {
@@ -10987,6 +18075,7 @@ var KumweStudioElement = class extends i {
 			attribute: false,
 			state: true
 		},
+		authoringControlRegistry: { attribute: false },
 		canvasDirectManipulation: {
 			attribute: false,
 			state: true
@@ -11014,6 +18103,7 @@ var KumweStudioElement = class extends i {
 			attribute: false,
 			state: true
 		},
+		resourceSearchService: { attribute: false },
 		selectedNodeId: {
 			attribute: false,
 			state: true
@@ -11448,6 +18538,60 @@ var KumweStudioElement = class extends i {
       gap: 0.375rem;
     }
 
+    .inspector-authoring-row {
+      display: grid;
+      gap: 0.375rem;
+    }
+
+    .inspector-authoring-control,
+    .inspector-resource-control {
+      border: 1px solid var(--studio-border);
+      border-radius: 0.375rem;
+      min-inline-size: 0;
+      overflow: auto;
+      padding: 0.5rem;
+    }
+
+    .inspector-authoring-control :is(input, select, textarea, button),
+    .inspector-resource-control :is(input, select, textarea, button) {
+      font: inherit;
+      max-inline-size: 100%;
+    }
+
+    .inspector-authoring-control textarea {
+      box-sizing: border-box;
+      inline-size: 100%;
+    }
+
+    .studio-resource-search {
+      display: grid;
+      gap: 0.375rem;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .studio-resource-current,
+    .studio-resource-status {
+      color: #5d6671;
+      font-size: 0.75rem;
+      overflow-wrap: anywhere;
+    }
+
+    .studio-resource-results {
+      display: grid;
+      gap: 0.375rem;
+      list-style: none;
+      padding: 0;
+    }
+
+    .studio-resource-results li {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      justify-content: space-between;
+      overflow-wrap: anywhere;
+    }
+
     .inspector-name {
       font-size: 0.8125rem;
       font-weight: 600;
@@ -11576,9 +18720,15 @@ var KumweStudioElement = class extends i {
     }
   `;
 	#activeViewportId;
+	#authoringControls = /* @__PURE__ */ new Map();
+	#authoringControlsReady = Promise.resolve();
+	#authoringDiagnostics = /* @__PURE__ */ new Map();
+	#defaultAuthoringControlRegistry = new StudioAuthoringControlRegistry();
 	#announcementPending = false;
 	#commandSequence = 0;
 	#bindingProjection;
+	#defaultDefinitions = createCoreProductionBlockDefinitions();
+	#defaultPatterns = createCoreProductionPatterns();
 	#diagnostics = [];
 	#drag;
 	#hoveredPreviewNodeId;
@@ -11600,6 +18750,7 @@ var KumweStudioElement = class extends i {
 	#previewDrag;
 	#removedNodes = [];
 	#registry;
+	#resourceBindingControls = /* @__PURE__ */ new Map();
 	#session;
 	#sessionGeneration = "";
 	get activeViewport() {
@@ -11611,6 +18762,10 @@ var KumweStudioElement = class extends i {
 	}
 	get stateVersion() {
 		return this.#session?.stateVersion ?? 0;
+	}
+	/** Resolves after the latest imperative custom-field lifecycle pass settles. */
+	get authoringReady() {
+		return this.#authoringControlsReady;
 	}
 	/** The single mode resolved from the wire configuration for this session. */
 	get sessionMode() {
@@ -11691,6 +18846,8 @@ var KumweStudioElement = class extends i {
 		this.#previewSurface.teardown(reason);
 	}
 	disconnectedCallback() {
+		this.#destroyAuthoringControls();
+		this.#destroyResourceBindingControls();
 		this.ownerDocument.removeEventListener("keydown", this.#onDocumentKeydown, true);
 		this.teardownPreview("studio.preview/surface-disconnected");
 		super.disconnectedCallback();
@@ -11755,6 +18912,8 @@ var KumweStudioElement = class extends i {
 		if (changed.has("document") || changed.has("configuration") || changed.has("contentModel")) this.#revalidate();
 	}
 	updated(changed) {
+		if (changed.has("authoringControlRegistry")) this.#destroyAuthoringControls();
+		if (changed.has("resourceSearchService")) this.#destroyResourceBindingControls();
 		for (const select of this.shadowRoot?.querySelectorAll("select[data-current-value]") ?? []) {
 			const current = select.dataset.currentValue;
 			if (current !== void 0 && select.value !== current) select.value = current;
@@ -11771,6 +18930,10 @@ var KumweStudioElement = class extends i {
 		}
 		for (const select of this.shadowRoot?.querySelectorAll("select.layout-role-select") ?? []) select.value = select.dataset.role ?? "";
 		if (changed.has("document") || changed.has("configuration") || changed.has("previewBinding") || changed.has("theme") || changed.has("viewports")) this.#schedulePreview();
+		this.#authoringControlsReady = this.#authoringControlsReady.catch(() => void 0).then(async () => {
+			await this.#synchronizeAuthoringControls();
+			this.#synchronizeResourceBindingControls();
+		});
 		const nodeId = this.#pendingFocusNodeId;
 		if (nodeId === void 0) return;
 		this.#pendingFocusNodeId = void 0;
@@ -11781,6 +18944,7 @@ var KumweStudioElement = class extends i {
 		const readOnly = this.#isReadOnly();
 		const roots = this.document?.roots ?? [];
 		const selected = this.document === void 0 || this.selectedNodeId === void 0 ? void 0 : findOutlineLocation(this.document.roots, this.selectedNodeId)?.node;
+		const diagnostics = [...this.#diagnostics, ...this.#authoringDiagnostics.values()].sort((left, right) => SEVERITY_RANK[left.severity] - SEVERITY_RANK[right.severity]);
 		return b`
       <div
         class="workspace"
@@ -11791,7 +18955,7 @@ var KumweStudioElement = class extends i {
         <aside class="panel" aria-label=${this.#text("studio.shell/palette-label")}>
           <h2>${this.#text("studio.shell/palette-heading")}</h2>
           <ul class="palette">
-            ${(this.configuration?.blockDefinitions ?? []).map((definition) => b`
+            ${this.#activeDefinitions().map((definition) => b`
                 <li>
                   <button
                     type="button"
@@ -11803,10 +18967,10 @@ var KumweStudioElement = class extends i {
                 </li>
               `)}
           </ul>
-          ${(this.patterns?.length ?? 0) === 0 ? A : b`
+          ${this.#activePatterns().length === 0 ? A : b`
                   <h2 class="pattern-heading">${this.#text("studio.shell/patterns-heading")}</h2>
                   <ul class="palette pattern-palette">
-                    ${this.patterns?.map((pattern) => b`
+                    ${this.#activePatterns().map((pattern) => b`
                         <li>
                           <button
                             type="button"
@@ -11895,10 +19059,10 @@ var KumweStudioElement = class extends i {
           aria-label=${this.#text("studio.shell/diagnostics-heading")}
         >
           <h2>${this.#text("studio.shell/diagnostics-heading")}</h2>
-          ${this.#diagnostics.length === 0 ? b`<p class="diagnostics-empty">
+          ${diagnostics.length === 0 ? b`<p class="diagnostics-empty">
                   ${this.#text("studio.shell/diagnostics-empty")}
                 </p>` : b`<ul class="diagnostics-list">
-                  ${this.#diagnostics.map((entry) => this.#renderDiagnostic(entry))}
+                  ${diagnostics.map((entry) => this.#renderDiagnostic(entry))}
                 </ul>`}
         </section>
 
@@ -11944,7 +19108,7 @@ var KumweStudioElement = class extends i {
 		}
 	}
 	#announce(key, parameters) {
-		this.announcement = messageText(key, this.messages, parameters);
+		this.announcement = messageText$1(key, this.messages, parameters);
 		this.#announcementPending = true;
 	}
 	#assignInternalDocument(document) {
@@ -12134,8 +19298,14 @@ var KumweStudioElement = class extends i {
 		if (filter.length === 0) return entries;
 		return entries.filter((entry) => entry.label.toLowerCase().includes(filter));
 	}
+	#activeDefinitions() {
+		return this.configuration?.blockDefinitions ?? this.#defaultDefinitions;
+	}
+	#activePatterns() {
+		return this.patterns ?? (this.configuration?.blockDefinitions === void 0 ? this.#defaultPatterns : []);
+	}
 	#findDefinition(node) {
-		return this.configuration?.blockDefinitions.find((candidate) => candidate.type === node.type && candidate.version === node.version);
+		return this.#activeDefinitions().find((candidate) => candidate.type === node.type && candidate.version === node.version);
 	}
 	#focusOutlineEntry(nodeId) {
 		const entries = this.shadowRoot?.querySelectorAll("button.outline-entry");
@@ -12165,10 +19335,10 @@ var KumweStudioElement = class extends i {
 			nodeId = `${base}-${counter}`;
 		}
 		const node = {
-			authoring: { mode: isCoreLayoutBlockType(definition.type) ? "structural" : "content" },
+			authoring: { mode: isCoreProductionBlockType(definition.type) && definition.slots.length > 0 ? "structural" : "content" },
 			bindings: {},
 			id: nodeId,
-			properties: isCoreLayoutBlockType(definition.type) ? coreLayoutInitialProperties(definition.type) : {},
+			properties: isCoreProductionBlockType(definition.type) ? coreProductionInitialProperties(definition.type) : {},
 			slots: Object.fromEntries(definition.slots.map((slot) => [slot.id, []])),
 			type: definition.type,
 			version: definition.version
@@ -12306,14 +19476,22 @@ var KumweStudioElement = class extends i {
 		if (document === void 0) return [];
 		const collections = [{
 			collection: document.roots,
-			label: this.#text("studio.shell/document-roots")
+			label: this.#text("studio.shell/document-roots"),
+			specificity: 0
 		}];
-		const stack = [...document.roots];
+		const stack = document.roots.map((node) => ({
+			node,
+			specificity: 1
+		}));
 		while (stack.length > 0) {
-			const parent = stack.shift();
-			if (parent === void 0) break;
+			const current = stack.shift();
+			if (current === void 0) break;
+			const { node: parent, specificity } = current;
 			const definition = this.#findDefinition(parent);
-			for (const children of Object.values(parent.slots)) stack.push(...children);
+			for (const children of Object.values(parent.slots)) stack.push(...children.map((node) => ({
+				node,
+				specificity: specificity + 1
+			})));
 			for (const slot of definition?.slots ?? []) {
 				if (!slot.accepts.types.includes(node.type)) continue;
 				collections.push({
@@ -12323,7 +19501,8 @@ var KumweStudioElement = class extends i {
 						slot: referenceText(slot.label)
 					}),
 					parentNodeId: parent.id,
-					slot: slot.id
+					slot: slot.id,
+					specificity
 				});
 			}
 		}
@@ -12712,7 +19891,7 @@ var KumweStudioElement = class extends i {
 	}
 	#patternDestination(pattern) {
 		if (!this.#permits("studio.command/apply-pattern") || pattern.roots.length === 0) return;
-		const definitions = this.configuration?.blockDefinitions ?? [];
+		const definitions = this.#activeDefinitions();
 		const pending = [...pattern.roots];
 		while (pending.length > 0) {
 			const node = pending.pop();
@@ -12821,7 +20000,7 @@ var KumweStudioElement = class extends i {
 				this.#announce("studio.shell/announce-selection-cleared");
 			}
 		});
-		for (const definition of this.configuration?.blockDefinitions ?? []) entries.push({
+		for (const definition of this.#activeDefinitions()) entries.push({
 			disabled: !this.#canInsertDefinition(definition),
 			id: `insert-${definition.type}@${definition.version}`,
 			label: this.#text("studio.shell/command-insert", { label: referenceText(definition.label) }),
@@ -12829,7 +20008,7 @@ var KumweStudioElement = class extends i {
 				this.#insertDefinition(definition);
 			}
 		});
-		for (const pattern of this.patterns ?? []) entries.push({
+		for (const pattern of this.#activePatterns()) entries.push({
 			disabled: this.#patternDestination(pattern) === void 0,
 			id: `apply-pattern-${pattern.id}`,
 			label: this.#text("studio.shell/command-apply-pattern", { pattern: referenceText(pattern.label) }),
@@ -12868,14 +20047,14 @@ var KumweStudioElement = class extends i {
 	*/
 	#queuePreviewAnnouncement(key, parameters) {
 		if (this.#announcementPending && this.isUpdatePending) {
-			this.#pendingPreviewAnnouncements.push(messageText(key, this.messages, parameters));
+			this.#pendingPreviewAnnouncements.push(messageText$1(key, this.messages, parameters));
 			return;
 		}
 		this.#announce(key, parameters);
 	}
 	#rebuildRegistry() {
 		const registry = new BlockRegistry();
-		for (const definition of this.configuration?.blockDefinitions ?? []) try {
+		for (const definition of this.#activeDefinitions()) try {
 			registry.register(definition);
 		} catch {}
 		this.#registry = registry;
@@ -13115,10 +20294,446 @@ var KumweStudioElement = class extends i {
       ${this.#renderInspectorRecipes(node, !this.#permits("studio.command/batch"))}
       ${this.#renderInspectorDesign(node, !this.#permits("studio.command/set-property"))}
       ${this.#renderInspectorProperties(node, !this.#permits("studio.command/set-property"))}
+      ${this.#renderInspectorAuthoringControls(node, readOnly)}
+      ${this.#renderInspectorResourceBindings(node, !this.#permits("studio.command/set-binding"))}
       ${this.#renderInspectorBindings(node, !this.#permits("studio.command/set-binding"))}
       ${this.#renderInspectorOverrides(node, !this.#permits("studio.command/set-property"))}
       ${this.#renderInspectorLayout(node, !this.#permits("studio.command/set-size-role"))}
     `;
+	}
+	/**
+	* Studio-owned custom fields are rendered as stable holders and mounted in
+	* `updated()`. The imperative editor/library lifecycle therefore remains
+	* behind the authoring registry instead of becoming part of Lit templates or
+	* the public shell contract.
+	*/
+	#renderInspectorAuthoringControls(node, readOnly) {
+		const targets = this.#inspectorAuthoringTargets(node, readOnly);
+		if (targets.length === 0) return A;
+		return b`
+      <section class="inspector-section inspector-authoring" aria-label="Studio authoring controls">
+        <h3>Authoring</h3>
+        <ul class="inspector-rows">
+          ${targets.map((target) => b`
+              <li
+                class="inspector-authoring-row"
+                data-authoring-kind=${target.kind}
+                data-authoring-name=${target.name}
+              >
+                <span class="inspector-name">${target.label}</span>
+                <div
+                  class="inspector-authoring-control"
+                  data-authoring-key=${target.key}
+                  data-authoring-control=${target.control}
+                ></div>
+              </li>
+            `)}
+        </ul>
+      </section>
+    `;
+	}
+	#inspectorAuthoringTargets(node, readOnly) {
+		const definition = this.#findDefinition(node);
+		if (definition === void 0) return [];
+		const targets = [];
+		for (const propertyControl of definition.propertyControls ?? []) {
+			if (!isStudioAuthoringControlId(propertyControl.control)) continue;
+			const value = propertyControl.control === STUDIO_AUTHORING_CONTROL_IDS.scopedCss ? defaultAuthoringControlValue(propertyControl.control) : node.properties[propertyControl.property] ?? defaultAuthoringControlValue(propertyControl.control);
+			targets.push({
+				control: propertyControl.control,
+				key: `${node.id}:property:${propertyControl.property}`,
+				kind: "property",
+				label: propertyControl.label === void 0 ? propertyControl.help === void 0 ? propertyControl.property : referenceText(propertyControl.help) : referenceText(propertyControl.label),
+				name: propertyControl.property,
+				nodeId: node.id,
+				readOnly,
+				value
+			});
+		}
+		for (const port of definition.ports) {
+			const metadata = port.authoring;
+			if (metadata?.control === void 0 || !isStudioAuthoringControlId(metadata.control)) continue;
+			const binding = node.bindings[port.id];
+			const value = binding?.source.kind === "static-value" ? binding.source.value : defaultAuthoringControlValue(metadata.control);
+			targets.push({
+				...binding === void 0 ? {} : { binding },
+				control: metadata.control,
+				key: `${node.id}:port:${port.id}`,
+				kind: "port",
+				label: referenceText(port.label) || port.id,
+				name: port.id,
+				nodeId: node.id,
+				...metadata.profile === void 0 ? {} : { profile: metadata.profile },
+				readOnly: readOnly || metadata.readOnly === true || binding !== void 0 && binding.source.kind !== "static-value",
+				value
+			});
+		}
+		return targets;
+	}
+	async #synchronizeAuthoringControls() {
+		if (!this.isConnected || this.shadowRoot === null) {
+			this.#destroyAuthoringControls();
+			return;
+		}
+		const node = this.document === void 0 || this.selectedNodeId === void 0 ? void 0 : this.#currentInspectorNode(this.selectedNodeId);
+		const targets = node === void 0 ? [] : this.#inspectorAuthoringTargets(node, this.#isReadOnly());
+		const holders = /* @__PURE__ */ new Map();
+		for (const holder of this.shadowRoot.querySelectorAll("[data-authoring-key]")) {
+			const key = holder.dataset.authoringKey;
+			if (key !== void 0) holders.set(key, holder);
+		}
+		const expected = new Set(targets.map((target) => target.key));
+		for (const [key, mounted] of this.#authoringControls) if (!expected.has(key) || holders.get(key) !== mounted.holder) this.#destroyAuthoringControl(key, mounted);
+		for (const key of [...this.#authoringDiagnostics.keys()]) if (!expected.has(key)) this.#authoringDiagnostics.delete(key);
+		const registry = this.authoringControlRegistry ?? this.#defaultAuthoringControlRegistry;
+		for (const target of targets) {
+			const holder = holders.get(target.key);
+			if (holder === void 0) continue;
+			const signature = authoringTargetSignature(target);
+			const mounted = this.#authoringControls.get(target.key);
+			if (mounted?.holder === holder && mounted.signature === signature) continue;
+			const restoreFocus = mounted !== void 0 && this.shadowRoot.activeElement !== null && mounted.holder.contains(this.shadowRoot.activeElement);
+			if (mounted !== void 0) this.#destroyAuthoringControl(target.key, mounted);
+			holder.replaceChildren();
+			try {
+				const options = {
+					...target.binding === void 0 ? {} : { binding: target.binding },
+					holder,
+					onChange: (change) => {
+						this.#acceptAuthoringControlChange(target, change);
+					},
+					...target.profile === void 0 ? {} : { profile: target.profile },
+					readOnly: target.readOnly,
+					usage: "studio.media/content",
+					value: structuredClone(target.value)
+				};
+				const handle = await registry.mount(target.control, options);
+				const currentNode = this.#currentInspectorNode(target.nodeId);
+				const currentTarget = currentNode ? this.#inspectorAuthoringTargets(currentNode, this.#isReadOnly()).find((candidate) => candidate.key === target.key) : void 0;
+				if (!holder.isConnected || currentTarget === void 0 || authoringTargetSignature(currentTarget) !== signature) {
+					handle.destroy();
+					continue;
+				}
+				this.#authoringControls.set(target.key, {
+					handle,
+					holder,
+					signature
+				});
+				this.#setAuthoringDiagnostic(target.key, void 0);
+				if (restoreFocus) handle.focus();
+			} catch (error) {
+				holder.replaceChildren(document.createTextNode(error instanceof Error ? `Control unavailable: ${error.message}` : "Control unavailable."));
+				this.#setAuthoringDiagnostic(target.key, {
+					code: "studio.authoring/control-unavailable",
+					location: { nodeId: target.nodeId },
+					message: {
+						defaultMessage: `The ${target.label} authoring control is unavailable.`,
+						key: "studio.authoring/control-unavailable"
+					},
+					parameters: {
+						control: target.control,
+						name: target.name
+					},
+					severity: "error"
+				});
+			}
+		}
+	}
+	#acceptAuthoringControlChange(target, change) {
+		const node = this.#currentInspectorNode(target.nodeId);
+		if (node === void 0 || target.readOnly) return;
+		if (!change.valid) {
+			this.#setAuthoringDiagnostic(target.key, {
+				code: "studio.authoring/invalid-control-value",
+				location: { nodeId: node.id },
+				message: {
+					defaultMessage: `${target.label} contains an invalid value.`,
+					key: "studio.authoring/invalid-control-value"
+				},
+				parameters: {
+					control: target.control,
+					name: target.name
+				},
+				severity: "error"
+			});
+			return;
+		}
+		let applied;
+		if (target.kind === "property") {
+			const value = toJsonValue(change.value);
+			if (value === void 0) {
+				this.#setAuthoringValueDiagnostic(target, node.id);
+				return;
+			}
+			if (target.control === STUDIO_AUTHORING_CONTROL_IDS.scopedCss) {
+				this.dispatchEvent(new CustomEvent("studio-scoped-style-change", {
+					bubbles: true,
+					composed: true,
+					detail: {
+						nodeId: node.id,
+						value
+					}
+				}));
+				applied = true;
+			} else applied = this.#setNodeProperty(node, target.name, value, void 0);
+		} else applied = this.#setAuthoringPortValue(node, target.name, change.value);
+		if (!applied) return;
+		this.#setAuthoringDiagnostic(target.key, void 0);
+		const current = this.#currentInspectorNode(node.id);
+		const updatedTarget = current ? this.#inspectorAuthoringTargets(current, this.#isReadOnly()).find((candidate) => candidate.key === target.key) : void 0;
+		const mounted = this.#authoringControls.get(target.key);
+		if (mounted !== void 0 && updatedTarget !== void 0) mounted.signature = authoringTargetSignature(updatedTarget);
+	}
+	#setAuthoringPortValue(node, port, input) {
+		const current = node.bindings[port];
+		if (current !== void 0 && current.source.kind !== "static-value") return false;
+		if (input === void 0) {
+			if (current === void 0) return true;
+			this.#removeBinding(node, port);
+			return this.#currentInspectorNode(node.id)?.bindings[port] === void 0;
+		}
+		const value = toJsonValue(input);
+		if (value === void 0) return false;
+		const session = this.#session;
+		const document = this.document;
+		if (session === void 0 || document === void 0 || !this.#permits("studio.command/set-binding")) return false;
+		const binding = current === void 0 ? {
+			onError: "error",
+			onNull: "empty",
+			source: {
+				kind: "static-value",
+				value
+			},
+			transforms: []
+		} : {
+			...current,
+			source: {
+				kind: "static-value",
+				value
+			}
+		};
+		const command = {
+			...this.#commandEnvelope(document, session),
+			payload: {
+				binding,
+				nodeId: node.id,
+				port
+			},
+			type: "studio.command/set-binding"
+		};
+		if (!this.#runShellCommand(command)) return false;
+		this.#announce("studio.shell/announce-binding-set", { port });
+		return true;
+	}
+	#setAuthoringValueDiagnostic(target, nodeId) {
+		this.#setAuthoringDiagnostic(target.key, {
+			code: "studio.authoring/non-canonical-control-value",
+			location: { nodeId },
+			message: {
+				defaultMessage: `${target.label} did not produce bounded canonical JSON.`,
+				key: "studio.authoring/non-canonical-control-value"
+			},
+			parameters: {
+				control: target.control,
+				name: target.name
+			},
+			severity: "error"
+		});
+	}
+	#setAuthoringDiagnostic(key, diagnostic) {
+		const previous = this.#authoringDiagnostics.get(key);
+		if (diagnostic === void 0) {
+			if (previous === void 0) return;
+			this.#authoringDiagnostics.delete(key);
+			this.requestUpdate();
+			return;
+		}
+		if (previous?.code === diagnostic.code && previous.message.defaultMessage === diagnostic.message.defaultMessage) return;
+		this.#authoringDiagnostics.set(key, diagnostic);
+		this.requestUpdate();
+	}
+	#destroyAuthoringControl(key, mounted) {
+		try {
+			mounted.handle.destroy();
+		} catch {}
+		this.#authoringControls.delete(key);
+	}
+	#destroyAuthoringControls() {
+		for (const [key, mounted] of this.#authoringControls) this.#destroyAuthoringControl(key, mounted);
+		this.#authoringDiagnostics.clear();
+	}
+	/**
+	* Resource-valued ports use a dedicated search/browser surface rather than
+	* the legacy raw binding field. Discovery stays useful in read-only mode;
+	* only a port that explicitly permits authoring can select a canonical
+	* resource reference.
+	*/
+	#renderInspectorResourceBindings(node, readOnly) {
+		const targets = this.#inspectorResourceBindingTargets(node, readOnly);
+		if (targets.length === 0) return A;
+		const browserAvailable = this.resourceSearchService !== void 0 && this.#resourcePortAdvertised();
+		return b`
+      <section class="inspector-section inspector-resource-bindings" aria-label="Resource bindings">
+        <h3>Resources</h3>
+        <ul class="inspector-rows">
+          ${targets.map((target) => b`
+              <li class="inspector-row" data-resource-port=${target.port}>
+                <span class="inspector-name">${target.label}</span>
+                ${browserAvailable ? b`<div
+                        class="inspector-resource-control"
+                        data-resource-authoring-key=${target.key}
+                      ></div>` : b`<p class="inspector-binding-status resource-browser-unavailable">
+                        Resource browsing is unavailable in this
+                        session.${target.binding === void 0 ? "" : ` The stored ${target.binding.source.kind} binding remains unchanged.`}
+                      </p>`}
+              </li>
+            `)}
+        </ul>
+      </section>
+    `;
+	}
+	#inspectorResourceBindingTargets(node, readOnly) {
+		const definition = this.#findDefinition(node);
+		if (definition === void 0) return [];
+		return definition.ports.filter((port) => port.valueType === "resource").map((port) => {
+			const binding = node.bindings[port.id];
+			return {
+				...binding === void 0 ? {} : { binding },
+				key: `resource:${node.id}:${port.id}`,
+				label: referenceText(port.label) || port.id,
+				multiple: port.multiple,
+				nodeId: node.id,
+				port: port.id,
+				readOnly: readOnly || port.authoring?.readOnly === true || binding !== void 0 && binding.source.kind !== "resource-reference"
+			};
+		});
+	}
+	#synchronizeResourceBindingControls() {
+		const service = this.resourceSearchService;
+		if (!this.isConnected || this.shadowRoot === null || service === void 0 || !this.#resourcePortAdvertised()) {
+			this.#destroyResourceBindingControls();
+			return;
+		}
+		const node = this.document === void 0 || this.selectedNodeId === void 0 ? void 0 : this.#currentInspectorNode(this.selectedNodeId);
+		const targets = node === void 0 ? [] : this.#inspectorResourceBindingTargets(node, this.#isReadOnly());
+		const holders = /* @__PURE__ */ new Map();
+		for (const holder of this.shadowRoot.querySelectorAll("[data-resource-authoring-key]")) {
+			const key = holder.dataset.resourceAuthoringKey;
+			if (key !== void 0) holders.set(key, holder);
+		}
+		const expected = new Set(targets.map((target) => target.key));
+		for (const [key, mounted] of this.#resourceBindingControls) if (!expected.has(key) || holders.get(key) !== mounted.holder) this.#destroyResourceBindingControl(key, mounted);
+		let removedDiagnostic = false;
+		for (const key of [...this.#authoringDiagnostics.keys()]) if (key.startsWith("resource:") && !expected.has(key)) {
+			this.#authoringDiagnostics.delete(key);
+			removedDiagnostic = true;
+		}
+		if (removedDiagnostic) this.requestUpdate();
+		for (const target of targets) {
+			const holder = holders.get(target.key);
+			if (holder === void 0) continue;
+			const signature = resourceBindingTargetSignature(target);
+			const mounted = this.#resourceBindingControls.get(target.key);
+			if (mounted?.holder === holder && mounted.signature === signature) continue;
+			const restoreFocus = mounted !== void 0 && this.shadowRoot.activeElement !== null && mounted.holder.contains(this.shadowRoot.activeElement);
+			if (mounted !== void 0) this.#destroyResourceBindingControl(target.key, mounted);
+			holder.replaceChildren();
+			try {
+				const handle = mountStudioResourceBindingControl({
+					...target.binding === void 0 ? {} : { binding: target.binding },
+					holder,
+					label: target.label,
+					multiple: target.multiple,
+					onChange: (change) => this.#acceptResourceBindingChange(target, change),
+					readOnly: target.readOnly,
+					service
+				});
+				const currentNode = this.#currentInspectorNode(target.nodeId);
+				const currentTarget = currentNode ? this.#inspectorResourceBindingTargets(currentNode, this.#isReadOnly()).find((candidate) => candidate.key === target.key) : void 0;
+				if (!holder.isConnected || currentTarget === void 0 || resourceBindingTargetSignature(currentTarget) !== signature) {
+					handle.destroy();
+					continue;
+				}
+				this.#resourceBindingControls.set(target.key, {
+					handle,
+					holder,
+					signature
+				});
+				this.#setAuthoringDiagnostic(target.key, void 0);
+				if (restoreFocus) handle.focus();
+			} catch {
+				holder.replaceChildren(document.createTextNode("Resource browser is unavailable."));
+				this.#setAuthoringDiagnostic(target.key, {
+					code: "studio.authoring/resource-control-unavailable",
+					location: { nodeId: target.nodeId },
+					message: {
+						defaultMessage: `The ${target.label} resource browser is unavailable.`,
+						key: "studio.authoring/resource-control-unavailable"
+					},
+					parameters: { port: target.port },
+					severity: "error"
+				});
+			}
+		}
+	}
+	#acceptResourceBindingChange(target, change) {
+		const node = this.#currentInspectorNode(target.nodeId);
+		if (node === void 0 || target.readOnly) return;
+		const currentTarget = this.#inspectorResourceBindingTargets(node, this.#isReadOnly()).find((candidate) => candidate.key === target.key);
+		if (currentTarget === void 0 || currentTarget.readOnly) return;
+		let applied;
+		if (change.source === void 0) {
+			if (node.bindings[target.port] === void 0) return;
+			this.#removeBinding(node, target.port);
+			applied = this.#currentInspectorNode(node.id)?.bindings[target.port] === void 0;
+		} else applied = this.#setResourceReferenceBinding(node, target.port, change.source);
+		if (!applied) return;
+		this.#setAuthoringDiagnostic(target.key, void 0);
+		const updatedNode = this.#currentInspectorNode(node.id);
+		const updatedTarget = updatedNode ? this.#inspectorResourceBindingTargets(updatedNode, this.#isReadOnly()).find((candidate) => candidate.key === target.key) : void 0;
+		const mounted = this.#resourceBindingControls.get(target.key);
+		if (mounted !== void 0 && updatedTarget !== void 0) mounted.signature = resourceBindingTargetSignature(updatedTarget);
+	}
+	#setResourceReferenceBinding(node, port, source) {
+		if (!isStudioResourceReference(source)) return false;
+		const current = node.bindings[port];
+		if (current !== void 0 && current.source.kind !== "resource-reference") return false;
+		const session = this.#session;
+		const document = this.document;
+		if (session === void 0 || document === void 0 || !this.#permits("studio.command/set-binding")) return false;
+		const binding = {
+			onError: "error",
+			onNull: "empty",
+			source: structuredClone(source),
+			transforms: []
+		};
+		const command = {
+			...this.#commandEnvelope(document, session),
+			payload: {
+				binding,
+				nodeId: node.id,
+				port
+			},
+			type: "studio.command/set-binding"
+		};
+		if (!this.#runShellCommand(command)) return false;
+		this.#announce("studio.shell/announce-binding-set", { port });
+		return true;
+	}
+	#destroyResourceBindingControl(key, mounted) {
+		try {
+			mounted.handle.destroy();
+		} catch {}
+		this.#resourceBindingControls.delete(key);
+	}
+	#destroyResourceBindingControls() {
+		for (const [key, mounted] of this.#resourceBindingControls) this.#destroyResourceBindingControl(key, mounted);
+		let removedDiagnostic = false;
+		for (const key of [...this.#authoringDiagnostics.keys()]) if (key.startsWith("resource:")) {
+			this.#authoringDiagnostics.delete(key);
+			removedDiagnostic = true;
+		}
+		if (removedDiagnostic && this.isConnected) this.requestUpdate();
 	}
 	/** Theme recipes are atomic command batches, never an untracked style mutation. */
 	#renderInspectorRecipes(node, disabled) {
@@ -13243,6 +20858,8 @@ var KumweStudioElement = class extends i {
 			return this.#renderLegacyInspectorBindings(node, readOnly);
 		}
 		const modelCompatible = !this.#bindingProjection?.diagnostics.some((entry) => entry.code.startsWith("studio.binding/model-"));
+		const resourcePorts = new Set((this.#findDefinition(node)?.ports ?? []).filter((port) => port.valueType === "resource").map((port) => port.id));
+		const projectedPorts = projection.ports.filter((port) => !resourcePorts.has(port.port));
 		return b`
       <section
         class="inspector-section inspector-bindings"
@@ -13254,10 +20871,10 @@ var KumweStudioElement = class extends i {
         </p>
         ${!modelCompatible ? b`<p class="inspector-empty inspector-binding-model-mismatch">
                 ${this.#text("studio.shell/inspector-binding-model-mismatch")}
-              </p>` : projection.ports.length === 0 ? b`<p class="inspector-empty">
+              </p>` : projectedPorts.length === 0 ? b`<p class="inspector-empty">
                   ${this.#text("studio.shell/inspector-bindings-empty")}
                 </p>` : b`<ul class="inspector-rows">
-                  ${projection.ports.map((port) => this.#renderProjectedBindingPort(node, port, readOnly))}
+                  ${projectedPorts.map((port) => this.#renderProjectedBindingPort(node, port, readOnly))}
                 </ul>`}
       </section>
     `;
@@ -13387,7 +21004,10 @@ var KumweStudioElement = class extends i {
     </div>`;
 	}
 	#renderLegacyInspectorBindings(node, readOnly) {
-		const entries = Object.entries(node.bindings);
+		const declaredPorts = this.#findDefinition(node)?.ports ?? [];
+		const resourcePorts = new Set(declaredPorts.filter((port) => port.valueType === "resource").map((port) => port.id));
+		const entries = Object.entries(node.bindings).filter(([port]) => !resourcePorts.has(port));
+		const showRawBindingForm = declaredPorts.length === 0 || declaredPorts.some((port) => port.valueType !== "resource");
 		return b`
       <section
         class="inspector-section inspector-bindings"
@@ -13418,30 +21038,30 @@ var KumweStudioElement = class extends i {
                     `)}
                 </ul>
               `}
-        <div class="inspector-row inspector-set-binding-form">
-          <input
-            type="text"
-            class="inspector-binding-port"
-            aria-label=${this.#text("studio.shell/inspector-binding-port-label")}
-            ?disabled=${readOnly}
-          />
-          <input
-            type="text"
-            class="inspector-binding-value-input"
-            aria-label=${this.#text("studio.shell/inspector-binding-value-label")}
-            ?disabled=${readOnly}
-          />
-          <button
-            type="button"
-            class="inspector-binding-set"
-            ?disabled=${readOnly}
-            @click=${() => {
+        ${showRawBindingForm ? b`<div class="inspector-row inspector-set-binding-form">
+                <input
+                  type="text"
+                  class="inspector-binding-port"
+                  aria-label=${this.#text("studio.shell/inspector-binding-port-label")}
+                  ?disabled=${readOnly}
+                />
+                <input
+                  type="text"
+                  class="inspector-binding-value-input"
+                  aria-label=${this.#text("studio.shell/inspector-binding-value-label")}
+                  ?disabled=${readOnly}
+                />
+                <button
+                  type="button"
+                  class="inspector-binding-set"
+                  ?disabled=${readOnly}
+                  @click=${() => {
 			this.#setBinding(node);
 		}}
-          >
-            ${this.#text("studio.shell/inspector-set-binding")}
-          </button>
-        </div>
+                >
+                  ${this.#text("studio.shell/inspector-set-binding")}
+                </button>
+              </div>` : A}
       </section>
     `;
 	}
@@ -13614,7 +21234,8 @@ var KumweStudioElement = class extends i {
     `;
 	}
 	#renderInspectorProperties(node, readOnly) {
-		const entries = Object.entries(node.properties);
+		const customProperties = new Set((this.#findDefinition(node)?.propertyControls ?? []).filter((entry) => isStudioAuthoringControlId(entry.control)).map((entry) => entry.property));
+		const entries = Object.entries(node.properties).filter(([property]) => !customProperties.has(property));
 		return b`
       <section
         class="inspector-section inspector-properties"
@@ -14090,7 +21711,7 @@ var KumweStudioElement = class extends i {
 		let distance = Number.POSITIVE_INFINITY;
 		for (const target of targets) {
 			const current = Math.hypot(target.distanceX - x, target.distanceY - y);
-			if (current < distance) {
+			if (current < distance || current === distance && (chosen === void 0 || target.specificity > chosen.specificity)) {
 				chosen = target;
 				distance = current;
 			}
@@ -14115,7 +21736,8 @@ var KumweStudioElement = class extends i {
 					...option,
 					distanceX: target.x + target.width / 2,
 					distanceY: target.y + target.height / 2,
-					indicator: target
+					indicator: target,
+					specificity: collection.specificity
 				});
 				continue;
 			}
@@ -14138,7 +21760,8 @@ var KumweStudioElement = class extends i {
 				...option,
 				distanceX: indicator.x + indicator.width / 2,
 				distanceY: indicator.y + indicator.height / 2,
-				indicator
+				indicator,
+				specificity: collection.specificity
 			});
 		}
 		return targets;
@@ -14219,7 +21842,7 @@ var KumweStudioElement = class extends i {
 		}
 		const registry = this.#registry ?? new BlockRegistry();
 		const result = validateBlueprint(this.document, registry);
-		this.#bindingProjection = this.contentModel === void 0 ? void 0 : projectBlueprintFieldBindings(this.document, this.contentModel, this.configuration?.blockDefinitions ?? []);
+		this.#bindingProjection = this.contentModel === void 0 ? void 0 : projectBlueprintFieldBindings(this.document, this.contentModel, this.#activeDefinitions());
 		this.#diagnostics = [...result.diagnostics, ...this.#bindingProjection?.diagnostics ?? []].sort((left, right) => SEVERITY_RANK[left.severity] - SEVERITY_RANK[right.severity]);
 	}
 	#revealDiagnosticNode(nodeId) {
@@ -14334,6 +21957,9 @@ var KumweStudioElement = class extends i {
 	#modelPortAdvertised() {
 		return this.configuration?.session.hostCapabilities.ports.some((port) => port.id === "studio.port/model") ?? false;
 	}
+	#resourcePortAdvertised() {
+		return this.configuration?.session.hostCapabilities.ports.some((port) => port.id === "studio.port/resource" && port.operations.includes("studio.operation/resource.search")) ?? false;
+	}
 	#setFieldBinding(node, port, candidate) {
 		const session = this.#session;
 		const document = this.document;
@@ -14377,6 +22003,10 @@ var KumweStudioElement = class extends i {
 		const port = portInput.value.trim();
 		if (port.length === 0) {
 			this.#announce("studio.shell/announce-name-required");
+			return;
+		}
+		if (this.#findDefinition(node)?.ports.some((entry) => entry.id === port && entry.valueType === "resource")) {
+			this.#announce("studio.shell/announce-invalid-value", { label: port });
 			return;
 		}
 		const parsed = this.#parseJsonInput(valueInput.value, port);
@@ -14514,7 +22144,7 @@ var KumweStudioElement = class extends i {
 		}));
 	}
 	#text(key, parameters) {
-		return messageText(key, this.messages, parameters);
+		return messageText$1(key, this.messages, parameters);
 	}
 	#togglePalette(event) {
 		if (this.paletteOpen === true) {
@@ -14616,6 +22246,96 @@ var SEVERITY_RANK = {
 	information: 3,
 	warning: 2
 };
+var STUDIO_AUTHORING_CONTROLS = new Set(Object.values(STUDIO_AUTHORING_CONTROL_IDS));
+function isStudioAuthoringControlId(value) {
+	return STUDIO_AUTHORING_CONTROLS.has(value);
+}
+function defaultAuthoringControlValue(control) {
+	switch (control) {
+		case "studio.control/rich-text": return {
+			content: [],
+			type: "doc"
+		};
+		case "studio.control/source": return "";
+		case "studio.control/chart": return {
+			datasets: [{
+				label: "Series 1",
+				values: [0]
+			}],
+			labels: ["Label 1"],
+			type: "bar"
+		};
+		case "studio.control/drawing": return {
+			alt: "Drawing",
+			height: 600,
+			strokes: [],
+			width: 800
+		};
+		case "studio.control/money": return {
+			amount: "0",
+			currency: "USD"
+		};
+		case "studio.control/media-collection": return [];
+		case "studio.control/media-reference": return;
+		case "studio.control/scoped-css": return { rules: [] };
+		case "studio.control/table": return {
+			columns: ["Column 1"],
+			rows: [[""]]
+		};
+	}
+}
+function authoringTargetSignature(target) {
+	return JSON.stringify({
+		bindingKind: target.binding?.source.kind,
+		control: target.control,
+		kind: target.kind,
+		name: target.name,
+		profile: target.profile,
+		readOnly: target.readOnly,
+		value: target.value
+	});
+}
+function resourceBindingTargetSignature(target) {
+	return JSON.stringify({
+		binding: target.binding,
+		multiple: target.multiple,
+		readOnly: target.readOnly
+	});
+}
+/**
+* Copy an editor-produced value into the bounded language-neutral JSON
+* domain. Unsupported objects, non-finite numbers and excessive structures
+* fail closed instead of being coerced into persisted protocol data.
+*/
+function toJsonValue(value, depth = 0) {
+	if (depth > 32) return void 0;
+	if (value === null || typeof value === "boolean") return value;
+	if (typeof value === "number") return Number.isFinite(value) ? value : void 0;
+	if (typeof value === "string") return value.length <= 1e6 ? value : void 0;
+	if (Array.isArray(value)) {
+		if (value.length > 1e4) return void 0;
+		const result = [];
+		for (const item of value) {
+			const parsed = toJsonValue(item, depth + 1);
+			if (parsed === void 0) return void 0;
+			result.push(parsed);
+		}
+		return result;
+	}
+	if (typeof value !== "object" || value === void 0) return void 0;
+	const prototype = Object.getPrototypeOf(value);
+	if (prototype !== Object.prototype && prototype !== null) return void 0;
+	const entries = Object.entries(value);
+	if (entries.length > 1e3) return void 0;
+	const result = {};
+	for (const [key, item] of entries) {
+		if (key === "__proto__" || key === "constructor" || key === "prototype") return void 0;
+		const parsed = toJsonValue(item, depth + 1);
+		if (parsed === void 0) return void 0;
+		result[key] = parsed;
+	}
+	return result;
+}
 function diagnosticText(entry) {
 	const template = referenceText(entry.message);
 	if (entry.parameters === void 0) return template;
@@ -15005,7 +22725,7 @@ async function setupStudioComposition() {
 	if (shell === null) return;
 	try {
 		const boot = JSON.parse(encoded.textContent ?? "");
-		if (boot.release !== "0.1.0-alpha.11") throw new Error("Studio release binding mismatch.");
+		if (boot.release !== "0.1.0-rc.1") throw new Error("Studio release binding mismatch.");
 		const opened = await openHostSession(boot);
 		const advertised = new Set(opened.hostCapabilities);
 		const adapter = createStudioHttpHostAdapter(boot.endpoints.ports, {

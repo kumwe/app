@@ -2,6 +2,7 @@ import { BlockRegistry, compileStudioPropertySchema, projectBlueprintFieldBindin
 import { STUDIO_CONTRACT_VERSION, STUDIO_WIRE_PROTOCOL_VERSION, } from '@kumwe/studio-protocol';
 export { createHostRequestContextFixture, createTestbedHost, TestbedHostError, } from './host-testbed.js';
 export { createHttpHostAdapter, } from './http-host-adapter.js';
+export { runAuthoringWebVector, } from './web-conformance.js';
 /**
  * Replays a binding vector without consulting its expected projection. The
  * normalized result intentionally excludes localized labels and prose so a

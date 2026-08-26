@@ -4,16 +4,20 @@
     "name": "reveal-validation"
   },
   "assets/administrator/components/studio-composition.ts": {
-    "file": "js/studio-composition-CO4f0V1C.js",
+    "file": "js/studio-composition-O9gFWRDp.js",
     "name": "studio-composition",
     "src": "assets/administrator/components/studio-composition.ts",
     "isDynamicEntry": true,
     "imports": [
-      "_reveal-validation-g1jDnck7.js"
+      "_reveal-validation-g1jDnck7.js",
+      "assets/administrator/main.ts"
+    ],
+    "dynamicImports": [
+      "node_modules/@editorjs/editorjs/dist/editorjs.mjs"
     ]
   },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-DzIVKEKg.js",
+    "file": "js/administrator-BGJujI72.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
@@ -50,5 +54,11 @@
     "css": [
       "css/site-Bg9wT4O4.css"
     ]
+  },
+  "node_modules/@editorjs/editorjs/dist/editorjs.mjs": {
+    "file": "js/editorjs-BQPU4-8b.js",
+    "name": "editorjs",
+    "src": "node_modules/@editorjs/editorjs/dist/editorjs.mjs",
+    "isDynamicEntry": true
   }
 }

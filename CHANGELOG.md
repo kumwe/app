@@ -24,6 +24,16 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **The App consumes the published Studio `0.1.0-rc.1` release-candidate family — all eight packages,
+  renderer included.** The atomic re-pin replaces the seven-package alpha.11 bootstrap with the exact
+  eight-package family Studio published through its governed promotion pipeline: eight vendored tarballs
+  whose bytes match the public registry, a `PIN.json` naming every digest, three byte-identical release
+  records, the complete 304-file testkit corpus, and the 47-schema protocol tree. The corpus lane now
+  also replays the eight published renderer-web conformance vectors through the package's own
+  `runRendererWebVector` runner against the exact installed renderer, and both release verifiers hold the
+  family closed at eight names. The 160-key Studio authoring message corpus is synchronized into App
+  XLIFF. The App Twig adapter's replay of the renderer-web vectors remains open work in STATUS.
+
 - **Content-model versions now have a first-party Studio Blueprint composition surface.** The
   capability-gated administrator route provisions an exact, deterministic, version-bound Blueprint
   only through a CSRF-protected POST and then opens the pinned alpha.11 Studio runtime on GET. Provisioning

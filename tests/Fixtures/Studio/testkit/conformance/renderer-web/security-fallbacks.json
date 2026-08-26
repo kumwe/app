@@ -1,0 +1,169 @@
+{
+  "id": "renderer-web/security-fallbacks",
+  "coverage": {
+    "blockTypes": [
+      "studio.core/call-to-action",
+      "studio.core/chart",
+      "studio.core/heading",
+      "studio.core/image",
+      "studio.core/table"
+    ],
+    "behaviors": [],
+    "presentation": [],
+    "security": ["active-media-deny", "escaped-text", "safe-url-deny", "typed-data-fallback"]
+  },
+  "context": { "allowBlobMedia": true },
+  "roots": [
+    {
+      "authoring": { "mode": "content" },
+      "bindings": {},
+      "id": "security-heading",
+      "properties": { "level": 2 },
+      "slots": {},
+      "type": "studio.core/heading",
+      "version": "1.0.0"
+    },
+    {
+      "authoring": { "mode": "content" },
+      "bindings": {},
+      "id": "security-action",
+      "properties": { "appearance": "primary", "href": "javascript:alert(1)" },
+      "slots": {},
+      "type": "studio.core/call-to-action",
+      "version": "1.0.0"
+    },
+    {
+      "authoring": { "mode": "content" },
+      "bindings": {},
+      "id": "security-blob-image",
+      "properties": { "fit": "cover", "loading": "lazy" },
+      "slots": {},
+      "type": "studio.core/image",
+      "version": "1.0.0"
+    },
+    {
+      "authoring": { "mode": "content" },
+      "bindings": {},
+      "id": "security-svg-image",
+      "properties": { "fit": "cover", "loading": "lazy" },
+      "slots": {},
+      "type": "studio.core/image",
+      "version": "1.0.0"
+    },
+    {
+      "authoring": { "mode": "content" },
+      "bindings": {},
+      "id": "security-data-image",
+      "properties": { "fit": "cover", "loading": "lazy" },
+      "slots": {},
+      "type": "studio.core/image",
+      "version": "1.0.0"
+    },
+    {
+      "authoring": { "mode": "content" },
+      "bindings": {},
+      "id": "security-chart",
+      "properties": {},
+      "slots": {},
+      "type": "studio.core/chart",
+      "version": "1.0.0"
+    },
+    {
+      "authoring": { "mode": "content" },
+      "bindings": {},
+      "id": "security-table",
+      "properties": {},
+      "slots": {},
+      "type": "studio.core/table",
+      "version": "1.0.0"
+    }
+  ],
+  "bindings": [
+    { "nodeId": "security-heading", "port": "text", "value": "<script>alert(1)</script>" },
+    { "nodeId": "security-action", "port": "label", "value": "Unsafe" },
+    {
+      "nodeId": "security-blob-image",
+      "port": "asset",
+      "value": {
+        "contractVersion": "0.1-draft",
+        "kind": "media-reference",
+        "assetId": "safe-blob",
+        "usage": "studio.media/content",
+        "accessibility": { "mode": "informative", "altText": "Local" }
+      }
+    },
+    {
+      "nodeId": "security-svg-image",
+      "port": "asset",
+      "value": {
+        "contractVersion": "0.1-draft",
+        "kind": "media-reference",
+        "assetId": "active-svg",
+        "usage": "studio.media/content",
+        "accessibility": { "mode": "informative", "altText": "SVG" }
+      }
+    },
+    {
+      "nodeId": "security-data-image",
+      "port": "asset",
+      "value": {
+        "contractVersion": "0.1-draft",
+        "kind": "media-reference",
+        "assetId": "data-image",
+        "usage": "studio.media/content",
+        "accessibility": { "mode": "informative", "altText": "Data" }
+      }
+    },
+    {
+      "nodeId": "security-chart",
+      "port": "chart",
+      "value": {
+        "type": "bar",
+        "labels": ["A"],
+        "datasets": [{ "label": "Bad", "values": [1, 2] }]
+      }
+    },
+    {
+      "nodeId": "security-table",
+      "port": "table",
+      "value": { "columns": ["A", "B"], "rows": [["one"]] }
+    }
+  ],
+  "media": [
+    {
+      "assetId": "safe-blob",
+      "src": "blob:https://studio.example.test/123e4567-e89b-12d3-a456-426614174000",
+      "altText": "Local",
+      "mediaType": "image/png"
+    },
+    {
+      "assetId": "active-svg",
+      "src": "blob:https://studio.example.test/223e4567-e89b-12d3-a456-426614174000",
+      "altText": "SVG",
+      "mediaType": "image/svg+xml"
+    },
+    {
+      "assetId": "data-image",
+      "src": "data:image/png;base64,AAAA",
+      "altText": "Data",
+      "mediaType": "image/png"
+    }
+  ],
+  "expect": {
+    "htmlContains": [
+      "&lt;script&gt;alert(1)&lt;/script&gt;",
+      "blob:https://studio.example.test/123e4567-e89b-12d3-a456-426614174000",
+      "Chart data unavailable",
+      "Table data unavailable",
+      "Image unavailable"
+    ],
+    "htmlExcludes": [
+      "<script",
+      "javascript:",
+      "data:image",
+      "223e4567-e89b-12d3-a456-426614174000"
+    ],
+    "cssContains": ["prefers-reduced-motion"],
+    "enhancements": []
+  }
+}

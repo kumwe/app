@@ -31,6 +31,7 @@ const packageNames = Object.freeze([
   "@kumwe/studio-media",
   "@kumwe/studio-preview",
   "@kumwe/studio-protocol",
+  "@kumwe/studio-renderer-web",
   "@kumwe/studio-rich-text",
   "@kumwe/studio",
   "@kumwe/studio-testkit",
@@ -111,7 +112,7 @@ function verifyReleaseRecord() {
     JSON.stringify(actualNames) !== JSON.stringify([...packageNames].sort())
   ) {
     errors.push(
-      "studio-release.json must name exactly the seven public Studio packages.",
+      "studio-release.json must name exactly the eight public Studio packages.",
     );
   }
   for (const name of packageNames) {

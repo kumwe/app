@@ -2,6 +2,7 @@ import { type StudioSchemaProfileErrorCode } from '@kumwe/studio-core';
 import { type BlockDefinition, type BlockSlotDefinition, type BlockType, type BlueprintDocument, type BlueprintBlockLock, type BlueprintNode, type ContentFieldKind, type ContentModelDocument, type DiagnosticLocation, type FieldDefinition, type JsonSchema, type StudioConfiguration, type StudioDiagnostic } from '@kumwe/studio-protocol';
 export { createHostRequestContextFixture, createTestbedHost, TestbedHostError, type HostRequestContextFixtureOptions, type TestbedControls, type TestbedHost, type TestbedHostOptions, type TestbedPortName, type TestbedRateLimitPolicy, } from './host-testbed.js';
 export { createHttpHostAdapter, type HttpFetchLike, type HttpHostAdapterOptions, type HttpRequestInit, type HttpResponseLike, type HttpTimeoutHandle, } from './http-host-adapter.js';
+export { runAuthoringWebVector, type AuthoringWebAction, type AuthoringWebCommandObservation, type AuthoringWebConformanceAdapter, type AuthoringWebConformanceSession, type AuthoringWebGiven, type AuthoringWebLane, type AuthoringWebLaneResult, type AuthoringWebObservation, type AuthoringWebRegion, type AuthoringWebVector, type AuthoringWebVectorResult, } from './web-conformance.js';
 export interface BlueprintFixtureOptions {
     blockLocks?: BlueprintBlockLock[];
     id?: string;
