@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Integration\Automation;
 
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Automation\JobHandler;
 use Kumwe\App\Application\Automation\JobHandlerRegistry;
 use Kumwe\App\Application\Automation\JobQueue;

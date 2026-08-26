@@ -9,7 +9,7 @@ use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Automation\IdempotencyKey;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;

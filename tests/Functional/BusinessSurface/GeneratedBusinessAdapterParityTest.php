@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Functional\BusinessSurface;
 
 use Doctrine\DBAL\Connection;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;

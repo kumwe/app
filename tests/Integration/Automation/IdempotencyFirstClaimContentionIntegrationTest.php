@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Types;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;

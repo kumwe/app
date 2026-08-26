@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\ExecutionContext;

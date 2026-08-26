@@ -11,7 +11,7 @@ use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\BusinessRecord\Application\BusinessNumberSequenceAllocator;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 
-use Joomla\Event\EventInterface;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Runtime\ExtensionEvent;
 use Kumwe\App\Extension\Runtime\ExtensionEventRegistrar;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
+use Kumwe\App\Extension\Runtime\LaminasExtensionEvent;
 use Kumwe\App\Extension\Runtime\TrustEnforcingExtensionEventRegistrar;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -52,7 +53,7 @@ final class TrustEnforcingExtensionEventRegistrarTest extends TestCase
         $registrar->listen('onKumweRecordSaved', $listener->receive(...));
 
         self::assertIsCallable($attached);
-        $attached($this->createStub(EventInterface::class));
+        $attached(new LaminasExtensionEvent('onKumweRecordSaved', []));
     }
 }
 
@@ -66,11 +67,11 @@ interface ExtensionEventListenerProbe
     /**
      * Receive one host event.
      *
-     * @param   EventInterface  $event  Event whose payload is irrelevant to the stale-generation proof.
+     * @param   ExtensionEvent  $event  Event whose payload is irrelevant to the stale-generation proof.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function receive(EventInterface $event): void;
+    public function receive(ExtensionEvent $event): void;
 }

@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Integration\Localization;
 use Kumwe\App\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use DateTimeZone;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Persistence\TransactionManager;

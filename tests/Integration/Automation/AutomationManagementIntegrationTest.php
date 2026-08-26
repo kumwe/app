@@ -708,7 +708,7 @@ final class AutomationManagementIntegrationTest extends TestCase
         return $site;
     }
 
-    private function siteAutomationContext(\Joomla\DI\Container $container, string $site): ExecutionContext
+    private function siteAutomationContext(\Kumwe\App\Kernel\Container $container, string $site): ExecutionContext
     {
         return TestKernelFactory::contextFromGrantRows($container, [[
             'capability' => 'automation.manage',

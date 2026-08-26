@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Support;
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use JsonException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Audit\Application\AuditRecorder;

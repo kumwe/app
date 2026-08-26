@@ -36,9 +36,9 @@ final class RestrictedExtensionContainerTest extends TestCase
         yield 'authorization gateway' => [\Kumwe\App\Application\Authorization\AuthorizationGateway::class];
         yield 'site ownership registry' => [\Kumwe\App\Application\Authorization\ResourceSiteOwnership::class];
         yield 'site ownership writer' => [\Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter::class];
-        yield 'root container' => [\Joomla\DI\Container::class];
+        yield 'root container' => [\Kumwe\App\Kernel\Container::class];
         yield 'database connection' => [\Doctrine\DBAL\Connection::class];
-        yield 'raw event dispatcher' => [\Joomla\Event\DispatcherInterface::class];
+        yield 'raw event manager' => [\Laminas\EventManager\EventManagerInterface::class];
         yield 'raw repository' => [ContentRepository::class];
         yield 'extension mutation manager' => [ExtensionManager::class];
         yield 'migration runner' => [ExtensionMigrationRunner::class];

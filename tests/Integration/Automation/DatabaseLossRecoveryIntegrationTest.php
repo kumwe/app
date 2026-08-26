@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Integration\Automation;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Automation\JobQueue;
 use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
 use Kumwe\App\Infrastructure\Persistence\TableNames;

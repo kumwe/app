@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Integration\Studio;
 
 use DateTimeImmutable;
 use FilesystemIterator;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;

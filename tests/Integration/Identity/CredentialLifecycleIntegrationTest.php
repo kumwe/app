@@ -9,7 +9,7 @@ use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;

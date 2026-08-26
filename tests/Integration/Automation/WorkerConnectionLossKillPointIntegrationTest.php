@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Integration\Automation;
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Automation\JobExecutionScope;

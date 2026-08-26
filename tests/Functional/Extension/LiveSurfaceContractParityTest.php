@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Functional\Extension;
 
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;

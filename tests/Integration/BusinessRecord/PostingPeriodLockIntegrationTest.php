@@ -35,7 +35,7 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
-use Joomla\DI\Container;
+use Kumwe\App\Kernel\Container;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

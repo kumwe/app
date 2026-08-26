@@ -9,7 +9,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Joomla\Event\DispatcherInterface;
+use Laminas\EventManager\EventManagerInterface;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Audit\Application\AuditRecorder;
@@ -677,7 +677,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             $transactions,
             $audit,
             $clock,
-            $this->createStub(DispatcherInterface::class),
+            $this->createStub(EventManagerInterface::class),
             new AllowThemeActivationGuard(),
             new TwigThemePackageValidator($this->root . '/core'),
             $themeAuthorization ?? new CapabilityThemeAuthorizer(),

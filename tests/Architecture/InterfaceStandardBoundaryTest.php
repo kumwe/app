@@ -54,7 +54,16 @@ final class InterfaceStandardBoundaryTest extends TestCase
                 continue;
             }
             $source = $this->contents($file->getPathname());
-            foreach (['Doctrine\\', 'Twig\\', 'Laminas\\', 'Mezzio\\', 'Psr\\Http\\', 'Joomla\\DI\\'] as $namespace) {
+            foreach (
+                [
+                    'Doctrine\\',
+                    'Twig\\',
+                    'Laminas\\',
+                    'Mezzio\\',
+                    'Psr\\Http\\',
+                    'Kumwe\\App\\Kernel\\Container',
+                ] as $namespace
+            ) {
                 self::assertStringNotContainsString(
                     sprintf('use %s', $namespace),
                     $source,
