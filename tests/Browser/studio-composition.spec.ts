@@ -1130,10 +1130,13 @@ test('measured canvas select, reorder and reparent have keyboard parity', async 
   await page.keyboard.press(stackPosition === 0 ? 'Alt+ArrowDown' : 'Alt+ArrowUp');
   await expect.poll(() => childNodeIds(shell, secondSectionId ?? ''))
     .not.toEqual(childrenBeforeKeyboardReorder);
+  // Within one parent the shell reorders children; the canonical move-node
+  // dispatch of the non-drag-move-equivalence vector covers positional moves
+  // of roots, which the drag and palette lanes above and below assert.
   await expect.poll(async () => {
     const values = await recordedCommands(page);
     return values.at(-1);
-  }).toBe('studio.command/move-node');
+  }).toBe('studio.command/reorder-children');
 
   await shell.getByRole('button', { name: 'Undo' }).click();
   await shell.getByRole('button', { name: 'Undo' }).click();
