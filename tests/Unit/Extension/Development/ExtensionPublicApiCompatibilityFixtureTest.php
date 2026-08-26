@@ -262,6 +262,49 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
     }
 
     /**
+     * Pin the vendor-free event contract a listener receives from `ExtensionEventRegistrar`.
+     *
+     * The registrar's `listen()` signature stays frozen while the event object it hands a listener is
+     * now this Kumwe-owned interface rather than a vendor type, so the dispatch engine behind it can
+     * change without the extension surface moving again. Its four methods are the whole of what a
+     * listener may rely on beside the versioned event names and argument maps, which is exactly why
+     * their bytes are pinned separately instead of rewriting the frozen SPI-two baseline.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdditiveExtensionEventContractRemainsSourceCompatible(): void
+    {
+        $path = dirname(__DIR__, 4) . '/tests/Fixtures/ExtensionApi/extension-event-v1.json';
+        $json = file_get_contents($path);
+        self::assertIsString($json);
+        self::assertSame(
+            '6d8eca893519563c99d77462cfc7902cb55ddec22e0f422d3eb0c075345b39de',
+            hash('sha256', $json),
+        );
+        $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
+        self::assertIsArray($fixture);
+        self::assertSame('kumwe-extension-event-v1', $fixture['format'] ?? null);
+        $interfaces = $fixture['interfaces'] ?? null;
+        self::assertIsArray($interfaces);
+        foreach ($interfaces as $interface => $expected) {
+            self::assertIsString($interface);
+            self::assertIsArray($expected);
+            self::assertTrue(interface_exists($interface), sprintf('Missing public interface %s.', $interface));
+            $actual = [];
+            foreach ((new ReflectionClass($interface))->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+                if ($method->getDeclaringClass()->getName() === $interface) {
+                    $actual[] = $this->signature($method);
+                }
+            }
+            sort($actual, SORT_STRING);
+            sort($expected, SORT_STRING);
+            self::assertSame($expected, $actual, sprintf('Public interface %s changed.', $interface));
+        }
+    }
+
+    /**
      * Require stable enum names and backed values used in signed manifests and durable rows.
      *
      * @return  void
