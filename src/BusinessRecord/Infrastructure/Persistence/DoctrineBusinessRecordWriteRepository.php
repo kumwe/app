@@ -797,6 +797,7 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
                 ), [$owner->recordKey], [$this->type($table, 'owner_id')]);
             }
             $inserts = [];
+            $moved = [];
             foreach ($lines as $line) {
                 if ($line->storedVersion === null) {
                     $inserts[] = $this->ownedLineRow($table, $lineDefinition, $owner, $line, $actorId, $at);
@@ -805,11 +806,109 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
                 if (!$line->modified) {
                     continue;
                 }
+                if ($line->movedOnly()) {
+                    $moved[] = $line;
+                    continue;
+                }
                 $this->updateOwnedLine($table, $lineDefinition, $owner, $line, $actorId, $at);
             }
+            $this->renumberOwnedLines($table, $owner, $moved, $actorId, $at);
             $this->insertOwnedLines($table, $inserts);
         } catch (DbalException $exception) {
             $this->map($exception, $relationship->handle);
+        }
+    }
+
+    /**
+     * Renumber the lines that only moved, set-based, in bounded chunks.
+     *
+     * A reordered document marks every surviving line as having to be written even though most of them
+     * differ from their stored row in one server-derived integer. Rewriting each one in full is the
+     * per-line reorder update: a thousand-line document reordered by one drag issued a thousand
+     * statements carrying a thousand full column lists. These lines change `position` and nothing else,
+     * so one statement moves a whole chunk of them.
+     *
+     * Both `CASE` expressions select on the line key and answer with integer literals derived by this
+     * process, never with parameters: PostgreSQL types a `CASE` by its `THEN` operands and refuses to
+     * assign a parameter-typed result to an integer column. The version arm carries the per-line
+     * optimistic check the row-at-a-time update made in its predicate, and a chunk that renumbers fewer
+     * rows than it names means a line moved underneath the command, which is refused exactly as before.
+     *
+     * @param   PhysicalTableBlueprint  $table    Installed line table holding the rows.
+     * @param   BusinessRecord          $owner    Owner record whose collection is renumbered.
+     * @param   list<OwnedLineWrite>    $lines    Existing lines whose values are unchanged.
+     * @param   string                  $actorId  Actor credited with the new line versions.
+     * @param   DateTimeImmutable       $at       Instant stamped on the moved rows.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRelationshipRejected  When a line did not move under the version read for it.
+     * @throws  BusinessRecordSchemaUnavailable  When a column this write names is not in the blueprint.
+     * @throws  \Doctrine\DBAL\Exception  When the driver refuses the update.
+     *
+     * @since   2.0.0
+     */
+    private function renumberOwnedLines(
+        PhysicalTableBlueprint $table,
+        BusinessRecord $owner,
+        array $lines,
+        string $actorId,
+        DateTimeImmutable $at,
+    ): void {
+        if ($lines === []) {
+            return;
+        }
+        $ownerColumn = $this->quote($this->physical($table, 'owner_id'));
+        $lineColumn = $this->quote($this->physical($table, 'line_id'));
+        $versionColumn = $this->quote($this->physical($table, 'version'));
+        $positionColumn = $this->quote($this->physical($table, 'position'));
+        $lineType = $this->type($table, 'line_id');
+        foreach (array_chunk($lines, self::OWNED_LINE_BATCH) as $chunk) {
+            $positions = [];
+            $versions = [];
+            /** @var list<mixed> $parameters */
+            $parameters = [];
+            /** @var list<string> $types */
+            $types = [];
+            foreach ($chunk as $line) {
+                $positions[] = 'WHEN ? THEN ' . $line->position;
+                $parameters[] = $line->recordKey;
+                $types[] = $lineType;
+            }
+            array_push($parameters, $actorId, $at, $owner->recordKey);
+            array_push($types, Types::STRING, Types::DATETIME_IMMUTABLE, $this->type($table, 'owner_id'));
+            foreach ($chunk as $line) {
+                $parameters[] = $line->recordKey;
+                $types[] = $lineType;
+            }
+            foreach ($chunk as $line) {
+                $versions[] = 'WHEN ? THEN ' . (int) $line->storedVersion;
+                $parameters[] = $line->recordKey;
+                $types[] = $lineType;
+            }
+            $affected = $this->database->executeStatement(sprintf(
+                'UPDATE %s SET %s = CASE %s %s END, %s = %s + 1, %s = ?, %s = ? '
+                . 'WHERE %s = ? AND %s IN (%s) AND %s = CASE %s %s END',
+                $this->quote($table->physicalName),
+                $positionColumn,
+                $lineColumn,
+                implode(' ', $positions),
+                $versionColumn,
+                $versionColumn,
+                $this->quote($this->physical($table, 'updated_by')),
+                $this->quote($this->physical($table, 'updated_at')),
+                $ownerColumn,
+                $lineColumn,
+                implode(', ', array_fill(0, count($chunk), '?')),
+                $versionColumn,
+                $lineColumn,
+                implode(' ', $versions),
+            ), $parameters, $types);
+            if ($affected !== count($chunk)) {
+                throw new BusinessRelationshipRejected(
+                    'A document line changed while the document was being written.',
+                );
+            }
         }
     }
 

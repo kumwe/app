@@ -14,6 +14,12 @@ namespace Kumwe\App\BusinessRecord\Application;
  * modified is rewritten, and a line with one that is not is left exactly as it is, so resubmitting a
  * document unchanged costs no statement at all.
  *
+ * A modified line says separately whether its values changed, because the two cost different statements.
+ * Moving a line changes one server-derived integer, so a whole reordered collection is renumbered by a
+ * handful of set-based statements; changing a line's values needs that line's own payload. Reordering a
+ * thousand-line document used to mark every surviving line modified and rewrite each one in full, which
+ * is the per-line reorder update this distinction exists to remove.
+ *
  * @since  2.0.0
  */
 final readonly class OwnedLineWrite
@@ -33,6 +39,9 @@ final readonly class OwnedLineWrite
      *         this line does not exist yet and is to be inserted at version one.
      * @param  bool                  $modified       Whether the row has to be written at all; false only
      *         for an existing line whose values and position are both unchanged.
+     * @param  bool                  $valuesChanged  Whether the row's stored values differ from what this
+     *         line now holds. False for an existing line that only moved, which is what lets the write
+     *         side renumber it set-based instead of rewriting its whole column list.
      *
      * @since  2.0.0
      */
@@ -43,6 +52,19 @@ final readonly class OwnedLineWrite
         public array $values,
         public ?int $storedVersion = null,
         public bool $modified = true,
+        public bool $valuesChanged = true,
     ) {
+    }
+
+    /**
+     * Whether this line is an existing row that only has to move.
+     *
+     * @return  bool  True when the row exists, has to be written, and differs only in its position.
+     *
+     * @since   2.0.0
+     */
+    public function movedOnly(): bool
+    {
+        return $this->storedVersion !== null && $this->modified && !$this->valuesChanged;
     }
 }

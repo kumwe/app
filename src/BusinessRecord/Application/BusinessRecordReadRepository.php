@@ -120,6 +120,39 @@ interface BusinessRecordReadRepository
     ): ?StoredRecordIdentity;
 
     /**
+     * Resolve many caller-facing record ids of one definition at once, in bounded batches.
+     *
+     * This is `identity()` asked for a set rather than a row, and it exists because asking per value is
+     * what turns a thousand-line document into a thousand round trips. Every predicate `identity()`
+     * applies — scope, soft deletion and the compiled row policy — applies here unchanged, so a value the
+     * caller may not see is absent from the result rather than reported, and a caller cannot learn that a
+     * row exists by asking for it in company.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved        Definition whose identity column is matched.
+     * @param   RecordScope                 $scope           Site and organization the rows must belong to.
+     * @param   BusinessRecordAccessPlan    $access          Row policy that must match before an identity
+     *          is returned.
+     * @param   list<string>                $recordIds       Caller-facing identities, already normalized;
+     *          duplicates and an empty list are both answered without a statement.
+     * @param   bool                        $includeDeleted  True to also match soft-deleted rows.
+     *
+     * @return  array<string, StoredRecordIdentity>  Resolved identities keyed by the caller-facing id that
+     *          asked for them. An id with no visible row is simply absent.
+     *
+     * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     *          requested scope disagrees with the installed columns, or a stored identity is malformed.
+     *
+     * @since   2.0.0
+     */
+    public function identities(
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        array $recordIds,
+        bool $includeDeleted = false,
+    ): array;
+
+    /**
      * Load one record and decode it against the definition version it was written under.
      *
      * Pass the pinned definition that `identity()` reported, not the installed one: a row whose stored

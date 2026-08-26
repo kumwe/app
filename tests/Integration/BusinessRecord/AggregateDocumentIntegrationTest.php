@@ -225,6 +225,121 @@ final class AggregateDocumentIntegrationTest extends TestCase
     }
 
     /**
+     * Proves reordering a thousand-line document renumbers it set-based rather than row by row.
+     *
+     * Reordering marks every surviving line as having to be written even though each differs from its
+     * stored row in one server-derived integer. Rewriting them one at a time is the per-line reorder
+     * update: one drag on a thousand-line document issued a thousand statements, each carrying a full
+     * column list. The whole collection is moved here and the statements are counted, so a regression to
+     * the row-at-a-time path fails on the number it broke.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testReorderingAThousandLineDocumentIsRenumberedSetBased(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $this->records($container);
+        $suffix = self::suffix();
+        $header = $this->install($container, $context, $suffix);
+        $documentId = Uuid::uuid7()->toString();
+        $records->writeDocument(new WriteDocumentCommand(
+            $context,
+            $header->handle,
+            'lines',
+            ['title' => 'Reorder document', 'total' => '1000.00'],
+            $this->lines(1000, $suffix),
+            NeutralBusinessFixture::idempotencyKey('doc-reorder-' . $suffix),
+            recordId: $documentId,
+        ));
+
+        [$table, $ownerColumn] = $this->physical($container, $header, 'line:lines', 'owner_id');
+        [, $lineColumn] = $this->physical($container, $header, 'line:lines', 'line_id');
+        [, $versionColumn] = $this->physical($container, $header, 'line:lines', 'version');
+        [, $positionColumn] = $this->physical($container, $header, 'line:lines', 'position');
+        $owner = $this->ownerRecord($container, $context, $header, $documentId);
+        $stored = $this->connection($container)->fetchAllAssociative(sprintf(
+            'SELECT %s AS line_key, %s AS line_version FROM %s WHERE %s = ? ORDER BY %s',
+            $lineColumn,
+            $versionColumn,
+            $table,
+            $ownerColumn,
+            $positionColumn,
+        ), [$owner->recordKey]);
+        self::assertCount(1000, $stored);
+
+        $moved = [];
+        foreach (array_reverse($stored) as $position => $row) {
+            $moved[] = new OwnedLineWrite(
+                (string) $row['line_key'],
+                (string) $row['line_key'],
+                $position,
+                [],
+                (int) $row['line_version'],
+                true,
+                false,
+            );
+        }
+
+        $counter = new BusinessQueryCounter();
+        $connection = $this->countedConnection($this->connection($container), $counter);
+        $writes = new DoctrineBusinessRecordWriteRepository(
+            $connection,
+            $this->service($container, RecordValueCodec::class),
+        );
+        $resolver = $this->service($container, BusinessRecordDefinitionResolver::class);
+        $resolved = $resolver->forCreate($context, $header->handle);
+        $relationship = $resolved->definition->runtimeRelationship('lines');
+        self::assertNotNull($relationship);
+        $lineResolved = $resolver->pinned(
+            $context,
+            $relationship->target,
+            $this->pinnedLineVersion($container, $header),
+        );
+
+        $connection->beginTransaction();
+        $counter->reset();
+        try {
+            $writes->writeOwnedLines(
+                $resolved,
+                $owner,
+                $relationship,
+                $lineResolved->definition,
+                $moved,
+                [],
+                true,
+                $context->actorId(),
+                $this->now($container),
+            );
+            $statements = $counter->queries();
+        } finally {
+            $connection->rollBack();
+            $connection->close();
+        }
+
+        self::assertGreaterThan(0, $statements);
+        self::assertLessThanOrEqual(
+            15,
+            $statements,
+            sprintf(
+                'A thousand moved lines must be renumbered set-based; this reorder issued %d statements.',
+                $statements,
+            ),
+        );
+
+        $records->delete(new DeleteRecordCommand(
+            $context,
+            $header->handle,
+            $documentId,
+            $records->read(new ReadRecordQuery($context, $header->handle, $documentId))->version,
+            NeutralBusinessFixture::idempotencyKey('doc-reorder-drop-' . $suffix),
+        ));
+        self::assertSame(0, $this->lineCount($container, $header, $documentId));
+    }
+
+    /**
      * Proves a document refused partway through its collection leaves neither a header nor a line behind.
      *
      * @return  void
