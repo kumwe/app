@@ -43,7 +43,7 @@ is an explicit external operation until that separately reviewed executor exists
 
 ## Browser and host boundary
 
-Only this surface dynamically loads the coordinated `0.1.0-alpha.11` Studio packages. It opens the AP-3
+Only this surface dynamically loads the coordinated `0.1.0-rc.1` Studio packages. It opens the AP-3
 Blueprint session and uses the common CSRF-protected host route for artifact, permission, recovery,
 model, localization, telemetry and—when composed by AP-6—preview operations. The coordinated host candidate
 advertises `resource.search` only for a qualified resource type owned by exactly one authorized provider. Its
@@ -227,7 +227,7 @@ then disables the owner and observes the fail-closed response before reactivatio
 closes the composition-block slice of P7-F; the roadmap's broader six-fixture vertical-neutral proof
 portfolio, lifecycle/backup/upgrade matrix and accountable acceptance still remain independent Gate B work.
 
-The release chain already binds all seven packages to `0.1.0-alpha.11` in
+The release chain already binds all eight packages to `0.1.0-rc.1` in
 `resources/studio-contract/studio-release.json` and records its SHA-256 in
 `resources/studio-contract/PIN.json`; release verification rejects any package, record or corpus-manifest
 digest mismatch. PHP bootstrap, the Vite build assertion and localization generation read that canonical
