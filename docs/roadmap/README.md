@@ -407,41 +407,40 @@ KIS decision
 [0001](../interface-standard/decisions/0001-dashboard-customization-compatibility.md) separately owns the
 compatible scope-ceiling correction, identifier grammar and retained `kis-1.0` classification.
 
-### D16 — Studio visual composition is the Version 2 authoring surface, integrated at Gate B
+### D16 — Studio is contextual Content authoring, integrated at Gate B
 
-Version 2 ships a visual composition capability: authors compose pages and reusable structures from
-typed, theme-bounded building blocks, and the result is a canonical, portable JSON document. Raw HTML/CSS
-strings and executable code are never stored in the Blueprint; a named-policy structural safe-markup value
-and a separately host-authorized scoped stylesheet are the bounded exceptions. The capability is delivered
-by integrating **Studio**, the standalone page builder developed in
-[`kumwe/studio`](https://github.com/kumwe/studio), as an embedded, capability-gated administrator surface
-over a host adapter this repository owns.
+Studio's
+[`docs/product-contract.md`](https://github.com/kumwe/studio/blob/main/docs/product-contract.md) is the sole
+normative authority for the Studio product. App consumes its exact `STUDIO-PROD-*` requirements and does not
+redefine a narrower page builder. [ADR 0020](decisions/0020-studio-contextual-content-authoring.md) records the
+App integration decision and partially supersedes the earlier product-surface wording in ADRs 0007, 0013, and
+0018 while preserving their architecture, security, protocol, and release conclusions.
 
-The division of labour is fixed and recorded in
-[ADR 0007](decisions/0007-studio-visual-composition-integration.md): Studio owns the authoring
-experience and its contract — a language-neutral corpus of JSON Schemas and canonical fixtures with a
-deterministic engine, 45 first-party blocks, patterns, Editor.js hidden behind Studio's editor-neutral API,
-semantic web rendering and progressive behavior, evolved under its own repository's gates and evidence
-discipline — while Kumwe
-owns the host adapter and every authoritative service behind it: identity, policy, persistence with
-optimistic revisions, media custody, resource/data resolution, authenticated preview, Twig delivery,
-localization, CSP and telemetry. Core gains no composition rule and never configures Editor.js. Package
-versions are pinned exactly until the Studio contract ratifies, and
-the Gate B signed manifest records the exact versions the release qualified.
+For Kumwe, Studio is the normal contextual authoring experience opened from Content create/edit, not a
+top-level Studio workspace. The target satisfies `STUDIO-PROD-001` through `STUDIO-PROD-008`: start blank or
+from an existing content type, arrange blocks and typed fields and enter item values in one continuous canvas,
+use explicit item/type save outcomes, and move between supported inline and expanded states without losing the
+originating resource. `STUDIO-PROD-012` forbids requiring an author to first create a Blueprint/type elsewhere,
+copy composition data, or manually reconcile disconnected screens. Reusable type, exact hydration, and save
+semantics remain exactly those in `STUDIO-PROD-004` through `STUDIO-PROD-006`.
 
-**The work splits across both gates, and the split is the point.** Extensions will contribute to
-composition — blocks, patterns, inspectors and field controls, design vocabulary, and the migrations
-their contributed documents need. Gate A's whole promise is that an extension author builds against
-contracts that do not move afterwards, so **the composition contribution declarations are frozen at
-Gate A**, as criterion 13, in the same additive generation discipline every other contribution surface
-follows. They are inert until the runtime that consumes them exists; that is not a reason to leave them
-unfrozen, because an extension built after Gate A must not have to change when the surface arrives.
+The division of labour remains fixed. Studio owns the host-neutral product and contracts; App owns the host
+adapter and every authoritative concern behind it. Every durable operation is independently authorized and
+performed by PHP application services and PHP HTTP endpoints under `STUDIO-PROD-010`. Node.js and npm are
+contributor/CI/release-build tools only: production deploys compiled browser assets and contains no Node.js/npm
+installation or process, as required by `STUDIO-PROD-011`. Exact coordinated Studio versions and their corpus
+are pinned and recorded in Gate B evidence.
 
-**The integration itself is Gate B**, as criterion 12: the host adapter, the authenticated preview
-endpoint, and the embedded surface. Phase S therefore carries a Gate A half and a Gate B half, the way
-phase L carries its own tail. The integration input — published packages, the corpus a PHPUnit suite
-replays, the port mapping, the contribution kinds an extension declares, and every normative contract
-reference — is collected in [`docs/roadmap/studio-integration.md`](studio-integration.md).
+**Current truth.** App currently exposes a useful content-model-version **Blueprint-only composition slice**,
+with read-only Content projection and no Studio-driven Content/model write journey. It is infrastructure toward
+the target, not completed contextual authoring; `STUDIO-PROD-014` prohibits claiming otherwise. The legacy
+server-rendered editor is transitional or exceptional fallback under `STUDIO-PROD-014`, not the definition of
+the target default experience.
+
+**The gate split remains.** Gate A criterion 13 freezes the extension contribution declarations needed by
+`STUDIO-PROD-009`; Gate B criterion 12 integrates and qualifies the complete host journey through
+`STUDIO-PROD-015`. Phase S carries both halves. The integration input is
+[`docs/roadmap/studio-integration.md`](studio-integration.md), subordinate to the Studio product contract.
 
 ### D17 — The native client platform is a Version 3 programme, and its sign-in is the authentication link
 
@@ -1199,18 +1198,18 @@ building against contracts that will not move; they are not building against a q
     translatable surface, and the browser, accessibility and visual matrix runs per locale with
     right-to-left carrying its own baselines. Zero horizontal overflow and zero inaccessible critical
     control in any of the nine. `V2-LNG-010` remains open until that evidence exists.
-12. **The visual composition surface ships and is qualified.** An authorized administrator composes a
-    page from typed, theme-bounded building blocks in the embedded Studio surface, previews it
-    authenticated, and publishes it, with the composition stored as a schema-valid canonical document
-    carrying no markup, style or code. The host adapter implements every required port; its responses
-    validate against the published schema corpus and its refusals against the closed host-error shape;
-    a stale write returns the safe current revision and never overwrites; a permission change
-    invalidates the session generation. The surface passes the browser, accessibility and visual matrix
-    including a right-to-left locale, every authoring operation is achievable by keyboard, and the
-    administrator content-security policy is unchanged except the recorded same-origin preview frame.
-    The signed manifest records the exact Studio package versions the release qualified, and the
-    composition contributions frozen at Gate A criterion 13 are consumed by the running surface without
-    a contract change. `V2-STU-002` and `V2-STU-005` through `V2-STU-007` remain open until that evidence exists.
+12. **Studio contextual Content authoring ships and is qualified.** The exact integrated App proves every step
+    of Studio's canonical `STUDIO-PROD-015` acceptance journey from a clean packaged production runtime. Content
+    create/edit reaches Studio for the exact resource; blank, reusable-type, existing-item, structure, typed
+    field, entry-value, explicit item/type save, context-preserving workspace, contribution, preview, reopen,
+    and trusted delivery paths all pass without a top-level Studio prerequisite, copy/paste handoff, or
+    production Node.js/npm requirement. Every durable effect terminates in an independently authorized PHP
+    application service and PHP HTTP endpoint with expected-revision, conflict, replay, workflow, audit, and
+    session-generation proof. The exact pinned Studio family passes its published schemas and conformance
+    corpus; the surface passes keyboard, browser, accessibility, visual, locale, right-to-left, CSP, and
+    fallback qualification. The signed manifest records the exact Studio versions and compiled assets, and the
+    Gate A contributions run without a contract change. `V2-STU-002` and `V2-STU-005` through `V2-STU-007`
+    remain open until that evidence exists.
 
 ---
 
@@ -2081,16 +2080,24 @@ section 12.
 
 ---
 
-### Phase S — Studio visual composition integration
+### Phase S — Studio contextual Content authoring integration
 
-**Objective.** Give an authorized administrator a visual composition surface over typed, theme-bounded
-building blocks, by implementing the host adapter Studio's contract requires and embedding its authoring
-shell, without moving one authoritative concern out of this repository — and freeze, before Gate A, the
-contract an extension declares its composition contributions through.
+**Objective.** Make Studio the contextual Content create/edit experience required by the exact
+`STUDIO-PROD-001` through `STUDIO-PROD-015` contract, with blank and reusable-type starts, structure, typed
+fields, entry values, explicit saves, and context-preserving presentation in one coordinated journey. App
+implements every authoritative effect in PHP, ships only compiled browser assets to production, and freezes
+before Gate A the extension contribution declarations the journey consumes. App does not invent or narrow
+Studio product behaviour.
 
-**Entry conditions.** Decision D16 and
-[ADR 0007](decisions/0007-studio-visual-composition-integration.md) are accepted, and the integration
-input is [`docs/roadmap/studio-integration.md`](studio-integration.md). The Gate A half additionally
+**Current implementation truth.** The repository has a content-model-version Blueprint composer, read-only
+Content projection, artifact/preview/shell foundations, and related implementation candidates. It does not yet
+provide the complete contextual Content/model write journey and must not be labelled as though it does.
+
+**Entry conditions.** Decision D16, [ADR 0007](decisions/0007-studio-visual-composition-integration.md), and
+[ADR 0020](decisions/0020-studio-contextual-content-authoring.md) are accepted. Studio's
+[`docs/product-contract.md`](https://github.com/kumwe/studio/blob/main/docs/product-contract.md) is the
+normative product authority, and the App integration input is
+[`docs/roadmap/studio-integration.md`](studio-integration.md). The Gate A half additionally
 needs `P0-C`'s classification and compatibility-fixture machinery, because it adds a generation to it.
 The Gate B half needs Gate A passed, so the contracts the adapter binds to — extension, authorization,
 persistence, media and localization — no longer move under it.
@@ -2188,18 +2195,35 @@ second block semantics table.
 *The enforcing check:* a preview suite covering the negative origin, replay and channel cases, and a
 policy test asserting the administrator policy is otherwise byte-identical to its current value.
 
-**S-G — The embedded authoring surface.** Findings: `V2-STU-007`. **Gate B.** Embed the shell as a
-capability-gated administrator surface declared through the interface standard like any other, with its
-message catalog fed from the compiled localization catalogues so wording and terminology overrides reach
-it, its locale and direction resolved from the same negotiation every other surface uses, and its
-diagnostics rendered in the platform's own vocabulary. The shell uses Studio's complete 45-block catalog,
-ten starter patterns, advanced control registry and private Editor.js adapter rather than App-local controls.
-The existing server-rendered content editor is
-untouched, so essential operation without JavaScript is unchanged. The surface joins the browser,
-accessibility and visual matrix, including one right-to-left locale.
+**S-G — Contextual Content authoring completion.** Findings: `V2-STU-007`. **Gate B.** Complete the App
+obligations for `STUDIO-PROD-001` through `STUDIO-PROD-015`. Studio launches from Content New/Edit for the
+exact resource and may expand only as the same context-preserving session; it is not a top-level navigation
+workspace. App coordinates the pinned Studio product through authoritative PHP ports and endpoints, never
+through an App-local page builder or production server-side JavaScript. The legacy form remains a declared
+transitional/exceptional fallback under `STUDIO-PROD-014`.
 
-*The enforcing check:* the matrix leg for the composition surface, with keyboard journeys covering every
-authoring operation and a zero-violation accessibility scan, failing the build on a regression.
+Deliver S-G in **one App pull request** through this small-goal commit ladder; each commit stays reviewable and
+green before the next begins:
+
+1. `S-G1` contract truth: ADR 0020, D16/Gate B/phase S, critical finding/status, and agent guardrails.
+2. `S-G2` PHP-issued context/session and Studio launch from Content New/Edit for the exact resource.
+3. `S-G3` inline/expanded shell continuity for resource, selection, authority, locale, unsaved state, and return.
+4. `S-G4` authorized existing-item load, layout/value save through PHP, expected-revision conflict, audit, reopen.
+5. `S-G5` new item from an existing authorized type with the reusable structure/fields and empty entry values.
+6. `S-G6` blank creation with blocks, typed fields, and entry values in the same journey.
+7. `S-G7` explicit PHP save-item, save-as-new-type, and new-type-version outcomes with value exclusion,
+   immutable successor, permission, migration-impact, replay, and audit proof.
+8. `S-G8` authorized contributed block/field use, authenticated preview, and trusted public delivery.
+9. `S-G9` the complete `STUDIO-PROD-015` packaged-production journey, including accessibility, locales,
+   fallbacks, compiled assets, and an automated refusal of any production Node.js/npm dependency.
+
+If the exact pinned Studio family lacks a required operation, that operation lands and releases in Studio
+first; App does not copy it or depend on an unmerged branch. S-G is not complete when only the contextual shell
+appears.
+
+*The enforcing check:* the complete `STUDIO-PROD-015` journey plus focused proof at every ladder step, with
+keyboard/browser/accessibility/visual/locales and PHP-boundary/production-package refusals failing the build on
+regression.
 
 **Exit gate, Gate A half.** Section 8, Gate A criterion 13: the composition contribution declarations
 are classified and frozen, validated at admission and install, and proven by a signed compatibility
@@ -2215,10 +2239,14 @@ pinned package versions in the signed manifest.
 nothing more. Do not build a composition engine in this repository. Do not move an authoritative concern
 — identity, policy, persistence, media custody, resource/data authority, Twig delivery, localization,
 telemetry or CSP — behind the composition layer. Do not fork Studio's renderer semantics or add a composition
-rule to core. Do not turn the dashboard into a composition surface. Do
-not replace the existing content editor. Do not expose composition editing on a public surface in Version
-2. Do not take a floating version on a draft contract. Do not relax the administrator content-security
-policy beyond the one recorded preview frame, and never with an inline script or style allowance.
+rule to core. Do not add a top-level or catalogue-level Studio workspace, dashboard entry, prerequisite
+Blueprint/type workflow, copy/paste handoff, or manual reconciliation path. Do not describe the current
+Blueprint-only slice or legacy form as the target product. Do not expose composition editing on a public
+surface in Version 2. Do not take a floating version on a draft contract. Do not redefine a
+`STUDIO-PROD-*` requirement in App documentation. Do not put Node.js, npm, a development server, or any
+server-side JavaScript process in a production install, image, startup, operation, preview, save, publish, or
+render path. Do not relax the administrator content-security policy beyond the one recorded preview frame,
+and never with an inline script or style allowance.
 
 ---
 

@@ -75,7 +75,7 @@ Full map: [`docs/architecture/map.md`](docs/architecture/map.md). Compact versio
 | Authorization ("may this actor?") | `src/Application/Authorization/` |
 | Users, sessions, tokens, TOTP | `src/Identity/` |
 | CMS content / workflow / menus | `src/Content/`, `src/Workflow/`, `src/Navigation/` |
-| Studio host integration | `src/Studio/`; browser shell in administrator handlers/assets/templates; exact package family in `resources/studio-contract/` |
+| Studio host integration | `src/Studio/`; contextual browser shell launched by Content create/edit handlers and templates; exact package family in `resources/studio-contract/`; product obligations in [ADR 0020](docs/roadmap/decisions/0020-studio-contextual-content-authoring.md) |
 | Business definitions | `src/BusinessDefinition/` |
 | Physical schema / DDL | `src/BusinessSchema/` |
 | Typed business records | `src/BusinessRecord/` (`BusinessRecordService` is the write/read facade) |
@@ -283,7 +283,8 @@ never in the live indexes. Absence from the roadmap is not a reason to omit the 
 - Mix cleanup / formatting / "while I was here" with the substantive change.
 - Add Symfony or Laravel, a Kumwe 1.x compatibility layer, or a second composition root.
 - Grow a shrinking baseline (dependency, idempotency, CoversNothing pending, test-docblock).
-- Re-litigate D1–D18. They are settled.
+- Re-litigate D1–D18. They are settled; ADR 0020 records the product-owner correction to D16 and the
+  clauses it partially supersedes.
 - Start Phase 5 before `P2-I` (the performance harness) exists.
 - Treat KIS programme gates A–F as product Gate A / Gate B. Product gates live only
   in `docs/roadmap/`.
@@ -325,7 +326,8 @@ stem (`str_repeat("\x01", 32)`, a hash of a known string). A genuinely fixed vec
 earns a fingerprint-scoped entry in `.gitleaksignore` with the reason beside it.
 Never exempt a path or a rule wholesale.
 
-Frontend is **not** in `qa`:
+Frontend is **not** in `qa`. These are contributor/CI build commands, never production install or runtime
+steps; deploy the committed compiled assets and do not put Node.js or npm in a Kumwe runtime image:
 
 ```bash
 npm ci && npm run check && npm run build
@@ -354,6 +356,16 @@ npm run test:browser                            # public HTML behaviour
    depends on domain; infrastructure and delivery depend inward.
 7. **Do not add Symfony or Laravel** as direct production dependencies, and do not
    add Kumwe 1.x compatibility layers.
+8. **Studio product behaviour is upstream authority.** App documentation and implementation must cite the
+   exact `STUDIO-PROD-*` requirement identifiers in Studio's
+   [`docs/product-contract.md`](https://github.com/kumwe/studio/blob/main/docs/product-contract.md); do not
+   restate a narrower App-local page-builder product.
+9. **Studio is contextual Content authoring, not a top-level workspace.** Launch it from Content create/edit;
+   an expanded or full-screen route may continue that exact context, but no catalogue-level Studio navigation
+   entry or manual Blueprint/type pre-creation is the product path.
+10. **PHP remains the server authority.** Browser Studio calls PHP application services and PHP HTTP endpoints.
+    Node.js and npm may build and test committed browser assets, but never ship as a production requirement,
+    process, container dependency, operator step, or author step.
 
 A fixture, a route, a command, and a changelog sentence are all load-bearing. The
 gates treat them that way.
@@ -396,6 +408,7 @@ application, adapter in infrastructure. Do not grow the baseline.
 | [`docs/architecture/map.md`](docs/architecture/map.md) | Unsure which folder owns the change. |
 | [`docs/architecture/principles.md`](docs/architecture/principles.md) | Crossing a layer. |
 | Package § in [`docs/roadmap/README.md`](docs/roadmap/README.md) | Executing that package. Not otherwise. |
+| [ADR 0020](docs/roadmap/decisions/0020-studio-contextual-content-authoring.md) and Studio's [`docs/product-contract.md`](https://github.com/kumwe/studio/blob/main/docs/product-contract.md) | Touching Studio launch, authoring, save, reusable-type, fallback, or runtime-boundary behaviour. Cite exact `STUDIO-PROD-*` IDs. |
 | [`docs/development.md`](docs/development.md) | Need the three-engine matrix, demo profiles, or release checks. |
 | [`docs/quality/contract.json`](docs/quality/contract.json) | Adding or moving a gate. |
 | [`docs/architecture/delivery.md`](docs/architecture/delivery.md) | Adding a use case that must appear on more than one surface. |

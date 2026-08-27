@@ -720,8 +720,8 @@
         },
         {
             "id": "V2-STU-007",
-            "title": "No administrator surface embeds a composition editor, and none is declared, localized or qualified",
-            "severity": "medium",
+            "title": "Studio is a separate Blueprint-only model-version surface instead of contextual Content authoring",
+            "severity": "critical",
             "state": "accepted_for_implementation",
             "phase": "S",
             "gate": "B",
@@ -730,19 +730,24 @@
                 {
                     "file": "templates/administrator/content-form.twig",
                     "symbol": "the content editor surface",
-                    "note": "Content is authored through a server-rendered form with retained input, optimistic version and CSRF. It stays, and the composition surface is an additional capability-gated surface rather than its replacement."
+                    "note": "Ordinary Content create/edit remains a server-rendered form and does not launch Studio for the exact Content item. That form is now a transitional or exceptional fallback under STUDIO-PROD-014, not the target default journey."
                 },
                 {
-                    "file": "docs/interface-standard/schemas/surface-declaration.schema.json",
-                    "symbol": "the closed surface declaration",
-                    "note": "Every administrator surface declares area, actor, intent, resource, purpose, pattern, capabilities, states, customization and responsive behaviour. An embedded composition surface is declared the same way or it is outside the standard."
+                    "file": "src/Administrator/Http/Handler/AdministratorStudioCompositionHandler.php",
+                    "symbol": "AdministratorStudioCompositionHandler",
+                    "note": "The implemented Studio route is bound to one content-type identifier and version and opens a Blueprint composition slice from the model catalogue. It is useful foundation but not the contextual Content create/edit, exact Entry hydration, and coordinated save journey required by STUDIO-PROD-001 through STUDIO-PROD-015."
+                },
+                {
+                    "file": "docs/roadmap/decisions/0020-studio-contextual-content-authoring.md",
+                    "symbol": "the subordinate App integration decision",
+                    "note": "ADR 0020 records the product-owner correction, current Blueprint-only limitation, PHP and production-runtime boundaries, and one-PR small-goal implementation ladder without redefining Studio's normative product contract."
                 }
             ],
-            "acceptance_test": "The composition surface is declared through the interface standard, gated by capability, and reachable only by an actor holding it. Its message catalog resolves through the compiled localization chain so site and organization wording overrides reach it, and its locale and direction come from the same per-request negotiation every other surface uses. Every authoring operation is achievable by keyboard, the surface passes the browser, accessibility and visual matrix including one right-to-left locale with zero violations and no horizontal overflow, and the existing server-rendered content editor and its no-JavaScript paths are unchanged.",
+            "acceptance_test": "Against one exact pinned Studio release, the packaged App executes and records every step of STUDIO-PROD-015 and satisfies STUDIO-PROD-001 through STUDIO-PROD-014 without an App-local redefinition: core and extension Content targets resolve through the generic declaration path; Content create/edit opens the exact resource in Studio; exact type, Model, Blueprint, Entry revisions and values hydrate; blank and reusable-type creation, layout, typed fields and Entry values remain one session; save item, save as new type and save new type version have explicit scopes, empty-value reuse and immutable successors; declared inline/expanded states preserve context; canonical extension contributions and accessible non-drag paths work; and every durable effect reaches an authorized PHP application service through a PHP HTTP endpoint. A clean production runtime starts, authors, previews, saves, publishes and renders compiled Studio assets with no Node.js, npm, Vite, development server or server-side JavaScript process. No top-level or catalogue Studio page, pre-created Blueprint/type, copy/paste transfer or manual revision reconciliation is required, and the legacy form is labelled only as a transitional or exceptional fallback.",
             "owner": "UNASSIGNED",
             "closure_sha": null,
             "work_package": "S-G",
-            "product_owner_decision": "Decision D16."
+            "product_owner_decision": "Decision D16 and ADR 0020."
         },
         {
             "id": "V2-UX-003",

@@ -1,6 +1,7 @@
 # ADR 0007 — Studio visual composition: its contribution contract at Gate A, its integration at Gate B
 
-**Status** Accepted
+**Status** Accepted; the product-surface clauses in decision 6 and the final non-goal are partially superseded
+by [ADR 0020](0020-studio-contextual-content-authoring.md)
 **Decided by** Product owner
 **Verified against** `47597288f322c3db7a9e334cf915158e6e4cded9`
 **Findings** `V2-STU-001`, `V2-STU-002`, `V2-STU-003`, `V2-STU-004`, `V2-STU-005`, `V2-STU-006`,
@@ -8,6 +9,15 @@
 **Gate** A and B
 
 ---
+
+> **Later product correction.** This record remains authoritative for the Gate split, contribution contract,
+> Studio/App division of labour, exact package pin, artifact discipline, preview security, and qualification
+> burden. [ADR 0020](0020-studio-contextual-content-authoring.md) supersedes only the idea that Studio is an
+> additional, separately reached authoring surface and the non-goal against replacing the normal editor. Studio
+> is now the target contextual Content create/edit experience under the exact `STUDIO-PROD-*` requirements in
+> Studio's
+> [`docs/product-contract.md`](https://github.com/kumwe/studio/blob/main/docs/product-contract.md); no
+> top-level Studio workspace is introduced, and the server-rendered editor becomes a transitional fallback.
 
 ## Context
 
