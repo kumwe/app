@@ -8,6 +8,8 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\App\BusinessRecord\Application\PlannedFieldEncoding;
+use Kumwe\App\BusinessRecord\Application\RecordColumnEncodingPlan;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessRecord\Application\SecretAssociatedData;
 use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
@@ -16,6 +18,9 @@ use Kumwe\App\BusinessRecord\Domain\MoneyValue;
 use Kumwe\App\BusinessRecord\Domain\QuantityValue;
 use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
 use Kumwe\App\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableKind;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -26,6 +31,8 @@ use RuntimeException;
 #[CoversClass(QuantityValue::class)]
 #[CoversClass(ZonedDateTimeValue::class)]
 #[CoversClass(EncryptedEnvelope::class)]
+#[CoversClass(PlannedFieldEncoding::class)]
+#[CoversClass(RecordColumnEncodingPlan::class)]
 #[CoversClass(RecordValueCodec::class)]
 #[CoversClass(SecretAssociatedData::class)]
 #[CoversClass(SodiumSecretCipher::class)]
@@ -236,6 +243,47 @@ final class ExactValueCodecTest extends TestCase
             'row',
         );
         self::assertSame('1000-01-01', $minimum->format('Y-m-d'));
+    }
+
+    public function testCompiledEncodingPlansMatchTheColumnEncodeExactly(): void
+    {
+        $definition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::documentLineDocument(
+            'codecplan',
+            '0191574f-f0b8-7bf3-a9aa-91c6b8245b01',
+        ))->published(1);
+        $table = new PhysicalTableBlueprint(
+            'record',
+            'kb_codecplan_record',
+            PhysicalTableKind::Entity,
+            [
+                new PhysicalColumnBlueprint('record_key', 'c_record_key', 'guid'),
+                new PhysicalColumnBlueprint('id', 'c_id', 'guid'),
+                new PhysicalColumnBlueprint('code', 'c_code', 'string'),
+                new PhysicalColumnBlueprint('description', 'c_description', 'string'),
+            ],
+            ['c_record_key'],
+        );
+        $codec = self::codec();
+
+        $plan = $codec->encodingPlan($definition, $table);
+        self::assertSame(
+            ['code', 'description'],
+            array_map(
+                static fn (PlannedFieldEncoding $planned): string => $planned->field->handle,
+                $plan->fields,
+            ),
+            'The plan holds exactly the columned fields; the UUID identity and column-less fields are out.',
+        );
+
+        $values = ['code' => 'A', 'description' => null];
+        $encoded = $codec->encodePlanned($plan, $values);
+        self::assertSame(['c_code' => 'A', 'c_description' => null], $encoded);
+        self::assertSame($codec->encodeColumns($definition, $table, $values), $encoded);
+        self::assertSame(
+            ['c_code' => 'B'],
+            $codec->encodePlanned($plan, ['code' => 'B']),
+            'A value collection mentioning one planned field writes only that field.',
+        );
     }
 
     private static function codec(): RecordValueCodec
