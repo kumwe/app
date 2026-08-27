@@ -130,6 +130,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationPublication;
+use Kumwe\App\BusinessRecord\Application\DocumentCommitTimingRecorder;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordReadRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationshipCoordinator;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionRepository;
@@ -2975,6 +2976,7 @@ final class ContainerFactory
             self::service($container, TableNames::class),
             self::service($container, DoctrineBusinessRecordQueryCompiler::class),
         ), true);
+        $container->share(DocumentCommitTimingRecorder::class, new DocumentCommitTimingRecorder(), true);
         $container->share(BusinessRecordMutationPublication::class, static fn (
             Container $container,
         ): BusinessRecordMutationPublication => new BusinessRecordMutationPublication(
@@ -2982,6 +2984,7 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, RecordFingerprint::class),
             self::service($container, BusinessRecordMutationEventPublisher::class),
+            self::service($container, DocumentCommitTimingRecorder::class),
         ), true);
         $container->share(BusinessRecordIdempotencyRepository::class, static fn (
             Container $container,
@@ -3063,6 +3066,7 @@ final class ContainerFactory
             self::service($container, BusinessRecordDefinitionResolver::class),
             self::service($container, RecordValueCodec::class),
             self::service($container, RecordRuleValidator::class),
+            self::service($container, DocumentCommitTimingRecorder::class),
         ), true);
         $container->share(BusinessRecordService::class, static fn (
             Container $container,
@@ -3088,6 +3092,7 @@ final class ContainerFactory
             self::service($container, PostingPeriodLock::class),
             self::service($container, PostingPeriodCalendar::class),
             $configuration->idempotencyReplay,
+            commitTimings: self::service($container, DocumentCommitTimingRecorder::class),
         ), true);
         $container->share(
             BusinessDefinitionValidator::class,

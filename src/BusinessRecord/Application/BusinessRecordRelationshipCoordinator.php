@@ -52,6 +52,8 @@ final readonly class BusinessRecordRelationshipCoordinator
      * @param  BusinessRecordDefinitionResolver  $definitions  Resolver for live and pinned target definitions.
      * @param  RecordValueCodec                  $values       Codec settling identities and reference values.
      * @param  RecordRuleValidator               $rules        Validator normalizing line values and invariants.
+     * @param  DocumentCommitTimingRecorder      $timings      Shared collector the document command reads
+     *         its fence lock-wait durations from; silent for every other command.
      *
      * @since  2.0.0
      */
@@ -61,6 +63,7 @@ final readonly class BusinessRecordRelationshipCoordinator
         private BusinessRecordDefinitionResolver $definitions,
         private RecordValueCodec $values,
         private RecordRuleValidator $rules,
+        private DocumentCommitTimingRecorder $timings = new DocumentCommitTimingRecorder(),
     ) {
     }
 
@@ -342,7 +345,9 @@ final readonly class BusinessRecordRelationshipCoordinator
                 if ($targetAccess === null) {
                     throw new BusinessRecordNotFound();
                 }
+                $fenceStart = hrtime(true);
                 $generation = $this->fence->lock($context, $targetHandle);
+                $this->timings->add('lock_wait', (hrtime(true) - $fenceStart) / 1_000_000);
                 $target = $this->definitions->forCreate($context, $targetHandle);
                 $generation->assertMatches($target);
                 $targetScope = $this->scope($target, $context, $scope->organizationIdentifier);
@@ -401,7 +406,9 @@ final readonly class BusinessRecordRelationshipCoordinator
             throw new BusinessRelationshipRejected('The owned-line pinned definition version is unavailable.');
         }
 
+        $fenceStart = hrtime(true);
         $generation = $this->fence->lock($context, $relationship->target);
+        $this->timings->add('lock_wait', (hrtime(true) - $fenceStart) / 1_000_000);
         $line = $this->definitions->pinned($context, $relationship->target, $version);
         $generation->assertMatches($line);
 
@@ -1055,15 +1062,15 @@ final readonly class BusinessRecordRelationshipCoordinator
         if ($wanted === []) {
             return OwnedLineReferenceIndex::empty();
         }
-        // Sorted so the fences below are always taken in one order. Two documents naming the same targets
-        // in opposite field order would otherwise be able to deadlock against each other.
-        ksort($wanted);
 
         /** @var array<string, array<string, string>> $keys */
         $keys = [];
         /** @var array<string, Throwable> $failures */
         $failures = [];
-        foreach ($wanted as $handle => $values) {
+        foreach (self::referenceAcquisitionOrder($targets) as $handle) {
+            if (!isset($wanted[$handle])) {
+                continue;
+            }
             try {
                 $keys[$handle] = $this->resolveReferenceBatch(
                     $context,
@@ -1071,7 +1078,7 @@ final readonly class BusinessRecordRelationshipCoordinator
                     $access,
                     $handle,
                     $targets[$handle],
-                    array_values($values),
+                    array_values($wanted[$handle]),
                 );
             } catch (Throwable $exception) {
                 $failures[$handle] = $exception;
@@ -1079,6 +1086,34 @@ final readonly class BusinessRecordRelationshipCoordinator
         }
 
         return new OwnedLineReferenceIndex($keys, $failures);
+    }
+
+    /**
+     * The one order reference-target fences are acquired in, for every command alike.
+     *
+     * The fence is a row lock on the target definition, so the sort key has to be the lock's own key —
+     * the target handle — and never the field handle that happens to point at it. Two definitions naming
+     * the same pair of targets through differently-named fields would otherwise take those fences in
+     * opposite orders, which is the textbook shape of a deadlock this method exists to make
+     * unrepresentable. The field handle only breaks ties between fields sharing one target, where the
+     * order no longer matters for locking and merely has to be deterministic.
+     *
+     * @param   array<string, string>  $targetsByField  Target definition handle keyed by field handle.
+     *
+     * @return  list<string>  Field handles in fence-acquisition order.
+     *
+     * @since   2.0.0
+     */
+    public static function referenceAcquisitionOrder(array $targetsByField): array
+    {
+        $order = array_keys($targetsByField);
+        usort(
+            $order,
+            static fn (string $a, string $b): int =>
+                [$targetsByField[$a], $a] <=> [$targetsByField[$b], $b],
+        );
+
+        return $order;
     }
 
     /**
@@ -1109,7 +1144,9 @@ final readonly class BusinessRecordRelationshipCoordinator
         if ($targetAccess === null) {
             throw new BusinessRecordNotFound();
         }
+        $fenceStart = hrtime(true);
         $generation = $this->fence->lock($context, $target);
+        $this->timings->add('lock_wait', (hrtime(true) - $fenceStart) / 1_000_000);
         $resolved = $this->definitions->forCreate($context, $target);
         $generation->assertMatches($resolved);
         $targetScope = $this->scope($resolved, $context, $scope->organizationIdentifier);

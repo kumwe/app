@@ -216,25 +216,71 @@ final readonly class RecordValueCodec
         PhysicalTableBlueprint $table,
         array $values,
     ): array {
-        $encoded = [];
+        return $this->encodePlanned($this->encodingPlan($definition, $table), $values);
+    }
+
+    /**
+     * Compile every per-field encoding decision one (definition, table) pair implies, once.
+     *
+     * The skip rules and the logical-to-physical column resolution depend only on the definition and the
+     * installed table, never on a row, so a command writing a whole collection compiles this once and
+     * pays per row only for converting values. `encodeColumns()` delegates through the same plan, which
+     * is what keeps the single-row and bulk paths one implementation instead of two that agree today.
+     *
+     * @param   EntityTypeDefinition    $definition  Definition naming the fields, in declared order.
+     * @param   PhysicalTableBlueprint  $table       Installed table the logical names resolve against.
+     *
+     * @return  RecordColumnEncodingPlan  The writable fields with their resolved storage columns.
+     *
+     * @since   2.0.0
+     */
+    public function encodingPlan(
+        EntityTypeDefinition $definition,
+        PhysicalTableBlueprint $table,
+    ): RecordColumnEncodingPlan {
+        $fields = [];
         foreach ($definition->fields() as $field) {
             if (
-                !array_key_exists($field->handle, $values)
-                || ($field === $this->identityField($definition)
+                ($field === $this->identityField($definition)
                     && $definition->identityStrategy === IdentityStrategy::Uuid)
                 || ($field->formula !== null && $field->computationMode === ComputationMode::Virtual)
+                || $this->columns($table, $field) === []
             ) {
                 continue;
             }
-            $value = $values[$field->handle];
-            $columns = $this->columns($table, $field);
-            if ($columns === []) {
+            $columns = [];
+            foreach ($this->columns($table, $field) as $column) {
+                $columns[$column->logicalName] = $column->physicalName;
+            }
+            $fields[] = new PlannedFieldEncoding($field, $columns);
+        }
+
+        return new RecordColumnEncodingPlan($fields);
+    }
+
+    /**
+     * Spread one row's values across physical columns using an already-compiled plan.
+     *
+     * @param   RecordColumnEncodingPlan  $plan    Compiled decisions for the definition and table.
+     * @param   array<string, mixed>      $values  Normalized values keyed by field handle.
+     *
+     * @return  array<string, mixed>  Physical column names to DBAL values.
+     *
+     * @throws  InvalidArgumentException  When a value is not the domain type its field normalizes to.
+     *
+     * @since   2.0.0
+     */
+    public function encodePlanned(RecordColumnEncodingPlan $plan, array $values): array
+    {
+        $encoded = [];
+        foreach ($plan->fields as $planned) {
+            if (!array_key_exists($planned->field->handle, $values)) {
                 continue;
             }
-            foreach ($this->storageValues($field, $value) as $logical => $storageValue) {
-                $column = $table->column($logical);
-                if ($column !== null) {
-                    $encoded[$column->physicalName] = $storageValue;
+            foreach ($this->storageValues($planned->field, $values[$planned->field->handle]) as $logical => $value) {
+                $physical = $planned->columns[$logical] ?? null;
+                if ($physical !== null) {
+                    $encoded[$physical] = $value;
                 }
             }
         }
