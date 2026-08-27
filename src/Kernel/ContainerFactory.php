@@ -318,8 +318,11 @@ use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentModelRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringLaunchResolver;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringAvailability;
+use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringConfigurationProvider;
+use Kumwe\App\Studio\Application\Authoring\UnavailableStudioContextualAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\ContentStudioResourceSearchProvider;
@@ -1733,6 +1736,17 @@ final class ContainerFactory
                 new PinnedStudioContextualAuthoringAvailability($root, null),
             true,
         );
+        $container->share(
+            StudioContextualAuthoringConfigurationProvider::class,
+            new UnavailableStudioContextualAuthoringConfigurationProvider(),
+            true,
+        );
+        $container->share(ContentStudioAuthoringLaunchResolver::class, static fn (
+            Container $container,
+        ): ContentStudioAuthoringLaunchResolver => new ContentStudioAuthoringLaunchResolver(
+            self::service($container, StudioContextualAuthoringAvailability::class),
+            self::service($container, StudioContextualAuthoringConfigurationProvider::class),
+        ), true);
         $container->share(
             StudioHostSessionRepository::class,
             static fn (Container $container): StudioHostSessionRepository =>
@@ -4274,7 +4288,7 @@ final class ContainerFactory
             self::service($container, ContentModelService::class),
             self::service($container, AdministratorRenderer::class),
             self::service($container, ContentStudioAuthoringTargetResolver::class),
-            self::service($container, StudioContextualAuthoringAvailability::class),
+            self::service($container, ContentStudioAuthoringLaunchResolver::class),
             self::service($container, ContentFormPresenter::class),
             self::service($container, MediaService::class),
             self::service($container, PublicPageLocator::class),

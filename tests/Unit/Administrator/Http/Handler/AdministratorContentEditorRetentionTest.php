@@ -31,7 +31,9 @@ use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Domain\Capability;
 use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringLaunchResolver;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
+use Kumwe\App\Studio\Application\Authoring\UnavailableStudioContextualAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Infrastructure\Release\PinnedStudioContextualAuthoringAvailability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Tests\Support\ImmediateTransactionManager;
@@ -255,7 +257,10 @@ final class AdministratorContentEditorRetentionTest extends TestCase
             $this->modelService(),
             $this->renderer(),
             new ContentStudioAuthoringTargetResolver(AuthorizationContext::gateway()),
-            new PinnedStudioContextualAuthoringAvailability(dirname(__DIR__, 5), null),
+            new ContentStudioAuthoringLaunchResolver(
+                new PinnedStudioContextualAuthoringAvailability(dirname(__DIR__, 5), null),
+                new UnavailableStudioContextualAuthoringConfigurationProvider(),
+            ),
         );
     }
 
