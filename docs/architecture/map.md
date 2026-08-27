@@ -168,11 +168,20 @@ grew later keep their own `Application/Domain/Infrastructure/Delivery` trees.
 | `Demo` | VDM / content profile install | `resources/demo/` |
 | `Automation` | `CronExpression` only | the engine is `Application\Automation` |
 
-`src/Studio/` is App's authoritative host adapter, not a second page builder. The portable command engine,
-45-block catalog, patterns, Editor.js adapter and renderer-web stay in `kumwe/studio`; App supplies trusted
-ports and Twig delivery. The administrator shell is composed through `src/Administrator/Http/Handler/`,
-`assets/administrator/components/studio-*.ts` and `templates/administrator/studio-composition.twig`. Exact
-released package and corpus bytes live in `resources/studio-contract/` and move only as one coordinated family.
+`src/Studio/` is App's authoritative PHP host adapter, not a second page builder. The portable command engine,
+45-block catalog, patterns, private Editor.js adapter and renderer-web stay in `kumwe/studio`; App supplies trusted
+PHP ports, Content operations, and Twig delivery. Browser assets are compiled before deployment, and production has
+no Node.js, npm, Vite, development-server, or server-side JavaScript dependency.
+
+The product target is contextual: one generic core/extension target resolver opens the same resource-bound Studio
+session from an authorized create/edit surface, inline or expanded. App does not add a top-level Studio navigation
+workspace; a full-screen route remains bound to its originating resource. The current administrator integration
+does not yet implement that target: it composes a
+Blueprint-only route for an existing Content-type version through `src/Administrator/Http/Handler/`,
+`assets/administrator/components/studio-*.ts`, and `templates/administrator/studio-composition.twig`; Content model
+and Entry writes remain separate. Exact released package and corpus bytes live in `resources/studio-contract/` and
+move only as one coordinated family. Product/status authority and the implementation ladder are linked from the
+single App host record, [`docs/studio-composition-authoring.md`](../studio-composition-authoring.md).
 
 ---
 

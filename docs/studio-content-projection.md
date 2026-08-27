@@ -1,10 +1,17 @@
-# Studio content projection
+# Studio content projection (current low-level primitive)
 
-Kumwe exposes its CMS content types and entries to Studio through a read-only application service.
+The current App implementation exposes its CMS content types and entries to Studio through a read-only application
+service.
 Studio receives canonical `content-model` and `entry` documents; Kumwe remains authoritative for
 content definitions, field visibility, workflows, translations, publication windows, and stored
 values. This is the AP-2 model-port foundation. It does not open a Studio session and it does not add
 any composition or Content write path.
+
+That read-only scope describes this primitive, not the Studio product target. Contextual authoring requires exact
+type/version and value hydration plus PHP-authoritative create/save/type-version operations in the same session.
+Those operations must use the existing Content application boundary and a public Studio contract; they must not be
+bolted onto this read projector as generic persistence. The sole App-side target/status record is
+[Studio authoring in Kumwe App](studio-composition-authoring.md).
 
 The implementation boundary is:
 
@@ -89,10 +96,11 @@ semantic versions, member limits, depth, forbidden property names, and canonical
 enter a projection. A binding appears in the model extension. Override values appear only in
 `entry.compositionOverrides`, and their host revision appears separately in the entry extension.
 
-The repository port deliberately contains reads only. AP-2 has no authorized, audited publication use
-case for these coordinates, and adding a generic save method here would create an AP-3/AP-4 write path
-before Studio's session-generation and optimistic artifact contracts are available. The later write
-service must supply that authorization, audit, expected-revision, and replay discipline explicitly.
+This repository port deliberately contains reads only because AP-2 introduced projection rather than an authorized
+Content mutation use case. It must stay read-only. The open contextual-authoring work adds purpose-specific PHP
+application operations for item create/save, new-type creation, and type-version creation with authorization,
+validation, transactions, audit, expected revisions, migration policy, and replay discipline. A generic save method
+on the projector would bypass those responsibilities and is not the implementation path.
 
 ## Dynamic resource and data boundary
 

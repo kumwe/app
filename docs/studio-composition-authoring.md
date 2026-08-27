@@ -1,241 +1,166 @@
-# Studio Content composition authoring
+# Studio authoring in Kumwe App
 
-The administrator can compose the Blueprint owned by one immutable Content-type version at
-`/administrator/content-models/{id}/versions/{version}/composition`. This is a composition-model
-surface, not a Content-entry editor. The existing server-rendered model and entry editors remain the
-essential authoring paths and are not replaced.
+## Authority and status
 
-Studio itself is the standalone page builder. It owns layout, the production block catalog, insertion
-patterns, authoring controls, Editor.js integration, semantic web rendering and progressive behavior. This
-App is one host: it supplies authorized Content models and entries, media, resource discovery, persistence,
-preview, Twig delivery and policy. No App module recreates Studio's canvas or Editor.js tool configuration.
+This is the single App-side host record for Studio. It does not define a second product direction. The sole
+normative statement of Studio product intent is Studio's
+[`docs/product-contract.md`](https://github.com/kumwe/studio/blob/main/docs/product-contract.md), currently
+`STUDIO-PROD-1.0-draft`. Studio schemas remain authoritative for serialized shapes, Studio contract documents
+remain authoritative for protocol semantics, and the two repositories' roadmap status files remain authoritative
+for implementation and qualification state.
 
-## Provisioning and authority
+This record maps that one product contract onto Kumwe App. Other App documents must link here for App-specific
+status and must not restate a competing Studio workflow. A target described here is not evidence that it is
+implemented.
 
-The first visit is read-only and presents a normal HTML form. Its CSRF-protected `POST` provisions the
-composition and returns `303 See Other`; `GET` never creates a binding or artifact. Both methods require
-`content.read` and `studio.mode.blueprint`.
+## The one product outcome
 
-Provisioning obtains the exact authorized AP-2 Content-model projection, derives the stable Blueprint
-identity `content-blueprint:{content-type-id}:v{content-type-version}`, and atomically writes:
+Studio is Kumwe's contextual page builder and content editor. People should think about the content they are
+creating, not about opening or operating a separate product.
 
-- binding revision 1, whose null `blueprint_revision` means the current artifact head; and
-- an admitted, empty, draft Blueprint through the AP-4 artifact admission and repository ports.
+- Creating or editing managed content opens Studio for that exact item.
+- An author starts from a blank canvas or an authorized reusable Kumwe content type.
+- Layout, blocks, typed fields, field bindings, and entry values are created in one continuous workspace.
+- A Kumwe content type presents a reusable choice while retaining separately versioned content-model, Blueprint,
+  and authoring-policy artifacts underneath.
+- Saving an item, saving the design as a new type, and creating a new type version are explicit different actions.
+- Studio may be inline, minimized, maximized, or full-screen, but the resource, unsaved state, authority, and return
+  path remain intact.
+- Kumwe App does not expose Studio as a primary/top-level navigation workspace. A dedicated full-screen route may
+  be an expanded state of the current resource-bound session, never a catalogue-first prerequisite.
+- There is no prerequisite Blueprint screen, manual identifier transfer, or copy-and-paste hand-off.
+- Authorized extension contributions appear in this same workspace only where their declared target and the host's
+  policy allow them.
 
-The Blueprint locks the projected model, the exact active public site theme, and every block that the active host
-can actually render. That deployment/renderability snapshot is independent of the provisioning actor;
-actor capability narrows only the presented authoring catalog, so another authorized actor sees the
-same immutable artifact lock. The block lock and its trusted per-type renderer map come from the live
-owner-bound contribution registry; they are not a copied palette or a browser prefix inference. An
-existing Blueprint intersects that catalog with its exact immutable `type`, `version`, and `revision`
-lock. An active same-type definition with a different version or revision refuses boot, rather than
-silently substituting it. A later extension activation cannot widen an existing palette, and a disabled
-or distrusted owner is withdrawn without deleting unresolved nodes already in a document.
+Editor.js is Studio's private rich-text implementation inside applicable blocks. Editor.js state, tool
+configuration, or HTML is not an App contract and does not cross the host boundary.
 
-The public-theme coordinate is not fabricated. A built-in theme revision digests the immutable App
-release, complete built-in site-template tree, and only the runtime assets reachable from the Vite site
-entry (or the manifest-less fallback). An extension theme uses its verified installed version and
-deployed-tree digest. Both include the validated site-presentation document in the final revision. That
-revision also participates in the host-session generation. If publication changes after provisioning,
-the immutable Blueprint fails closed with a localized migration diagnostic; AP-7 never rewrites its
-dependency lock. The current artifact framework has no safe theme-lock migration command, so migration
-is an explicit external operation until that separately reviewed executor exists.
+## Current App truth
 
-## Browser and host boundary
+The pinned coordinated Studio family is `0.1.0-rc.1`; exact package and corpus bytes are recorded by
+[`resources/studio-contract/PIN.json`](../resources/studio-contract/PIN.json). The release-candidate label describes
+that coordinated Studio package family. It does **not** by itself prove Kumwe App's integrated contextual-authoring
+journey.
 
-Only this surface dynamically loads the coordinated `0.1.0-rc.1` Studio packages. It opens the AP-3
-Blueprint session and uses the common CSRF-protected host route for artifact, permission, recovery,
-model, localization, telemetry and—when composed by AP-6—preview operations. The coordinated host candidate
-advertises `resource.search` only for a qualified resource type owned by exactly one authorized provider. Its
-closed query contains that type, a limit from 1 through 100, optional search text no longer than 160 characters
-and an optional opaque host cursor. It returns only stable identifier, localized label and qualified type,
-plus the next opaque cursor. It exposes no writes, SQL/filter language, entity data or repository selection.
+App currently has valuable low-level integration primitives:
 
-The next coordinated candidate replaces the former library-specific rich-content implementation with the
-Studio Inline Content Editor. Studio alone owns Editor.js and converts its transient block output to canonical
-rich-text, safe-markup, media, chart, drawing, source, and other typed values before a document change crosses
-the host boundary. This App does not configure Editor.js tools, persist its JSON, or render its HTML. Each
-block port selects a governed Studio authoring profile; static values may be edited, while entry, resource,
-query, and other host-resolved bindings remain read-only.
+- a compiled browser shell and Studio-owned Blueprint canvas;
+- authenticated PHP session and host-port dispatch;
+- PHP-backed permission, artifact/recovery, media/resource, preview, localization, and telemetry operations;
+- read-only Content model and entry projection;
+- versioned Studio artifact persistence, optimistic concurrency, and audit;
+- extension contribution admission and owner-aware activation; and
+- trusted preview and published Content composition rendering.
 
-Safe HTML import is admitted only as Studio's structural SafeMarkupFragment under an exact content policy;
-raw HTML strings do not become trusted output. A scoped-style control produces canonical structured intent,
-but the App authorizes and stores the resulting deterministic block-root stylesheet separately from the
-Blueprint. Authored JavaScript is never admitted. The App
-continues to own media authorization/upload/finalization, resource search and query execution, preview,
-publication, Twig output and CSP. Until that exact coordinated Studio candidate is pinned and qualified, the
-existing server-rendered `kumwe-rich-text` field remains the non-Studio fallback.
+The composed authoring route,
+`/administrator/content-models/{id}/versions/{version}/composition`, is nevertheless Blueprint-only. It is reached
+from an already-created immutable Content-type version, while Content models and entry values are still created or
+edited through separate App forms.
+The model host port is read-only and generic artifact save updates an existing draft only. Therefore App does not
+yet provide blank-or-type creation, entry editing, field/model creation, the three explicit save outcomes, or the
+complete context-preserving acceptance journey inside Studio. That is a major integration gap, not an alternative
+product interpretation and not a reason to weaken the target.
 
-## Studio production catalog
+The existing generated Content editor remains a transitional fallback until the integrated journey passes the
+canonical acceptance proof.
 
-The coordinated Studio family supplies exactly 45 first-party block types. They are Studio-owned capabilities,
-not PHP palette definitions:
+## Product-contract mapping
 
-| Family | Types |
+| Requirement | App status | Required App outcome |
+|---|---|---|
+| `STUDIO-PROD-001` | Open | Launch from Content create/edit with the exact trusted resource context. |
+| `STUDIO-PROD-002` | Open | Offer blank and reusable-type starts without copying entry values. |
+| `STUDIO-PROD-003` | Open | Compose layout, fields, bindings, and values without a manual screen hand-off. |
+| `STUDIO-PROD-004` | Partial primitives | Present one reusable type while preserving exact Model, Blueprint, policy, and revision identities. |
+| `STUDIO-PROD-005` | Open | Hydrate the item's exact accepted type, Model, Blueprint, Entry revisions, and values. |
+| `STUDIO-PROD-006` | Open | Implement separately confirmed item-save, new-type-version, and new-type outcomes. |
+| `STUDIO-PROD-007` | Partial primitives | Preserve full session state across inline/minimized/maximized/fullscreen presentation and return. |
+| `STUDIO-PROD-008` | Open | Resolve core and extension content areas through one generic Studio target declaration. |
+| `STUDIO-PROD-009` | Partial primitives | Apply the canonical contribution lifecycle to blocks, field adapters, and patterns on admitted targets. |
+| `STUDIO-PROD-010` | Partial primitives | Route every durable effect through declared host APIs and PHP App authority. |
+| `STUDIO-PROD-011` | Implemented deployment rule; acceptance pending | Ship compiled assets; require no Node.js, npm, Vite, or JavaScript server in production. |
+| `STUDIO-PROD-012` | Open | Remove pre-creation, copy/paste, catalogue-first, and manual revision reconciliation. |
+| `STUDIO-PROD-013` | Partial primitives | Prove keyboard, explicit-control, touch, assistive-technology, zoom, directionality, and reflow parity. |
+| `STUDIO-PROD-014` | Enforced documentation rule | Keep target, primitive, integration, package, conformance, gate, and fallback claims distinct. |
+| `STUDIO-PROD-015` | Not passed | Prove the complete integrated acceptance journey exactly as specified by Studio. |
+
+`Partial primitives` never means the end-to-end requirement is delivered.
+
+## Host boundary: PHP is always authoritative
+
+The production request path is browser Studio -> same-origin App endpoint -> PHP application service -> existing
+authorization/domain/persistence/audit services. JavaScript can present state and request an operation; it cannot
+be the server authority.
+
+Node.js and npm are contributor, build, test, and release tools only. Official browser assets are compiled and
+committed or packaged before deployment. Starting, operating, saving, previewing, publishing, and publicly rendering
+Kumwe must never require `node`, `npm`, a development server, or a server-side JavaScript process.
+
+The integrated journey needs these PHP-owned application operations. Existing Studio port names and schemas are
+used where they already cover the outcome; any missing public protocol operation must first be defined in the
+Studio repository and then consumed by App, never invented as a private parallel contract.
+
+| Operation | PHP responsibility |
 |---|---|
-| Layout | `section`, `stack`, `grid`, `columns` |
-| Content and semantics | `heading`, `rich-text`, `article`, `card`, `call-to-action`, `callout`, `badge`, `label`, `divider`, `description-list`, `description-item` |
-| Media and visual | `image`, `gallery`, `video`, `audio`, `attachment`, `cover`, `drawing`, `icon` |
-| Data and source | `chart`, `diagram`, `math`, `code`, `table`, `money`, `content-reference`, `content-collection`, `embed` |
-| Interactive and status | `accordion`, `accordion-item`, `tabs`, `tab`, `dialog`, `popover`, `notice`, `navigation`, `navigation-item`, `countdown`, `progress`, `search`, `spinner` |
+| Resolve authoring context | Authenticate the actor; resolve site, item or create intent, type/version, locale, workflow, capabilities, contribution generation, and return location. |
+| Load blank or reusable start | List only authorized types; load the exact model/Blueprint/policy revision; initialize empty values; preserve all artifact identities. |
+| Create a draft item | Call the existing Content application service under transaction, policy, validation, revision, audit, and idempotency rules. |
+| Save an item | Validate the Studio result against the pinned type and workflow; compare the expected revision; persist through Content services; return the accepted revision. |
+| Save as a new content type | Validate and atomically create the model, reusable Blueprint, policy/bindings, and initial type version without current entry values. |
+| Create a content-type version | Show migration and dependent-entry effects; require explicit confirmation; create immutable successor revisions; never rewrite a published version. |
+| Save and lifecycle Studio artifacts | Reuse the authenticated generation fence, expected revisions, audit, and replay-safe artifact operations. |
+| Media, resources, preview, and publication | Reuse the existing typed host ports and trusted PHP/Twig delivery; reapply policy at every resolution. |
+| Dispatch integrations or webhooks | Emit only after an accepted PHP transaction through App's durable outbox/integration services; sign, retry, and audit under host policy. |
+| Resolve extension contributions | Admit only the active immutable generation for the exact target/surface/mode and require host-renderable, authorized definitions. |
 
-Studio also owns the ten starter patterns and the advanced `studio.control/*` controls for chart, drawing,
-media collection/reference, money, presentation, rich text, scoped CSS, source and table. Tabs, dialog,
-notice, popover, countdown, lightbox, navigation, slideshow and motion are progressive enhancements over
-usable semantic fallbacks. App can contribute namespaced definitions and host resource providers through the
-published extension seam; it cannot fork first-party block behavior or leak Editor.js/Chart.js/Mermaid/KaTeX
-configuration into a Blueprint.
+## Extension reuse
 
-Media controls use Studio's injected media provider for all browse/upload/status work. The provider crosses
-the App media port and retains only a canonical media reference in Studio state. Editor.js tools never call the
-App uploader directly. Resource and data-aware controls retain closed references or binding descriptors;
-App resolves them through the existing authorized application service for preview and public delivery. The
-browser receives no database credentials, query language or unrestricted record payload.
+Extensions do not embed or fork Studio. A schema-6 extension declares canonical Studio
+`block-definition`, `pattern`, `field-adapter`, `inspector`, `design-vocabulary`, and `migration` documents plus
+bounded App host bindings. The App resolves them into the same Studio generation as first-party tools. An
+extension surface that declares an eligible Studio target can request contextual authoring for its authorized
+resource; it must not create a new editor, expose Editor.js, or bypass the PHP host operations above.
 
-The exact AP-7 vector coverage is:
+Contribution admission and activation primitives already exist. Seamless contextual use from extension-owned
+content areas remains part of the open integrated journey and must be proven by `STUDIO-PROD-015`.
 
-| Port | Vector IDs |
-|---|---|
-| Model | `vector.host-vector.model.get.stored`, `vector.host-vector.model.list.authorized` |
-| Localization | `vector.host-vector.localization.messages.unknown-locale` |
-| Telemetry | `vector.host-vector.telemetry.emit.accepted`, `vector.host-vector.telemetry.emit.non-primitive` |
+## One App pull request, small working goals
 
-The shell receives the complete 160-key Studio message corpus through the App's compiled catalogue and
-site/organization override chain. Its active locale carries requested and resolved tags, direction,
-time zone and the ordered source fallback. Studio's published named-interpolation grammar is retained
-for its exact message namespace; neighbouring App messages remain ICU-validated.
+Implementation proceeds in one App pull request. Each goal is one coherent, reviewable commit, leaves the branch
+green, and adds the focused proof for the behavior it introduces. A Studio protocol or package change, if the
+capability audit proves one necessary, lands first in one coordinated Studio pull request and is consumed by the
+App pull request through one exact family re-pin.
 
-Document changes execute through the Studio session, serialize optimistic saves, and acknowledge the
-captured state version with `markSaved(revision, stateVersion)`. A late acknowledgement rebases that
-snapshot without marking newer edits clean. A conflict leaves the local draft dirty, disables further
-mutation, replaces the interactive shell with a localized refusal, and cannot stage a stale preview.
-The draft surface exposes the canonical `artifact.publish` operation only when the live App policy also
-grants the distinct `content.publish` capability; a published Blueprint exposes `artifact.unpublish` only
-when policy grants `content.unpublish`. Blueprint authoring authority alone permits composition and save
-but never widens into either lifecycle transition, and holding one transition capability never authorizes
-the other. Studio's current protocol projects both operations through its shared
-`studio.permission/publish` permission, so the App session response also carries private `canPublish` and
-`canUnpublish` decisions. Each artifact operation enforces its own server-resolved decision, and either
-decision changing invalidates the session generation even while the shared protocol permission remains.
-Publication first waits for its latest draft save to settle. Both transitions send an exact reference,
-expected revision and mutation idempotency key, then reload the accepted current head. Drafts open an
-editable Studio session, while published and retired artifacts open read-only, so a published revision
-cannot be changed by an ordinary composition command before it returns to draft.
+1. **Ship and boot.** Prove a clean production App starts with the compiled Studio asset present and no production
+   Node/npm dependency; make missing or incompatible assets a clear build/release failure.
+2. **Open in context.** Launch Studio from existing Content create/edit actions with a PHP-issued trusted context,
+   inline/expanded state, recovery scope, and deterministic return. Retain the current form as an explicit fallback.
+3. **Start blank or from type.** Load authorized reusable types and blank state inside that context, with empty entry
+   values and exact model/Blueprint/policy locks.
+4. **Save the content item.** Persist new and edited entry values through the existing PHP Content service with CSRF,
+   authorization, validation, expected revision, idempotency, audit, conflict, and workflow behavior.
+5. **Create a reusable type.** Add the explicit save-as-new-type outcome, excluding entry values and atomically
+   creating the initial immutable model/Blueprint/policy association.
+6. **Version a reusable type.** Add the separately confirmed successor-version outcome with migration/dependency
+   impact, immutable history, and no silent changes to other entries.
+7. **Use extensions contextually.** Resolve authorized extension blocks, fields, patterns, inspectors, design
+   vocabularies, and migrations on their declared targets, including an extension-owned authoring surface proof.
+8. **Complete the workspace.** Preserve selection, unsaved state, locale, generation authority, preview, diagnostics,
+   and history across inline/minimized/maximized/full-screen transitions and return.
+9. **Prove the product journey.** Run the exact `STUDIO-PROD-015` journey on the production artifact, PHP-only server
+   topology, real databases, browser/accessibility/security lanes, public rendering, and rollback fallback.
 
-Preview uses the AP-6 session metadata and two independent sequence lanes, both beginning at zero. The
-parent serializes render and document-claim order while allowing an in-flight render's cancellation to
-reach the server immediately. Cancellation is memoized per render attempt, so abort, Studio teardown
-and page disposal cannot duplicate one cancellation. A later render of the same digest waits for that
-attempt's acknowledged cancellation; an ambiguous preview transport failure terminally closes the
-channel instead of spending a higher sequence. AP-6's bounded predecessor wait and cancellation
-tombstone make a concurrent pre-grant cancel authoritative. A hidden `sandbox="allow-same-origin"`
-staging iframe waits for the single-use HTML
-document, checks its exact route and KIS sentinel, and is swapped into the preview slot only while its
-generation is current. Measurement returns every finite `getClientRects()` fragment for the current
-response's bounded marker set. Iframe and outer scroll, resize, visual-viewport changes, fonts and late
-layout trigger coalesced geometry refresh.
+The pull request is not complete because its Blueprint canvas opens. It is complete only when the canonical
+acceptance journey passes and the live status ledgers truthfully record that evidence.
 
-## Layout contract
+## Focused references
 
-Stored documents carry bounded layout intent, never CSS. The AP-6 renderer projects admitted values to
-the following closed attributes, and App styles consume only these values:
-
-| Attribute | Values |
-|---|---|
-| `data-studio-layout-alignment` | `center`, `end`, `start`, `stretch` |
-| `data-studio-layout-collapse` | `preserve`, `stack`, `wrap` |
-| `data-studio-layout-columns` | decimal integers `1` through `12` |
-| `data-studio-layout-direction` | `block`, `inline` |
-| `data-studio-layout-spacing` | `comfortable`, `compact`, `none`, `spacious` |
-| `data-studio-layout-visibility` | `hidden`, `visible` |
-
-The coordinated theme supplies all five Studio layout controls and its responsive grid recipe. The
-preview CSS uses logical properties, supports right-to-left documents, and applies the admitted
-expanded-to-medium-to-compact `4 → 2 → 1` grid behavior without stored CSS. A one-width authoring
-preview receives the unsuffixed attributes above. Marker-free published output instead retains the exact
-same allowlisted values as `data-studio-layout-{compact|medium|expanded}-{property}` attributes. The
-committed site stylesheet selects compact through `46rem`, medium above `46rem` through `62rem`, and
-expanded above `62rem`; it applies alignment, collapse, columns, direction, spacing, and visibility only
-from those tokens. The public renderer evaluates all three widths before returning any HTML, so a malformed
-inactive-width override fails closed instead of lying dormant until a visitor reaches that viewport.
-
-## Published page runtime
-
-Public Content resolution remains authoritative. After the existing locator selects a published record,
-the Studio publication boundary looks up only the binding for that record's exact site, Content-type ID,
-and pinned Content-type version. No binding, or a bound Blueprint whose lifecycle is `draft` or `retired`,
-keeps the existing layout and presenter byte-for-byte. A `published` Blueprint instead renders through the
-internal canonical `page` template with an empty legacy data map and one host-produced safe composition
-fragment; navigation, language alternates, canonical URL, colour scheme, cache policy, indexing policy,
-site assets, and the validated public theme remain on the same `ContentPageRenderService` path.
-
-Configuring a binding makes compatibility mandatory. The selected artifact must exist at its bound head or
-revision, be the exact App-owned Blueprint, and pass the pinned Studio schema and stored-content policy. Its
-model lock must equal the record's exact projected model ID, semantic version, and deterministic revision;
-the matching historical Content definition must still exist. Its theme must equal the live published theme,
-and every block lock and node must have the exact live core or signed-extension renderer. Missing artifacts,
-wrong kinds, incompatible schemas, model drift, theme drift, ambiguous locks, withdrawn extensions, and
-renderer failure throw typed fail-closed refusals instead of falling back and silently changing published
-meaning.
-
-That live decision also revalidates every node against the exact canonical block declaration: base and
-viewport-effective responsive properties, unique node identity, declared slots, min/max cardinality,
-accepted child types and every Content field named by an entry binding. Optional canonical-document
-SHA-256 locks are verified before the declaration is interpreted. Public core layout fragments emit only
-the closed compact, medium and expanded data tokens, and the site stylesheet maps those tokens to bounded
-media-query behavior without accepting stored styles.
-
-The public value projection does not invent an administrator or anonymous authorization context. The public
-Content boundary has already selected a publishable record, so `ContentStudioProjector::publishedValues()`
-projects its complete pinned schema with the same lossless recursive conversion as the authorized Studio entry
-port. Stored strings remain strings; block output remains plain text escaped by the closed renderer. Published
-markup shares preview traversal and registry semantics but omits every `data-studio-preview-marker` authoring
-attribute. `StudioPublishedCompositionGuard::assertCompatible()` is the reusable application seam for the same
-schema, owner, model, theme, and live-renderer check at artifact publication time.
-
-The coordinated eight-package family adds `@kumwe/studio-renderer-web` as the portable reference renderer.
-App continues to own server delivery through Twig: Studio does not generate or persist Twig. The Twig adapter
-must consume the same canonical document, exact locks, authorized host values and presentation intent and
-replay Studio's language-neutral renderer vectors. The acceptance corpus covers all 45 types, nine progressive
-behavior families, ten presentation axes and five security-fallback classes in eight vectors. Exact canonical
-results and declared semantic fallbacks must agree across renderer-web and Twig; a locally invented PHP block
-meaning or browser-only policy exception fails conformance.
-
-## Qualification status
-
-Automated coverage declares provisioning, exact sequence order, save conflict refusal, same-origin
-preview validation, geometry-backed visual select/reorder/reparent, cancelled drag, keyboard parity,
-responsive layout, right-to-left rendering, overflow, axe and deterministic style/geometry invariants. Browser execution and
-snapshot ratification happen in the integrated AP-6 environment; source presence alone is not recorded
-as execution evidence.
-
-AP-6 projects the admitted published-theme variables through an authenticated, same-origin, no-store
-`/administrator/studio/preview/theme.css` grant. The preview carries one `link[data-studio-theme]`, no
-inline theme style or body style attribute, and keeps the strict CSP byte-identical. AP-7 browser
-coverage verifies that response contract and the computed published `--site-accent`; AP-7 does not
-copy the renderer or relax its preview policy.
-
-The accountable-human acceptance journey is defined in
-`tests/Fixtures/Studio/composition-acceptance-journey.json`. It requires a human author to compose,
-preview and publish through the canonical lifecycle control, then repeat the journey in a non-source language. Its status remains `not_run`;
-automation cannot self-attest that gate.
-
-The signed manifest-6 compatibility fixture now supplies a real owner-specific Grid renderer. The browser
-journey installs and activates the signed package, asserts its exact renderer/type/version/revision and
-required properties, publishes it on the real Content route, proves the public response is marker-free,
-then disables the owner and observes the fail-closed response before reactivation and unpublish. This
-closes the composition-block slice of P7-F; the roadmap's broader six-fixture vertical-neutral proof
-portfolio, lifecycle/backup/upgrade matrix and accountable acceptance still remain independent Gate B work.
-
-The release chain already binds all eight packages to `0.1.0-rc.1` in
-`resources/studio-contract/studio-release.json` and records its SHA-256 in
-`resources/studio-contract/PIN.json`; release verification rejects any package, record or corpus-manifest
-digest mismatch. PHP bootstrap, the Vite build assertion and localization generation read that canonical
-record directly, so adopting a later coordinate does not require synchronizing copied release literals across
-the PHP bootstrap, browser entry point, Vite configuration, and localization generator.
-Studio's next eight-package prerelease set is currently expected to be `0.1.0-alpha.9`; that release-plan
-coordinate is not this App's pin and the numbering discrepancy must be reconciled by Studio's published
-release record. After publication, App adopts one exact `<coordinated-version>` by changing all eight
-dependencies, lock entries, tarballs, pin/release records, notices and corpus bytes together. Beta/RC adoption
-is disabled until Studio M1-04 and evidence acceptance, and no release label or source-only green run is Gate B
-evidence.
+- Product intent and acceptance: Studio
+  [`docs/product-contract.md`](https://github.com/kumwe/studio/blob/main/docs/product-contract.md)
+- Protocol semantics: Studio
+  [`docs/contracts/`](https://github.com/kumwe/studio/tree/main/docs/contracts)
+- Current Studio implementation and gate state: Studio
+  [`docs/roadmap/STATUS.md`](https://github.com/kumwe/studio/blob/main/docs/roadmap/STATUS.md)
+- Exact App package/corpus pin: [`resources/studio-contract/PIN.json`](../resources/studio-contract/PIN.json)
+- App implementation ledger: [`docs/roadmap/STATUS.md`](roadmap/STATUS.md)
+- Detailed phase-S evidence and component map: [`docs/roadmap/studio-integration.md`](roadmap/studio-integration.md)

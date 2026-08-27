@@ -142,6 +142,22 @@ docker compose -f compose.production.yaml --profile automation up -d worker sche
 [Workers and scheduler](docs/automation.md) covers queues, schedules, and operating rules;
 [operations](docs/operations/README.md) covers deployment, backup, and upgrades.
 
+## Studio content authoring
+
+Studio is the target contextual page builder and editor for Kumwe content: creating or editing content should open
+the same Studio workspace for layout, blocks, typed fields, and values, inline or expanded, without first visiting a
+separate Studio or Blueprint catalogue. Extensions can contribute governed Studio blocks and fields to authorized
+targets through the same host integration.
+
+That unified journey is not yet complete in App. The current integration opens a Blueprint-only composition route
+from an already-created Content-type version; Content model and entry writes still use separate forms. The single
+App-side statement of the target, exact current gap, PHP host boundary, and small-goal implementation sequence is
+[Studio authoring in Kumwe App](docs/studio-composition-authoring.md).
+
+Studio's browser code is compiled before deployment. Kumwe's server authority is PHP, and an installed production
+App never requires Node.js, npm, a JavaScript development server, or a server-side JavaScript process to start,
+author, preview, publish, or render content.
+
 ## Testing
 
 ```bash
@@ -155,7 +171,8 @@ member set. The authoritative member list is
 third copy. A fresh sandbox is provisioned by `bash tools/agent-setup.sh`
 ([`AGENTS.md`](AGENTS.md) section 0).
 
-The browser suite runs against the started stack:
+Contributors who change browser sources use Node.js and npm to build and test the committed browser assets. These
+are source-development commands, not production installation or server-operation steps:
 
 ```bash
 npm ci

@@ -37,9 +37,9 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 
 - [REST API](rest-api.md): authentication, content, navigation, identity, optimistic concurrency, and retry safety.
 - [MCP](mcp.md): stdio and Streamable HTTP transports, capabilities, tools, resources, and safe writes.
-- [Studio page-builder host integration](studio-composition-authoring.md): standalone Studio ownership,
-  the private Editor.js boundary, production block catalog, Blueprint lifecycle, authenticated preview,
-  published Twig delivery, qualification and coordinated release adoption. See also the
+- [Studio authoring in Kumwe App](studio-composition-authoring.md): the single App-side mapping from Studio's
+  canonical product contract to the contextual Content workflow, current Blueprint-only gap, PHP authority,
+  zero-production-Node rule, extension targets, and one-PR implementation ladder. See also the
   [artifact/recovery boundary](studio-artifact-persistence.md) and [media host adapter](studio-media-host.md).
 - [Studio content projection](studio-content-projection.md): read-only Content models and entries,
   Blueprint bindings, composition overrides, lossless mappings, and fail-closed diagnostics.
