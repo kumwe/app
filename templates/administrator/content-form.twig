@@ -23,6 +23,16 @@
       {% if entry %}<a href="#content-workflow">{{ t('core.administrator.business_definitions.workflow') }}</a>{% endif %}
     </nav>
 
+    {% if not studio_authoring.available %}
+      <section class="notice warning stack" role="status" data-studio-authoring-fallback data-studio-authoring-reason="{{ studio_authoring.reason }}">
+        <div>
+          <p class="eyebrow">{{ t('core.administrator.content_form.studio_page_builder') }}</p>
+          <h2>{{ t('core.administrator.content_form.structured_editor_fallback') }}</h2>
+          <p>{{ t('core.administrator.content_form.studio_page_builder_unavailable_use_the') }}</p>
+        </div>
+      </section>
+    {% endif %}
+
     {% if not entry and content_types|length > 1 %}
       <form class="panel panel-body form-grid" action="/administrator/content/new" method="get"><label>{{ t('core.administrator.access_control.content_type') }}<select name="content_type" data-content-type-selector>{% for type in content_types %}<option value="{{ type.id }}"{% if type.id == content_type.id %} selected{% endif %}>{{ type.name }}</option>{% endfor %}</select></label><div><span class="field-help">{{ t('core.administrator.content_form.changing_the_type_changes_the_fields') }}</span><noscript><button type="submit">{{ t('core.administrator.content_form.use_selected_type') }}</button></noscript></div></form>
     {% endif %}
@@ -52,7 +62,7 @@
 
     <div class="editor-grid">
       <kumwe-dirty-form>
-      <form action="{{ entry ? '/administrator/content/' ~ entry.id : '/administrator/content' }}" method="post" class="panel editor-main editor-form stack" data-kis-dirty-form>
+      <form action="{{ entry ? '/administrator/content/' ~ entry.id : '/administrator/content' }}" method="post" class="panel editor-main editor-form stack" data-kis-dirty-form data-studio-authoring-fallback-form data-studio-authoring-intent="{{ studio_authoring.target.intent }}">
       <input type="hidden" name="_csrf" value="{{ csrf }}">
       <input type="hidden" name="content_type" value="{{ content_type.id }}">
       {% if entry %}<input type="hidden" name="version" value="{{ entry.version }}">{% endif %}

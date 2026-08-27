@@ -24,14 +24,14 @@
     {
       "path": "templates/administrator/content-form.twig",
       "surface_ids": ["core.administrator.content-editor"],
-      "must_contain": ["data-kis-dirty-form", "name=\"_csrf\"", "name=\"content_type\"", "name=\"version\"", "name=\"title\"", "name=\"slug\"", "name=\"publish_at\"", "name=\"unpublish_at\"", "/transition", "Create draft", "Save changes"],
+      "must_contain": ["data-kis-dirty-form", "data-studio-authoring-fallback", "data-studio-authoring-fallback-form", "name=\"_csrf\"", "name=\"content_type\"", "name=\"version\"", "name=\"title\"", "name=\"slug\"", "name=\"publish_at\"", "name=\"unpublish_at\"", "/transition", "Create draft", "Save changes"],
       "must_not_contain": ["name=\"definition_json\""]
     },
     {
       "path": "templates/administrator/content-models.twig",
       "surface_ids": ["core.administrator.content-models"],
       "must_contain": ["id=\"content-type-catalog\"", "id=\"workflow-catalog\"", "name=\"kind\"", "name=\"action\"", "name=\"version\"", "name=\"allow_breaking\"", "kumwe-field-builder", "kumwe-workflow-builder"],
-      "must_not_contain": []
+      "must_not_contain": ["/versions/{{ type.version }}/composition"]
     },
     {
       "path": "templates/administrator/navigation.twig",

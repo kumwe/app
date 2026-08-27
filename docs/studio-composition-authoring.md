@@ -31,6 +31,8 @@ creating, not about opening or operating a separate product.
 - There is no prerequisite Blueprint screen, manual identifier transfer, or copy-and-paste hand-off.
 - Authorized extension contributions appear in this same workspace only where their declared target and the host's
   policy allow them.
+- Studio is mounted through one canonical configuration per target element. A page may host several independent
+  instances; none may infer a Kumwe route, credential, permission, resource, or contribution from a global default.
 
 Editor.js is Studio's private rich-text implementation inside applicable blocks. Editor.js state, tool
 configuration, or HTML is not an App contract and does not cross the host boundary.
@@ -86,6 +88,39 @@ canonical acceptance proof.
 
 `Partial primitives` never means the end-to-end requirement is delivered.
 
+## Configuration-first deployment boundary
+
+Studio owns a portable mount contract; App supplies one instance of that contract for each eligible Content target.
+The exact serialized member names and validators belong to Studio's published schemas and packages. App must consume
+that contract after coordinated publication and must not create an App-private replacement while the upstream shape
+is still changing.
+
+For a hosted Kumwe instance, PHP emits HTML-safe JSON adjacent to the target element. The canonical configuration
+must name the exact resolved operation endpoints, credential mode and CSRF transport, opaque context/session seed,
+locale, authorized Studio capabilities, content and field inputs, reusable-type choices, admitted blocks and
+patterns, media and preview services, explicit save outcomes, and return context. It may map several logical
+operations to one physical dispatcher, but browser code receives the resolved URLs and never constructs them from a
+base-route convention. Raw App capability maps remain server-side; only the closed Studio projection crosses the
+boundary.
+
+The administrator session cookie remains `HttpOnly`. Configuration tells Studio to use same-origin browser
+credentials and supplies the scoped CSRF header name/value required by App; it never exposes a session cookie or
+turns a bootstrap value into durable authority. PHP authenticates and authorizes every request again, re-resolves the
+target and active contribution generation, validates the canonical request, and applies revision, transaction,
+idempotency, audit, and outbox rules before accepting an effect.
+
+Absence has two deliberately different meanings:
+
+- An intentionally backendless Studio mount with no configured host route is Studio's standalone mode. Studio owns
+  its built-in static catalogue, blank local canvas, canonical JSON import, and JSON download behavior.
+- Kumwe Content is a hosted integration. If its complete canonical configuration or qualified runtime is absent or
+  incompatible, App renders the named structured-editor fallback. Once a route is configured, an authentication,
+  authorization, validation, conflict, rate-limit, or server response remains authoritative and must never be
+  converted into standalone/offline success.
+
+Each mount owns its DOM root, configuration, lifecycle, unsaved state, and opaque context. No singleton element ID,
+global mutable adapter, shared sequence, or page-wide unload listener may couple otherwise independent instances.
+
 ## Host boundary: PHP is always authoritative
 
 The production request path is browser Studio -> same-origin App endpoint -> PHP application service -> existing
@@ -124,19 +159,21 @@ resource; it must not create a new editor, expose Editor.js, or bypass the PHP h
 Contribution admission and activation primitives already exist. Seamless contextual use from extension-owned
 content areas remains part of the open integrated journey and must be proven by `STUDIO-PROD-015`.
 
-## One App pull request, small working goals
+## Successor App pull request, small working goals
 
-Implementation proceeds in one App pull request. Each goal is one coherent, reviewable commit, leaves the branch
-green, and adds the focused proof for the behavior it introduces. A Studio protocol or package change, if the
-capability audit proves one necessary, lands first in one coordinated Studio pull request and is consumed by the
-App pull request through one exact family re-pin.
+PR 119 merged the `S-G1` documentation increment before runtime implementation began. Goals `S-G2` through
+`S-G9` therefore proceed in one successor App pull request. Each goal is one coherent, reviewable commit, leaves
+the branch green, and adds the focused proof for the behavior it introduces. A Studio protocol or package change,
+if the capability audit proves one necessary, lands first in one coordinated Studio pull request and is consumed
+by the App pull request through one exact family re-pin.
 
 1. **`S-G1` — Contract truth.** Land the one product authority, App ADR and mapping, corrected status/finding,
    acceptance fixture, production PHP/asset rule, and agent guardrails. This documentation increment completes that
    goal; it does not complete the product journey.
 2. **`S-G2` — Context envelope and launch.** Ship the compiled Studio asset and open it from Content New/Edit with a
-   PHP-issued trusted context for the exact resource, recovery scope, and deterministic return. Missing or incompatible
-   assets fail the build/release clearly; the current form remains an explicit fallback.
+   canonical per-mount configuration issued by PHP for the exact resource, resolved operation URLs, CSRF transport,
+   recovery scope, and deterministic return. Missing or incompatible configuration/assets fail closed; a configured
+   refusal remains authoritative, and the current form remains an explicit fallback.
 3. **`S-G3` — Context-preserving shell.** Preserve resource identity, selection, authority, locale, unsaved state,
    history, validation, and return across inline, minimized, maximized, and full-screen presentations.
 4. **`S-G4` — Existing-item round trip.** Load the authorized exact Model, Blueprint, type, and Entry revisions and

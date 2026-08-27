@@ -70,6 +70,12 @@ test('Phase 5 administrator surfaces use one KIS task shell without route or pay
       root: '#administrator-content',
       detectControlOverlaps: false,
     });
+    if (path === '/administrator/content/new') {
+      await expect(page.locator('[data-studio-authoring-fallback]')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Structured editor fallback' })).toBeVisible();
+      await expect(page.locator('[data-studio-authoring-fallback-form]'))
+        .toHaveAttribute('data-studio-authoring-intent', 'create');
+    }
   }
 
   await page.goto('/administrator/settings');

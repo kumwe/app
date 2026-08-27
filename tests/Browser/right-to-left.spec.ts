@@ -195,13 +195,15 @@ test.describe('Right-to-left presentation', () => {
     await page.getByLabel('Password').fill(administratorPassword);
     await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
     await page.goto('/administrator/content-models');
-    const link = page.locator('a[href*="/administrator/content-models/"][href$="/composition"]').first();
-    const model = link.locator('xpath=ancestor::details[1]');
+    const model = page.locator('[data-content-type-id][data-content-type-version]').first();
     if (await model.getAttribute('open') === null) {
       await model.locator('summary').first().click();
     }
-    await expect(link).toBeVisible();
-    await link.click();
+    const modelId = await model.getAttribute('data-content-type-id');
+    const modelVersion = await model.getAttribute('data-content-type-version');
+    expect(modelId).not.toBeNull();
+    expect(modelVersion).not.toBeNull();
+    await page.goto(`/administrator/content-models/${modelId}/versions/${modelVersion}/composition`);
     const provision = page.getByRole('button', { name: 'Create composition' });
     if (await provision.isVisible()) await provision.click();
 
