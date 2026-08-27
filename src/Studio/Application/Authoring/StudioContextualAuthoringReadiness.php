@@ -16,12 +16,12 @@ final readonly class StudioContextualAuthoringReadiness
     /**
      * Hold a mutually exclusive ready or fallback result.
      *
-     * @param  bool                                      $available  Whether contextual mounting is qualified.
-     * @param  ?StudioContextualAuthoringFallbackReason  $reason     Required reason while unavailable.
+     * @param   bool                                      $available  Whether contextual mounting is qualified.
+     * @param   ?StudioContextualAuthoringFallbackReason  $reason     Required reason while unavailable.
      *
      * @throws  LogicException  When availability and reason do not describe one closed state.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function __construct(
         public bool $available,

@@ -45,14 +45,14 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
     /**
      * Wire the editor to the services supplying the entry and the vocabulary it is edited against.
      *
-     * @param  ContentService         $content      Loads the entry being edited, trashed ones included.
-     * @param  ContentModelService    $models       Supplies the pinned content type and workflow versions.
-     * @param  AdministratorRenderer  $renderer     Renders the `content-form` template.
-     * @param  ContentStudioAuthoringTargetResolver  $studioTargets  Resolves trusted create/edit coordinates.
+     * @param ContentService $content Loads the entry being edited, trashed ones included.
+     * @param ContentModelService $models Supplies the pinned content type and workflow versions.
+     * @param  AdministratorRenderer                  $renderer            Renders the `content-form` template.
+     * @param  ContentStudioAuthoringTargetResolver   $studioTargets       Resolves trusted create/edit coordinates.
      * @param  StudioContextualAuthoringAvailability  $studioAvailability  Gates the contextual browser runtime.
-     * @param  ?ContentFormPresenter  $form         Turns a schema into field descriptors; null builds a default.
-     * @param  ?MediaService          $media        Backs the media picker; null renders the form without one.
-     * @param  ?PublicPageLocator     $publicPages  Resolves the entry's public URL; null omits the link.
+     * @param ?ContentFormPresenter $form Turns a schema into field descriptors; null builds a default.
+     * @param ?MediaService $media Backs the media picker; null renders the form without one.
+     * @param ?PublicPageLocator $publicPages Resolves the entry's public URL; null omits the link.
      *
      * @since  2.0.0
      */
