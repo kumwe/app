@@ -946,7 +946,7 @@
         {
             "id": "perf-breakpoint",
             "title": "The performance harness reproduces a stable breakpoint report, nightly",
-            "purpose": "Run the harness's breakpoint mode against the nightly database: ramp the document line axis twice, price each size by interpolating the two declared commit objectives, and record where measured p95 first crosses that line. The run fails when the two passes disagree, because the phase-2 exit gate asks for a report that is stable, not merely produced, and the written document names its own role as a baseline fact about that host and commit, never a capacity claim.",
+            "purpose": "Run the harness's breakpoint mode against the nightly database: ramp the document line axis twice, price each size by interpolating the two declared commit objectives, and record where measured p95 first crosses that line. A changed knee always fails. Away from the knee, a p95 pair fails when its delta breaches both the 35% relative tolerance and 10% of its interpolated objective, so immaterial shared-runner jitter cannot masquerade as a breakpoint while a material divergence still fails. The phase-2 exit gate asks for a report that is stable, not merely produced, and the written document names its own role as a baseline fact about that host and commit, never a capacity claim.",
             "owner": "quality-engineering",
             "runner": "composer",
             "composer_script": "perf:breakpoint",
