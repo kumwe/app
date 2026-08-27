@@ -245,6 +245,13 @@ final class ExactValueCodecTest extends TestCase
         self::assertSame('1000-01-01', $minimum->format('Y-m-d'));
     }
 
+    /**
+     * A compiled encoding plan writes the exact bytes the unplanned column encode always wrote.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCompiledEncodingPlansMatchTheColumnEncodeExactly(): void
     {
         $definition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::documentLineDocument(

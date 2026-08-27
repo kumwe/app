@@ -845,10 +845,6 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
     }
 
     /**
-     * @param list<string> $includes
-     * @return array<string, list<BusinessRecordRelationView>>
-     */
-    /**
      * A whole-document write resolves its lines' entity references through the live batched lookup.
      *
      * @return  void
@@ -989,6 +985,18 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
         }
     }
 
+    /**
+     * Browse the definition's single record and return its included relation collections.
+     *
+     * @param   BusinessRecordService  $records     Live record service under test.
+     * @param   \Kumwe\App\Application\Authorization\ExecutionContext  $context  Acting administrator.
+     * @param   string                 $definition  Definition handle expected to hold exactly one record.
+     * @param   list<string>           $includes    Relationship handles to include with the page.
+     *
+     * @return  array<string, list<BusinessRecordRelationView>>  Included relation views by handle.
+     *
+     * @since   2.0.0
+     */
     private static function browseIncludes(
         BusinessRecordService $records,
         \Kumwe\App\Application\Authorization\ExecutionContext $context,
