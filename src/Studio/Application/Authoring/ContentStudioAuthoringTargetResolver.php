@@ -12,7 +12,6 @@ use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Identity\Domain\Capability;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
-use LogicException;
 
 /**
  * Resolves the core Content authoring target exclusively from PHP-authoritative facts.
@@ -50,7 +49,7 @@ final readonly class ContentStudioAuthoringTargetResolver
      * @return  ContentStudioAuthoringTarget  Trusted create target with no previous Entry values.
      *
      * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When create is refused.
-     * @throws  LogicException  When the selected definition belongs to another site.
+     * @throws  ContentStudioAuthoringTargetMismatch  When the selected definition belongs to another site.
      *
      * @since   2.0.0
      */
@@ -64,7 +63,9 @@ final readonly class ContentStudioAuthoringTargetResolver
             AuthorizationResource::collection('content'),
         );
         if ($definition !== null && $definition->site->identifier() !== $context->site()->identifier()) {
-            throw new LogicException('The selected Content type does not belong to the authoring site.');
+            throw new ContentStudioAuthoringTargetMismatch(
+                'The selected Content type does not belong to the authoring site.',
+            );
         }
 
         return new ContentStudioAuthoringTarget(
@@ -94,7 +95,7 @@ final readonly class ContentStudioAuthoringTargetResolver
      * @return  ContentStudioAuthoringTarget  Trusted edit target with exact Model and Entry revisions.
      *
      * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When update is refused.
-     * @throws  LogicException  When authoritative record and definition coordinates disagree.
+     * @throws  ContentStudioAuthoringTargetMismatch  When record and definition coordinates disagree.
      *
      * @since   2.0.0
      */
@@ -115,7 +116,9 @@ final readonly class ContentStudioAuthoringTargetResolver
             || $record->contentTypeId !== $definition->id
             || $record->contentTypeVersion !== $definition->version
         ) {
-            throw new LogicException('The Content authoring target coordinates are inconsistent.');
+            throw new ContentStudioAuthoringTargetMismatch(
+                'The Content authoring target coordinates are inconsistent.',
+            );
         }
 
         return new ContentStudioAuthoringTarget(

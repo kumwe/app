@@ -48,6 +48,9 @@ App currently has valuable low-level integration primitives:
 
 - a compiled browser shell and Studio-owned Blueprint canvas;
 - authenticated PHP session and host-port dispatch;
+- an App-only opaque Content authoring-context store that binds exact create/edit targets to the authenticated
+  actor, site, membership, administrator session, and approval generation, then re-loads and re-authorizes the
+  target on every successful resolution;
 - PHP-backed permission, artifact/recovery, media/resource, preview, localization, and telemetry operations;
 - read-only Content model and entry projection;
 - versioned Studio artifact persistence, optimistic concurrency, and audit;
@@ -65,6 +68,14 @@ product interpretation and not a reason to weaken the target.
 
 The existing generated Content editor remains a transitional fallback until the integrated journey passes the
 canonical acceptance proof.
+
+The new context authority is not a browser launch or completed `S-G2`: no key is emitted to Studio while the
+canonical configuration contract is unpublished. Its immutable Entry revision deliberately becomes stale after a
+concurrent or accepted save; `S-G4`–`S-G7` must return or atomically advance a successor context under the published
+save contract. Dormant rows cannot authorize without a live matching administrator session and approval generation.
+Every row also has an App-owned hard expiry no later than the configured administrator-session lifetime, checked
+before any Content read and indexed so expired rows are collectible. Physical purging and successor-context
+advancement remain deferred to the coordinated host lifecycle rather than being guessed here.
 
 ## Product-contract mapping
 

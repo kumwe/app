@@ -70,6 +70,49 @@ final class StudioContextualAuthoringLaunchBoundaryTest extends TestCase
     }
 
     /**
+     * Context authority remains an App-only persistence seam with no route, wire, or old-host coupling.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testContentContextAuthorityIsPersistedWithoutActivatingAnUnpublishedBrowserContract(): void
+    {
+        $container = $this->contents('src/Kernel/ContainerFactory.php');
+        $authority = $this->contents(
+            'src/Studio/Application/Authoring/ContentStudioAuthoringContextAuthority.php',
+        );
+        $handler = $this->contents(
+            'src/Administrator/Http/Handler/AdministratorContentEditorHandler.php',
+        );
+        $hostAuthority = $this->contents('src/Studio/Application/Host/StudioHostSessionAuthority.php');
+        $migration = $this->contents(
+            'src/Infrastructure/Persistence/Migration/StudioContentAuthoringContextMigration.php',
+        );
+
+        self::assertStringContainsString('ContentStudioAuthoringContextRepository::class', $container);
+        self::assertStringContainsString('DoctrineContentStudioAuthoringContextRepository(', $container);
+        self::assertStringContainsString('ContentStudioAuthoringContextAuthority::class', $container);
+        self::assertStringContainsString('StudioContentAuthoringContextMigration(', $container);
+        self::assertStringContainsString('StudioResourceContextKeyFactory::class', $container);
+        self::assertStringContainsString('ContentModelService::class', $container);
+        self::assertStringContainsString('ContentService::class', $container);
+        self::assertStringContainsString('ClockInterface::class', $container);
+        self::assertStringContainsString('$configuration->administratorSessionSeconds', $container);
+        self::assertStringContainsString("'expires_at'", $migration);
+        self::assertStringContainsString('idx_studio_content_authoring_context_expiry', $migration);
+        self::assertStringNotContainsString('StudioHostSessionAuthority', $authority);
+        self::assertStringNotContainsString('StudioContextualAuthoringConfiguration', $authority);
+        self::assertStringNotContainsString('ServerRequestInterface', $authority);
+        self::assertStringNotContainsString('json_encode', $authority);
+        self::assertStringNotContainsString('csrf', strtolower($authority));
+        self::assertStringContainsString('ContentStudioAuthoringTargetMismatch', $authority);
+        self::assertStringNotContainsString('| LogicException', $authority);
+        self::assertStringNotContainsString('ContentStudioAuthoringContextAuthority', $handler);
+        self::assertStringNotContainsString('ContentStudioAuthoringContextAuthority', $hostAuthority);
+    }
+
+    /**
      * Read one repository file or fail with its relative path.
      *
      * @param   string  $path  Path below the application root.

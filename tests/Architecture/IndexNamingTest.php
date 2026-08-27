@@ -67,6 +67,7 @@ final class IndexNamingTest extends TestCase
         '$scopeIndex',
         '$scope',
         '$expiry',
+        '$expiry',
         '$grantIndex',
         '$cancelOrderIndex',
         '$unique',
@@ -154,7 +155,7 @@ final class IndexNamingTest extends TestCase
         $declarations = self::declarations();
 
         self::assertCount(110, $declarations['literal']);
-        self::assertCount(28, $declarations['derived']);
+        self::assertCount(29, $declarations['derived']);
         self::assertSame(5, self::rawCreateIndexStatements());
         self::assertSame(
             ConstraintNameIsolationMigration::MAXIMUM_IDENTIFIER_BYTES,
