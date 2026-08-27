@@ -1,0 +1,28 @@
+{
+    "schema": "kumwe-perf-report",
+    "authority": "docs/roadmap/capacity-contract.json, benchmark_method.result_binding",
+    "note": "The result schema P2-I requires. Both documents the harness writes are held to these shapes by the harness itself before it writes them - a report that does not conform is refused with a non-zero exit, not written with a caveat - and tests/Unit/Performance holds the schema and the tool to each other. The type vocabulary is deliberately small: object, array, number, string, boolean. Every measurement document must bind its provenance (commit, engine, seed) because the contract says a result that cannot name what produced it is not a result.",
+    "report": {
+        "required": {
+            "plan": "object",
+            "result_binding": "object",
+            "measurements": "object",
+            "write_amplification": "object",
+            "slo_verdicts": "object",
+            "limitations": "array"
+        }
+    },
+    "breakpoint": {
+        "required": {
+            "harness": "string",
+            "schema": "string",
+            "role": "string",
+            "seed": "number",
+            "result_binding": "object",
+            "sizes": "array",
+            "passes": "array",
+            "knee": "object",
+            "stable": "boolean"
+        }
+    }
+}
