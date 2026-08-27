@@ -20,7 +20,7 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function testBlueprintBindingWriteDoesNotWidenTheAP2ReadPort(): void
     {
@@ -40,16 +40,24 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
     }
 
     /**
-     * GET is read-only; first creation is the one CSRF and dual-capability protected POST route.
+     * The Blueprint primitive stays protected but is no longer the normal Content-authoring entry.
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function testCompositionRoutePreservesReadOnlyGetAndProtectedPost(): void
     {
         $container = $this->contents('src/Kernel/ContainerFactory.php');
         $handler = $this->contents('src/Administrator/Http/Handler/AdministratorStudioCompositionHandler.php');
+        $catalogue = $this->contents('templates/administrator/content-models.twig');
+        $editor = $this->contents('templates/administrator/content-form.twig');
+        $editorHandler = $this->contents(
+            'src/Administrator/Http/Handler/AdministratorContentEditorHandler.php',
+        );
+        $authority = $this->contents('docs/studio-composition-authoring.md');
+        $normalizedAuthority = preg_replace('/\s+/', ' ', $authority);
+        self::assertIsString($normalizedAuthority);
 
         self::assertSame(2, substr_count(
             $container,
@@ -70,6 +78,23 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
             strpos($handler, '$this->compositions->find('),
             strpos($handler, "strtoupper(\$request->getMethod()) === 'POST'"),
         );
+        self::assertStringNotContainsString(
+            '/versions/{{ type.version }}/composition',
+            $catalogue,
+        );
+        self::assertStringContainsString('data-studio-authoring-fallback', $editor);
+        self::assertStringContainsString('data-studio-authoring-fallback-form', $editor);
+        self::assertStringContainsString("'studio_authoring' => \$studioAuthoring", $editorHandler);
+        self::assertStringNotContainsString('<kumwe-studio-contextual', $editor);
+        self::assertStringContainsString('Configuration-first deployment boundary', $authority);
+        self::assertStringContainsString(
+            'browser code receives the resolved URLs and never constructs them',
+            $authority,
+        );
+        self::assertStringContainsString(
+            'must never be converted into standalone/offline success',
+            $normalizedAuthority,
+        );
     }
 
     /**
@@ -77,7 +102,7 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function testBrowserSurfaceUsesPublishedLifecycleSeams(): void
     {
@@ -130,7 +155,7 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function testAccountableJourneyRemainsHonestAndReleasePinned(): void
     {
@@ -178,7 +203,7 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
      *
      * @return  string  Required source bytes.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function contents(string $path): string
     {

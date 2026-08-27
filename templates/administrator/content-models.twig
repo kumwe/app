@@ -39,9 +39,8 @@
     <div id="content-type-catalog" class="stack kis-phase-five-card">
       <div class="section-heading"><div><p class="eyebrow">{{ t('core.administrator.content_form.authoring') }}</p><h2>{{ t('core.administrator.content_models.content_types') }}</h2><p class="field-help">{{ t('core.administrator.content_models.choose_a_type_to_inspect_or') }}</p></div><span class="count-badge">{{ content_types|length }}</span></div>
       {% for type in content_types %}
-        <details id="content-type-{{ type.handle }}" class="panel model-card kis-phase-five-card">
+        <details id="content-type-{{ type.handle }}" class="panel model-card kis-phase-five-card" data-content-type-id="{{ type.id }}" data-content-type-version="{{ type.version }}">
           <summary><span><strong>{{ type.name }}</strong><br><span>{{ t('core.administrator.content_models.version', {handle: type.handle, version: type.version}) }}</span></span></summary>
-          {% if capabilities['studio.mode.blueprint'] is defined %}<p><a class="button" href="/administrator/content-models/{{ type.id }}/versions/{{ type.version }}/composition">{{ t('core.administrator.studio_composition.open_action') }}</a></p>{% endif %}
           {% if capabilities['content.update'] is defined %}
             <form method="post" class="stack">
               <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="content_type"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ type.id }}"><input type="hidden" name="version" value="{{ type.version }}"><input type="hidden" name="schema_mode" value="builder">

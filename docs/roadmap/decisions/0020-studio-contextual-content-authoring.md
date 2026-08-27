@@ -84,30 +84,51 @@ the operation under App's existing Content, Workflow, media, preview, and public
 JavaScript coordinates the interface and calls those endpoints; it is never a server authority. This is the App
 implementation of `STUDIO-PROD-010`.
 
-### 4. Production contains compiled browser assets, not Node.js
+### 4. Configuration is the browser deployment boundary
+
+Each Studio target element receives an independent canonical configuration emitted by PHP. The configuration names
+the exact resolved endpoints, same-origin credential behavior, CSRF transport, opaque context/session seed, locale,
+closed Studio capability projection, content inputs, reusable-type choices, admitted contributions, service routes,
+save outcomes, and return context. Browser code must not infer App routes or expose App's raw capability map. Several
+logical operations may share one PHP dispatcher, but their exact URLs are still supplied rather than synthesized.
+
+The administrator session cookie remains `HttpOnly`; configuration carries only the browser credential instruction
+and scoped CSRF header/value. Possession of configuration is not authorization. PHP re-authenticates, re-authorizes,
+re-resolves the target, validates, transacts, versions, audits, and applies replay/conflict rules on every operation.
+
+Studio's intentionally backendless mode is selected only when a mount has no configured host route. In Kumwe's
+hosted Content surface, missing or incompatible canonical configuration selects the structured-editor fallback.
+After any host route is configured, a 401, 403, 409, 422, rate-limit, or server failure remains authoritative and
+must never be hidden by switching to local/default mode. The portable multi-instance mount and serialized
+configuration shape remain Studio-owned public contracts; App consumes the exact published family rather than
+inventing a private shape.
+
+### 5. Production contains compiled browser assets, not Node.js
 
 Node.js and npm are contributor, CI, test, and release-build tools only. Official compiled assets are committed
 and packaged before deployment. App's production install, images, startup, operation, preview, save, publish,
 and rendering paths must contain no Node.js/npm installation, development server, or server-side JavaScript
 process. Release qualification proves `STUDIO-PROD-011`.
 
-### 5. The legacy form is exceptional, not the product definition
+### 6. The legacy form is exceptional, not the product definition
 
 The server-rendered editor may remain during migration and as an explicit recovery, unsupported-capability,
 no-JavaScript, or rollback path under `STUDIO-PROD-014`. It is not a coequal normal authoring product and its
 continued presence cannot be used to call the Blueprint-only slice complete. Status and readiness claims must
 follow `STUDIO-PROD-014`.
 
-## One-App-PR small-goal commit ladder
+## Successor-App-PR small-goal commit ladder
 
-Implementation proceeds in one App pull request as a sequence of independently reviewable, green commits. A
+PR 119 merged the contract-truth increment before runtime implementation began. The remaining implementation
+therefore proceeds in one successor App pull request as a sequence of independently reviewable, green commits. A
 commit may combine adjacent goals only when their tests cannot be separated; it must not skip the acceptance
 evidence for an earlier goal.
 
 1. **Contract truth.** Land this ADR, the D16/Gate B/phase-S correction, the critical finding, status truth, and
    agent guardrails, all citing the exact upstream requirement IDs.
-2. **Context envelope and launch.** Define the PHP-issued authoring context/session and open Studio from Content
-   New/Edit for the exact resource; retain the legacy form only as the declared fallback.
+2. **Context envelope and launch.** Define the PHP-issued per-mount configuration and context/session, including
+   exact resolved routes and CSRF transport, and open Studio from Content New/Edit for the exact resource; retain
+   the legacy form only as the declared fallback and never turn a configured refusal into local mode.
 3. **Context-preserving shell.** Mount the shell in the originating Content surface and preserve identity,
    selection, authority, locale, unsaved state, and return path across supported expanded states.
 4. **Existing-item round trip.** Load authorized model, Blueprint, and entry projections; change layout and

@@ -158,16 +158,17 @@ async function signIn(page: Page): Promise<void> {
 async function openComposition(page: Page, modelHandle?: string): Promise<Locator> {
   await signIn(page);
   await page.goto('/administrator/content-models');
-  const links = page.locator('a[href*="/administrator/content-models/"][href$="/composition"]');
-  const link = modelHandle === undefined
-    ? links.first()
-    : page.locator(`#content-type-${modelHandle}`).locator('a[href$="/composition"]');
-  const model = link.locator('xpath=ancestor::details[1]');
+  const model = modelHandle === undefined
+    ? page.locator('[data-content-type-id][data-content-type-version]').first()
+    : page.locator(`#content-type-${modelHandle}`);
   if (await model.getAttribute('open') === null) {
     await model.locator('summary').first().click();
   }
-  await expect(link).toBeVisible();
-  await link.click();
+  const modelId = await model.getAttribute('data-content-type-id');
+  const modelVersion = await model.getAttribute('data-content-type-version');
+  expect(modelId).not.toBeNull();
+  expect(modelVersion).not.toBeNull();
+  await page.goto(`/administrator/content-models/${modelId}/versions/${modelVersion}/composition`);
   const provision = page.getByRole('button', { name: 'Create composition' });
   if (await provision.isVisible()) {
     await provision.click();
