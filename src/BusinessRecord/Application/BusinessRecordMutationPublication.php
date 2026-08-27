@@ -41,6 +41,8 @@ final readonly class BusinessRecordMutationPublication
      * @param  RecordFingerprint                      $fingerprints  Keyed disclosure-safe digest service.
      * @param  ?BusinessRecordMutationEventPublisher  $events        Synchronous and durable event publisher;
      *         nullable only for isolated legacy tests.
+     * @param  DocumentCommitTimingRecorder           $timings       Shared collector the document command
+     *         reads its revision, audit and event durations from; silent for every other mutation.
      *
      * @since  2.0.0
      */
@@ -49,6 +51,7 @@ final readonly class BusinessRecordMutationPublication
         private AuditRecorder $audit,
         private RecordFingerprint $fingerprints,
         private ?BusinessRecordMutationEventPublisher $events = null,
+        private DocumentCommitTimingRecorder $timings = new DocumentCommitTimingRecorder(),
     ) {
     }
 
@@ -94,6 +97,7 @@ final readonly class BusinessRecordMutationPublication
             $snapshot['runtime_relation_evidence'] = RecordValueGuard::canonical($evidence);
         }
         if ($definition->revisionsEnabled) {
+            $revisionStart = hrtime(true);
             $this->revisions->append(new BusinessRecordRevision(
                 Uuid::uuid7()->toString(),
                 $record->definitionId,
@@ -110,6 +114,7 @@ final readonly class BusinessRecordMutationPublication
                 $context->actorId(),
                 $now,
             ));
+            $this->timings->add('revision', (hrtime(true) - $revisionStart) / 1_000_000);
         }
 
         $metadata = [];
@@ -126,6 +131,7 @@ final readonly class BusinessRecordMutationPublication
                 'redacted' => false,
             ];
         }
+        $auditStart = hrtime(true);
         $this->audit->record(new AuditEvent(
             Uuid::uuid7()->toString(),
             $now,
@@ -145,6 +151,8 @@ final readonly class BusinessRecordMutationPublication
                 'client_captured_at' => $capturedAt?->toArray(),
             ],
         ));
+        $this->timings->add('audit', (hrtime(true) - $auditStart) / 1_000_000);
+        $eventStart = hrtime(true);
         $this->events?->publish(
             $context,
             $record->definitionId,
@@ -155,6 +163,7 @@ final readonly class BusinessRecordMutationPublication
             array_column($metadata, 'field'),
             $now,
         );
+        $this->timings->add('event', (hrtime(true) - $eventStart) / 1_000_000);
     }
 
     /**

@@ -33,6 +33,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFaile
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
 use Kumwe\App\BusinessRecord\Application\OwnedLineCreateIntent;
 use Kumwe\App\BusinessRecord\Application\OwnedLineMutationIntent;
+use Kumwe\App\BusinessRecord\Application\OwnedLineReferenceIndex;
 use Kumwe\App\BusinessRecord\Application\OwnedLineWrite;
 use Kumwe\App\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
@@ -73,8 +74,87 @@ use Throwable;
 #[CoversClass(BusinessRecordRelationshipCoordinator::class)]
 #[CoversClass(OwnedLineCreateIntent::class)]
 #[CoversClass(OwnedLineMutationIntent::class)]
+#[CoversClass(OwnedLineReferenceIndex::class)]
+#[CoversClass(OwnedLineWrite::class)]
 final class BusinessRecordRelationshipCoordinatorTest extends TestCase
 {
+    /**
+     * Reference-target fences sort on the fence's own lock key, never on the field that points at it.
+     *
+     * The fence is a row lock on the target definition, so two documents naming the same pair of targets
+     * through differently-named fields must acquire that pair identically — sorting by field handle would
+     * let them deadlock against each other. The field handle only breaks ties between fields that share
+     * one target, where the order stops mattering for locking and merely has to be deterministic.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testReferenceFencesAreOrderedByTheirLockKey(): void
+    {
+        self::assertSame(
+            ['zulu_field', 'alpha_field', 'mike_field'],
+            BusinessRecordRelationshipCoordinator::referenceAcquisitionOrder([
+                'alpha_field' => 'target_bravo',
+                'mike_field' => 'target_bravo',
+                'zulu_field' => 'target_alpha',
+            ]),
+            'Fences must be acquired in target order, with the field handle only breaking ties.',
+        );
+        self::assertSame([], BusinessRecordRelationshipCoordinator::referenceAcquisitionOrder([]));
+    }
+
+    /**
+     * A line that exists, must be written, and differs only in position reports itself as moved-only.
+     *
+     * The distinction is what lets the write side renumber a reordered collection set-based instead of
+     * rewriting every surviving row's full column list, so each of the three ingredients — stored, has to
+     * be written, values unchanged — has to flip the answer on its own.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOnlyAStoredUnchangedModifiedLineIsMovedOnly(): void
+    {
+        self::assertTrue((new OwnedLineWrite('k', 'r', 1, [], 3, true, false))->movedOnly());
+        self::assertFalse(
+            (new OwnedLineWrite('k', 'r', 1, [], null, true, true))->movedOnly(),
+            'A new line is inserted, never renumbered.',
+        );
+        self::assertFalse(
+            (new OwnedLineWrite('k', 'r', 1, [], 3, false, false))->movedOnly(),
+            'An untouched line is not written at all.',
+        );
+        self::assertFalse(
+            (new OwnedLineWrite('k', 'r', 1, [], 3, true, true))->movedOnly(),
+            'A line whose values changed needs its own payload.',
+        );
+    }
+
+    /**
+     * The reference index answers keys for what resolved and replays the failure for what did not.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheReferenceIndexAnswersKeysAndReplaysFailures(): void
+    {
+        $failure = new BusinessRecordNotFound();
+        $index = new OwnedLineReferenceIndex(
+            ['client' => ['C-1' => 'stored-key-1']],
+            ['blocked' => $failure],
+        );
+
+        self::assertSame('stored-key-1', $index->key('client', 'C-1'));
+        self::assertNull($index->key('client', 'C-2'));
+        self::assertNull($index->key('unknown', 'C-1'));
+        self::assertSame($failure, $index->failure('blocked'));
+        self::assertNull($index->failure('client'));
+        self::assertNull(OwnedLineReferenceIndex::empty()->key('client', 'C-1'));
+    }
+
     /**
      * Stable published header definition identity used throughout the characterization.
      *

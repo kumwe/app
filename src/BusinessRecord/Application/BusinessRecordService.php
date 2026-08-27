@@ -73,6 +73,7 @@ use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
 use Kumwe\App\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use Throwable;
 
 /**
  * The one transactional boundary through which typed business records are read and changed.
@@ -155,6 +156,10 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @param  BusinessRecordReplayWindow             $replayWindow    Declared horizons over which a
      *         caller-minted operation identifier replays, and over which it is remembered so a late
      *         repeat is refused by name instead of applied twice.
+     * @param  DocumentWriteBudget                    $documentBudget  Declared command-level ceilings the
+     *         aggregate document command refuses to exceed rather than quietly outgrow.
+     * @param  DocumentCommitTimingRecorder           $commitTimings   Shared collector the document command
+     *         reports its validation, lock-wait, write and publication durations through.
      *
      * @since  2.0.0
      */
@@ -180,6 +185,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         private PostingPeriodLock $postingPeriods,
         private PostingPeriodCalendar $periodCalendar,
         private BusinessRecordReplayWindow $replayWindow = new BusinessRecordReplayWindow(),
+        private DocumentWriteBudget $documentBudget = new DocumentWriteBudget(),
+        private DocumentCommitTimingRecorder $commitTimings = new DocumentCommitTimingRecorder(),
     ) {
     }
 
@@ -1878,32 +1885,44 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $creating,
         );
 
-        return $this->idempotent(
-            $command->context,
-            $command->definitionIdentifier,
-            $command->organizationIdentifier,
-            'business.record.document_' . $command->intent->value,
-            $command->idempotencyKey,
-            [
-                'definition' => $command->definitionIdentifier,
-                'record_id' => $command->recordId,
-                'expected_version' => $command->expectedVersion,
-                'relationship' => $command->relationship,
-                'values' => $command->values,
-                'lines' => array_map(
-                    static fn (DocumentLineInput $line): array => [
-                        'record_id' => $line->recordId,
-                        'values' => $line->values,
-                    ],
-                    $command->lines,
-                ),
-                'captured_at' => $command->capturedAt?->toPortableString(),
-            ],
-            fn (
-                DateTimeImmutable $now,
-                BusinessRecordMutationGeneration $generation,
-            ): RecordMutationResult => $this->applyDocument($command, $now, $generation),
-        );
+        $request = [
+            'definition' => $command->definitionIdentifier,
+            'record_id' => $command->recordId,
+            'expected_version' => $command->expectedVersion,
+            'relationship' => $command->relationship,
+            'values' => $command->values,
+            'lines' => array_map(
+                static fn (DocumentLineInput $line): array => [
+                    'record_id' => $line->recordId,
+                    'values' => $line->values,
+                ],
+                $command->lines,
+            ),
+            'captured_at' => $command->capturedAt?->toPortableString(),
+        ];
+        $this->documentBudget->assertPayloadWithin(strlen((string) json_encode($request)));
+        $this->commitTimings->begin();
+        $commandStart = hrtime(true);
+        try {
+            $result = $this->idempotent(
+                $command->context,
+                $command->definitionIdentifier,
+                $command->organizationIdentifier,
+                'business.record.document_' . $command->intent->value,
+                $command->idempotencyKey,
+                $request,
+                fn (
+                    DateTimeImmutable $now,
+                    BusinessRecordMutationGeneration $generation,
+                ): RecordMutationResult => $this->applyDocument($command, $now, $generation),
+            );
+        } catch (Throwable $exception) {
+            $this->commitTimings->abandon();
+            throw $exception;
+        }
+        $this->commitTimings->commit((hrtime(true) - $commandStart) / 1_000_000);
+
+        return $result;
     }
 
     /**
@@ -2087,6 +2106,18 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * stable order however many lines it carries, and the header's compare-and-set is the single point
      * where two concurrent amendments are separated.
      *
+     * The declared lock order of the whole command is: the command's own definition fence, then the
+     * idempotency claim's unique key, then the line-type fence, then the line collection's
+     * reference-target fences sorted by target handle, then the sequence counter rows in field
+     * declaration order, then the header's reference-target fences sorted by target handle, then the
+     * header row, then the line rows — delete, park, rewrite, renumber, insert — and finally the
+     * revision, audit and outbox appends. Each reference set sorts on the fence's own lock key, the
+     * target handle, so two documents naming the same targets through differently-named or
+     * differently-ordered fields acquire that pair identically. What one command cannot order is another
+     * definition's opposite-direction cycle — A referencing B while B references A — which every command
+     * enters through its own fence first; the engine detects that as a deadlock and this command's
+     * three-attempt envelope retries it rather than hanging.
+     *
      * @param   WriteDocumentCommand              $command     Validated document write being applied.
      * @param   DateTimeImmutable                 $now         Instant stamped on every row this writes.
      * @param   BusinessRecordMutationGeneration  $generation  Generation the fence observed, asserted
@@ -2130,6 +2161,10 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $this->expected($header, (int) $command->expectedVersion);
             $this->assertRecordMutable($resolved, $header);
         }
+        $memoryStart = memory_get_usage();
+        $transactionStart = hrtime(true);
+        $validationStart = hrtime(true);
+        $lockWaitBefore = $this->commitTimings->accumulated('lock_wait');
         $lineIntent = $this->relationships->prepareDocumentMutation(
             $command,
             $resolved,
@@ -2141,6 +2176,13 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         $collections = $this->relationships->invariantLineValues($command->context, $resolved, $header, [
             $relationship->handle => $lineIntent->invariantValues(),
         ]);
+        $this->commitTimings->add(
+            'validation',
+            (hrtime(true) - $validationStart) / 1_000_000
+                - ($this->commitTimings->accumulated('lock_wait') - $lockWaitBefore),
+        );
+        $writeStart = hrtime(true);
+        $lockWaitBefore = $this->commitTimings->accumulated('lock_wait');
         [$record, $changed] = $creating
             ? $this->createDocumentHeader($command, $resolved, $scope, $access, $collections, $now)
             : $this->amendDocumentHeader($command, $resolved, $scope, $access, $header, $collections, $now);
@@ -2155,6 +2197,13 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $command->context->actorId(),
             $now,
         );
+        $this->commitTimings->add(
+            'write',
+            (hrtime(true) - $writeStart) / 1_000_000
+                - ($this->commitTimings->accumulated('lock_wait') - $lockWaitBefore),
+        );
+        $this->documentBudget->assertMemoryWithin($memoryStart);
+        $this->documentBudget->assertElapsedWithin($transactionStart);
         $this->publication->publish(
             $command->context,
             $resolved->definition,
@@ -2165,6 +2214,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $this->documentEvidence($relationship->handle, $lineIntent->writes, $lineIntent->removed),
             $command->capturedAt,
         );
+        $this->documentBudget->assertMemoryWithin($memoryStart);
+        $this->documentBudget->assertElapsedWithin($transactionStart);
 
         return $this->result($record, 'document.' . $command->intent->value);
     }
@@ -2802,7 +2853,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $requestFingerprint,
                     $authenticatedOrganization,
                 ): RecordMutationResult {
+                    $fenceStart = hrtime(true);
                     $generation = $this->mutationFence->lock($context, $definitionIdentifier);
+                    $this->commitTimings->add('lock_wait', (hrtime(true) - $fenceStart) / 1_000_000);
                     $resolved = $this->definitions->forCreate($context, $definitionIdentifier);
                     $generation->assertMatches($resolved);
                     $scope = $this->scope($resolved, $context, $organizationIdentifier);
@@ -3262,6 +3315,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     'period' => $this->fiscalPeriodKey($resolved, $scope, $submittedValues),
                 ]
                 : $format->counter($scope->organizationIdentifier, $now);
+            $sequenceStart = hrtime(true);
             $allocated[$field->handle] = $format->render($this->numbers->allocate(
                 $scope->siteIdentifier ?? $resolved->definition->siteIdentifier,
                 $resolved->definition->id,
@@ -3270,6 +3324,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 $counter['period'],
                 $now,
             ), $counter['period']);
+            $this->commitTimings->add('lock_wait', (hrtime(true) - $sequenceStart) / 1_000_000);
         }
 
         return $allocated;
@@ -3451,7 +3506,15 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         array $values,
         array $handles,
     ): array {
-        $violations = [];
+        // Classified in declaration order first, so the violations a caller sees keep their exact order,
+        // then resolved in fence-acquisition order — the target handle is the lock key, and taking those
+        // row locks in one order for every command is what a stable lock order means here. Iterating the
+        // fields as declared while locking would let two definitions that name the same pair of targets
+        // through differently-ordered fields take that fence pair in opposite orders.
+        /** @var array<string, string> $resolvable */
+        $resolvable = [];
+        /** @var list<string> $invalid */
+        $invalid = [];
         foreach ($definition->fields() as $field) {
             if ($field->type !== 'core.entity_reference' || !in_array($field->handle, $handles, true)) {
                 continue;
@@ -3462,20 +3525,30 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             }
             $targetHandle = $field->configuration['target'] ?? null;
             if (!is_string($value) || !is_string($targetHandle)) {
-                $violations[] = new ValidationViolation(
-                    $field->handle,
-                    'reference',
-                    'The entity reference or target definition is invalid.',
-                );
+                $invalid[] = $field->handle;
+                continue;
+            }
+            $resolvable[$field->handle] = $targetHandle;
+        }
+
+        /** @var array<string, string> $resolved */
+        $resolved = [];
+        /** @var list<string> $unresolved */
+        $unresolved = [];
+        foreach (BusinessRecordRelationshipCoordinator::referenceAcquisitionOrder($resolvable) as $handle) {
+            $value = $values[$handle] ?? null;
+            if (!is_string($value)) {
                 continue;
             }
             try {
-                $targetAccess = $access->related($field->handle);
+                $targetAccess = $access->related($handle);
                 if ($targetAccess === null) {
                     throw new BusinessRecordNotFound();
                 }
-                $targetGeneration = $this->mutationFence->lock($context, $targetHandle);
-                $target = $this->definitions->forCreate($context, $targetHandle);
+                $lockStart = hrtime(true);
+                $targetGeneration = $this->mutationFence->lock($context, $resolvable[$handle]);
+                $this->commitTimings->add('lock_wait', (hrtime(true) - $lockStart) / 1_000_000);
+                $target = $this->definitions->forCreate($context, $resolvable[$handle]);
                 $targetGeneration->assertMatches($target);
                 $targetScope = $this->scope($target, $context, $scope->organizationIdentifier);
                 $identityField = $this->identityField($target->definition);
@@ -3494,13 +3567,32 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 if ($identity === null) {
                     throw new BusinessRecordNotFound();
                 }
-                $values[$field->handle] = $identity->recordKey;
+                $resolved[$handle] = $identity->recordKey;
             } catch (BusinessRecordNotFound | InvalidArgumentException) {
+                $unresolved[] = $handle;
+            }
+        }
+
+        $violations = [];
+        foreach ($definition->fields() as $field) {
+            if (in_array($field->handle, $invalid, true)) {
+                $violations[] = new ValidationViolation(
+                    $field->handle,
+                    'reference',
+                    'The entity reference or target definition is invalid.',
+                );
+                continue;
+            }
+            if (in_array($field->handle, $unresolved, true)) {
                 $violations[] = new ValidationViolation(
                     $field->handle,
                     'reference',
                     'The referenced business record does not exist in this scope.',
                 );
+                continue;
+            }
+            if (isset($resolved[$field->handle])) {
+                $values[$field->handle] = $resolved[$field->handle];
             }
         }
         if ($violations !== []) {
