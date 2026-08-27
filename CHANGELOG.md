@@ -24,6 +24,63 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **P4-B — Bulk persistence mechanics: a document's cost is decided up front, bounded by declaration, and
+  visible afterwards.** Four paths in the aggregate document command grew with the collection instead of
+  with the work. Entity references resolved per line — every reference field of every line took a
+  mutation-fence lock, a definition resolution and its own identity `SELECT`, thousands of avoidable round
+  trips at a thousand lines; targets are now locked once, in the order of the fence's own lock key, and
+  distinct values resolve in bounded batches through `BusinessRecordReadRepository::identities()`, which
+  carries every predicate `identity()` applies so asking for a hundred ids can never see a row asking for
+  one would have hidden. Reordering rewrote every surviving line's full column list for one server-derived
+  integer — one drag on a thousand-line document issued 1,001 statements; lines that only moved are now
+  renumbered by chunked `CASE` statements with the per-line optimistic version check in the predicate, 15
+  statements, and the regression test was proven by forcing the old path back. Encoding remade every
+  per-field decision per row; the codec now compiles a `RecordColumnEncodingPlan` once per (definition,
+  table) pair — `encodeColumns()` delegates through it so the single-row and bulk paths cannot drift — and
+  the write repository compiles an `OwnedLineWritePlan` once per command, with value-changed lines
+  rewritten through one prepared statement per column shape. Five ceilings are declared and refused rather
+  than outgrown: statement parameters and SQL bytes where statements are built, and payload, memory and
+  transaction time in `DocumentWriteBudget`, each refusal a `budget` validation violation rolled back
+  whole. The declared lock order — own fence, idempotency key, line-type fence, reference fences sorted by
+  target handle, sequence rows, header row, line rows, ledger appends — is stated in `applyDocument()` and
+  now actually held: the line path sorted reference fences by field handle and the header path not at all,
+  so two documents naming the same targets through different fields could deadlock; both now sort on the
+  lock key, with the one inversion no command can order away — a cross-definition reference cycle — named
+  as engine-detected and retried. The commit exposes validation, lock-wait, write, revision, audit, event
+  and total durations through a shared `DocumentCommitTimingRecorder`, armed only by the document command.
+  Proven at the service, not the repository: the container's own shared connection is wrapped in place
+  with Doctrine's logging decorators, and a thousand-line create stays under one hundred statements,
+  within a bounded delta of the hundred-line cost, while amending three lines of a thousand costs
+  statements proportional to three — on all three engines through the ordinary integration matrix. The
+  scope-index gap this exposed is under the P2-I entry below. (#118)
+- **P2-I — Performance harness and deterministic budgets, delivered in full.** The deterministic plan
+  generator and workload driver existed; the package's remaining obligations land together. Query-plan
+  capture: `docs/quality/hot-plans.json` declares the four statements the interactive workload leans on,
+  and the regression suite runs the real operation, captures the SQL the runtime actually compiled with
+  its bound parameters, records the engine's own plan under `build/perf/`, and refuses a driving table
+  with no indexed access path — deliberately the *path*, not the optimizer's volume-dependent choice. The
+  gate failed on its first run: a definition declaring no indexed field compiled a record table with only
+  its primary key, leaving every policy-filtered page over it a full scan the moment the installation
+  grew. The schema compiler now guarantees a bare scope index whenever nothing else leads with the scope,
+  emits nothing new for already-indexed definitions so their installations compile byte-identically, and
+  an existing unindexed installation picks the index up when its definition next republishes. Metric
+  collection: write amplification is measured the way the capacity contract counts it — physical row
+  mutations per logical business transaction, from real row-count deltas across the header, line,
+  revision, audit, idempotency, outbox and projection-source tables around exactly one commit; a 100-line
+  document is 106 physical rows, a 1000-line document 1,006. Result schema:
+  `docs/quality/perf-report.schema.json` is enforced by the harness itself, which refuses to write a
+  non-conforming report, and `tests/Unit/Performance` holds the tool and the schema to each other. The
+  breakpoint is a mode: `composer perf:breakpoint` ramps the document line axis twice, prices each size by
+  interpolating the two declared commit objectives, records where measured p95 first crosses that line,
+  fails when the two passes disagree — the exit gate asks for a *stable* report — and runs nightly through
+  the quality contract lane; its document names itself a baseline fact, never a capacity claim. And the
+  eight deterministic per-change budgets all enforce now: the three that had no enforcement gained it — a
+  measured thousand-line memory and payload proof, a declared 120-second fresh-migration runtime budget in
+  the lane that migrates from scratch, and byte ceilings for the production images and the release archive
+  in `docs/quality/artifact-budget.json`, checked where each artifact is built —
+  and `DeterministicBudgetEnforcementTest` pins every budget to its enforcement point by the load-bearing
+  string, so an enforcement that quietly disappears fails the architecture suite under the budget's own
+  name. (#118)
 - **The App consumes the published Studio `0.1.0-rc.1` release-candidate family — all eight packages,
   renderer included.** The atomic re-pin replaces the seven-package alpha.11 bootstrap with the exact
   eight-package family Studio published through its governed promotion pipeline: eight vendored tarballs

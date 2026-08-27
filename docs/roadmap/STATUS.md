@@ -36,13 +36,13 @@ record is not thereby a new machine-evidence candidate.
 |---|---|---|---|
 | 0 — Truth, contracts and decisions | A | In progress — `P0-C` complete; `P0-A`, `P0-B`, `P0-D` and `P0-E` open | — |
 | 1 — Correctness, security, data entry | A | Delivered — every package complete, including resident extension withdrawal and stale-generation fencing | — |
-| 2 — Truthful gates | A | In progress — `P2-A`, `P2-F` and `P2-G` complete; the Gate A slices of `P2-D` and `P2-E` are delivered; broader `P2-B`, `P2-C`, `P2-D`, `P2-E`, `P2-H` and `P2-I` work remains | Phase 0 decisions 1, 7, 8 |
+| 2 — Truthful gates | A | In progress — `P2-A`, `P2-F`, `P2-G` and `P2-I` complete; the Gate A slices of `P2-D` and `P2-E` are delivered; broader `P2-B`, `P2-C`, `P2-D`, `P2-E` and `P2-H` work remains | Phase 0 decisions 1, 7, 8 |
 | 3 — Seams and the ownership model | A | Delivered — transaction proof, delivery boundaries, the two aggregate seams, business-group ownership, and the `P3-D` domain-and-application reconciliation recorded in ADR 0012 | Phases 1 and 2 |
-| 4 — Atomic aggregate documents | A | In progress — `P4-A`, `P4-C` and `P4-D` carry the command, the numbering proof set with ADR 0011 and the bounded invariant; only `P4-B` remains | Phase 3; phase 0 decision 2 |
+| 4 — Atomic aggregate documents | A | Delivered — `P4-A` … `P4-D` complete: the command, the bulk persistence mechanics, the numbering proof set with ADR 0011 and the bounded invariant | Phase 3; phase 0 decision 2 |
 | E — Enterprise document primitives | A | Delivered — every package and follow-up finding complete | — |
 | L — Language, locale and multilingual content | A, with a B tail | Gate A half delivered — `PL-A` … `PL-F` complete; only the `PL-G` Gate B translation tail remains open | `PL-G` needs phase 2's broader `P2-E` matrix; otherwise parallel to 3, 4 and E |
 | **Gate A** | | **Passed — 13/13 executable criteria met** | — |
-| 5 — Enterprise scale | B | Not started | `P2-I` performance harness |
+| 5 — Enterprise scale | B | Not started | — (`P2-I` delivered; the harness reproduces a stable breakpoint report nightly) |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
 | 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
 | S — Studio visual composition | A, with a B integration | In progress — `S-A`, `S-C` and `S-D` complete; implementation candidates for the exact package pin/corpus, hardened media host, authenticated preview, embedded authoring shell and marker-free public runtime are present, with authoritative Gate B qualification still open; `S-B` and `S-E` … `S-G` remain open | — |
@@ -59,8 +59,7 @@ remains in README.
 | Phase | Packages | Findings |
 |---|---|---|
 | 0 | `P0-A`, `P0-B`, `P0-D`, `P0-E` | `V2-DOC-002`, `V2-ERP-007` |
-| 2 | `P2-B`, `P2-C`, `P2-D`, `P2-E`, `P2-H`, `P2-I` | `V2-DEMO-001`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
-| 4 | `P4-B` | — |
+| 2 | `P2-B`, `P2-C`, `P2-D`, `P2-E`, `P2-H` | `V2-DEMO-001`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` |
 | L | `PL-G` | `V2-LNG-010` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |

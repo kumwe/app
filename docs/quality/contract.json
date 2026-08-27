@@ -944,6 +944,26 @@
             }
         },
         {
+            "id": "perf-breakpoint",
+            "title": "The performance harness reproduces a stable breakpoint report, nightly",
+            "purpose": "Run the harness's breakpoint mode against the nightly database: ramp the document line axis twice, price each size by interpolating the two declared commit objectives, and record where measured p95 first crosses that line. The run fails when the two passes disagree, because the phase-2 exit gate asks for a report that is stable, not merely produced, and the written document names its own role as a baseline fact about that host and commit, never a capacity claim.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "perf:breakpoint",
+            "command": "composer perf:breakpoint",
+            "artifact": "build/perf/breakpoint.json",
+            "in_qa": false,
+            "excluded_from_qa_reason": "The ramp commits dozens of large documents against a live database, which does not fit the merge budget; nightly is its declared cadence.",
+            "cadence": [
+                "nightly"
+            ],
+            "maximum_interval": "daily",
+            "engines": [
+                "mariadb"
+            ],
+            "workflows": {}
+        },
+        {
             "id": "deployment-acceptance",
             "title": "Complete deployment acceptance against the built images",
             "purpose": "Stand the deployment up on every supported engine and both distribution formats and probe it.",
