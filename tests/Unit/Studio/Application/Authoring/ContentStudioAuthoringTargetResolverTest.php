@@ -14,11 +14,11 @@ use Kumwe\App\Content\Domain\ContentStatus;
 use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Content\Domain\PublicationWindow;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetMismatch;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Tests\Support\AuthorizationContext;
-use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(ContentStudioAuthoringTargetResolver::class)]
 #[CoversClass(ContentStudioAuthoringTarget::class)]
+#[CoversClass(ContentStudioAuthoringTargetMismatch::class)]
 #[CoversClass(StudioAuthoringIntent::class)]
 #[UsesClass(ContentStudioProjector::class)]
 final class ContentStudioAuthoringTargetResolverTest extends TestCase
@@ -141,7 +142,7 @@ final class ContentStudioAuthoringTargetResolverTest extends TestCase
      */
     public function testCreateRefusesATypeFromAnotherSite(): void
     {
-        $this->expectException(LogicException::class);
+        $this->expectException(ContentStudioAuthoringTargetMismatch::class);
 
         $this->resolver()->create(
             AuthorizationContext::human(['content.create']),
@@ -176,7 +177,7 @@ final class ContentStudioAuthoringTargetResolverTest extends TestCase
             contentTypeVersion: 2,
         );
 
-        $this->expectException(LogicException::class);
+        $this->expectException(ContentStudioAuthoringTargetMismatch::class);
         $this->expectExceptionMessage('The Content authoring target coordinates are inconsistent.');
 
         $this->resolver()->edit(

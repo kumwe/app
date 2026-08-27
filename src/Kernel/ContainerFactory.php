@@ -319,6 +319,8 @@ use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringLaunchResolver;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthority;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringAvailability;
 use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringConfigurationProvider;
@@ -388,6 +390,7 @@ use Kumwe\App\Studio\Domain\Media\StudioMediaUploadPolicy;
 use Kumwe\App\Studio\Infrastructure\Host\RandomStudioResourceContextKeyFactory;
 use Kumwe\App\Studio\Infrastructure\Observability\StructuredLogStudioPreviewActivityRecorder;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentProjectionBindingRepository;
+use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioHostStorage;
 use Kumwe\App\Studio\Infrastructure\Media\FilesystemStudioMediaStagingStorage;
 use Kumwe\App\Studio\Infrastructure\Media\FinfoStudioMediaSignatureVerifier;
@@ -662,6 +665,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\NumberSequenceIdentityMigrati
 use Kumwe\App\Infrastructure\Persistence\Migration\ResourceOwnershipPortabilityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentProjectionMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioArtifactRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioHostSessionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioPreviewGrantMigration;
@@ -1731,6 +1735,15 @@ final class ContainerFactory
             self::service($container, AuthorizationGateway::class),
         ), true);
         $container->share(
+            ContentStudioAuthoringContextRepository::class,
+            static fn (Container $container): ContentStudioAuthoringContextRepository =>
+                new DoctrineContentStudioAuthoringContextRepository(
+                    self::service($container, Connection::class),
+                    self::service($container, TableNames::class),
+                ),
+            true,
+        );
+        $container->share(
             StudioContextualAuthoringAvailability::class,
             static fn (): StudioContextualAuthoringAvailability =>
                 new PinnedStudioContextualAuthoringAvailability($root, null),
@@ -1761,6 +1774,17 @@ final class ContainerFactory
             new RandomStudioResourceContextKeyFactory(),
             true,
         );
+        $container->share(ContentStudioAuthoringContextAuthority::class, static fn (
+            Container $container,
+        ): ContentStudioAuthoringContextAuthority => new ContentStudioAuthoringContextAuthority(
+            self::service($container, ContentStudioAuthoringContextRepository::class),
+            self::service($container, StudioResourceContextKeyFactory::class),
+            self::service($container, ContentStudioAuthoringTargetResolver::class),
+            self::service($container, ContentModelService::class),
+            self::service($container, ContentService::class),
+            self::service($container, ClockInterface::class),
+            $configuration->administratorSessionSeconds,
+        ), true);
         $container->share(StudioHostSessionAuthority::class, static fn (
             Container $container,
         ): StudioHostSessionAuthority => new StudioHostSessionAuthority(
@@ -2228,6 +2252,7 @@ final class ContainerFactory
                     new StudioArtifactRecoveryMigration(self::service($container, TableNames::class)),
                     new StudioPreviewGrantMigration(self::service($container, TableNames::class)),
                     new StudioMediaUploadMigration(self::service($container, TableNames::class)),
+                    new StudioContentAuthoringContextMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
