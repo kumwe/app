@@ -74,8 +74,9 @@ canonical configuration contract is unpublished. Its immutable Entry revision de
 concurrent or accepted save; `S-G4`–`S-G7` must return or atomically advance a successor context under the published
 save contract. Dormant rows cannot authorize without a live matching administrator session and approval generation.
 Every row also has an App-owned hard expiry no later than the configured administrator-session lifetime, checked
-before any Content read and indexed so expired rows are collectible. Physical purging and successor-context
-advancement remain deferred to the coordinated host lifecycle rather than being guessed here.
+before any Content read and indexed so expired rows are collectible. A bounded installation-wide maintenance job
+physically purges expired rows without interpreting their target or activating a Studio browser contract.
+Successor-context advancement remains deferred to the coordinated save lifecycle rather than being guessed here.
 
 ## Product-contract mapping
 

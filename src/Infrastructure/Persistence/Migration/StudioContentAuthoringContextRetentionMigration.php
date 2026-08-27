@@ -1,0 +1,150 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\App\Infrastructure\Persistence\Migration;
+
+use DateTimeImmutable;
+use DateTimeZone;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Types\Types;
+use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
+use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use RuntimeException;
+
+/**
+ * Seeds installation-wide retention for opaque Studio Content authoring contexts.
+ *
+ * The context table is shared by every site and its rows carry a hard expiry. This separate append-only
+ * migration preserves the checksum of the table-creation migration while ensuring expired bindings are
+ * eventually removed even when an operator never creates a maintenance schedule manually.
+ *
+ * @since  2.0.0
+ */
+final readonly class StudioContentAuthoringContextRetentionMigration implements RepeatableMigration
+{
+    /**
+     * Stable append-only migration identity.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string ID = '20260827020000_studio_content_authoring_context_retention';
+
+    /**
+     * Fixed seed identity outside the previously shipped core schedule range.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string SCHEDULE_ID = '00000000-0000-7000-8000-000000000807';
+
+    /**
+     * Bind schedule persistence to the installation's prefix-aware table names.
+     *
+     * @param   TableNames  $tables  Physical table-name compiler.
+     *
+     * @since   2.0.0
+     */
+    public function __construct(private TableNames $tables)
+    {
+    }
+
+    /**
+     * Return the immutable schema-ledger identity.
+     *
+     * @return  string  Stable migration version.
+     *
+     * @since   2.0.0
+     */
+    public function id(): string
+    {
+        return self::ID;
+    }
+
+    /**
+     * Bind applied history to these exact retention and schedule bytes.
+     *
+     * @return  string  SHA-256 migration checksum.
+     *
+     * @throws  RuntimeException  When the source digest cannot be read.
+     *
+     * @since   2.0.0
+     */
+    public function checksum(): string
+    {
+        $checksum = hash_file('sha256', __FILE__);
+        if (!is_string($checksum)) {
+            throw new RuntimeException('The Studio Content authoring context retention checksum is unavailable.');
+        }
+
+        return hash('sha256', self::ID . ':' . $checksum);
+    }
+
+    /**
+     * Seed one global schedule and repair persisted execution-scope classifications idempotently.
+     *
+     * An operator-created schedule for the same job type wins: the migration does not overwrite its
+     * cadence or payload, but it still repairs that schedule and any queued work to installation scope.
+     *
+     * @param   Connection  $database  Installation database holding schedules and queued jobs.
+     *
+     * @return  void
+     *
+     * @throws  \Doctrine\DBAL\Exception  When schedule persistence or verification fails.
+     * @throws  RuntimeException  When the required global schedule postcondition cannot be established.
+     *
+     * @since   2.0.0
+     */
+    public function up(Connection $database): void
+    {
+        $existing = $database->fetchOne(sprintf(
+            'SELECT id FROM %s WHERE job_type = ?',
+            $this->tables->quoted('schedules'),
+        ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+        if ($existing === false) {
+            $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+            $database->insert($this->tables->raw('schedules'), [
+                'id' => self::SCHEDULE_ID,
+                'name' => 'Purge expired Studio Content authoring contexts',
+                'cron_expression' => '11 * * * *',
+                'timezone' => 'UTC',
+                'queue' => 'default',
+                'job_type' => PurgeStudioContentAuthoringContextsHandler::JOB_TYPE,
+                'job_schema_version' => 1,
+                'payload' => ['batch_size' => 1_000, 'maximum_batches' => 10],
+                'priority' => -10,
+                'maximum_attempts' => 5,
+                'enabled' => true,
+                'next_run_at' => $now->modify('+1 hour'),
+                'last_run_at' => null,
+                'version' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+                'execution_scope' => JobExecutionClass::Installation->value,
+            ], [
+                'payload' => Types::JSON,
+                'enabled' => Types::BOOLEAN,
+                'next_run_at' => Types::DATETIME_IMMUTABLE,
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+        }
+        foreach (['jobs', 'schedules'] as $table) {
+            $database->executeStatement(sprintf(
+                'UPDATE %s SET execution_scope = ? WHERE job_type = ?',
+                $this->tables->quoted($table),
+            ), [JobExecutionClass::Installation->value, PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+        }
+        $scope = $database->fetchOne(sprintf(
+            'SELECT execution_scope FROM %s WHERE job_type = ?',
+            $this->tables->quoted('schedules'),
+        ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+        if ($scope !== JobExecutionClass::Installation->value) {
+            throw new RuntimeException(
+                'The Studio Content authoring context retention schedule is missing or not installation-global.',
+            );
+        }
+    }
+}

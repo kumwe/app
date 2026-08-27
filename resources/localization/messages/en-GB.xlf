@@ -523,6 +523,14 @@
         <source>Purge expired business-record idempotency entries</source>
       </segment>
     </unit>
+    <unit id="core.administrator.automation.job_purge_studio_content_authoring_contexts">
+      <notes>
+        <note category="context">Job-type caption in the automation schedule builder.</note>
+      </notes>
+      <segment>
+        <source>Purge expired Studio Content authoring contexts</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.automation.job_purge_sessions">
       <notes>
         <note category="context">Job-type caption in the automation schedule builder.</note>

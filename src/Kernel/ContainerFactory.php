@@ -14,6 +14,7 @@ use Kumwe\App\Application\Automation\Job\EnforceAuditRetentionHandler;
 use Kumwe\App\Application\Automation\Job\PurgeAdministratorSessionsHandler;
 use Kumwe\App\Application\Automation\Job\PurgeBusinessRecordIdempotencyHandler;
 use Kumwe\App\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
+use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
 use Kumwe\App\Application\Automation\Job\RecordAuditAnchorHandler;
 use Kumwe\App\Application\Automation\Job\RotateRecordSecretsHandler;
 use Kumwe\App\Application\Automation\Job\RebuildExtensionMapHandler;
@@ -320,6 +321,7 @@ use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupReposit
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringLaunchResolver;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthority;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextPurger;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringAvailability;
@@ -391,6 +393,7 @@ use Kumwe\App\Studio\Infrastructure\Host\RandomStudioResourceContextKeyFactory;
 use Kumwe\App\Studio\Infrastructure\Observability\StructuredLogStudioPreviewActivityRecorder;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentProjectionBindingRepository;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentStudioAuthoringContextRepository;
+use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentStudioAuthoringContextPurger;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioHostStorage;
 use Kumwe\App\Studio\Infrastructure\Media\FilesystemStudioMediaStagingStorage;
 use Kumwe\App\Studio\Infrastructure\Media\FinfoStudioMediaSignatureVerifier;
@@ -666,6 +669,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\ResourceOwnershipPortabilityM
 use Kumwe\App\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentProjectionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextRetentionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioArtifactRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioHostSessionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioPreviewGrantMigration;
@@ -2253,6 +2257,7 @@ final class ContainerFactory
                     new StudioPreviewGrantMigration(self::service($container, TableNames::class)),
                     new StudioMediaUploadMigration(self::service($container, TableNames::class)),
                     new StudioContentAuthoringContextMigration(self::service($container, TableNames::class)),
+                    new StudioContentAuthoringContextRetentionMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -5821,6 +5826,22 @@ final class ContainerFactory
             self::service($container, IdempotencyPurger::class),
             self::service($container, AuthorizationGateway::class),
         ), true);
+        $container->share(
+            ContentStudioAuthoringContextPurger::class,
+            static fn (Container $container): ContentStudioAuthoringContextPurger =>
+                new DoctrineContentStudioAuthoringContextPurger(
+                    self::service($container, Connection::class),
+                    self::service($container, TableNames::class),
+                    self::service($container, ClockInterface::class),
+                ),
+            true,
+        );
+        $container->share(PurgeStudioContentAuthoringContextsHandler::class, static fn (
+            Container $container,
+        ): PurgeStudioContentAuthoringContextsHandler => new PurgeStudioContentAuthoringContextsHandler(
+            self::service($container, ContentStudioAuthoringContextPurger::class),
+            self::service($container, AuthorizationGateway::class),
+        ), true);
         $container->share(PurgeBusinessRecordIdempotencyHandler::class, static fn (
             Container $container,
         ): PurgeBusinessRecordIdempotencyHandler => new PurgeBusinessRecordIdempotencyHandler(
@@ -5869,6 +5890,7 @@ final class ContainerFactory
             $handlers = [
                 self::service($container, PurgeAdministratorSessionsHandler::class),
                 self::service($container, PurgeIdempotencyRecordsHandler::class),
+                self::service($container, PurgeStudioContentAuthoringContextsHandler::class),
                 self::service($container, PurgeBusinessRecordIdempotencyHandler::class),
                 self::service($container, RecordAuditAnchorHandler::class),
                 self::service($container, VerifyAuditTrailHandler::class),
