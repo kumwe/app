@@ -21,16 +21,16 @@ final readonly class StudioContextualAuthoringQualification
     /**
      * Bind the adapter to immutable release and corpus evidence selected by App.
      *
-     * @param  string  $release                 Exact coordinated semantic version.
-     * @param  string  $releaseRecordSha256     Hex SHA-256 of `studio-release.json`.
-     * @param  string  $pinRecordSha256         Hex SHA-256 of App's complete `PIN.json`.
-     * @param  string  $schemaManifestSha256    Hex SHA-256 of the published schema manifest.
-     * @param  string  $browserManifestSha256   Hex SHA-256 of the compiled Vite manifest.
-     * @param  string  $browserEntrySha256      Hex SHA-256 of the contextual browser entry.
+     * @param   string  $release                Exact coordinated semantic version.
+     * @param   string  $releaseRecordSha256    Hex SHA-256 of `studio-release.json`.
+     * @param   string  $pinRecordSha256        Hex SHA-256 of App's complete `PIN.json`.
+     * @param   string  $schemaManifestSha256   Hex SHA-256 of the published schema manifest.
+     * @param   string  $browserManifestSha256  Hex SHA-256 of the compiled Vite manifest.
+     * @param   string  $browserEntrySha256     Hex SHA-256 of the contextual browser entry.
      *
      * @throws  InvalidArgumentException  When a coordinate cannot identify exact immutable evidence.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         public string $release,
