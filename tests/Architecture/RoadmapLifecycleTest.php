@@ -262,12 +262,11 @@ final class RoadmapLifecycleTest extends TestCase
     public function testTheVerifierRefusesACompletionMarkerInTheOpenWorkTable(): void
     {
         $original = $this->contents('docs/roadmap/STATUS.md');
+        [$phase, $row] = $this->firstOpenWorkRow($original);
         foreach (['closed', 'complete', 'completed', 'delivered', 'done', 'finished', 'shipped'] as $marker) {
-            $status = str_replace(
-                '| 4 | `P4-B` |',
-                sprintf('| 4 | `P4-B` (`P4-A` %s) |', $marker),
-                $original,
-            );
+            $cells = explode('|', $row);
+            $cells[2] = sprintf('%s (`P4-A` %s) ', rtrim($cells[2]), $marker);
+            $status = str_replace($row, implode('|', $cells), $original);
             self::assertNotSame($original, $status);
             $path = $this->writeTemporaryStatus($status);
 
@@ -279,10 +278,36 @@ final class RoadmapLifecycleTest extends TestCase
 
             self::assertSame(1, $result['status'], sprintf('Marker "%s" must be refused.', $marker));
             self::assertStringContainsString(
-                'open-work row for phase 4 carries a completion marker',
+                sprintf('open-work row for phase %s carries a completion marker', $phase),
                 $result['output'],
             );
         }
+    }
+
+    /**
+     * The first row of the live open-work table, so the mutation cases survive packages completing.
+     *
+     * These cases used to hard-code one phase's row and went stale the day that phase's last package
+     * completed — the mutation produced the original document unchanged and the refusal was asserted
+     * against nothing. Whichever row happens to be first is equally good for proving the verifier
+     * refuses completion language inside the live index.
+     *
+     * @param   string  $status  The live STATUS.md contents.
+     *
+     * @return  array{string, string}  The row's phase token and the whole row.
+     *
+     * @since   2.0.0
+     */
+    private function firstOpenWorkRow(string $status): array
+    {
+        $table = substr($status, (int) strpos($status, '## Open work packages by phase'));
+        self::assertSame(
+            1,
+            preg_match('/^\| ([0-9A-Z]+) \| `[^\n|]*` \| [^\n]*\|$/m', $table, $match),
+            'The open-work table declares no package row to mutate.',
+        );
+
+        return [$match[1], $match[0]];
     }
 
     /**
@@ -294,12 +319,12 @@ final class RoadmapLifecycleTest extends TestCase
      */
     public function testTheVerifierRefusesACompletionMarkerInTheOpenFindingCell(): void
     {
-        $status = str_replace(
-            '| 4 | `P4-B` | — |',
-            '| 4 | `P4-B` | `V2-TEST-001` complete |',
-            $this->contents('docs/roadmap/STATUS.md'),
-        );
-        self::assertNotSame($this->contents('docs/roadmap/STATUS.md'), $status);
+        $original = $this->contents('docs/roadmap/STATUS.md');
+        [$phase, $row] = $this->firstOpenWorkRow($original);
+        $cells = explode('|', $row);
+        $cells[3] = ' `V2-TEST-001` complete ';
+        $status = str_replace($row, implode('|', $cells), $original);
+        self::assertNotSame($original, $status);
         $path = $this->writeTemporaryStatus($status);
 
         try {
@@ -310,7 +335,7 @@ final class RoadmapLifecycleTest extends TestCase
 
         self::assertSame(1, $result['status']);
         self::assertStringContainsString(
-            'open-work row for phase 4 carries a completion marker',
+            sprintf('open-work row for phase %s carries a completion marker', $phase),
             $result['output'],
         );
     }

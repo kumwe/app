@@ -129,7 +129,7 @@ final class HotPlanRegressionIntegrationTest extends TestCase
             mkdir('build/perf', 0775, true);
         }
         file_put_contents(
-            sprintf('build/perf/plans-%s.json', (string) getenv('DB_DRIVER') ?: 'mariadb'),
+            sprintf('build/perf/plans-%s.json', $this->engineLabel($connection)),
             json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n",
         );
     }
@@ -277,6 +277,26 @@ final class HotPlanRegressionIntegrationTest extends TestCase
             $fullScan && $keyless,
             sprintf('Hot plan %s reads %s by full scan with no usable key.', $name, $table),
         );
+    }
+
+    /**
+     * Name the engine for the capture artifact from the connection itself, never from the environment.
+     *
+     * @param   Connection  $connection  Live connection of the engine under test.
+     *
+     * @return  string  Engine label for the plan artifact's file name.
+     *
+     * @since   2.0.0
+     */
+    private function engineLabel(Connection $connection): string
+    {
+        $platform = strtolower($connection->getDatabasePlatform()::class);
+
+        return match (true) {
+            str_contains($platform, 'postgres') => 'pgsql',
+            str_contains($platform, 'mariadb') => 'mariadb',
+            default => 'mysql',
+        };
     }
 
     /**
