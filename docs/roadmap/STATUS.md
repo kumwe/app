@@ -25,7 +25,7 @@ record is not thereby a new machine-evidence candidate.
 |---|---|
 | **Current phase** | Gate A passed. Runtime implementation and Gate B preparation proceed. |
 | **In flight** | All thirteen executable Gate A criteria are verified at exact candidate `67cf6c02` by terminal-green CI, Nightly, Security and Development Compose runs. Its reproducible baseline names measured source `a4ded133`; criterion 12's released-artifact evidence remains `2adb2ebe` and `v2.0.0-alpha.4`. Remaining open work continues without reopening Gate A. |
-| **Next** | Continue the runtime work with code quality and stability as the priority; add documentation and tests when they directly protect changed runtime behavior. |
+| **Next** | Complete the `S-G1` through `S-G9` one-App-PR ladder: contextual Content launch, PHP-authoritative item/type saves, reusable-type and blank creation, workspace continuity, contributions/delivery, and the packaged `STUDIO-PROD-015` journey with zero production Node.js/npm. |
 | **Open decisions** | `V2-QA-014` needs a real-Safari appearance-switch result before the stale WebKit background can be classified as a product defect or a Playwright-only emulation defect. It belongs to Gate B's accountable human-interface acceptance and does not block Gate A. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
 | **Gate A** | Passed on 2026-08-22. All 13 executable criteria are met; acceptance is recorded in [ADR 0010](decisions/0010-gate-a-assessment.md). |
 | **Gate B** | Not assessed. Gate A is passed; the remaining Gate B runtime and qualification work is open. |
@@ -45,7 +45,7 @@ record is not thereby a new machine-evidence candidate.
 | 5 — Enterprise scale | B | Not started | `P2-I` performance harness |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
 | 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
-| S — Studio visual composition | A, with a B integration | In progress — `S-A`, `S-C` and `S-D` complete; implementation candidates for the exact package pin/corpus, hardened media host, authenticated preview, embedded authoring shell and marker-free public runtime are present, with authoritative Gate B qualification still open; `S-B` and `S-E` … `S-G` remain open | — |
+| S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-C` and `S-D` complete and package/corpus, media, preview, shell, and public-runtime foundations exist. The visible implementation is still a content-model-version Blueprint-only composer with read-only Content projection, not the `STUDIO-PROD-001` through `STUDIO-PROD-015` journey. Critical `V2-STU-007` and `S-G1` … `S-G9` remain open with `S-B` and `S-E` … `S-F`; Gate B is not asserted | — |
 | **Gate B** | | **Not assessed** | **Phases 7 and S** |
 | M — Maintainability | — | Not started | Phase 3 seams settled. Blocks nothing. |
 | N — Native client platform contracts | — | Version 3 seed — not started | Nothing in Version 2; blocks nothing. Decision D17, [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md). |
@@ -71,7 +71,8 @@ remains in README.
 
 ## Decisions
 
-Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full decision record.
+Eighteen, all recorded in [`README.md`](README.md) section 2. Ten carry a full decision record; ADR 0020 is the
+product-owner correction to D16 rather than a nineteenth decision.
 
 | | Decision | Record |
 |---|---|---|
@@ -90,7 +91,7 @@ Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full 
 | D13 | The seven enterprise-primitive boundary questions are decided | README section 2; [ADR 0003](decisions/0003-immutable-correction-by-reversal.md) for D13.2 |
 | D14 | Point of sale is deferred but not foreclosed | README section 2 |
 | D15 | Role-specific dashboards compose the unified contribution runtime | [ADR 0006](decisions/0006-unified-dashboard-composition.md) |
-| D16 | Studio visual composition is the Version 2 authoring surface, integrated at Gate B | [ADR 0007](decisions/0007-studio-visual-composition-integration.md) |
+| D16 | Studio is contextual Content authoring, integrated at Gate B | [ADR 0007](decisions/0007-studio-visual-composition-integration.md); product-surface correction in [ADR 0020](decisions/0020-studio-contextual-content-authoring.md) |
 | D17 | The native client platform is a Version 3 programme; its sign-in is the authentication link | [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md) |
 | D18 | Gate A is accepted on its thirteen executable criteria | [ADR 0010](decisions/0010-gate-a-assessment.md) |
 | — | The remaining `P0-E` decisions | Not yet written |
@@ -133,7 +134,7 @@ Eighteen, all recorded in [`README.md`](README.md) section 2. Nine carry a full 
 | B | 21 |
 | none | 23 |
 
-By severity: 0 critical, 17 high, 18 medium, 9 low.
+By severity: 1 critical, 17 high, 17 medium, 9 low.
 By origin: 12 from the independent review, 12 still-open entries from the executed gap matrix, 20 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
 D16 through D18.
@@ -174,7 +175,7 @@ were added:
 | # | Criterion | Met | Findings |
 |---|---|---|---|
 | 11 | All nine languages ship and each is qualified in its own right | No | `V2-LNG-010` |
-| 12 | The visual composition integration ships and is qualified | No | `V2-STU-002`, `V2-STU-005` – `V2-STU-007` |
+| 12 | Studio contextual Content authoring ships and passes `STUDIO-PROD-015`, through PHP and with zero production Node.js/npm | No — the current visible slice is a separate Blueprint-only model-version composer | `V2-STU-002`, `V2-STU-005` – `V2-STU-007` |
 
 ## Baseline health at `7a83c295`
 

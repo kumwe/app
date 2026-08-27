@@ -1,11 +1,18 @@
 # ADR 0018 — Studio owns inline content editing; App owns authority and delivery
 
-**Status** Accepted
+**Status** Accepted; the normal-product role of the fallback in decision 7 is partially superseded by
+[ADR 0020](0020-studio-contextual-content-authoring.md)
 **Decided by** Product owner
 **Findings** `V2-STU-002`, `V2-STU-005`, `V2-STU-006`, `V2-STU-007`
 **Gate** B
 
 ---
+
+> **Later product correction.** Studio ownership of inline editing, the App authority/delivery boundary,
+> dependency isolation, security posture, exact-release rule, and licensing condition remain unchanged.
+> [ADR 0020](0020-studio-contextual-content-authoring.md) supersedes only any reading of the server-rendered
+> field as a coequal normal authoring path: under `STUDIO-PROD-014` it is a transitional, recovery,
+> unsupported-capability, no-JavaScript, or rollback fallback while Studio becomes contextual Content authoring.
 
 ## Context
 

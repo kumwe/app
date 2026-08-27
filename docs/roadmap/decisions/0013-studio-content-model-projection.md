@@ -1,12 +1,19 @@
 # ADR 0013 — Studio reads a lossless Content projection through an App-owned model port
 
-**Status** Accepted as the AP-2 implementation of decision D16
+**Status** Accepted as the AP-2 read foundation for decision D16; its product-surface limitation is partially
+superseded by [ADR 0020](0020-studio-contextual-content-authoring.md)
 **Decided by** ADR 0007's fixed Studio/App division of labour and the approved AP-2 completion sequence
 **Findings** None; `V2-STU-002` remains open for the separate S-B release-pin and corpus-replay work
 **Gate** B foundation
 **Verified against** `f10c8f1d`
 
 ---
+
+> **Later product correction.** This record truthfully describes the AP-2 read-only projection slice and remains
+> authoritative for projection ownership, lossless mapping, field-policy seams, and Content/BusinessRecord
+> separation. [ADR 0020](0020-studio-contextual-content-authoring.md) adds the separate authorized PHP write and
+> orchestration work required by `STUDIO-PROD-001` through `STUDIO-PROD-015`; it does not turn this projector
+> into a writer or make the Blueprint-only slice a completed product.
 
 ## Context
 
