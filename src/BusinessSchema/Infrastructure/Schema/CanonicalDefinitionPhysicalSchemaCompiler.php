@@ -294,6 +294,30 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             );
         }
 
+        // Every emitted index is led by the scope columns, so a definition declaring at least one indexed
+        // field or materialized relationship already reaches its rows through the scope. A definition
+        // declaring neither used to compile a table with only its primary key, and every policy-filtered
+        // page over it was a full scan the moment the installation grew — which is what the declared
+        // hot-plan gate now refuses. The bare scope index is emitted only when nothing else leads with
+        // the scope, so already-indexed installations compile to the byte-identical blueprint they did.
+        $scopeColumns = $this->scopePhysicalColumns($columns, $definition);
+        if ($scopeColumns !== []) {
+            $scoped = false;
+            foreach ($indexes as $index) {
+                if ($this->leftPrefix($index->columns, $scopeColumns)) {
+                    $scoped = true;
+                    break;
+                }
+            }
+            if (!$scoped) {
+                $indexes[] = new PhysicalIndexBlueprint(
+                    'scope',
+                    $this->names->index($physicalTable, 'scope', $scopeColumns),
+                    $scopeColumns,
+                    false,
+                );
+            }
+        }
         $this->sortColumns($columns);
         $identity = $this->column($columns, 'record_id');
         $this->ensureForeignKeyIndexes(
