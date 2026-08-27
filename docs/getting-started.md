@@ -118,7 +118,15 @@ published Kumwe documentation site, a nested `main` menu, site settings, a VDM b
 logo media. They are ordinary managed records: inspect their fields and permissions, edit an example, or create a
 new record alongside them.
 
-## Build the first site
+## Build the first site with the current release
+
+Studio's target is to open directly when creating or editing content and coordinate layout, blocks, typed fields,
+and values in one contextual workspace. That journey is not yet complete in App: the current release still uses the
+generated Content editor and the separate Content-model screen below, while its Studio route edits only the
+Blueprint of an already-created Content-type version. See the single App host record,
+[Studio authoring in Kumwe App](studio-composition-authoring.md), for the exact gap and implementation sequence.
+
+The following is therefore the transitional current workflow, not the finished Studio experience:
 
 1. Open **Content**, edit one of the installed documentation pages, and verify the change on the public site.
 2. Open **Content models** and review the graphical fields and workflow used by pages.

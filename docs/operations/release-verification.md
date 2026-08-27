@@ -49,6 +49,11 @@ Before `composer create-project`, verify that the selected `kumwe/app` version r
 
 ## Business-security acceptance
 
+The commands in this section run in the controlled source-build and release-qualification environment. They
+are not production installation or server-operation steps. Released images and archives already contain the
+compiled browser assets; an installed Kumwe production runtime must contain and require neither Node.js nor
+npm.
+
 Before promotion, retain evidence from the supported-database matrix for owner-aware catalog synchronization,
 deny-overrides policy evaluation, field-usage isolation, policy-before-pagination SQL, non-enumerating direct reads,
 organization/workspace freshness, scoped token non-escalation, maker-checker quorum and replay, TOTP/recovery replay,

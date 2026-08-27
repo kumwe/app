@@ -1,9 +1,15 @@
-# Studio artifact and recovery persistence
+# Studio artifact and recovery persistence (current low-level primitive)
 
 Kumwe implements Studio's artifact and recovery host ports behind the authenticated session-generation
 dispatcher. This is the AP-4 / S-D persistence boundary. It stores and versions Studio documents; it does
 not execute the Studio command engine, interpret composition rules, or introduce a Content or BusinessRecord
 write path.
+
+This update-only artifact store is an implemented infrastructure primitive, not the limit or completion of Studio
+authoring in App. The target contextual journey also needs purpose-specific PHP operations for Content item
+create/save, reusable-type creation, and immutable type-version creation. Those operations coordinate authoritative
+Content, Model, Blueprint, workflow, migration, and audit services; they do not weaken this store into a generic
+repository. See [Studio authoring in Kumwe App](studio-composition-authoring.md) for the single target/status record.
 
 ## Port surface
 
@@ -35,13 +41,18 @@ or raced write returns category `conflict`, diagnostic `studio.artifact/revision
 current revision only when the requested artifact is already bound to the trusted session. There is no
 last-write-wins path.
 
-Generic save is update-only and draft-only. It cannot create an absent version, change artifact identity,
+The currently implemented generic save is intentionally update-only and draft-only. It cannot create an absent
+version, change artifact identity,
 publish, unpublish or retire a head, and it refuses a published or retired current head. A published head
 must return to draft through canonical `artifact.unpublish`, including its separate publish permission and
 audit event, before another save can run. Blueprint owner, model and complete dependency-lock values are
 canonical-byte immutable across save; changing their identifiers, versions, revisions, integrity values or
 ordered members is a conflict rather than a new dependency coordinate. These continuity checks run in the
 same transaction as the current-head read and compare-and-set.
+
+New-item and new-type outcomes therefore require explicit application use cases and admitted create/version
+protocol operations; they are not achieved by relaxing `artifact.save` or manufacturing an initial head in browser
+code.
 
 Idempotency scope is the digest of actor, authenticated session binding, resource-context key, session
 generation, operation and caller key. Intent separately digests the canonical semantic argument plus

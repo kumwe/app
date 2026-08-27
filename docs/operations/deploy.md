@@ -6,6 +6,10 @@ This guide describes the supplied container topology. See [Install](install.md) 
 
 `web` is the only service with a host port and defaults to `127.0.0.1:8080`. Publish it through a TLS reverse proxy or private load balancer. `app`, `worker`, `scheduler`, and `migrate` use the same immutable PHP image and configuration. `database` and Redis exist only on the internal backend network.
 
+The release images already carry the compiled administrator and Studio browser assets. None of the production
+services installs or runs Node.js, npm, Vite, or a JavaScript server; every authoritative Studio request ends in
+the PHP application.
+
 The migration task must complete before the application starts. Writable application state is limited to tmpfs plus media and extension volumes. Runtime containers are non-root, read-only, capability-dropped, and configured with `no-new-privileges`.
 
 The shipped Compose file uses one `KUMWE_DB_USER` and one `KUMWE_DB_PASSWORD_FILE` for `migrate`, `app`,

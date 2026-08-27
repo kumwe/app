@@ -21,6 +21,12 @@ The administrator navigation links to:
 
 A missing section normally means the account lacks its management capability. A direct request to that route receives `403` rather than relying on hidden navigation.
 
+Kumwe App does not add Studio as a top-level administrator navigation destination. Studio appears in the authorized
+create/edit context for core and extension-owned content resources, inline or expanded. The current App release has
+not completed that integration; its only composed Studio authoring surface is a Blueprint route reached from an
+existing Content-type version. The exact target and current gap are maintained in
+[Studio authoring in Kumwe App](studio-composition-authoring.md).
+
 ## Content and publishing
 
 Each edit creates an immutable revision and audit event. The built-in workflow supports these actions:
@@ -40,9 +46,27 @@ Each edit creates an immutable revision and audit event. The built-in workflow s
 
 The editor displays only valid actions for the current state. An unlinked page uses `/{slug}`. When it is linked from the public menu, the menu hierarchy becomes its canonical URL—for example `/about-us/contact-details`. The administrator's **View page** action uses the same resolver and is shown only when the workflow state and publication window make the page public. Legacy `/pages/{slug}` requests redirect to the canonical URL.
 
-Pages store a title, slug, workflow state, optional publication window, and schema-validated structured data. Editors work with generated text, rich-text, number, date, choice, boolean, list, nested-group, URL, and media fields; routine authoring does not require reading or writing JSON. The built-in rich-text control stores a portable constrained format and renders only escaped headings, emphasis, lists, and safe links. Extensions that store HTML must still apply an organization-approved sanitization policy. Templates decide how named fields render.
+Pages store a title, slug, workflow state, optional publication window, and schema-validated structured data. In the
+current transitional editor, authors work with generated text, rich-text, number, date, choice, boolean, list,
+nested-group, URL, and media fields; routine authoring does not require reading or writing JSON. The built-in
+rich-text control stores a portable constrained format and renders only escaped headings, emphasis, lists, and safe
+links. Extensions that store HTML must still apply an organization-approved sanitization policy. Templates decide
+how named fields render.
 
-Open **Content models** to create content types and workflows or publish a new version of an existing definition. Add and arrange graphical field rows, choose validation and required-field controls, then select the workflow version. The workflow builder declares named states, the initial state, public visibility, and capability-protected transitions. Kumwe generates the persisted JSON Schema and workflow definition from those controls, validates every entry against the pinned schema, and shows only transitions valid for the current state and editor. Advanced integrations may still submit the documented schema format through REST or CLI. A definition update never changes the meaning of existing content; incompatible field or state removal requires explicit breaking-change confirmation and still creates a new immutable version.
+The current fallback workflow uses **Content models** to create content types and workflows or publish a new version
+of an existing definition before composing its Blueprint. Add and arrange graphical field rows, choose validation
+and required-field controls, then select the workflow version. The workflow builder declares named states, the
+initial state, public visibility, and capability-protected transitions. Kumwe generates the persisted JSON Schema
+and workflow definition from those controls, validates every entry against the pinned schema, and shows only
+transitions valid for the current state and editor. Advanced integrations may still submit the documented schema
+format through REST or CLI. A definition update never changes the meaning of existing content; incompatible field
+or state removal requires explicit breaking-change confirmation and still creates a new immutable version.
+
+That separate pre-creation sequence is not the Studio target. The integrated journey will let an author start blank
+or from a reusable type, compose layout and typed fields, enter values, and explicitly choose **save item**,
+**save as new type**, or **save new type version** in the same resource-bound Studio session. Until that journey is
+implemented and qualified, the generated forms above remain a labeled fallback rather than evidence of completed
+Studio authoring.
 
 ## Media library
 

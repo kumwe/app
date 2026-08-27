@@ -4,10 +4,12 @@
 phase S in [`README.md`](README.md) section 9, Gate A criterion 13, and Gate B criterion 12.
 **Ledger entries** `V2-STU-001` through `V2-STU-007`.
 
-This document records phase S alignment: what Studio is, the exact release App consumes, the host
-adapter now implemented, and where every normative contract lives. Released author-facing behavior is
-documented in [`docs/studio-composition-authoring.md`](../studio-composition-authoring.md); the remaining
-phase-7 human/security proof and authoritative contributed-renderer browser/DB qualification stay explicit below.
+This is a detailed phase-S component and evidence record, not a second product definition or an author guide. The
+sole normative product outcome is Studio's
+[`docs/product-contract.md`](https://github.com/kumwe/studio/blob/main/docs/product-contract.md). The single App-side
+mapping, current-gap statement, and implementation sequence are
+[`docs/studio-composition-authoring.md`](../studio-composition-authoring.md). If this evidence record appears to
+describe a different authoring workflow, those two authorities win and this record must be corrected.
 
 ---
 
@@ -31,6 +33,13 @@ API and exposes no Editor.js JSON or configuration to App; App owns media custod
 authorization, persistence, preview, Twig delivery and CSP enforcement. Editor.js edits content inside a
 Studio block; it is not the page model, layout engine, renderer, host API, or persistence format.
 
+In App, the required product presentation is contextual rather than catalogue-first: one generic resolver makes
+Studio available from authorized core and extension content create/edit targets, inline or expanded, with exact
+type/Model/Blueprint/Entry hydration and explicit item/type-version/new-type save outcomes. App does not add Studio
+as a top-level navigation workspace; a full-screen route remains an expanded state of the originating content
+context. The current Blueprint-only route does not yet satisfy that journey; detailed component evidence below
+must not be read as an end-to-end completion claim.
+
 Studio's programme runs its own two-gate discipline in its repository —
 [`docs/roadmap/`](https://github.com/kumwe/studio/tree/main/docs/roadmap) there — with machine-checked
 registries for its requirements and threats, a canonical fixture corpus, and an evidence model. Its
@@ -39,12 +48,13 @@ until then, which is why every version below is exact.
 
 ## Current App pin and next release family
 
-The App currently consumes the published eight-package `0.1.0-rc.1` release-candidate family. All
+The App currently consumes the eight-package `0.1.0-rc.1` release-candidate family. All
 eight exact tarballs are vendored and pinned:
 [`resources/studio-contract/PIN.json`](../../resources/studio-contract/PIN.json) is the authoritative
 record of their exact versions and tarball checksums, and `composer studio:corpus` fails when the
-vendored bytes and the pin disagree. App makes no runtime or qualification claim about a public npm
-publication; its build consumes only these release-bound bytes.
+vendored bytes and the pin disagree. App's contributor/release build consumes those release-bound bytes and emits
+compiled browser assets. Production installation and operation consume the compiled result and never run npm,
+Node.js, Vite, a development server, or server-side JavaScript.
 
 | Package | Version | What it carries |
 |---|---|---|
@@ -62,11 +72,10 @@ The packages matter in two places: the administrator build consumes `@kumwe/stud
 the runtime packages) through the existing Vite entry points, and the test suite consumes the corpus
 shipped inside `@kumwe/studio-testkit` and `@kumwe/studio-protocol`.
 
-Studio has published the eight-package `0.1.0-rc.1` coordinated family through its governed promotion
-pipeline: the packages are on the public registry under Studio's release-candidate quarantine tag with
-signed provenance, and the vendor record above is that exact published family. Official `rc` channel
-publication on the Studio side remains gated behind its Gate A evidence acceptance; this pin makes no
-claim about that gate.
+The pin identifies one coordinated release-candidate family; it is not evidence that App's contextual journey or
+Studio's/App's gate acceptance has passed. Package publication, provenance, conformance, and gate status remain
+separate claims under Studio's release record and roadmap status. No App documentation may infer integrated product
+maturity from the `rc.1` label alone.
 
 | Coordinated package | Release-unit responsibility |
 |---|---|
@@ -83,6 +92,9 @@ No package is upgraded alone. Chart.js 4.5.1, Mermaid 11.17.1 and KaTeX 0.18.4 r
 lazy renderer adapters; they do not enter a Blueprint or become App-facing APIs.
 
 ### Coordinated adoption sequence
+
+Every npm command in this adoption and verification record is a contributor/release-build or CI command. None is
+an installation, startup, authoring, preview, publication, or production-server operation.
 
 1. The Studio implementation merges first. Its fixed Changesets family sets all eight manifests, lock data,
    generated release records, package manifests, notices and tarball contents to one exact coordinated version.
@@ -183,7 +195,8 @@ renderer-web/Twig conformance replay described above.
 
 ## The host contract
 
-The normative host contract is
+Studio's product contract defines which authoring outcome these ports must enable; this section only maps the
+currently implemented protocol boundary. The normative host protocol contract is
 [`docs/contracts/host-adapter.md`](https://github.com/kumwe/studio/blob/main/docs/contracts/host-adapter.md)
 in the Studio repository, with the port types in `@kumwe/studio-protocol`. Typed asynchronous ports
 share one request envelope. App advertises only artifact, permission, recovery, model, media, resource,
@@ -272,6 +285,15 @@ Every composition lookup reprojects the authorized exact Content model and compa
 version and revision with the immutable Blueprint model lock before returning the artifact. Drift in any
 coordinate is a typed migration-required refusal rather than an opportunity to open the Blueprint against
 a different schema.
+
+These are low-level host primitives. App currently opens them only for a Blueprint session reached from an
+already-created Content-type version. Its model/Entry projection is read-only and `artifact.save` updates an
+existing draft; the ordinary Content forms still own item and type writes. The open integration must add one generic
+core/extension Studio target resolver, exact type/Model/Blueprint/Entry hydration, PHP-authoritative item and type
+operations, the three explicit save outcomes, state-preserving contextual presentation, and the canonical
+end-to-end acceptance journey. It must not turn this dispatcher or read projector into an ungoverned generic save
+path. The authoritative gap and commit ladder are in
+[`docs/studio-composition-authoring.md`](../studio-composition-authoring.md).
 
 AP-1 replay accounting for S-D additionally covers these exact vendored IDs:
 
@@ -468,12 +490,17 @@ A half of phase S. The declaration shapes are the published composition schemas 
 paraphrase of them, so the contract an author reads and the contract the runtime enforces cannot drift.
 A property schema is bounded by the published schema profile, which is what keeps a contributed block
 from smuggling unbounded structure into a stored document. Gate A admitted only inert declarations.
-Gate B now activates all six canonical Studio document kinds through the owner-aware contribution
-runtime, locks only exact host-renderable blocks, and withdraws disabled or distrusted owners. An
+The implemented owner-aware activation primitive resolves all six canonical Studio document kinds,
+locks only exact host-renderable blocks, and withdraws disabled or distrusted owners. An
 owner-specific executable renderer is required before an extension block enters the palette or preview.
 The runtime and signed manifest-6 proof now implement that boundary, including distinct public capability
 and owner-local service identifiers; P7-F remains open only until the authoritative browser and
 database-backed lifecycle runs retain their CI evidence.
+
+Activation is not yet contextual authoring. The open product integration uses one generic target declaration for
+core and extension-owned content areas and filters this same immutable generation for that resolved target, surface,
+mode, capability, and permission. An extension does not open a private Studio, configure Editor.js, or copy data
+between its own editor and Studio.
 
 The behaviour those declarations get at Gate B is the same lifecycle the platform already guarantees:
 a disabled or untrusted owner's blocks stop executing while documents that used them stay readable and
@@ -481,7 +508,10 @@ diagnosable, and an unresolved block is represented rather than dropped.
 
 ## Contract documents to read before implementing
 
-All in the Studio repository under
+Start with Studio's sole product authority,
+[`docs/product-contract.md`](https://github.com/kumwe/studio/blob/main/docs/product-contract.md), and the App host
+mapping in [`docs/studio-composition-authoring.md`](../studio-composition-authoring.md). Then use the protocol
+documents in the Studio repository under
 [`docs/contracts/`](https://github.com/kumwe/studio/tree/main/docs/contracts):
 `commands.md` (the sixteen-command subset, canonical vectors, failure taxonomy),
 `blueprint.md` and `content-and-entries.md` (the composition and content artifacts),
@@ -502,12 +532,13 @@ than assumes each point:
 - **Stored compositions hold structure, never code.** Studio documents are closed-schema JSON;
   raw markup and styles are rejected by its negative fixtures. This is the same rule the platform
   already applies to stored preferences and expressions.
-- **The dashboard remains what the interface standard says it is.** The composition surface is a
-  separate, capability-gated administrator authoring surface; it does not turn the dashboard into a
-  page builder and it does not touch the dashboard contract.
-- **Essential operations keep their server-rendered paths.** The existing content editor remains; the
-  composition surface is an authoring capability for composition artifacts, and the platform's
-  no-JavaScript guarantees for essential navigation, forms and recovery are unchanged.
+- **The dashboard remains what the interface standard says it is.** Studio opens from the resolved content
+  create/edit target, inline or through a context-preserving route; it does not turn the dashboard into a page
+  builder or add a top-level Studio navigation workspace.
+- **The current form is a transitional fallback.** Essential navigation, recovery, and declared fallback operations
+  retain their server-rendered paths, but the separate Content form must not redefine the completed authoring
+  target. Studio itself provides accessible non-drag operation parity, and durable effects always cross PHP host
+  authority.
 - **Content security tightens rather than relaxes.** The Studio shell is proven in its own repository
   under `default-src 'none'` with a bare self script source and enforced Trusted Types; embedding it
   keeps the administrator policy strict, and the one deliberate change — a same-origin frame for

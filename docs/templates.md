@@ -308,6 +308,24 @@ running all activation checks; its next package release must publish the explici
 4 never infer compatibility. See
 [Template authoring against KIS 1.0](interface-standard/template-authoring.md).
 
+## Studio authoring and extension targets
+
+A template presents trusted host output; it does not embed a private page builder, configure Editor.js, or create
+another Studio contract. Studio owns the browser authoring experience and portable composition semantics. App owns
+PHP authorization, persistence, workflow, media, preview, and Twig/public delivery.
+
+An extension that adds a content area should use the generic Studio target and canonical contribution contracts,
+not construct a one-off editor. Schema-6 packages can already declare canonical Studio `block-definition`,
+`field-adapter`, `pattern`, `inspector`, `design-vocabulary`, and `migration` documents with bounded App host
+bindings. The target outcome is that an authorized extension-owned create/edit surface resolves through the same
+contextual Studio path as core Content, and only the contributions admitted for that target appear.
+
+Contribution admission and owner-aware activation exist, but the generic contextual target journey is not yet
+complete in App. The sole App-side target/status record is
+[Studio authoring in Kumwe App](studio-composition-authoring.md); extension declaration details remain in
+[Extension development](extensions.md). Do not describe a template, an admitted contribution, or the current
+Blueprint-only route as complete Studio integration.
+
 ## Assets and presentation data
 
 Use the immutable package URL:

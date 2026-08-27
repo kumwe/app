@@ -27,6 +27,14 @@ Open the address in a current Chromium, Firefox, or Safari browser. The local co
 `127.0.0.1:18080`; a real deployment must remain behind the HTTPS reverse proxy described in the
 [deployment runbook](operations/deploy.md).
 
+This production demonstration does **not** currently prove the completed Studio product journey. App's composed
+Studio surface edits only the Blueprint of an existing Content-type version; the Content model and Entry still use
+separate forms. Studio is therefore not expected as a top-level navigation item, but it is also not yet available in
+the ordinary Content create/edit context as required by the product target. Do not present the current Blueprint
+canvas, the `0.1.0-rc.1` package label, or the fallback forms as completed contextual authoring. The one App host
+record and the acceptance that must be added to this demonstration are in
+[Studio authoring in Kumwe App](studio-composition-authoring.md).
+
 The useful review path is:
 
 1. Open `/` and follow the installed documentation menu from **Start here** through **Operate Kumwe**.

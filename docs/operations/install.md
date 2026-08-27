@@ -2,6 +2,11 @@
 
 Kumwe ships as versioned Docker images, a Composer project, and a self-contained release ZIP. All methods use PHP 8.5, the same CLI and migrations, and the same administrator. MariaDB LTS is the default database; MySQL 8.4 and PostgreSQL 17 are alternatives.
 
+Every release method already contains Kumwe's compiled browser assets, including Studio. Production installation
+and startup require PHP, not Node.js or npm: do not run `npm install`, `npm build`, Vite, or a JavaScript server
+on the production host. Node/npm commands elsewhere in this repository belong only to contributor and release
+build environments.
+
 Choose an immutable released version, verify it as described in [Release verification](release-verification.md), and keep site configuration outside source control.
 
 ## Docker images
