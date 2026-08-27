@@ -14,10 +14,13 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\DocumentLineInput;
 use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
 use Kumwe\App\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
 use Kumwe\App\BusinessRecord\Application\Command\UnrelateRecordsCommand;
+use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
@@ -27,6 +30,7 @@ use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
+use Kumwe\App\BusinessRecord\Infrastructure\Persistence\OwnedLineWritePlan;
 use Kumwe\App\BusinessRecord\Query\BooleanFilter;
 use Kumwe\App\BusinessRecord\Query\BooleanOperator;
 use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
@@ -38,6 +42,7 @@ use Kumwe\App\BusinessRecord\Query\RelationQuantifier;
 use Kumwe\App\BusinessRecord\Query\SetFilter;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\BusinessSchema\Domain\PhysicalTableKind;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
@@ -50,6 +55,7 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(BusinessRecordService::class)]
 #[CoversClass(DoctrineBusinessRecordReadRepository::class)]
 #[CoversClass(DoctrineBusinessRecordWriteRepository::class)]
+#[CoversClass(OwnedLineWritePlan::class)]
 final class BusinessRecordRelationshipIntegrationTest extends TestCase
 {
     /**
@@ -842,6 +848,147 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
      * @param list<string> $includes
      * @return array<string, list<BusinessRecordRelationView>>
      */
+    /**
+     * A whole-document write resolves its lines' entity references through the live batched lookup.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDocumentReferencesResolveInOneBatchAgainstTheLiveRepository(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $container->get(BusinessRecordService::class);
+        self::assertInstanceOf(BusinessRecordService::class, $records);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
+        $targetDocument = NeutralBusinessFixture::referenceTargetDocument($suffix, Uuid::uuid7()->toString());
+        $targetDocument['soft_delete_enabled'] = true;
+        $target = NeutralBusinessFixture::install($container, $context, $targetDocument);
+        $lineDocument = NeutralBusinessFixture::documentLineDocument($suffix, Uuid::uuid7()->toString());
+        $lineDocument['fields'][] = [
+            'handle' => 'product',
+            'label' => 'Product',
+            'type' => 'core.entity_reference',
+            'required' => false,
+            'nullable' => true,
+            'configuration' => ['target' => $target->handle],
+        ];
+        $line = NeutralBusinessFixture::install($container, $context, $lineDocument);
+        $header = NeutralBusinessFixture::install($container, $context, NeutralBusinessFixture::documentHeaderDocument(
+            $suffix,
+            Uuid::uuid7()->toString(),
+            $line->handle,
+        ));
+        foreach (['first', 'second'] as $ordinal) {
+            $records->create(new CreateRecordCommand(
+                $context,
+                $target->handle,
+                ['code' => 'ref-' . $ordinal . '-' . $suffix, 'label' => ucfirst($ordinal) . ' target'],
+                NeutralBusinessFixture::idempotencyKey('doc-ref-target-' . $ordinal . '-' . $suffix),
+            ));
+        }
+
+        $documentId = Uuid::uuid7()->toString();
+        $records->writeDocument(new WriteDocumentCommand(
+            $context,
+            $header->handle,
+            'lines',
+            ['title' => 'Referencing document', 'total' => '3.75'],
+            [
+                new DocumentLineInput([
+                    'code' => 'A',
+                    'description' => 'Alpha',
+                    'amount' => '1.25',
+                    'product' => ' REF-FIRST-' . strtoupper($suffix) . ' ',
+                ]),
+                new DocumentLineInput([
+                    'code' => 'B',
+                    'description' => 'Beta',
+                    'amount' => '1.25',
+                    'product' => 'ref-second-' . $suffix,
+                ]),
+                new DocumentLineInput(['code' => 'C', 'description' => 'Gamma', 'amount' => '1.25']),
+            ],
+            NeutralBusinessFixture::idempotencyKey('doc-ref-create-' . $suffix),
+            recordId: $documentId,
+        ));
+
+        self::assertCount(3, self::browseIncludes($records, $context, $header->handle, ['lines'])['lines']);
+        $schemas = $container->get(BusinessSchemaService::class);
+        $database = $container->get(Connection::class);
+        self::assertInstanceOf(BusinessSchemaService::class, $schemas);
+        self::assertInstanceOf(Connection::class, $database);
+        $targetInstallation = $schemas->installation($context, $target->id);
+        self::assertNotNull($targetInstallation);
+        $targetTable = $targetInstallation->blueprint->table('record');
+        self::assertNotNull($targetTable);
+        $targetCode = $targetTable->column('code');
+        $targetKey = $targetTable->column('record_id');
+        self::assertNotNull($targetCode);
+        self::assertNotNull($targetKey);
+        /** @var array<string, string> $keyByCode */
+        $keyByCode = $database->fetchAllKeyValue(sprintf(
+            'SELECT %s, %s FROM %s',
+            $database->getDatabasePlatform()->quoteIdentifier($targetCode->physicalName),
+            $database->getDatabasePlatform()->quoteIdentifier($targetKey->physicalName),
+            $database->getDatabasePlatform()->quoteIdentifier($targetTable->physicalName),
+        ));
+        $headerInstallation = $schemas->installation($context, $header->id);
+        self::assertNotNull($headerInstallation);
+        $lineTable = null;
+        foreach ($headerInstallation->blueprint->tables() as $candidate) {
+            if ($candidate->kind === PhysicalTableKind::OwnedLine) {
+                $lineTable = $candidate;
+            }
+        }
+        self::assertNotNull($lineTable);
+        $lineCode = $lineTable->column('code');
+        $lineProduct = $lineTable->column('product');
+        self::assertNotNull($lineCode);
+        self::assertNotNull($lineProduct);
+        /** @var array<string, ?string> $stored */
+        $stored = $database->fetchAllKeyValue(sprintf(
+            'SELECT %s, %s FROM %s',
+            $database->getDatabasePlatform()->quoteIdentifier($lineCode->physicalName),
+            $database->getDatabasePlatform()->quoteIdentifier($lineProduct->physicalName),
+            $database->getDatabasePlatform()->quoteIdentifier($lineTable->physicalName),
+        ));
+        self::assertSame(
+            $keyByCode['REF-FIRST-' . strtoupper($suffix)],
+            $stored['A'],
+            'A messy-cased reference resolves to its target and stores that target\'s key.',
+        );
+        self::assertSame(
+            $keyByCode['REF-SECOND-' . strtoupper($suffix)],
+            $stored['B'],
+            'A lowercase reference resolves through the same batch to its own target.',
+        );
+        self::assertNotSame($stored['A'], $stored['B'], 'Two references resolve to two distinct targets.');
+        self::assertNull($stored['C'], 'A line naming no reference stores none.');
+
+        try {
+            $records->writeDocument(new WriteDocumentCommand(
+                $context,
+                $header->handle,
+                'lines',
+                ['title' => 'Unresolvable document', 'total' => '1.25'],
+                [
+                    new DocumentLineInput([
+                        'code' => 'D',
+                        'description' => 'Delta',
+                        'amount' => '1.25',
+                        'product' => 'ref-missing-' . $suffix,
+                    ]),
+                ],
+                NeutralBusinessFixture::idempotencyKey('doc-ref-missing-' . $suffix),
+            ));
+            self::fail('A reference no visible row answers must refuse the whole document.');
+        } catch (BusinessRecordValidationFailed $exception) {
+            self::assertSame('The business record failed validation.', $exception->getMessage());
+        }
+    }
+
     private static function browseIncludes(
         BusinessRecordService $records,
         \Kumwe\App\Application\Authorization\ExecutionContext $context,
