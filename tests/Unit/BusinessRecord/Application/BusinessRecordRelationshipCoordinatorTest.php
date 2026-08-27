@@ -60,6 +60,7 @@ use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -1010,6 +1011,151 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
     }
 
     /**
+     * A document resolves every line's entity references in one batch instead of one read per line.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDocumentReferenceResolutionBatchesTheCollectionAndStoresTargetKeys(): void
+    {
+        [$owner, $line, $target] = $this->entityReferenceDefinitions();
+        $reads = $this->createMock(BusinessRecordReadRepository::class);
+        $reads->expects(self::never())->method('identity');
+        $reads->expects(self::once())->method('identities')->willReturnCallback(
+            static function (
+                ResolvedBusinessDefinition $resolved,
+                RecordScope $scope,
+                BusinessRecordAccessPlan $access,
+                array $recordIds,
+            ): array {
+                sort($recordIds);
+                self::assertSame(['TARGET-001', 'TARGET-002'], $recordIds);
+
+                return [
+                    'TARGET-001' => new StoredRecordIdentity(self::LINE_A, 'TARGET-001', 1, 1),
+                    'TARGET-002' => new StoredRecordIdentity(self::LINE_B, 'TARGET-002', 1, 1),
+                ];
+            },
+        );
+
+        $intent = $this->coordinator($reads, $line, $target)->prepareDocumentMutation(
+            $this->documentCommand([
+                new DocumentLineInput([...$this->submittedLine('A', 'Alpha', '1.25'), 'product' => ' target-001 ']),
+                new DocumentLineInput([...$this->submittedLine('B', 'Beta', '2.50'), 'product' => ' target-002 ']),
+                new DocumentLineInput($this->submittedLine('C', 'Gamma', '3.75')),
+                new DocumentLineInput([...$this->submittedLine('D', 'Delta', '4.00'), 'product' => null]),
+            ]),
+            $owner,
+            $this->scope(),
+            null,
+            $this->ownerAccess(
+                $owner->definition,
+                $line->definition,
+                related: ['product' => $this->targetAccess($target->definition)],
+            ),
+        );
+
+        self::assertSame(
+            [self::LINE_A, self::LINE_B, null, null],
+            array_map(
+                static fn (OwnedLineWrite $write): mixed => $write->values['product'] ?? null,
+                $intent->writes,
+            ),
+            'Submitted references resolve to storage keys; absent and null references stay unresolved.',
+        );
+    }
+
+    /**
+     * A batch reference failure replays per line: policy and existence refuse, infrastructure rethrows.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDocumentReferenceResolutionReplaysBatchFailuresPerLine(): void
+    {
+        [$owner, $line, $target] = $this->entityReferenceDefinitions();
+        $referenceLine = new DocumentLineInput([
+            ...$this->submittedLine('A', 'Alpha', '1.25'),
+            'product' => ' target-001 ',
+        ]);
+
+        $blindReads = $this->createMock(BusinessRecordReadRepository::class);
+        $blindReads->expects(self::never())->method('identities');
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $this->coordinator($blindReads, $line, $target)->prepareDocumentMutation(
+                $this->documentCommand([$referenceLine]),
+                $owner,
+                $this->scope(),
+                null,
+                $this->ownerAccess($owner->definition, $line->definition),
+            ),
+        );
+
+        $access = $this->ownerAccess(
+            $owner->definition,
+            $line->definition,
+            related: ['product' => $this->targetAccess($target->definition)],
+        );
+        $emptyReads = $this->createMock(BusinessRecordReadRepository::class);
+        $emptyReads->expects(self::once())->method('identities')->willReturn([]);
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $this->coordinator($emptyReads, $line, $target)->prepareDocumentMutation(
+                $this->documentCommand([
+                    new DocumentLineInput([...$this->submittedLine('A', 'Alpha', '1.25'), 'product' => 'missing-001']),
+                    new DocumentLineInput([
+                        ...$this->submittedLine('B', 'Beta', '2.50'),
+                        'product' => str_repeat('X', 96),
+                    ]),
+                    new DocumentLineInput(['code' => 'C']),
+                ]),
+                $owner,
+                $this->scope(),
+                null,
+                $access,
+            ),
+        );
+
+        $brokenReads = $this->createMock(BusinessRecordReadRepository::class);
+        $brokenReads->expects(self::once())->method('identities')->willThrowException(
+            new RuntimeException('The reference lookup failed.'),
+        );
+        $this->assertRefusal(
+            RuntimeException::class,
+            'The reference lookup failed.',
+            fn () => $this->coordinator($brokenReads, $line, $target)->prepareDocumentMutation(
+                $this->documentCommand([$referenceLine]),
+                $owner,
+                $this->scope(),
+                null,
+                $access,
+            ),
+        );
+
+        [$targetlessOwner, $targetlessLine] = $this->entityReferenceDefinitions(true);
+        $targetlessReads = $this->createMock(BusinessRecordReadRepository::class);
+        $targetlessReads->expects(self::never())->method('identities');
+        $this->assertRefusal(
+            BusinessRecordValidationFailed::class,
+            'The business record failed validation.',
+            fn () => $this->coordinator($targetlessReads, $targetlessLine)->prepareDocumentMutation(
+                $this->documentCommand([
+                    new DocumentLineInput([...$this->submittedLine('A', 'Alpha', '1.25'), 'accessory' => 'ANY']),
+                ]),
+                $targetlessOwner,
+                $this->scope(),
+                null,
+                $this->ownerAccess($targetlessOwner->definition, $targetlessLine->definition),
+            ),
+        );
+    }
+
+    /**
      * Build an owner whose line identity is authored and normalized instead of generated.
      *
      * @return  array{ResolvedBusinessDefinition, ResolvedBusinessDefinition}  Owner then line definition.
@@ -1049,12 +1195,14 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
     /**
      * Build an owner line whose product field resolves a reference-identity target.
      *
+     * @param   bool  $withTargetlessField  Whether the line also declares a reference field naming no target.
+     *
      * @return  array{ResolvedBusinessDefinition, ResolvedBusinessDefinition, ResolvedBusinessDefinition}
      *          Owner, line and reference target definitions.
      *
      * @since   2.0.0
      */
-    private function entityReferenceDefinitions(): array
+    private function entityReferenceDefinitions(bool $withTargetlessField = false): array
     {
         $targetDefinition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::referenceTargetDocument(
             'coordtarget',
@@ -1070,6 +1218,13 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
             'type' => 'core.entity_reference',
             'configuration' => ['target' => $targetDefinition->handle],
         ];
+        if ($withTargetlessField) {
+            $lineDocument['fields'][] = [
+                'handle' => 'accessory',
+                'label' => 'Accessory',
+                'type' => 'core.entity_reference',
+            ];
+        }
         $lineDefinition = EntityTypeDefinition::fromArray($lineDocument)->published(1);
         $ownerDefinition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::documentHeaderDocument(
             'coordlink',
@@ -1300,6 +1455,7 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
      * @param   EntityTypeDefinition  $owner      Header definition protected by the outer plan.
      * @param   EntityTypeDefinition  $line       Line definition protected by the nested plan.
      * @param   bool                  $allowRows  Whether line row policy admits the collection.
+     * @param   array<string, BusinessRecordAccessPlan>  $related  Entity-reference decisions for the line.
      *
      * @return  BusinessRecordAccessPlan  Header plan with one `lines` child.
      *
@@ -1309,6 +1465,7 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
         EntityTypeDefinition $owner,
         EntityTypeDefinition $line,
         bool $allowRows = true,
+        array $related = [],
     ): BusinessRecordAccessPlan {
         return new BusinessRecordAccessPlan(
             $owner->id,
@@ -1316,7 +1473,7 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
             $this->rowPolicy(true),
             new FieldDisclosurePlan(),
             hash('sha256', 'relationship-owner-access'),
-            ['lines' => $this->lineAccess($line, $allowRows)],
+            ['lines' => $this->lineAccess($line, $allowRows, $related)],
         );
     }
 
