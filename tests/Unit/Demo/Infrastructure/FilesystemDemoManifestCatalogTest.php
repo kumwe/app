@@ -56,7 +56,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-content/v1', $manifest['format'] ?? null);
         self::assertSame('documentation', $manifest['profile'] ?? null);
-        self::assertSame(4, $manifest['version'] ?? null);
+        self::assertSame(5, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
         self::assertCount(28, $content);
         self::assertCount(1, $menus);

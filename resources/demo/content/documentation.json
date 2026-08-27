@@ -1,7 +1,7 @@
 {
   "format": "kumwe.demo-content/v1",
   "profile": "documentation",
-  "version": 4,
+  "version": 5,
   "site": {
     "fixture_key": "site.default",
     "resource_id": "default",
@@ -115,7 +115,7 @@
           {
             "anchor": "managed-content",
             "heading": "Content that stays governed.",
-            "body": "Every page on this site is a managed record: its content type pins the fields, its workflow state decides public visibility, and its menu item gives it a canonical route. The layout is driven by the document itself, so editors fill defined fields rather than hand-building markup. You are reading the result now.\n\n[Explore managed content](/content)"
+            "body": "Every page on this site is a managed record: its reusable content type coordinates exact Model and layout revisions, its workflow state decides public visibility, and its menu item gives it a canonical route. The product target makes Studio the contextual Content New/Edit surface for layout, typed fields, and values; Kumwe App's current generated form remains a transitional fallback until that integrated journey passes acceptance. You are reading the governed public result.\n\n[Explore managed content](/content)"
           },
           {
             "anchor": "business-applications",
@@ -223,7 +223,7 @@
           "label": "Open administrator",
           "url": "/administrator"
         },
-        "body": "## Before startup\n- Copy the example environment file and choose an unused local HTTP port.\n- Keep database credentials, application secrets, and the owner password outside source control.\n- Install the locked Composer and frontend dependencies through the documented development container.\n\n## Bring the installation online\n- Run the portable database migrations.\n- Create the first owner with the user management command.\n- Start the application, web, database, and Redis services.\n- Check both liveness and readiness before opening the user interface.\n\n## Verify the result\nThe public homepage should render managed database content, the administrator should load its committed assets, and the owner should be able to sign in. If one of those checks fails, inspect the service health and logs before changing content or permissions. The [administrator tour](/start-here/administrator) is the next step once this baseline passes.",
+        "body": "## Before startup\n- Copy the example environment file and choose an unused local HTTP port.\n- Keep database credentials, application secrets, and the owner password outside source control.\n- Install the locked Composer PHP dependencies and deploy the committed, precompiled browser assets.\n- Do not install Node.js, npm, Vite, or a JavaScript server in production. Those tools belong only in contributor build, test, and release environments.\n\n## Bring the installation online\n- Run the portable database migrations.\n- Create the first owner with the user management command.\n- Start the PHP application, web, database, and Redis services.\n- Check both liveness and readiness before opening the user interface.\n\n## Verify the result\nThe public homepage should render managed database content, the administrator should load its committed assets, and the owner should be able to sign in. If one of those checks fails, inspect the service health and logs before changing content or permissions. The [administrator tour](/start-here/administrator) is the next step once this baseline passes.",
         "platform": {
           "anchor": "portability",
           "heading": "Keep the database choice portable.",
@@ -260,7 +260,7 @@
           "label": "Open dashboard",
           "url": "/administrator"
         },
-        "body": "## Main work areas\n- Dashboard summarizes content, recent activity, extensions, and system state.\n- Content, Media, Navigation, and Settings shape the public site.\n- Content models define editorial fields and workflow states.\n- Business definitions and schema plans create transactional applications.\n- Business workspaces and Reports expose live records and governed projections.\n- Access and Business security manage capabilities, policies, membership, approvals, tokens, and stronger authentication.\n- Extensions and Automation manage installed contributions and durable background work.\n\nA missing navigation item usually means the signed-in actor lacks its capability. Do not work around that by editing tables. Grant the narrow role or scoped permission through Access, sign in again if the security epoch changed, and verify the intended screen appears.",
+        "body": "## Main work areas\n- Dashboard summarizes content, recent activity, extensions, and system state.\n- Content is the normal New/Edit context and the target home of Studio for layout, blocks, typed fields, and values.\n- Media, Navigation, and Settings shape shared public resources, routes, and presentation.\n- Content models provide advanced reusable-type, version, workflow, migration, and recovery governance; they are not a prerequisite authoring path.\n- Business definitions and schema plans create transactional applications.\n- Business workspaces and Reports expose live records and governed projections.\n- Access and Business security manage capabilities, policies, membership, approvals, tokens, and stronger authentication.\n- Extensions and Automation manage installed contributions and durable background work; authorized extension content areas use the same generic Studio target mechanism as core Content.\n\nThe contextual Studio journey remains an unimplemented target, so the current generated Content form and model-first Blueprint canvas must stay labeled as fallbacks. A missing navigation item usually means the signed-in actor lacks its capability. Do not work around that by editing tables. Grant the narrow role or scoped permission through Access, sign in again if the security epoch changed, and verify the intended screen appears.",
         "capabilities": {
           "anchor": "safe-tour",
           "heading": "Use a reversible tour.",
@@ -292,7 +292,7 @@
       "data": {
         "eyebrow": "Public experience",
         "heading": "Model content once and publish it through governed paths.",
-        "summary": "Pages, content types, workflows, media, navigation, and presentation settings form one editable public site rather than separate page-builder data.",
+        "summary": "Studio's target contextual authoring flow unifies page layout, blocks, typed fields, values, reusable content types, workflows, media, navigation, and presentation without turning them into disconnected page-builder data.",
         "primary_action": {
           "label": "Pages and publishing",
           "url": "/content/pages"
@@ -301,11 +301,11 @@
           "label": "Media and navigation",
           "url": "/content/media-navigation"
         },
-        "body": "Use [Pages and publishing](/content/pages) for day-to-day editorial work, [Content models and workflows](/content/models) when the fields or lifecycle must change, and [Media, navigation, and presentation](/content/media-navigation) when the public chrome and routes must change.\n\nAll three areas meet at a published content record. Its type pins validation, its workflow state decides public visibility, its menu item gives it a canonical route, and site settings may nominate it as the homepage.",
+        "body": "Use [Pages and publishing](/content/pages) for day-to-day editorial work. The product target is one contextual Studio session inside Content New/Edit: start blank or from a reusable content type, arrange layout and blocks, define or bind typed fields, enter values, and save without visiting another workspace. [Content models and workflows](/content/models) remains an advanced governance and recovery area, not a prerequisite authoring step. Use [Media, navigation, and presentation](/content/media-navigation) when public chrome and routes must change.\n\nThat contextual Studio journey is not yet implemented end to end in Kumwe App. The current generated Content form and separate model-first Blueprint canvas are incomplete transitional fallbacks and must not be demonstrated as the finished Studio product. All durable effects remain governed by PHP application services and PHP endpoints.",
         "capabilities": {
           "anchor": "content-loop",
           "heading": "A dependable editorial loop.",
-          "body": "Create a draft, fill the defined fields, save with the current version, transition through an allowed workflow action, and verify the public route. Each write creates audit evidence and a revision snapshot."
+          "body": "The target loop opens Studio from Content New/Edit, composes layout, typed fields and Entry values together, saves an explicit item or reusable-type outcome, reopens the exact accepted revisions, transitions through an allowed workflow action, and verifies the public route. The current form-based loop remains usable but is not contextual Studio acceptance."
         },
         "platform": {
           "anchor": "delivery",
@@ -343,7 +343,7 @@
           "label": "Manage content",
           "url": "/administrator/content"
         },
-        "body": "## Create a page\n- Open Content and choose New content.\n- Select Page or another published content type.\n- Enter a clear title, stable URL slug, and the fields shown by its schema.\n- Save the draft before adding it to navigation.\n\n## Publish safely\n- Use only a transition offered by the pinned workflow.\n- Confirm any publication window includes the current time.\n- Add the page to a menu or nominate it as the homepage when it is meant to be public.\n- Open its canonical path in a signed-out browser.\n\n## Revise or retire\nSave edits with the displayed version so concurrent changes cannot be silently overwritten. Each accepted edit records an immutable revision and an audit event. Trash or restore through the managed actions; references such as the homepage and navigation targets are protected from becoming broken pointers.",
+        "body": "## Studio product target\n- Open Content and choose New content or Edit for the exact item. Studio belongs in that context; it is not a first-class navigation workspace.\n- Start from a blank canvas or an authorized reusable content type.\n- Arrange layout and blocks, define or bind typed fields, and enter the item values in one continuous session.\n- Choose an explicit outcome: save item, save as new type, or save new type version. Reopen the item to verify the exact accepted Model, Blueprint, type, and Entry revisions.\n- Inline, minimized, maximized, and fullscreen presentations preserve one session; fullscreen is only a continuation with a deterministic return.\n\nThis integrated journey is the target, not current release behavior. Today the generated Content form and the separate model-first Blueprint canvas are incomplete transitional fallbacks. They require pre-existing definitions and do not prove contextual Studio acceptance.\n\n## Publish safely\n- Use only a transition offered by the pinned workflow.\n- Confirm any publication window includes the current time.\n- Add the page to a menu or nominate it as the homepage when it is meant to be public.\n- Open its canonical path in a signed-out browser.\n\n## Revise or retire\nSave edits with the displayed version so concurrent changes cannot be silently overwritten. Each accepted edit records an immutable revision and an audit event. Trash or restore through the managed actions; references such as the homepage and navigation targets are protected from becoming broken pointers.",
         "platform": {
           "anchor": "rich-text",
           "heading": "Use the supported rich-text vocabulary.",
@@ -374,13 +374,13 @@
       "canonical_path": "/content/models",
       "data": {
         "eyebrow": "Editorial structure",
-        "heading": "Define fields and lifecycle rules before editors depend on them.",
-        "summary": "Published content types and workflows are immutable versions, so existing entries remain interpretable while a model evolves.",
+        "heading": "Govern reusable content types and workflows without making them an authoring prerequisite.",
+        "summary": "Studio's target Content New/Edit flow presents a reusable type as one choice while preserving immutable Model, Blueprint, policy, workflow, and Entry revisions underneath.",
         "primary_action": {
-          "label": "Manage content models",
-          "url": "/administrator/content-models"
+          "label": "Create or edit content",
+          "url": "/administrator/content"
         },
-        "body": "## Content types\nA content type has a stable handle, name, field schema, workflow reference, and published version. Use required fields only for information every editor can supply. Prefer structured fields for values another surface must filter or display consistently, and use rich text for narrative content.\n\n## Workflows\nA workflow defines states, the initial state, which states are public, and the transitions allowed between them. Name transitions as actions an editor understands. Keep review and publication authority separate where governance requires it.\n\n## Evolve without ambiguity\nDraft a new definition, validate it, and publish a new version rather than rewriting a version already used by content. Entries retain the type and workflow versions that validated them. Test old and new entries through the administrator and public renderer before making the new model the normal authoring choice.",
+        "body": "## One reusable authoring choice\nIn product language, a Kumwe content type is the reusable surface an author can choose inside Studio. It coordinates an exact Content Model revision, an exact Blueprint revision, authoring policy, and workflow while excluding every Entry's values. Authors can also begin blank and save the accepted layout, blocks, typed fields, and bindings as a new type without copying the current values.\n\n## Explicit version outcomes\nSave item changes only the current Entry. Save as new type creates a new reusable choice without Entry values. Save new type version creates immutable successors only after showing migration and dependent-entry consequences. Published Model, Blueprint, and workflow revisions are never silently rewritten, and reopening an item hydrates the exact revisions it accepted.\n\n## Advanced governance and current fallback\nA separate model administration area may remain for advanced governance, recovery, and migration; it is not the normal starting point for authors. Kumwe App has not yet implemented the unified contextual journey. Its current model-first Blueprint canvas and generated Entry form are incomplete transitional fallbacks, not an alternative product definition and not release acceptance.",
         "capabilities": {
           "anchor": "page-v3",
           "heading": "This guide is Page v3 content.",
@@ -661,7 +661,7 @@
           "label": "Manage extensions",
           "url": "/administrator/extensions"
         },
-        "body": "## Build the package\nStart from the complete-component scaffold and keep its namespace, package identifier, manifest, provider, tests, and documentation aligned. Declare only supported manifest keys. Inventory every runtime asset and migration, lock dependencies, and make the build reproducible.\n\n## Contribute behavior\nThe provider may register services while it has the container, but ordinary classes receive dependencies through constructors. Routes call application services. Business definitions, fields, actions, reports, events, jobs, schedules, policies, administrator links, portal routes, and settings use their typed contribution registries.\n\n## Manage lifecycle\nRun static and lifecycle conformance before install. Review the plan, install, activate, disable, reactivate, upgrade, uninstall, and restore from backup. Interrupted activation must leave the previous active runtime intact.\n\n## Templates\nA template package owns Twig files, declared assets, compatibility, and presentation behavior. It consumes already-presented data and must not bypass content, authorization, or settings services. Verify homepage, nested routes, missing optional fields, errors, responsive layouts, keyboard use, contrast, security headers, and caching.",
+        "body": "## Build the package\nStart from the complete-component scaffold and keep its namespace, package identifier, manifest, provider, tests, and documentation aligned. Declare only supported manifest keys. Inventory every runtime asset and migration, lock dependencies, and make the build reproducible. Production packages ship compiled browser assets and must never require Node.js, npm, Vite, a development server, or server-side JavaScript.\n\n## Contribute behavior\nThe provider may register services while it has the container, but ordinary classes receive dependencies through constructors and routes call PHP application services. Business definitions, fields, actions, reports, events, jobs, schedules, policies, administrator links, portal routes, and settings use their typed contribution registries. An extension-owned content area may declare the same generic, resource-bound Studio target as core Content. It can contribute admitted block definitions, patterns, field adapters, inspectors, design vocabularies, and migrations through Studio's canonical owner-aware lifecycle; it must not fork Studio, expose Editor.js, or create a weaker one-off editor. Contextual extension authoring remains part of the unimplemented Studio acceptance target.\n\n## Manage lifecycle\nRun static and lifecycle conformance before install. Review the plan, install, activate, disable, reactivate, upgrade, uninstall, and restore from backup. Interrupted activation must leave the previous active runtime intact. Studio contributions must preserve deterministic disable, unresolved intent, upgrade, and migration behavior.\n\n## Templates\nA template package owns Twig files, declared assets, compatibility, and presentation behavior. It consumes already-presented data and must not bypass content, authorization, or settings services. Verify homepage, nested routes, missing optional fields, errors, responsive layouts, keyboard use, contrast, security headers, and caching.",
         "capabilities": {
           "anchor": "examples",
           "heading": "Study the shipped proof components.",
@@ -777,7 +777,7 @@
         "eyebrow": "First page",
         "heading": "Take one page from draft to the public site.",
         "summary": "Sign in, create a draft in Content, submit it for review, publish it, and open the result — one loop through the governed workflow every page uses.",
-        "body": "This guide takes one page from nothing to a public URL using only the administrator. You need a running installation from the [installation guide](/start-here/getting-started) and an account holding the content capabilities involved; the owner created during installation holds them all.\n\n## How the workflow behaves\n- Every edit creates an immutable revision and an audit event, so no state change loses work.\n- The editor offers only the transitions valid for the page's current state and your capabilities.\n- A published page is public only after its optional publish date and before its optional unpublish date.\n\nEvery step below uses generated screens; routine authoring never requires reading or writing JSON.",
+        "body": "This guide takes one page from nothing to a public URL using the currently implemented administrator fallback. You need a running installation from the [installation guide](/start-here/getting-started) and an account holding the content capabilities involved; the owner created during installation holds them all.\n\n## How the workflow behaves\n- Every edit creates an immutable revision and an audit event, so no state change loses work.\n- The editor offers only the transitions valid for the page's current state and your capabilities.\n- A published page is public only after its optional publish date and before its optional unpublish date.\n\nThe finished product will provide this work contextually in Studio from Content New/Edit, including blank or reusable-type creation, layout, typed fields, values, explicit save outcomes, and exact reopen. That target is not yet implemented end to end; the generated form described below is a transitional fallback, and the separate model-first Blueprint canvas is not a prerequisite product path.",
         "steps": [
           {
             "anchor": "sign-in",
@@ -791,8 +791,8 @@
           },
           {
             "anchor": "choose-a-layout",
-            "heading": "Create the page and choose its layout.",
-            "body": "Create a new page and select a content type. This documentation site installs six layouts — Document, Guide, Reference, Questions and answers, Landing page, and Article — and each renders differently on the public site; the page you are reading uses the Guide layout. Your choice generates the editor: text, rich-text, media, and the other field controls come from the content type definition. Give the page a title and a slug, then complete the generated fields. [Content models](/content/models) explains how these definitions are built and versioned."
+            "heading": "Use the current content-form fallback.",
+            "body": "Create a new page and select an existing content type. This documentation site installs six layouts — Document, Guide, Reference, Questions and answers, Landing page, and Article — and each renders differently on the public site; the page you are reading uses the Guide layout. The current fallback generates text, rich-text, media, and other field controls from that definition. Give the page a title and slug, then complete the fields. This is runnable current behavior, but it does not satisfy the contextual Studio target described in [Pages and publishing](/content/pages)."
           },
           {
             "anchor": "save-the-draft",
@@ -817,7 +817,7 @@
         ],
         "outcome": {
           "heading": "What you now have.",
-          "body": "A page you created is live at a public URL, and its complete history — every draft revision, the review transition, the publish action, and the matching audit events — is inspectable in the administrator. You have exercised the same workflow every editor uses and the same application services shared by the REST API, command line, and MCP tools. Continue with [content models](/content/models) to define your own layouts, or open [Content](/content) for the wider publishing tour."
+          "body": "A page you created is live at a public URL, and its complete history — every draft revision, the review transition, the publish action, and the matching audit events — is inspectable in the administrator. You have exercised the current form-based fallback and the same PHP application services shared by the REST API, command line, and MCP tools. Open [Content](/content) for the wider publishing tour or [content models](/content/models) for advanced type and workflow governance; neither result should be presented as completed contextual Studio acceptance."
         }
       },
       "publish_at": null,
@@ -932,7 +932,7 @@
           },
           {
             "question": "How do layouts relate to content types?",
-            "body": "A content type is the contract: a stable handle, a field schema, a workflow reference, and a published version that pins how entries validate. A layout is presentation: the active template renders each type's presented data as a matching public page. This FAQ is a managed entry whose type defines a heading and a list of question-and-answer items; the template turns that structure into the page you are reading. Change fields and lifecycle in [Content models and workflows](/content/models); change public chrome and presentation in [Media, navigation, and presentation](/content/media-navigation)."
+            "body": "In Studio product language, a Kumwe content type is one reusable authoring choice that coordinates an exact Content Model revision, Blueprint revision, authoring policy, and workflow while excluding Entry values. The Blueprint carries layout and block composition; the Model carries typed fields and bindings; the current Entry supplies only its own values. The target Content New/Edit flow lets an author start blank or from that reusable type, work on all three in one session, and save the item, a new type, or a new type version explicitly. Kumwe App has not yet completed that contextual journey, so its generated form and separate model-first Blueprint canvas remain labeled fallbacks. [Content models and workflows](/content/models) covers advanced governance."
           },
           {
             "question": "What is the portal?",

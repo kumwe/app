@@ -3,17 +3,50 @@
   "schemaVersion": 1,
   "status": "not_run",
   "studioRelease": "0.1.0-rc.1",
-  "surface": "core.administrator.studio-composition",
+  "surface": "core.administrator.content-editor",
+  "productContract": {
+    "version": "STUDIO-PROD-1.0-draft",
+    "requirements": [
+      "STUDIO-PROD-001",
+      "STUDIO-PROD-002",
+      "STUDIO-PROD-003",
+      "STUDIO-PROD-004",
+      "STUDIO-PROD-005",
+      "STUDIO-PROD-006",
+      "STUDIO-PROD-007",
+      "STUDIO-PROD-008",
+      "STUDIO-PROD-009",
+      "STUDIO-PROD-010",
+      "STUDIO-PROD-011",
+      "STUDIO-PROD-012",
+      "STUDIO-PROD-013",
+      "STUDIO-PROD-014",
+      "STUDIO-PROD-015"
+    ],
+    "implementationStatus": "incomplete",
+    "acceptanceStatus": "not_run"
+  },
+  "runtimeTopology": {
+    "browser": "precompiled Studio assets",
+    "serverAuthority": "Kumwe PHP application services and PHP HTTP endpoints",
+    "productionNodeJsOrNpm": "forbidden"
+  },
+  "currentFallback": {
+    "surface": "core.administrator.studio-composition",
+    "status": "transitional_incomplete",
+    "description": "The current model-first Blueprint canvas requires a pre-existing Content model/version and is separate from Entry-value editing. Its evidence below proves only fallback primitives, not contextual product acceptance."
+  },
   "accountableRoles": [
     "product-owner",
     "accessibility-reviewer",
     "localization-reviewer"
   ],
   "automationIsNecessaryNotSufficient": true,
+  "stepsScope": "current_fallback_primitive_evidence_only",
   "steps": [
     {
       "id": "compose",
-      "humanTask": "Provision a Content-type-version Blueprint and compose a nested section, grid and field layout using direct manipulation and keyboard commands.",
+      "humanTask": "On the current incomplete fallback, provision a Content-type-version Blueprint and compose a nested section, grid and field layout using direct manipulation and keyboard commands.",
       "automatedEvidence": {
         "path": "tests/Browser/studio-composition.spec.ts",
         "marker": "measured canvas select, reorder and reparent have keyboard parity"
@@ -22,7 +55,7 @@
     },
     {
       "id": "preview",
-      "humanTask": "Inspect the exact rendered preview at compact, medium and expanded viewports and confirm selection remains aligned after scroll and reflow.",
+      "humanTask": "On the current incomplete fallback, inspect the exact rendered preview at compact, medium and expanded viewports and confirm selection remains aligned after scroll and reflow.",
       "automatedEvidence": {
         "path": "tests/Browser/studio-composition.spec.ts",
         "marker": "closed layout intent renders four, two and one columns without surface overflow"
@@ -31,7 +64,7 @@
     },
     {
       "id": "publish",
-      "humanTask": "Publish the accepted Blueprint through Studio and verify the public composition is the accepted immutable revision.",
+      "humanTask": "On the current incomplete fallback, publish the accepted Blueprint and verify the public composition is the accepted immutable revision.",
       "automatedEvidence": {
         "path": "tests/Browser/studio-composition.spec.ts",
         "marker": "draft lifecycle control sends the canonical publication envelope"
@@ -40,7 +73,7 @@
     },
     {
       "id": "non-source-language",
-      "humanTask": "Repeat compose, preview and publish in a configured non-source language, including one right-to-left locale, and review terminology overrides.",
+      "humanTask": "On the current incomplete fallback, repeat compose, preview and publish in a configured non-source language, including one right-to-left locale, and review terminology overrides.",
       "automatedEvidence": {
         "path": "tests/Browser/right-to-left.spec.ts",
         "marker": "the Studio composition shell and exact preview remain right-to-left without overflow"
@@ -48,6 +81,86 @@
       "humanEvidence": null
     }
   ],
+  "targetJourney": {
+    "id": "STUDIO-PROD-015",
+    "status": "not_run",
+    "implementationStatus": "not_implemented",
+    "humanAcceptanceRun": false,
+    "steps": [
+      {
+        "id": "production-without-node",
+        "outcome": "Start a clean production host using compiled Studio browser assets, PHP server authority and no Node.js, npm, Vite, development server or server-side JavaScript process.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "contextual-core-and-extension-launch",
+        "outcome": "Resolve one core target and one extension-owned target through the same generic declaration and open Studio from the exact existing item's normal content context; fullscreen only continues and returns to that context.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "exact-reopen-hydration",
+        "outcome": "Reopen an existing item and hydrate its exact reusable-type, Model, Blueprint and Entry revisions and its own values without substituting the latest type.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "layout-fields-values-save-item-reopen",
+        "outcome": "In one session, change layout, add or configure a typed field, enter its Entry value, choose save item, reopen and observe every host-accepted revision without changing the reusable type.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "create-from-type",
+        "outcome": "Create from an authorized reusable content type and receive its exact layout, blocks, fields and bindings with empty Entry values.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "create-from-blank",
+        "outcome": "Create from a blank canvas, insert layout and content blocks, add or bind typed fields and enter values without leaving Studio or pre-creating another artifact.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "save-and-reuse-new-type",
+        "outcome": "Choose save as new type, then create another item from it and receive the accepted structure and fields with empty Entry values.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "save-new-type-version",
+        "outcome": "Choose save new type version and observe immutable successor revisions plus migration and dependent-entry consequences before confirmation.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "presentation-continuity",
+        "outcome": "Move through every declared inline, minimized, maximized and fullscreen state without losing resource coordinates, selection, history, dirty state, validation, authority, unsaved work or return context.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "extension-contribution-lifecycle",
+        "outcome": "Use authorized extension block-definition, field-adapter and pattern contributions, save and render, then prove deterministic disable, unresolved, upgrade and migration behavior.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "accessible-operation",
+        "outcome": "Prove equivalent pointer, keyboard, structural-control, touch and required assistive-technology outcomes.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      },
+      {
+        "id": "php-authority-record",
+        "outcome": "Record that every durable effect passed through authenticated, authorized, validated, transactional, versioned and audited Kumwe PHP APIs and application services.",
+        "automatedEvidence": null,
+        "humanEvidence": null
+      }
+    ]
+  },
   "qualificationDependencies": {
     "p7cPreviewMediaSecurity": "pending_independent_review",
     "p7fSignedContributedBlockAndRenderer": "open",

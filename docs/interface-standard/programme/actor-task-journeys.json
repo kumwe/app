@@ -20,8 +20,8 @@
       "id": "content-operator",
       "label": "Content operator",
       "context": "Authenticated administrator with content capabilities",
-      "goals": ["Find content", "Create and edit content", "Manage media", "Understand publication state"],
-      "must_not_receive": ["Actions outside granted capabilities", "Hidden workflow transitions"]
+      "goals": ["Find content", "Create layout, typed fields and values in one contextual Studio session", "Reuse an authorized design without copying Entry values", "Manage media", "Understand publication state"],
+      "must_not_receive": ["Actions outside granted capabilities", "Hidden workflow transitions", "A prerequisite Studio or Blueprint workspace", "Manual copy-paste or revision reconciliation"]
     },
     {
       "id": "structure-manager",
@@ -146,9 +146,9 @@
     },
     {
       "id": "task.content.author",
-      "label": "Create, edit and publish content",
+      "label": "Create, design, edit and publish content contextually",
       "actor_ids": ["content-operator"],
-      "primary_outcome": "A validated content record progresses through its authorized workflow without lost edits.",
+      "primary_outcome": "From Content New/Edit, the actor uses one resource-bound Studio session to start blank or from a reusable type, arrange layout and typed fields, enter values, save the item or an explicit reusable-type outcome, reopen exact accepted revisions, and progress through the authorized workflow without lost edits.",
       "journey_ids": ["journey.content-lifecycle"]
     },
     {
@@ -330,10 +330,24 @@
     },
     {
       "id": "journey.content-lifecycle",
-      "label": "Create, publish and find managed content",
-      "actor_ids": ["content-operator"],
+      "label": "Create, reuse, reopen and publish managed content through contextual Studio",
+      "actor_ids": ["content-operator", "extension-operator"],
       "surface_sequence": ["core.administrator.content-collection", "core.administrator.content-editor", "core.administrator.media", "core.public.page"],
-      "success": "The authorized actor creates valid content, uses media, progresses state and verifies canonical public output."
+      "success": "The authorized actor opens Studio from the exact core or extension content context, starts blank or from a reusable type, composes layout, typed fields and Entry values in one session, saves an explicit outcome, reopens exact accepted revisions, progresses state and verifies canonical public output through PHP authority with zero production Node.js or npm.",
+      "product_contract": ["STUDIO-PROD-001", "STUDIO-PROD-002", "STUDIO-PROD-003", "STUDIO-PROD-004", "STUDIO-PROD-005", "STUDIO-PROD-006", "STUDIO-PROD-007", "STUDIO-PROD-008", "STUDIO-PROD-009", "STUDIO-PROD-010", "STUDIO-PROD-011", "STUDIO-PROD-012", "STUDIO-PROD-013", "STUDIO-PROD-014", "STUDIO-PROD-015"],
+      "implementation_status": "target_not_implemented",
+      "target_steps": [
+        "Open Studio from Content New/Edit for the exact resource; fullscreen, when used, continues and returns to that same context.",
+        "For new content, choose a blank canvas or an authorized reusable content type without visiting another workspace.",
+        "In one session, arrange layout and blocks, add or bind typed fields, enter Entry values and preview the result.",
+        "Choose save item and reconcile the host-accepted Model, Blueprint and Entry revisions without changing the reusable type.",
+        "Reopen the item and hydrate its exact accepted type, Model, Blueprint and Entry revisions plus its own values.",
+        "Choose save as new type, create another item from it, and receive its structure and fields with empty Entry values.",
+        "Choose save new type version only after visible migration and dependent-entry consequences, preserving immutable predecessors.",
+        "Resolve one extension-owned target through the same generic target and contribution lifecycle as core content.",
+        "Run the production host with compiled Studio browser assets, authoritative PHP APIs and no Node.js, npm, Vite, development server or server-side JavaScript process."
+      ],
+      "current_fallback": "The separate model-first Blueprint composition route and generated Content form are incomplete transitional fallbacks, not this journey and not evidence of product acceptance."
     },
     {
       "id": "journey.site-structure",
