@@ -131,24 +131,29 @@ green, and adds the focused proof for the behavior it introduces. A Studio proto
 capability audit proves one necessary, lands first in one coordinated Studio pull request and is consumed by the
 App pull request through one exact family re-pin.
 
-1. **Ship and boot.** Prove a clean production App starts with the compiled Studio asset present and no production
-   Node/npm dependency; make missing or incompatible assets a clear build/release failure.
-2. **Open in context.** Launch Studio from existing Content create/edit actions with a PHP-issued trusted context,
-   inline/expanded state, recovery scope, and deterministic return. Retain the current form as an explicit fallback.
-3. **Start blank or from type.** Load authorized reusable types and blank state inside that context, with empty entry
-   values and exact model/Blueprint/policy locks.
-4. **Save the content item.** Persist new and edited entry values through the existing PHP Content service with CSRF,
-   authorization, validation, expected revision, idempotency, audit, conflict, and workflow behavior.
-5. **Create a reusable type.** Add the explicit save-as-new-type outcome, excluding entry values and atomically
-   creating the initial immutable model/Blueprint/policy association.
-6. **Version a reusable type.** Add the separately confirmed successor-version outcome with migration/dependency
-   impact, immutable history, and no silent changes to other entries.
-7. **Use extensions contextually.** Resolve authorized extension blocks, fields, patterns, inspectors, design
-   vocabularies, and migrations on their declared targets, including an extension-owned authoring surface proof.
-8. **Complete the workspace.** Preserve selection, unsaved state, locale, generation authority, preview, diagnostics,
-   and history across inline/minimized/maximized/full-screen transitions and return.
-9. **Prove the product journey.** Run the exact `STUDIO-PROD-015` journey on the production artifact, PHP-only server
-   topology, real databases, browser/accessibility/security lanes, public rendering, and rollback fallback.
+1. **`S-G1` — Contract truth.** Land the one product authority, App ADR and mapping, corrected status/finding,
+   acceptance fixture, production PHP/asset rule, and agent guardrails. This documentation increment completes that
+   goal; it does not complete the product journey.
+2. **`S-G2` — Context envelope and launch.** Ship the compiled Studio asset and open it from Content New/Edit with a
+   PHP-issued trusted context for the exact resource, recovery scope, and deterministic return. Missing or incompatible
+   assets fail the build/release clearly; the current form remains an explicit fallback.
+3. **`S-G3` — Context-preserving shell.** Preserve resource identity, selection, authority, locale, unsaved state,
+   history, validation, and return across inline, minimized, maximized, and full-screen presentations.
+4. **`S-G4` — Existing-item round trip.** Load the authorized exact Model, Blueprint, type, and Entry revisions and
+   values; change layout and values; save through PHP with expected revision, conflict, idempotency, audit, and workflow
+   behavior; then reopen the accepted result.
+5. **`S-G5` — Existing-type creation.** Start a new item from an authorized reusable type with its exact structure,
+   fields, and bindings but empty Entry values, then save it through the same PHP path.
+6. **`S-G6` — Blank creation and field authoring.** Start blank, compose blocks and typed fields, enter values in the
+   same Studio journey, and save without a prerequisite catalogue workflow.
+7. **`S-G7` — Explicit reusable-type outcomes.** Implement the separately confirmed save-item,
+   save-as-new-type, and new-type-version PHP transactions with value exclusion, immutable successors, permission,
+   migration/dependency impact, conflict, replay, and audit proof.
+8. **`S-G8` — Contributions, preview, and delivery.** Resolve authorized extension contributions on their declared
+   targets, prove an extension-owned authoring surface, and exercise authenticated preview and trusted public rendering.
+9. **`S-G9` — Production qualification.** Run the exact `STUDIO-PROD-015` journey on the packaged artifact, PHP-only
+   server topology, real databases, browser/accessibility/security/localization lanes, public rendering, fallback, and
+   automated refusal of any production Node.js/npm dependency.
 
 The pull request is not complete because its Blueprint canvas opens. It is complete only when the canonical
 acceptance journey passes and the live status ledgers truthfully record that evidence.
