@@ -10,10 +10,11 @@
  * integration suite boots, measures the contract's interactive operation classes, and writes a
  * report that speaks the contract's own vocabulary.
  *
- * Two modes:
+ * Three modes:
  *
- *   php tools/perf-harness.php --plan [--seed=N] [--profile=baseline|enterprise|stretch]
- *   php tools/perf-harness.php --run  [--seed=N] [--profile=...] [--samples=N] [--warmup=N]
+ *   php tools/perf-harness.php --plan       [--seed=N] [--profile=baseline|enterprise|stretch]
+ *   php tools/perf-harness.php --run        [--seed=N] [--profile=...] [--samples=N] [--warmup=N]
+ *   php tools/perf-harness.php --breakpoint [--seed=N] [--samples=N]
  *
  * `--plan` is pure: the same seed always prints byte-identical JSON, which is what makes the dataset
  * reproducible and lets a unit test hold the generator to it. `--run` needs the test database
@@ -22,11 +23,20 @@
  * 100- and 1000-line document commits — reporting p50/p95/p99, mean, coefficient of variation and
  * the contract's SLO verdicts to `build/perf/report.json`.
  *
- * Honesty over reach, per the contract's own rules: this seed measures single-worker latency on
- * whatever host runs it, so the report binds the engine, commit, seed and sample counts but claims
- * no absolute-throughput authority ("shared CI runners are never the authority"), no concurrency or
- * contention profile, no write-amplification figure and no breakpoint. Those are the next P2-I
- * stages, and the report's `limitations` block names them rather than leaving them implied.
+ * `--run` also measures write amplification the way the contract counts it — physical row mutations
+ * per logical business transaction, from real row-count deltas across the header, line, revision,
+ * audit, idempotency, outbox and projection-source tables around one commit — and refuses to write a
+ * report that does not validate against `docs/quality/perf-report.schema.json`, so the result schema
+ * is a contract rather than a habit. `--breakpoint` ramps the document line axis twice and records
+ * where the measured p95 first crosses the interpolated commit objective: a baseline fact about this
+ * host and this commit, never a capacity claim, and the run fails when the two passes disagree,
+ * because the phase-2 exit gate asks for a report that is *stable*, not merely produced.
+ *
+ * Honesty over reach, per the contract's own rules: this harness measures single-worker latency on
+ * whatever host runs it, so every report binds the engine, commit, seed and sample counts but claims
+ * no absolute-throughput authority ("shared CI runners are never the authority") and no concurrency
+ * or contention profile. Hot-plan capture lives in the integration gate
+ * (tests/Integration/Performance/HotPlanRegressionIntegrationTest.php) where every engine runs it.
  *
  * @since  2.0.0
  */
@@ -41,7 +51,7 @@ $samples = 30;
 $warmup = 5;
 
 foreach (array_slice($argv, 1) as $argument) {
-    if ($argument === '--plan' || $argument === '--run') {
+    if ($argument === '--plan' || $argument === '--run' || $argument === '--breakpoint') {
         $mode = substr($argument, 2);
         continue;
     }
@@ -66,7 +76,7 @@ foreach (array_slice($argv, 1) as $argument) {
 }
 
 if ($mode === null) {
-    fwrite(STDERR, "Pass --plan or --run. See the file header for usage.\n");
+    fwrite(STDERR, "Pass --plan, --run or --breakpoint. See the file header for usage.\n");
     exit(1);
 }
 
@@ -131,7 +141,8 @@ function buildPlan(array $contract, int $seed, string $profile, int $samples, in
 
     return [
         'harness' => 'kumwe-perf-harness',
-        'stage' => 'P2-I seed: single-worker interactive characterisation',
+        'schema' => 'docs/quality/perf-report.schema.json',
+        'stage' => 'P2-I: single-worker interactive characterisation',
         'seed' => $seed,
         'profile' => $profile,
         'profile_target' => $contract['profiles'][$profile] ?? null,
@@ -162,6 +173,51 @@ function buildPlan(array $contract, int $seed, string $profile, int $samples, in
     ];
 }
 
+/**
+ * Hold a built document to the declared result schema, reporting every divergence at once.
+ *
+ * The validator speaks the small structural dialect the schema file uses — required keys with a
+ * declared type, nothing more — because the point is not general JSON Schema power but that a report
+ * the tooling writes and a report the schema promises cannot quietly drift apart.
+ *
+ * @param   array<string, mixed>  $document  Report or breakpoint document about to be written.
+ * @param   string                $section   Key of the schema file describing this document kind.
+ * @param   string                $root      Repository root holding the schema file.
+ *
+ * @return  list<string>  Human-readable divergences; empty when the document conforms.
+ *
+ * @since   2.0.0
+ */
+function schemaDivergences(array $document, string $section, string $root): array
+{
+    $schema = json_decode((string) file_get_contents($root . '/docs/quality/perf-report.schema.json'), true);
+    if (!is_array($schema) || !is_array($schema[$section] ?? null)) {
+        return [sprintf('The result schema declares no "%s" section.', $section)];
+    }
+    $divergences = [];
+    /** @var array<string, string> $required */
+    $required = $schema[$section]['required'] ?? [];
+    foreach ($required as $key => $type) {
+        if (!array_key_exists($key, $document)) {
+            $divergences[] = sprintf('%s: required key "%s" is absent.', $section, $key);
+            continue;
+        }
+        $actual = get_debug_type($document[$key]);
+        $matches = match ($type) {
+            'object', 'array' => is_array($document[$key]),
+            'number' => is_int($document[$key]) || is_float($document[$key]),
+            'string' => is_string($document[$key]),
+            'boolean' => is_bool($document[$key]),
+            default => false,
+        };
+        if (!$matches) {
+            $divergences[] = sprintf('%s: key "%s" must be %s, found %s.', $section, $key, $type, $actual);
+        }
+    }
+
+    return $divergences;
+}
+
 if ($mode === 'plan') {
     echo json_encode(buildPlan($contract, $seed, $profile, $samples, $warmup), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "\n";
     exit(0);
@@ -169,6 +225,7 @@ if ($mode === 'plan') {
 
 require $root . '/vendor/autoload.php';
 
+use Doctrine\DBAL\Connection;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
@@ -177,6 +234,8 @@ use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
@@ -274,6 +333,195 @@ function measure(int $warmupRuns, int $sampleRuns, callable $operation): array
         'mean_ms' => round($mean, 2),
         'coefficient_of_variation' => $mean > 0.0 ? round($deviation / $mean, 3) : 0.0,
     ];
+}
+
+/**
+ * Count the live rows of every table one committed document touches, keyed by the ledger's name.
+ *
+ * @param   Connection             $connection  Live connection of the engine under measurement.
+ * @param   array<string, string>  $tables      Quoted physical table names keyed by ledger name.
+ *
+ * @return  array<string, int>  Current row count per ledger.
+ *
+ * @since   2.0.0
+ */
+function ledgerRowCounts(Connection $connection, array $tables): array
+{
+    $counts = [];
+    foreach ($tables as $ledger => $quoted) {
+        $counts[$ledger] = (int) $connection->fetchOne('SELECT COUNT(*) FROM ' . $quoted);
+    }
+
+    return $counts;
+}
+
+$connection = $container->get(Connection::class);
+if (!$connection instanceof Connection) {
+    fwrite(STDERR, "The shared connection is unavailable.\n");
+    exit(1);
+}
+$tableNames = $container->get(TableNames::class);
+$installations = $container->get(BusinessSchemaInstallationRepository::class);
+if (!$tableNames instanceof TableNames || !$installations instanceof BusinessSchemaInstallationRepository) {
+    fwrite(STDERR, "The table-name services are unavailable.\n");
+    exit(1);
+}
+$headerInstallation = $installations->find($header->id);
+$headerTable = $headerInstallation?->blueprint->table('record');
+$lineTable = $headerInstallation?->blueprint->table('line:lines');
+if ($headerTable === null || $lineTable === null) {
+    fwrite(STDERR, "The document fixture's installed tables are unavailable.\n");
+    exit(1);
+}
+$platform = $connection->getDatabasePlatform();
+$ledgerTables = [
+    'header' => $platform->quoteSingleIdentifier($headerTable->physicalName),
+    'lines' => $platform->quoteSingleIdentifier($lineTable->physicalName),
+    'revisions' => $tableNames->quoted('business_record_revisions'),
+    'audit' => $tableNames->quoted('audit_events'),
+    'idempotency' => $tableNames->quoted('business_command_idempotency'),
+    'outbox' => $tableNames->quoted('integration_outbox'),
+    'projection_source' => $tableNames->quoted('business_projection_source_events'),
+];
+
+$binding = static function () use ($root, $connection): array {
+    $commit = trim((string) shell_exec('git -C ' . escapeshellarg($root) . ' rev-parse HEAD 2>/dev/null'));
+    $engineVersion = 'unavailable';
+    try {
+        $engineVersion = (string) $connection->fetchOne('SELECT VERSION()');
+    } catch (Throwable) {
+    }
+
+    return [
+        'source_commit' => $commit,
+        'engine' => (string) getenv('DB_DRIVER') ?: 'mariadb',
+        'engine_version' => $engineVersion,
+        'php_version' => PHP_VERSION,
+        'measured_at' => gmdate('c'),
+        'runner' => 'unqualified host: latency characterisation only, never an absolute-throughput authority',
+    ];
+};
+
+if ($mode === 'breakpoint') {
+    $objectives = $contract['service_level_objectives'] ?? [];
+    $floor = (float) ($objectives['document_100_line_commit']['p95_ms'] ?? 2000);
+    $ceiling = (float) ($objectives['document_1000_line_commit']['p95_ms'] ?? 8000);
+    // The objective between the two declared sizes is interpolated on the line axis, because the
+    // contract prices the commit by its lines and declares the two ends of that price.
+    $budgetAt = static fn (int $size): float => $floor + ($size - 100) * ($ceiling - $floor) / 900.0;
+    $sizes = [100, 200, 500, 1000];
+    $rampSamples = max(3, intdiv($samples, 10));
+    $passes = [];
+    $knees = [];
+    for ($pass = 0; $pass < 2; ++$pass) {
+        $measured = [];
+        $knee = null;
+        foreach ($sizes as $size) {
+            $documents = [];
+            $stats = measure(1, $rampSamples, function (int $index) use (
+                $records,
+                $context,
+                $header,
+                $size,
+                $nonce,
+                $pass,
+                &$documents
+            ): void {
+                $documentId = Uuid::uuid7()->toString();
+                $stem = $nonce . '-bp' . $pass . '-' . $size . '-' . ($index + 100);
+                $result = $records->writeDocument(new WriteDocumentCommand(
+                    $context,
+                    $header->handle,
+                    'lines',
+                    ['title' => 'Breakpoint document ' . $stem, 'total' => number_format($size, 2, '.', '')],
+                    documentLines($size, $stem),
+                    NeutralBusinessFixture::idempotencyKey('perf-bp-' . $stem),
+                    recordId: $documentId,
+                ));
+                $documents[] = [$documentId, $result->version];
+            });
+            foreach ($documents as $position => [$documentId, $version]) {
+                $records->delete(new DeleteRecordCommand(
+                    $context,
+                    $header->handle,
+                    $documentId,
+                    $version,
+                    NeutralBusinessFixture::idempotencyKey(
+                        'perf-bp-drop-' . $nonce . '-' . $pass . '-' . $size . '-' . $position,
+                    ),
+                ));
+            }
+            $measured[] = [
+                'lines' => $size,
+                'p95_ms' => $stats['p95_ms'],
+                'budget_p95_ms' => round($budgetAt($size), 1),
+                'over_budget' => $stats['p95_ms'] > $budgetAt($size),
+            ];
+            if ($knee === null && $stats['p95_ms'] > $budgetAt($size)) {
+                $knee = $size;
+            }
+        }
+        $passes[] = $measured;
+        $knees[] = $knee;
+    }
+    $agrees = $knees[0] === $knees[1];
+    $withinTolerance = true;
+    foreach ($sizes as $index => $size) {
+        $first = (float) $passes[0][$index]['p95_ms'];
+        $second = (float) $passes[1][$index]['p95_ms'];
+        $reference = max($first, $second, 0.001);
+        if (abs($first - $second) / $reference > 0.35) {
+            $withinTolerance = false;
+        }
+    }
+    $stable = $agrees && $withinTolerance;
+    $breakpoint = [
+        'harness' => 'kumwe-perf-harness',
+        'schema' => 'docs/quality/perf-report.schema.json',
+        'role' => 'baseline fact about this host and this commit; never a capacity claim',
+        'seed' => $seed,
+        'result_binding' => $binding(),
+        'sizes' => $sizes,
+        'passes' => $passes,
+        'knee' => [
+            'first_pass_lines' => $knees[0],
+            'second_pass_lines' => $knees[1],
+            'meaning' => $knees[0] === null
+                ? 'no measured size crossed its interpolated commit objective on this host'
+                : sprintf('p95 first crossed the interpolated commit objective at %d lines', $knees[0]),
+        ],
+        'stable' => $stable,
+    ];
+    $divergences = schemaDivergences($breakpoint, 'breakpoint', $root);
+    if ($divergences !== []) {
+        fwrite(STDERR, "The breakpoint document violates the declared result schema:\n");
+        foreach ($divergences as $divergence) {
+            fwrite(STDERR, '  - ' . $divergence . "\n");
+        }
+        exit(1);
+    }
+    if (!is_dir($root . '/build/perf')) {
+        mkdir($root . '/build/perf', 0775, true);
+    }
+    file_put_contents(
+        $root . '/build/perf/breakpoint.json',
+        json_encode($breakpoint, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n",
+    );
+    foreach ($sizes as $index => $size) {
+        printf(
+            "%5d lines  p95 %8.1fms / budget %8.1fms   p95 %8.1fms / budget %8.1fms\n",
+            $size,
+            $passes[0][$index]['p95_ms'],
+            $passes[0][$index]['budget_p95_ms'],
+            $passes[1][$index]['p95_ms'],
+            $passes[1][$index]['budget_p95_ms'],
+        );
+    }
+    printf(
+        "Breakpoint report written to build/perf/breakpoint.json (%s).\n",
+        $stable ? 'stable across both passes' : 'UNSTABLE: the two passes disagree',
+    );
+    exit($stable ? 0 : 1);
 }
 
 $results = [];
@@ -394,6 +642,44 @@ foreach ([100 => 'document_100_line_commit', 1000 => 'document_1000_line_commit'
     }
 }
 
+// Write amplification, counted the way the contract counts it: PRM/LBT from real row deltas across
+// every ledger one commit feeds, around exactly one logical business transaction per document class.
+$amplification = [];
+foreach ([100 => 'document_100_line_commit', 1000 => 'document_1000_line_commit'] as $size => $class) {
+    $before = ledgerRowCounts($connection, $ledgerTables);
+    $documentId = Uuid::uuid7()->toString();
+    $stem = $nonce . '-prm-' . $size;
+    $result = $records->writeDocument(new WriteDocumentCommand(
+        $context,
+        $header->handle,
+        'lines',
+        ['title' => 'Amplification document ' . $stem, 'total' => number_format($size, 2, '.', '')],
+        documentLines($size, $stem),
+        NeutralBusinessFixture::idempotencyKey('perf-prm-' . $stem),
+        recordId: $documentId,
+    ));
+    $after = ledgerRowCounts($connection, $ledgerTables);
+    $mutations = [];
+    $total = 0;
+    foreach ($ledgerTables as $ledger => $_quoted) {
+        $mutations[$ledger] = $after[$ledger] - $before[$ledger];
+        $total += max(0, $after[$ledger] - $before[$ledger]);
+    }
+    $amplification[$class] = [
+        'lbt' => 1,
+        'physical_row_mutations' => $total,
+        'prm_per_lbt' => $total,
+        'rows_by_ledger' => $mutations,
+    ];
+    $records->delete(new DeleteRecordCommand(
+        $context,
+        $header->handle,
+        $documentId,
+        $result->version,
+        NeutralBusinessFixture::idempotencyKey('perf-prm-drop-' . $stem),
+    ));
+}
+
 foreach ($cleanup as $position => [$handle, $recordId]) {
     $read = $records->read(new ReadRecordQuery($context, $handle, $recordId));
     $records->delete(new DeleteRecordCommand(
@@ -418,44 +704,27 @@ foreach ($results as $class => $stats) {
     $verdicts[$class] = $within ? 'within objective' : 'outside objective';
 }
 
-$commit = trim((string) shell_exec('git -C ' . escapeshellarg($root) . ' rev-parse HEAD 2>/dev/null'));
-$engineVersion = '';
-try {
-    $probe = new PDO(
-        sprintf(
-            'mysql:host=%s;port=%s;dbname=%s',
-            (string) getenv('DB_HOST') ?: '127.0.0.1',
-            (string) getenv('DB_PORT') ?: '3306',
-            (string) getenv('DB_NAME') ?: 'kumwe_test',
-        ),
-        (string) getenv('DB_USER') ?: 'kumwe',
-        (string) getenv('DB_PASSWORD') ?: '',
-    );
-    $engineVersion = (string) $probe->query('SELECT VERSION()')->fetchColumn();
-} catch (Throwable) {
-    $engineVersion = 'unavailable';
-}
-
 $report = [
     'plan' => $plan,
-    'result_binding' => [
-        'source_commit' => $commit,
-        'engine' => (string) getenv('DB_DRIVER') ?: 'mariadb',
-        'engine_version' => $engineVersion,
-        'php_version' => PHP_VERSION,
-        'measured_at' => gmdate('c'),
-        'runner' => 'unqualified host: latency characterisation only, never an absolute-throughput authority',
-    ],
+    'result_binding' => $binding(),
     'measurements' => $results,
+    'write_amplification' => $amplification,
     'slo_verdicts' => $verdicts,
     'limitations' => [
         'single worker: no concurrency, contention or fence profile is measured',
-        'no write-amplification (PRM/LBT) figure: physical-row instrumentation is a later P2-I stage',
-        'no breakpoint: throughput ramping is a later P2-I stage',
-        'no plan capture: EXPLAIN regression assertions are a later P2-I stage',
+        'breakpoint characterisation is its own mode (--breakpoint) and its own document',
+        'hot-plan capture lives in the integration gate, where every engine runs it',
         'document_1000_line_commit may run below the contract sample minimum; its plan entry says so',
     ],
 ];
+$divergences = schemaDivergences($report, 'report', $root);
+if ($divergences !== []) {
+    fwrite(STDERR, "The report violates the declared result schema and was not written:\n");
+    foreach ($divergences as $divergence) {
+        fwrite(STDERR, '  - ' . $divergence . "\n");
+    }
+    exit(1);
+}
 
 if (!is_dir($root . '/build/perf')) {
     mkdir($root . '/build/perf', 0775, true);
@@ -474,6 +743,13 @@ foreach ($results as $class => $stats) {
         $stats['p99_ms'],
         $stats['coefficient_of_variation'],
         $verdicts[$class],
+    );
+}
+foreach ($amplification as $class => $figures) {
+    printf(
+        "%-30s PRM/LBT %d\n",
+        $class,
+        $figures['prm_per_lbt'],
     );
 }
 printf("Report written to build/perf/report.json (seed %d, profile %s).\n", $seed, $profile);

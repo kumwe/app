@@ -119,6 +119,7 @@
     "coverage:ratchet": "php tools/coverage-contract.php --ratchet",
     "perf:plan": "php tools/perf-harness.php --plan",
     "perf:run": "php tools/perf-harness.php --run",
+    "perf:breakpoint": "php tools/perf-harness.php --breakpoint",
     "test": "phpunit --colors=always",
     "test:artifact": "bash tools/deployed-artifact-lane.sh",
     "test:idempotency": "php tools/verify-suite-idempotency.php",
