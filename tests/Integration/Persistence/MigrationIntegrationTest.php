@@ -645,6 +645,121 @@ final class MigrationIntegrationTest extends TestCase
     }
 
     /**
+     * A fresh installation receives the global Studio-context retention schedule before replay begins.
+     *
+     * The shared integration database is migrated before this class starts, so its ordinary replay proof
+     * cannot execute the first-install branch. A minimal isolated schema keeps that branch deterministic
+     * while still exercising the real DBAL insert, JSON/date conversion, repair queries and postconditions.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStudioContextRetentionSeedsAFreshInstallationBeforeReplay(): void
+    {
+        $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $tables = new TableNames($database, 'kumwe_');
+        $schema = new Schema();
+        $schedules = $schema->createTable($tables->raw('schedules'));
+        $schedules->addColumn('id', Types::GUID);
+        $schedules->addColumn('name', Types::STRING, ['length' => 160]);
+        $schedules->addColumn('cron_expression', Types::STRING, ['length' => 120]);
+        $schedules->addColumn('timezone', Types::STRING, ['length' => 80]);
+        $schedules->addColumn('queue', Types::STRING, ['length' => 64, 'default' => 'default']);
+        $schedules->addColumn('job_type', Types::STRING, ['length' => 128]);
+        $schedules->addColumn('job_schema_version', Types::INTEGER, ['default' => 1]);
+        $schedules->addColumn('payload', Types::JSON);
+        $schedules->addColumn('priority', Types::SMALLINT, ['default' => 0]);
+        $schedules->addColumn('maximum_attempts', Types::SMALLINT, ['default' => 5]);
+        $schedules->addColumn('enabled', Types::BOOLEAN, ['default' => true]);
+        $schedules->addColumn('next_run_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
+        $schedules->addColumn('last_run_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
+        $schedules->addColumn('version', Types::INTEGER, ['default' => 1]);
+        $schedules->addColumn('created_at', Types::DATETIME_IMMUTABLE);
+        $schedules->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
+        $schedules->addColumn('execution_scope', Types::STRING, ['length' => 16, 'notnull' => false]);
+        $schedules->setPrimaryKey(['id']);
+        $schedules->addUniqueIndex(['name'], 'uniq_schedule_name');
+        $schedules->addIndex(['enabled', 'next_run_at'], 'idx_schedule_due');
+        $jobs = $schema->createTable($tables->raw('jobs'));
+        $jobs->addColumn('id', Types::GUID);
+        $jobs->addColumn('job_type', Types::STRING, ['length' => 128]);
+        $jobs->addColumn('execution_scope', Types::STRING, ['length' => 16, 'notnull' => false]);
+        $jobs->setPrimaryKey(['id']);
+        $ownership = $schema->createTable($tables->raw('resource_site_ownership'));
+        $ownership->addColumn('resource_type', Types::STRING, ['length' => 63]);
+        $ownership->addColumn('resource_id', Types::STRING, ['length' => 191]);
+        $ownership->addColumn('site_identifier', Types::STRING, ['length' => 191, 'notnull' => false]);
+        $ownership->addColumn('scope_level', Types::STRING, ['length' => 16, 'default' => 'site']);
+        $ownership->addColumn('group_identifier', Types::STRING, ['length' => 191, 'notnull' => false]);
+        $ownership->setPrimaryKey(['resource_type', 'resource_id']);
+        foreach ($schema->toSql($database->getDatabasePlatform()) as $statement) {
+            $database->executeStatement($statement);
+        }
+
+        $migration = new StudioContentAuthoringContextRetentionMigration($tables);
+        $migration->up($database);
+        $seededSchedule = $database->fetchAssociative(sprintf(
+            'SELECT id, cron_expression, payload FROM %s WHERE job_type = ?',
+            $tables->quoted('schedules'),
+        ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+        self::assertIsArray($seededSchedule);
+        self::assertSame(StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID, $seededSchedule['id']);
+        self::assertSame('11 * * * *', $seededSchedule['cron_expression']);
+        self::assertSame(
+            ['batch_size' => 1_000, 'maximum_batches' => 10],
+            json_decode((string) $seededSchedule['payload'], true, flags: JSON_THROW_ON_ERROR),
+        );
+        $operatorPayload = ['batch_size' => 250, 'maximum_batches' => 3];
+        $database->update(
+            $tables->raw('schedules'),
+            [
+                'cron_expression' => '7 3 * * *',
+                'payload' => $operatorPayload,
+                'execution_scope' => JobExecutionClass::Site->value,
+            ],
+            ['id' => StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID],
+            ['payload' => Types::JSON],
+        );
+        $database->insert($tables->raw('resource_site_ownership'), [
+            'resource_type' => 'schedule',
+            'resource_id' => StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID,
+            'site_identifier' => SiteContext::DEFAULT,
+            'scope_level' => 'site',
+            'group_identifier' => null,
+        ]);
+        $migration->up($database);
+
+        $schedule = $database->fetchAssociative(sprintf(
+            'SELECT id, cron_expression, payload, enabled, next_run_at, created_at, execution_scope '
+            . 'FROM %s WHERE job_type = ?',
+            $tables->quoted('schedules'),
+        ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+        self::assertIsArray($schedule);
+        self::assertSame(StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID, $schedule['id']);
+        self::assertSame('7 3 * * *', $schedule['cron_expression']);
+        self::assertSame('1', (string) $schedule['enabled']);
+        self::assertSame(JobExecutionClass::Installation->value, $schedule['execution_scope']);
+        self::assertSame(
+            $operatorPayload,
+            json_decode((string) $schedule['payload'], true, flags: JSON_THROW_ON_ERROR),
+        );
+        self::assertSame(
+            3_600,
+            (new DateTimeImmutable((string) $schedule['next_run_at']))->getTimestamp()
+                - (new DateTimeImmutable((string) $schedule['created_at']))->getTimestamp(),
+        );
+        self::assertSame('1', (string) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE job_type = ?',
+            $tables->quoted('schedules'),
+        ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]));
+        self::assertSame('0', (string) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE resource_type = ? AND resource_id = ?',
+            $tables->quoted('resource_site_ownership'),
+        ), ['schedule', StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID]));
+    }
+
+    /**
      * The homepage the migration seeds validates against the page schema the same migration publishes.
      *
      * Both halves are written by hand in one file, so nothing but this check keeps them in step: a key
