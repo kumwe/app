@@ -15,6 +15,7 @@ use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\BigIntType;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
+use Kumwe\App\Application\Automation\JobExecutionClass;
 use Kumwe\App\Application\Automation\JobHandlerRegistry;
 use Kumwe\App\Delivery\Console\Command\MigrateCommand;
 use Kumwe\App\Delivery\Console\Output;
@@ -531,20 +532,101 @@ final class MigrationIntegrationTest extends TestCase
             ['batch_size' => 1_000, 'maximum_batches' => 10],
             json_decode((string) $retentionSchedule['payload'], true, flags: JSON_THROW_ON_ERROR),
         );
+        $retentionJobId = Uuid::uuid7()->toString();
+        $unrelatedJobId = Uuid::uuid7()->toString();
+        $now = new DateTimeImmutable('2026-08-27T08:00:00+00:00');
         $database->update(
             $tables->raw('schedules'),
-            ['execution_scope' => 'site'],
+            ['execution_scope' => JobExecutionClass::Site->value],
             ['id' => StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID],
         );
-        (new StudioContentAuthoringContextRetentionMigration($tables))->up($database);
-        self::assertSame('installation', $database->fetchOne(sprintf(
+        $database->insert($tables->raw('resource_site_ownership'), [
+            'resource_type' => 'schedule',
+            'resource_id' => StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID,
+            'site_identifier' => SiteContext::DEFAULT,
+            'scope_level' => 'site',
+            'group_identifier' => null,
+        ]);
+        foreach (
+            [
+                $retentionJobId => PurgeStudioContentAuthoringContextsHandler::JOB_TYPE,
+                $unrelatedJobId => 'test.unrelated',
+            ] as $jobId => $jobType
+        ) {
+            $database->insert($tables->raw('jobs'), [
+                'id' => $jobId,
+                'queue' => 'default',
+                'job_type' => $jobType,
+                'execution_scope' => JobExecutionClass::Site->value,
+                'schema_version' => 1,
+                'payload' => ['batch_size' => 100, 'maximum_batches' => 1],
+                'priority' => 0,
+                'status' => 'pending',
+                'available_at' => $now,
+                'attempts' => 0,
+                'maximum_attempts' => 5,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], [
+                'id' => Types::GUID,
+                'payload' => Types::JSON,
+                'available_at' => Types::DATETIME_IMMUTABLE,
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            $database->insert($tables->raw('resource_site_ownership'), [
+                'resource_type' => 'job',
+                'resource_id' => $jobId,
+                'site_identifier' => SiteContext::DEFAULT,
+                'scope_level' => 'site',
+                'group_identifier' => null,
+            ]);
+        }
+        $retentionMigration = new StudioContentAuthoringContextRetentionMigration($tables);
+        $retentionMigration->up($database);
+        $retentionMigration->up($database);
+        foreach (
+            [
+                'schedule' => StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID,
+                'job' => $retentionJobId,
+            ] as $resourceType => $resourceId
+        ) {
+            $resourceTable = $resourceType === 'job' ? 'jobs' : 'schedules';
+            self::assertSame(JobExecutionClass::Installation->value, $database->fetchOne(sprintf(
+                'SELECT execution_scope FROM %s WHERE id = ?',
+                $tables->quoted($resourceTable),
+            ), [$resourceId]));
+            self::assertFalse($database->fetchOne(sprintf(
+                'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
+                $tables->quoted('resource_site_ownership'),
+            ), [$resourceType, $resourceId]));
+        }
+        self::assertSame(SiteContext::DEFAULT, $database->fetchOne(sprintf(
+            'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
+            $tables->quoted('resource_site_ownership'),
+        ), ['schedule', '00000000-0000-7000-8000-000000000801']));
+        self::assertSame(JobExecutionClass::Site->value, $database->fetchOne(sprintf(
             'SELECT execution_scope FROM %s WHERE id = ?',
-            $tables->quoted('schedules'),
-        ), [StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID]));
+            $tables->quoted('jobs'),
+        ), [$unrelatedJobId]));
+        self::assertSame(SiteContext::DEFAULT, $database->fetchOne(sprintf(
+            'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
+            $tables->quoted('resource_site_ownership'),
+        ), ['job', $unrelatedJobId]));
         self::assertSame('1', (string) $database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE job_type = ?',
             $tables->quoted('schedules'),
         ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]));
+        $database->delete($tables->raw('jobs'), ['id' => $retentionJobId], ['id' => Types::GUID]);
+        self::assertFalse($database->fetchOne(sprintf(
+            'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
+            $tables->quoted('resource_site_ownership'),
+        ), ['job', $retentionJobId]));
+        $database->delete($tables->raw('resource_site_ownership'), [
+            'resource_type' => 'job',
+            'resource_id' => $unrelatedJobId,
+        ]);
+        $database->delete($tables->raw('jobs'), ['id' => $unrelatedJobId], ['id' => Types::GUID]);
         foreach (['ownership.scope.manage', 'reports.consolidated.read', 'sites.group.manage'] as $capability) {
             self::assertSame($capability, $database->fetchOne(sprintf(
                 'SELECT code FROM %s WHERE code = ?',
