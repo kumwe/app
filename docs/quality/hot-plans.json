@@ -1,0 +1,31 @@
+{
+    "contract": "kumwe-hot-plans",
+    "authority": "docs/roadmap/capacity-contract.json, benchmark_method",
+    "note": "The capacity contract forbids a full scan, sort or spill on 'a declared hot plan', and until this file existed nothing declared one, so the rule could not be enforced against anything. Each entry names one statement the interactive workload leans on. The plans are captured from the running system, not restated here: tests/Integration/Performance/HotPlanRegressionIntegrationTest.php executes the real operation, takes the SQL the runtime actually compiled, records the engine's plan for it under build/perf/, and asserts an indexed access path exists for the driving table. What the assertion proves is exactly that and no more: the predicate is sargable against a real index visible to the planner. Which plan the optimizer picks at production volume is a property of production-sized data, and pronouncing on it from a CI-sized dataset would be the kind of claim the contract calls a benchmark composed only of primary-key reads: not a qualification. That belongs to the scheduled runs on dedicated hardware.",
+    "plans": [
+        {
+            "name": "record_identity_lookup",
+            "operation_class": "bounded_primary_key_read",
+            "statement": "The identity resolution every read, update and document amendment starts with: one record by caller-facing identity inside site scope and row policy.",
+            "driving_table": "record"
+        },
+        {
+            "name": "policy_filtered_page",
+            "operation_class": "indexed_policy_filtered_page",
+            "statement": "The browse page: a bounded, policy-filtered, keyset-ordered window over one definition's records.",
+            "driving_table": "record"
+        },
+        {
+            "name": "owned_lines_for_document",
+            "operation_class": "document_1000_line_commit",
+            "statement": "The whole-collection read a document amendment starts from: every owned line of one owner, in position order.",
+            "driving_table": "line"
+        },
+        {
+            "name": "idempotency_claim_lookup",
+            "operation_class": "ordinary_small_mutation",
+            "statement": "The idempotency ledger probe issued inside every mutation's transaction before its effect runs.",
+            "driving_table": "business_command_idempotency"
+        }
+    ]
+}
