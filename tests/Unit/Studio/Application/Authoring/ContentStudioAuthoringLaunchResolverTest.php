@@ -27,6 +27,7 @@ use ReflectionClass;
  */
 #[CoversClass(ContentStudioAuthoringLaunchResolver::class)]
 #[CoversClass(ContentStudioAuthoringLaunch::class)]
+#[CoversClass(StudioContextualAuthoringReadiness::class)]
 #[CoversClass(UnavailableStudioContextualAuthoringConfigurationProvider::class)]
 final class ContentStudioAuthoringLaunchResolverTest extends TestCase
 {
