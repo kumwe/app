@@ -16,6 +16,13 @@ namespace Kumwe\App\Studio\Application\Authoring;
 enum StudioContextualAuthoringFallbackReason: string
 {
     /**
+     * PHP cannot supply one canonical configuration for the requested Studio mount.
+     *
+     * @since  2.0.0
+     */
+    case ConfigurationUnavailable = 'configuration-unavailable';
+
+    /**
      * The pinned coordinated protocol does not contain the complete contextual authoring vocabulary.
      *
      * @since  2.0.0

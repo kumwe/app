@@ -7,7 +7,10 @@ namespace Kumwe\App\Studio\Application\Authoring;
 use LogicException;
 
 /**
- * Closed readiness result deciding whether the Content surface may mount contextual Studio.
+ * Closed result for one contextual Studio readiness gate.
+ *
+ * Release/runtime qualification uses this value first; the Content launch resolver then derives a
+ * second effective result that additionally requires the canonical per-mount configuration.
  *
  * @since  2.0.0
  */

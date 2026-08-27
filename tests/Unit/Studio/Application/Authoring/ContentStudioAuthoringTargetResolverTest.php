@@ -150,6 +150,43 @@ final class ContentStudioAuthoringTargetResolverTest extends TestCase
     }
 
     /**
+     * Edit cannot combine an Entry with a different immutable Content-type version.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEditRefusesMismatchedAuthoritativeCoordinates(): void
+    {
+        $definition = $this->definition(version: 3);
+        $record = new ContentRecord(
+            ContentEntry::reconstitute(
+                '018f22e2-7c8b-7ab0-8f3a-88e8026bb502',
+                'Mismatched page',
+                'mismatched-page',
+                [],
+                ContentStatus::Draft,
+                PublicationWindow::unbounded(),
+                1,
+            ),
+            $definition->id,
+            ContentService::CORE_WORKFLOW_ID,
+            new DateTimeImmutable('2026-08-27T00:00:00+00:00'),
+            new DateTimeImmutable('2026-08-27T00:00:00+00:00'),
+            contentTypeVersion: 2,
+        );
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('The Content authoring target coordinates are inconsistent.');
+
+        $this->resolver()->edit(
+            AuthorizationContext::human(['content.update']),
+            $record,
+            $definition,
+        );
+    }
+
+    /**
      * Build the resolver over the same deny-by-default gateway production uses.
      *
      * @return  ContentStudioAuthoringTargetResolver  Resolver under test.

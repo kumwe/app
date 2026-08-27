@@ -15,8 +15,8 @@ use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Media\Application\MediaAsset;
 use Kumwe\App\Media\Application\MediaService;
 use Kumwe\App\Site\Application\PublicPageLocator;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringLaunchResolver;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
-use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringAvailability;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -47,9 +47,9 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      *
      * @param ContentService $content Loads the entry being edited, trashed ones included.
      * @param ContentModelService $models Supplies the pinned content type and workflow versions.
-     * @param  AdministratorRenderer                  $renderer            Renders the `content-form` template.
-     * @param  ContentStudioAuthoringTargetResolver   $studioTargets       Resolves trusted create/edit coordinates.
-     * @param  StudioContextualAuthoringAvailability  $studioAvailability  Gates the contextual browser runtime.
+     * @param  AdministratorRenderer                 $renderer        Renders the `content-form` template.
+     * @param  ContentStudioAuthoringTargetResolver  $studioTargets   Resolves trusted create/edit coordinates.
+     * @param  ContentStudioAuthoringLaunchResolver  $studioLaunches  Resolves one atomic configured launch.
      * @param ?ContentFormPresenter $form Turns a schema into field descriptors; null builds a default.
      * @param ?MediaService $media Backs the media picker; null renders the form without one.
      * @param ?PublicPageLocator $publicPages Resolves the entry's public URL; null omits the link.
@@ -61,7 +61,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         private ContentModelService $models,
         private AdministratorRenderer $renderer,
         private ContentStudioAuthoringTargetResolver $studioTargets,
-        private StudioContextualAuthoringAvailability $studioAvailability,
+        private ContentStudioAuthoringLaunchResolver $studioLaunches,
         private ?ContentFormPresenter $form = null,
         private ?MediaService $media = null,
         private ?PublicPageLocator $publicPages = null,
@@ -136,10 +136,11 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
                 $context,
                 $this->explicitTypeSelected($request, $submission, $selectedType) ? $selectedType : null,
             );
-        $studioAuthoring = [
-            ...$this->studioAvailability->current()->toArray(),
-            'target' => $studioTarget->toArray(),
-        ];
+        $studioAuthoring = $this->studioLaunches->resolve(
+            $context,
+            $studioTarget,
+            $session->csrfToken,
+        )->toArray();
         $workflow = null;
         if (is_array($entry)) {
             $workflowId = $entry['workflow_id'] ?? null;
