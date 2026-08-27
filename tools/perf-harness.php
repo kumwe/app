@@ -29,8 +29,9 @@
  * report that does not validate against `docs/quality/perf-report.schema.json`, so the result schema
  * is a contract rather than a habit. `--breakpoint` ramps the document line axis twice and records
  * where the measured p95 first crosses the interpolated commit objective: a baseline fact about this
- * host and this commit, never a capacity claim, and the run fails when the two passes disagree,
- * because the phase-2 exit gate asks for a report that is *stable*, not merely produced.
+ * host and this commit, never a capacity claim. The run fails when the two knees disagree or a p95
+ * pair diverges by both the relative tolerance and a material share of its objective, because the
+ * phase-2 exit gate asks for a report that is *stable*, not merely produced.
  *
  * Honesty over reach, per the contract's own rules: this harness measures single-worker latency on
  * whatever host runs it, so every report binds the engine, commit, seed and sample counts but claims
@@ -224,6 +225,7 @@ if ($mode === 'plan') {
 }
 
 require $root . '/vendor/autoload.php';
+require $root . '/tools/PerfBreakpointStability.php';
 
 use Doctrine\DBAL\Connection;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
@@ -238,6 +240,7 @@ use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
+use Kumwe\App\Tools\PerfBreakpointStability;
 use Kumwe\App\Tests\Support\TestKernelFactory;
 use Ramsey\Uuid\Uuid;
 
@@ -464,17 +467,15 @@ if ($mode === 'breakpoint') {
         $passes[] = $measured;
         $knees[] = $knee;
     }
-    $agrees = $knees[0] === $knees[1];
-    $withinTolerance = true;
+    $pairs = [];
     foreach ($sizes as $index => $size) {
-        $first = (float) $passes[0][$index]['p95_ms'];
-        $second = (float) $passes[1][$index]['p95_ms'];
-        $reference = max($first, $second, 0.001);
-        if (abs($first - $second) / $reference > 0.35) {
-            $withinTolerance = false;
-        }
+        $pairs[] = [
+            'first_p95_ms' => (float) $passes[0][$index]['p95_ms'],
+            'second_p95_ms' => (float) $passes[1][$index]['p95_ms'],
+            'budget_p95_ms' => $budgetAt($size),
+        ];
     }
-    $stable = $agrees && $withinTolerance;
+    $stable = PerfBreakpointStability::agrees($knees[0], $knees[1], $pairs);
     $breakpoint = [
         'harness' => 'kumwe-perf-harness',
         'schema' => 'docs/quality/perf-report.schema.json',

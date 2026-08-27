@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Performance;
 
+use Kumwe\App\Tools\PerfBreakpointStability;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -83,6 +84,69 @@ final class PerfHarnessContractTest extends TestCase
     }
 
     /**
+     * A changed knee is a changed breakpoint even when every individual p95 pair is close.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBreakpointKneeDisagreementIsAlwaysUnstable(): void
+    {
+        self::assertFalse($this->stable(
+            500,
+            1000,
+            [['first_p95_ms' => 4600.0, 'second_p95_ms' => 4620.0, 'budget_p95_ms' => 4666.7]],
+        ));
+    }
+
+    /**
+     * A p95 delta that is large relative to both the observation and its budget remains unstable.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMaterialRelativeAndAbsoluteDivergenceIsUnstable(): void
+    {
+        self::assertFalse($this->stable(
+            null,
+            null,
+            [['first_p95_ms' => 800.0, 'second_p95_ms' => 1600.0, 'budget_p95_ms' => 2000.0]],
+        ));
+    }
+
+    /**
+     * Shared-runner jitter far below the objective is not promoted into a false breakpoint failure.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testHighRelativeButImmaterialAbsoluteJitterIsStable(): void
+    {
+        self::assertTrue($this->stable(
+            null,
+            null,
+            [
+                ['first_p95_ms' => 18.3, 'second_p95_ms' => 18.1, 'budget_p95_ms' => 2000.0],
+                ['first_p95_ms' => 22.6, 'second_p95_ms' => 44.7, 'budget_p95_ms' => 2666.7],
+                ['first_p95_ms' => 37.7, 'second_p95_ms' => 60.3, 'budget_p95_ms' => 4666.7],
+                ['first_p95_ms' => 67.9, 'second_p95_ms' => 62.6, 'budget_p95_ms' => 8000.0],
+            ],
+        ));
+        self::assertTrue($this->stable(
+            null,
+            null,
+            [
+                ['first_p95_ms' => 20.0, 'second_p95_ms' => 19.9, 'budget_p95_ms' => 2000.0],
+                ['first_p95_ms' => 38.3, 'second_p95_ms' => 22.9, 'budget_p95_ms' => 2666.7],
+                ['first_p95_ms' => 38.8, 'second_p95_ms' => 38.2, 'budget_p95_ms' => 4666.7],
+                ['first_p95_ms' => 390.1, 'second_p95_ms' => 62.8, 'budget_p95_ms' => 8000.0],
+            ],
+        ));
+    }
+
+    /**
      * Print the deterministic plan for one seed through the real tool.
      *
      * @param   int  $seed  Generator seed under test.
@@ -102,5 +166,26 @@ final class PerfHarnessContractTest extends TestCase
         ));
 
         return is_string($output) ? $output : '';
+    }
+
+    /**
+     * Evaluate a deterministic breakpoint comparison through the tool's production rule.
+     *
+     * @param   int|null                                                                                     $firstKnee
+     *     First line count to cross its objective.
+     * @param   int|null                                                                                     $secondKnee
+     *     Second line count to cross its objective.
+     * @param   list<array{first_p95_ms: float, second_p95_ms: float, budget_p95_ms: float}>                  $pairs
+     *     Corresponding p95 observations and budgets.
+     *
+     * @return  bool  Whether the comparison is stable.
+     *
+     * @since   2.0.0
+     */
+    private function stable(?int $firstKnee, ?int $secondKnee, array $pairs): bool
+    {
+        require_once dirname(__DIR__, 3) . '/tools/PerfBreakpointStability.php';
+
+        return PerfBreakpointStability::agrees($firstKnee, $secondKnee, $pairs);
     }
 }
