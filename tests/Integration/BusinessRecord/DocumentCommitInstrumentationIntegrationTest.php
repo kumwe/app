@@ -217,6 +217,60 @@ final class DocumentCommitInstrumentationIntegrationTest extends TestCase
     }
 
     /**
+     * A thousand-line command stays inside the declared memory and payload budgets, measured, not assumed.
+     *
+     * The capacity contract's per-change budgets require bounded memory and encoded payload size at a
+     * thousand lines. `DocumentWriteBudget` declares the ceilings and the command refuses past them; this
+     * is the other half of the budget — proof that the real thousand-line command actually fits inside
+     * what was declared, so the ceiling constrains the implementation rather than flattering it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAThousandLineCommandStaysInsideItsDeclaredBudgets(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $this->records($container);
+        $suffix = self::suffix();
+        $header = $this->install($container, $context, $suffix);
+        $documentId = Uuid::uuid7()->toString();
+        $lines = $this->lines(1000, $suffix . 'b');
+
+        $payloadBytes = strlen((string) json_encode(array_map(
+            static fn (DocumentLineInput $line): array => $line->values,
+            $lines,
+        )));
+        self::assertLessThanOrEqual(
+            DocumentWriteBudget::MAXIMUM_PAYLOAD_BYTES,
+            $payloadBytes,
+            'A thousand contract-shaped lines must encode inside the declared payload ceiling.',
+        );
+
+        gc_collect_cycles();
+        $memoryBefore = memory_get_usage();
+        $records->writeDocument(new WriteDocumentCommand(
+            $context,
+            $header->handle,
+            'lines',
+            ['title' => 'Budgeted document', 'total' => '1000.00'],
+            $lines,
+            NeutralBusinessFixture::idempotencyKey('instr-budget-' . $suffix),
+            recordId: $documentId,
+        ));
+        $memoryDelta = memory_get_usage() - $memoryBefore;
+
+        self::assertLessThanOrEqual(
+            DocumentWriteBudget::MAXIMUM_MEMORY_DELTA_BYTES,
+            $memoryDelta,
+            sprintf('A thousand-line command grew memory by %d bytes, past its declared budget.', $memoryDelta),
+        );
+
+        $this->drop($records, $context, $header, $documentId, 'instr-budget-drop-' . $suffix);
+    }
+
+    /**
      * Install the neutral header and line documents this suite writes against.
      *
      * @param   Container         $container  Live integration container.

@@ -1,0 +1,19 @@
+{
+    "contract": "kumwe-artifact-budget",
+    "authority": "docs/roadmap/capacity-contract.json, benchmark_method.deterministic_pull_request_budgets",
+    "note": "The capacity contract lists an artifact and image size regression budget among the deterministic per-change budgets, and until this file existed nothing declared a ceiling, so nothing could fail. Each entry is a hard byte ceiling on one built artifact, checked in the workflow that builds it: the production runtime and web images in the security workflow's source-and-image job, and the release archive in the release workflow. The ceilings are sized with deliberate headroom over the measured artifact so ordinary growth passes review invisibly, while the class of regression this budget exists for - a vendor directory swallowed into an image layer, debug symbols shipped, a dataset committed into the archive - lands far past the ceiling and fails by name. Raising a ceiling is a reviewed change to this file, never a build-time override.",
+    "artifacts": {
+        "production_runtime_image": {
+            "built_in": ".github/workflows/security.yml, source-and-image",
+            "maximum_bytes": 1288490188
+        },
+        "production_web_image": {
+            "built_in": ".github/workflows/security.yml, source-and-image",
+            "maximum_bytes": 536870912
+        },
+        "release_archive": {
+            "built_in": ".github/workflows/release.yml",
+            "maximum_bytes": 157286400
+        }
+    }
+}

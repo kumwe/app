@@ -95,11 +95,24 @@ jobs:
           test "$(docker compose run --rm --no-deps app php -r 'echo getenv("APP_BASE_URL");')" \
             = 'http://localhost:9900'
 
-      - name: Migrate a fresh development database
+      # The capacity contract's per-change budgets include a migration plan runtime budget; this is its
+      # enforcement point. A fresh database receives the whole shipped plan here, so a migration that
+      # suddenly rewrites a hot table pays its price on this clock and fails the lane by name instead of
+      # burning the job timeout. The plan's size is budgeted separately: the baseline pins the shipped
+      # migration list, so a plan that grows re-records the baseline in review rather than drifting.
+      - name: Migrate a fresh development database within the declared runtime budget
         shell: bash
         run: |
           set -euo pipefail
+          budget=120
+          started=$(date +%s)
           docker compose run --rm app php bin/kumwe database:migrate
+          elapsed=$(( $(date +%s) - started ))
+          if [ "$elapsed" -gt "$budget" ]; then
+            echo "The fresh migration plan ran ${elapsed}s, past its declared ${budget}s budget." >&2
+            exit 1
+          fi
+          echo "Fresh migration plan completed in ${elapsed}s (budget ${budget}s)."
           docker compose run --rm app php bin/kumwe database:migrate
 
       - name: Start the documented development topology
