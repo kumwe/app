@@ -8,7 +8,7 @@
     "recorded_from": [
         "https://github.com/kumwe/app/actions/runs/32251426675"
     ],
-    "entry_count": 3679,
+    "entry_count": 3674,
     "entries": [
         {
             "file": "tests/Architecture/BusinessDefinitionBoundaryTest.php",
@@ -5735,56 +5735,6 @@
             "line": 51,
             "member": "BusinessRecordRelationshipIntegrationTest",
             "code": "MISSING_DOC",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php",
-            "line": 843,
-            "member": "BusinessRecordRelationshipIntegrationTest::browseIncludes()",
-            "code": "MISSING_SINCE",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php",
-            "line": 843,
-            "member": "BusinessRecordRelationshipIntegrationTest::browseIncludes()",
-            "code": "MISSING_SUMMARY",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php",
-            "line": 843,
-            "member": "BusinessRecordRelationshipIntegrationTest::browseIncludes() $context",
-            "code": "MISSING_PARAM",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php",
-            "line": 843,
-            "member": "BusinessRecordRelationshipIntegrationTest::browseIncludes() $definition",
-            "code": "MISSING_PARAM",
-            "owner": "quality-engineering",
-            "finding": "V2-QA-010",
-            "expires": "2027-06-30",
-            "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-        },
-        {
-            "file": "tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php",
-            "line": 843,
-            "member": "BusinessRecordRelationshipIntegrationTest::browseIncludes() $records",
-            "code": "MISSING_PARAM",
             "owner": "quality-engineering",
             "finding": "V2-QA-010",
             "expires": "2027-06-30",
