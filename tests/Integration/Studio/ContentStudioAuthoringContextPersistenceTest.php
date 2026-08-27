@@ -14,10 +14,12 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextBinding;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
+use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentStudioAuthoringContextPurger;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentStudioAuthoringContextRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Clock\ClockInterface;
 use RuntimeException;
 
 /**
@@ -26,6 +28,7 @@ use RuntimeException;
  * @since  2.0.0
  */
 #[CoversClass(DoctrineContentStudioAuthoringContextRepository::class)]
+#[CoversClass(DoctrineContentStudioAuthoringContextPurger::class)]
 #[CoversClass(StudioContentAuthoringContextMigration::class)]
 #[UsesClass(ContentStudioAuthoringContextBinding::class)]
 #[UsesClass(ContentStudioAuthoringTarget::class)]
@@ -116,16 +119,67 @@ final class ContentStudioAuthoringContextPersistenceTest extends TestCase
     }
 
     /**
+     * Retention removes only contexts at or beyond their hard expiry in stable bounded passes.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRetentionPurgesExpiredContextsInBoundedOldestFirstPasses(): void
+    {
+        $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $tables = new TableNames($database, 'kumwe_');
+        (new StudioContentAuthoringContextMigration($tables))->up($database);
+        $repository = new DoctrineContentStudioAuthoringContextRepository($database, $tables);
+        $oldest = self::binding('oldest-expired', '2026-08-27T00:00:00+00:00', '2026-08-27T02:00:00+00:00');
+        $boundary = self::binding('boundary-expired', '2026-08-27T01:00:00+00:00', '2026-08-27T08:00:00+00:00');
+        $live = self::binding('still-live', '2026-08-27T02:00:00+00:00', '2026-08-27T08:00:01+00:00');
+        foreach ([$boundary, $live, $oldest] as $binding) {
+            $repository->add($binding);
+        }
+        $clock = new class implements ClockInterface {
+            /**
+             * Hold the exact retention cutoff.
+             *
+             * @return  DateTimeImmutable  Fixed expiry boundary.
+             *
+             * @since   2.0.0
+             */
+            public function now(): DateTimeImmutable
+            {
+                return new DateTimeImmutable('2026-08-27T08:00:00+00:00');
+            }
+        };
+        $purger = new DoctrineContentStudioAuthoringContextPurger($database, $tables, $clock);
+
+        self::assertSame(1, $purger->purgeExpired(1));
+        self::assertNull($repository->find($oldest->contextKey));
+        self::assertNotNull($repository->find($boundary->contextKey));
+        self::assertNotNull($repository->find($live->contextKey));
+        self::assertSame(1, $purger->purgeExpired(1));
+        self::assertNull($repository->find($boundary->contextKey));
+        self::assertNotNull($repository->find($live->contextKey));
+        self::assertSame(0, $purger->purgeExpired(1));
+    }
+
+    /**
      * Build one complete immutable contextual-authoring binding.
+     *
+     * @param   string  $seed       Stable material used to derive a distinct opaque context key.
+     * @param   string  $createdAt  ISO-8601 creation instant.
+     * @param   string  $expiresAt  ISO-8601 exclusive expiry instant.
      *
      * @return  ContentStudioAuthoringContextBinding  Secret-free persistence fixture.
      *
      * @since   2.0.0
      */
-    private static function binding(): ContentStudioAuthoringContextBinding
-    {
+    private static function binding(
+        string $seed = 'persistence-context',
+        string $createdAt = '2026-08-27T00:00:00+00:00',
+        string $expiresAt = '2026-08-27T08:00:00+00:00',
+    ): ContentStudioAuthoringContextBinding {
         return new ContentStudioAuthoringContextBinding(
-            'contexts/' . hash('sha256', 'persistence-context'),
+            'contexts/' . hash('sha256', $seed),
             '018f22e2-7c8b-7ab0-8f3a-88e8026bb301',
             SiteContext::DEFAULT,
             'organization-1',
@@ -142,8 +196,8 @@ final class ContentStudioAuthoringContextPersistenceTest extends TestCase
                 null,
                 '/administrator/content/new?content_type=018f22e2-7c8b-7ab0-8f3a-88e8026be810',
             ),
-            new DateTimeImmutable('2026-08-27T00:00:00+00:00'),
-            new DateTimeImmutable('2026-08-27T08:00:00+00:00'),
+            new DateTimeImmutable($createdAt),
+            new DateTimeImmutable($expiresAt),
         );
     }
 

@@ -34,6 +34,12 @@ final class AutomationJobFormRegistryTest extends TestCase
             'Purge expired administrator sessions',
             $registry->definitions(['system.sessions.purge'])[0]['label'],
         );
+        $retention = $registry->definitions(['studio.content-authoring-context.purge'])[0];
+        self::assertSame('Purge expired Studio Content authoring contexts', $retention['label']);
+        self::assertSame(
+            ['batch_size' => 1_000, 'maximum_batches' => 10],
+            $registry->payload('studio.content-authoring-context.purge', []),
+        );
     }
 
     public function testRejectsAnOutOfRangeGraphicalValue(): void

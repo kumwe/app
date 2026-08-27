@@ -288,6 +288,28 @@ final class AutomationJobFormRegistry
                 ),
             ],
         );
+        $registry->register(
+            'studio.content-authoring-context.purge',
+            'core.administrator.automation.job_purge_studio_content_authoring_contexts',
+            [
+                new AutomationJobField(
+                    'batch_size',
+                    'core.administrator.automation.field_batch_size',
+                    'integer',
+                    default: 1_000,
+                    minimum: 1,
+                    maximum: 10_000,
+                ),
+                new AutomationJobField(
+                    'maximum_batches',
+                    'core.administrator.automation.field_maximum_batches',
+                    'integer',
+                    default: 10,
+                    minimum: 1,
+                    maximum: 100,
+                ),
+            ],
+        );
         $registry->register('system.sessions.purge', 'core.administrator.automation.job_purge_sessions');
         $registry->register('extensions.runtime.rebuild', 'core.administrator.automation.job_rebuild_runtime');
 

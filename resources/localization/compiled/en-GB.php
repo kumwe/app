@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2291 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2292 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -328,6 +328,7 @@ return [
     'core.administrator.automation.job_purge_business_idempotency' => 'Purge expired business-record idempotency entries',
     'core.administrator.automation.job_purge_idempotency' => 'Purge expired idempotency records',
     'core.administrator.automation.job_purge_sessions' => 'Purge expired administrator sessions',
+    'core.administrator.automation.job_purge_studio_content_authoring_contexts' => 'Purge expired Studio Content authoring contexts',
     'core.administrator.automation.job_rebuild_runtime' => 'Rebuild extension runtime map',
     'core.administrator.automation.job_transition_content' => 'Transition content',
     'core.administrator.automation.job_type' => 'Job type',

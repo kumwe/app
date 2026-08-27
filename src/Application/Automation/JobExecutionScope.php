@@ -33,6 +33,7 @@ final class JobExecutionScope
         'business.record.idempotency.purge' => SystemIdentity::InstallationMaintenance,
         'extensions.runtime.rebuild' => SystemIdentity::ExtensionMaterializer,
         'extensions.trust.revocations.synchronize' => SystemIdentity::ExtensionMaterializer,
+        'studio.content-authoring-context.purge' => SystemIdentity::InstallationMaintenance,
         'system.idempotency.purge' => SystemIdentity::InstallationMaintenance,
     ];
 

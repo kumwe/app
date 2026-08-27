@@ -89,11 +89,21 @@ final class StudioContextualAuthoringLaunchBoundaryTest extends TestCase
         $migration = $this->contents(
             'src/Infrastructure/Persistence/Migration/StudioContentAuthoringContextMigration.php',
         );
+        $retention = $this->contents(
+            'src/Studio/Infrastructure/Persistence/DoctrineContentStudioAuthoringContextPurger.php',
+        );
+        $retentionMigration = $this->contents(
+            'src/Infrastructure/Persistence/Migration/StudioContentAuthoringContextRetentionMigration.php',
+        );
 
         self::assertStringContainsString('ContentStudioAuthoringContextRepository::class', $container);
         self::assertStringContainsString('DoctrineContentStudioAuthoringContextRepository(', $container);
         self::assertStringContainsString('ContentStudioAuthoringContextAuthority::class', $container);
         self::assertStringContainsString('StudioContentAuthoringContextMigration(', $container);
+        self::assertStringContainsString('ContentStudioAuthoringContextPurger::class', $container);
+        self::assertStringContainsString('DoctrineContentStudioAuthoringContextPurger(', $container);
+        self::assertStringContainsString('PurgeStudioContentAuthoringContextsHandler::class', $container);
+        self::assertStringContainsString('StudioContentAuthoringContextRetentionMigration(', $container);
         self::assertStringContainsString('StudioResourceContextKeyFactory::class', $container);
         self::assertStringContainsString('ContentModelService::class', $container);
         self::assertStringContainsString('ContentService::class', $container);
@@ -110,6 +120,18 @@ final class StudioContextualAuthoringLaunchBoundaryTest extends TestCase
         self::assertStringNotContainsString('| LogicException', $authority);
         self::assertStringNotContainsString('ContentStudioAuthoringContextAuthority', $handler);
         self::assertStringNotContainsString('ContentStudioAuthoringContextAuthority', $hostAuthority);
+        self::assertStringContainsString('expires_at <= ?', $retention);
+        self::assertStringContainsString('ORDER BY expires_at, context_key', $retention);
+        self::assertStringNotContainsString('StudioHostSessionAuthority', $retention);
+        self::assertStringNotContainsString('StudioContextualAuthoringConfiguration', $retention);
+        self::assertStringNotContainsString('ServerRequestInterface', $retention);
+        self::assertStringNotContainsString('json_encode', $retention);
+        self::assertStringContainsString(
+            'PurgeStudioContentAuthoringContextsHandler::JOB_TYPE',
+            $retentionMigration,
+        );
+        self::assertStringNotContainsString('endpoint', strtolower($retentionMigration));
+        self::assertStringNotContainsString('configuration', strtolower($retentionMigration));
     }
 
     /**

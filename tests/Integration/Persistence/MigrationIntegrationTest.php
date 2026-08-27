@@ -14,6 +14,8 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\BigIntType;
 use Doctrine\DBAL\Types\Types;
+use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
+use Kumwe\App\Application\Automation\JobHandlerRegistry;
 use Kumwe\App\Delivery\Console\Command\MigrateCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Application\Authorization\SiteContext;
@@ -44,6 +46,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationM
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\App\Infrastructure\Persistence\Migration\ResourceOwnershipScopeMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextRetentionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\App\Infrastructure\Persistence\ReadinessProbe;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -78,6 +81,7 @@ use ZipArchive;
 #[CoversClass(AuthorizationRecoveryIntegrationMigration::class)]
 #[CoversClass(SiteAutomationContextMigration::class)]
 #[CoversClass(InstallationGlobalAutomationMigration::class)]
+#[CoversClass(StudioContentAuthoringContextRetentionMigration::class)]
 #[CoversClass(TokenAndTrustLifecycleMigration::class)]
 #[CoversClass(IsolateThemeSurfacesMigration::class)]
 final class MigrationIntegrationTest extends TestCase
@@ -104,6 +108,12 @@ final class MigrationIntegrationTest extends TestCase
         $tables = $container->get(TableNames::class);
         self::assertInstanceOf(Connection::class, $database);
         self::assertInstanceOf(TableNames::class, $tables);
+        $jobHandlers = $container->get(JobHandlerRegistry::class);
+        self::assertInstanceOf(JobHandlerRegistry::class, $jobHandlers);
+        self::assertInstanceOf(
+            PurgeStudioContentAuthoringContextsHandler::class,
+            $jobHandlers->find(PurgeStudioContentAuthoringContextsHandler::JOB_TYPE),
+        );
         self::assertSame(
             '40bf9c3fa708f153453cfbd6caf93c9cef806052eabb6a1bb8ad7a4b71e7dddf',
             (new CoreSchemaMigration($tables))->checksum(),
@@ -505,6 +515,36 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT scope_level FROM %s WHERE resource_type = ? AND resource_id = ?',
             $tables->quoted('resource_site_ownership'),
         ), ['schedule', '00000000-0000-7000-8000-000000000801']));
+        self::assertSame(StudioContentAuthoringContextRetentionMigration::ID, $database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE version = ?',
+            $tables->quoted('schema_migrations'),
+        ), [StudioContentAuthoringContextRetentionMigration::ID]));
+        $retentionSchedule = $database->fetchAssociative(sprintf(
+            'SELECT id, cron_expression, payload, execution_scope FROM %s WHERE job_type = ?',
+            $tables->quoted('schedules'),
+        ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+        self::assertIsArray($retentionSchedule);
+        self::assertSame(StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID, $retentionSchedule['id']);
+        self::assertSame('11 * * * *', $retentionSchedule['cron_expression']);
+        self::assertSame('installation', $retentionSchedule['execution_scope']);
+        self::assertSame(
+            ['batch_size' => 1_000, 'maximum_batches' => 10],
+            json_decode((string) $retentionSchedule['payload'], true, flags: JSON_THROW_ON_ERROR),
+        );
+        $database->update(
+            $tables->raw('schedules'),
+            ['execution_scope' => 'site'],
+            ['id' => StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID],
+        );
+        (new StudioContentAuthoringContextRetentionMigration($tables))->up($database);
+        self::assertSame('installation', $database->fetchOne(sprintf(
+            'SELECT execution_scope FROM %s WHERE id = ?',
+            $tables->quoted('schedules'),
+        ), [StudioContentAuthoringContextRetentionMigration::SCHEDULE_ID]));
+        self::assertSame('1', (string) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE job_type = ?',
+            $tables->quoted('schedules'),
+        ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]));
         foreach (['ownership.scope.manage', 'reports.consolidated.read', 'sites.group.manage'] as $capability) {
             self::assertSame($capability, $database->fetchOne(sprintf(
                 'SELECT code FROM %s WHERE code = ?',
