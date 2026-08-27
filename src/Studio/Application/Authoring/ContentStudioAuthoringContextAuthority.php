@@ -26,8 +26,8 @@ use Psr\Clock\ClockInterface;
  * revision with the immutable server-side binding. This implements the App authority portion of
  * `V2-STU-007`, `STUDIO-PROD-010`, and `STUDIO-PROD-012` without defining a Studio wire contract.
  * Every row expires no later than the administrator-session lifetime and grants nothing without a live
- * matching session and approval generation. Physical purging and compare-and-swap context advancement remain
- * deferred to the future coordinated host lifecycle.
+ * matching session and approval generation. Bounded installation-wide retention physically purges expired
+ * rows; compare-and-swap context advancement remains deferred to the future coordinated host lifecycle.
  *
  * @since  2.0.0
  */

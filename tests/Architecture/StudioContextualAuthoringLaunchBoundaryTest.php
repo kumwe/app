@@ -130,6 +130,10 @@ final class StudioContextualAuthoringLaunchBoundaryTest extends TestCase
             'PurgeStudioContentAuthoringContextsHandler::JOB_TYPE',
             $retentionMigration,
         );
+        self::assertStringContainsString("'job' => 'jobs'", $retentionMigration);
+        self::assertStringContainsString("'schedule' => 'schedules'", $retentionMigration);
+        self::assertStringContainsString("quoted('resource_site_ownership')", $retentionMigration);
+        self::assertStringContainsString('PostgreSQLPlatform', $retentionMigration);
         self::assertStringNotContainsString('endpoint', strtolower($retentionMigration));
         self::assertStringNotContainsString('configuration', strtolower($retentionMigration));
     }

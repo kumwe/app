@@ -7,6 +7,7 @@ namespace Kumwe\App\Infrastructure\Persistence\Migration;
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
 use Kumwe\App\Application\Automation\JobExecutionClass;
@@ -83,10 +84,12 @@ final readonly class StudioContentAuthoringContextRetentionMigration implements 
     }
 
     /**
-     * Seed one global schedule and repair persisted execution-scope classifications idempotently.
+     * Seed one global schedule and repair persisted execution-scope and ownership classifications.
      *
      * An operator-created schedule for the same job type wins: the migration does not overwrite its
      * cadence or payload, but it still repairs that schedule and any queued work to installation scope.
+     * Installation-global automation has no site owner, so every repaired resource loses only its matching
+     * `schedule` or `job` ownership row in the same migration pass.
      *
      * @param   Connection  $database  Installation database holding schedules and queued jobs.
      *
@@ -131,20 +134,80 @@ final readonly class StudioContentAuthoringContextRetentionMigration implements 
                 'updated_at' => Types::DATETIME_IMMUTABLE,
             ]);
         }
-        foreach (['jobs', 'schedules'] as $table) {
+        $resourceId = $database->getDatabasePlatform() instanceof PostgreSQLPlatform
+            ? 'CAST(id AS VARCHAR)'
+            : 'id';
+        foreach (['job' => 'jobs', 'schedule' => 'schedules'] as $resourceType => $table) {
             $database->executeStatement(sprintf(
                 'UPDATE %s SET execution_scope = ? WHERE job_type = ?',
                 $this->tables->quoted($table),
             ), [JobExecutionClass::Installation->value, PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+            $database->executeStatement(sprintf(
+                'DELETE FROM %s WHERE resource_type = ? AND resource_id IN ('
+                . 'SELECT %s FROM %s WHERE job_type = ?)',
+                $this->tables->quoted('resource_site_ownership'),
+                $resourceId,
+                $this->tables->quoted($table),
+            ), [$resourceType, PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+            $invalidScopes = $database->fetchOne(sprintf(
+                'SELECT COUNT(*) FROM %s WHERE job_type = ? '
+                . 'AND (execution_scope IS NULL OR execution_scope <> ?)',
+                $this->tables->quoted($table),
+            ), [
+                PurgeStudioContentAuthoringContextsHandler::JOB_TYPE,
+                JobExecutionClass::Installation->value,
+            ]);
+            if (self::rowCount($invalidScopes) !== 0) {
+                throw new RuntimeException(sprintf(
+                    'A Studio Content authoring context retention %s is not installation-global.',
+                    $resourceType,
+                ));
+            }
+            $owned = $database->fetchOne(sprintf(
+                'SELECT COUNT(*) FROM %s WHERE resource_type = ? AND resource_id IN ('
+                . 'SELECT %s FROM %s WHERE job_type = ?)',
+                $this->tables->quoted('resource_site_ownership'),
+                $resourceId,
+                $this->tables->quoted($table),
+            ), [$resourceType, PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+            if (self::rowCount($owned) !== 0) {
+                throw new RuntimeException(sprintf(
+                    'A Studio Content authoring context retention %s still has site ownership.',
+                    $resourceType,
+                ));
+            }
         }
-        $scope = $database->fetchOne(sprintf(
-            'SELECT execution_scope FROM %s WHERE job_type = ?',
+        $schedules = $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE job_type = ?',
             $this->tables->quoted('schedules'),
         ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
-        if ($scope !== JobExecutionClass::Installation->value) {
+        if (self::rowCount($schedules) === 0) {
             throw new RuntimeException(
-                'The Studio Content authoring context retention schedule is missing or not installation-global.',
+                'The Studio Content authoring context retention schedule is missing.',
             );
         }
+    }
+
+    /**
+     * Normalize portable DBAL count results without accepting malformed persistence values.
+     *
+     * @param   mixed  $value  Driver result returned for a `COUNT(*)` expression.
+     *
+     * @return  int  Non-negative row count.
+     *
+     * @throws  RuntimeException  When the driver result is not a non-negative decimal integer.
+     *
+     * @since   2.0.0
+     */
+    private static function rowCount(mixed $value): int
+    {
+        if (is_int($value) && $value >= 0) {
+            return $value;
+        }
+        if (!is_string($value) || preg_match('/^(?:0|[1-9][0-9]*)$/D', $value) !== 1) {
+            throw new RuntimeException('A Studio Content authoring context retention count is invalid.');
+        }
+
+        return (int) $value;
     }
 }

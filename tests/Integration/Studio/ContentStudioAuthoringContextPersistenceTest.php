@@ -132,9 +132,18 @@ final class ContentStudioAuthoringContextPersistenceTest extends TestCase
         (new StudioContentAuthoringContextMigration($tables))->up($database);
         $repository = new DoctrineContentStudioAuthoringContextRepository($database, $tables);
         $oldest = self::binding('oldest-expired', '2026-08-27T00:00:00+00:00', '2026-08-27T02:00:00+00:00');
-        $boundary = self::binding('boundary-expired', '2026-08-27T01:00:00+00:00', '2026-08-27T08:00:00+00:00');
+        $boundaryFirst = self::binding(
+            'boundary-expired-first',
+            '2026-08-27T01:00:00+00:00',
+            '2026-08-27T08:00:00+00:00',
+        );
+        $boundarySecond = self::binding(
+            'boundary-expired-second',
+            '2026-08-27T01:00:01+00:00',
+            '2026-08-27T08:00:00+00:00',
+        );
         $live = self::binding('still-live', '2026-08-27T02:00:00+00:00', '2026-08-27T08:00:01+00:00');
-        foreach ([$boundary, $live, $oldest] as $binding) {
+        foreach ([$boundarySecond, $live, $oldest, $boundaryFirst] as $binding) {
             $repository->add($binding);
         }
         $clock = new class implements ClockInterface {
@@ -151,15 +160,22 @@ final class ContentStudioAuthoringContextPersistenceTest extends TestCase
             }
         };
         $purger = new DoctrineContentStudioAuthoringContextPurger($database, $tables, $clock);
+        $boundaryKeys = [$boundaryFirst->contextKey, $boundarySecond->contextKey];
+        sort($boundaryKeys, SORT_STRING);
 
-        self::assertSame(1, $purger->purgeExpired(1));
+        self::assertSame(
+            [$oldest->contextKey, $boundaryKeys[0]],
+            $purger->expiredCandidates($clock->now(), 2),
+        );
+        self::assertSame(2, $purger->purgeExpired(2));
         self::assertNull($repository->find($oldest->contextKey));
-        self::assertNotNull($repository->find($boundary->contextKey));
+        self::assertNull($repository->find($boundaryKeys[0]));
+        self::assertNotNull($repository->find($boundaryKeys[1]));
         self::assertNotNull($repository->find($live->contextKey));
-        self::assertSame(1, $purger->purgeExpired(1));
-        self::assertNull($repository->find($boundary->contextKey));
+        self::assertSame(1, $purger->purgeExpired(2));
+        self::assertNull($repository->find($boundaryKeys[1]));
         self::assertNotNull($repository->find($live->contextKey));
-        self::assertSame(0, $purger->purgeExpired(1));
+        self::assertSame(0, $purger->purgeExpired(2));
     }
 
     /**
