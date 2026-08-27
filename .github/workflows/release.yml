@@ -245,6 +245,9 @@ jobs:
               cd dist/package
               zip -X --quiet --recurse-paths "../kumwe-app-${version}.zip" .
           )
+          # The capacity contract's per-change budgets include an artifact size regression budget; the
+          # ceiling lives in docs/quality/artifact-budget.json and is enforced where the archive is built.
+          tools/verify-artifact-budget.sh release_archive "$(stat -c %s "dist/kumwe-app-${version}.zip")"
 
       - name: Generate SBOMs and scan published images
         env:

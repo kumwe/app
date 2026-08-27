@@ -125,6 +125,16 @@ jobs:
           --load
           .
 
+      # The capacity contract's per-change budgets include an artifact and image size regression
+      # budget; the ceilings live in docs/quality/artifact-budget.json and are enforced where each
+      # artifact is built.
+      - name: Hold the runtime image to its declared size budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          size=$(docker image inspect --format '{{.Size}}' "kumwe-security:${GITHUB_SHA}")
+          tools/verify-artifact-budget.sh production_runtime_image "$size"
+
       - name: Scan production runtime image
         run: >-
           docker run --rm
@@ -144,6 +154,13 @@ jobs:
           --build-context composer-cache="$HOME/.cache/composer/files"
           --load
           .
+
+      - name: Hold the web image to its declared size budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          size=$(docker image inspect --format '{{.Size}}' "kumwe-web-security:${GITHUB_SHA}")
+          tools/verify-artifact-budget.sh production_web_image "$size"
 
       - name: Scan production web image
         run: >-
