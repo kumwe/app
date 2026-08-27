@@ -10,10 +10,13 @@ use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Content\Application\ContentModelService;
+use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Media\Application\MediaAsset;
 use Kumwe\App\Media\Application\MediaService;
 use Kumwe\App\Site\Application\PublicPageLocator;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
+use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringAvailability;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -45,6 +48,8 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      * @param  ContentService         $content      Loads the entry being edited, trashed ones included.
      * @param  ContentModelService    $models       Supplies the pinned content type and workflow versions.
      * @param  AdministratorRenderer  $renderer     Renders the `content-form` template.
+     * @param  ContentStudioAuthoringTargetResolver  $studioTargets  Resolves trusted create/edit coordinates.
+     * @param  StudioContextualAuthoringAvailability  $studioAvailability  Gates the contextual browser runtime.
      * @param  ?ContentFormPresenter  $form         Turns a schema into field descriptors; null builds a default.
      * @param  ?MediaService          $media        Backs the media picker; null renders the form without one.
      * @param  ?PublicPageLocator     $publicPages  Resolves the entry's public URL; null omits the link.
@@ -55,6 +60,8 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         private ContentService $content,
         private ContentModelService $models,
         private AdministratorRenderer $renderer,
+        private ContentStudioAuthoringTargetResolver $studioTargets,
+        private StudioContextualAuthoringAvailability $studioAvailability,
         private ?ContentFormPresenter $form = null,
         private ?MediaService $media = null,
         private ?PublicPageLocator $publicPages = null,
@@ -112,6 +119,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         $session = AdministratorRequest::session($request);
         $id = $request->getAttribute('id');
         $entry = null;
+        $record = null;
 
         if (is_string($id) && $id !== '') {
             $record = $this->content->get(AdministratorRequest::context($request), $id, true);
@@ -122,6 +130,16 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         $definitions = $this->models->contentTypes($context);
         $types = array_map(static fn (ContentTypeDefinition $type): array => $type->toArray(), $definitions);
         $selectedType = $this->selectedType($request, $definitions, $entry, $submission);
+        $studioTarget = $record instanceof ContentRecord
+            ? $this->studioTargets->edit($context, $record, $selectedType)
+            : $this->studioTargets->create(
+                $context,
+                $this->explicitTypeSelected($request, $submission, $selectedType) ? $selectedType : null,
+            );
+        $studioAuthoring = [
+            ...$this->studioAvailability->current()->toArray(),
+            'target' => $studioTarget->toArray(),
+        ];
         $workflow = null;
         if (is_array($entry)) {
             $workflowId = $entry['workflow_id'] ?? null;
@@ -154,6 +172,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
             'entry' => $entry,
             'content_types' => $types,
             'content_type' => $selectedType->toArray(),
+            'studio_authoring' => $studioAuthoring,
             'editor_input' => $this->editorInput($submission),
             'content_violations' => $submission === null ? [] : $submission->violations,
             'version_conflict' => $this->versionConflict($entry, $submission),
@@ -167,6 +186,36 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
                 $this->media->browse($context, perPage: 48)->items,
             ),
         ]), $status, ['Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * Decide whether create authoring explicitly selected a reusable Content type.
+     *
+     * The structured fallback always needs a definition and therefore defaults to the core Page type.
+     * Studio must not inherit that implementation detail: only a recognized query or retained
+     * submission makes the type part of the contextual target; an unqualified Content New visit stays
+     * a blank create intent.
+     *
+     * @param   ServerRequestInterface    $request     Request whose query may select a type.
+     * @param   ?ContentEditorSubmission  $submission  Retained create submission, or null.
+     * @param   ContentTypeDefinition     $selected    Definition selected for the structured fallback.
+     *
+     * @return  bool  True only when the selected definition was explicitly and validly requested.
+     *
+     * @since   2.0.0
+     */
+    private function explicitTypeSelected(
+        ServerRequestInterface $request,
+        ?ContentEditorSubmission $submission,
+        ContentTypeDefinition $selected,
+    ): bool {
+        $requested = $submission?->contentType;
+        if ($requested === null || $requested === '') {
+            $requested = $request->getQueryParams()['content_type'] ?? null;
+        }
+
+        return is_string($requested)
+            && ($requested === $selected->id || $requested === $selected->handle);
     }
 
     /**

@@ -1323,7 +1323,7 @@ final readonly class ContentStudioProjector
      *
      * @since   2.0.0
      */
-    private static function entryRevision(int $version): string
+    public static function entryRevision(int $version): string
     {
         return 'content-entry-v' . $version;
     }

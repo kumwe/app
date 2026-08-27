@@ -50,6 +50,37 @@ final class AdministratorContentEditorHandlerTest extends TestCase
     }
 
     /**
+     * The structured form's Page default does not silently become Studio's reusable-type start.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOnlyAnExplicitRecognizedTypeBecomesPartOfTheStudioTarget(): void
+    {
+        $definition = $this->definition(ContentService::CORE_PAGE_TYPE_ID, 'page');
+        $handler = (new ReflectionClass(AdministratorContentEditorHandler::class))
+            ->newInstanceWithoutConstructor();
+        $method = new ReflectionMethod($handler, 'explicitTypeSelected');
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('GET', 'https://kumwe.test/administrator/content/new');
+
+        self::assertFalse($method->invoke($handler, $request, null, $definition));
+        self::assertTrue($method->invoke(
+            $handler,
+            $request->withQueryParams(['content_type' => 'page']),
+            null,
+            $definition,
+        ));
+        self::assertFalse($method->invoke(
+            $handler,
+            $request->withQueryParams(['content_type' => 'unknown']),
+            null,
+            $definition,
+        ));
+    }
+
+    /**
      * Run the private type-selection decision without composing the full editor.
      *
      * @param   list<ContentTypeDefinition>  $definitions  Head versions offered to the editor.

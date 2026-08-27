@@ -318,6 +318,8 @@ use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentModelRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
+use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringAvailability;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\ContentStudioResourceSearchProvider;
@@ -392,6 +394,7 @@ use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioMediaUploadReposit
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioHostSessionRepository;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioPreviewDraftSource;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioPreviewRepository;
+use Kumwe\App\Studio\Infrastructure\Release\PinnedStudioContextualAuthoringAvailability;
 use Kumwe\App\Studio\Infrastructure\Transport\NativeStudioPreviewSequenceWaiter;
 use Kumwe\App\Demo\Application\DemoProfileLedger;
 use Kumwe\App\Demo\Application\DemoProfileReconciler;
@@ -1719,6 +1722,17 @@ final class ContainerFactory
 
             return StudioReleaseRecord::fromJson($record);
         }, true);
+        $container->share(ContentStudioAuthoringTargetResolver::class, static fn (
+            Container $container,
+        ): ContentStudioAuthoringTargetResolver => new ContentStudioAuthoringTargetResolver(
+            self::service($container, AuthorizationGateway::class),
+        ), true);
+        $container->share(
+            StudioContextualAuthoringAvailability::class,
+            static fn (): StudioContextualAuthoringAvailability =>
+                new PinnedStudioContextualAuthoringAvailability($root, null),
+            true,
+        );
         $container->share(
             StudioHostSessionRepository::class,
             static fn (Container $container): StudioHostSessionRepository =>
@@ -4259,6 +4273,8 @@ final class ContainerFactory
             self::service($container, ContentService::class),
             self::service($container, ContentModelService::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, ContentStudioAuthoringTargetResolver::class),
+            self::service($container, StudioContextualAuthoringAvailability::class),
             self::service($container, ContentFormPresenter::class),
             self::service($container, MediaService::class),
             self::service($container, PublicPageLocator::class),
