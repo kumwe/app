@@ -41,7 +41,7 @@
             "retryable"
         ],
         "unexpected_failure": "generic_protocol_error_and_server_log",
-        "registry_sha256": "7f21082b8ff3a3c85e42a69a3b7438e5547f7295ef7254f90520bdf42357019c",
+        "registry_sha256": "f8ca7f719c10f279a516979fcf61e10939425d4ebb8d663fbac3183ae749a745",
         "registry": [
             {
                 "code": "authorization.denied",
@@ -198,10 +198,10 @@
                         "stable_code": "business_record.temporarily_unavailable"
                     },
                     {
-                        "exception": "Kumwe\\App\\BusinessRecord\\Application\\MoneyRateUnavailable"
+                        "exception": "Kumwe\\Conversion\\Provider\\MoneyRateUnavailable"
                     },
                     {
-                        "exception": "Kumwe\\App\\BusinessRecord\\Application\\UnitConversionUnavailable"
+                        "exception": "Kumwe\\Conversion\\Provider\\UnitConversionUnavailable"
                     }
                 ]
             },
@@ -445,7 +445,7 @@
             ]
         }
     ],
-    "contract_sha256": "b8a5b3b2e09bca3457cbda377d25cc1a3263bdcf4e0b48a25ba60c5d812f3703",
+    "contract_sha256": "43c4006eb385eca3c356f3bdbaeb543d048d7a5d5743dcb00308621d1005649b",
     "surface": {
         "tools": [
             {

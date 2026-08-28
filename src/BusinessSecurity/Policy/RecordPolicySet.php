@@ -6,6 +6,7 @@ namespace Kumwe\App\BusinessSecurity\Policy;
 
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate;
 
 /**
  * Bounded allow and deny predicates for one record resource.

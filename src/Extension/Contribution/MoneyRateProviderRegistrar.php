@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\App\BusinessRecord\Application\MoneyRateProvider;
+use Kumwe\Conversion\Provider\MoneyRateProvider;
 use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
 
 /**

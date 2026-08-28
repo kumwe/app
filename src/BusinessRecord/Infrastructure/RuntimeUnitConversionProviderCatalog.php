@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessRecord\Infrastructure;
 
-use Kumwe\App\BusinessRecord\Application\UnitConversionProvider;
-use Kumwe\App\BusinessRecord\Application\UnitConversionProviderCatalog;
+use Kumwe\Conversion\Provider\UnitConversionProvider;
+use Kumwe\Conversion\Provider\UnitConversionProviderCatalog;
 use Kumwe\App\Extension\Contribution\UnitConversionProviderDefinition;
-use Kumwe\App\BusinessRecord\Domain\UnitConversionRequest;
+use Kumwe\Conversion\Contract\UnitConversionRequest;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 

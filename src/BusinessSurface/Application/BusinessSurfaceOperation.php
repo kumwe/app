@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSurface\Application;
 
-use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
 
 /**
  * Closed operation vocabulary shared by generated browser, REST, CLI and MCP adapters.

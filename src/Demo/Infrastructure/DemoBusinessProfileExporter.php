@@ -20,9 +20,9 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailab
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\App\BusinessRecord\Domain\MoneyValue;
-use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\Conversion\Decimal\ExactDecimal;
+use Kumwe\Conversion\Value\MoneyValue;
+use Kumwe\Conversion\Value\QuantityValue;
 use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
 use Kumwe\App\BusinessRecord\Query\RecordProjection;
 use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;

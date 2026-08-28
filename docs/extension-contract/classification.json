@@ -2,7 +2,7 @@
   "format": "kumwe-extension-contract-classification-v1",
   "authority": "docs/extension-contract/README.md",
   "generations": "docs/extension-contract/generations.json",
-  "note": "Which types an extension may build against, as data rather than as prose. Everything under `Kumwe\\App\\` is internal unless it is listed here, so the absence of a type from this file is itself the answer: core may decompose it freely and a package that reaches for it will break. A type listed here is public \u2014 it is part of a promised generation, and it changes only by a generation gaining a successor. `pinned_by` names the compatibility fixture whose committed bytes hold the type's exact member signatures; where it is null the type is public and governed by its generation, but its members are not byte-pinned at this release.",
+  "note": "Which types an extension may build against, as data rather than as prose. Everything under `Kumwe\\App\\` is internal unless it is listed here, so the absence of a type from this file is itself the answer: core may decompose it freely and a package that reaches for it will break. A type listed here is public — it is part of a promised generation, and it changes only by a generation gaining a successor. `pinned_by` names the compatibility fixture whose committed bytes hold the type's exact member signatures; where it is null the type is public and governed by its generation, but its members are not byte-pinned at this release.",
   "default_visibility": "internal",
   "visibilities": {
     "public": "Part of a promised generation. An extension may depend on it.",
@@ -316,13 +316,13 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessRecord\\Application\\MoneyRateProvider",
+      "type": "Kumwe\\Conversion\\Provider\\MoneyRateProvider",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
       "reachable_from": "manifest-4",
       "spi": 2,
-      "path": "src/BusinessRecord/Application/MoneyRateProvider.php",
+      "path": "vendor/kumwe/conversion/src/Provider/MoneyRateProvider.php",
       "pinned_by": "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
     },
     {
@@ -336,33 +336,33 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessRecord\\Application\\UnitConversionProvider",
+      "type": "Kumwe\\Conversion\\Provider\\UnitConversionProvider",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
       "reachable_from": "manifest-4",
       "spi": 2,
-      "path": "src/BusinessRecord/Application/UnitConversionProvider.php",
+      "path": "vendor/kumwe/conversion/src/Provider/UnitConversionProvider.php",
       "pinned_by": "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json"
     },
     {
-      "type": "Kumwe\\App\\BusinessRecord\\Domain\\MoneyConversionRequest",
+      "type": "Kumwe\\Conversion\\Contract\\MoneyConversionRequest",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
       "reachable_from": "manifest-4",
       "spi": 2,
-      "path": "src/BusinessRecord/Domain/MoneyConversionRequest.php",
+      "path": "vendor/kumwe/conversion/src/Contract/MoneyConversionRequest.php",
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessRecord\\Domain\\MoneyExchangeRate",
+      "type": "Kumwe\\Conversion\\Value\\MoneyExchangeRate",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
       "reachable_from": "manifest-4",
       "spi": 2,
-      "path": "src/BusinessRecord/Domain/MoneyExchangeRate.php",
+      "path": "vendor/kumwe/conversion/src/Value/MoneyExchangeRate.php",
       "pinned_by": null
     },
     {
@@ -376,43 +376,43 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessRecord\\Domain\\MoneyRoundingMode",
+      "type": "Kumwe\\Conversion\\Value\\MoneyRoundingMode",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
       "reachable_from": "manifest-4",
       "spi": 2,
-      "path": "src/BusinessRecord/Domain/MoneyRoundingMode.php",
+      "path": "vendor/kumwe/conversion/src/Value/MoneyRoundingMode.php",
       "pinned_by": "tests/Fixtures/ExtensionApi/money-rate-provider-v1.json"
     },
     {
-      "type": "Kumwe\\App\\BusinessRecord\\Domain\\QuantityRoundingMode",
+      "type": "Kumwe\\Conversion\\Value\\QuantityRoundingMode",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
       "reachable_from": "manifest-4",
       "spi": 2,
-      "path": "src/BusinessRecord/Domain/QuantityRoundingMode.php",
+      "path": "vendor/kumwe/conversion/src/Value/QuantityRoundingMode.php",
       "pinned_by": "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json"
     },
     {
-      "type": "Kumwe\\App\\BusinessRecord\\Domain\\UnitConversionFactor",
+      "type": "Kumwe\\Conversion\\Value\\UnitConversionFactor",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
       "reachable_from": "manifest-4",
       "spi": 2,
-      "path": "src/BusinessRecord/Domain/UnitConversionFactor.php",
+      "path": "vendor/kumwe/conversion/src/Value/UnitConversionFactor.php",
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessRecord\\Domain\\UnitConversionRequest",
+      "type": "Kumwe\\Conversion\\Contract\\UnitConversionRequest",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
       "reachable_from": "manifest-4",
       "spi": 2,
-      "path": "src/BusinessRecord/Domain/UnitConversionRequest.php",
+      "path": "vendor/kumwe/conversion/src/Contract/UnitConversionRequest.php",
       "pinned_by": null
     },
     {
@@ -486,53 +486,53 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessSecurity\\Application\\FieldAccessUsage",
+      "type": "Kumwe\\Extension\\Spi\\BusinessSecurity\\Application\\FieldAccessUsage",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
       "reachable_from": "manifest-2",
       "spi": 1,
-      "path": "src/BusinessSecurity/Application/FieldAccessUsage.php",
+      "path": "vendor/kumwe/extension-sdk/src/Spi/BusinessSecurity/Application/FieldAccessUsage.php",
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessSecurity\\Application\\FieldDisclosurePlan",
+      "type": "Kumwe\\Extension\\Spi\\BusinessSecurity\\Application\\FieldDisclosurePlan",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
       "reachable_from": "manifest-2",
       "spi": 1,
-      "path": "src/BusinessSecurity/Application/FieldDisclosurePlan.php",
+      "path": "vendor/kumwe/extension-sdk/src/Spi/BusinessSecurity/Application/FieldDisclosurePlan.php",
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyComparison",
+      "type": "Kumwe\\Extension\\Spi\\BusinessSecurity\\Policy\\RecordPolicyComparison",
       "kind": "class",
       "visibility": "public",
       "role": "construct",
       "reachable_from": "manifest-2",
       "spi": 1,
-      "path": "src/BusinessSecurity/Policy/RecordPolicyComparison.php",
+      "path": "vendor/kumwe/extension-sdk/src/Spi/BusinessSecurity/Policy/RecordPolicyComparison.php",
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyComparisonOperator",
+      "type": "Kumwe\\Extension\\Spi\\BusinessSecurity\\Policy\\RecordPolicyComparisonOperator",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
       "reachable_from": "manifest-2",
       "spi": 1,
-      "path": "src/BusinessSecurity/Policy/RecordPolicyComparisonOperator.php",
+      "path": "vendor/kumwe/extension-sdk/src/Spi/BusinessSecurity/Policy/RecordPolicyComparisonOperator.php",
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyPredicate",
+      "type": "Kumwe\\Extension\\Spi\\BusinessSecurity\\Policy\\RecordPolicyPredicate",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
       "reachable_from": "manifest-2",
       "spi": 1,
-      "path": "src/BusinessSecurity/Policy/RecordPolicyPredicate.php",
+      "path": "vendor/kumwe/extension-sdk/src/Spi/BusinessSecurity/Policy/RecordPolicyPredicate.php",
       "pinned_by": null
     },
     {
@@ -556,13 +556,13 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyValueType",
+      "type": "Kumwe\\Extension\\Spi\\BusinessSecurity\\Policy\\RecordPolicyValueType",
       "kind": "enum",
       "visibility": "public",
       "role": "construct",
       "reachable_from": "manifest-2",
       "spi": 1,
-      "path": "src/BusinessSecurity/Policy/RecordPolicyValueType.php",
+      "path": "vendor/kumwe/extension-sdk/src/Spi/BusinessSecurity/Policy/RecordPolicyValueType.php",
       "pinned_by": null
     },
     {
@@ -1006,13 +1006,13 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/unit-conversion-provider-v1.json"
     },
     {
-      "type": "Kumwe\\App\\Extension\\Development\\LifecycleConformanceAdapter",
+      "type": "Kumwe\\Extension\\Toolchain\\LifecycleConformanceAdapter",
       "kind": "interface",
       "visibility": "public",
       "role": "implement",
       "reachable_from": "manifest-1",
       "spi": null,
-      "path": "src/Extension/Development/LifecycleConformanceAdapter.php",
+      "path": "vendor/kumwe/extension-sdk/src/Toolchain/LifecycleConformanceAdapter.php",
       "pinned_by": "tests/Fixtures/ExtensionApi/public-interfaces-v2.json"
     },
     {
@@ -1226,13 +1226,13 @@
       "pinned_by": null
     },
     {
-      "type": "Kumwe\\App\\Extension\\Contribution\\Manifest5AdapterResult",
+      "type": "Kumwe\\Extension\\Spi\\Contribution\\Manifest5AdapterResult",
       "kind": "class",
       "visibility": "public",
       "role": "receive",
       "reachable_from": "manifest-6",
       "spi": 4,
-      "path": "src/Extension/Contribution/Manifest5AdapterResult.php",
+      "path": "vendor/kumwe/extension-sdk/src/Spi/Contribution/Manifest5AdapterResult.php",
       "pinned_by": null
     },
     {
@@ -1276,13 +1276,13 @@
       "pinned_by": "tests/Fixtures/ExtensionApi/studio-preview-block-renderer-v1.json"
     },
     {
-      "type": "Kumwe\\App\\Extension\\Runtime\\ExtensionEvent",
+      "type": "Kumwe\\Extension\\Spi\\Runtime\\ExtensionEvent",
       "kind": "interface",
       "visibility": "public",
       "role": "receive",
       "reachable_from": "manifest-1",
       "spi": null,
-      "path": "src/Extension/Runtime/ExtensionEvent.php",
+      "path": "vendor/kumwe/extension-sdk/src/Spi/Runtime/ExtensionEvent.php",
       "pinned_by": "tests/Fixtures/ExtensionApi/extension-event-v1.json"
     }
   ]

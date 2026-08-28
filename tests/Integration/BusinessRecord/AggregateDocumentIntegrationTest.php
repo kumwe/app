@@ -29,7 +29,7 @@ use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessRecord\Application\ValidationViolation;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;

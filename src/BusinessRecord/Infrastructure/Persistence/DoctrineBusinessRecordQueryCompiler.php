@@ -49,15 +49,15 @@ use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
 use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBoolean;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBooleanOperator;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparison;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyNullCheck;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyPredicate;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyValueType;
 use Ramsey\Uuid\Uuid;
 
 /**

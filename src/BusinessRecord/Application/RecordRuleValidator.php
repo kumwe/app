@@ -10,7 +10,7 @@ use Kumwe\App\BusinessDefinition\Domain\Expression;
 use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessDefinition\Domain\RecordInvariantDefinition;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
-use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use Ramsey\Uuid\Uuid;
 

@@ -25,7 +25,7 @@ use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdmini
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityScopeDenied;
 use Kumwe\App\BusinessSecurity\Application\Administration\SelfEscalationDenied;
 use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
-use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\App\Extension\Contribution\ContributionOwner;

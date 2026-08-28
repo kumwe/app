@@ -7,8 +7,8 @@ namespace Kumwe\App\Delivery\Console\Command;
 use InvalidArgumentException;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
-use Kumwe\App\Extension\Development\ComponentScaffolder;
-use Kumwe\App\Extension\Development\ScaffoldRequest;
+use Kumwe\Extension\Toolchain\ComponentScaffolder;
+use Kumwe\Extension\Toolchain\ScaffoldRequest;
 use Throwable;
 
 /**

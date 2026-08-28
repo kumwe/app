@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\App\BusinessRecord\Domain\MoneyValue;
-use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\Conversion\Decimal\ExactDecimal;
+use Kumwe\Conversion\Value\MoneyValue;
+use Kumwe\Conversion\Value\QuantityValue;
 use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
 
 /**

@@ -10,7 +10,7 @@ use Kumwe\App\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessRecord\Application\ValidationViolation;
 use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
-use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\App\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;

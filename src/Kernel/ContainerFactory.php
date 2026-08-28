@@ -138,16 +138,16 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordWriteRepository;
 use Kumwe\App\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolver;
-use Kumwe\App\BusinessRecord\Application\MoneyConversionPipeline;
-use Kumwe\App\BusinessRecord\Application\MoneyRateProviderCatalog;
+use Kumwe\Conversion\Provider\MoneyConversionPipeline;
+use Kumwe\Conversion\Provider\MoneyRateProviderCatalog;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodCalendar;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodLock;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodRepository;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodService;
-use Kumwe\App\BusinessRecord\Domain\MoneyConverter;
-use Kumwe\App\BusinessRecord\Application\UnitConversionPipeline;
-use Kumwe\App\BusinessRecord\Application\UnitConversionProviderCatalog;
-use Kumwe\App\BusinessRecord\Domain\QuantityConverter;
+use Kumwe\Conversion\Contract\MoneyConverter;
+use Kumwe\Conversion\Provider\UnitConversionPipeline;
+use Kumwe\Conversion\Provider\UnitConversionProviderCatalog;
+use Kumwe\Conversion\Contract\QuantityConverter;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeMoneyRateProviderCatalog;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeUnitConversionProviderCatalog;
 use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
@@ -423,11 +423,11 @@ use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
-use Kumwe\App\Extension\Application\Package\ArchiveContentReader;
+use Kumwe\Extension\Package\ArchiveContentReader;
 use Kumwe\App\Extension\Application\Package\ArchiveReader;
 use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
-use Kumwe\App\Extension\Application\Package\PackageAdmissionScanner;
-use Kumwe\App\Extension\Application\Package\PackageCodeConformance;
+use Kumwe\Extension\Package\PackageAdmissionScanner;
+use Kumwe\Extension\Package\PackageCodeConformance;
 use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\App\Extension\Application\Trust\ExtensionArtifactVerifier;
 use Kumwe\App\Extension\Application\Trust\RevocationFeedSource;
@@ -439,7 +439,9 @@ use Kumwe\App\Extension\Application\Trust\TrustRuntimeInvalidator;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
-use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveContentReader;
+use Kumwe\Extension\Package\PackageSafetyPolicy as SdkPackageSafetyPolicy;
+use Kumwe\Extension\Package\ZipArchiveContentReader;
+use Kumwe\Extension\Package\ZipArchiveReader as SdkZipArchiveReader;
 use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveReader;
 use Kumwe\App\Extension\Infrastructure\ExtensionRegistryFenceAllocator;
 use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
@@ -449,12 +451,12 @@ use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier
 use Kumwe\App\Extension\Infrastructure\Trust\SodiumRevocationListVerifier;
 use Kumwe\App\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
 use Kumwe\App\Extension\Infrastructure\Trust\StreamRevocationFeedSource;
-use Kumwe\App\Extension\Development\ComponentScaffolder;
-use Kumwe\App\Extension\Development\DeterministicPackageBuilder;
-use Kumwe\App\Extension\Development\PackageInspector;
-use Kumwe\App\Extension\Development\PackageSigner;
-use Kumwe\App\Extension\Development\ProtectedSigningKeyReader;
-use Kumwe\App\Extension\Development\StaticConformanceRunner;
+use Kumwe\Extension\Toolchain\ComponentScaffolder;
+use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
+use Kumwe\Extension\Toolchain\PackageInspector;
+use Kumwe\Extension\Toolchain\PackageSigner;
+use Kumwe\Extension\Toolchain\ProtectedSigningKeyReader;
+use Kumwe\Extension\Toolchain\StaticConformanceRunner;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\CurrentExtensionExecutionGate;
 use Kumwe\App\Extension\Runtime\ContributedStudioPreviewBlockRendererRegistry;
@@ -2643,10 +2645,10 @@ final class ContainerFactory
             $configuration->packageConformanceAdmission,
         ), true);
         $container->share(ComponentScaffolder::class, new ComponentScaffolder(), true);
-        $container->share(PackageInspector::class, static fn (Container $container): PackageInspector =>
+        $container->share(PackageInspector::class, static fn (): PackageInspector =>
             new PackageInspector(
-                self::service($container, ArchiveReader::class),
-                self::service($container, PackageSafetyPolicy::class),
+                new SdkZipArchiveReader(),
+                new SdkPackageSafetyPolicy(),
             ), true);
         $container->share(DeterministicPackageBuilder::class, static fn (
             Container $container,

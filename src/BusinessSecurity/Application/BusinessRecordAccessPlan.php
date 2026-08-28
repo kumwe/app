@@ -7,6 +7,7 @@ namespace Kumwe\App\BusinessSecurity\Application;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicySet;
+use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldDisclosurePlan;
 
 /**
  * Immutable authorization decision consumed by every read of one business-record resource.

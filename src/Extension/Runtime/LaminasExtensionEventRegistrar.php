@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Runtime;
 
 use InvalidArgumentException;
+use Kumwe\Extension\Spi\Runtime\ExtensionEvent;
 use Laminas\EventManager\EventManagerInterface;
 
 /**

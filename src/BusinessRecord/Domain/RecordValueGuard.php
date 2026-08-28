@@ -6,6 +6,9 @@ namespace Kumwe\App\BusinessRecord\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\Conversion\Decimal\ExactDecimal;
+use Kumwe\Conversion\Value\MoneyValue;
+use Kumwe\Conversion\Value\QuantityValue;
 
 /**
  * Gatekeeper for what may appear inside a business-record value, and how it is spelled for storage.

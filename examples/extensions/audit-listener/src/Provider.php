@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace KumweExample\AuditListener;
 
 use Kumwe\App\Extension\Runtime\ExtensionContainer;
-use Kumwe\App\Extension\Runtime\ExtensionEvent;
+use Kumwe\Extension\Spi\Runtime\ExtensionEvent;
 use Kumwe\App\Extension\Runtime\ExtensionEventRegistrar;
 use Kumwe\App\Extension\Runtime\ExtensionRouteRegistrar;
 use Kumwe\App\Extension\Runtime\RuntimeExtension;

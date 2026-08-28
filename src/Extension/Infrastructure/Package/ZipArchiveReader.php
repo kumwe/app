@@ -9,7 +9,7 @@ use Kumwe\App\Extension\Application\Package\ArchiveEntry;
 use Kumwe\App\Extension\Application\Package\ArchiveEntryType;
 use Kumwe\App\Extension\Application\Package\ArchivePackage;
 use Kumwe\App\Extension\Application\Package\ArchiveReader;
-use Kumwe\App\Extension\Domain\PackagePath;
+use Kumwe\Extension\Package\PackagePath;
 use RuntimeException;
 use ZipArchive;
 

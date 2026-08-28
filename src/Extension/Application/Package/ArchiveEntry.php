@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Application\Package;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Domain\PackagePath;
+use Kumwe\Extension\Package\PackagePath;
 
 /**
  * One row of an extension archive's directory: what an entry is, where it sits, and how large it claims

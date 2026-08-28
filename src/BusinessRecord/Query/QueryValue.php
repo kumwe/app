@@ -6,9 +6,9 @@ namespace Kumwe\App\BusinessRecord\Query;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\App\BusinessRecord\Domain\MoneyValue;
-use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\Conversion\Decimal\ExactDecimal;
+use Kumwe\Conversion\Value\MoneyValue;
+use Kumwe\Conversion\Value\QuantityValue;
 use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
 
 /**

@@ -27,7 +27,7 @@ use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
-use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\App\Demo\Application\DemoProfileLedger;
 use Kumwe\App\Demo\Application\VdmBusinessManifestProjector;
 use Kumwe\App\Demo\Application\VdmBusinessOperationGuard;

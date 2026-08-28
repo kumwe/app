@@ -1,17 +1,17 @@
 {
   "format": "kumwe-unit-conversion-provider-v1",
   "interfaces": {
-    "Kumwe\\App\\BusinessRecord\\Application\\UnitConversionProvider": [
-      "factorFor(Kumwe\\App\\BusinessRecord\\Domain\\UnitConversionRequest $request): Kumwe\\App\\BusinessRecord\\Domain\\UnitConversionFactor",
+    "Kumwe\\Conversion\\Provider\\UnitConversionProvider": [
+      "factorFor(Kumwe\\Conversion\\Contract\\UnitConversionRequest $request): Kumwe\\Conversion\\Value\\UnitConversionFactor",
       "identifier(): string",
-      "supports(Kumwe\\App\\BusinessRecord\\Domain\\UnitConversionRequest $request): bool"
+      "supports(Kumwe\\Conversion\\Contract\\UnitConversionRequest $request): bool"
     ],
     "Kumwe\\App\\Extension\\Contribution\\UnitConversionProviderRegistrar": [
-      "unitConversionProvider(Kumwe\\App\\Extension\\Contribution\\UnitConversionProviderDefinition $definition, Kumwe\\App\\BusinessRecord\\Application\\UnitConversionProvider $provider): void"
+      "unitConversionProvider(Kumwe\\App\\Extension\\Contribution\\UnitConversionProviderDefinition $definition, Kumwe\\Conversion\\Provider\\UnitConversionProvider $provider): void"
     ]
   },
   "enums": {
-    "Kumwe\\App\\BusinessRecord\\Domain\\QuantityRoundingMode": {
+    "Kumwe\\Conversion\\Value\\QuantityRoundingMode": {
       "Ceiling": "ceiling",
       "Floor": "floor",
       "HalfDown": "half_down",

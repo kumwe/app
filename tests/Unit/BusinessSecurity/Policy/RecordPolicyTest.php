@@ -6,17 +6,17 @@ namespace Kumwe\App\Tests\Unit\BusinessSecurity\Policy;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBoolean;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBooleanOperator;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparison;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyEvaluator;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyNullCheck;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicySet;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

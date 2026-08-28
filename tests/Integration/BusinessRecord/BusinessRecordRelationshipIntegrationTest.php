@@ -27,7 +27,7 @@ use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\Query\OwnedLineFormQuery;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
+use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\OwnedLineWritePlan;

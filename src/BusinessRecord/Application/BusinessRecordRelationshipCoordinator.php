@@ -27,7 +27,7 @@ use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
 use Ramsey\Uuid\Uuid;
 use Throwable;
 

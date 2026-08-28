@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Domain;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Domain\PackagePath;
+use Kumwe\Extension\Package\PackagePath;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

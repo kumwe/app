@@ -238,7 +238,7 @@ That list is an API compatibility boundary, **not a sandbox**. Admitted PHP has
 full process authority.
 
 Runtime volume: `extensions/` (empty in git). Examples: `examples/extensions/`.
-Scaffold: `resources/extension-scaffold/`. Conformance: `sdk/extension-conformance/`.
+Scaffold templates and conformance toolchain: the `kumwe/extension-sdk` package.
 
 ---
 

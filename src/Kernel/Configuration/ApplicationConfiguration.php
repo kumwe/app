@@ -7,7 +7,7 @@ namespace Kumwe\App\Kernel\Configuration;
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\App\Extension\Application\Package\PackageConformanceMode;
+use Kumwe\Extension\Package\PackageConformanceMode;
 use Kumwe\App\Http\Security\TrustedProxyMatcher;
 use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
 

@@ -6,6 +6,10 @@ namespace Kumwe\App\BusinessSecurity\Policy;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyValueType;
 use Stringable;
 
 /**

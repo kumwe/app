@@ -6,7 +6,7 @@ namespace KumweExample\AssetInspection\Application;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\App\Identity\Domain\Capability;
 
 /**

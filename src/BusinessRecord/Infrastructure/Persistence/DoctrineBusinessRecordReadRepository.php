@@ -36,7 +36,7 @@ use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessRecord\Query\CursorPosition;
 use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\App\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;

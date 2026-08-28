@@ -117,7 +117,7 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '301b9778de8a782cc387925729e3a88d7e67d80198b4da1364e104e5509a8b65',
+            'dc35bcf25a72d799ab44d63815740c44ffd7f40d368221a0c38b509528a0b51d',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
@@ -181,7 +181,7 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '1b8b5d2c0227138ca9e1e0709b58365f6c332c7ba6aa0a628f47dce83563cb42',
+            '3b3b9b139e07640f2bedb02d0bbfe9373b50e4b4595409b86fbe7a372ee02234',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
@@ -280,7 +280,7 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            '6d8eca893519563c99d77462cfc7902cb55ddec22e0f422d3eb0c075345b39de',
+            'd85c9ed47dcede53d76b09f6d11ad5258310fe8a57a58d8e47eb3577e3c3d53c',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
@@ -345,7 +345,7 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
         $json = file_get_contents($path);
         self::assertIsString($json);
         self::assertSame(
-            'a155c13a5a8271c8ff92288626cce70476a751881c9b4d8ebb670deda2cf1bfb',
+            'b5cad63c63807c147c8b00e4f61bae98501339d64e7e8ebcf5eecae704361d2c',
             hash('sha256', $json),
         );
         $fixture = json_decode($json, true, 32, JSON_THROW_ON_ERROR);

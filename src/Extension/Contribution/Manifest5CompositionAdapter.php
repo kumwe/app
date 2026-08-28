@@ -6,6 +6,7 @@ namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\App\Studio\Domain\Contract\SchemaProfileRejected;
 use Kumwe\App\Studio\Domain\Contract\SchemaPropertyProfile;
+use Kumwe\Extension\Spi\Contribution\Manifest5AdapterResult;
 use stdClass;
 
 /**

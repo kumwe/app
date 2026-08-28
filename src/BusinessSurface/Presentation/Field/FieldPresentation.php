@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessSurface\Presentation\Field;
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue;
+use Kumwe\Conversion\Value\ConvertedMoneyValue;
 
 /**
  * Escaped-view-model request returned by core or extension field strategies.

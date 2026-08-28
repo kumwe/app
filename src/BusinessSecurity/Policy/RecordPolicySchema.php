@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSecurity\Policy;
 
 use InvalidArgumentException;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyValueType;
 
 /**
  * Closed field/type vocabulary against which a record-policy tree is validated.

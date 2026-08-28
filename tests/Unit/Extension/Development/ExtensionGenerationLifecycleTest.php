@@ -7,21 +7,21 @@ namespace Kumwe\App\Tests\Unit\Extension\Development;
 use FilesystemIterator;
 use Kumwe\App\Extension\Application\Install\AtomicInstallPlan;
 use Kumwe\App\Extension\Application\Install\InstallState;
-use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\Extension\Package\PackageSafetyPolicy;
 use Kumwe\App\Extension\Application\Trust\PackageTrustPolicy;
 use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Development\DeterministicPackageBuilder;
-use Kumwe\App\Extension\Development\PackageInspector;
-use Kumwe\App\Extension\Development\PackageSigner;
-use Kumwe\App\Extension\Development\ProtectedSigningKeyReader;
-use Kumwe\App\Extension\Development\SignatureDocument;
-use Kumwe\App\Extension\Development\StaticConformanceRunner;
+use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
+use Kumwe\Extension\Toolchain\PackageInspector;
+use Kumwe\Extension\Toolchain\PackageSigner;
+use Kumwe\Extension\Toolchain\ProtectedSigningKeyReader;
+use Kumwe\Extension\Toolchain\SignatureDocument;
+use Kumwe\Extension\Toolchain\StaticConformanceRunner;
 use Kumwe\App\Extension\Domain\ExtensionManifest;
 use Kumwe\App\Extension\Domain\ExtensionRecord;
 use Kumwe\App\Extension\Domain\ExtensionStatus;
 use Kumwe\App\Extension\Domain\PackageSignature;
-use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveReader;
+use Kumwe\Extension\Package\ZipArchiveReader;
 use Kumwe\App\Extension\Infrastructure\Trust\SodiumEd25519Verifier;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
@@ -257,13 +257,14 @@ final class ExtensionGenerationLifecycleTest extends TestCase
 
         $publicKey = base64_encode(sodium_crypto_sign_publickey(sodium_crypto_sign_seed_keypair($seed)));
         $policy = new PackageTrustPolicy(new SodiumEd25519Verifier([$keyId => $publicKey]), [$keyId]);
+        $checksum = \Kumwe\App\Extension\Domain\PackageChecksum::sha256((string) $built->inspection->checksum);
         $policy->assertTrusted(
-            $built->inspection->checksum,
+            $checksum,
             PackageSignature::ed25519($signature->keyId, $signature->base64Signature),
             false,
         );
 
-        return $built->inspection->checksum;
+        return $checksum;
     }
 
     /**

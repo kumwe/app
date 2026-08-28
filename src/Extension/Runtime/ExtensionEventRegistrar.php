@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Runtime;
 
+use Kumwe\Extension\Spi\Runtime\ExtensionEvent;
+
 /**
  * Subscription surface an extension is handed so it can react to Kumwe domain events.
  *

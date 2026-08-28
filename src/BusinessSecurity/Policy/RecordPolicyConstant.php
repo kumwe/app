@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSecurity\Policy;
 
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate;
+
 /**
  * Explicit true or false leaf used when a policy intentionally covers every or no record.
  *

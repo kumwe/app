@@ -78,7 +78,7 @@
       "schedule(Kumwe\\App\\BusinessIntegration\\Domain\\ScheduleContributionDefinition $definition): void",
       "webhook(Kumwe\\App\\BusinessIntegration\\Domain\\WebhookContributionDefinition $definition, Kumwe\\App\\BusinessIntegration\\Application\\IntegrationEventTransport $transport): void"
     ],
-    "Kumwe\\App\\Extension\\Development\\LifecycleConformanceAdapter": [
+    "Kumwe\\Extension\\Toolchain\\LifecycleConformanceAdapter": [
       "assertAuthorizationAndFieldPolicies(): void",
       "assertBackupAndRestore(): void",
       "assertCliAndMcp(): void",
