@@ -7,7 +7,6 @@ namespace Kumwe\App\Infrastructure\Persistence\Migration;
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
 use Kumwe\App\Application\Automation\JobExecutionClass;
@@ -134,21 +133,28 @@ final readonly class StudioContentAuthoringContextRetentionMigration implements 
                 'updated_at' => Types::DATETIME_IMMUTABLE,
             ]);
         }
-        $resourceId = $database->getDatabasePlatform() instanceof PostgreSQLPlatform
-            ? 'CAST(id AS VARCHAR)'
-            : 'id';
         foreach (['job' => 'jobs', 'schedule' => 'schedules'] as $resourceType => $table) {
             $database->executeStatement(sprintf(
                 'UPDATE %s SET execution_scope = ? WHERE job_type = ?',
                 $this->tables->quoted($table),
             ), [JobExecutionClass::Installation->value, PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
-            $database->executeStatement(sprintf(
-                'DELETE FROM %s WHERE resource_type = ? AND resource_id IN ('
-                . 'SELECT %s FROM %s WHERE job_type = ?)',
-                $this->tables->quoted('resource_site_ownership'),
-                $resourceId,
+            // Resolve the retention resource identifiers first and compare them as bound
+            // parameters. An IN (SELECT ...) across resource_site_ownership and the
+            // automation tables mixes per-table string collations, which MariaDB and
+            // MySQL refuse on installations whose server default collation differs
+            // from the ownership table's declared one (SQLSTATE HY000/1267); a bound
+            // parameter always adopts the compared column's collation.
+            $resourceIds = self::resourceIds($database->fetchFirstColumn(sprintf(
+                'SELECT id FROM %s WHERE job_type = ?',
                 $this->tables->quoted($table),
-            ), [$resourceType, PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+            ), [PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]));
+            if ($resourceIds !== []) {
+                $database->executeStatement(sprintf(
+                    'DELETE FROM %s WHERE resource_type = ? AND resource_id IN (%s)',
+                    $this->tables->quoted('resource_site_ownership'),
+                    implode(', ', array_fill(0, count($resourceIds), '?')),
+                ), [$resourceType, ...$resourceIds]);
+            }
             $invalidScopes = $database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s WHERE job_type = ? '
                 . 'AND (execution_scope IS NULL OR execution_scope <> ?)',
@@ -163,13 +169,11 @@ final readonly class StudioContentAuthoringContextRetentionMigration implements 
                     $resourceType,
                 ));
             }
-            $owned = $database->fetchOne(sprintf(
-                'SELECT COUNT(*) FROM %s WHERE resource_type = ? AND resource_id IN ('
-                . 'SELECT %s FROM %s WHERE job_type = ?)',
+            $owned = $resourceIds === [] ? 0 : $database->fetchOne(sprintf(
+                'SELECT COUNT(*) FROM %s WHERE resource_type = ? AND resource_id IN (%s)',
                 $this->tables->quoted('resource_site_ownership'),
-                $resourceId,
-                $this->tables->quoted($table),
-            ), [$resourceType, PurgeStudioContentAuthoringContextsHandler::JOB_TYPE]);
+                implode(', ', array_fill(0, count($resourceIds), '?')),
+            ), [$resourceType, ...$resourceIds]);
             if (self::rowCount($owned) !== 0) {
                 throw new RuntimeException(sprintf(
                     'A Studio Content authoring context retention %s still has site ownership.',
@@ -199,6 +203,37 @@ final readonly class StudioContentAuthoringContextRetentionMigration implements 
      *
      * @since   2.0.0
      */
+    /**
+     * Normalize fetched automation resource identifiers to the string form the
+     * ownership registry stores, refusing a malformed identifier outright.
+     *
+     * @param   list<mixed>  $values  Identifier column values for one automation table.
+     *
+     * @return  list<string>  Bound-parameter-ready resource identifiers.
+     *
+     * @throws  RuntimeException  When an identifier is neither a non-empty string nor an integer.
+     *
+     * @since   2.0.0
+     */
+    private static function resourceIds(array $values): array
+    {
+        $identifiers = [];
+        foreach ($values as $value) {
+            if (is_int($value)) {
+                $identifiers[] = (string) $value;
+                continue;
+            }
+            if (!is_string($value) || $value === '') {
+                throw new RuntimeException(
+                    'A Studio Content authoring context retention resource identifier is invalid.'
+                );
+            }
+            $identifiers[] = $value;
+        }
+
+        return $identifiers;
+    }
+
     private static function rowCount(mixed $value): int
     {
         if (is_int($value) && $value >= 0) {
