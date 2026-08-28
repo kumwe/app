@@ -570,6 +570,32 @@
             }
         },
         {
+            "id": "studio-dependency-pins",
+            "title": "Studio contract dependencies are pinned to exact versions",
+            "purpose": "Fail on any non-exact specifier for kumwe/producer or an @kumwe/studio* package in composer.json or package.json: ADR 0007 and docs/roadmap/producer-adoption.md step 1 forbid a version range while the Studio contract is pre-release, because a range would take a contract change silently (V2-STU-002).",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "studio:dependencies",
+            "command": "composer studio:dependencies",
+            "artifact": "tools/verify-studio-dependencies.php",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer studio:dependencies"
+                }
+            }
+        },
+        {
             "id": "openapi-drift",
             "title": "The generated OpenAPI document matches the routes that exist",
             "purpose": "Regenerate the contract and fail when it differs from the committed artifact.",
