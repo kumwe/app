@@ -133,7 +133,8 @@ final class StudioContextualAuthoringLaunchBoundaryTest extends TestCase
         self::assertStringContainsString("'job' => 'jobs'", $retentionMigration);
         self::assertStringContainsString("'schedule' => 'schedules'", $retentionMigration);
         self::assertStringContainsString("quoted('resource_site_ownership')", $retentionMigration);
-        self::assertStringContainsString('PostgreSQLPlatform', $retentionMigration);
+        self::assertStringNotContainsString('PostgreSQLPlatform', $retentionMigration);
+        self::assertStringContainsString("array_fill(0, count(\$resourceIds), '?')", $retentionMigration);
         self::assertStringNotContainsString('endpoint', strtolower($retentionMigration));
         self::assertStringNotContainsString('configuration', strtolower($retentionMigration));
     }
