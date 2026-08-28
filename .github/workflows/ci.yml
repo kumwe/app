@@ -61,6 +61,7 @@ jobs:
           composer cli:contract
           composer mcp:contract
           composer studio:corpus
+          composer studio:dependencies
 
       - name: Verify documentation records
         run: |
@@ -387,7 +388,9 @@ jobs:
           composer mcp:contract
 
       - name: Verify the pinned Studio contract corpus
-        run: composer studio:corpus
+        run: |
+          composer studio:corpus
+          composer studio:dependencies
 
       - name: Verify the interface programme and the roadmap ledger
         run: |
