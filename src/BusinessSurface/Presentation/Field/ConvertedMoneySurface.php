@@ -145,15 +145,15 @@ enum ConvertedMoneySurface: string
     public static function contractCarriers(): array
     {
         return [
-            'src/BusinessRecord/Application/MoneyConversionPipeline.php',
-            'src/BusinessRecord/Application/MoneyRateProvider.php',
-            'src/BusinessRecord/Application/MoneyRateProviderCatalog.php',
-            'src/BusinessRecord/Domain/ConvertedMoneyValue.php',
-            'src/BusinessRecord/Domain/ExactDecimalArithmetic.php',
-            'src/BusinessRecord/Domain/MoneyConverter.php',
             'src/BusinessRecord/Domain/MoneyRateProviderDefinition.php',
             'src/BusinessRecord/Infrastructure/RuntimeMoneyRateProviderCatalog.php',
             'src/Kernel/ContainerFactory.php',
+            'vendor/kumwe/conversion/src/Contract/MoneyConverter.php',
+            'vendor/kumwe/conversion/src/Decimal/ExactDecimalArithmetic.php',
+            'vendor/kumwe/conversion/src/Provider/MoneyConversionPipeline.php',
+            'vendor/kumwe/conversion/src/Provider/MoneyRateProvider.php',
+            'vendor/kumwe/conversion/src/Provider/MoneyRateProviderCatalog.php',
+            'vendor/kumwe/conversion/src/Value/ConvertedMoneyValue.php',
         ];
     }
 

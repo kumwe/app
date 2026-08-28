@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "7a778e9399b8706fd286b670da7336f8af7e5d9d",
+    "commit": "95eca0802ef112ec65ba0915a806496d593871f6",
     "recorded_at": "2026-08-28",
     "recorded_from": [],
     "toolchain": {
@@ -21,7 +21,7 @@
             "ext-sodium",
             "ext-zip"
         ],
-        "composer_lock_sha256": "c9734438f2421d7fd292c4b7a718212582f3b6bc1770d44dd2b38b6a8a0b1820",
+        "composer_lock_sha256": "1c474f22285ff229efd644f0523ffe65f3446d8b37974f54ee19d2c036dfe48f",
         "package_lock_sha256": "977e7f2d2a270dee95b0d5c19df256ec812c6466eda2f030855245fd0aa351a3"
     },
     "tests": {

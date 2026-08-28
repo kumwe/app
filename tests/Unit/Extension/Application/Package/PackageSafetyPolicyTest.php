@@ -10,7 +10,7 @@ use Kumwe\App\Extension\Application\Package\ArchiveEntryType;
 use Kumwe\App\Extension\Application\Package\ArchivePackage;
 use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\App\Extension\Application\Package\UnsafePackage;
-use Kumwe\App\Extension\Domain\PackagePath;
+use Kumwe\Extension\Package\PackagePath;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -6,6 +6,7 @@ namespace Kumwe\App\Extension\Runtime;
 
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\Extension\Spi\Runtime\ExtensionEvent;
 
 /**
  * Extension event registrar that re-checks trust at dispatch time instead of at subscription time.

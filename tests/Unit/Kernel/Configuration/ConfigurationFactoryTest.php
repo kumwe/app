@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Kernel\Configuration;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Application\Package\PackageConformanceMode;
+use Kumwe\Extension\Package\PackageConformanceMode;
 use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\App\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\App\Kernel\Configuration\DatabaseConfiguration;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Domain;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue;
-use Kumwe\App\BusinessRecord\Domain\ConvertedQuantityValue;
+use Kumwe\Conversion\Value\ConvertedMoneyValue;
+use Kumwe\Conversion\Value\ConvertedQuantityValue;
 
 /**
  * Closed scalar vocabulary accepted by report parameters, columns and formulas.

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessRecord\Infrastructure;
 
-use Kumwe\App\BusinessRecord\Application\MoneyRateProvider;
-use Kumwe\App\BusinessRecord\Application\MoneyRateProviderCatalog;
-use Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest;
+use Kumwe\Conversion\Provider\MoneyRateProvider;
+use Kumwe\Conversion\Provider\MoneyRateProviderCatalog;
+use Kumwe\Conversion\Contract\MoneyConversionRequest;
 use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;

@@ -1,17 +1,17 @@
 {
   "format": "kumwe-money-rate-provider-v1",
   "interfaces": {
-    "Kumwe\\App\\BusinessRecord\\Application\\MoneyRateProvider": [
+    "Kumwe\\Conversion\\Provider\\MoneyRateProvider": [
       "identifier(): string",
-      "rateFor(Kumwe\\App\\BusinessRecord\\Domain\\MoneyConversionRequest $request): Kumwe\\App\\BusinessRecord\\Domain\\MoneyExchangeRate",
-      "supports(Kumwe\\App\\BusinessRecord\\Domain\\MoneyConversionRequest $request): bool"
+      "rateFor(Kumwe\\Conversion\\Contract\\MoneyConversionRequest $request): Kumwe\\Conversion\\Value\\MoneyExchangeRate",
+      "supports(Kumwe\\Conversion\\Contract\\MoneyConversionRequest $request): bool"
     ],
     "Kumwe\\App\\Extension\\Contribution\\MoneyRateProviderRegistrar": [
-      "moneyRateProvider(Kumwe\\App\\BusinessRecord\\Domain\\MoneyRateProviderDefinition $definition, Kumwe\\App\\BusinessRecord\\Application\\MoneyRateProvider $provider): void"
+      "moneyRateProvider(Kumwe\\App\\BusinessRecord\\Domain\\MoneyRateProviderDefinition $definition, Kumwe\\Conversion\\Provider\\MoneyRateProvider $provider): void"
     ]
   },
   "enums": {
-    "Kumwe\\App\\BusinessRecord\\Domain\\MoneyRoundingMode": {
+    "Kumwe\\Conversion\\Value\\MoneyRoundingMode": {
       "Ceiling": "ceiling",
       "Floor": "floor",
       "HalfDown": "half_down",

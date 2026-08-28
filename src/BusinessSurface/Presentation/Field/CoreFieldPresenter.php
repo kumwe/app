@@ -7,10 +7,10 @@ namespace Kumwe\App\BusinessSurface\Presentation\Field;
 use DateTimeImmutable;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue;
-use Kumwe\App\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\App\BusinessRecord\Domain\MoneyValue;
-use Kumwe\App\BusinessRecord\Domain\QuantityValue;
+use Kumwe\Conversion\Value\ConvertedMoneyValue;
+use Kumwe\Conversion\Decimal\ExactDecimal;
+use Kumwe\Conversion\Value\MoneyValue;
+use Kumwe\Conversion\Value\QuantityValue;
 use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
 
 /**

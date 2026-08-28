@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "40d9344e8e009279f73b5d1c736fded4",
+    "content-hash": "d0875321eeb6993688a701f6e208ad35",
     "packages": [
         {
             "name": "brick/math",
@@ -323,6 +323,119 @@
                 "source": "https://github.com/php-fig/http-message-util/tree/1.1.5"
             },
             "time": "2020-11-24T22:02:12+00:00"
+        },
+        {
+            "name": "kumwe/conversion",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/conversion.git",
+                "reference": "c3f2bd3fb6bd94a15dd9c8b995822ca86d6eaff9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/conversion/zipball/c3f2bd3fb6bd94a15dd9c8b995822ca86d6eaff9",
+                "reference": "c3f2bd3fb6bd94a15dd9c8b995822ca86d6eaff9",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Conversion\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "The money and quantity conversion contract of the Kumwe family: the exact decimal kernel, typed money and quantity values, converted values that always carry their rate and as-at instant, and the provider ports rate and unit extensions implement. Core ships no rate and no conversion table.",
+            "homepage": "https://github.com/kumwe/conversion",
+            "support": {
+                "issues": "https://github.com/kumwe/conversion/issues",
+                "source": "https://github.com/kumwe/conversion"
+            },
+            "time": "2026-08-28T20:17:46+00:00"
+        },
+        {
+            "name": "kumwe/extension-sdk",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/extension-sdk.git",
+                "reference": "76fe8034233147c35e53c9bb52eaa9b3e858d3e5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/76fe8034233147c35e53c9bb52eaa9b3e858d3e5",
+                "reference": "76fe8034233147c35e53c9bb52eaa9b3e858d3e5",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-sodium": "*",
+                "ext-zip": "*",
+                "php": "^8.5"
+            },
+            "suggest": {
+                "phpunit/phpunit": "Activates the ExtensionConformanceTestCase and ExtensionLifecycleTestCase bridges in a consuming suite."
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Extension\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "The Kumwe extension SDK: the manifest contract, SPI interfaces, classification data and signed compatibility fixtures, plus the author toolchain - scaffold, deterministic build, sign, inspect and conformance-test - sharing one inspection implementation with Kumwe App's admission.",
+            "homepage": "https://github.com/kumwe/extension-sdk",
+            "support": {
+                "issues": "https://github.com/kumwe/extension-sdk/issues",
+                "source": "https://github.com/kumwe/extension-sdk"
+            },
+            "time": "2026-08-28T20:18:14+00:00"
+        },
+        {
+            "name": "kumwe/producer",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/producer.git",
+                "reference": "8799ec1b5f753af3408f24b6a87c768e7b79ec76"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/producer/zipball/8799ec1b5f753af3408f24b6a87c768e7b79ec76",
+                "reference": "8799ec1b5f753af3408f24b6a87c768e7b79ec76",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "php": ">=8.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Producer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "The PHP producer for Kumwe Studio: receives canonical Studio compositions and makes them real - validated wire handling, semantic server-side rendering, and design-token CSS - while your application keeps all authority and storage.",
+            "homepage": "https://github.com/kumwe/producer",
+            "support": {
+                "issues": "https://github.com/kumwe/producer/issues",
+                "source": "https://github.com/kumwe/producer"
+            },
+            "time": "2026-08-28T19:47:03+00:00"
         },
         {
             "name": "laminas/laminas-authentication",

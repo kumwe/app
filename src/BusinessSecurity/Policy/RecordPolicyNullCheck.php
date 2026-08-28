@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSecurity\Policy;
 
 use InvalidArgumentException;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate;
 
 /**
  * Test whether a declared record field is null without overloading scalar comparison semantics.

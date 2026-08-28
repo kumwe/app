@@ -47,7 +47,7 @@ fails closed at runtime. The allowlist is in `generations.json` under `host_serv
 purpose. Their identifiers are frozen; the method surface behind each is public but not byte-pinned yet.
 
 One of those services hands objects back: a listener attached through `ExtensionEventRegistrar` receives
-each dispatched event as `Kumwe\App\Extension\Runtime\ExtensionEvent` — a Kumwe-owned contract carrying
+each dispatched event as `Kumwe\Extension\Spi\Runtime\ExtensionEvent` — a Kumwe-owned contract carrying
 the event's name, its named arguments and the propagation flag, deliberately naming no vendor type so the
 dispatch engine behind it can change without the extension surface moving again. Unlike the registrar
 itself, that interface **is** byte-pinned, by `tests/Fixtures/ExtensionApi/extension-event-v1.json`. The

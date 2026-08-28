@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Infrastructure\Package;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Infrastructure\Package\ZipArchiveContentReader;
+use Kumwe\Extension\Package\ZipArchiveContentReader;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;

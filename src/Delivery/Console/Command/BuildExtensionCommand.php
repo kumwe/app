@@ -7,7 +7,7 @@ namespace Kumwe\App\Delivery\Console\Command;
 use InvalidArgumentException;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
-use Kumwe\App\Extension\Development\DeterministicPackageBuilder;
+use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
 use Throwable;
 
 /**

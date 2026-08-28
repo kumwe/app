@@ -22,8 +22,9 @@ use Kumwe\App\Extension\Application\Install\ExtensionInstallOutcome;
 use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\App\Extension\Application\Package\ArchiveReader;
 use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
-use Kumwe\App\Extension\Application\Package\PackageAdmissionReport;
-use Kumwe\App\Extension\Application\Package\PackageAdmissionScanner;
+use Kumwe\Extension\Manifest\ExtensionManifest as PackagedExtensionManifest;
+use Kumwe\Extension\Package\PackageAdmissionReport;
+use Kumwe\Extension\Package\PackageAdmissionScanner;
 use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ContributionDefinitionChecksum;
@@ -591,7 +592,8 @@ final readonly class DoctrineExtensionManager
         $signature = $this->signature($signingKeyId, $base64Signature);
         $this->trust->assertTrusted($checksum, $signature, $manifest->identifier());
         $this->assertDependencies($manifest);
-        $admission = $this->packageAdmission?->scan($archiveFile, $manifest) ?? PackageAdmissionReport::notTaken();
+        $admission = $this->packageAdmission?->scan($archiveFile, PackagedExtensionManifest::fromJson($manifestJson))
+            ?? PackageAdmissionReport::notTaken();
 
         $relativeRuntime = $this->runtimePath($manifest);
         $this->ensureBoundedDirectory($this->extensionRoot, dirname($relativeRuntime), 0700);

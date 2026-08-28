@@ -29,8 +29,8 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFaile
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
 use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
-use Kumwe\App\BusinessRecord\Application\MoneyRateUnavailable;
-use Kumwe\App\BusinessRecord\Application\UnitConversionUnavailable;
+use Kumwe\Conversion\Provider\MoneyRateUnavailable;
+use Kumwe\Conversion\Provider\UnitConversionUnavailable;
 use Kumwe\App\BusinessReporting\Application\ExportArtifactUnavailable;
 use Kumwe\App\BusinessReporting\Application\ExportGenerationRejected;
 use Kumwe\App\BusinessReporting\Application\ExportVersionConflict;

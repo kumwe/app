@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Domain\UnitConversionFactor;
-use Kumwe\App\BusinessRecord\Domain\UnitConversionRequest;
+use Kumwe\Conversion\Value\UnitConversionFactor;
+use Kumwe\Conversion\Contract\UnitConversionRequest;
 
 /**
  * What a package declares before any of its code is allowed to convert between units of measure.

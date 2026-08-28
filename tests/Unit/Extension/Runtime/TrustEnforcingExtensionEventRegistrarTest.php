@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\App\Extension\Runtime\ExtensionEvent;
+use Kumwe\Extension\Spi\Runtime\ExtensionEvent;
 use Kumwe\App\Extension\Runtime\ExtensionEventRegistrar;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Runtime\LaminasExtensionEvent;

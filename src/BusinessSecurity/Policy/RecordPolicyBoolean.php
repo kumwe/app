@@ -6,6 +6,7 @@ namespace Kumwe\App\BusinessSecurity\Policy;
 
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate;
 
 /**
  * Deterministic all-of or any-of composition over bounded policy children.
