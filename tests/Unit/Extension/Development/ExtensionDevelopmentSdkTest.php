@@ -50,16 +50,6 @@ use SplFileInfo;
 #[CoversClass(RunExtensionConformanceCommand::class)]
 #[CoversClass(ScaffoldExtensionCommand::class)]
 #[CoversClass(SignExtensionCommand::class)]
-#[CoversClass(ComponentScaffolder::class)]
-#[CoversClass(ConformanceReport::class)]
-#[CoversClass(DeterministicPackageBuilder::class)]
-#[CoversClass(LifecycleConformanceRunner::class)]
-#[CoversClass(PackageInspector::class)]
-#[CoversClass(PackageSigner::class)]
-#[CoversClass(ProtectedSigningKeyReader::class)]
-#[CoversClass(ScaffoldRequest::class)]
-#[CoversClass(SignatureDocument::class)]
-#[CoversClass(StaticConformanceRunner::class)]
 /**
  * Exercises the complete scaffold, deterministic build, inspection, conformance, and signing path.
  *

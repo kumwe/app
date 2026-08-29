@@ -14,7 +14,6 @@ use Kumwe\App\Extension\Contribution\CompositionPropertySchema;
 use Kumwe\App\Extension\Contribution\CompositionPropertyType;
 use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\Extension\Spi\Contribution\Manifest5AdapterResult;
 use Kumwe\App\Extension\Contribution\Manifest5CompositionAdapter;
 use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Contribution\OwnedExtensionContributionRegistrar;
@@ -43,7 +42,6 @@ use stdClass;
 #[CoversClass(CanonicalCompositionKind::class)]
 #[CoversClass(CompositionHostBinding::class)]
 #[CoversClass(ContributionOwner::class)]
-#[CoversClass(Manifest5AdapterResult::class)]
 #[CoversClass(Manifest5CompositionAdapter::class)]
 #[CoversClass(ManifestContributionSet::class)]
 #[CoversClass(OwnedExtensionContributionRegistrar::class)]

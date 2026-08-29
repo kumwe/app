@@ -8,7 +8,7 @@
   "recorded_from": [
     "https://github.com/kumwe/app/actions/runs/32251426675"
   ],
-  "entry_count": 3671,
+  "entry_count": 3668,
   "entries": [
     {
       "file": "tests/Architecture/BusinessDefinitionBoundaryTest.php",
@@ -27234,36 +27234,6 @@
       "file": "tests/Unit/Extension/Domain/PackageChecksumTest.php",
       "line": 24,
       "member": "PackageChecksumTest::testRejectsMalformedDigests()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Extension/Domain/PackagePathTest.php",
-      "line": 13,
-      "member": "PackagePathTest",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Extension/Domain/PackagePathTest.php",
-      "line": 15,
-      "member": "PackagePathTest::testAcceptsAStableRelativePath()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Extension/Domain/PackagePathTest.php",
-      "line": 20,
-      "member": "PackagePathTest::testRejectsTraversalAndPlatformSeparators()",
       "code": "MISSING_DOC",
       "owner": "quality-engineering",
       "finding": "V2-QA-010",

@@ -29,7 +29,6 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 #[CoversClass(RuntimeUnitConversionProviderCatalog::class)]
-#[CoversClass(UnitConversionPipeline::class)]
 #[CoversClass(UnitConversionProviderDefinition::class)]
 /**
  * Pins the conversion table as a genuine extension point: factors arrive from packages, never from core.

@@ -28,7 +28,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
-#[CoversClass(MoneyConversionPipeline::class)]
 #[CoversClass(MoneyRateProviderDefinition::class)]
 #[CoversClass(RuntimeMoneyRateProviderCatalog::class)]
 /**
